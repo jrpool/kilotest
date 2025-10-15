@@ -1,0 +1,32 @@
+{
+  "name": "kilotest",
+  "version": "0.0.1",
+  "description": "An ensemble testing service with a focus on accessibility",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jrpool/kilotest"
+  },
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "testing"
+  ],
+  "author": "Jonathan Robert Pool <pool@jpdev.pro>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jrpool/kilotest/issues"
+  },
+  "homepage": "https://github.com/jrpool/kilotest",
+  "dependencies": {
+    "dotenv": "*",
+    "testaro": "*",
+    "testilo": "*"
+  },
+  "devDependencies": {
+    "eslint": "*"
+  }
+}

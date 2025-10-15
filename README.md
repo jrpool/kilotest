@@ -13,7 +13,7 @@ To learn why Kilotest uses an ensemble of tools, instead of only one tool, see:
 - [Testaro: Efficient Ensemble Testing for Web Accessibility](https://arxiv.org/abs/2309.10167)
 - [Accessibility Metatesting: Comparing Nine Testing Tools](https://arxiv.org/abs/2304.07591)
 
-Bottom line: Using an ensemble of tools for testing web accessibility provides many more issue reports than using only one tool. Of course, not every claim by every tool will turn out to be important, or even credible. But Kilotest provides thorough intelligence about the accessibility complaints that may be made on the basis of automated testing.
+Bottom line: Using an ensemble of tools for testing web accessibility usually discovers many more issues than using only one tool.
 
 ## Getting started
 

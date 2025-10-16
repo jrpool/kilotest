@@ -41,7 +41,7 @@ const serveError = async (error, response) => {
   if (! response.writableEnded) {
     response.statusCode = 400;
     const errorTemplate = await fs.readFile('error.html', 'utf8');
-    const errorPage = errorTemplate.replace(/__error__/, error);
+    const errorPage = errorTemplate.replace(/__error__/, error.message);
     response.end(errorPage);
   }
 };
@@ -77,13 +77,11 @@ const getPostData = async request => {
 };
 // Handles a request.
 const requestHandler = async (request, response) => {
-  console.log('Request handler started');
   const {method} = request;
   // Get its URL.
   const requestURL = request.url;
-  // If the URL ends with a slash:
-  console.log(`Request URL: ${requestURL}`);
-  if (requestURL.endsWith('/')) {
+  // If the URL has a path that ends with a slash:
+  if (requestURL.length > 1 && requestURL.endsWith('/')) {
     // Redirect the client permanently.
     response.writeHead(301, {'Location': requestURL.slice(0, -1)});
     response.end();
@@ -127,11 +125,11 @@ const requestHandler = async (request, response) => {
     // If the request is a job specification:
     if (requestURL === '/kilotest/result.html') {
       // Get the data from it.
-      const postData = getPostData(request);
+      const postData = await getPostData(request);
       const {pageWhat, pageURL} = postData;
       // If the request is valid:
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
-        console.log(`Job submitted to test ${pageWhat} (${pageURL})`);
+        console.log(`Request submitted to test ${pageWhat} (${pageURL})`);
         // Create a target list from it.
         const targetList = [[pageWhat, pageURL]];
         // Create a batch from the target list.
@@ -143,7 +141,7 @@ const requestHandler = async (request, response) => {
         // Perform the job and get the report from Testaro.
         const rawReport = await doJob(job);
         // Score the report.
-        const scoredReport = await score(scorer, rawReport);
+        const scoredReport = score(scorer, rawReport);
         // Digest the scored report.
         const jobDigest = await digest(digester, scoredReport);
         // Serve the digest.
@@ -170,12 +168,6 @@ const serve = (protocolModule, options) => {
   const server = protocolModule === 'https'
     ? https.createServer(options, requestHandler)
     : http.createServer(requestHandler);
-  // Debug probes
-  server.on('request', (req) => console.log('Server got request', req.method, req.url));
-  server.on('connection', (sock) => {
-    const addr = sock.remoteAddress + ':' + sock.remotePort;
-    console.log('Connection to server made from', addr);
-  });
   const port = process.env.PORT || '3000';
   server.listen(port, () => {
     console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);

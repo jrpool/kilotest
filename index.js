@@ -14,7 +14,6 @@ const protocol = process.env.PROTOCOL || 'http';
 const resultStreams = {};
 
 // IMPORTS
-
 // Module to access files.
 const fs = require('fs/promises');
 // Module to create an HTTP server and client.
@@ -24,7 +23,11 @@ const https = require('https');
 // URL of Kilotest.
 process.env.APP_URL ??= 'http://localhost:3000/kilotest';
 // Functions from Testilo.
-const {batch, script, merge, score, digest} = require('testilo');
+const {batch} = require('testilo/batch');
+const {script} = require('testilo/script');
+const {merge} = require('testilo/merge');
+const {score} = require('testilo/score');
+const {digest} = require('testilo/digest');
 const {scorer} = require('testilo/procs/score/tsp');
 const {digester} = require('testilo/procs/digest/tdp');
 // Functions from Testaro

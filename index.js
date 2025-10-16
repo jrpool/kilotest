@@ -27,6 +27,8 @@ process.env.APP_URL ??= 'http://localhost:3000/kilotest';
 const {batch, script, merge, score, digest} = require('testilo');
 const {scorer} = require('testilo/procs/score/tsp');
 const {digester} = require('testilo/procs/digest/tdp');
+// Functions from Testaro
+const {doJob} = require('testaro/run');
 
 // FUNCTIONS
 
@@ -118,95 +120,32 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
         console.log(`Job submitted to test ${pageWhat} (${pageURL})`);
-        // Convert it to a Testaro job.
-        const jobBatch = batch(
-          'testuList', '1 target', [[pageWhat, pageURL]]
-        );
-        // Create a script.
-        const scriptObj = script('testu', pageWhat, 'default', {});
-        try{
-          // Create a job from the script and the batch.
-          const job = merge(scriptObj, jobBatch, '')[0];
-          job.sendReportTo = `${process.env.APP_URL}/api/report`;
-          // Add it to the jobs to be done.
-          jobs.todo[job.id] = job;
-          // Serve a result page to the requester.
-          const resultTemplate = await fs.readFile('result.html', 'utf8');
-          const resultPage = resultTemplate
-          .replace('__pageWhat__', requestData.pageWhat)
-          .replace('__pageURL__', requestData.pageURL)
-          .replace(/__jobID__/g, job.id);
-          response.setHeader('Content-Location', '/testu/result.html');
-          response.end(resultPage);
-          console.log(`Result page initialized and served`);
-        }
-        catch(error) {
-          await serveError(`ERROR creating job (${error.message})`, response);
-        }
+        // Create a target list from it.
+        const targetList = [[pageWhat, pageURL]];
+        // Create a batch from the target list.
+        const jobBatch = batch('jobTarget', 'job target', targetList);
+        // Create a script for the job.
+        const jobScript = script('jobScript', 'job script', 'default');
+        // Merge the batch and the script into a job.
+        const job = merge(jobScript, jobBatch, '')[0];
+        // Perform the job and get the report from Testaro.
+        const rawReport = await doJob(job);
+        // Score the report.
+        const scoredReport = await score(scorer, rawReport);
+        // Digest the scored report.
+        const jobDigest = await digest(digester, scoredReport);
+        // Serve the digest.
+        response.setHeader('Content-Type', 'text/html');
+        response.end(jobDigest);
       }
-        // Otherwise, i.e. if the request is invalid:
-        else {
-          // Report this to the requester.
-          const message = 'ERROR: invalid request';
-          console.log(message);
-          await serveError(message, response);
-        }
+      // Otherwise, i.e. if the request is invalid:
+      else {
+        // Report this.
+        const message = 'ERROR: invalid request';
+        console.log(message);
+        await serveError(message, response);
       }
-      // Otherwise, if the request is a job report from a testing agent:
-      else if (requestURL === '/testu/api/report') {
-        // Process the report.
-        const reportJSON = Buffer.concat(bodyParts).toString();
-        try {
-          // If it is valid:
-          const report = JSON.parse(reportJSON);
-          const {id, sources} = report;
-          const {agent} = sources;
-          if (
-            report && reportProperties.every(propertyName => Object.hasOwn(report, propertyName))
-          ) {
-            // Send an acknowledgement to the agent.
-            serveObject({
-              message: `Report ${id} received and validated`
-            }, response);
-            console.log(`Valid report ${id} received from agent ${agent}`);
-            // Notify the requester.
-            resultStreams[id].write(`data: Report ${id} received from Testaro agent ${agent}.\n\n`);
-            // Score and save it.
-            await fs.mkdir('reports', {recursive: true});
-            score(scorer, report);
-            await fs.writeFile(`reports/${id}.json`, `${JSON.stringify(report, null, 2)}\n`);
-            // Notify the requester.
-            console.log('Report scored');
-            resultStreams[id].write('data: Report scored.\n\n');
-            // Digest it and save the digest.
-            const jobDigest = await digest(digester, report);
-            await fs.writeFile(`reports/${id}.html`, jobDigest);
-            // Notify the requester.
-            const digestURL = `${process.env.APP_URL}/digest?jobID=${id}`;
-            console.log('Report digested');
-            resultStreams[id].write(
-              `data: Report digested. <a href="${digestURL}">Get the digest</a>.\n\n`
-            );
-            // Close the event source for the requester.
-            resultStreams[id].end();
-            console.log(`Requester notified that job ${id} is complete\n`);
-          }
-          // Otherwise, i.e. if the report is invalid:
-          else {
-            // Report this.
-            const message = 'ERROR: Invalid job report received';
-            console.log(message);
-            serveObject({message}, response);
-          }
-        }
-        // If the processing fails:
-        catch(error) {
-          // Report this.
-          const message = 'ERROR: Report processing failed';
-          console.log(`${message} (${error.message})`);
-        }
-      }
-    });
+    }
   }
   // Otherwise, i.e. if it uses another method:
   else {
@@ -217,9 +156,9 @@ const requestHandler = async (request, response) => {
 // ########## SERVER
 const serve = (protocolModule, options) => {
   const server = protocolModule.createServer(options, requestHandler);
-  const port = process.env.PORT || '3008';
+  const port = process.env.PORT || '3000';
   server.listen(port, () => {
-    console.log(`Testu server listening at ${protocol}://localhost:${port}.`);
+    console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
   });
 };
 if (protocol === 'http') {

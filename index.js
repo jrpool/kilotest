@@ -46,34 +46,43 @@ const serveError = async (error, response) => {
   }
 };
 // Gets the data from a POST request.
-const getPostData = async (request) => {
-  const bodyParts = [];
-  request.on('error', async err => {
-    await serveError(err, response);
-  })
-  .on('data', chunk => {
-    bodyParts.push(chunk);
-  })
-  // When the request has arrived:
-  .on('end', async () => {
-    // Get a query string from the request body.
-    const queryString = Buffer.concat(bodyParts).toString();
-    // Parse it as an array of key-value pairs.
-    const requestParams = new URLSearchParams(queryString);
-    // Convert it to an object with string- or array-valued properties.
-    const postData = {};
-    requestParams.forEach((value, name) => {
-      postData[name] = value;
+const getPostData = async request => {
+  return new Promise((resolve, reject) => {
+    const bodyParts = [];
+    request.on('error', async err => {
+      reject(err);
+    })
+    .on('data', chunk => {
+      bodyParts.push(chunk);
+    })
+    // When the request has arrived:
+    .on('end', async () => {
+      try {
+        // Get a query string from the request body.
+        const queryString = Buffer.concat(bodyParts).toString();
+        // Parse it as an array of key-value pairs.
+        const requestParams = new URLSearchParams(queryString);
+        // Convert it to an object with string-valued properties.
+        const postData = {};
+        requestParams.forEach((value, name) => {
+          postData[name] = value;
+        });
+        resolve(postData);
+      }
+      catch (err) {
+        reject(err);
+      }
     });
-    return postData;
   });
 };
 // Handles a request.
 const requestHandler = async (request, response) => {
+  console.log('Request handler started');
   const {method} = request;
   // Get its URL.
   const requestURL = request.url;
   // If the URL ends with a slash:
+  console.log(`Request URL: ${requestURL}`);
   if (requestURL.endsWith('/')) {
     // Redirect the client permanently.
     response.writeHead(301, {'Location': requestURL.slice(0, -1)});
@@ -106,7 +115,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, i.e. if it is any other GET request:
     else {
       const error = {
-        message: `ERROR: Invalid request (${requestPath})`
+        message: `ERROR: Invalid request (${requestURL})`
       };
       // Report the error.
       console.log(error.message);
@@ -118,7 +127,7 @@ const requestHandler = async (request, response) => {
     // If the request is a job specification:
     if (requestURL === '/kilotest/result.html') {
       // Get the data from it.
-      const postData = await getPostData(request);
+      const postData = getPostData(request);
       const {pageWhat, pageURL} = postData;
       // If the request is valid:
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
@@ -158,20 +167,30 @@ const requestHandler = async (request, response) => {
 };
 // ########## SERVER
 const serve = (protocolModule, options) => {
-  const server = protocolModule.createServer(options, requestHandler);
+  const server = protocolModule === 'https'
+    ? https.createServer(options, requestHandler)
+    : http.createServer(requestHandler);
+  // Debug probes
+  server.on('request', (req) => console.log('Server got request', req.method, req.url));
+  server.on('connection', (sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('Connection to server made from', addr);
+  });
   const port = process.env.PORT || '3000';
   server.listen(port, () => {
     console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
   });
 };
 if (protocol === 'http') {
+  console.log('Starting HTTP server');
   serve(http, {});
 }
 else if (protocol === 'https') {
-  globals.fs.readFile(process.env.KEY, 'utf8')
+  console.log('Starting HTTPS server');
+  fs.readFile(process.env.KEY, 'utf8')
   .then(
     key => {
-      globals.fs.readFile(process.env.CERT, 'utf8')
+      fs.readFile(process.env.CERT, 'utf8')
       .then(
         cert => {
           serve(https, {key, cert});

@@ -29,7 +29,7 @@ const {merge} = require('testilo/merge');
 const {score} = require('testilo/score');
 const {digest} = require('testilo/digest');
 const {scorer} = require('testilo/procs/score/tsp');
-const {digester} = require('testilo/procs/digest/tdp');
+const {digester} = require('testilo/procs/digest/tdpi');
 // Functions from Testaro
 const {doJob} = require('testaro/run');
 
@@ -135,15 +135,28 @@ const requestHandler = async (request, response) => {
         // Create a batch from the target list.
         const jobBatch = batch('jobTarget', 'job target', targetList);
         // Create a script for the job.
-        const jobScript = script('jobScript', 'job script', 'default');
+        const jobScript = script('jobScript', 'job script', 'default', {
+          type: 'tools',
+          specs: [
+            'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
+          ]
+        });
         // Merge the batch and the script into a job.
         const job = merge(jobScript, jobBatch, '')[0];
         // Perform the job and get the report from Testaro.
-        const rawReport = await doJob(job);
-        // Score the report.
-        const scoredReport = score(scorer, rawReport);
+        const report = await doJob(job);
+        // Score the report in place.
+        score(scorer, report);
         // Digest the scored report.
-        const jobDigest = await digest(digester, scoredReport);
+        const jobDigest = await digest(digester, report, {
+          title: 'Kilotest report',
+          mainHeading: 'Kilotest report',
+          metadataHeading: 'Test facts',
+          testDate: new Date().toLocaleString(),
+          pageID: pageWhat,
+          pageURL,
+          dataHeading: 'Issues reported'
+        });
         // Serve the digest.
         response.setHeader('Content-Type', 'text/html');
         response.end(jobDigest);

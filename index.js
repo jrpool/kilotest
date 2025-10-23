@@ -152,7 +152,7 @@ const requestHandler = async (request, response) => {
           title: 'Kilotest report',
           mainHeading: 'Kilotest report',
           metadataHeading: 'Test facts',
-          testDate: new Date().toLocaleString(),
+          testDate: new Date().toISOString(),
           pageID: pageWhat,
           pageURL,
           dataHeading: 'Issues reported'

@@ -20,6 +20,11 @@ button {
   color: #fff;
   background-color: #03a;
 }
+button:disabled, button:disabled:hover {
+  color: #666;
+  background-color: #ccc;
+  border-color: #666;
+}
 button:hover {
   color: #000;
   background-color: #9df;

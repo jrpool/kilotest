@@ -105,8 +105,10 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is for the job-specification form:
     else if (['/kilotest', '/kilotest/index.html'].includes(requestURL)) {
-      // Serve it.
+      // Get the form page.
       const formPage = await fs.readFile(`index.html`, 'utf8');
+      // Serve it.
+      response.setHeader('Content-Type', 'text/html');
       response.setHeader('Content-Location', '/kilotest');
       response.end(formPage);
     }

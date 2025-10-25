@@ -152,8 +152,4 @@ Add a bounded-parallel implementation into your index.js using p-limit and a pla
 Add simple timing logs so you can profile per-tool durations and choose a concurrency level. Which would you prefer?
 GPT-5 mini • 1x
 
-### Temp
-
-Recommended approach
-
-Profile / measure a typical doJob run and per-tool durations to confirm where the time goes.
+Comment about the above advice: The Testaro `run.js` `doJob` function saves the report in the `tmp` directory as `report.json` and forks child processes to run individual tools and add their results to the report files. Parallel execution of `doJob` for individual tools would risk conflicting writes to the same file.

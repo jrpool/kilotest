@@ -23,14 +23,17 @@
           Description of that page (e.g., ACM home)
           <input type="text" name="pageWhat" size="60" maxLength="60" required>
         </label></p>
-        <p><button id="submit" type="submit">Submit</button></p>
-        <p id="status" role="status"></p>
+        <p><button id="submit">Submit</button></p>
+        <div id="status" role="status"></div>
       </form>
       <script>
         const form = document.getElementById('form');
         form.addEventListener('submit', () => {
           document.getElementById('submit').disabled = true;
-          document.getElementById('status').textContent = 'Testing in progress. Please wait.';
+          const status = document.getElementById('status');
+          const wait = document.createElement('p');
+          wait.textContent = 'Testing in progress. Please wait.';
+          status.appendChild(wait);
         });
       </script>
     </main>

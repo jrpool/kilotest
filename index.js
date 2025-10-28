@@ -12,6 +12,7 @@ require('dotenv').config();
 
 const protocol = process.env.PROTOCOL || 'http';
 const eventStreams = new Map();
+const results = new Map();
 
 // IMPORTS
 // Module to access files.
@@ -152,6 +153,27 @@ const requestHandler = async (request, response) => {
         return;
       });
     }
+    // Otherwise, if it is for a job result:
+    else if (requestURL.startsWith('/kilotest/result/')) {
+      // Get the job ID from the URL.
+      const jobID = requestURL.split('/').pop();
+      const resultsHTML = results.get(jobID);
+      // If a result for the job exists:
+      if (resultsHTML) {
+        // Serve it.
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.end(resultsHTML);
+        // Remove the result from memory.
+        results.delete(jobID);
+        return;
+      }
+      // Otherwise, i.e. if no result for the job exists:
+      else {
+        response.statusCode = 404;
+        response.end('ERROR: No such job result');
+        return;
+      }
+    }
     // Otherwise, i.e. if it is any other GET request:
     else {
       const error = {
@@ -174,8 +196,6 @@ const requestHandler = async (request, response) => {
         // Create a unique ID for the job.
         const jobID = Date.now() + Math.random().toString(36).slice(2);
         console.log(`Request submitted to test ${pageWhat} (${pageURL})`);
-        response.setHeader('Content-Type', 'text/html');
-        const initialPage =
         // Create a target list from it.
         const targetList = [[pageWhat, pageURL]];
         // Create a batch from the target list.

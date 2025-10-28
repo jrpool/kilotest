@@ -11,7 +11,7 @@ require('dotenv').config();
 // CONSTANTS
 
 const protocol = process.env.PROTOCOL || 'http';
-const resultStreams = {};
+const eventStreams = new Map();
 
 // IMPORTS
 // Module to access files.
@@ -34,6 +34,18 @@ const {digester} = require('testilo/procs/digest/tdpi');
 const {doJob} = require('testaro/run');
 
 // FUNCTIONS
+
+// Publishes an event to all clients connected to an event stream.
+const publishEvent = (jobID, event) => {
+  const sinks = eventStreams.get(jobID) || [];
+  const payload = `data: ${JSON.stringify(event)}\n\n`;
+  for (const response of sinks) {
+    try {
+      response.write(payload);
+    }
+    catch (error) {}
+  };
+}
 
 // Serves an error message.
 const serveError = async (error, response) => {
@@ -112,6 +124,34 @@ const requestHandler = async (request, response) => {
       response.setHeader('Content-Location', '/kilotest');
       response.end(formPage);
     }
+    // Otherwise, if it is for a stream of job events:
+    else if (requestURL.startsWith('/kilotest/events/')) {
+      // Get the job ID from the URL.
+      const jobID = requestURL.split('/').pop();
+      // Set the response headers for an event stream.
+      response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      });
+      response.write('\n');
+      const sinks = eventStreams.get(jobID) || [];
+      sinks.push(response);
+      eventStreams.set(jobID, sinks);
+      // When the client disconnects:
+      request.on('close', () => {
+        // Remove the response from the list of sinks for that job ID.
+        const sinks = eventStreams.get(jobID) || [];
+        const remaining = sinks.filter(r => r !== response);
+        if (remaining.length) {
+          eventStreams.set(jobID, remaining);
+        }
+        else {
+          eventStreams.delete(jobID);
+        }
+        return;
+      });
+    }
     // Otherwise, i.e. if it is any other GET request:
     else {
       const error = {
@@ -131,7 +171,11 @@ const requestHandler = async (request, response) => {
       const {pageWhat, pageURL} = postData;
       // If the request is valid:
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
+        // Create a unique ID for the job.
+        const jobID = Date.now() + Math.random().toString(36).slice(2);
         console.log(`Request submitted to test ${pageWhat} (${pageURL})`);
+        response.setHeader('Content-Type', 'text/html');
+        const initialPage =
         // Create a target list from it.
         const targetList = [[pageWhat, pageURL]];
         // Create a batch from the target list.

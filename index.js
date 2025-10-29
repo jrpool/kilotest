@@ -199,6 +199,7 @@ const requestHandler = async (request, response) => {
         // Serve a progress page.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         const progressPage = await fs.readFile('progress.html', 'utf8');
+        response.end(progressPage);
         // Notify the client that the job has started.
         publishEvent(jobID, {type: 'started', message: `Job ${jobID} started`});
         // Create a target list from it.

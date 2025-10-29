@@ -21,8 +21,6 @@ const fs = require('fs/promises');
 const http = require('http');
 // Module to create an HTTPS server and client.
 const https = require('https');
-// URL of Kilotest.
-process.env.APP_URL ??= 'http://localhost:3000/kilotest';
 // Functions from Testilo.
 const {batch} = require('testilo/batch');
 const {script} = require('testilo/script');
@@ -38,6 +36,7 @@ const {doJob} = require('testaro/run');
 
 // Publishes an event to all clients connected to an event stream.
 const publishEvent = (jobID, event) => {
+  // Get the response sinks for the job.
   const sinks = eventStreams.get(jobID) || [];
   const payload = `data: ${JSON.stringify(event)}\n\n`;
   for (const response of sinks) {
@@ -215,8 +214,10 @@ const requestHandler = async (request, response) => {
         });
         // Merge the batch and the script into a job.
         const job = merge(jobScript, jobBatch, '')[0];
-        // Perform the job and get the report from Testaro.
-        const report = await doJob(job);
+        // Perform the job, publish its progress events, and get the report from Testaro.
+        const report = await doJob(job, {
+          onProgress: payload => publishEvent(jobID, {type: 'progress', payload})
+        });
         // Score the report in place.
         score(scorer, report);
         // Digest the scored report.

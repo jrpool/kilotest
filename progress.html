@@ -12,7 +12,7 @@
   <body>
     <main>
       <h1>Kilotest progress</h1>
-      <div id="status">Starting…</div>
+      <div id="status"></div>
       <script>
         (function(){
           const status = document.getElementById('status');
@@ -20,7 +20,11 @@
           eventSource.onmessage = event => {
             try {
               const message = JSON.parse(event.data);
-              if (message.type === 'progress' && message.payload) {
+              if (message.type === 'started' && message.message) {
+                const startedPar = document.createElement('p');
+                startedPar.textContent = `[started] ${message.message}`;
+                status.appendChild(startedPar);
+              } else if (message.type === 'progress' && message.payload) {
                 const progressDiv = document.createElement('div');
                 const {payload} = message;
                 const {actName} = payload;

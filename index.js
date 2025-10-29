@@ -195,7 +195,12 @@ const requestHandler = async (request, response) => {
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
         // Create a unique ID for the job.
         const jobID = Date.now() + Math.random().toString(36).slice(2);
-        console.log(`Request submitted to test ${pageWhat} (${pageURL})`);
+        console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
+        // Serve a progress page.
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        const progressPage = await fs.readFile('progress.html', 'utf8');
+        // Notify the client that the job has started.
+        publishEvent(jobID, {type: 'started', message: `Job ${jobID} started`});
         // Create a target list from it.
         const targetList = [[pageWhat, pageURL]];
         // Create a batch from the target list.

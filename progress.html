@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="report,accessibility,a11y">
+    <title>Progress | Kilotest</title>
+    <link rel="stylesheet" href="kilotest/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Kilotest progress</h1>
+      <div id="status">Starting…</div>
+      <script>
+        (function(){
+          const status = document.getElementById('status');
+          const eventSource = new EventSource('/kilotest/events/${jobID}');
+          eventSource.onmessage = event => {
+            try {
+              const message = JSON.parse(event.data);
+              if (message.type === 'progress' && message.payload) {
+                const progressDiv = document.createElement('div');
+                const {payload} = message;
+                const {actName} = payload;
+                progressDiv.textContent = `[progress] ${actName || JSON.stringify(payload)}`;
+                status.appendChild(progressDiv);
+              } else if (message.type === 'done' && message.url) {
+                // Fetch the digest and replace the page.
+                fetch(message.url, {credentials: 'same-origin'})
+                .then(response => response.text())
+                .then(digestHTML => {
+                  document.open();
+                  document.write(digestHTML);
+                  document.close();
+                }).catch(error => {
+                  const errorDiv = document.createElement('div');
+                  errorDiv.textContent = `Failed to fetch final report: ${error.message}`;
+                  status.appendChild(errorDiv);
+                });
+                eventSource.close();
+              } else if (msg.type === 'error') {
+                const errorDiv = document.createElement('div');
+                errorDiv.textContent = `[error] ${msg.message || 'unknown error'}`;
+                status.appendChild(errorDiv);
+                eventSource.close();
+              }
+            } catch (error) {}
+          };
+        })();
+      </script>
+    </main>
+  </body>
+</html>

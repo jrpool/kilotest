@@ -6,7 +6,7 @@
 // ENVIRONMENT
 
 // Module to keep secrets local.
-require('dotenv').config();
+require('dotenv').config({quiet: true});
 
 // CONSTANTS
 
@@ -38,6 +38,7 @@ const {doJob} = require('testaro/run');
 const publishEvent = (jobID, event) => {
   // Get the response sinks for the job.
   const sinks = eventStreams.get(jobID) || [];
+  // Create the payload.
   const payload = `data: ${JSON.stringify(event)}\n\n`;
   for (const response of sinks) {
     try {
@@ -152,8 +153,8 @@ const requestHandler = async (request, response) => {
         return;
       });
     }
-    // Otherwise, if it is for a job result:
-    else if (requestURL.startsWith('/kilotest/result/')) {
+    // Otherwise, if it is for job results:
+    else if (requestURL.startsWith('/kilotest/results/')) {
       // Get the job ID from the URL.
       const jobID = requestURL.split('/').pop();
       const resultsHTML = results.get(jobID);
@@ -162,7 +163,7 @@ const requestHandler = async (request, response) => {
         // Serve it.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.end(resultsHTML);
-        // Remove the result from memory.
+        // Remove the results from memory.
         results.delete(jobID);
         return;
       }
@@ -186,7 +187,7 @@ const requestHandler = async (request, response) => {
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
     // If the request is a job specification:
-    if (requestURL === '/kilotest/result.html') {
+    if (requestURL === '/kilotest/progress.html') {
       // Get the data from it.
       const postData = await getPostData(request);
       const {pageWhat, pageURL} = postData;
@@ -197,10 +198,11 @@ const requestHandler = async (request, response) => {
         console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
         // Serve a progress page.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        const progressPage = await fs.readFile('progress.html', 'utf8');
+        let progressPage = await fs.readFile('progress.html', 'utf8');
+        progressPage = progressPage.replace(/__jobID__/g, jobID);
         response.end(progressPage);
         // Notify the client that the job has started.
-        publishEvent(jobID, {type: 'started', message: `Job ${jobID} started`});
+        publishEvent(jobID, {eventType: 'jobStart', payload: {}});
         // Create a target list from it.
         const targetList = [[pageWhat, pageURL]];
         // Create a batch from the target list.
@@ -212,12 +214,17 @@ const requestHandler = async (request, response) => {
             'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
           ]
         });
+        // Specify granular reporting.
+        jobScript.observe = true;
         // Merge the batch and the script into a job.
         const job = merge(jobScript, jobBatch, '')[0];
         // Perform the job, publish its progress events, and get the report from Testaro.
-        const report = await doJob(job, {
-          onProgress: payload => publishEvent(jobID, {type: 'progress', payload})
-        });
+        const jobOpts = {
+          onProgress: payload => {
+            publishEvent(jobID, {eventType: 'progress', payload});
+          }
+        };
+        const report = await doJob(job, jobOpts);
         // Score the report in place.
         score(scorer, report);
         // Digest the scored report.
@@ -230,9 +237,13 @@ const requestHandler = async (request, response) => {
           pageURL,
           dataHeading: 'Issues reported'
         });
-        // Serve the digest.
-        response.setHeader('Content-Type', 'text/html');
-        response.end(jobDigest);
+        // Tell the client to retrieve the digest.
+        publishEvent(jobID, {
+          eventType: 'digestDone',
+          payload: {url: `/kilotest/results/${jobID}`}
+        });
+        // Store the digest HTML in memory for retrieval.
+        results.set(jobID, jobDigest);
       }
       // Otherwise, i.e. if the request is invalid:
       else {

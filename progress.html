@@ -7,32 +7,46 @@
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="report,accessibility,a11y">
     <title>Progress | Kilotest</title>
-    <link rel="stylesheet" href="kilotest/style.css">
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <main>
       <h1>Kilotest progress</h1>
-      <div id="status"></div>
+      <div id="status">
+        <p>This is job __jobID__</p>
+        <p>Testing is starting now</p>
+      </div>
       <script>
         (function(){
-          const status = document.getElementById('status');
-          const eventSource = new EventSource('/kilotest/events/${jobID}');
+          const statusDiv = document.getElementById('status');
+          // Define the URL of the event source for this job.
+          const eventSource = new EventSource('/kilotest/events/__jobID__');
+          // When the event source sends a message:
           eventSource.onmessage = event => {
             try {
-              const message = JSON.parse(event.data);
-              if (message.type === 'started' && message.message) {
+              // Get its data object, with eventType and payload properties.
+              const eventData = JSON.parse(event.data);
+              const {eventType, payload} = eventData;
+              // If the event is the start of the job:
+              if (eventType === 'jobStart') {
+                // Add a paragraph with the Testaro start message.
                 const startedPar = document.createElement('p');
-                startedPar.textContent = `[started] ${message.message}`;
-                status.appendChild(startedPar);
-              } else if (message.type === 'progress' && message.payload) {
-                const progressDiv = document.createElement('div');
-                const {payload} = message;
-                const {actName} = payload;
-                progressDiv.textContent = `[progress] ${actName || JSON.stringify(payload)}`;
-                status.appendChild(progressDiv);
-              } else if (message.type === 'done' && message.url) {
+                startedPar.textContent = 'Testing started';
+                statusDiv.appendChild(startedPar);
+              }
+              // Otherwise, if the event is a tool or test start:
+              else if (eventType === 'progress' && payload) {
+                // Add a paragraph with a progress message based on the payload property.
+                const progressPar = document.createElement('p');
+                const {type, which} = payload;
+                const scope = type === 'test' ? 'tool' : type;
+                progressPar.innerHTML = `Starting tests of ${scope} <strong>${which}</strong>`;
+                statusDiv.appendChild(progressPar);
+              }
+              // Otherwise, if the event is the end of the job:
+              else if (eventType === 'digestDone') {
                 // Fetch the digest and replace the page.
-                fetch(message.url, {credentials: 'same-origin'})
+                fetch(payload.url, {credentials: 'same-origin'})
                 .then(response => response.text())
                 .then(digestHTML => {
                   document.open();
@@ -41,13 +55,13 @@
                 }).catch(error => {
                   const errorDiv = document.createElement('div');
                   errorDiv.textContent = `Failed to fetch final report: ${error.message}`;
-                  status.appendChild(errorDiv);
+                  statusDiv.appendChild(errorDiv);
                 });
                 eventSource.close();
               } else if (msg.type === 'error') {
                 const errorDiv = document.createElement('div');
                 errorDiv.textContent = `[error] ${msg.message || 'unknown error'}`;
-                status.appendChild(errorDiv);
+                statusDiv.appendChild(errorDiv);
                 eventSource.close();
               }
             } catch (error) {}

@@ -12,7 +12,20 @@
   <body>
     <main>
       <h1>Kilotest</h1>
-      <p>Kilotest performs a thousand tests on a web page. Which page do you want to test?</p>
+      <p>Kilotest performs a thousand tests on a web page.</p>
+      <details>
+        <summary>A thousand? Really?</summary>
+        <h2>Ensemble testing</h2>
+        <p>Testing by realistic human users is valuable, but slow and expensive. You can optimize the investment in talented testers by discovering as many issues as possible with automated tests, and correcting those issues, <strong>before</strong> asking humans to start testing. Then testers can concentrate on the subtle issues that automated tests did not detect.</p>
+        <p>OK, but there are numerous automated testing tools. Which should you use? Kilotest is based on <a href="https://arxiv.org/pdf/2304.07591">research</a> showing that each tool discovers only a fraction of the issues that multiple tools discover. Tools vary in what and how they test.</p>
+        <p>The answer: <strong>ensemble testing</strong>. Test with several tools that have different strengths. Then assemble their results into a standardized report. That is what Kilotest does.</p>
+        <h2>The tools</h2>
+        <p>Kilotest runs the tests of 11 tools developed by teams around the world, including the USA, Canada, Denmark, Australia, and Portugal. Some of the tools are under active development, and when they get updated Kilotest users get the benefits.</p>
+        <p>The tools perform more than a thousand tests in total. Specialized <a href="https://medium.com/cvs-health-tech-blog/how-to-run-a-thousand-accessibility-tests-63692ad120c3">open-source software</a> developed initially at CVS Health distills the results into about 300 <q>issues</q>.</p>
+        <h2>Status</h2>
+        <p>Kilotest is an early-stage proof of concept, launched in November 2025. The currently used tools focus on HTML and CSS standards, usability, and accessibility.Your suggestions, bug reports, and code contributions are welcome!</p>
+      </details>
+      <p>Which page do you want to test?</p>
       <p>Both answers are required.</p>
       <form id="form" method="post" action="kilotest/progress.html">
         <p><label>

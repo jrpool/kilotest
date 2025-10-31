@@ -14,8 +14,7 @@ const fs = require('fs/promises');
 // Issues module.
 const {issues} = require('testilo/procs/score/tic');
 // Utility module.
-const {tools} = require('testilo/procs/util');
-
+const toolNames = require('testilo/procs/util').tools;
 // CONSTANTS
 
 // Newline with indentations.
@@ -32,23 +31,23 @@ const populateQuery = async (report, query) => {
   const issueData = [];
   Object.keys(issue).forEach(issueID => {
     const {summary, tools} = issue[issueID];
-    const toolNames = Object.keys(tools).map(toolID => tools[toolID]);
+    const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
     issueData.push({
       summary,
       why: issues[issueID].why,
-      toolNames
+      issueToolNames
     });
   });
-  issueData.sort((a, b) => b.toolNames.length - a.toolNames.length);
+  issueData.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
   const dataLines = [];
   issueData.forEach(issueDatum => {
     dataLines.push(`<h3>${issueDatum.summary}</h3>`);
     dataLines.push(`<p>Impact: ${issueDatum.why}</p>`);
-    dataLines.push(`<p>Reported by: ${issueDatum.toolNames.join(', ')}</p>`);
+    dataLines.push(`<p>Reported by: ${issueDatum.issueToolNames.join(', ')}</p>`);
   });
   query.data = dataLines.join(outerJoiner);
 };
-// Returns a digested report.
+// Returns a digested report with the complete report as a collapsed appendix.
 exports.digester = async (report, query) => {
   // Create a query to replace placeholders.
   await populateQuery(report, query);

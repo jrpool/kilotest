@@ -194,7 +194,7 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
         // Create a unique ID for the job.
-        const jobID = Date.now() + Math.random().toString(36).slice(2);
+        const jobID = Date.now().toString(36).slice(2, -1);
         console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
         // Serve a progress page.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -232,11 +232,13 @@ const requestHandler = async (request, response) => {
           title: 'Kilotest report',
           mainHeading: 'Kilotest report',
           metadataHeading: 'Test facts',
+          jobID,
           testDate: new Date().toISOString().slice(0, 10),
           pageID: pageWhat,
           pageURL,
           issueCount: Object.keys(report.score.details.issue).length,
           elapsedSeconds: report.jobData.elapsedSeconds,
+          report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
         });
         // Tell the client to retrieve the digest.
         publishEvent(jobID, {

@@ -28,7 +28,7 @@ const {merge} = require('testilo/merge');
 const {score} = require('testilo/score');
 const {digest} = require('testilo/digest');
 const {scorer} = require('testilo/procs/score/tsp');
-const {digester} = require('testilo/procs/digest/tdpi');
+const {digester} = require('./digesters/kd00/index');
 // Functions from Testaro
 const {doJob} = require('testaro/run');
 
@@ -232,10 +232,11 @@ const requestHandler = async (request, response) => {
           title: 'Kilotest report',
           mainHeading: 'Kilotest report',
           metadataHeading: 'Test facts',
-          testDate: new Date().toISOString(),
+          testDate: new Date().toISOString().slice(0, 10),
           pageID: pageWhat,
           pageURL,
-          dataHeading: 'Issues reported'
+          issueCount: Object.keys(report.score.details.issue).length,
+          elapsedSeconds: report.jobData.elapsedSeconds,
         });
         // Tell the client to retrieve the digest.
         publishEvent(jobID, {

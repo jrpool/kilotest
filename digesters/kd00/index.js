@@ -9,12 +9,12 @@
 
 // Module to keep secrets.
 require('dotenv').config();
-// Module to classify tool rules into issues
-const {issues} = require('../../score/tic');
 // Module to process files.
 const fs = require('fs/promises');
+// Issues module.
+const {issues} = require('testilo/procs/score/tic');
 // Utility module.
-const {tools} = require('../../util');
+const {tools} = require('testilo/procs/util');
 
 // CONSTANTS
 
@@ -31,13 +31,20 @@ const populateQuery = async (report, query) => {
   const {issue} = details;
   const issueData = [];
   Object.keys(issue).forEach(issueID => {
-    issueData.push([issue[issueID].summary, Object.keys(issue[issueID].tools).map(toolID => tools[toolID])]);
+    const {summary, tools} = issue[issueID];
+    const toolNames = Object.keys(tools).map(toolID => tools[toolID]);
+    issueData.push({
+      summary,
+      why: issues[issueID].why,
+      toolNames
+    });
   });
-  issueData.sort((a, b) => b[1].length - a[1].length);
+  issueData.sort((a, b) => b.toolNames.length - a.toolNames.length);
   const dataLines = [];
   issueData.forEach(issueDatum => {
-    dataLines.push(`<h3>${issueDatum[0]}</h3>`);
-    dataLines.push(`<p>Reported by: ${issueDatum[1].join(', ')}</p>`);
+    dataLines.push(`<h3>${issueDatum.summary}</h3>`);
+    dataLines.push(`<p>Impact: ${issueDatum.why}</p>`);
+    dataLines.push(`<p>Reported by: ${issueDatum.toolNames.join(', ')}</p>`);
   });
   query.data = dataLines.join(outerJoiner);
 };

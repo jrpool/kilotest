@@ -201,6 +201,10 @@ const requestHandler = async (request, response) => {
         let progressPage = await fs.readFile('progress.html', 'utf8');
         progressPage = progressPage.replace(/__jobID__/g, jobID);
         response.end(progressPage);
+        console.log(`[${Date.now()}] Served progress page for job ${jobID}`);
+        console.log(`[${Date.now()}] Waiting 2000ms before publishing jobStart`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log(`[${Date.now()}] Publishing jobStart event`);
         // Notify the client that the job has started.
         publishEvent(jobID, {eventType: 'jobStart', payload: {}});
         // Create a target list from it.

@@ -1611,3 +1611,3986 @@ Add simple timing logs so you can profile per-tool durations and choose a concur
 GPT-5 mini • 1x
 
 Comment about the above advice: The Testaro `run.js` `doJob` function saves the report in the `tmp` directory as `report.json` and forks child processes to run individual tools and add their results to the report files. Parallel execution of `doJob` for individual tools would risk conflicting writes to the same file.
+
+## Preventing EventSource events before sink is connected
+
+The browser correctly displays all payloads when the `publishEvent` function in `index.js` is called. This is true locally. However, I have deployed this repository on a Vultr VPS, and there the behavior differs. When the server is the VPS, all the expected events are published by `publishEvent`, but not all the events are displayed by the browser. The first two events, the job start and the start of the `alfa` tool, are not displayed. All other events are displayed. When I log the `eventSource.onmessage` method in the `progress.html` script, logs for those two events are missing. I notice in observing the `publishEvent` logging that the second event appears immediately after the first. This makes me wonder whether SSE events can be subject to collisions or race conditions when the second begins before the first has ended.
+
+Yes, SSE events can experience issues with rapid successive writes, especially when the connection is still being established or when events are sent before the client is fully ready to receive them.
+
+Common causes:
+
+Connection timing: The first event(s) may be sent before the EventSource connection is fully established on the client side.
+
+Buffering: Some reverse proxies (like nginx) or network middleware buffer SSE streams, which can drop or delay initial events.
+
+Race condition: If events are published immediately after responding with the HTML skeleton, the browser may not have parsed the HTML and established the EventSource connection yet.
+
+Solutions to try:
+
+Add a small delay before the first event:
+Add connection padding and keepalive:
+Replay recent events on connection:
+The most robust solution is #3 (event replay) combined with the padding from #2. This ensures that even if a client connects late or reconnects, they receive all events.
+
+Would you like me to show the complete implementation of the event replay pattern?
+
+Claude Sonnet 4.5 • 0.9x
+
+You don’t need to guess a delay. Start the job only after the SSE connection is established. That removes the race entirely and is simple to implement.
+
+What to change
+
+When you serve the progress page (POST), don’t start doJob yet. Store the job params in a pendingJobs map.
+In the SSE GET handler (/kilotest/events/:jobId), after you add the response sink, start the job if it hasn’t started yet. Also send no-buffer headers and a small padding to avoid proxy buffering.
+Patch (adds pending/start maps, a startJob helper, moves job start to SSE connect, adds anti-buffering/padding)
+
+// ...existing code...
+const protocol = process.env.PROTOCOL || 'http';
+const eventStreams = new Map();
+const results = new Map();
+// Add: pending + started trackers
+const pendingJobs = new Map();   // jobID -> { pageWhat, pageURL }
+const startedJobs = new Set();   // jobIDs already started
+// ...existing code...
+
+// Add a helper to start a job when ready (called from SSE handler)
+async function startJob(jobID, pageWhat, pageURL) {
+  try {
+    // Create target list, batch, and script
+    const targetList = [[pageWhat, pageURL]];
+    const jobBatch = batch('jobTarget', 'job target', targetList);
+    const jobScript = script('jobScript', 'job script', 'default', {
+      type: 'tools',
+      specs: ['alfa','aslint','axe','ed11y','htmlcs','ibm','nuVal','qualWeb','testaro','wax']
+    });
+    jobScript.observe = true;
+
+    const job = merge(jobScript, jobBatch, '')[0];
+
+    // Publish an explicit job start (now that the sink exists)
+    publishEvent(jobID, { eventType: 'jobStart', payload: {} });
+
+    const jobOpts = {
+      onProgress: payload => {
+        publishEvent(jobID, { eventType: 'progress', payload });
+      }
+    };
+
+    const report = await doJob(job, jobOpts);
+
+    // Score and digest
+    score(scorer, report);
+    const jobDigest = await digest(digester, report, {
+      title: 'Kilotest report',
+      mainHeading: 'Kilotest report',
+      metadataHeading: 'Test facts',
+      jobID,
+      testDate: new Date().toISOString().slice(0, 10),
+      pageID: pageWhat,
+      pageURL,
+      issueCount: Object.keys(report.score.details.issue).length,
+      elapsedSeconds: report.jobData.elapsedSeconds,
+      report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    });
+
+    // Store digest in-memory and notify client to fetch it
+    results.set(jobID, jobDigest);
+    publishEvent(jobID, { eventType: 'digestDone', payload: { url: `/kilotest/results/${jobID}` } });
+
+    // Cleanup SSE sinks shortly after done so the client can fetch
+    setTimeout(() => {
+      const sinks = eventStreams.get(jobID) || [];
+      for (const res of sinks) { try { res.end(); } catch {} }
+      eventStreams.delete(jobID);
+    }, 2000);
+  } catch (err) {
+    publishEvent(jobID, { eventType: 'error', message: err && err.message ? err.message : String(err) });
+  }
+}
+// ...existing code...
+
+// In requestHandler, GET branch -> SSE endpoint
+// ...existing code...
+    else if (requestURL.startsWith('/kilotest/events/')) {
+      const jobID = requestURL.split('/').pop();
+      // SSE headers (disable proxy buffering if present)
+      response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      });
+      // Initial padding/comment improves flush behavior through some proxies
+      response.write(':' + ' '.repeat(2048) + '\n\n');
+
+      const sinks = eventStreams.get(jobID) || [];
+      sinks.push(response);
+      eventStreams.set(jobID, sinks);
+
+      // If this job is pending and not yet started, start it now
+      if (!startedJobs.has(jobID) && pendingJobs.has(jobID)) {
+        startedJobs.add(jobID);
+        const { pageWhat, pageURL } = pendingJobs.get(jobID);
+        pendingJobs.delete(jobID);
+        // Start asynchronously; no arbitrary delay needed
+        startJob(jobID, pageWhat, pageURL);
+      }
+
+      request.on('close', () => {
+        const sinks = eventStreams.get(jobID) || [];
+        const remaining = sinks.filter(r => r !== response);
+        if (remaining.length) eventStreams.set(jobID, remaining);
+        else eventStreams.delete(jobID);
+        return;
+      });
+    }
+// ...existing code...
+
+// In requestHandler, POST branch -> serve progress page but DO NOT start job yet
+// ...existing code...
+    if (requestURL === '/kilotest/progress.html') {
+      const postData = await getPostData(request);
+      const {pageWhat, pageURL} = postData;
+      if (pageURL && pageURL.startsWith('http') && pageWhat) {
+        const jobID = Date.now().toString(36).slice(2, -1);
+        console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
+
+        // Stash job params; SSE connect will trigger start
+        pendingJobs.set(jobID, { pageWhat, pageURL });
+
+        // Serve the progress page
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        let progressPage = await fs.readFile('progress.html', 'utf8');
+        progressPage = progressPage.replace(/__jobID__/g, jobID);
+        response.end(progressPage);
+        // Do not publish events or start job here anymore
+      }
+      else {
+        const message = 'ERROR: invalid request';
+        console.log(message);
+        await serveError(message, response);
+      }
+    }
+// ...existing code...
+
+Why this fixes your VPS issue
+
+No events are sent until the SSE request arrives and a sink is registered, so the first events can’t be missed due to client not yet connected.
+The X-Accel-Buffering header plus initial padding reduce proxy buffering problems that are common on VPS setups.
+No arbitrary sleeps; it’s event-driven and deterministic.
+Optional
+
+Add a small ping every 15–30s to keep the connection alive on some proxies:
+response.write(': ping\n\n') inside a setInterval, and clear it on request 'close'.
+Let me know if you want me to also update progress.html to log EventSource.onopen and show the jobID for easier debugging.
+
+I am going to save this advice for later implementation, because my immediate goal is to get a demo ready, up to 2 seconds of delay will not interfere with that, and an occasional loss of initial event messages will not be significant.
+
+jrpool: After `node index`, the `Kilotest server listening at http://localhost:3000` message is logged, but a browser request for `localhost:3000` does not start the `requestHandler` function. Why?
+
+GitHub Copilot: Enable GPT-5 mini for all clients
+[object Object]
+
+jrpool: @GitHubCopilot Enable: "Enable GPT-5 mini for all clients"
+
+GitHub Copilot: GitHub Copilot
+
+Most likely causes
+- The server process that logged "listening" is not the same one wired to your requestHandler (you created/attached the handler to a different server instance).
+- The request never reaches Node (binding to a different interface/address, or a proxy/firewall intercepts it).
+- Your requestHandler is never attached (e.g. you called http.createServer() with no handler, or you attach the handler to a different object), or a middleware/handler earlier in the chain swallows the request.
+- The handler throws immediately and its log never appears.
+
+Quick checks (run in Terminal in your project folder)
+- Confirm Node is listening on 3000:
+  lsof -iTCP:3000 -sTCP:LISTEN
+- Try curling directly (IPv4/IPv6):
+  curl -v http://127.0.0.1:3000
+  curl -v http://[::1]:3000
+- See server stdout while making a request:
+  node index
+  then in another terminal run the curl command above.
+- If using Express, confirm you actually set routes or a fallback middleware and that you started the right app: check for app.listen(...) vs some other server variable.
+
+Common code problem to look for
+- Wrong: create server without handler then log and forget to attach
+  ```js
+  const http = require('http');
+  const server = http.createServer();         // no handler here
+  server.listen(3000, () => console.log('listening'));
+  // request handler attached to a different object or never attached
+  ```
+- Correct:
+  ```js
+  const http = require('http');
+  function requestHandler(req, res) {
+    console.log('requestHandler invoked', req.method, req.url);
+    res.end('ok');
+  }
+  const server = http.createServer(requestHandler);
+  server.listen(3000, () => console.log('Kilotest server listening at http://localhost:3000'));
+  ```
+
+If you paste your index.js (or the file that defines requestHandler) I can point to the exact line causing this.
+
+jrpool: This is the index.js.
+
+Workspace: Collecting workspace informationNoted. I inspected the file and found a few bugs and mismatches that will break runtime behavior. Summary, links, and a minimal patch follow.
+
+Problems found
+- getPostData does not return a Promise / value to the caller, so awaiting it yields undefined. See `getPostData` in index.js.
+- serveError assumes error has .message (fails when called with a string). See `serveError` in index.js.
+- requestPath is undefined in an error message — should use requestURL. See `requestHandler` in index.js.
+- HTTPS branch uses globals.fs (typo) instead of the imported `fs` promise API. See bottom of index.js.
+- There are path/name inconsistencies between server routes ("/kilotest") and HTML that references "testu" paths (index.html, result.html, result.js). You may want to reconcile those separately.
+
+Proposed fix
+- Make getPostData return a Promise that resolves to the parsed post object.
+- Make serveError accept either Error or string and log/serve a safe string.
+- Replace requestPath with requestURL.
+- Use the imported `fs` (promises) in the HTTPS startup code.
+
+Patch (applies to index.js):
+
+````javascript
+// ...existing code...
+
+// Serves an error message.
+const serveError = async (error, response) => {
+  // Accept either an Error or a string.
+  const msg = error && error.message ? error.message : String(error);
+  console.log(msg);
+  if (! response.writableEnded) {
+    response.statusCode = 400;
+    const errorTemplate = await fs.readFile('error.html', 'utf8');
+    const errorPage = errorTemplate.replace(/__error__/, msg);
+    response.end(errorPage);
+  }
+};
+// Gets the data from a POST request.
+const getPostData = async (request) => {
+  return new Promise((resolve, reject) => {
+    const bodyParts = [];
+    request.on('error', err => {
+      reject(err);
+    })
+    .on('data', chunk => {
+      bodyParts.push(chunk);
+    })
+    .on('end', () => {
+      try {
+        const queryString = Buffer.concat(bodyParts).toString();
+        const requestParams = new URLSearchParams(queryString);
+        const postData = {};
+        requestParams.forEach((value, name) => {
+          // support repeated keys as arrays
+          if (Object.prototype.hasOwnProperty.call(postData, name)) {
+            if (Array.isArray(postData[name])) postData[name].push(value);
+            else postData[name] = [postData[name], value];
+          } else {
+            postData[name] = value;
+          }
+        });
+        resolve(postData);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  });
+};
+// ...existing code...
+    // Otherwise, i.e. if it is any other GET request:
+    else {
+      const error = {
+        message: `ERROR: Invalid request (${requestURL})`
+      };
+      // Report the error.
+      console.log(error.message);
+      await serveError(error, response);
+    }
+// ...existing code...
+else if (protocol === 'https') {
+  // Use the imported fs (promises) rather than globals.
+  fs.readFile(process.env.KEY, 'utf8')
+  .then(
+    key => {
+      fs.readFile(process.env.CERT, 'utf8')
+      .then(
+        cert => {
+          serve(https, {key, cert});
+        },
+        error => console.log(error.message)
+      );
+    },
+    error => console.log(error.message)
+  );
+}
+// ...existing code...
+````
+
+Files / symbols I referenced
+- File: index.js
+- File: index.html
+- File: result.html
+- File: result.js
+- Symbol: `serveError`
+- Symbol: `getPostData`
+- Symbol: `requestHandler`
+- Symbol: `serve`
+
+If you want, I can:
+- Apply the patch directly and update route names to match the HTML (change "testu" ↔ "kilotest"), or
+- Update the HTML files to use the "/kilotest" paths the server currently expects.
+
+Which would you prefer?
+
+jrpool: I have corrected the bugs, I believe. But the 'Request handler started' message is still not being logged when the browser requests localhost:3000. Did I miss something?
+
+GitHub Copilot: GitHub Copilot
+
+You have a stray string literal instead of a console.log call. A bare string does nothing, so the handler never logs. Replace it with the console.log call and restart Node.
+
+Patch:
+
+````javascript
+// ...existing code...
+- 'Request handler started'
++ console.log('Request handler started');
+// ...existing code...
+````
+
+After that, restart with node index and test (curl http://localhost:3000). If it's still not invoked, add a server-level listener to confirm requests arrive:
+
+````javascript
+// ...existing code...
+const serve = (protocolModule, options) => {
+  const server = protocolModule.createServer(options, requestHandler);
+  server.on('request', (req) => console.log('server got request', req.method, req.url));
+  const port = process.env.PORT || '3000';
+  server.listen(port, () => {
+    console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
+  });
+};
+// ...existing code...
+````
+
+jrpool: Where do you see a stray literal string? I don’t see it.
+
+GitHub Copilot: GitHub Copilot
+
+You had the stray string earlier; your current file shows you fixed it (console.log is present). The remaining likely cause is how you call createServer.
+
+Problem
+- For HTTPS the API is createServer(options, requestListener), but for the plain http module you should call createServer(requestListener). You call protocolModule.createServer(options, requestHandler) unconditionally — that can end up creating an HTTP server with no request listener attached, so the server listens but requestHandler never runs.
+
+Fix — create the server with the correct call for http vs https and add a short request/connection probe for debugging:
+
+````javascript
+// ...existing code...
+const serve = (protocolModule, options) => {
+  // Create server with the correct signature for http vs https
+  const server = (protocolModule === https)
+    ? protocolModule.createServer(options, requestHandler)
+    : protocolModule.createServer(requestHandler);
+
+  // Debug probes
+  server.on('request', (req) => console.log('server got request', req.method, req.url));
+  server.on('connection', (sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('connection from', addr);
+  });
+
+  const port = process.env.PORT || '3000';
+  server.listen(port, () => {
+    console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
+  });
+};
+// ...existing code...
+````
+
+Quick tests
+- curl http://127.0.0.1:3000
+- curl -v http://[::1]:3000
+- lsof -iTCP:3000 -sTCP:LISTEN
+
+If you still see the listening log but none of the "server got request" / "connection from" lines, try from another terminal/host or check for a proxy/browser extension that redirects the request.
+
+jrpool: I find that a request to localhost:3000 or localhost:3000/ is not treated as a request, but only as a connection. A request to localhost:3000/kilotest or localhost:3000/bad etc. is treated as a request. Can I make even a bare localhost:3000 request get handled by requestHandler?
+
+GitHub Copilot: GitHub Copilot
+
+Most likely cause
+- Modern browsers often try HTTPS first (HTTPS‑first / upgrade / HSTS). That makes the browser open a TCP connection and start a TLS handshake instead of an HTTP request. Your http server logs the TCP connection but never sees a valid HTTP request, so the 'request' event / requestHandler never fires.
+
+Quick checks
+- From another terminal run:
+  - curl -v http://localhost:3000/    (this forces plain HTTP)
+  - curl -v https://localhost:3000/   (this will try TLS)
+- If curl http works and your browser does not, the browser is upgrading to HTTPS.
+
+Options to make a bare visit handled
+1) Force HTTP in the browser
+- Use the explicit URL: http://localhost:3000/ (or disable HTTPS‑first in your browser).
+
+2) Serve HTTPS on that port
+- Start the HTTPS server (set PROTOCOL=https and provide KEY/CERT) so the browser’s TLS ClientHello becomes a real HTTPS request that your server can handle.
+
+3) Run an HTTPS server alongside HTTP (or on the same host, different port)
+- Typical: https on 443 (or 3001) and http on 3000.
+
+4) (Fallback) Detect TLS attempts at the socket level and send a redirect
+- You can peek the first bytes on connection; if they look like a TLS ClientHello (first byte 0x16 / decimal 22), respond with an HTTP redirect. Add inside your serve() connection handler:
+
+````javascript
+// ...existing code...
+  server.on('connection', (sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('Connection to server made from', addr);
+
+    // Peek first bytes to detect an attempted TLS handshake and redirect to https
+    sock.once('data', (chunk) => {
+      const firstByte = chunk[0];
+      // 22 (0x16) == TLS Handshake (ClientHello)
+      if (firstByte === 22) {
+        // Respond with an HTTP redirect to the https URL and close the socket.
+        sock.write('HTTP/1.1 301 Moved Permanently\r\n' +
+                   'Location: https://localhost:' + (process.env.HTTPS_PORT || '3000') + '/\r\n' +
+                   'Content-Length: 0\r\n\r\n');
+        sock.destroy();
+      } else {
+        // Not TLS: push the data back into the socket to be handled by Node http
+        sock.unshift(chunk);
+      }
+    });
+  });
+// ...existing code...
+````
+
+Notes
+- Option 4 is a pragmatic workaround for developer testing only; it is not a replacement for a proper HTTPS server and can confuse clients.
+- Also consider fixing your redirect logic for trailing slashes — redirecting to an empty Location (slice(0,-1) when requestURL === '/') is not ideal.
+
+If you want, I can add option 4 into your serve() implementation or help you enable the HTTPS branch with self-signed certs.
+
+jrpool: /testilo [* main]: curl -v http://localhost:3000/
+* Host localhost:3000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+*   Trying [::1]:3000...
+* Connected to localhost (::1) port 3000
+> GET / HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/8.7.1
+> Accept: */*
+>
+* Request completely sent off
+< HTTP/1.1 301 Moved Permanently
+< Location:
+< Date: Thu, 16 Oct 2025 14:45:31 GMT
+< Connection: keep-alive
+< Keep-Alive: timeout=5
+< Transfer-Encoding: chunked
+<
+* Connection #0 to host localhost left intact
+
+
+GitHub Copilot: GitHub Copilot
+
+Yes. Two things are happening here:
+
+- Your handler is already being invoked for a plain HTTP request (curl shows the 301), so the server is working for HTTP.
+- Browsers often try HTTPS first; if they send a TLS ClientHello the http server only sees a connection (no valid HTTP request). Also your current redirect for trailing slash turns "/" into an empty Location header (requestURL.slice(0,-1) for "/" → ""), so the client gets a 301 with an empty Location.
+
+Fixes to make a bare visit behave sensibly:
+- Special-case "/" (don’t slice it to empty) — redirect to your app path (for example /kilotest).
+- Detect TLS ClientHello on the socket and either unshift the bytes (let http handle) or send a redirect to https (developer-only workaround).
+- Ensure your serve() creates an HTTPS server when you pass the https module (compare to the https module, not the string).
+
+Patch (apply the changes marked below):
+
+````javascript
+// ...existing code...
+  // If the URL ends with a slash:
+  console.log(`Request URL: ${requestURL}`);
+-  if (requestURL.endsWith('/')) {
+-    // Redirect the client permanently.
+-    response.writeHead(301, {'Location': requestURL.slice(0, -1)});
+-    response.end();
+-  }
++  if (requestURL === '/') {
++    // Root -- redirect to the app entry
++    response.writeHead(301, { 'Location': '/kilotest' });
++    response.end();
++    return;
++  }
++  else if (requestURL.endsWith('/')) {
++    // Strip a trailing slash for other paths
++    response.writeHead(301, { 'Location': requestURL.slice(0, -1) });
++    response.end();
++    return;
++  }
+  // Otherwise, if the request is a GET request:
+  else if (method === 'GET') {
+    ...
+// ...existing code...
+    if (requestURL === '/kilotest/result.html') {
+      // Get the data from it.
+-      const postData = getPostData(request);
++      const postData = await getPostData(request);
+      const {pageWhat, pageURL} = postData;
+      ...
+// ...existing code...
+const serve = (protocolModule, options) => {
+-  const server = protocolModule === 'https'
+-    ? https.createServer(options, requestHandler)
+-    : http.createServer(requestHandler);
++  // protocolModule is the module object (http or https); compare to the https module
++  const server = (protocolModule === https)
++    ? https.createServer(options, requestHandler)
++    : http.createServer(requestHandler);
+  // Debug probes
+  server.on('request', (req) => console.log('Server got request', req.method, req.url));
+  server.on('connection', (sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('Connection to server made from', addr);
++    // Peek the first bytes to detect TLS ClientHello (0x16 / 22).
++    sock.once('data', (chunk) => {
++      const firstByte = chunk && chunk[0];
++      if (firstByte === 22) {
++        // Client tried TLS on the HTTP port — send a redirect to the HTTPS URL and close.
++        sock.write(
++          'HTTP/1.1 301 Moved Permanently\r\n' +
++          'Location: https://localhost:' + (process.env.PORT || '3000') + '/\r\n' +
++          'Content-Length: 0\r\n\r\n'
++        );
++        sock.destroy();
++      } else {
++        // Not TLS: push the data back to be handled normally by the HTTP parser.
++        sock.unshift(chunk);
++      }
++    });
+  });
+  const port = process.env.PORT || '3000';
+  server.listen(port, () => {
+    console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
+  });
+};
+// ...existing code...
+````
+
+Notes
+- For a production-grade fix, run a real HTTPS server (set PROTOCOL=https and supply KEY/CERT) instead of the TLS-peek workaround.
+- Keep using explicit http://localhost:3000/ in the browser while testing, or disable HTTPS‑first behavior in the browser if you don’t want TLS.
+
+jrpool: A request to http://localhost:3000 is treated as a request to “/” if it comes from curl, Safari, Firefox, or Chrome, but is treated as only a connection, with no request, if it comes from Comet. Why?
+
+GitHub Copilot: GitHub Copilot
+
+Short answer
+- Comet is opening a TLS (HTTPS) connection to port 3000 (sends a TLS ClientHello) instead of sending plain HTTP. Node's http server emits a 'connection' for the TCP/TLS bytes but no 'request' because there is no valid HTTP request for it to parse. curl/Chrome/Firefox in your tests sent plain HTTP, so they produced an HTTP request and you saw the 301.
+
+How to confirm
+- From another terminal:
+  - curl -v https://localhost:3000    # will show TLS handshake or failure
+  - openssl s_client -connect localhost:3000 -servername localhost
+- Or log the first bytes arriving on each socket to see a TLS ClientHello (first byte 0x16 / decimal 22).
+
+Small snippet to add to index.js (inside server.on('connection')) to log the first bytes and optionally redirect TLS attempts to https:
+````javascript
+// ...existing code...
+  server.on('connection', (sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('Connection to server made from', addr);
+
+    sock.once('data', (chunk) => {
+      // Log first bytes as hex/text to identify TLS ClientHello vs HTTP
+      console.log('first bytes:', chunk.slice(0, 16).toString('hex'), chunk.slice(0, 16).toString('utf8'));
+
+      // If it's a TLS ClientHello (first byte 0x16 == 22), optionally send an HTTP redirect to https
+      if (chunk[0] === 22) {
+        sock.write(
+          'HTTP/1.1 301 Moved Permanently\r\n' +
+          'Location: https://localhost:' + (process.env.PORT || '3000') + '/\r\n' +
+          'Content-Length: 0\r\n\r\n'
+        );
+        sock.destroy();
+      } else {
+        // Not TLS: put data back so Node's HTTP parser receives it
+        sock.unshift(chunk);
+      }
+    });
+  });
+// ...existing code...
+````
+
+Recommended fixes
+- Best: run a proper HTTPS server on that port (serve HTTPS), or run HTTPS on a different port and use HTTP on 3000, and configure Comet to use http:// if you want plain HTTP.
+- Quick dev workaround: keep the TLS-detection/redirect above so clients that try TLS on your HTTP port get redirected.
+
+If you want, I can add the detection+redirect into your repo or show how to start a self-signed HTTPS server for testing.
+
+jrpool: So, you are saying that Comet violates the instruction from its user to visit http://localhost, right?
+
+GitHub Copilot: Yes — effectively. Comet is opening a TLS connection (sending a ClientHello) to port 3000 instead of sending plain HTTP, so your http server only sees a TCP connection and not a parseable HTTP request.
+
+Why that happens (common causes)
+- Comet enforces HTTPS or does HTTPS‑first/upgrades requests.
+- A proxy / system setting or HSTS cached entry causes an automatic upgrade.
+- Comet was instructed (or configured) to use https even when the user typed http.
+
+How to confirm quickly
+- From your machine run:
+  - curl -v http://localhost:3000/    (plain HTTP — should get 301 from your handler)
+  - curl -v https://localhost:3000/   (shows TLS handshake or failure)
+  - openssl s_client -connect localhost:3000    (shows if a TLS ClientHello is accepted)
+- Or add a socket peek in your server to log the first byte(s): if chunk[0] === 22 (0x16) it’s TLS ClientHello.
+
+What you can do
+- Tell/configure Comet to use http:// explicitly (or disable HTTPS‑first).
+- Run an HTTPS server on port 3000 (or change Comet to use the HTTP port).
+- Add TLS‑detection on the server socket and redirect TLS attempts to https (dev-only workaround).
+
+If you want, I can:
+- Show the minimal socket-peek snippet to detect & log TLS ClientHello (ready to insert into your serve connection handler), or
+- Show how to start a self-signed HTTPS server on port 3000 for testing.
+
+jrpool: You said “Tell/configure Comet to use http:// explicitly (or disable HTTPS‑first).”. But the Comet settings already have “Always use secure connections” turned off. What else do I need to do to tell Comet to request http connections when I explicitly put http into the URL?
+
+GitHub Copilot: Most likely causes
+- Comet is still opening a TLS handshake (ClientHello) to port 3000 even when you type http:// — that will result in a TCP connection but no HTTP request for Node's http parser.
+- Reasons for that include: a cached HSTS entry for localhost in Comet, a Comet setting or internal HTTPS‑first behavior that isn’t disabled by the UI toggle, a system/proxy or TLS‑inspecting tool upgrading or intercepting connections, or Comet using a different network stack that prefers TLS.
+
+Quick checks (try these in this order)
+1. Force IPv4/address: in Comet visit
+   - http://127.0.0.1:3000/
+   If that works, it’s an HSTS/host-name issue (use IP or adjust HSTS).
+2. From your server add a tiny socket peek to confirm what the client sends (TLS ClientHello first byte 0x16). Add this inside your serve() connection handler:
+```javascript
+// ...existing code...
+  server.on('connection', (sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('Connection to server made from', addr);
+
+    sock.once('data', (chunk) => {
+      console.log('first bytes (hex):', chunk.slice(0, 8).toString('hex'));
+      // 0x16 (22) indicates TLS ClientHello
+      if (chunk[0] === 22) {
+        console.log('Client attempted TLS on HTTP port (ClientHello)');
+        // optional: redirect TLS-attempts to https (dev-only)
+        sock.write(
+          'HTTP/1.1 301 Moved Permanently\r\n' +
+          'Location: https://localhost:' + (process.env.PORT || '3000') + '/\r\n' +
+          'Content-Length: 0\r\n\r\n'
+        );
+        sock.destroy();
+      } else {
+        // Put data back so HTTP parser receives it
+        sock.unshift(chunk);
+      }
+    });
+  });
+// ...existing code...
+```
+3. Try curl from the same machine to reproduce what Comet does:
+   - curl -v http://localhost:3000/
+   - curl -v https://localhost:3000/
+   If curl http works but Comet does TLS, Comet is forcing HTTPS.
+
+What to do next
+- Use http://127.0.0.1:3000/ in Comet (quick workaround).
+- Check/clear HSTS entries in Comet (if it’s Chromium‑based use chrome://net‑internals/#hsts in Chrome; Comet may have an equivalent).
+- Inspect Comet prefs for any proxy/TLS interception or “secure connections first” behaviour beyond the single toggle.
+- If Comet can’t be changed, run an HTTPS server on that port (self‑signed cert) or keep the socket TLS‑detection redirect above (developer workaround).
+
+If you want, I can:
+- Add the socket‑peek + redirect into your repo, or
+- Show steps to generate a self‑signed cert and enable the HTTPS branch so Comet’s TLS ClientHello is handled.
+
+jrpool: http://127.0.0.1:3000 creates an http request in Comet. How can I adjust HSTS?
+
+GitHub Copilot: GitHub Copilot
+
+Short answer: HSTS is persistent and overrides the “Always use secure connections” toggle. You need to remove the localhost entry from Comet’s HSTS store (or use a host/IP that isn’t HSTS) or run Comet with a fresh profile.
+
+Options
+
+- If Comet is Chromium‑based (supports net‑internals)
+  1. In Comet’s address bar open: chrome://net‑internals/#hsts
+  2. In “Query HSTS/PKP domain” enter localhost to confirm there’s an entry.
+  3. In “Delete domain security policies” enter localhost and press Delete.
+  4. Restart Comet and test http://localhost:3000/.
+
+- If Comet doesn’t expose net‑internals
+  - Launch Comet with a fresh profile (temporary, quick way to bypass stored HSTS):
+````bash
+# macOS — adjust path if Comet is in a different location
+/Applications/Comet.app/Contents/MacOS/Comet --user-data-dir=/tmp/comet-test-profile
+````
+  - Or start Comet with flags that disable HSTS/secure‑first behavior for testing:
+````bash
+/Applications/Comet.app/Contents/MacOS/Comet --user-data-dir=/tmp/comet-test-profile --ignore-certificate-errors --disable-features=HTTPSOnlyMode
+````
+  (developer testing only — don’t use in production)
+
+- Firefox
+  - Edit the profile file SiteSecurityServiceState.txt and remove any localhost line, then restart Firefox:
+````bash
+# find profile dir, then:
+nano ~/Library/Application\ Support/Firefox/Profiles/<profile>/SiteSecurityServiceState.txt
+# remove "localhost" entry, save, restart Firefox
+````
+
+- Workarounds without changing HSTS
+  - Use the IP: http://127.0.0.1:3000/ (you already observed this works).
+  - Use a different hostname not in HSTS (e.g., http://local.test:3000) and map it in /etc/hosts.
+  - Run an HTTPS server on 3000 so Comet’s TLS ClientHello is handled.
+
+If you tell me which engine Comet uses (Chromium or WebKit/Firefox) I’ll give exact step‑by‑step commands for that browser.
+
+jrpool: Comet uses Chrome, but it says localhost is not found when I query HSTS/PKP domain.
+
+GitHub Copilot: GitHub Copilot
+
+If chrome://net‑internals/#hsts reports "not found" for localhost, that just means there is no dynamic HSTS entry for that hostname — it doesn't rule out other causes for Comet upgrading http://localhost:3000 to TLS. Common remaining causes: Comet’s HTTPS‑first logic (flag/feature) still active, an extension, a system/proxy/TLS‑inspector doing an upgrade, or a cached policy in the profile. Quick steps to diagnose and workarounds:
+
+1) Confirm Comet is sending TLS (ClientHello)
+- Add a tiny socket peek to your server to log the first byte(s). If the first byte is 22 (0x16), the client sent TLS:
+
+```javascript
+// ...existing code...
+  server.on('connection', (sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('Connection to server made from', addr);
+
+    sock.once('data', (chunk) => {
+      console.log('first bytes (hex):', chunk.slice(0, 8).toString('hex'));
+      if (chunk[0] === 22) {
+        console.log('Client attempted TLS (ClientHello) on HTTP port');
+        // optional dev redirect:
+        sock.write(
+          'HTTP/1.1 301 Moved Permanently\r\n' +
+          'Location: https://localhost:' + (process.env.PORT || '3000') + '/\r\n' +
+          'Content-Length: 0\r\n\r\n'
+        );
+        sock.destroy();
+      } else {
+        sock.unshift(chunk);
+      }
+    });
+  });
+// ...existing code...
+```
+
+2) Quick workarounds / fixes
+- Use the IP: http://127.0.0.1:3000/ (you already verified this works).
+- Start Comet with a fresh profile to bypass stored policies:
+```bash
+/Applications/Comet.app/Contents/MacOS/Comet --user-data-dir=/tmp/comet-test-profile
+```
+- Start Comet disabling HTTPS‑first for testing:
+```bash
+/Applications/Comet.app/Contents/MacOS/Comet --user-data-dir=/tmp/comet-test-profile --disable-features=HTTPSOnlyMode
+```
+(Dev-only flags; don’t use permanently.)
+
+3) Things to check in Comet/Chrome
+- Settings → Privacy & security → Security → “Always use secure connections” should be OFF (you said it is).
+- Disable extensions (esp. privacy/security/HTTPS enforcement extensions).
+- Clear site settings / cache for localhost (Settings → Privacy → Clear browsing data / Site settings).
+- If Comet is managed, check system/proxy/antivirus that may enforce TLS (e.g., corporate proxy, WARP, etc.).
+
+4) If you need permanent behaviour for localhost
+- Serve HTTPS on port 3000 (self-signed cert) so Comet’s TLS ClientHello is handled; or
+- Use a non‑HSTS hostname (add /etc/hosts entry like local.test) and use http://local.test:3000/.
+
+If you want, I can:
+- Add the socket-peek snippet into your repo (I included it above), or
+- Show how to generate a self‑signed cert and enable PROTOCOL=https so Comet’s TLS requests succeed. Which do you want?
+
+jrpool: I have added the sock.once method invocation, but it does not run when Comet requests http://localhost:3000. With Chrome, I get `first bytes (hex): 474554202f204854`.
+
+GitHub Copilot: GitHub Copilot
+
+Cause (concise)
+- Race between your connection listener and Node’s internal HTTP connection handler. The http module registers its connection listener when the server is created; if that internal listener runs first it may read the first bytes from the socket and consume them before your server.on('connection') attaches its data handler — so socket.once('data') never fires for you.
+
+Fix
+- Prepend your connection listener so it runs before Node’s internal HTTP listener. Replace server.on('connection', ...) with server.prependListener('connection', ...).
+
+Patch:
+
+````javascript
+// ...existing code...
+-  server.on('connection', (sock) => {
++  // Prepend so this runs before Node's internal http connection handler,
++  // avoiding a race where the HTTP parser consumes the first bytes.
++  server.prependListener('connection', (sock) => {
+     const addr = sock.remoteAddress + ':' + sock.remotePort;
+     console.log('Connection to server made from', addr);
+     sock.once('data', (chunk) => {
+       console.log('first bytes (hex):', chunk.slice(0, 8).toString('hex'));
+       if (chunk[0] === 22) {
+         console.log('Client attempted TLS (ClientHello) on HTTP port');
+         // optional dev redirect:
+         sock.write(
+           'HTTP/1.1 301 Moved Permanently\r\n' +
+           'Location: https://localhost:' + (process.env.PORT || '3000') + '/\r\n' +
+           'Content-Length: 0\r\n\r\n'
+         );
+         sock.destroy();
+       } else {
+         sock.unshift(chunk);
+       }
+     });
+   });
+ // ...existing code...
+````
+
+Verification
+- Restart node and try Comet again. If you still don’t see the peek log, confirm the connection handler runs at all (log at the top of the prependListener).
+
+jrpool: Yes, the connection handlor runs, but sock.once('data') is not called.
+
+GitHub Copilot: GitHub Copilot
+
+Reason (short)
+- Node's internal HTTP/HTTPS handlers can consume the first socket bytes before your data listener runs. That race sometimes still prevents sock.once('data') from firing. The robust fix is to accept raw TCP connections yourself, peek the first bytes, then hand the socket to the appropriate http/https server.
+
+Patch
+- Add net require and replace serve() with a net proxy that peeks the first bytes and then emits 'connection' on the internal server.
+
+````javascript
+// ...existing code...
+const net = require('net');
+// ...existing code...
+
+const serve = (protocolModule, options) => {
+  // Create the real http/https server but don't listen on it directly.
+  const internalServer = (protocolModule === https)
+    ? https.createServer(options, requestHandler)
+    : http.createServer(requestHandler);
+
+  // Create a raw TCP server to reliably peek the first bytes.
+  const proxy = net.createServer((sock) => {
+    const addr = sock.remoteAddress + ':' + sock.remotePort;
+    console.log('New connection from', addr);
+
+    // If the client sends the first bytes quickly, handle them here.
+    const onFirst = (chunk) => {
+      console.log('first bytes (hex):', chunk.slice(0, 8).toString('hex'));
+      // 0x16 (22) indicates TLS ClientHello.
+      if (chunk[0] === 22) {
+        console.log('Client attempted TLS (ClientHello) on HTTP port');
+        // Dev-friendly redirect to https (or destroy/hand to https server if you prefer).
+        sock.write(
+          'HTTP/1.1 301 Moved Permanently\r\n' +
+          'Location: https://localhost:' + (process.env.PORT || '3000') + '/\r\n' +
+          'Content-Length: 0\r\n\r\n'
+        );
+        sock.destroy();
+        return;
+      }
+
+      // Not TLS: push bytes back and hand socket to the internal HTTP server.
+      sock.unshift(chunk);
+      internalServer.emit('connection', sock);
+    };
+
+    // If no data arrives promptly, hand over the socket anyway to avoid hangs.
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      internalServer.emit('connection', sock);
+    }, 200);
+
+    sock.once('data', (chunk) => {
+      if (timedOut) return;
+      clearTimeout(timer);
+      onFirst(chunk);
+    });
+
+    sock.on('error', (err) => {
+      console.log('socket error', err && err.message);
+    });
+  });
+
+  const port = process.env.PORT || '3000';
+  proxy.listen(port, () => {
+    console.log(`Kilotest proxy listening at ${protocol}://localhost:${port}.`);
+  });
+};
+// ...existing code...
+````
+
+Result
+- This reliably detects TLS ClientHello vs plain HTTP and then forwards the socket to the correct server component so your requestHandler will always run for plain HTTP requests (including from Comet).
+
+jrpool: For now this is too much infrastructure for a condition that is present only for a browser that almost no user will be using and a URL that the instructions will not tell anybody to enter. So I am going to stop trying to handle this behavior.
+
+GitHub Copilot: GitHub Copilot
+
+Understood. If you stop handling that browser-specific TLS behavior, you can simplify by removing the connection‑peek logic and restoring a plain server. Example patch (replace the current serve(...) implementation):
+
+````javascript
+// ...existing code...
+const serve = (protocolModule, options) => {
+  const server = (protocolModule === https)
+    ? https.createServer(options, requestHandler)
+    : http.createServer(requestHandler);
+
+  // Simple debug probe
+  server.on('request', (req) => console.log('Server got request', req.method, req.url));
+
+  const port = process.env.PORT || '3000';
+  server.listen(port, () => {
+    console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
+  });
+};
+// ...existing code...
+````
+
+Tell me if you want me to apply this change or revert only parts of the earlier additions.
+
+jrpool: Why do lines 32 and 33 in the script fail silently, while line 34 succeeds?
+
+GitHub Copilot: GitHub Copilot
+
+Because the form start tag is malformed: the opening <form> is missing its closing >. The HTML parser treats the following markup as part of the attribute value, producing a different DOM than you expect. That makes some getElementById lookups fail (or the event listener not be attached) while others happen to work.
+
+Fix: close the form tag (and make the submit button explicit). Patch:
+
+````html
+<form id="form" method="post" action="kilotest/result.html">
+  <p><label>
+    URL of a web page to test (starting with <code>https://</code>)
+    <input type="url" name="pageURL" size="80" maxLength="300" required>
+  </label></p>
+  <p><label>
+    Description of that page (e.g., ACM home)
+    <input type="text" name="pageWhat" size="60" maxLength="60" required>
+  </label></p>
+  <p><button id="submit" type="submit">Submit</button></p>
+  <p id="status" role="status"></p>
+</form>
+````
+
+After that the submit handler will attach reliably and the console.log / disabling the button will run.
+
+jrpool: Line 149 of `index.js` calls the `doJob` function in the `testaro` dependency and awaits its result. Line 164 serves a new page reporting the result. But the wait on line 149 can be up to about 4 minutes, so I want to revise this application to give incremental progress notices to the user. My first architectural question is this: Is it more standard and simpler to output the progress notices on the page containing the form submitted by the user, adding them to the single progress notice currently output by line 35 of index.html? Or is it more standard and simpler to immediately serve the new page and output the progress notices on that page until the page content is ready to populate with the final report?
+
+GitHub Copilot: Serve the new page and stream progress to it (EventSource/SSE) — recommended
+
+Reasons (short)
+- Standard pattern for long-running jobs: POST creates a job resource, respond with a job URL, and the client loads that job page which subscribes to progress updates.
+- Decouples UI from backend: client can refresh the page, reconnect, or open the job page directly later.
+- SSE (EventSource) is simpler than WebSocket for one-way progress updates and works well in browsers.
+- Simpler to implement and reason about than keeping the user on the form page and doing XHR/fetch + UI juggling.
+
+Minimal flow
+1. POST /kilotest/result -> server creates jobId, starts background doJob(jobId, progressCb) and responds with 303 (or 200) redirect to /kilotest/job/{jobId} (the progress page).
+2. Client loads /kilotest/job/{jobId}, its JS opens an EventSource to /kilotest/events/{jobId}.
+3. Server publishes progress events to the SSE endpoint while doJob runs; when done it sends a final event and/or the client fetches final results.
+
+Example snippets
+
+Server: create SSE endpoint and publish helper (add to index.js)
+````javascript
+// ...existing code...
+const eventStreams = new Map();
+
+function publishEvent(jobId, obj) {
+  const list = eventStreams.get(jobId) || [];
+  const payload = `data: ${JSON.stringify(obj)}\n\n`;
+  list.forEach(res => {
+    try { res.write(payload); } catch (e) { /* ignore closed */ }
+  });
+}
+
+// SSE endpoint (GET /kilotest/events/<id>)
+else if (requestURL.startsWith('/kilotest/events/')) {
+  const jobId = requestURL.split('/').pop();
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  response.write('\n'); // initial padding for some proxies
+  const sinks = eventStreams.get(jobId) || [];
+  sinks.push(response);
+  eventStreams.set(jobId, sinks);
+
+  request.on('close', () => {
+    const remaining = (eventStreams.get(jobId) || []).filter(r => r !== response);
+    if (remaining.length) eventStreams.set(jobId, remaining);
+    else eventStreams.delete(jobId);
+  });
+  return;
+}
+// ...existing code...
+````
+
+Server: start job and publish progress
+````javascript
+// ...inside POST handling for job submission...
+const jobId = String(Date.now());
+
+// start job in background, report progress by calling publishEvent
+doJob({/* params */}, (progress) => {
+  publishEvent(jobId, {type: 'progress', progress});
+})
+.then(result => {
+  publishEvent(jobId, {type: 'done', result});
+})
+.catch(err => {
+  publishEvent(jobId, {type: 'error', message: err.message});
+});
+
+// redirect the client to the job page
+response.writeHead(303, { Location: `/kilotest/job/${jobId}` });
+response.end();
+````
+
+Client: progress page connects via EventSource (job page)
+````html
+<!-- ...existing page HTML ... -->
+<script>
+const jobId = /* obtain from path or ?id= param */;
+const status = document.getElementById('status');
+
+const es = new EventSource('/kilotest/events/' + jobId);
+es.onmessage = e => {
+  const obj = JSON.parse(e.data);
+  if (obj.type === 'progress') {
+    const p = document.createElement('div');
+    p.textContent = obj.progress;
+    status.appendChild(p);
+  } else if (obj.type === 'done') {
+    es.close();
+    // replace progress UI with final report or fetch the final report now
+    // fetch(`/kilotest/result/${jobId}`).then(...);
+  } else if (obj.type === 'error') {
+    es.close();
+    const p = document.createElement('div'); p.textContent = 'Error: ' + obj.message;
+    status.appendChild(p);
+  }
+};
+</script>
+````
+
+When to keep the user on the form page
+- If you want a single-page experience and no navigation, prevent default form submit and use fetch + render progress in-place. That’s fine for simple cases but less RESTful and harder to reconnect if the user reloads.
+
+If you want, I can:
+- Add the SSE endpoints and client code into your repo (index.js + result.html) now. Which approach do you prefer: redirect-to-job-page-with-SSE or single-page fetch+progress?
+
+jrpool: This application currently calls, on line 149 of `index.js`, the `doJob`  method of `testaro/run`. That method calls numerous (typically 11) asynchronous functions, sequentially. It typically takes about 2 minutes for the `doJob` method to complete. I want to consider an alternative architecture in which `doJob` is called multiple times in parallel, once for each of the functions, and `requestHandler` continues execution after all ef tne promises returned by those calls are resolved. The idea is that the parallel execution would be faster than sequential execution. This would require `requestHandler` to construct from the multiple resolved values the same object (named `report`) that would have been returned by the original single call. I wonder whether execution would really occur in parallel or whether anything about the execution environment would limit or prevent such parallel execution and thus limit or nullify the benefit of such an architectural change.
+
+GitHub Copilot: GitHub Copilot
+
+Short answer
+- Parallelism helps only if most of doJob’s time is spent waiting on I/O, child processes, network calls, or other non‑JS blocking work. Node’s JS runs single‑threaded, so CPU‑bound work inside doJob will not execute in parallel unless you use worker_threads or separate processes. Also practical limits (browser instances, memory, libuv threadpool, external rate limits) can reduce/negate speedups.
+
+Key points to decide
+- Is doJob mostly I/O/child-process work (e.g., hitting the network, spawning browsers/tools)? — Parallelize: likely large win.
+- Is doJob doing heavy JS computation (scoring/digesting) in the main thread? — Parallelizing at the call-site won’t speed up the JS parts; use worker_threads or spawn processes.
+- Does doJob have internal dependencies or shared mutable state? — If yes, you cannot safely run the internal steps in parallel unless you isolate them or replicate the behavior and then merge results.
+- Resource constraints: running many heavy tool runs concurrently can exhaust CPU, memory, file descriptors, or external service limits. Use a concurrency cap.
+
+How Node concurrency works here (practical implications)
+- Async I/O and child processes overlap — Promise.all will run them in parallel (concurrent) from the event-loop perspective.
+- CPU-bound JS blocks the event loop; concurrent Promise-based calls won’t execute JS in parallel.
+- Some blocking ops use the libuv threadpool (fs, crypto by default) — threadpool default = 4; you can increase via UV_THREADPOOL_SIZE env var.
+- Spawned processes / Puppeteer instances run in the OS and do run in parallel, constrained by CPU/RAM.
+
+Recommended approach
+1. Profile / measure a typical doJob run and per-tool durations to confirm where the time goes.
+2. If independent tool runs are possible, run per-tool jobs concurrently with a concurrency limit (e.g., 2..4 depending on machine).
+3. Merge per-tool results into a single report using the same combining rules doJob would have used (you must implement or reuse that merge logic).
+4. If heavy CPU work remains after aggregation, offload it to worker_threads or separate processes.
+
+Example pattern (bounded parallelism using p-limit)
+- Install p-limit: npm install p-limit
+- Replace the single await doJob(job) with a mapped set of per-tool jobs run with a concurrency cap and then merge results.
+
+Example skeleton patch (illustrative — you must adapt mergeReports() to the real report shape):
+
+````javascript
+// ...existing code...
+const pLimit = require('p-limit');
+// ...existing code...
+      // Perform the job and get the report from Testaro.
+-        const report = await doJob(job);
++        // Parallelize per-tool runs with limited concurrency.
++        const specs = jobScript.specs || [];
++        const limit = pLimit(parseInt(process.env.JOB_CONCURRENCY || '3', 10));
++        const perToolPromises = specs.map(tool => limit(async () => {
++          // Build a job that runs only this tool.
++          const singleScript = script('jobScript', 'job script', 'default', {
++            type: 'tools',
++            specs: [tool]
++          });
++          const singleJob = merge(singleScript, jobBatch, '')[0];
++          return doJob(singleJob);
++        }));
++        const perToolResults = await Promise.all(perToolPromises);
++        // TODO: implement accurate merging of perToolResults to match doJob(job) output
++        const report = mergeReports(perToolResults);
++        // Example placeholder mergeReports: you must replace with correct logic.
++        function mergeReports(resultsArray) {
++          // naive concat of top-level arrays (adjust to actual report shape)
++          const merged = {};
++          for (const r of resultsArray) {
++            for (const k of Object.keys(r || {})) {
++              if (!merged[k]) merged[k] = [];
++              if (Array.isArray(r[k])) merged[k] = merged[k].concat(r[k]);
++              else merged[k] = r[k]; // heuristics — replace as needed
++            }
++          }
++          return merged;
++        }
+ // ...existing code...
+````
+
+Tests and tuning
+- Start with concurrency = 1, 2, 3 and measure end‑to‑end time and system load; choose the sweet spot.
+- Watch memory and CPU; spawn fewer parallel heavy tasks on small machines.
+- If per-tool runs use Puppeteer/headless Chromium, you’ll likely want a small concurrency (1–3) because each instance is memory/CPU heavy.
+
+If you want, I can:
+- Add a bounded-parallel implementation into your index.js using p-limit and a placeholder mergeReports, and
+- Add simple timing logs so you can profile per-tool durations and choose a concurrency level. Which would you prefer?
+
+jrpool: Can parts of a chat be exported as Markdown?
+
+GitHub Copilot: Enable Claude Sonnet 3.5 for all clients
+[object Object]
+
+jrpool: @GitHubCopilot Enable: "Enable Claude Sonnet 3.5 for all clients"
+
+GitHub Copilot: Yes - you can select any part of our chat and save it as a Markdown file. In VS Code, you can:
+
+1. Select the text you want to export
+2. Right click and choose "Copy" or press Cmd+C
+3. Create a new .md file
+4. Paste the content (Cmd+V)
+
+The chat content already uses Markdown formatting, so it will render properly when saved as .md. Code blocks with backticks and language identifiers will maintain syntax highlighting.
+
+Do you want me to show a specific example of exporting part of our earlier discussion about parallelizing doJob?
+
+jrpool: When I select some text, choose copy from the contextual menu, and then paste into an existing .md file, I get plain text. For example, a list item in an ordered list becomes a plain paragraph.
+
+GitHub Copilot: Enable Claude Sonnet 3.5 for all clients
+[object Object]
+
+jrpool: @GitHubCopilot Enable: "Enable Claude Sonnet 3.5 for all clients"
+
+GitHub Copilot: GitHub Copilot
+
+When copying text from the chat to preserve Markdown formatting in VS Code:
+
+1. Select the text you want to copy
+2. Press Cmd+Shift+C (Copy with formatting)
+   - Or right-click and choose "Copy With Formatting"
+3. Paste into your .md file with Cmd+V
+
+If that doesn't work (some VS Code versions don't preserve formatting), you can also:
+1. Click the "..." menu at the top of the chat
+2. Choose "Export conversation"
+3. Select the parts you want to keep in the exported Markdown file
+4. Copy from the exported .md file into your target file
+
+The difference is that regular Copy (Cmd+C) treats the text as plain text, while Copy With Formatting (Cmd+Shift+C) preserves the Markdown syntax like lists, code blocks, etc.
+
+Try copying this test list with Cmd+Shift+C:
+1. First item
+2. Second item
+   - Nested item
+   - Another nested item
+3. Third item with `code`
+
+jrpool: The contextual menu has no option to copy with formatting. And the ellpisis menu at the top has no export option.
+
+GitHub Copilot: Enable Claude Sonnet 3.5 for all clients
+[object Object]
+
+jrpool: @GitHubCopilot Enable: "Enable Claude Sonnet 3.5 for all clients"
+
+GitHub Copilot: You are correct - I apologize for suggesting menu options that don't exist. Let me clarify:
+
+In VS Code's GitHub Copilot Chat, there currently isn't a built-in way to copy chat content while preserving Markdown formatting. When you copy text from the chat, it copies as plain text.
+
+To work around this limitation, you have a few options:
+
+1. Manually add Markdown formatting when pasting into your .md file
+2. Use VS Code's "Save Chat" feature to save the entire chat as a text file, then copy the formatted parts you want
+3. Type the chat content directly into your Markdown file while referencing the chat
+
+For your specific case with the README.md file, you would need to manually format list items by adding:
+- Numbers and periods for ordered lists (`1. Item`)
+- Hyphens for unordered lists (`- Item`)
+- Four spaces or tabs for nested items
+
+Would you like me to show an example of how to properly format a specific section from our earlier chat in Markdown?
+
+jrpool: I wanted to know whether the Markdown export feature offered by Cursor exists also in VS Code GitHub Copilot Chat.
+
+GitHub Copilot: Enable Claude Sonnet 3.5 for all clients
+[object Object]
+
+jrpool: @GitHubCopilot Enable: "Enable Claude Sonnet 3.5 for all clients"
+
+GitHub Copilot: No, VS Code GitHub Copilot Chat currently does not offer a Markdown export feature like Cursor does. When you copy text from VS Code GitHub Copilot Chat, it is copied as plain text without preserving Markdown formatting.
+
+For example, if you try to copy this from our chat:
+1. A numbered list item
+2. With a second item
+   - And a nested item
+
+And paste it into a Markdown file, it will appear as plain text without the list formatting. You would need to manually add the Markdown syntax.
+
+If you need to preserve Markdown formatting when copying from our chat, you'll need to:
+1. Copy the plain text
+2. Manually add Markdown syntax when pasting into your target file
+3. Or type the content directly into your Markdown file while referencing the chat
+
+This is different from Cursor, which does preserve Markdown formatting when copying from its chat interface.
+
+jrpool: Can the `requestHandler` detect messages logged to the console by methods of dependents that `requestHandler` calls?
+
+GitHub Copilot: No, the `requestHandler` cannot directly detect or intercept messages logged to the console by methods of its dependencies (such as `doJob`).
+
+**Explanation:**
+- `console.log` writes to the process's stdout and is not returned to the calling function.
+- Unless the dependent method returns its log messages as part of its result, or you override `console.log` globally, `requestHandler` cannot access those logs.
+
+**If you want to capture logs from dependencies:**
+- You can temporarily override `console.log` to collect messages into an array during the call, then restore it:
+
+````javascript
+// ...existing code...
+const logs = [];
+const originalLog = console.log;
+console.log = (msg, ...args) => {
+  logs.push(msg);
+  originalLog(msg, ...args);
+};
+const report = await doJob(job);
+console.log = originalLog;
+// Now logs[] contains all messages logged during doJob(job)
+````
+
+This way, you can access log messages generated by dependencies during their execution.
+
+jrpool: I want to consider whether this is the best way to accomplish my purpose. My purpose is to revise the behavior of line 149. Instead of doing nothing while waiting for the returned value of `doJob` and then to create a response on the basis of that value, I want to create and serve a response before calling `doJob`, watch for progress signals while `doJob` is executed, add incrementally to the response on the basis of those progress signals, and finally output the remainder of the response on the basis of the returned value when it arrives. I want to know what the simplest and most reliable method for doing this is. If it requires modifying the `testaro` dependency so that `doJob` produces a type of progress signal that it currently does not produce` I can do that, because I have permission to contribute to the `testaro` package.
+
+GitHub Copilot: GitHub Copilot
+
+Short answer — two reasonable choices
+
+- Easiest to implement with no client-side changes: stream an HTML page (Transfer-Encoding: chunked). Server writes an initial page, writes small HTML snippets as progress messages arrive, then inserts the final report (safely escaped) and ends the response. Simple but fragile: some proxies/buffers can delay chunks, and browsers may buffer until a threshold.
+
+- Most robust / standard: return a job page immediately and publish progress over an EventSource (SSE) or WebSocket. SSE is simpler than WebSocket for one‑way progress updates; it avoids proxy buffering issues and supports reconnecting.
+
+If you can change testaro, the recommended API is: doJob(job, { onProgress, signal }) — call onProgress(event) while running and honor signal for cancellation. That works with both streaming and SSE.
+
+Example: streaming HTML approach (minimal server-only change). This writes an initial skeleton, uses a progress callback to write chunks, and when doJob resolves inserts the final digest into the page via a safe JSON-escaped string.
+
+````javascript
+// ...existing code...
+        // Perform the job and get the report from Testaro.
+-        const report = await doJob(job);
+-        // Score the report in place.
+-        score(scorer, report);
+-        // Digest the scored report.
+-        const jobDigest = await digest(digester, report, {
+-          title: 'Kilotest report',
+-          mainHeading: 'Kilotest report',
+-          metadataHeading: 'Test facts',
+-          testDate: new Date().toISOString(),
+-          pageID: pageWhat,
+-          pageURL,
+-          dataHeading: 'Issues reported'
+-        });
+-        // Serve the digest.
+-        response.setHeader('Content-Type', 'text/html');
+-        response.end(jobDigest);
++        // Stream an HTML page immediately and push incremental progress.
++        response.setHeader('Content-Type', 'text/html; charset=utf-8');
++        response.setHeader('Transfer-Encoding', 'chunked');
++        // discourage nginx buffering if present
++        response.setHeader('X-Accel-Buffering', 'no');
++
++        // small helper to avoid basic XSS when inserting plain text
++        const escapeHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
++
++        // initial skeleton sent immediately
++        response.write('<!doctype html><html><head><meta charset="utf-8"><title>Kilotest progress</title></head><body>');
++        response.write(`<h1>Testing ${escapeHtml(pageWhat)}</h1>`);
++        response.write('<div id="progress">Progress:<ul></ul></div>');
++        response.write('<div id="report-placeholder"></div>');
++
++        // allow client disconnect to abort the job (requires doJob to honor an AbortSignal)
++        const ac = new AbortController();
++        request.on('close', () => {
++          ac.abort();
++        });
++
++        // progress callback: append a list item for each progress event
++        const onProgress = (msg) => {
++          try {
++            const safe = escapeHtml(typeof msg === 'string' ? msg : JSON.stringify(msg));
++            // write an LI and flush
++            response.write(`<script>document.querySelector('#progress ul').appendChild(Object.assign(document.createElement('li'),{textContent:${JSON.stringify(safe)}}));</script>`);
++          } catch (e) { /* ignore write errors from closed sockets */ }
++        };
++
++        // call doJob with progress callback and abort signal (modify testaro to accept these options)
++        const report = await doJob(job, { onProgress, signal: ac.signal });
++
++        // score & digest as before
++        score(scorer, report);
++        const jobDigest = await digest(digester, report, {
++          title: 'Kilotest report',
++          mainHeading: 'Kilotest report',
++          metadataHeading: 'Test facts',
++          testDate: new Date().toISOString(),
++          pageID: pageWhat,
++          pageURL,
++          dataHeading: 'Issues reported'
++        });
++
++        // insert final report into the page via JSON-escaped string to avoid DOM/HTML parsing issues
++        const safeDigest = JSON.stringify(jobDigest);
++        response.write(`<script>document.getElementById('report-placeholder').innerHTML = ${safeDigest};</script>`);
++        response.end('</body></html>');
+ // ...existing code...
+````
+
+Notes / caveats
+- You will need to modify testaro/doJob so it accepts an options object with an onProgress callback and a signal (AbortSignal). Inside doJob, call onProgress(event) at useful points and monitor signal.aborted to stop early.
+- Chunked HTML is simple but can be buffered by proxies or intermediary software; SSE avoids many of those problems.
+- For large final HTML (jobDigest) we embed it with JSON.stringify into a script so it’s safely inserted. If jobDigest is extremely large, consider writing it as streamed fragments or redirecting to a final result page instead.
+- Add error handling: if doJob throws, send a final error chunk and end response.
+- Consider exposing per-job endpoints (job id + SSE) if you want reconnect/reload support — SSE is more robust for that.
+
+If you want, I can:
+- Patch index.js to add the streaming code and a minimal change suggestion for testaro/doJob (signature + where to call onProgress), or
+- Show the SSE-based implementation (server publish + client EventSource) instead. Which do you prefer?
+
+jrpool: I want to determine whether minimal changes to existing code can accomplish my purpose. Currently, the `job` object parameter passed to `doJob` contains a boolean `observe` property. If the value of `observe` is true, that means that the caller of `doJob` wants to receive a progress signal when `doJob` begins to process each `act` in the job). In the `testaro` `run` module, `doJob` calls `doActs`, which contains a loop starting on line 578 of `run.js`. The loop is executed once per `act`. Within the loop, on line 589, the value of the `observe` property is interrogated. If it is true, then `doActs` calls `procs/tellServer` on line 593, passing a `messageParams` parameter, a string that identifies the `act`. The `tellServer` function then makes an `http` or `https` request to the caller, with a specified API URL that contains a query parameter identifying the act. When the caller receives that request, the caller writes a message to a response of type `text/event-stream` that was created when the browser asked for a result stream to be opened. This procedure was designed for the case in which `testaro` is running on one host and is performing work for a remote server. The difference here is that `testaro` is a dependency. So, can I accomplish the same purpose by setting the host of the API URL to `localhost` and otherwise make no changes? Finally, your advice gives me the impression that making `testaro` a dependency instead of an application running on a different host does not create an opportunity to simplify the existing architecture for updating the browser with notices of the currently running `act`. Is that a correct understanding?
+
+GitHub Copilot: GitHub Copilot
+
+Short answer
+- Yes — you can make testaro’s existing tellServer call back to localhost (same host/port) and have your server receive and forward those messages to the browser. That requires no change to testaro itself beyond configuring the API URL to point at your server.
+- But the simpler, more robust approach (and what I recommend since you can edit testaro) is to change doJob to emit progress directly (callback/EventEmitter/AsyncIterator). That avoids HTTP loopback, proxy/HSTS quirks, and timing/race issues.
+
+Details and tradeoffs
+
+1) Using tellServer → localhost (minimal change)
+- Works if:
+  - tellServer points to the exact host:port/protocol your server is listening on (use 127.0.0.1:3000 to avoid IPv6/localhost variations).
+  - Your server exposes the endpoint that tellServer will hit and immediately writes into the matching EventSource/SSE response or other progress sink.
+  - doJob yields to the event loop (i.e., it is asynchronous between acts). If doJob performs long synchronous CPU work between awaits, the loopback HTTP request cannot be handled until that sync work completes.
+- Caveats:
+  - If any code blocks the event loop, the incoming tellServer request will be delayed or dropped.
+  - Local environment proxies or unusual DNS can interfere — using 127.0.0.1 usually avoids that.
+  - Security: ensure only authenticated/expected callbacks are accepted (e.g., require a secret token in the query) to avoid accidental injection of events.
+
+2) Better alternative: in-process progress API (recommended)
+- Change doJob signature to accept progress emission primitives (example patterns):
+  - doJob(job, { onProgress, signal })
+  - doJob(job) returns an AsyncGenerator yielding progress events
+  - doJob returns an EventEmitter you listen to
+- Advantages:
+  - No network loopback; immediate, reliable delivery of progress events to the request handler.
+  - Easier to test and debug.
+  - Can honor cancellation via AbortSignal.
+- Example minimal API (conceptual):
+  - In testaro/run.js: call options.onProgress({act, stage, message}) at appropriate points.
+  - In requestHandler: pass onProgress that writes to SSE (or streams HTML chunks) and/or buffers events.
+
+Tiny example of how requestHandler would call doJob with a callback (replace your current await doJob(job)):
+
+````javascript
+// ...existing code...
+// open SSE response earlier and keep response object for streaming
+response.setHeader('Content-Type', 'text/event-stream');
+response.setHeader('Cache-Control', 'no-cache');
+response.write('\n');
+
+// progress callback used by testaro
+const onProgress = (evt) => {
+  try {
+    response.write(`data: ${JSON.stringify(evt)}\n\n`);
+  } catch (e) { /* ignore if socket closed */ }
+};
+
+// optional abort support
+const ac = new AbortController();
+request.on('close', () => ac.abort());
+
+// call testaro with progress callback
+const report = await doJob(job, { onProgress, signal: ac.signal });
+// ...finalize, score, digest, send final result event/page...
+````
+
+Which to pick
+- If you want the absolute minimal change and can tolerate the network hop: point tellServer to http://127.0.0.1:3000/your-callback-path and implement the SSE/receiver endpoint in your server.
+- If you can change testaro (you said you can): modify doJob to emit progress directly. It’s simpler, faster, and avoids subtle runtime issues.
+
+If you want, I can:
+- Show the exact small changes to testaro (doJob signature + where to call onProgress), and the matching tiny changes to index.js to stream SSE or chunked HTML. Which do you prefer?
+
+jrpool: I prefer to modify `doJob` and then make use of that modification. However, any modification must also respect the use case in which `doJob` is called on line 182 of the `netWatch` module of `testaro` and `netWatch` is fetching jobs from a remote server with which the browser interacts.
+
+GitHub Copilot: GitHub Copilot
+
+Yes — change doJob to accept an options object (onProgress + signal) and keep the old behaviour when options is absent. Then in your server call doJob with onProgress and start it in background while you immediately serve a page that connects to an SSE endpoint. Below are minimal, backwards-compatible patches you can apply.
+
+1) testaro: run.js — make doJob/doActs call onProgress when present, otherwise fall back to existing tellServer behavior.
+
+````javascript
+// ...existing code...
+// inside the doActs loop (approx. around line ~578) where it currently checks job.observe:
+-        if (job.observe) {
+-          // build messageParams...
+-          await tellServer(apiUrl, messageParams);
+-        }
++        if (job.observe) {
++          const messageParams = /* ...existing messageParams build ... */;
++          // If an onProgress callback was supplied via options, invoke it in-process.
++          // Otherwise fall back to the existing tellServer loopback to a remote server.
++          if (opts && typeof opts.onProgress === 'function') {
++            try {
++              // Provide a small progress object; adapt shape as you prefer.
++              opts.onProgress({ actId: act.id, actName: act.name, messageParams });
++            } catch (err) {
++              // swallow callback errors so they don't break the run loop
++            }
++          } else {
++            // original behavior: notify remote server
++            await tellServer(apiUrl, messageParams);
++          }
++        }
+ // ...existing code...
+````
+
+Notes:
+- Ensure doJob signature becomes doJob(job, opts) or similar and that opts is optional. If doJob already takes other args, thread opts through appropriately.
+- netWatch (which fetches jobs remotely) will still call doJob with no opts, so tellServer behavior remains intact.
+
+2) Kilotest server (index.js) — minimal changes: when POST arrives, create a jobId, immediately serve a small result page that opens an EventSource to /kilotest/events/{jobId}, and start doJob(job, { onProgress }) in background publishing SSE events.
+
+````javascript
+// ...existing code...
+// add at top (you already have resultStreams; use a Map for clarity)
+const eventStreams = new Map();
+
+function publishEvent(jobId, obj) {
+  const sinks = eventStreams.get(jobId) || [];
+  const payload = `data: ${JSON.stringify(obj)}\n\n`;
+  for (const res of sinks.slice()) {
+    try { res.write(payload); } catch (e) { /* ignore closed */ }
+  }
+}
+
+// inside requestHandler, add SSE endpoint handling in the GET branch:
+else if (method === 'GET') {
+  // SSE endpoint: /kilotest/events/<jobId>
+  if (requestURL.startsWith('/kilotest/events/')) {
+    const jobId = requestURL.split('/').pop();
+    response.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    });
+    response.write('\n'); // padding for some proxies
+    const sinks = eventStreams.get(jobId) || [];
+    sinks.push(response);
+    eventStreams.set(jobId, sinks);
+    request.on('close', () => {
+      const remaining = (eventStreams.get(jobId) || []).filter(r => r !== response);
+      if (remaining.length) eventStreams.set(jobId, remaining);
+      else eventStreams.delete(jobId);
+    });
+    return;
+  }
+  // ...existing GET handlers...
+}
+// ...existing code...
+
+// then replace the POST handling for /kilotest/result.html with:
+else if (method === 'POST') {
+  if (requestURL === '/kilotest/result.html') {
+    const postData = await getPostData(request);
+    const {pageWhat, pageURL} = postData;
+    if (pageURL && pageURL.startsWith('http') && pageWhat) {
+      // Build job as before
+      const targetList = [[pageWhat, pageURL]];
+      const jobBatch = batch('jobTarget', 'job target', targetList);
+      const jobScript = script('jobScript', 'job script', 'default', {
+        type: 'tools',
+        specs: [
+          'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
+        ]
+      });
+      const job = merge(jobScript, jobBatch, '')[0];
+
+      // Create a jobId
+      const jobId = String(Date.now()) + '-' + Math.random().toString(36).slice(2,8);
+
+      // Immediately serve a small page that opens an EventSource to get progress
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      const pageHtml = `<!doctype html>
+<html><head><meta charset="utf-8"><title>Kilotest progress</title></head><body>
+<h1>Testing ${escapeHtml(pageWhat)}</h1>
+<div id="status"></div>
+<script>
+  const es = new EventSource('/kilotest/events/${jobId}');
+  es.onmessage = (e) => {
+    try {
+      const obj = JSON.parse(e.data);
+      const p = document.createElement('div');
+      if (obj.type === 'progress') p.textContent = '[progress] ' + (obj.payload && obj.payload.actName || JSON.stringify(obj.payload));
+      else if (obj.type === 'done') p.textContent = '[done] job complete';
+      else if (obj.type === 'error') p.textContent = '[error] ' + obj.message;
+      document.getElementById('status').appendChild(p);
+    } catch (err) { /* ignore parse errors */ }
+  };
+</script>
+</body></html>`;
+      response.end(pageHtml);
+
+      // Start the job in background and publish events
+      (async () => {
+        try {
+          const onProgress = payload => publishEvent(jobId, { type: 'progress', payload });
+          // provide an AbortSignal if you want to support cancel on client disconnect
+          const ac = new AbortController();
+          // If you want to abort when nobody is listening: optional
+          // request.on('close', () => ac.abort());
+
+          const report = await doJob(job, { onProgress, signal: ac.signal });
+
+          score(scorer, report);
+          const jobDigest = await digest(digester, report, {
+            title: 'Kilotest report',
+            mainHeading: 'Kilotest report',
+            metadataHeading: 'Test facts',
+            testDate: new Date().toISOString(),
+            pageID: pageWhat,
+            pageURL,
+            dataHeading: 'Issues reported'
+          });
+
+          // send final result event
+          publishEvent(jobId, { type: 'done', payload: { html: jobDigest } });
+
+          // Optionally keep job results for later retrieval or save to disk
+        } catch (err) {
+          publishEvent(jobId, { type: 'error', message: err && err.message });
+        } finally {
+          // close any open SSE connections for this job
+          const sinks = eventStreams.get(jobId) || [];
+          for (const s of sinks) {
+            try { s.end(); } catch (e) {}
+          }
+          eventStreams.delete(jobId);
+        }
+      })();
+    } else {
+      const message = 'ERROR: invalid request';
+      console.log(message);
+      await serveError(message, response);
+    }
+  }
+}
+// ...existing code...
+// helper: basic html escape
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+````
+
+Notes and cautions
+- Backwards compatibility: netWatch or other remote usage still works because doJob without opts will run the original tellServer path.
+- Security: if you expose an SSE endpoint that accepts progress messages from local testaro via onProgress, ensure you only accept messages for jobs you created (we used jobId unguessable-ish). If you later allow tellServer to hit localhost as well, validate a shared token.
+- If doJob contains synchronous CPU-bound sections, those blocks will still block the event loop and delay delivery of SSE events; prefer making doJob yield to the event loop between long tasks (or run heavy CPU portions in worker_threads).
+- You may want to persist job results (in memory, DB, or disk) if the user refreshes or loses the SSE connection; SSE supports reconnect logic but you need to handle replaying missed events or returning the final report on demand.
+
+If you want, I can generate exact diffs for your local copy of testaro/run.js (where to insert opts and the onProgress calls) and the exact small edits to index.js to drop into your repo. Which file should I patch first?
+
+jrpool: `tellServer` is synchronous.
+
+GitHub Copilot: GitHub Copilot
+
+That's important - if `tellServer` is synchronous then the existing code in `testaro` is already running everything in the main thread, so no need to worry about event-loop blocking between progress events. Let's modify the code in two steps:
+
+1. First, add an event stream handler to your server:
+
+````javascript
+// Add at top with other constants
+const eventStreams = new Map();
+
+// Add after other imports
+const publishEvent = (jobId, evt) => {
+  const sinks = eventStreams.get(jobId) || [];
+  const payload = `data: ${JSON.stringify(evt)}\n\n`;
+  for (const res of sinks) {
+    try { res.write(payload); }
+    catch (e) { /* ignore closed connections */ }
+  }
+};
+
+// Add in the GET handler branch of requestHandler
+else if (method === 'GET') {
+  // ...existing code for style.css, favicon, index...
+
+  // Handle SSE connections
+  if (requestURL.startsWith('/kilotest/events/')) {
+    const jobId = requestURL.split('/').pop();
+    response.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    });
+    response.write('\n');
+
+    const sinks = eventStreams.get(jobId) || [];
+    sinks.push(response);
+    eventStreams.set(jobId, sinks);
+
+    request.on('close', () => {
+      const remaining = (eventStreams.get(jobId) || []).filter(r => r !== response);
+      if (remaining.length) eventStreams.set(jobId, remaining);
+      else eventStreams.delete(jobId);
+    });
+    return;
+  }
+  // ...existing error handling...
+}
+````
+
+2. Then modify the POST handler to serve an initial page and run the job with progress:
+
+````javascript
+// Replace the POST section where it handles /kilotest/result.html
+else if (method === 'POST') {
+  if (requestURL === '/kilotest/result.html') {
+    const postData = await getPostData(request);
+    const {pageWhat, pageURL} = postData;
+    if (pageURL && pageURL.startsWith('http') && pageWhat) {
+      // Create a unique job ID
+      const jobId = Date.now() + '-' + Math.random().toString(36).slice(2);
+
+      // Serve initial page that connects to event stream
+      response.setHeader('Content-Type', 'text/html');
+      const initialPage = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Testing ${escapeHtml(pageWhat)}</title>
+  <link rel="stylesheet" href="kilotest/style.css">
+</head>
+<body>
+  <h1>Testing ${escapeHtml(pageWhat)}</h1>
+  <div id="progress"></div>
+  <script>
+    const progress = document.getElementById('progress');
+    const es = new EventSource('/kilotest/events/${jobId}');
+    es.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      const div = document.createElement('div');
+      if (msg.type === 'act') {
+        div.textContent = 'Running: ' + msg.name;
+      }
+      else if (msg.type === 'complete') {
+        div.innerHTML = msg.html;
+        es.close();
+      }
+      progress.appendChild(div);
+    };
+  </script>
+</body>
+</html>`;
+      response.end(initialPage);
+
+      // Start job in background
+      (async () => {
+        try {
+          // Create job as before
+          const targetList = [[pageWhat, pageURL]];
+          const jobBatch = batch('jobTarget', 'job target', targetList);
+          const jobScript = script('jobScript', 'job script', 'default', {
+            type: 'tools',
+            specs: ['alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax']
+          });
+          const job = merge(jobScript, jobBatch, '')[0];
+
+          // Add progress reporting
+          job.observe = true;
+          job.apiURL = `http://localhost:${process.env.PORT || '3000'}/kilotest/progress/${jobId}`;
+
+          const report = await doJob(job);
+          score(scorer, report);
+          const jobDigest = await digest(digester, report, {
+            title: 'Kilotest report',
+            mainHeading: 'Kilotest report',
+            metadataHeading: 'Test facts',
+            testDate: new Date().toISOString(),
+            pageID: pageWhat,
+            pageURL,
+            dataHeading: 'Issues reported'
+          });
+
+          // Send final report
+          publishEvent(jobId, {
+            type: 'complete',
+            html: jobDigest
+          });
+        }
+        catch (err) {
+          publishEvent(jobId, {
+            type: 'error',
+            message: err.message
+          });
+        }
+      })();
+    }
+    else {
+      const message = 'ERROR: invalid request';
+      console.log(message);
+      await serveError(message, response);
+    }
+  }
+}
+
+// Add helper function at bottom
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, m => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[m]);
+}
+````
+
+This approach:
+1. Uses existing `tellServer` behavior
+2. Adds a local progress endpoint that forwards messages to browser
+3. Serves an initial page that connects via EventSource
+4. Runs the job in background after responding
+5. Sends progress and final result through SSE
+
+Since `tellServer` is synchronous, we don't need to worry about event-loop blocking between progress events.
+
+Would you like me to also show the progress endpoint handler that receives messages from `tellServer`?
+
+jrpool: How can I restore the status of `kilotest` as a package not in a workspace? I did not intend to create a workspace.
+
+GitHub Copilot: GitHub Copilot
+
+Two different things are commonly called “workspace” — VS Code workspace vs. an npm/yarn workspace. Pick the section that matches what you accidentally created.
+
+1) If you opened/created a VS Code workspace
+- Close the workspace: File → Close Workspace (or Command Palette → Workspaces: Close Workspace).
+- Remove the .code-workspace file (if you created one) and re-open the folder directly:
+```bash
+# from your project parent dir (adjust path)
+rm ~/Documents/Topics/repos/a11yTesting/kilotest.code-workspace
+# open folder in VS Code (mac)
+code /Users/pool/Documents/Topics/repos/a11yTesting/kilotest
+```
+- If you want to remove workspace-level settings, delete .vscode/ in the folder:
+```bash
+rm -rf /Users/pool/Documents/Topics/repos/a11yTesting/kilotest/.vscode
+```
+
+2) If you accidentally turned the repo into an npm/yarn workspace (package.json has "workspaces")
+- Inspect package.json(s):
+```bash
+# show any package.json containing "workspaces"
+grep -Rn '"workspaces"' /Users/pool/Documents/Topics/repos/a11yTesting/kilotest || true
+```
+- Remove the workspaces key safely with jq (recommended) or edit by hand:
+```bash
+# requires jq; creates a backup first
+cp package.json package.json.bak
+jq 'del(.workspaces)' package.json > package.json.tmp && mv package.json.tmp package.json
+```
+- Reinstall node modules:
+```bash
+npm install
+# or if you use yarn:
+yarn install
+```
+- If kilotest is nested in a monorepo dir, move it to a standalone folder or run npm init inside it so it has its own package.json.
+
+Notes
+- If you’re unsure which “workspace” you mean, run both checks above.
+- Tell me which type you created (VS Code workspace file or npm/yarn workspaces in package.json) and I’ll give exact commands tailored to your repo.
+
+jrpool: The architecture of the proposed solution seems questionable to me, because it uses the event source not only to convey progress notices, but also to deliver an HTML report digest to the server. This seems to be a major change to the existing architecture. Under the existing architecture, Kilotest tells Testaro to produce a JSON report, then Kilotest tells Testilo to “score” that report, then Kilotest asks Testilo to generate an HTML digest from that report, and then Kilotest writes that digest to the response to the browser request. I am also considering a revision of that model, such that Kilotest itself, without using Testilo, would generate a digest from the scored report, because this would allow fine-tuning the digest for the purposes of Kilotest without requiring repeated revisions to Testilo. The application under that architecture already works correctly. My only current intent is to add one feature: progress reporting to the browser during the time, typically about 3 minutes, when Testaro is producing the JSON report. I think of this as a minor change, so I am hoping that implementing it requires only a minor architectural change. I believe it would be appropriate to output the progress notices onto the original form page (`/index.html`), or onto an intermediate progress page, or onto the result page before the digest appears there. Whichever of these three output locations makes the revision simplest seems best. Please provide high-level architectural guidance to help craft a solution.
+
+GitHub Copilot: GitHub Copilot
+
+Short recommendation (minimal, robust change)
+- Add an in‑process progress callback to testaro/doJob (optional, backward compatible). Have doJob call opts.onProgress(...) once per act when present.
+- In Kilotest: on POST, immediately serve a small “progress” HTML page (or the result page skeleton) that opens an EventSource to an SSE endpoint /kilotest/events/<jobId>.
+- Start doJob(job, { onProgress }) in the background. Each onProgress invocation writes an SSE event to the job’s sink(s).
+- When doJob resolves, run score() and digest() as before on the server, then publish a final SSE event (type: done) that either includes a short URL to GET the final HTML or includes the HTML (or both).
+- Keep the existing pipeline (JSON → score → digest) unchanged except for adding the progress callback; keep testaro’s remote callback (tellServer) as fallback when opts.onProgress is not provided.
+
+Why this is the best minimal approach
+- Minimal invasive changes:
+  - testaro only needs to accept an optional opts.onProgress and invoke it where it currently calls tellServer when observe=true.
+  - Kilotest only needs an SSE endpoint, a little client JS to connect, a background job launcher, and a small job-result store (memory or disk) for reloads.
+- Robustness:
+  - SSE avoids chunked‑HTML buffering problems and is re‑connectable by the browser.
+  - No HTTP loopback from dependency to server (avoids race/HSTS/proxy issues).
+- Compatibility:
+  - netWatch / remote usage continues to work because doJob without opts still uses tellServer.
+- UX:
+  - Serving a dedicated progress/result page (the result page skeleton) is the standard pattern — simpler for users and allows bookmark/refresh.
+  - Less client modification than keeping the user on the original form page (would require preventing default submit and using fetch + DOM updates).
+
+Practical details & gotchas
+- API change for testaro: doJob(job, opts?) where opts.onProgress(evt) and opts.signal optional. Inside doActs call opts.onProgress({ actId, actName, message }) instead of or in addition to tellServer.
+- SSE server: Map<jobId, [response]> to push events; respond to /kilotest/events/<jobId> with Content-Type: text/event-stream.
+- Final report delivery: prefer publishing {type: 'done', url: '/kilotest/result/<jobId>'} and let the client fetch result HTML; embedding full HTML in SSE is OK for quick minimal change but can be large.
+- Persistence: save final HTML or report keyed by jobId in memory or disk so reloads/reconnects work.
+- Abort/cancellation: pass an AbortSignal to doJob if you want cancel on client disconnect.
+- Security: generate unguessable jobId (timestamp+random) and validate any incoming callbacks if you ever accept remote tellServer calls.
+- Synchronous blocking inside doJob: if doJob contains long synchronous JS work, SSE delivery can be delayed; prefer making doJob yield between acts or offload heavy CPU to worker threads.
+
+Minimal code path summary
+1. Modify testaro: accept opts.onProgress and call it inside the acts loop.
+2. In Kilotest POST handler:
+   - create jobId, serve progress HTML (EventSource -> /kilotest/events/jobId)
+   - start background doJob(job, { onProgress: p => publishSSE(jobId, {type:'progress', payload:p}) })
+   - when done: score/digest, store final HTML, publishSSE(jobId, {type:'done', url:`/kilotest/result/${jobId}`})
+3. In client: EventSource, render progress items; on done fetch final GET url and replace UI.
+
+If you want, I can:
+- Produce the exact small patch for testaro/run.js to call opts.onProgress safely and fall back to tellServer when opts absent, and
+- Produce the matching SSE + background job code to drop into your index.js (and the small client HTML snippet). Which patch do you want first?
+
+jrpool: Let us start with the modification to Testaro. I have created the `localprogress` branch from `main` for this change.
+
+GitHub Copilot: GitHub Copilot
+
+Good. Below is a minimal, backwards‑compatible patch you can apply to testaro/run.js on your localprogress branch. It:
+
+- Adds an optional opts parameter to doJob (defaults to undefined).
+- Grabs opts.onProgress and opts.signal.
+- In the per‑act branch that previously called tellServer, calls opts.onProgress(...) when provided (and otherwise falls back to the existing tellServer call).
+- Swallows errors thrown by the progress callback so it does not break doJob.
+- Checks signal.aborted at the start of each act loop iteration (so callers can cancel).
+
+Apply and run the testaro unit tests / netWatch to confirm no regressions.
+
+Patch (apply inside testaro/run.js where doJob and the acts loop are defined):
+
+````javascript
+// ...existing code...
+-async function doJob(job) {
++async function doJob(job, opts) {
++  // Backwards-compatible: opts is optional.
++  opts = opts || {};
++  const onProgress = (typeof opts.onProgress === 'function') ? opts.onProgress : null;
++  const signal = opts.signal;
+ // ...existing code...
+   // inside the acts loop (approx. where job.observe is tested)
+-        if (job.observe) {
+-          // build messageParams...
+-          await tellServer(apiUrl, messageParams);
+-        }
++        if (job.observe) {
++          // build messageParams...
++          // If an in‑process onProgress callback was supplied, call it;
++          // otherwise fall back to the original tellServer network callback.
++          if (onProgress) {
++            try {
++              // Deliver a small event object; adapt fields as needed.
++              onProgress({
++                type: 'actStart',
++                actId: act && act.id,
++                actName: act && act.name,
++                params: messageParams
++              });
++            } catch (e) {
++              // Swallow progress callback errors so they do not crash the job.
++            }
++          } else {
++            await tellServer(apiUrl, messageParams);
++          }
++        }
++        // Support cooperative cancellation if a signal was provided.
++        if (signal && signal.aborted) {
++          throw new Error('doJob aborted');
++        }
+ // ...existing code...
+}
+// ...existing code...
+````
+
+Notes / recommendations
+- netWatch and other callers that call doJob(job) with no second arg will continue to work (opts is optional).
+- Decide the exact event object shape you want onProgress to receive (above uses type/actId/actName/params). Keep it stable and document it.
+- If the onProgress handler performs I/O that may be slow, keep it non‑blocking (do not await it inside doJob). The pattern above calls it synchronously but does not await a returned promise.
+- Consider adding optional onProgress finalization calls (e.g., onProgress({type:'done', reportMeta})) when doJob completes or on errors.
+- Add tests exercising doJob(job, { onProgress: spy }) to confirm progress is emitted the expected number of times and netWatch behaviour remains unchanged.
+
+If you want, I can also:
+- Produce the exact diff to apply with git (git apply format),
+- Suggest the matching Kilotest index.js changes that subscribe to onProgress and publish SSE events, or
+- Add a small unit test in testaro to validate the new opts.onProgress behaviour. Which next?
+
+jrpool: Line 1389 of `run.js` is now `exports.doJob = async job =>`. Are you saying that this syntax should change, or only that the line should change to `exports.doJob = async (job, opt) =>`?
+
+GitHub Copilot: GitHub Copilot
+
+Change the export signature to accept an optional options parameter. Use a default so existing callers (calling doJob(job)) continue to work.
+
+Patch:
+
+````javascript
+// ...existing code...
+-exports.doJob = async job =>
++exports.doJob = async (job, opts = {}) =>
+ {
++  // Backwards-compatible: opts may be omitted by existing callers.
++  opts = opts || {};
++  const onProgress = (typeof opts.onProgress === 'function') ? opts.onProgress : null;
++  const signal = opts.signal;
+ // ...existing code...
+ }
+// ...existing code...
+````
+
+Notes
+- Keep the option name plural (opts) for clarity.
+- Inside the acts loop call onProgress(...) when present and check signal.aborted for cooperative cancellation.
+- No other callers need changing; netWatch and remote usage that call doJob(job) will keep working.
+
+jrpool: Is the line `opts = opts || {};` not redundant when the signature defines a default value?
+
+GitHub Copilot: Yes — it’s redundant if you use a default parameter. The parameter default (opts = {}) runs when the caller passes undefined; the extra `opts = opts || {}` only helps if callers might pass null or another falsy value and you want to normalize that.
+
+Recommended options
+
+- If you expect callers to omit the arg or pass undefined (normal case), keep the param default and remove the assignment:
+
+````javascript
+exports.doJob = async (job, opts = {}) => {
+  // no need for opts = opts || {};
+  const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+  const signal = opts.signal;
+  ...
+}
+````
+
+- If you want to tolerate callers passing null explicitly, use nullish coalescing (avoids treating false/0 as empty):
+
+````javascript
+exports.doJob = async (job, opts = {}) => {
+  opts = opts ?? {}; // handles null
+  const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+  const signal = opts.signal;
+  ...
+}
+````
+
+Also consider destructuring for clarity:
+
+````javascript
+exports.doJob = async (job, opts = {}) => {
+  const { onProgress = null, signal } = opts;
+  ...
+}
+````
+
+Pick the style that matches how callers will invoke doJob.
+
+jrpool: This modification seems to require adding `onProgress, signal` to the parameters of `doActs`, or else moving `doActs` so it is inside `doJob` instead of being called by `doJob`.
+
+
+GitHub Copilot: GitHub Copilot
+
+Keep doActs as a top-level function and thread an optional opts object through it — simpler and less invasive than moving the whole function. Make opts optional (default {}) so existing callers continue to work.
+
+Key points
+- Change doActs signature to accept opts (or destructure { onProgress, signal }).
+- Pass the same opts from doJob into doActs.
+- Inside the per-act loop call onProgress(...) in a try/catch and check signal.aborted for cooperative cancellation.
+- Keep behavior identical when opts is omitted so netWatch / remote callers are unaffected.
+
+Minimal example patch to illustrate (apply in testaro/run.js):
+
+````javascript
+// ...existing code...
+// Old: async function doActs(acts) { ... }
+async function doActs(acts, opts = {}) {
+  const { onProgress = null, signal } = opts;
+  for (const act of acts) {
+    // cooperative cancellation
+    if (signal && signal.aborted) throw new Error('doActs aborted');
+
+    // existing per-act work ...
+    // notify progress if requested
+    if (onProgress) {
+      try {
+        onProgress({ type: 'actStart', actId: act.id, actName: act.name });
+      } catch (e) {
+        // swallow to avoid breaking the run loop
+      }
+    } else if (act.job && act.job.observe) {
+      // existing fallback behaviour (e.g. tellServer)
+      await tellServer(apiUrl, messageParams);
+    }
+
+    // ...rest of act processing...
+  }
+}
+// ...existing code...
+
+// Update doJob to forward opts into doActs
+// Old: exports.doJob = async (job) => { ... await doActs(job.acts); ... }
+exports.doJob = async (job, opts = {}) => {
+  // destructure if useful
+  // const { onProgress, signal } = opts;
+  // ...existing preparation...
+  await doActs(job.acts, opts);
+  // ...existing finishing code...
+};
+````
+
+Notes
+- If multiple internal callers call doActs, update those call sites to pass opts or rely on the default.
+- If tellServer was previously always used when job.observe was true, keep that path as the fallback when onProgress is not provided (see example).
+- Consider adding final events (type: 'done' / 'error') from doJob so callers can publish completion.
+- Add unit tests exercising doJob(job, { onProgress: spy }) to verify events and that netWatch callers remain unchanged.
+
+If you want, I can produce an exact diff for your testaro/run.js based on its current layout. Which would you prefer?
+
+jrpool: This would be a major revision. You are proposing a change in calling syntax and a change in the existing `report` parameter to its `acts` property, and that would leave the existing references to `report` without a referent. Can you base your proposal on the existing code starting on line 572 of `run.js`?
+
+GitHub Copilot: GitHub Copilot
+
+Yes — thread an optional opts through doJob -> doActs and call opts.onProgress when present, otherwise fall back to tellServer. Below is a minimal, backward‑compatible patch based on the acts loop area (around line ~572) and the exported doJob. It keeps existing names (report/act/etc.) unchanged and only adds the optional opts plumbing and signal checks.
+
+````javascript
+// ...existing code...
+
+// Old doActs signature:
+// async function doActs(/* ... */) { ... }
+async function doActs(/* existing params */, opts = {}) {
+  const { onProgress = null, signal } = opts;
+
+  // ...existing code before the acts loop...
+
+  for (const act of /* existing acts source */) {
+    // cooperative cancellation
+    if (signal && signal.aborted) {
+      throw new Error('doActs aborted');
+    }
+
+    // ...existing per-act setup that builds apiUrl and messageParams ...
+
+-    if (job.observe) {
+-      // build messageParams...
+-      await tellServer(apiUrl, messageParams);
+-    }
++    if (job.observe) {
++      // If an in-process progress callback was supplied, invoke it;
++      // otherwise fall back to the original tellServer network callback.
++      if (onProgress) {
++        try {
++          onProgress({
++            type: 'actStart',
++            actId: act && act.id,
++            actName: act && act.name,
++            params: messageParams
++          });
++        } catch (err) {
++          // swallow callback errors so they don't break the run loop
++        }
++      } else {
++        await tellServer(apiUrl, messageParams);
++      }
++    }
+
+    // ...rest of existing per-act processing...
+  }
+
+  // ...existing code after the acts loop...
+}
+
+// ...existing code...
+
+// Old export:
+// exports.doJob = async job =>
+exports.doJob = async (job, opts = {}) => {
+  // destructure opts to propagate into doActs/do other helpers
+  // keep backward compatibility when opts is omitted
+  // const { onProgress, signal } = opts; // optional if you need here
+
+  // ...existing doJob setup ...
+
+  // Wherever doJob calls doActs, pass opts through:
+-  await doActs(/* original args */);
++  await doActs(/* original args */, opts);
+
+  // Optionally emit a final onProgress when job completes
++  if (opts && typeof opts.onProgress === 'function') {
++    try {
++      opts.onProgress({ type: 'done', reportMeta: /* small meta if available */ null });
++    } catch (e) { /* ignore */ }
++  }
+
+  // ...existing doJob finish/return ...
+};
+
+// ...existing code...
+````
+
+Notes
+- Use opts = {} default so existing callers (including netWatch) need no change.
+- Choose the event payload shape (type/actId/actName/params) and keep it stable; add final events (done/error) if desired.
+- If tellServer is synchronous in the current code path, this approach still works; if doActs contains long synchronous JS work between act boundaries, progress callbacks delivered inside the loop may be blocked until the synchronous work completes.
+- I can produce a precise git patch if you provide the real path to run.js in your checkout (or confirm applying to node_modules/testaro/run.js). Do you want that?
+
+jrpool: You are proposing a change in the calling syntax from `const doActs = async … => {`. Why?
+
+GitHub Copilot: Use the same arrow-function style — only add an optional opts parameter and thread it through. The goal is minimal, backward‑compatible change: keep doActs where it is, keep its existing parameters and local names (report/acts), and just accept an extra opts (default {}) so callers that don't pass it need no change.
+
+Why
+- Avoids moving doActs or renaming/report-to-acts changes that would break many references.
+- Keeps the public API backwards compatible (doJob(job) still works).
+- Lets you pass onProgress/signal through doJob -> doActs with a single small edit.
+- Keeps semantics identical when opts is omitted.
+
+Minimal example patch (illustrative):
+
+````javascript
+// ...existing code...
+
+// Old:
+// const doActs = async (report, otherArg) => {
+//   ... uses report, acts, etc ...
+// }
+
+// New: add optional opts argument (default {}) and destructure what you need
+const doActs = async (report, otherArg, opts = {}) => {
+  const { onProgress = null, signal = null } = opts;
+
+  // keep existing names and logic; add only:
+  // - cooperative cancellation check
+  // - call onProgress(...) instead of network tellServer when provided
+  for (const act of /* existing acts source */) {
+    if (signal && signal.aborted) throw new Error('doActs aborted');
+
+    // ...existing code that builds messageParams...
+    if (report.observe) {
+      if (onProgress) {
+        try { onProgress({ type: 'actStart', actId: act.id, actName: act.name, params: messageParams }); }
+        catch (e) { /* swallow */ }
+      } else {
+        await tellServer(apiUrl, messageParams); // existing behavior
+      }
+    }
+
+    // ...rest of existing act processing...
+  }
+};
+
+// Thread opts through from doJob
+exports.doJob = async (job, opts = {}) => {
+  // ...existing setup...
+  await doActs(report, otherArg, opts);
+  // ...existing finish...
+};
+````
+
+You do not need to change arrow vs function syntax — only add the opts parameter and pass it along.
+
+jrpool: Why have you inserted `otherArg`?
+
+GitHub Copilot: GitHub Copilot
+
+I used otherArg only as a placeholder for whatever other parameters your existing doActs already takes. Don’t add a new parameter named otherArg — instead append opts = {} to the real parameter list.
+
+Example (replace with the actual parameter names your file already uses):
+
+````javascript
+// ...existing code...
+
+// If the old signature was, e.g.:
+-const doActs = async (report) => {
++const doActs = async (report, opts = {}) => {
++  const { onProgress = null, signal = null } = opts;
+  // ...existing code...
+}
+````
+
+Also thread opts through from doJob when you call doActs:
+
+````javascript
+// ...existing code...
+-exports.doJob = async (job) => {
++exports.doJob = async (job, opts = {}) => {
+   // ...existing setup...
+-  await doActs(report);
++  await doActs(report, opts);
+   // ...existing finish...
+}
+````
+
+That keeps the change minimal and backward compatible (calls that don’t pass opts continue to work).
+
+jrpool: Why do you prefix `tellServer` with `await`?
+
+GitHub Copilot: I apologize for suggesting `await` with `tellServer`. Since you mentioned `tellServer` is synchronous, `await` is unnecessary and incorrect. In synchronous code, `await` adds overhead without benefit.
+
+The correct code should be:
+
+````javascript
+// ...existing code...
+if (report.observe) {
+  if (onProgress) {
+    try {
+      onProgress({ type: 'actStart', actId: act.id, actName: act.name });
+    }
+    catch (e) { /* swallow */ }
+  }
+  else {
+    tellServer(apiUrl, messageParams); // synchronous, no await needed
+  }
+}
+// ...existing code...
+````
+
+The `await` prefix I suggested came from assuming `tellServer` was asynchronous, which was incorrect. Thank you for the clarification.
+
+jrpool: You said you could “Produce the matching SSE + background job code to drop into your index.js (and the small client HTML snippet).” I am ready for that.
+
+GitHub Copilot: First, let's modify index.html to handle progress events. We'll add an EventSource connection when the form is submitted:
+
+````javascript
+    <script>
+      const form = document.getElementById('form');
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        document.getElementById('submit').disabled = true;
+        const status = document.getElementById('status');
+        status.textContent = '';  // Clear any previous status
+
+        // Get form data
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+
+        // Submit form via fetch to get jobId
+        fetch('kilotest/result.html', {
+          method: 'POST',
+          body: params,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Connect to SSE stream for this job
+          const es = new EventSource(`kilotest/events/${data.jobId}`);
+          es.onmessage = (e) => {
+            const msg = JSON.parse(e.data);
+            const p = document.createElement('p');
+            if (msg.type === 'actStart') {
+              p.textContent = `Running: ${msg.actName}`;
+            }
+            else if (msg.type === 'done') {
+              es.close();
+              // Replace page content with final report
+              document.body.innerHTML = msg.html;
+            }
+            else if (msg.type === 'error') {
+              p.textContent = `Error: ${msg.message}`;
+              es.close();
+            }
+            status.appendChild(p);
+          };
+        });
+      });
+    </script>
+````
+
+Now let's add the server-side code to handle the SSE events and background job:
+
+````javascript
+// Add near top with other constants
+const eventStreams = new Map();
+
+// Add helper function after imports
+const publishEvent = (jobId, evt) => {
+  const sinks = eventStreams.get(jobId) || [];
+  const payload = `data: ${JSON.stringify(evt)}\n\n`;
+  for (const res of sinks) {
+    try { res.write(payload); }
+    catch (e) { /* ignore closed connections */ }
+  }
+};
+
+// In requestHandler, add SSE endpoint handler in the GET section
+else if (method === 'GET') {
+  // ...existing GET handlers...
+
+  if (requestURL.startsWith('/kilotest/events/')) {
+    const jobId = requestURL.split('/').pop();
+    response.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive'
+    });
+    response.write('\n');
+
+    const sinks = eventStreams.get(jobId) || [];
+    sinks.push(response);
+    eventStreams.set(jobId, sinks);
+
+    request.on('close', () => {
+      const remaining = (eventStreams.get(jobId) || []).filter(r => r !== response);
+      if (remaining.length) eventStreams.set(jobId, remaining);
+      else eventStreams.delete(jobId);
+    });
+    return;
+  }
+}
+
+// Modify the POST handler for /kilotest/result.html
+else if (method === 'POST') {
+  if (requestURL === '/kilotest/result.html') {
+    const postData = await getPostData(request);
+    const {pageWhat, pageURL} = postData;
+    if (pageURL && pageURL.startsWith('http') && pageWhat) {
+      // Create unique job ID
+      const jobId = Date.now() + '-' + Math.random().toString(36).slice(2);
+
+      // Respond immediately with jobId
+      response.setHeader('Content-Type', 'application/json');
+      response.end(JSON.stringify({ jobId }));
+
+      // Start job in background
+      (async () => {
+        try {
+          const targetList = [[pageWhat, pageURL]];
+          const jobBatch = batch('jobTarget', 'job target', targetList);
+          const jobScript = script('jobScript', 'job script', 'default', {
+            type: 'tools',
+            specs: ['alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax']
+          });
+          const job = merge(jobScript, jobBatch, '')[0];
+
+          // Run job with progress callback
+          const report = await doJob(job, {
+            onProgress: evt => publishEvent(jobId, evt)
+          });
+
+          // Score and digest as before
+          score(scorer, report);
+          const jobDigest = await digest(digester, report, {
+            title: 'Kilotest report',
+            mainHeading: 'Kilotest report',
+            metadataHeading: 'Test facts',
+            testDate: new Date().toISOString(),
+            pageID: pageWhat,
+            pageURL,
+            dataHeading: 'Issues reported'
+          });
+
+          // Send final result
+          publishEvent(jobId, {
+            type: 'done',
+            html: jobDigest
+          });
+        }
+        catch (err) {
+          publishEvent(jobId, {
+            type: 'error',
+            message: err.message || String(err)
+          });
+        }
+        finally {
+          // Clean up this job's event streams
+          const sinks = eventStreams.get(jobId) || [];
+          for (const res of sinks) {
+            try { res.close(); } catch (e) {}
+          }
+          eventStreams.delete(jobId);
+        }
+      })();
+    }
+    else {
+      const message = 'ERROR: invalid request';
+      console.log(message);
+      await serveError(message, response);
+    }
+  }
+}
+````
+
+This implementation:
+1. Keeps the user on the form page and shows progress there
+2. Uses fetch + EventSource for reliable progress updates
+3. Preserves the existing report generation pipeline
+4. Requires minimal changes to the current architecture
+5. Supports connection drops (client can reconnect to SSE)
+
+The flow is:
+1. User submits form → JS prevents default, fetches POST /kilotest/result.html
+2. Server creates jobId, starts background job, returns jobId
+3. Client connects EventSource to /kilotest/events/{jobId}
+4. Server publishes progress via SSE as doJob runs
+5. When done, server sends final HTML and client replaces page content
+
+Would you like me to explain any part in more detail?
+
+jrpool: Yes. Earlier you proposed:
+```
+In Kilotest: on POST, immediately serve a small “progress” HTML page (or the result page skeleton) that opens an EventSource to an SSE endpoint /kilotest/events/<jobId>.
+Start doJob(job, { onProgress }) in the background. Each onProgress invocation writes an SSE event to the job’s sink(s).
+When doJob resolves, run score() and digest() as before on the server, then publish a final SSE event (type: done) that either includes a short URL to GET the final HTML or includes the HTML (or both).
+```
+Just now you proposed inserting progress notices into the form page instead. What are the advantages of each design?
+
+GitHub Copilot: GitHub Copilot
+
+Short summary recommendation
+- Best balance of simplicity, robustness, and UX: create a job page (POST → immediate JSON or 303 redirect to /kilotest/job/<jobId>) and stream progress to that job page with SSE (EventSource). When done, show or link to the final result page.
+- If you must make the absolutely smallest code changes and can accept UX/reconnect limitations, updating the original form page in-place is acceptable.
+
+Advantages and tradeoffs
+
+1) Update the original form page (stay on index.html; prevent default submit + fetch + EventSource)
+- Pros
+  - Minimal visible navigation for the user (no redirect).
+  - Good when you want a single-page flow and users rarely refresh or bookmark jobs.
+  - Implementation can be small if you already have client JS wired to the form.
+- Cons
+  - You must replace default form submit with JavaScript (PRG pattern lost).
+  - Harder to handle refreshes, reconnection and bookmarking — if user reloads, you need to re-create EventSource and recover job state (requires server-side persistence).
+  - If user opens the link in a new tab (or shares it) there’s no job URL to use.
+  - Slightly more brittle for long-running jobs if the user navigates away.
+
+2) Serve an intermediate “job/progress” page (recommended)
+- Pros
+  - Standard pattern for long-running tasks (POST → job id → GET job page).
+  - Job page has its own URL: bookmarkable, shareable, reloadable.
+  - SSE reconnects easily and the server can replay recent events or provide final result via GET /kilotest/result/<jobId>.
+  - Cleaner separation of responsibilities: server starts background job and stores job state; client only subscribes to progress.
+  - Easier to support multiple concurrent jobs and job history.
+- Cons
+  - Slightly more code: create job id, SSE endpoint, small job-state store (memory or disk).
+  - Slight change to UX: user is navigated to a job page (but this is normal and expected).
+
+3) Serve the result page skeleton and stream progress into it (chunked HTML or SSE on the eventual result page)
+- Pros
+  - Minimal change to server-side pipeline: you still produce final HTML digest and can inject it into the same page when ready.
+  - If you serve a proper result page that connects to SSE, you get reconnect/refresh benefits (same as #2).
+  - If you use chunked HTML (server writes HTML fragments directly), you avoid SSE client code but risk buffering by proxies and poor reconnection support.
+- Cons
+  - Chunked HTML is fragile (proxy/buffer issues); SSE is more reliable.
+  - Large final HTML embedded over SSE can be heavy; better to send a small done event with a URL to fetch the final HTML.
+  - If you don’t persist final results, reloads are harder to handle.
+
+Other considerations
+- Backward compatibility: adding an in‑process onProgress hook to testaro is compatible with netWatch; use the onProgress callback to publish SSE events in your server.
+- Persistence: for robustness (reloads, reconnects), store final report and optionally recent events keyed by jobId.
+- Security: generate unguessable jobIds and validate any incoming callbacks if you later accept external tellServer calls.
+- Cancellation: support AbortSignal in doJob and allow client to request cancel if desired.
+- Concurrency & resource limits: if you let users run many jobs concurrently, add server-side throttling/queuing.
+
+Decision guide (pick one)
+- Want standard, reconnectable, bookmarkable behavior with modest extra code → use the job page + SSE approach (#2).
+- Want minimal visible change and can tolerate reconnect/bookmark limitations → update index.html in place (#1).
+- Want to keep final digest pipeline unchanged and minimize risk of buffering → implement job page + SSE and publish a done event with a URL to fetch the final digest (#2 + final GET for digest).
+
+If you want, I can:
+- Provide the exact SSE + background job snippets to insert into index.js and the minimal client JS for index.html (POST → jobId → EventSource), or
+- Show the smaller in-place (form-page) JS changes and the matching server code to return jobId and publish SSE events. Which do you want me to generate?
+
+jrpool: I believe I prefer to adopt the third approach in your decision guide, but I want to understand how the user experiences it, so I can be sure it is the preferred approach. When the user submits the form, do the progress notices appear on a new page, and, when the job is complete, does the digest appear on another new page, and, if so, does it appear automatically or require the user to follow a link?
+
+GitHub Copilot: GitHub Copilot
+
+Short answer
+- With the “result page skeleton + SSE” (approach 3) the browser navigates to a new page when the user submits the form. Progress notices appear on that new page. When the job finishes you can either (A) automatically replace the page content with the final digest, or (B) provide a link/button the user can follow to load the final digest. Both are normal — automatic replacement is the smoother UX; including a link is a useful fallback.
+
+User‑visible flow (recommended)
+1. User submits the form → browser requests /kilotest/result.html (or the server issues a 303 redirect to /kilotest/job/<jobId>).
+2. Server immediately responds with a small “result page skeleton” (new page) that contains a short script which opens EventSource('/kilotest/events/<jobId>') and a progress area.
+3. Server starts doJob(job, { onProgress }) in the background. Each onProgress publishes an SSE progress event. The script appends those notices to the page as they arrive.
+4. When doJob completes, server publishes a final SSE event:
+   - Preferred: { type: "done", url: "/kilotest/result/<jobId>.html" } — client fetches that URL and replaces the skeleton with the full digest (works around SSE size/encoding/buffering issues).
+   - Alternative: { type: "done", html: "<full HTML>" } — client inserts HTML directly (simpler but can be heavy and fragile behind proxies).
+5. Always show a permanent fallback link (e.g., “View final report”) to the result URL so users can reload/bookmark or get the report if the automatic replacement fails.
+
+Why this is best balance
+- Minimal server change: keep existing JSON→score→digest pipeline; just start it in background and store the final digest at a stable URL.
+- Robustness: sending a URL and fetching the final digest avoids sending large blobs over SSE and supports reloads/bookmarks.
+- UX: new page + SSE is standard for long jobs; users see progress immediately and get the final report automatically (with a link if auto‑insert fails).
+
+Small implementation notes
+- Serve the skeleton immediately on the POST (or redirect) so the browser shows the job page without extra client JS to intercept the form.
+- Persist the final digest (in memory or on disk) at /kilotest/result/<jobId> so refresh/bookmark works and SSE done can point to that URL.
+- Include a fallback link on the skeleton page that always points to the result URL.
+- Use an unguessable jobId and clean up stored results after a retention period.
+
+If you want, I can generate the minimal skeleton HTML (client SSE code) and the server-side SSE + final-URL publish pattern to drop into your index.js and to write the final digest to /kilotest/result/<jobId>.
+
+jrpool: I understand this design. However, I want to implement it in two stages. The second stage, to be implemented later, involves storage. I want to postpone that stage because it requires decisions on storage formats, storage locations, storage retentions, and access permissions. The first stage serves the digest immediately and does not offer an option to retrieve it later. This allows me to produce a demonstration version sooner and avoids prematurely making unwise decisions about storage. Does that plan seem reasonable?
+
+GitHub Copilot: GitHub Copilot
+
+Yes — that two‑stage plan is reasonable and pragmatic.
+
+Summary
+- Stage 1 (no persistent storage): serve a result page skeleton immediately, stream progress via SSE, and when doJob finishes send the final digest over SSE (or as a small redirect instruction) and replace the skeleton in the browser. Fast to implement; good for demos.
+- Stage 2 (later): add durable storage and a stable GET URL for the final digest so users can reload/bookmark/retrieve results. Delay this until you choose format, retention, and permissions.
+
+Stage‑1 caveats and recommendations (short)
+- SSE + final HTML is fine for a demo, but the final HTML can be large — consider memory and network cost. For now it’s acceptable.
+- Escape/JSON.stringify the HTML server side and parse/insert it client side to avoid XSS or broken markup.
+- Clean up eventStreams and close SSE connections once the final digest is delivered to avoid memory leaks.
+- Use an unguessable jobId and remove stored in‑memory data for the job after you send the final report (no persistence).
+- If doJob does any large synchronous CPU blocks, progress events may be delayed — prefer to yield between acts.
+
+Minimal example (stage 1)
+
+Server: publish final HTML over SSE
+````javascript
+// ...existing code...
+// publishEvent(jobId, obj) already exists
+// When job completes:
+const jobDigest = /* produced HTML string */;
+publishEvent(jobId, { type: 'done', html: jobDigest });
+// then cleanup:
+const sinks = eventStreams.get(jobId) || [];
+for (const s of sinks) { try { s.end(); } catch (e) {} }
+eventStreams.delete(jobId);
+````
+
+Client: replace skeleton with final HTML when done
+````html
+<script>
+  const es = new EventSource('/kilotest/events/${jobId}');
+  es.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'progress') {
+      // append progress message...
+    } else if (msg.type === 'done') {
+      // msg.html is the full HTML string; replace body or a container
+      document.documentElement.innerHTML = msg.html;
+      es.close();
+    } else if (msg.type === 'error') {
+      // show error
+      es.close();
+    }
+  };
+</script>
+````
+
+When to switch to Stage‑2
+- If you need reload/bookmark, multi‑tab access, or to keep reports longer than one session.
+- If jobDigest gets large enough to worry about sending via SSE or memory pressure.
+
+If you like, I can:
+- Generate the exact small patches to index.js and the result skeleton to implement Stage‑1 now, and add TODO markers for Stage‑2 storage. Which file should I patch first?
+
+jrpool: I prefer to avoid sending the digest over SSE, because the digest may become large.
+
+GitHub Copilot: GitHub Copilot
+
+Your plan is good — serve a lightweight result page skeleton immediately, stream progress via SSE, and publish a final "done" event that contains a URL the client will fetch to get the full digest. That avoids sending large HTML over SSE and keeps stage‑1 simple by storing the final digest only in ephemeral memory until the client fetches it (no durable storage).
+
+Apply the minimal edits below to your index.js to implement stage‑1:
+
+- add an in‑memory finalResults Map
+- POST /kilotest/result.html: respond immediately with a result skeleton page that opens EventSource('/kilotest/events/<jobID>') and shows a fallback link to /kilotest/result/<jobID>
+- run doJob(job, { onProgress }) in background; when done compute digest, store it in finalResults, publish a done event with a URL
+- add GET /kilotest/result/<jobID> to serve the stored digest (one‑time; deletes after serving)
+
+Patch to insert into index.js (keep other code unchanged):
+
+````javascript
+// ...existing code...
+const protocol = process.env.PROTOCOL || 'http';
+const eventStreams = new Map();
+// Add ephemeral in-memory storage for final digests (stage‑1 only)
+const finalResults = new Map();
+// ...existing code...
+
+// ...existing code inside requestHandler GET branch...
+    // Otherwise, if it is for a stream of job events:
+    else if (requestURL.startsWith('/kilotest/events/')) {
+      // Get the job ID from the URL.
+      const jobID = requestURL.split('/').pop();
+      // Set the response headers for an event stream.
+      response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      });
+      response.write('\n');
+      const sinks = eventStreams.get(jobID) || [];
+      sinks.push(response);
+      eventStreams.set(jobID, sinks);
+      // When the client disconnects:
+      request.on('close', () => {
+        // Remove the response from the list of sinks for that job ID.
+        const sinks = eventStreams.get(jobID) || [];
+        const remaining = sinks.filter(r => r !== response);
+        if (remaining.length) {
+          eventStreams.set(jobID, remaining);
+        }
+        else {
+          eventStreams.delete(jobID);
+        }
+        return;
+      });
+    }
++    // Serve the final digest for a finished job (ephemeral, stage‑1).
++    else if (requestURL.startsWith('/kilotest/result/')) {
++      const jobID = requestURL.split('/').pop();
++      const html = finalResults.get(jobID);
++      if (html) {
++        response.setHeader('Content-Type', 'text/html; charset=utf-8');
++        response.end(html);
++        // Remove stored result after first successful retrieval (stage‑1).
++        finalResults.delete(jobID);
++        return;
++      } else {
++        // Not found or already fetched
++        response.statusCode = 404;
++        response.end('Not found');
++        return;
++      }
++    }
+// ...existing code...
+````
+
+````javascript
+// ...existing code inside requestHandler POST branch...
+    if (requestURL === '/kilotest/result.html') {
+      // Get the data from it.
+      const postData = await getPostData(request);
+      const {pageWhat, pageURL} = postData;
+      // If the request is valid:
+      if (pageURL && pageURL.startsWith('http') && pageWhat) {
+        // Create a unique ID for the job.
+-        const jobID = Date.now() + Math.random().toString(36).slice(2);
+-        console.log(`Request submitted to test ${pageWhat} (${pageURL})`);
+-        // Create a target list from it.
+-        const targetList = [[pageWhat, pageURL]];
+-        // Create a batch from the target list.
+-        const jobBatch = batch('jobTarget', 'job target', targetList);
+-        // Create a script for the job.
+-        const jobScript = script('jobScript', 'job script', 'default', {
+-          type: 'tools',
+-          specs: [
+-            'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
+-          ]
+-        });
+-        // Merge the batch and the script into a job.
+-        const job = merge(jobScript, jobBatch, '')[0];
+-        // Perform the job and get the report from Testaro.
+-        const report = await doJob(job);
+-        // Score the report in place.
+-        score(scorer, report);
+-        // Digest the scored report.
+-        const jobDigest = await digest(digester, report, {
+-          title: 'Kilotest report',
+-          mainHeading: 'Kilotest report',
+-          metadataHeading: 'Test facts',
+-          testDate: new Date().toISOString(),
+-          pageID: pageWhat,
+-          pageURL,
+-          dataHeading: 'Issues reported'
+-        });
+-        // Serve the digest.
+-        response.setHeader('Content-Type', 'text/html');
+-        response.end(jobDigest);
++        const jobID = Date.now() + Math.random().toString(36).slice(2);
++        console.log(`Request submitted to test ${pageWhat} (${pageURL}) -> job ${jobID}`);
++
++        // Immediately serve a result-page skeleton that subscribes to SSE.
++        response.setHeader('Content-Type', 'text/html; charset=utf-8');
++        const skeleton = `<!doctype html>
++<html><head><meta charset="utf-8"><title>Kilotest — ${escapeHtml(pageWhat)}</title>
++<link rel="stylesheet" href="/kilotest/style.css"></head><body>
++  <h1>Testing ${escapeHtml(pageWhat)}</h1>
++  <div id="status">Starting…</div>
++  <p><a id="fallback" href="/kilotest/result/${jobID}">View final report (if available)</a></p>
++  <script>
++    (function(){
++      const status = document.getElementById('status');
++      const es = new EventSource('/kilotest/events/${jobID}');
++      es.onmessage = function(e) {
++        try {
++          const msg = JSON.parse(e.data);
++          if (msg.type === 'progress' && msg.payload) {
++            const d = document.createElement('div');
++            d.textContent = '[progress] ' + (msg.payload.actName || JSON.stringify(msg.payload));
++            status.appendChild(d);
++          } else if (msg.type === 'done' && msg.url) {
++            // fetch final digest HTML and replace the page
++            fetch(msg.url, {credentials: 'same-origin'}).then(r => r.text()).then(html => {
++              document.open();
++              document.write(html);
++              document.close();
++            }).catch(err => {
++              const e = document.createElement('div');
++              e.textContent = 'Failed to fetch final report: ' + err;
++              status.appendChild(e);
++            });
++            es.close();
++          } else if (msg.type === 'error') {
++            const e = document.createElement('div');
++            e.textContent = '[error] ' + (msg.message || 'unknown error');
++            status.appendChild(e);
++            es.close();
++          }
++        } catch (ex) { /* ignore parse errors */ }
++      };
++    })();
++  </script>
++</body></html>`;
++        response.end(skeleton);
++
++        // Start background job
++        (async () => {
++          try {
++            // build job as before
++            const targetList = [[pageWhat, pageURL]];
++            const jobBatch = batch('jobTarget', 'job target', targetList);
++            const jobScript = script('jobScript', 'job script', 'default', {
++              type: 'tools',
++              specs: [
++                'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
++              ]
++            });
++            const job = merge(jobScript, jobBatch, '')[0];
++
++            // run Testaro with in‑process progress callback
++            const report = await doJob(job, {
++              onProgress: payload => publishEvent(jobID, { type: 'progress', payload })
++            });
++
++            // score & digest
++            score(scorer, report);
++            const jobDigest = await digest(digester, report, {
++              title: 'Kilotest report',
++              mainHeading: 'Kilotest report',
++              metadataHeading: 'Test facts',
++              testDate: new Date().toISOString(),
++              pageID: pageWhat,
++              pageURL,
++              dataHeading: 'Issues reported'
++            });
++
++            // store digest in-memory for immediate fetch (stage‑1)
++            finalResults.set(jobID, jobDigest);
++            // publish done with a URL the client will fetch
++            publishEvent(jobID, { type: 'done', url: `/kilotest/result/${jobID}` });
++          }
++          catch (err) {
++            publishEvent(jobID, { type: 'error', message: err && err.message ? err.message : String(err) });
++          }
++          finally {
++            // close SSE sinks after a short delay so client has time to fetch the result
++            setTimeout(() => {
++              const sinks = eventStreams.get(jobID) || [];
++              for (const res of sinks) {
++                try { res.end(); } catch (e) {}
++              }
++              eventStreams.delete(jobID);
++            }, 2000);
++          }
++        })();
+       }
+       // Otherwise, i.e. if the request is invalid:
+       else {
+         // Report this.
+         const message = 'ERROR: invalid request';
+         console.log(message);
+         await serveError(message, response);
+       }
+     }
+````
+
+Notes
+- This stage‑1 stores the digest only in-memory (finalResults) and deletes it on first GET. Stage‑2 can replace that with durable storage and retention policy.
+- The client page fetches the final digest via the URL sent in the 'done' SSE event and replaces the page. A fallback link is present in the skeleton.
+- The server publishes only small progress objects on SSE (payloads from onProgress). The final HTML is fetched via GET to avoid sending large bodies over EventSource.
+- Keep an eye on memory if many jobs run concurrently; stage‑2 should add durable storage and retention.
+- The implementation assumes testaro/doJob accepts the opts.onProgress callback as discussed.
+
+If you want, I can prepare the matching small edits to index.html (e.g., add a submit handler to avoid full-page reload) or add a TTL cleanup for finalResults. Which would you like next?
+
+jrpool: In your above code for `requestHandler`, the `jobID` constant is declared and assigned twice.
+
+GitHub Copilot: You're right. Looking at my suggested changes, I duplicated the `jobID` creation. The code should create the `jobID` only once at the start of the POST handler for `/kilotest/result.html`.
+
+Here's the corrected POST handler section:
+
+````javascript
+  // Otherwise, if the request is a POST request:
+  else if (method === 'POST') {
+    // If the request is a job specification:
+    if (requestURL === '/kilotest/result.html') {
+      // Get the data from it.
+      const postData = await getPostData(request);
+      const {pageWhat, pageURL} = postData;
+      // If the request is valid:
+      if (pageURL && pageURL.startsWith('http') && pageWhat) {
+        // Create a unique ID for the job.
+        const jobID = Date.now() + Math.random().toString(36).slice(2);
+        console.log(`Request submitted to test ${pageWhat} (${pageURL}) -> job ${jobID}`);
+
+        // Immediately serve a result-page skeleton that subscribes to SSE
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        const skeleton = `<!doctype html>
+<html><head><meta charset="utf-8"><title>Kilotest — ${escapeHtml(pageWhat)}</title>
+<link rel="stylesheet" href="/kilotest/style.css"></head><body>
+  <h1>Testing ${escapeHtml(pageWhat)}</h1>
+  <div id="status">Starting…</div>
+  <p><a id="fallback" href="/kilotest/result/${jobID}">View final report (if available)</a></p>
+  <script>
+    (function(){
+      const status = document.getElementById('status');
+      const es = new EventSource('/kilotest/events/${jobID}');
+      es.onmessage = function(e) {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'progress' && msg.payload) {
+            const d = document.createElement('div');
+            d.textContent = '[progress] ' + (msg.payload.actName || JSON.stringify(msg.payload));
+            status.appendChild(d);
+          } else if (msg.type === 'done' && msg.url) {
+            // fetch final digest HTML and replace the page
+            fetch(msg.url, {credentials: 'same-origin'}).then(r => r.text()).then(html => {
+              document.open();
+              document.write(html);
+              document.close();
+            }).catch(err => {
+              const e = document.createElement('div');
+              e.textContent = 'Failed to fetch final report: ' + err;
+              status.appendChild(e);
+            });
+            es.close();
+          } else if (msg.type === 'error') {
+            const e = document.createElement('div');
+            e.textContent = '[error] ' + (msg.message || 'unknown error');
+            status.appendChild(e);
+            es.close();
+          }
+        } catch (ex) { /* ignore parse errors */ }
+      };
+    })();
+  </script>
+</body></html>`;
+        response.end(skeleton);
+
+        // Start background job
+        (async () => {
+          try {
+            // build job as before
+            const targetList = [[pageWhat, pageURL]];
+            const jobBatch = batch('jobTarget', 'job target', targetList);
+            const jobScript = script('jobScript', 'job script', 'default', {
+              type: 'tools',
+              specs: [
+                'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
+              ]
+            });
+            const job = merge(jobScript, jobBatch, '')[0];
+
+            // run Testaro with in-process progress callback
+            const report = await doJob(job, {
+              onProgress: payload => publishEvent(jobID, { type: 'progress', payload })
+            });
+
+            // score & digest
+            score(scorer, report);
+            const jobDigest = await digest(digester, report, {
+              title: 'Kilotest report',
+              mainHeading: 'Kilotest report',
+              metadataHeading: 'Test facts',
+              testDate: new Date().toISOString(),
+              pageID: pageWhat,
+              pageURL,
+              dataHeading: 'Issues reported'
+            });
+
+            // store digest in results Map
+            results.set(jobID, jobDigest);
+            // publish done with URL for client to fetch
+            publishEvent(jobID, { type: 'done', url: `/kilotest/result/${jobID}` });
+          }
+          catch (err) {
+            publishEvent(jobID, { type: 'error', message: err && err.message ? err.message : String(err) });
+          }
+          finally {
+            // close SSE sinks after a delay so client has time to fetch
+            setTimeout(() => {
+              const sinks = eventStreams.get(jobID) || [];
+              for (const res of sinks) {
+                try { res.end(); } catch (e) {}
+              }
+              eventStreams.delete(jobID);
+            }, 2000);
+          }
+        })();
+      }
+      // Otherwise, i.e. if the request is invalid:
+      else {
+        // Report this.
+        const message = 'ERROR: invalid request';
+        console.log(message);
+        await serveError(message, response);
+      }
+    }
+  }
+````
+
+Note that I also:
+1. Used your existing results Map instead of creating a new `finalResults` Map
+2. Added a clearer job ID logging message
+3. Fixed the formatting for better readability
+
+Would you like me to add the `escapeHtml` helper function that's used in the skeleton HTML?
+
+jrpool: The line `<p><a id="fallback" href="/kilotest/result/${jobID}">View final report (if available)</a></p>` seems premature at this stage, since the link will not work until storage is introduced in stage 2.
+
+GitHub Copilot: Yes, we should remove the fallback link in stage 1 since we're not implementing persistent storage yet. The progress page should focus on showing real-time updates and transitioning to the final report when it's ready.
+
+Here's the corrected progress.html:
+
+````html
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="report,accessibility,a11y">
+    <title>Progress | Kilotest</title>
+    <link rel="stylesheet" href="kilotest/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Kilotest progress</h1>
+      <div id="status">Starting…</div>
+      <script>
+        (function(){
+          const status = document.getElementById('status');
+          const es = new EventSource('/kilotest/events/${jobID}');
+          es.onmessage = function(e) {
+            try {
+              const msg = JSON.parse(e.data);
+              if (msg.type === 'progress' && msg.payload) {
+                const d = document.createElement('div');
+                d.textContent = '[progress] ' + (msg.payload.actName || JSON.stringify(msg.payload));
+                status.appendChild(d);
+              } else if (msg.type === 'done' && msg.url) {
+                // fetch final digest HTML and replace the page
+                fetch(msg.url, {credentials: 'same-origin'}).then(r => r.text()).then(html => {
+                  document.open();
+                  document.write(html);
+                  document.close();
+                }).catch(err => {
+                  const e = document.createElement('div');
+                  e.textContent = 'Failed to fetch final report: ' + err;
+                  status.appendChild(e);
+                });
+                es.close();
+              } else if (msg.type === 'error') {
+                const e = document.createElement('div');
+                e.textContent = '[error] ' + (msg.message || 'unknown error');
+                status.appendChild(e);
+                es.close();
+              }
+            } catch (ex) { /* ignore parse errors */ }
+          };
+        })();
+      </script>
+    </main>
+  </body>
+</html>
+````
+
+The fallback link can be added in stage 2 when we implement persistent storage and proper result retrieval endpoints.
+
+jrpool: I believe I have implemented this solution. I am now testing it as a user. When I execute `node index` in the `kilotest` root directory, I get the expected `listening` message. Then, when I navigate in a browser to `localhost:3000/kilotest`, the browser console reports this error:
+`kilotest:1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.`
+
+GitHub Copilot: GitHub Copilot
+
+The error message `Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.` typically indicates that there is an issue with a browser extension trying to communicate with a background script or content script that isn't available. This is not directly related to your server code but rather to the browser environment.
+
+Here are a few steps to troubleshoot and resolve the issue:
+
+1. **Disable Extensions**: Temporarily disable any browser extensions, especially those related to content scripts or developer tools, to see if the error persists. Sometimes, extensions can interfere with normal page operations.
+
+2. **Check Console for Other Errors**: Look for any other errors in the console that might provide more context. The error you mentioned might be a symptom of another underlying issue.
+
+3. **Inspect Network Requests**: Open the Network tab in the browser's developer tools and check if the requests to your server (e.g., fetching the style.css, index.html, or any other resources) are successful. Look for any 404 or other error responses.
+
+4. **Verify Server Response**: Ensure that your server is correctly serving the index.html file when you navigate to `/kilotest`. You can test this by directly accessing `http://localhost:3000/kilotest/index.html` in your browser.
+
+5. **Check EventSource URL**: If your progress.html or any other script is trying to establish an EventSource connection, ensure that the URL is correct and that the server is set up to handle that endpoint.
+
+6. **Browser Compatibility**: Ensure that you are using a compatible browser version. Sometimes, certain features or APIs may behave differently across browsers.
+
+7. **Clear Cache**: Clear your browser cache or try accessing the page in an incognito window to rule out caching issues.
+
+If you've checked all of the above and the issue persists, please provide any additional context or error messages from the console or network tab, and I can help you further troubleshoot the problem.
+
+jrpool: The error message points to line 1 of `index.html`, which is `<!DOCTYPE html>`, in the `Sources` panel of Developer Tools. That line is tagged with a red disk with white `X` on it, and the tooltip of that tag is the same error message.
+
+GitHub Copilot: GitHub Copilot
+
+This error is **not caused by your HTML or Kilotest code**. The red X on line 1 with the message
+`Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.`
+is almost always from a browser extension (often a Chrome extension like Grammarly, AdBlock, or a developer tool) trying to inject a content script or connect to a background script, but failing because your page does not support it.
+
+**What you should do:**
+- Ignore this error for your Kilotest app—it does not affect your code or its execution.
+- If you want to confirm, disable all browser extensions and reload the page. The error should disappear.
+- Your Kilotest HTML and JS are not the cause; the page will work as intended.
+
+**Summary:**
+You can safely proceed with testing Kilotest. This is a browser extension issue, not a bug in your project.
+
+jrpool: I have uninstalled the extension that was at fault.
+I am continuing to test.
+The home page containing the form loads successfully.
+When I submit the completed form, I get a page with the `h1` “Kilotest progress”, as expected.
+The Kilotest console shows the logs posted by Testaro as `doJob` proceeds.
+However, I find that the `jobOpts` object defined on line 219 of `index.js` is invalid. When it is passed on line 226 to `doJob`, the `jobOpts` object is interpreted as having only one property `temp`. So it seems that the value of the `onProgress` property is invalid, but I do not notice any invalidity in it.
+
+GitHub Copilot: Enable Claude Sonnet 4.5 for all clients
+[object Object]
+
+jrpool: @GitHubCopilot Enable: "Enable Claude Sonnet 4.5 for all clients"
+
+GitHub Copilot: I need to see lines 219-226 of your index.js to diagnose the issue with `jobOpts`. Can you share that section of code?
+
+The symptoms suggest that `onProgress` might be undefined or incorrectly defined, causing `doJob` to only see the `temp` property. Common causes:
+- `onProgress` is defined but evaluates to `undefined`
+- Syntax error in the object literal
+- `publishEvent` is not in scope or not defined at that point
+
+Please share the code around lines 219-226 so I can identify the exact issue.
+
+jrpool:         const jobOpts = {
+          temp: 'Temporary',
+          onProgress: payload => {
+            console.log(`About to publish ${jobID} progress:\n${JSON.stringify(payload)}`);
+            publishEvent(jobID, {type: 'progress', payload});
+          }
+        };
+        const report = await doJob(job, jobOpts);
+
+
+GitHub Copilot: Enable Claude Sonnet 4.5 for all clients
+[object Object]
+
+jrpool: @GitHubCopilot Enable: "Enable Claude Sonnet 4.5 for all clients"
+
+GitHub Copilot: The `jobOpts` object looks correct. The issue is likely that `doJob` in testaro is not correctly recognizing the `onProgress` property. Let me check a few possibilities:
+
+1. **Verify testaro modification**: Ensure your local testaro has the changes we discussed. Check that `doJob` accepts an `opts` parameter and destructures it correctly.
+
+2. **Add debug logging** to see what `doJob` receives:
+
+````javascript
+const jobOpts = {
+  temp: 'Temporary',
+  onProgress: payload => {
+    console.log(`About to publish ${jobID} progress:\n${JSON.stringify(payload)}`);
+    publishEvent(jobID, {type: 'progress', payload});
+  }
+};
+console.log('jobOpts keys:', Object.keys(jobOpts));
+console.log('onProgress type:', typeof jobOpts.onProgress);
+console.log('onProgress is function:', typeof jobOpts.onProgress === 'function');
+const report = await doJob(job, jobOpts);
+````
+
+3. **Check testaro's doJob signature**: In your local run.js (or wherever testaro is), verify the export line looks like:
+
+````javascript
+exports.doJob = async (job, opts = {}) => {
+  const { onProgress, signal } = opts;
+  console.log('doJob received opts:', Object.keys(opts));
+  console.log('onProgress type:', typeof onProgress);
+  // ...
+}
+````
+
+Can you add those debug logs and share what they output? Also, confirm whether you modified testaro in node_modules or if you have a local clone/link of testaro?
+
+jrpool: I already did some debugging in the `node_modules` copy of `run.js` in Testaro. This is what this temporary `doJob` starts with:
+```
+exports.doJob = async (job, opts = {}) => {
+  console.log('Starting doJob');
+  console.log(`Its opts argument is:\n${JSON.stringify(opts)}`);
+```
+The log from that is:
+```
+Starting doJob
+Its opts argument is:
+{"temp":"Temporary"}
+```
+
+GitHub Copilot: The issue is clear: the `onProgress` function property is not being serialized by `JSON.stringify`. Functions cannot be serialized to JSON, so when you log `JSON.stringify(opts)`, the `onProgress` function is omitted.
+
+However, the `onProgress` function should still be present in the actual `opts` object. Let's verify this with better debugging:
+
+````javascript
+exports.doJob = async (job, opts = {}) => {
+  console.log('Starting doJob');
+  console.log('opts keys:', Object.keys(opts));
+  console.log('onProgress type:', typeof opts.onProgress);
+  console.log('onProgress is function:', typeof opts.onProgress === 'function');
+  const {onProgress, signal} = opts;
+  console.log('Destructured onProgress type:', typeof onProgress);
+  // ...existing code...
+````
+
+Also verify in your index.js that `jobOpts` is being passed correctly:
+
+````javascript
+const jobOpts = {
+  temp: 'Temporary',
+  onProgress: payload => {
+    console.log(`About to publish ${jobID} progress:\n${JSON.stringify(payload)}`);
+    publishEvent(jobID, {type: 'progress', payload});
+  }
+};
+console.log('Before doJob - jobOpts keys:', Object.keys(jobOpts));
+console.log('Before doJob - onProgress type:', typeof jobOpts.onProgress);
+const report = await doJob(job, jobOpts);
+````
+
+The `JSON.stringify` not showing the function is expected behavior—but the function should still be in the object. The debug logs above will confirm whether `onProgress` is actually being passed and received correctly.
+
+jrpool: The browser correctly displays all payloads when the `publishEvent` function in `index.js` is called. This is true locally. However, I have deployed this repository on a Vultr VPS, and there the behavior differs. When the server is the VPS, all the expected events are published by `publishEvent`, but not all the events are displayed by the browser. The first two events, the job start and the start of the `alfa` tool, are not displayed. All other events are displayed. When I log the `eventSource.onmessage` method in the `progress.html` script, logs for those two events are missing. I notice in observing the `publishEvent` logging that the second event appears immediately after the first. This makes me wonder whether SSE events can be subject to collisions or race conditions when the second begins before the first has ended.
+
+GitHub Copilot: Yes, SSE events can experience issues with rapid successive writes, especially when the connection is still being established or when events are sent before the client is fully ready to receive them.
+
+**Common causes:**
+
+1. **Connection timing**: The first event(s) may be sent before the EventSource connection is fully established on the client side.
+
+2. **Buffering**: Some reverse proxies (like nginx) or network middleware buffer SSE streams, which can drop or delay initial events.
+
+3. **Race condition**: If events are published immediately after responding with the HTML skeleton, the browser may not have parsed the HTML and established the EventSource connection yet.
+
+**Solutions to try:**
+
+1. **Add a small delay before the first event:**
+
+````javascript
+// In index.js, after serving the skeleton and starting the background job:
+(async () => {
+  try {
+    // Give the client time to establish the EventSource connection
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    publishEvent(jobID, {eventType: 'jobStart'});
+
+    const report = await doJob(job, {
+      onProgress: payload => {
+        publishEvent(jobID, {eventType: 'progress', payload});
+      }
+    });
+    // ...rest of code...
+  }
+})();
+````
+
+2. **Add connection padding and keepalive:**
+
+````javascript
+// In the SSE endpoint handler:
+if (requestURL.startsWith('/kilotest/events/')) {
+  const jobID = requestURL.split('/').pop();
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no'  // Disable nginx buffering
+  });
+  // Send initial padding and comment to establish the stream
+  response.write(':' + ' '.repeat(2048) + '\n\n');
+  response.write(': ping\n\n');
+
+  const sinks = eventStreams.get(jobID) || [];
+  sinks.push(response);
+  eventStreams.set(jobID, sinks);
+  // ...rest of handler...
+}
+````
+
+3. **Replay recent events on connection:**
+
+````javascript
+// Store recent events per job
+const recentEvents = new Map(); // jobID -> [events]
+
+const publishEvent = (jobID, evt) => {
+  // Store event for replay
+  if (!recentEvents.has(jobID)) recentEvents.set(jobID, []);
+  recentEvents.get(jobID).push(evt);
+
+  const sinks = eventStreams.get(jobID) || [];
+  const payload = `data: ${JSON.stringify(evt)}\n\n`;
+  for (const res of sinks) {
+    try { res.write(payload); }
+    catch (e) { /* ignore closed connections */ }
+  }
+};
+
+// In SSE handler, after adding the sink:
+sinks.push(response);
+eventStreams.set(jobID, sinks);
+
+// Replay recent events for this new connection
+const events = recentEvents.get(jobID) || [];
+for (const evt of events) {
+  try {
+    response.write(`data: ${JSON.stringify(evt)}\n\n`);
+  } catch (e) {}
+}
+````
+
+The most robust solution is **#3 (event replay)** combined with the padding from **#2**. This ensures that even if a client connects late or reconnects, they receive all events.
+
+Would you like me to show the complete implementation of the event replay pattern?
+
+jrpool: Before implementing any solution, I want to diagnose the cause. That will allow me to know which solution is appropriate. If it is useful, I can temporarily insert a delay where there is a suspected lack of readiness.
+
+GitHub Copilot: Good approach. Let's add diagnostic logging to pinpoint the timing issue:
+
+**1. Add timing logs to track event publishing:**
+
+````javascript
+// In index.js, modify publishEvent to log timing:
+const publishEvent = (jobID, event) => {
+  const timestamp = Date.now();
+  const sinks = eventStreams.get(jobID) || [];
+  console.log(`[${timestamp}] Publishing to job ${jobID}: ${event.eventType}, sinks: ${sinks.length}`);
+  const payload = `data: ${JSON.stringify(event)}\n\n`;
+  for (const response of sinks) {
+    try {
+      response.write(payload);
+      console.log(`[${timestamp}] Successfully wrote to sink`);
+    }
+    catch (error) {
+      console.log(`[${timestamp}] Failed to write to sink:`, error.message);
+    }
+  };
+};
+````
+
+**2. Add logging when EventSource connection is established:**
+
+````javascript
+// In the SSE endpoint handler, after adding the sink:
+else if (requestURL.startsWith('/kilotest/events/')) {
+  const jobID = requestURL.split('/').pop();
+  const timestamp = Date.now();
+  console.log(`[${timestamp}] EventSource connected for job ${jobID}`);
+
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  response.write('\n');
+  const sinks = eventStreams.get(jobID) || [];
+  sinks.push(response);
+  eventStreams.set(jobID, sinks);
+  console.log(`[${timestamp}] Added sink for job ${jobID}, total sinks: ${sinks.length}`);
+  // ...rest of handler
+}
+````
+
+**3. Add client-side logging in progress.html:**
+
+````html
+<script>
+  const jobID = '__jobID__';
+  const connectTime = Date.now();
+  console.log(`[${connectTime}] Creating EventSource for job ${jobID}`);
+
+  const eventSource = new EventSource(`/kilotest/events/${jobID}`);
+
+  eventSource.onopen = () => {
+    const openTime = Date.now();
+    console.log(`[${openTime}] EventSource opened (${openTime - connectTime}ms after creation)`);
+  };
+
+  eventSource.onmessage = event => {
+    const receiveTime = Date.now();
+    console.log(`[${receiveTime}] Received event (${receiveTime - connectTime}ms after creation):`, event.data);
+    // ...rest of handler
+  };
+
+  eventSource.onerror = (error) => {
+    console.log(`[${Date.now()}] EventSource error:`, error);
+  };
+</script>
+````
+
+**4. Add a small delay before the first publishEvent (temporary diagnostic):**
+
+````javascript
+// After serving progressPage:
+response.end(progressPage);
+
+// Add diagnostic delay
+console.log(`[${Date.now()}] Waiting 200ms before publishing jobStart`);
+await new Promise(resolve => setTimeout(resolve, 200));
+
+// Notify the client that the job has started.
+publishEvent(jobID, {eventType: 'jobStart', payload: {}});
+````
+
+With these logs, compare the timestamps:
+- When does the client create EventSource?
+- When does EventSource.onopen fire?
+- When does the server receive the `/kilotest/events/` connection?
+- When does the server publish jobStart?
+- When does the client receive the first event?
+
+This will tell us if the issue is:
+- **Race condition**: Server publishes before client connects (timestamps will show publish before connection)
+- **Network/buffering**: Client connects but events aren't received (connection established but no onmessage)
+- **EventSource lifecycle**: onopen hasn't fired when events arrive
+
+Share the timestamp logs from both server console and browser console, and we'll know exactly which solution to apply.
+
+jrpool: It will be easier for me to do this incrementally, starting with the suspected cause that seems most likely.
+
+GitHub Copilot: Good approach. The most likely cause is a **race condition** where events are published before the EventSource connection is fully established.
+
+Let's test this hypothesis with a single diagnostic change:
+
+**Add a delay before the first publishEvent:**
+
+````javascript
+// In index.js, after serving the progress page (around line 204):
+response.end(progressPage);
+
+// Add diagnostic delay to test race condition hypothesis
+console.log(`[${Date.now()}] Served progress page for job ${jobID}`);
+console.log(`[${Date.now()}] Waiting 500ms before publishing jobStart`);
+await new Promise(resolve => setTimeout(resolve, 500));
+console.log(`[${Date.now()}] Publishing jobStart event`);
+
+// Notify the client that the job has started.
+publishEvent(jobID, {eventType: 'jobStart', payload: {}});
+````
+
+Test this on your VPS and observe:
+1. Do the first two events (jobStart and alfa) now appear in the browser?
+2. Check the server console for the timing logs
+
+If adding this delay fixes the issue, it confirms that events were being published before the EventSource connection was ready. Then we can implement a proper solution (like event replay or connection acknowledgment) instead of relying on delays.
+
+What happens when you test with the 500ms delay?
+
+jrpool: I increased the delay to 2000ms. The delay corrected the defect. Your hypothesis seems to have been correct. Is it necessary to guess what the right delay is, or is there a simple way to check for the completion of the EventSource connection?
+
+GitHub Copilot: GitHub Copilot
+
+You don’t need to guess a delay. Start the job only after the SSE connection is established. That removes the race entirely and is simple to implement.
+
+What to change
+- When you serve the progress page (POST), don’t start doJob yet. Store the job params in a pendingJobs map.
+- In the SSE GET handler (/kilotest/events/:jobId), after you add the response sink, start the job if it hasn’t started yet. Also send no-buffer headers and a small padding to avoid proxy buffering.
+
+Patch (adds pending/start maps, a startJob helper, moves job start to SSE connect, adds anti-buffering/padding)
+
+````javascript
+// ...existing code...
+const protocol = process.env.PROTOCOL || 'http';
+const eventStreams = new Map();
+const results = new Map();
+// Add: pending + started trackers
+const pendingJobs = new Map();   // jobID -> { pageWhat, pageURL }
+const startedJobs = new Set();   // jobIDs already started
+// ...existing code...
+
+// Add a helper to start a job when ready (called from SSE handler)
+async function startJob(jobID, pageWhat, pageURL) {
+  try {
+    // Create target list, batch, and script
+    const targetList = [[pageWhat, pageURL]];
+    const jobBatch = batch('jobTarget', 'job target', targetList);
+    const jobScript = script('jobScript', 'job script', 'default', {
+      type: 'tools',
+      specs: ['alfa','aslint','axe','ed11y','htmlcs','ibm','nuVal','qualWeb','testaro','wax']
+    });
+    jobScript.observe = true;
+
+    const job = merge(jobScript, jobBatch, '')[0];
+
+    // Publish an explicit job start (now that the sink exists)
+    publishEvent(jobID, { eventType: 'jobStart', payload: {} });
+
+    const jobOpts = {
+      onProgress: payload => {
+        publishEvent(jobID, { eventType: 'progress', payload });
+      }
+    };
+
+    const report = await doJob(job, jobOpts);
+
+    // Score and digest
+    score(scorer, report);
+    const jobDigest = await digest(digester, report, {
+      title: 'Kilotest report',
+      mainHeading: 'Kilotest report',
+      metadataHeading: 'Test facts',
+      jobID,
+      testDate: new Date().toISOString().slice(0, 10),
+      pageID: pageWhat,
+      pageURL,
+      issueCount: Object.keys(report.score.details.issue).length,
+      elapsedSeconds: report.jobData.elapsedSeconds,
+      report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    });
+
+    // Store digest in-memory and notify client to fetch it
+    results.set(jobID, jobDigest);
+    publishEvent(jobID, { eventType: 'digestDone', payload: { url: `/kilotest/results/${jobID}` } });
+
+    // Cleanup SSE sinks shortly after done so the client can fetch
+    setTimeout(() => {
+      const sinks = eventStreams.get(jobID) || [];
+      for (const res of sinks) { try { res.end(); } catch {} }
+      eventStreams.delete(jobID);
+    }, 2000);
+  } catch (err) {
+    publishEvent(jobID, { eventType: 'error', message: err && err.message ? err.message : String(err) });
+  }
+}
+// ...existing code...
+
+// In requestHandler, GET branch -> SSE endpoint
+// ...existing code...
+    else if (requestURL.startsWith('/kilotest/events/')) {
+      const jobID = requestURL.split('/').pop();
+      // SSE headers (disable proxy buffering if present)
+      response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      });
+      // Initial padding/comment improves flush behavior through some proxies
+      response.write(':' + ' '.repeat(2048) + '\n\n');
+
+      const sinks = eventStreams.get(jobID) || [];
+      sinks.push(response);
+      eventStreams.set(jobID, sinks);
+
+      // If this job is pending and not yet started, start it now
+      if (!startedJobs.has(jobID) && pendingJobs.has(jobID)) {
+        startedJobs.add(jobID);
+        const { pageWhat, pageURL } = pendingJobs.get(jobID);
+        pendingJobs.delete(jobID);
+        // Start asynchronously; no arbitrary delay needed
+        startJob(jobID, pageWhat, pageURL);
+      }
+
+      request.on('close', () => {
+        const sinks = eventStreams.get(jobID) || [];
+        const remaining = sinks.filter(r => r !== response);
+        if (remaining.length) eventStreams.set(jobID, remaining);
+        else eventStreams.delete(jobID);
+        return;
+      });
+    }
+// ...existing code...
+
+// In requestHandler, POST branch -> serve progress page but DO NOT start job yet
+// ...existing code...
+    if (requestURL === '/kilotest/progress.html') {
+      const postData = await getPostData(request);
+      const {pageWhat, pageURL} = postData;
+      if (pageURL && pageURL.startsWith('http') && pageWhat) {
+        const jobID = Date.now().toString(36).slice(2, -1);
+        console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
+
+        // Stash job params; SSE connect will trigger start
+        pendingJobs.set(jobID, { pageWhat, pageURL });
+
+        // Serve the progress page
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        let progressPage = await fs.readFile('progress.html', 'utf8');
+        progressPage = progressPage.replace(/__jobID__/g, jobID);
+        response.end(progressPage);
+        // Do not publish events or start job here anymore
+      }
+      else {
+        const message = 'ERROR: invalid request';
+        console.log(message);
+        await serveError(message, response);
+      }
+    }
+// ...existing code...
+````
+
+Why this fixes your VPS issue
+- No events are sent until the SSE request arrives and a sink is registered, so the first events can’t be missed due to client not yet connected.
+- The X-Accel-Buffering header plus initial padding reduce proxy buffering problems that are common on VPS setups.
+- No arbitrary sleeps; it’s event-driven and deterministic.
+
+Optional
+- Add a small ping every 15–30s to keep the connection alive on some proxies:
+  response.write(': ping\n\n') inside a setInterval, and clear it on request 'close'.
+
+Let me know if you want me to also update progress.html to log EventSource.onopen and show the jobID for easier debugging.
+
+jrpool: I am going to save this advice for later implementation, because my immediate goal is to get a demo ready, up to 2 seconds of delay will not interfere with that, and an occasional loss of initial event messages will not be significant.
+
+GitHub Copilot: GitHub Copilot
+
+Sounds good. To keep your demo simple but avoid guessing a delay, you can “wait until an SSE sink exists (or timeout after 2s)” before sending the first events. Also add anti-buffering headers and a ping to help on the VPS. Minimal patch:
+
+````javascript
+// ...existing code...
+const eventStreams = new Map();
+const results = new Map();
+// ...existing code...
+
+// Small helpers
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function waitForSSESink(jobID, timeoutMs = 2000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const sinks = eventStreams.get(jobID) || [];
+    if (sinks.length) return true;
+    await wait(50);
+  }
+  return false;
+}
+// ...existing code...
+
+// Inside GET handler (SSE endpoint)
+else if (requestURL.startsWith('/kilotest/events/')) {
+  const jobID = requestURL.split('/').pop();
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no' // help behind nginx/proxies
+  });
+  // Initial padding to encourage flush through proxies
+  response.write(':' + ' '.repeat(2048) + '\n\n');
+
+  const sinks = eventStreams.get(jobID) || [];
+  sinks.push(response);
+  eventStreams.set(jobID, sinks);
+
+  // Keepalive ping (optional, helps some proxies)
+  const ping = setInterval(() => {
+    try { response.write(': ping\n\n'); } catch {}
+  }, 30000);
+
+  request.on('close', () => {
+    clearInterval(ping);
+    const sinks = eventStreams.get(jobID) || [];
+    const remaining = sinks.filter(r => r !== response);
+    if (remaining.length) eventStreams.set(jobID, remaining);
+    else eventStreams.delete(jobID);
+    return;
+  });
+}
+// ...existing code...
+
+// Inside POST /kilotest/progress.html, after serving progress page
+response.end(progressPage);
+console.log(`[${Date.now()}] Served progress page for job ${jobID}`);
+
+// Wait until a client subscribes (or 2s max), then publish first event
+console.log(`[${Date.now()}] Waiting for SSE subscription (up to 2000ms)`);
+await waitForSSESink(jobID, 2000);
+console.log(`[${Date.now()}] Publishing jobStart event`);
+publishEvent(jobID, {eventType: 'jobStart', payload: {}});
+// ...existing code continues (build job, run doJob, publish progress/done)...
+````
+
+This keeps your current stage-1 design, avoids missing the first events without a hardcoded sleep, and improves reliability on the VPS.
+
+jrpool: I am going to save this advice, too, for the same reasons.
+
+GitHub Copilot: GitHub Copilot
+
+Makes sense. For the demo, keep your 2s delay. Two tiny, low‑risk tweaks will improve reliability on the VPS without changing the flow:
+
+- Disable proxy buffering and send initial padding on the SSE response.
+- Add a periodic ping to keep the connection alive.
+
+Patch:
+
+````javascript
+// ...existing code...
+    else if (requestURL.startsWith('/kilotest/events/')) {
+      const jobID = requestURL.split('/').pop();
+      response.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no' // helps behind nginx/proxies
+      });
+      // Initial padding/comments improve flush through some proxies
+      response.write(':' + ' '.repeat(2048) + '\n\n');
+
+      const sinks = eventStreams.get(jobID) || [];
+      sinks.push(response);
+      eventStreams.set(jobID, sinks);
+
++      // Keepalive ping (cleared on close)
++      const ping = setInterval(() => {
++        try { response.write(': ping\n\n'); } catch {}
++      }, 30000);
+
+      request.on('close', () => {
++        clearInterval(ping);
+        const sinks = eventStreams.get(jobID) || [];
+        const remaining = sinks.filter(r => r !== response);
+        if (remaining.length) {
+          eventStreams.set(jobID, remaining);
+        }
+        else {
+          eventStreams.delete(jobID);
+        }
+        return;
+      });
+    }
+// ...existing code...
+````
+
+Optional (still minimal): after publishing digestDone, end SSE sinks after a short delay so the client can fetch results.
+
+````javascript
+// ...after publishEvent(jobID, { eventType: 'digestDone', payload: { url: `/kilotest/results/${jobID}` } });
+setTimeout(() => {
+  const sinks = eventStreams.get(jobID) || [];
+  for (const res of sinks) { try { res.end(); } catch {} }
+  eventStreams.delete(jobID);
+}, 2000);
+````
+
+These changes avoid guessing longer delays while keeping your current stage-1 architecture intact.
+
+jrpool: I am going to save this advice, too, for the same reasons. The demo can be a bit flaky.
+
+GitHub Copilot: GitHub Copilot
+
+Two tiny, low-risk tweaks to reduce flakiness without changing your flow:
+
+- Avoid proxy buffering and help early flush on VPS.
+- Prevent a race where the client fetches the result before it’s stored.
+
+````javascript
+// ...existing code...
+else if (requestURL.startsWith('/kilotest/events/')) {
+  const jobID = requestURL.split('/').pop();
+  response.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no' // help behind nginx/proxies
+  });
+  // encourage proxies to flush early
+  response.write(':' + ' '.repeat(2048) + '\n\n');
+// ...existing code...
+  const sinks = eventStreams.get(jobID) || [];
+  sinks.push(response);
+  eventStreams.set(jobID, sinks);
+
+  // optional keepalive ping
+  const ping = setInterval(() => {
+    try { response.write(': ping\n\n'); } catch {}
+  }, 30000);
+
+  request.on('close', () => {
+    clearInterval(ping);
+    const sinks = eventStreams.get(jobID) || [];
+    const remaining = sinks.filter(r => r !== response);
+    if (remaining.length) {
+      eventStreams.set(jobID, remaining);
+    }
+    else {
+      eventStreams.delete(jobID);
+    }
+    return;
+  });
+}
+// ...existing code...
+````
+
+````javascript
+// ...existing code...
+// Tell the client to retrieve the digest.
+// (store first, then notify to avoid a race)
+-        publishEvent(jobID, {
+-          eventType: 'digestDone',
+-          payload: {url: `/kilotest/results/${jobID}`}
+-        });
+-        // Store the digest HTML in memory for retrieval.
+-        results.set(jobID, jobDigest);
++        // Store the digest HTML in memory for retrieval.
++        results.set(jobID, jobDigest);
++        // Now notify client; URL will be ready when it fetches.
++        publishEvent(jobID, {
++          eventType: 'digestDone',
++          payload: {url: `/kilotest/results/${jobID}`}
++        });
+// ...existing code...
+````
+
+These changes:
+- Reduce chances of missing the first events on the VPS.
+- Eliminate the possible 404 on the final fetch due to ordering.
+
+jrpool: Same response as before. Too much work and risk for the immediate benefit.
+
+GitHub Copilot: GitHub Copilot
+
+Understood. Keep the simple demo with a fixed delay.
+
+One tiny, low-risk improvement: make the delay configurable via an env var so you can tune it on the VPS without code changes.
+
+````javascript
+// ...existing code...
+const protocol = process.env.PROTOCOL || 'http';
+const eventStreams = new Map();
+const results = new Map();
+// Make demo SSE delay configurable
+const DEMO_SSE_DELAY_MS = parseInt(process.env.DEMO_SSE_DELAY_MS || '2000', 10);
+// ...existing code...
+        response.end(progressPage);
+        console.log(`[${Date.now()}] Served progress page for job ${jobID}`);
+-        console.log(`[${Date.now()}] Waiting 2000ms before publishing jobStart`);
+-        await new Promise(resolve => setTimeout(resolve, 2000));
++        console.log(`[${Date.now()}] Waiting ${DEMO_SSE_DELAY_MS}ms before publishing jobStart`);
++        await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY_MS));
+        console.log(`[${Date.now()}] Publishing jobStart event`);
+        // Notify the client that the job has started.
+        publishEvent(jobID, {eventType: 'jobStart', payload: {}});
+// ...existing code...
+````
+
+You can run on Mac:
+- DEMO_SSE_DELAY_MS=1500 node index
+
+This keeps the current flow and lets you tweak reliability quickly.
+
+jrpool: OK, I shall do that.
+
+GitHub Copilot: GitHub Copilot
+
+Looks good for a demo. Two small, low‑risk fixes:
+
+1) Store the digest before notifying the client (avoids a race where the client fetches before results.set).
+2) Pass an object to serveError in the invalid POST path (serveError expects error.message).
+
+Suggested edits:
+
+````javascript
+// ...existing code...
+        // Digest the scored report.
+        const jobDigest = await digest(digester, report, {
+          title: 'Kilotest report',
+          mainHeading: 'Kilotest report',
+          metadataHeading: 'Test facts',
+          jobID,
+          testDate: new Date().toISOString().slice(0, 10),
+          pageID: pageWhat,
+          pageURL,
+          issueCount: Object.keys(report.score.details.issue).length,
+          elapsedSeconds: report.jobData.elapsedSeconds,
+          report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        });
+-        // Tell the client to retrieve the digest.
+-        publishEvent(jobID, {
+-          eventType: 'digestDone',
+-          payload: {url: `/kilotest/results/${jobID}`}
+-        });
+-        // Store the digest HTML in memory for retrieval.
+-        results.set(jobID, jobDigest);
++        // Store first, then notify (prevents 404 if client fetches immediately).
++        results.set(jobID, jobDigest);
++        publishEvent(jobID, {
++          eventType: 'digestDone',
++          payload: {url: `/kilotest/results/${jobID}`}
++        });
++        // Optional: close SSE after a short delay
++        // setTimeout(() => {
++        //   const sinks = eventStreams.get(jobID) || [];
++        //   for (const res of sinks) { try { res.end(); } catch {} }
++        //   eventStreams.delete(jobID);
++        // }, 2000);
+// ...existing code...
+      }
+      // Otherwise, i.e. if the request is invalid:
+      else {
+        // Report this.
+-        const message = 'ERROR: invalid request';
+-        console.log(message);
+-        await serveError(message, response);
++        const error = {message: 'ERROR: invalid request'};
++        console.log(error.message);
++        await serveError(error, response);
+      }
+// ...existing code...
+````
+
+Optional (later): wrap doJob/score/digest in a try/catch and publish an error event if something throws. Also consider ending SSE sinks after done to avoid lingering connections.
+
+Question: does your progress.html include the EventSource client code with the __jobID__ placeholder? The version I saw was a minimal template without the script. If you want, I can provide a tiny script block to drop in.
+
+jrpool: `progress.html` is now in the context.
+
+GitHub Copilot: GitHub Copilot
+
+You have two small issues in progress.html:
+- The CSS link should point to /kilotest/style.css (your server serves that path).
+- The error handler references msg which is undefined; use eventData.message.
+
+Here’s a minimal fix.
+
+````html
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="report,accessibility,a11y">
+    <title>Progress | Kilotest</title>
+    <link rel="stylesheet" href="/kilotest/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Kilotest progress</h1>
+      <div id="status">
+        <p>This is job __jobID__</p>
+        <p>Testing is starting now</p>
+      </div>
+      <script>
+        (function(){
+          const statusDiv = document.getElementById('status');
+          const eventSource = new EventSource('/kilotest/events/__jobID__');
+          eventSource.onmessage = event => {
+            try {
+              const eventData = JSON.parse(event.data);
+              const { eventType, payload } = eventData;
+
+              if (eventType === 'jobStart') {
+                const startedPar = document.createElement('p');
+                startedPar.textContent = 'Testing started';
+                statusDiv.appendChild(startedPar);
+              }
+              else if (eventType === 'progress' && payload) {
+                const progressPar = document.createElement('p');
+                const { type, which } = payload;
+                const scope = type === 'test' ? 'tool' : type;
+                progressPar.innerHTML = `Starting tests of ${scope} <strong>${which}</strong>`;
+                statusDiv.appendChild(progressPar);
+              }
+              else if (eventType === 'digestDone' && payload && payload.url) {
+                fetch(payload.url, { credentials: 'same-origin' })
+                  .then(r => r.text())
+                  .then(digestHTML => {
+                    document.open();
+                    document.write(digestHTML);
+                    document.close();
+                  })
+                  .catch(error => {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.textContent = `Failed to fetch final report: ${error.message}`;
+                    statusDiv.appendChild(errorDiv);
+                  });
+                eventSource.close();
+              }
+              else if (eventType === 'error') {
+                const errorDiv = document.createElement('div');
+                errorDiv.textContent = `[error] ${eventData.message || 'unknown error'}`;
+                statusDiv.appendChild(errorDiv);
+                eventSource.close();
+              }
+            } catch (error) {
+              // ignore parse errors
+            }
+          };
+        })();
+      </script>
+    </main>
+  </body>
+</html>
+````
+
+This should fix missing styles and the undefined variable in the error branch.
+
+jrpool: How can I save this chat in a file for future reference?
+
+GitHub Copilot: GitHub Copilot
+
+Fastest ways on macOS
+
+- In VS Code
+  1) Select the chat text you want
+  2) Cmd+C
+  3) File → New File, set language to Markdown (Cmd+K M → Markdown)
+  4) Cmd+V, then save as notes.md
+
+- From Terminal (keeps exactly what you copied)
+  1) Select text in chat → Cmd+C
+  2) In Terminal:
+     ```
+     cd /Users/pool/Documents/Topics/repos/a11yTesting/kilotest
+     pbpaste > kilotest-chat-$(date +%F).md
+     ```
+
+Notes
+- VS Code Copilot Chat doesn’t have a built‑in “Export as Markdown” button. Copy/paste is the practical route.
+- If list formatting looks off, paste into a .md file and touch up bullets/numbers as needed.Notes
+- VS Code Copilot Chat doesn’t have a built‑in “Export as Markdown” button. Copy/paste is the practical route.
+- If list formatting looks off, paste into a .md file and touch up bullets/numbers as needed.
+
+jrpool: You said “Select the chat you want.” What does that mean? Is a chat an entire chat window or only a part of it? How does one select it?
+
+GitHub Copilot: GitHub Copilot
+
+By “select the chat you want,” I meant selecting text in the Copilot Chat panel.
+
+Options:
+- Select a portion of the chat: click in the chat panel, drag to highlight the exact messages/snippets, Cmd+C.
+- Select the entire thread (visible in the panel): click once in the chat panel to focus it, Cmd+A, then Cmd+C.
+- Copy a single message or code block: use the copy button on that bubble/block (if shown), or triple‑click in the message to select it, then Cmd+C.
+
+Then paste into a new .md file in VS Code and save. Note: Copilot Chat doesn’t have an export feature; copy/paste is the way to go.

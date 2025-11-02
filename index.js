@@ -104,7 +104,7 @@ const requestHandler = async (request, response) => {
   // Otherwise, if the request is a GET request:
   else if (method === 'GET') {
     // If it is for the stylesheet:
-    if (requestURL === '/kilotest/style.css') {
+    if (requestURL === '/style.css') {
       // Serve it.
       const styleSheet = await fs.readFile('style.css', 'utf8');
       response.end(styleSheet);
@@ -119,7 +119,7 @@ const requestHandler = async (request, response) => {
       response.end('');
     }
     // Otherwise, if it is for the job-specification form:
-    else if (['/kilotest', '/kilotest/index.html'].includes(requestURL)) {
+    else if (['/', '/index.html'].includes(requestURL)) {
       // Get the form page.
       const formPage = await fs.readFile(`index.html`, 'utf8');
       // Serve it.
@@ -128,7 +128,7 @@ const requestHandler = async (request, response) => {
       response.end(formPage);
     }
     // Otherwise, if it is for a stream of job events:
-    else if (requestURL.startsWith('/kilotest/events/')) {
+    else if (requestURL.startsWith('/events/')) {
       // Get the job ID from the URL.
       const jobID = requestURL.split('/').pop();
       // Set the response headers for an event stream.
@@ -156,7 +156,7 @@ const requestHandler = async (request, response) => {
       });
     }
     // Otherwise, if it is for job results:
-    else if (requestURL.startsWith('/kilotest/results/')) {
+    else if (requestURL.startsWith('/results/')) {
       // Get the job ID from the URL.
       const jobID = requestURL.split('/').pop();
       const resultsHTML = results.get(jobID);
@@ -189,7 +189,7 @@ const requestHandler = async (request, response) => {
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
     // If the request is a job specification:
-    if (requestURL === '/kilotest/progress.html') {
+    if (requestURL === '/progress.html') {
       // Get the data from it.
       const postData = await getPostData(request);
       const {pageWhat, pageURL} = postData;
@@ -247,7 +247,7 @@ const requestHandler = async (request, response) => {
         // Tell the client to retrieve the digest.
         publishEvent(jobID, {
           eventType: 'digestDone',
-          payload: {url: `/kilotest/results/${jobID}`}
+          payload: {url: `/results/${jobID}`}
         });
         // Store the digest HTML in memory for retrieval.
         results.set(jobID, jobDigest);

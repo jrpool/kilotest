@@ -70,3 +70,9 @@ The TTL value in each case is 3600 (1 hour).
 - The MX record is set up for email forwarding using Porkbun's forwarding services.
 - The TXT records are used for domain validation with Let's Encrypt, ensuring that SSL certificates can be issued for your domain.
 - The ALIAS record is optional and can be adjusted based on your specific requirements.
+
+## Request management
+
+Requests to `https://kilotest.com` are directed to the IPV4 address of the Kilotest service.
+
+When requests arrive, they are mapped by Caddy, acting as a reverse proxy, to port 3000.

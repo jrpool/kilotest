@@ -7,7 +7,10 @@ module.exports = {
     watch: false,
     max_memory_restart: '500M',
     env: {
-      NODE_ENV: 'production'
+      NODE_ENV: 'production',
+      BASE_PATH: '/',
+      DEMO_SSE_DELAY_MS: '100',
+      TMPDIR: '/dev/shm'
     }
   }]
 };

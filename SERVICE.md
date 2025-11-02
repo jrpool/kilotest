@@ -76,3 +76,5 @@ The TTL value in each case is 3600 (1 hour).
 Requests to `https://kilotest.com` are directed to the IPV4 address of the Kilotest service.
 
 When requests arrive, they are mapped by Caddy, acting as a reverse proxy, to port 3000.
+
+Caddy also manages request and response encryption by subscribing to a periodically renewed Let’s Encrypt certificate and redirecting any `http` request to a corresponding `https` request.

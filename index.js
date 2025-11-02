@@ -105,9 +105,18 @@ const requestHandler = async (request, response) => {
   else if (method === 'GET') {
     // If it is for the stylesheet:
     if (requestURL === '/style.css') {
-      // Serve it.
-      const styleSheet = await fs.readFile('style.css', 'utf8');
-      response.end(styleSheet);
+      try {
+        // Serve it.
+        const styleSheet = await fs.readFile('style.css', 'utf8');
+        response.writeHead(200, {
+          'Content-Type': 'text/css; charset=utf-8',
+          'Cache-Control': 'public, max-age=600'
+        });
+        response.end(styleSheet);
+      }
+      catch (error) {
+        await serveError(error, response);
+      }
     }
     // Otherwise, if it is for the application icon:
     else if (requestURL.includes('favicon.')) {

@@ -31,6 +31,8 @@ const {scorer} = require('testilo/procs/score/tsp');
 const {digester} = require('./digesters/kd00/index');
 // Functions from Testaro
 const {doJob} = require('testaro/run');
+// Temporary import.
+const DEMO_SSE_DELAY = parseInt(process.env.DEMO_SSE_DELAY || '2000', 10);
 
 // FUNCTIONS
 
@@ -201,10 +203,8 @@ const requestHandler = async (request, response) => {
         let progressPage = await fs.readFile('progress.html', 'utf8');
         progressPage = progressPage.replace(/__jobID__/g, jobID);
         response.end(progressPage);
-        console.log(`[${Date.now()}] Served progress page for job ${jobID}`);
-        console.log(`[${Date.now()}] Waiting 2000ms before publishing jobStart`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log(`[${Date.now()}] Publishing jobStart event`);
+        console.log(`Waiting ${DEMO_SSE_DELAY}ms before publishing jobStart`);
+        await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY));
         // Notify the client that the job has started.
         publishEvent(jobID, {eventType: 'jobStart', payload: {}});
         // Create a target list from it.

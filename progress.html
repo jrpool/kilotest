@@ -7,7 +7,7 @@
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="report,accessibility,a11y">
     <title>Progress | Kilotest</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/kilotest/style.css">
   </head>
   <body>
     <main>
@@ -58,9 +58,9 @@
                   statusDiv.appendChild(errorDiv);
                 });
                 eventSource.close();
-              } else if (msg.type === 'error') {
+              } else if (eventType === 'error') {
                 const errorDiv = document.createElement('div');
-                errorDiv.textContent = `[error] ${msg.message || 'unknown error'}`;
+                errorDiv.textContent = `[error] ${eventData.message || 'unknown error'}`;
                 statusDiv.appendChild(errorDiv);
                 eventSource.close();
               }

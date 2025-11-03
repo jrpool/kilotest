@@ -9,8 +9,7 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       BASE_PATH: '/',
-      DEMO_SSE_DELAY_MS: '100',
-      TMPDIR: '/dev/shm'
+      DEMO_SSE_DELAY_MS: '100'
     }
   }]
 };

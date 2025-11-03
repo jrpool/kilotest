@@ -16,6 +16,13 @@ The server has a `sudo`-capable non-root user named `linuxuser`, which is the ow
 
 The service is managed with PM2 on the server. The PM2 configuration is tracked in the repository as `pm2.config.js`, although PM2 is not installed on the client.
 
+When the PM2 configuration is changed, restart PM2 with:
+
+```
+pm2 kill
+pm2 start pm2.config.js --env production
+```
+
 ## Keepalive
 
 The SSH configuration on both the server and the local client is customized so that connections will be kept alive longer than the default. This customization is performed in `/etc/ssh/sshd_config` on the server and in `~/.ssh/config` on the client. The customized variables are `ClientAliveInterval` on the server, and `ServerAliveInterval`, `ServerAliveCountMax`, and `TCPKeepAlive` within `Host <ip.address>` on the client.

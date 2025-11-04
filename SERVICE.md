@@ -4,7 +4,7 @@ This document describes one deployment of Kilotest as a web service.
 
 ## Host
 
-The host of the service is a [Vultr](https://www.vultr.com) Cloud Compute virtual machine named `jpdev` with the IPV4 address 140.82.50.126.
+The host of the service is a [Vultr](https://www.vultr.com) High Frequency virtual machine named `jpdev` with the IPV4 address 149.28.208.106. The host has 1 vCPU, 2MB of RAM, and 64GB NVMe of storage.
 
 The server operating system is Ubuntu LTS 22.04.
 
@@ -14,14 +14,19 @@ The server has a `sudo`-capable non-root user named `linuxuser`, which is the ow
 
 ## Process management
 
-The service is managed with PM2 on the server. The PM2 configuration is tracked in the repository as `pm2.config.js`, although PM2 is not installed on the client.
+The service is managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`.
 
-When the PM2 configuration is changed, restart PM2 with:
+When the PM2 configuration or environment is changed, restart PM2 with:
 
 ```
-pm2 kill
-pm2 start pm2.config.js --env production
+pm2 restart kilotest --update-env
+pm2 save
 ```
+
+The server configuration has been tuned for improved performance. The file edited for this purpose is:
+- `/etc/default/zramswap`
+
+This enables `zram` and decreases the amount of disk swapping.
 
 ## Keepalive
 
@@ -33,55 +38,64 @@ The domain name `kilotest.com` is registered with [Porkbun](https://porkbun.com)
 
 ## DNS Configuration
 
-The DNS records for `kilotest.com` are configured as follows:
+The DNS records for `kilotest.com` are configured as follows. In each case, `TTL` is set to 3600 (1 hour). (The Porkbun interface uses `kilotest.com` as a name where some others use `@`.)
 
-### TTL
+1. **A**
+   - **Host**: kilotest.com
+   - **Answer**: 149.28.208.106
 
-The TTL value in each case is 3600 (1 hour).
+2. **AAAA** (if IPv6 is used)
+   - **Host**: @
+   - **Answer**: IPv6 address
 
-1. **A Record**
-   - **Type**: A
-   - **Name**: @
-   - **Value**: 140.82.50.126
+3. **CNAME**
+   - **Host**: www
+   - **Answer**: kilotest.com
 
-2. **AAAA Record** (if applicable)
-   - **Type**: AAAA
-   - **Name**: @
-   - **Value**: [Your IPv6 address] (if applicable)
+4. **MX** (for email forwarding)
+   - **Host**: kilotest.com
+   - **Answer**: fwd1.porkbun.com or fwd2.porkbun.com
+   - **Priority**: 10 or 20, respectively
 
-3. **CNAME Record** (optional for www)
-   - **Type**: CNAME
-   - **Name**: www
-   - **Value**: kilotest.tools
-
-4. **MX Record** (for email forwarding)
-   - **Type**: MX
-   - **Name**: kilotest.com
-   - **Value**: fwd1.porkbun.com or fwd2.porkbun.com
-   - **Priority**: [Set priority, e.g., 10]
-
-5. **TXT Records** (for domain validation)
-   - **Type**: TXT
-   - **Name**: _acme-challenge.kilotest.com
-   - **Value**: validation token provided by Porkbun or Let’s Encrypt
-
-6. **ALIAS Record**
-   - **Type**: ALIAS
-   - **Name**: www.kilotest.com
-   - **Value**: kilotest.com
-
-### Notes
-
-- Ensure that all records are correctly configured and propagated.
-- The A record points to the server's IP address, allowing users to access the Kilotest service via `kilotest.tools`.
-- The MX record is set up for email forwarding using Porkbun's forwarding services.
-- The TXT records are used for domain validation with Let's Encrypt, ensuring that SSL certificates can be issued for your domain.
-- The ALIAS record is optional and can be adjusted based on your specific requirements.
+5. **TXT** (domain validation)
+   - **Host**: _acme-challenge.kilotest.com
+   - **Answers**: validation tokens provided by Porkbun ACME client
 
 ## Request management
 
-Requests to `https://kilotest.com` are directed to the IPV4 address of the Kilotest service.
+Requests to `https://kilotest.com` are received on port 443 and processed by Caddy, which forwards them via HTTP to the application at `localhost:3000`. Caddy manages TLS via Let’s Encrypt. Any request to `http://kilotest.com` is received on port 80, and Caddy redirects it to an `https` request. Caddy forwards `https` requests to http://localhost:3000, where it is processed by the Kilotest service.
 
-When requests arrive, they are mapped by Caddy, acting as a reverse proxy, to port 3000.
+Caddy also manages request and response encryption by subscribing to a periodically renewed Let’s Encrypt certificate.
 
-Caddy also manages request and response encryption by subscribing to a periodically renewed Let’s Encrypt certificate and redirecting any `http` request to a corresponding `https` request.
+This Caddy configuration is maintained in `/etc/caddy/Caddyfile`:
+
+```
+kilotest.com {
+  # Enable Zstandard and Gzip compression of responses.
+  encode zstd gzip
+  # Reverse proxy all requests to localhost:3000.
+  reverse_proxy localhost:3000 {
+    # Improve SSE latency.
+    flush_interval -1
+  }
+}
+```
+
+This configuration prevents the granular reporting of Testaro from being buffered, so the updates reach the browser without delay.
+
+## Performance
+
+The Cloud Compute host, in initial testing, took about 2.5 as long to process an example job as an Apple M2 Pro MacBook Pro with 16GB of memory. After tuning, the ratio was reduced to about 1.7.
+
+The performances of several alternative host architectures were evaluated, and it was decided to migrate the initial host to a High Frequency compute instance. Any subsequent migration is straightforward if the destination root volume is at least as large as the originating one (64GB). The process is:
+- Create a snapshot of `jpdev`.
+- Deploy the new host using the snapshot.
+
+To evaluate a new host before deciding to keep it, do this after deploying it:
+- Connect to it via SSH (`ssh linuxuser@<IP address>`).
+- Add a firewall rule permitting `http` connections to port 3000 (`sudo ufw allow 3000/tcp`).
+- Navigate with a browser to `http://<IP address>:3000/`.
+- Request the sample job.
+- Observe the elapsed time reported in the result basics.
+
+Experimentation revealed that a high-frequency instance could decrease the elapsed-time ratio (compared with the MacBook Pro) to 1.3 to 1.5, and a dedicated instance could decrease it further to about 1.2. Swapping was found eliminated with 4GB of RAM, but that elimination had no significant impact on elapsed time.

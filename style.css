@@ -90,6 +90,9 @@ input {
 legend {
   font-weight: 700;
 }
+li, p {
+  line-height: 1.5;
+}
 pre {
   white-space: break-spaces;
 }

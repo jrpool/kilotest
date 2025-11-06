@@ -15,10 +15,10 @@ const fs = require('fs/promises');
 const {issues} = require('testilo/procs/score/tic');
 // Utility module.
 const toolNames = require('testilo/procs/util').tools;
+
 // CONSTANTS
 
 // Newline with indentations.
-const innerJoiner = '\n        ';
 const outerJoiner = '\n      ';
 
 // FUNCTIONS
@@ -26,7 +26,7 @@ const outerJoiner = '\n      ';
 // Adds parameters to a query for a digest.
 const populateQuery = async (report, query) => {
   const {score} = report;
-  const {details} = score;
+  const {details, summary} = score;
   const {issue} = details;
   const issueData = [];
   Object.keys(issue).forEach(issueID => {

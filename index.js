@@ -250,6 +250,7 @@ const requestHandler = async (request, response) => {
           pageID: pageWhat,
           pageURL,
           issueCount: Object.keys(report.score.details.issue).length,
+          impact: report.score.summary.total,
           elapsedSeconds: report.jobData.elapsedSeconds,
           report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
         });

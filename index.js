@@ -113,7 +113,9 @@ const requestHandler = async (request, response) => {
     console.log(`ERROR: Request with prohibited method ${method} received`);
   }
 };
-// ########## SERVER
+
+// SERVER
+
 const serve = (protocolModule, options) => {
   const server = protocolModule === 'https'
     ? https.createServer(options, requestHandler)

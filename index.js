@@ -12,6 +12,12 @@ require('dotenv').config({quiet: true});
 
 const protocol = process.env.PROTOCOL || 'http';
 
+// IMPORTS
+// Module to create an HTTP server and client.
+const http = require('http');
+// Module to create an HTTPS server and client.
+const https = require('https');
+
 // FUNCTIONS
 
 // Handles a request.

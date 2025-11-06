@@ -17,10 +17,6 @@ const results = new Map();
 // IMPORTS
 // Module to access files.
 const fs = require('fs/promises');
-// Module to create an HTTP server and client.
-const http = require('http');
-// Module to create an HTTPS server and client.
-const https = require('https');
 // Functions from Testilo.
 const {batch} = require('testilo/batch');
 const {script} = require('testilo/script');

@@ -12,7 +12,7 @@
   <body>
     <main>
       <h1>Kilotest</h1>
-      <p>Kilotest can perform up to a thousand tests on a web page.</p>
+      <p>Kilotest performs a thousand tests on a web page.</p>
       <details>
         <summary>A thousand? Really?</summary>
         <h2>Ensemble testing</h2>
@@ -25,12 +25,29 @@
         <h2>Status</h2>
         <p>Kilotest is an early-stage proof of concept, launched in November 2025. The currently used tools focus on HTML and CSS standards, usability, and accessibility. Your <a href="https://github.com/jrpool/kilotest/issues">suggestions, bug reports, and collaboration proposals</a> are welcome!</p>
       </details>
-      <h2>Choose a service</h2>
-      <p>Which Kilotest service do you want now?</p>
-      <ul>
-        <li><a href="screen/index.html">Kilotest Screen</a>: <p></p>reliminary testing of 2 or 3 web pages</li>
-        <li><a href="dev/index.html">Kilotest Dev</a>: thorough testing of 1 web page</li>
-      </ul>
+      <p>Which page do you want to test? (Both answers are required.)</p>
+      <form id="form" method="post" action="progress.html">
+        <p><label>
+          URL of a web page to test (starting with <code>https://</code>)
+          <input type="url" name="pageURL" size="80" maxLength="300" required>
+        </label></p>
+        <p><label>
+          Description of that page (e.g., ACM home)
+          <input type="text" name="pageWhat" size="60" maxLength="60" required>
+        </label></p>
+        <p><button id="submit">Submit</button></p>
+        <div id="status" role="status"></div>
+      </form>
+      <script>
+        const form = document.getElementById('form');
+        form.addEventListener('submit', () => {
+          document.getElementById('submit').disabled = true;
+          const status = document.getElementById('status');
+          const wait = document.createElement('p');
+          wait.textContent = 'Testing in progress. Please wait.';
+          status.appendChild(wait);
+        });
+      </script>
     </main>
   </body>
 </html>

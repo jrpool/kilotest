@@ -10,7 +10,6 @@ require('dotenv').config({quiet: true});
 
 // CONSTANTS
 
-const protocol = process.env.PROTOCOL || 'http';
 const eventStreams = new Map();
 const results = new Map();
 

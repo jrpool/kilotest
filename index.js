@@ -20,6 +20,16 @@ const https = require('https');
 
 // FUNCTIONS
 
+// Serves an error message.
+const serveError = async (error, response) => {
+  console.log(error.message);
+  if (! response.writableEnded) {
+    response.statusCode = 400;
+    const errorTemplate = await fs.readFile('error.html', 'utf8');
+    const errorPage = errorTemplate.replace(/__error__/, error.message);
+    response.end(errorPage);
+  }
+};
 // Handles a request.
 const requestHandler = async (request, response) => {
   const {method} = request;
@@ -64,6 +74,15 @@ const requestHandler = async (request, response) => {
       response.setHeader('Content-Type', 'image/x-icon');
       response.write(icon, 'binary');
       response.end('');
+    }
+    // Otherwise, if it is for the home page:
+    else if (['/', '/index.html'].includes(requestURL)) {
+      // Get the home page.
+      const homePage = await fs.readFile('index.html', 'utf8');
+      // Serve it.
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      response.setHeader('Content-Location', '/index.html');
+      response.end(homePage);
     }
     // Otherwise, i.e. if it is any other GET request:
     else {

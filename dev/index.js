@@ -23,7 +23,7 @@ const {merge} = require('testilo/merge');
 const {score} = require('testilo/score');
 const {digest} = require('testilo/digest');
 const {scorer} = require('testilo/procs/score/tsp');
-const {digester} = require('../digesters/kd00/index');
+const {digester} = require('./digesters/kd00/index');
 // Functions from Testaro
 const {doJob} = require('testaro/run');
 // Temporary import.

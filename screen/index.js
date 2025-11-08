@@ -23,9 +23,10 @@ const {merge} = require('testilo/merge');
 const {score} = require('testilo/score');
 const {digest} = require('testilo/digest');
 const {scorer} = require('testilo/procs/score/tsp');
-const {digester} = require('./digesters/kd00/index');
 // Functions from Testaro
 const {doJob} = require('testaro/run');
+// Custom digester.
+const {digester} = require('./digesters/ks00/index');
 // Temporary import.
 const DEMO_SSE_DELAY = parseInt(process.env.DEMO_SSE_DELAY || '2000', 10);
 
@@ -129,24 +130,24 @@ exports.screenRequestHandler = async (request, response) => {
         return;
       });
     }
-    // Otherwise, if it is for job results:
+    // Otherwise, if it is for a comparison of job scores:
     else if (requestURL.startsWith('/screen/results/')) {
-      // Get the job ID from the URL.
-      const jobID = requestURL.split('/').pop();
-      const resultsHTML = results.get(jobID);
+      // Get the request ID from the URL.
+      const requestID = requestURL.split('/').pop();
+      const resultsHTML = results.get(requestID);
       // If a result for the job exists:
       if (resultsHTML) {
         // Serve it.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.end(resultsHTML);
         // Remove the results from memory.
-        results.delete(jobID);
+        results.delete(requestID);
         return;
       }
-      // Otherwise, i.e. if no result for the job exists:
+      // Otherwise, i.e. if no result for the request exists:
       else {
         response.statusCode = 404;
-        response.end('ERROR: No such job result');
+        response.end('ERROR: No such result');
         return;
       }
     }
@@ -162,12 +163,17 @@ exports.screenRequestHandler = async (request, response) => {
   }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
-    // If the request is a job specification:
-    if (requestURL === '/dev/progress.html') {
-      console.log('XXX Received request for progress page');
+    // If the request is a comparison specification:
+    if (requestURL === '/screen/progress.html') {
       // Get the data from it.
       const postData = await getPostData(request);
-      const {pageWhat, pageURL} = postData;
+      const {
+        pageWhat1, pageURL1,
+        pageWhat2, pageURL2,
+        pageWhat3, pageURL3,
+        pageWhat4, pageURL4,
+        pageWhat5, pageURL5
+      } = postData;
       // If the request is valid:
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
         // Create a unique ID for the job.

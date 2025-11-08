@@ -164,7 +164,6 @@ exports.devRequestHandler = async (request, response) => {
   else if (method === 'POST') {
     // If the request is a job specification:
     if (requestURL === '/dev/progress.html') {
-      console.log('XXX Received request for progress page');
       // Get the data from it.
       const postData = await getPostData(request);
       const {pageWhat, pageURL} = postData;

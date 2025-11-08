@@ -1,6 +1,6 @@
 /*
   index.js
-  Manages Kilotest Dev.
+  Manages Kilotest Screen.
 */
 
 // ENVIRONMENT
@@ -86,23 +86,23 @@ const getPostData = async request => {
   });
 };
 // Handles a request.
-exports.devRequestHandler = async (request, response) => {
+exports.screenRequestHandler = async (request, response) => {
   const {method} = request;
   // Get its URL.
   const requestURL = request.url;
   // If the request is a GET request:
   if (method === 'GET') {
     // If it is for the job-specification form:
-    if (requestURL === '/dev/index.html') {
+    if (requestURL === '/screen/index.html') {
       // Get the form page.
       const formPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
       // Serve it.
       response.setHeader('Content-Type', 'text/html');
-      response.setHeader('Content-Location', '/dev/index.html');
+      response.setHeader('Content-Location', '/screen/index.html');
       response.end(formPage);
     }
     // Otherwise, if it is for a stream of job events:
-    else if (requestURL.startsWith('/dev/events/')) {
+    else if (requestURL.startsWith('/screen/events/')) {
       // Get the job ID from the URL.
       const jobID = requestURL.split('/').pop();
       // Set the response headers for an event stream.
@@ -130,7 +130,7 @@ exports.devRequestHandler = async (request, response) => {
       });
     }
     // Otherwise, if it is for job results:
-    else if (requestURL.startsWith('/dev/results/')) {
+    else if (requestURL.startsWith('/screen/results/')) {
       // Get the job ID from the URL.
       const jobID = requestURL.split('/').pop();
       const resultsHTML = results.get(jobID);

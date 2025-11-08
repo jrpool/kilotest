@@ -22,7 +22,7 @@ const https = require('https');
 // Module to handle dev requests.
 const {devRequestHandler} = require('./dev/index');
 // Module to handle screen requests.
-// const {screenRequestHandler} = require('./screen/index');
+const {screenRequestHandler} = require('./screen/index');
 
 // FUNCTIONS
 

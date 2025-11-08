@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="report,accessibility,a11y">
+    <title>Screen | Kilotest</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Kilotest Screen</h1>
+      <p>Kilotest Screen performs preliminary testing on up to 5 web pages.</p>
+      <p>Which pages do you want to test? For each page give a URL (such as https://example.com)  and a description (such as Example Home). Leave unneeded inputs empty.</p>
+      <form id="form" method="post" action="/dev/progress.html">
+        <h2>Page 1</h2>
+        <p><label>
+          URL
+          <input type="url" name="pageURL1" size="80" maxLength="300" required>
+        </label></p>
+        <p><label>
+          Description
+          <input type="text" name="pageWhat1" size="60" maxLength="60" required>
+        </label></p>
+        <h2>Page 2</h2>
+        <p><label>
+          URL
+          <input type="url" name="pageURL2" size="80" maxLength="300">
+        </label></p>
+        <p><label>
+          Description
+          <input type="text" name="pageWhat1" size="60" maxLength="60" required>
+        </label></p>
+        <h2>Page 2</h2>
+        <p><label>
+          URL
+          <input type="url" name="pageURL2" size="80" maxLength="300">
+        </label></p>
+        <p><label>
+          Description
+          <input type="text" name="pageWhat2" size="60" maxLength="60">
+        </label></p>
+        <h2>Page 3</h2>
+        <p><label>
+          URL
+          <input type="url" name="pageURL3" size="80" maxLength="300">
+        </label></p>
+        <p><label>
+          Description
+          <input type="text" name="pageWhat3" size="60" maxLength="60">
+        </label></p>
+        <h2>Page 4</h2>
+        <p><label>
+          URL
+          <input type="url" name="pageURL4" size="80" maxLength="300">
+        </label></p>
+        <p><label>
+          Description
+          <input type="text" name="pageWhat4" size="60" maxLength="60">
+        </label></p>
+        <h2>Page 5</h2>
+        <p><label>
+          URL
+          <input type="url" name="pageURL5" size="80" maxLength="300">
+        </label></p>
+        <p><label>
+          Description
+          <input type="text" name="pageWhat5" size="60" maxLength="60">
+        </label></p>
+        <p><button type="submit">Submit</button></p>
+      </form>
+    </main>
+  </body>
+</html>

@@ -20,7 +20,7 @@
         (function(){
           const statusDiv = document.getElementById('status');
           // Define the URL of the event source for this job.
-          const eventSource = new EventSource('/dev/events/__jobID__');
+          const eventSource = new EventSource('/screen/events/__requestID__');
           // When the event source sends a message:
           eventSource.onmessage = event => {
             try {

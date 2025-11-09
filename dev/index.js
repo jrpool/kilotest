@@ -181,7 +181,7 @@ exports.devRequestHandler = async (request, response) => {
         await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY));
         // Notify the client that the job has started.
         publishEvent(jobID, {eventType: 'jobStart', payload: {}});
-        // Create a target list from it.
+        // Create a target list.
         const targetList = [[pageWhat, pageURL]];
         // Create a batch from the target list.
         const jobBatch = batch('jobTarget', 'job target', targetList);

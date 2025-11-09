@@ -180,10 +180,8 @@ exports.screenRequestHandler = async (request, response) => {
         }
         return 'invalid';
       });
-      console.log(`Page statuses: ${pageStatuses.join(', ')}`);
       // If any request is invalid:
       if (pageStatuses.includes('invalid')) {
-        console.log(pageStatuses);
         const error = {
           message: `ERROR: go back to correct page ${pageStatuses.indexOf('invalid') + 1}`
         }
@@ -207,12 +205,9 @@ exports.screenRequestHandler = async (request, response) => {
             url: postData[`pageURL${num}`]
           };
         })
-        .filter(num => pageStatuses[num - 1] === 'valid');
+        .filter(spec => pageStatuses[spec.num - 1] === 'valid');
         // Create a unique ID for the request.
         const requestID = Date.now().toString(36).slice(2, -1);
-        console.log(
-          `Request ${requestID} specified pages ${pageSpecs.map(spec => spec.what).join(', ')}`
-        );
         // Serve a progress page.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         let progressPage = await fs.readFile(`${__dirname}/progress.html`, 'utf8');
@@ -223,10 +218,7 @@ exports.screenRequestHandler = async (request, response) => {
         // Notify the client that the testing has started.
         publishEvent(requestID, {eventType: 'requestStart', payload: {}});
         // Create a target list from the page specifications.
-        const targetList = pageSpecs.map(spec => ({
-          what: spec.what,
-          url: spec.url
-        }));
+        const targetList = pageSpecs.map(spec => ([spec.what, spec.url]));
         // Create a batch from the target list.
         const jobBatch = batch('jobTarget', 'job target', targetList);
         // Create a script for the jobs.
@@ -237,10 +229,12 @@ exports.screenRequestHandler = async (request, response) => {
         // Merge the batch and the script into jobs.
         const jobs = merge(jobScript, jobBatch, '');
         const jobsData = [];
+        let startTime = Date.now();
         // For each job:
         for (const job of jobs) {
           // Publish a progress event.
           publishEvent(requestID, {eventType: 'progress', payload: {type: 'page', which: job.target.what}});
+          console.log(`Starting job for ${job.target.what}`);
           // Perform the job and get the report from Testaro.
           const report = await doJob(job);
           // Score the report in place.
@@ -253,10 +247,11 @@ exports.screenRequestHandler = async (request, response) => {
           });
         }
         // Digest the results.
+        jobsData.id = requestID;
         const resultsDigest = await digest(digester, jobsData, {
           requestID,
           testDate: new Date().toISOString().slice(0, 10),
-          elapsedSeconds: report.jobData.elapsedSeconds
+          elapsedSeconds: Math.round((Date.now() - startTime) / 1000)
         });
         // Tell the client to retrieve the digest.
         publishEvent(requestID, {

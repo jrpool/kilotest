@@ -24,9 +24,9 @@ const outerJoiner = '\n      ';
 // Adds parameters to a query for a digest.
 const populateQuery = async (jobsData, query) => {
   jobsData.sort((a, b) => a.score - b.score);
-  const bestScore = jobsData[0].score;
+  const bestScore = jobsData[0].score + 1;
   for (let i = 0; i < jobsData.length; i++) {
-    jobsData[i].worsePercent = 100 * round(jobsData[i].score / bestScore) - 100;
+    jobsData[i].worsePercent = Math.round(100 * ((jobsData[i].score + 1) / bestScore - 1));
   }
   const dataLines = [];
   jobsData.forEach(jobData => {

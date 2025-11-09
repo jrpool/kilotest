@@ -3,8 +3,6 @@
   Licensed under the MIT License. See LICENSE file for details.
 */
 
-// index: abbreviated issue-oriented digester for scoring procedure tsp.
-
 // IMPORTS
 
 // Module to keep secrets.

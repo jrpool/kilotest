@@ -11,8 +11,6 @@
 require('dotenv').config();
 // Module to process files.
 const fs = require('fs/promises');
-// Issues module.
-const {issues} = require('testilo/procs/score/tic');
 // Utility module.
 const toolNames = require('testilo/procs/util').tools;
 
@@ -24,33 +22,29 @@ const outerJoiner = '\n      ';
 // FUNCTIONS
 
 // Adds parameters to a query for a digest.
-const populateQuery = async (report, query) => {
-  const {score} = report;
-  const {details, summary} = score;
-  const {issue} = details;
-  const issueData = [];
-  Object.keys(issue).forEach(issueID => {
-    const {summary, tools} = issue[issueID];
-    const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
-    issueData.push({
-      summary,
-      why: issues[issueID].why,
-      issueToolNames
-    });
-  });
-  issueData.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
+const populateQuery = async (jobsData, query) => {
+  jobsData.sort((a, b) => a.score - b.score);
+  const bestScore = jobsData[0].score;
+  for (let i = 0; i < jobsData.length; i++) {
+    jobsData[i].worsePercent = 100 * round(jobsData[i].score / bestScore) - 100;
+  }
   const dataLines = [];
-  issueData.forEach(issueDatum => {
-    dataLines.push(`<h3>${issueDatum.summary}</h3>`);
-    dataLines.push(`<p>Impact: ${issueDatum.why}</p>`);
-    dataLines.push(`<p>Reported by: ${issueDatum.issueToolNames.join(', ')}</p>`);
+  jobsData.forEach(jobData => {
+    dataLines.push(`<h3>${jobData.what}</h3>`);
+    dataLines.push(`<p>URL: ${jobData.url}</p>`);
+    if (jobData.worsePercent === 0) {
+      dataLines.push('<p><strong>Best</strong></p>');
+    }
+    else {
+      dataLines.push(`<p><strong>${jobData.worsePercent}% worse</strong> than the best</p>`);
+    }
   });
   query.data = dataLines.join(outerJoiner);
 };
-// Returns a digested report with the complete report as a collapsed appendix.
-exports.digester = async (report, query) => {
+// Returns digested results.
+exports.digester = async (jobsData, query) => {
   // Create a query to replace placeholders.
-  await populateQuery(report, query);
+  await populateQuery(jobsData, query);
   // Get the template.
   let template = await fs.readFile(`${__dirname}/index.html`, 'utf8');
   // Replace its placeholders.

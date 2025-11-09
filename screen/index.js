@@ -135,9 +135,9 @@ exports.screenRequestHandler = async (request, response) => {
       // Get the request ID from the URL.
       const requestID = requestURL.split('/').pop();
       const resultsHTML = results.get(requestID);
-      // If a result for the job exists:
+      // If results for the request exist:
       if (resultsHTML) {
-        // Serve it.
+        // Serve them.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.end(resultsHTML);
         // Remove the results from memory.
@@ -174,72 +174,97 @@ exports.screenRequestHandler = async (request, response) => {
         pageWhat4, pageURL4,
         pageWhat5, pageURL5
       } = postData;
-      // If the request is valid:
-      if (pageURL && pageURL.startsWith('http') && pageWhat) {
-        // Create a unique ID for the job.
-        const jobID = Date.now().toString(36).slice(2, -1);
-        console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
+      // Get the statusus of the page requests.
+      const pageStatuses = [1, 2, 3, 4, 5].map(pageNum => {
+        const what = postData[`pageWhat${pageNum}`];
+        const url = postData[`pageURL${pageNum}`];
+        if (! url && ! what) {
+          return 'empty';
+        }
+        if (url && url.startsWith('https://') && what) {
+          return 'valid';
+        }
+        return 'invalid';
+      });
+      // If any request is invalid:
+      if (pageStatuses.includes('invalid')) {
+        const message = `ERROR: go back to correct page ${pageStatuses.indexOf('invalid') + 1}`;
+        await serveError(message, response);
+      }
+      // Otherwise, if all requests are empty:
+      else if (pageStatuses.every(status => status === 'empty')) {
+        const message = 'No pages were specified';
+        await serveError(message, response);
+      }
+      // Otherwise, i.e. if all requests are valid and there are any:
+      else {
+        // Get the requested page specifications.
+        const pageSpecs = [1, 2, 3, 4, 5]
+        .map(num => {
+          return {
+            num,
+            what: postData[`pageWhat${pageNum}`],
+            url: postData[`pageURL${pageNum}`]
+          };
+        })
+        .filter(num => pageStatuses[num - 1] === 'valid');
+        // Create a unique ID for the request.
+        const requestID = Date.now().toString(36).slice(2, -1);
+        console.log(
+          `Request ${requestID} specified pages ${pageSpecs.map(spec => spec.what).join(', ')}`
+        );
         // Serve a progress page.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         let progressPage = await fs.readFile(`${__dirname}/progress.html`, 'utf8');
-        progressPage = progressPage.replace(/__jobID__/g, jobID);
+        progressPage = progressPage.replace(/__requestID__/g, requestID);
         response.end(progressPage);
         console.log(`Waiting ${DEMO_SSE_DELAY}ms before publishing jobStart`);
         await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY));
-        // Notify the client that the job has started.
+        // Notify the client that the testing has started.
         publishEvent(jobID, {eventType: 'jobStart', payload: {}});
-        // Create a target list from it.
-        const targetList = [[pageWhat, pageURL]];
+        // Create a target list from the page specifications.
+        const targetList = pageSpecs.map(spec => ({
+          what: spec.what,
+          url: spec.url
+        }));
         // Create a batch from the target list.
         const jobBatch = batch('jobTarget', 'job target', targetList);
-        // Create a script for the job.
+        // Create a script for the jobs.
         const jobScript = script('jobScript', 'job script', 'default', {
           type: 'tools',
-          specs: [
-            'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
-          ]
+          specs: ['aslint', 'ed11y', 'htmlcs', 'qualWeb']
         });
-        // Specify granular reporting.
-        jobScript.observe = true;
-        // Merge the batch and the script into a job.
-        const job = merge(jobScript, jobBatch, '')[0];
-        // Perform the job, publish its progress events, and get the report from Testaro.
-        const jobOpts = {
-          onProgress: payload => {
-            publishEvent(jobID, {eventType: 'progress', payload});
-          }
-        };
-        const report = await doJob(job, jobOpts);
-        // Score the report in place.
-        score(scorer, report);
-        // Digest the scored report.
-        const jobDigest = await digest(digester, report, {
-          title: 'Kilotest dev report',
-          mainHeading: 'Kilotest dev report',
-          metadataHeading: 'Test facts',
-          jobID,
+        // Merge the batch and the script into jobs.
+        const jobs = merge(jobScript, jobBatch, '');
+        const jobsData = [];
+        // For each job:
+        for (const job of jobs) {
+          // Publish a progress event.
+          publishEvent(requestID, {eventType: 'progress', payload: {type: 'page', which: job.target.what}});
+          // Perform the job and get the report from Testaro.
+          const report = await doJob(job);
+          // Score the report in place.
+          score(scorer, report);
+          // Get the page specification and total score.
+          jobsData.push({
+            what: job.target.what,
+            url: job.target.url,
+            score: report.score.summary.total
+          });
+        }
+        // Digest the results.
+        const resultsDigest = await digest(digester, jobsData, {
+          requestID,
           testDate: new Date().toISOString().slice(0, 10),
-          pageID: pageWhat,
-          pageURL,
-          issueCount: Object.keys(report.score.details.issue).length,
-          impact: report.score.summary.total,
-          elapsedSeconds: report.jobData.elapsedSeconds,
-          report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          elapsedSeconds: report.jobData.elapsedSeconds
         });
         // Tell the client to retrieve the digest.
-        publishEvent(jobID, {
+        publishEvent(requestID, {
           eventType: 'digestDone',
-          payload: {url: `/dev/results/${jobID}`}
+          payload: {url: `/screen/results/${requestID}`}
         });
         // Store the digest HTML in memory for retrieval.
-        results.set(jobID, jobDigest);
-      }
-      // Otherwise, i.e. if the request is invalid:
-      else {
-        // Report this.
-        const message = 'ERROR: invalid request';
-        console.log(message);
-        await serveError(message, response);
+        results.set(requestID, resultsDigest);
       }
     }
   }

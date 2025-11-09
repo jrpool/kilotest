@@ -208,8 +208,6 @@ exports.devRequestHandler = async (request, response) => {
         // Digest the scored report.
         const jobDigest = await digest(digester, report, {
           title: 'Kilotest dev report',
-          mainHeading: 'Kilotest dev report',
-          metadataHeading: 'Test facts',
           jobID,
           testDate: new Date().toISOString().slice(0, 10),
           pageID: pageWhat,

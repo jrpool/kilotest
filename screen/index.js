@@ -88,6 +88,7 @@ const getPostData = async request => {
 };
 // Handles a request.
 exports.screenRequestHandler = async (request, response) => {
+  // Get its method.
   const {method} = request;
   // Get its URL.
   const requestURL = request.url;
@@ -167,17 +168,10 @@ exports.screenRequestHandler = async (request, response) => {
     if (requestURL === '/screen/progress.html') {
       // Get the data from it.
       const postData = await getPostData(request);
-      const {
-        pageWhat1, pageURL1,
-        pageWhat2, pageURL2,
-        pageWhat3, pageURL3,
-        pageWhat4, pageURL4,
-        pageWhat5, pageURL5
-      } = postData;
       // Get the statusus of the page requests.
-      const pageStatuses = [1, 2, 3, 4, 5].map(pageNum => {
-        const what = postData[`pageWhat${pageNum}`];
-        const url = postData[`pageURL${pageNum}`];
+      const pageStatuses = [1, 2, 3, 4, 5].map(num => {
+        const what = postData[`pageWhat${num}`];
+        const url = postData[`pageURL${num}`];
         if (! url && ! what) {
           return 'empty';
         }
@@ -186,15 +180,21 @@ exports.screenRequestHandler = async (request, response) => {
         }
         return 'invalid';
       });
+      console.log(`Page statuses: ${pageStatuses.join(', ')}`);
       // If any request is invalid:
       if (pageStatuses.includes('invalid')) {
-        const message = `ERROR: go back to correct page ${pageStatuses.indexOf('invalid') + 1}`;
-        await serveError(message, response);
+        console.log(pageStatuses);
+        const error = {
+          message: `ERROR: go back to correct page ${pageStatuses.indexOf('invalid') + 1}`
+        }
+        await serveError(error, response);
       }
       // Otherwise, if all requests are empty:
       else if (pageStatuses.every(status => status === 'empty')) {
-        const message = 'No pages were specified';
-        await serveError(message, response);
+        const error = {
+          message: 'ERROR: go back to specify at least 1 page'
+        };
+        await serveError(error, response);
       }
       // Otherwise, i.e. if all requests are valid and there are any:
       else {
@@ -203,8 +203,8 @@ exports.screenRequestHandler = async (request, response) => {
         .map(num => {
           return {
             num,
-            what: postData[`pageWhat${pageNum}`],
-            url: postData[`pageURL${pageNum}`]
+            what: postData[`pageWhat${num}`],
+            url: postData[`pageURL${num}`]
           };
         })
         .filter(num => pageStatuses[num - 1] === 'valid');
@@ -221,7 +221,7 @@ exports.screenRequestHandler = async (request, response) => {
         console.log(`Waiting ${DEMO_SSE_DELAY}ms before publishing jobStart`);
         await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY));
         // Notify the client that the testing has started.
-        publishEvent(jobID, {eventType: 'jobStart', payload: {}});
+        publishEvent(requestID, {eventType: 'requestStart', payload: {}});
         // Create a target list from the page specifications.
         const targetList = pageSpecs.map(spec => ({
           what: spec.what,

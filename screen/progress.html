@@ -6,14 +6,14 @@
     <meta name="publisher" content="Jonathan Robert Pool">
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="report,accessibility,a11y">
-    <title>Progress | Kilotest</title>
+    <title>Screen progress | Kilotest</title>
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <main>
-      <h1>Kilotest Dev progress</h1>
+      <h1>Kilotest Screen progress</h1>
       <div id="status">
-        <p>This is job <code>__jobID__</code></p>
+        <p>This is request <code>__requestID__</code></p>
         <p>Testing is starting now</p>
       </div>
       <script>
@@ -28,7 +28,7 @@
               const eventData = JSON.parse(event.data);
               const {eventType, payload} = eventData;
               // If the event is the start of the job:
-              if (eventType === 'jobStart') {
+              if (eventType === 'requestStart') {
                 // Add a paragraph with the start message.
                 const startedPar = document.createElement('p');
                 startedPar.textContent = 'Testing started';

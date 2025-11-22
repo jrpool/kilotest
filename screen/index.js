@@ -180,21 +180,21 @@ exports.screenRequestHandler = async (request, response) => {
         }
         return 'invalid';
       });
-      // If any request is invalid:
-      if (pageStatuses.includes('invalid')) {
+      // If only 0 or 1 request is non-empty:
+      if (pageStatuses.filter(status => status === 'empty').length >= 4) {
+        const error = {
+          message: 'ERROR: go back to specify at least 2 pages'
+        };
+        await serveError(error, response);
+      }
+      // Otherwise, if any request is invalid:
+      else if (pageStatuses.includes('invalid')) {
         const error = {
           message: `ERROR: go back to correct page ${pageStatuses.indexOf('invalid') + 1}`
         }
         await serveError(error, response);
       }
-      // Otherwise, if all requests are empty:
-      else if (pageStatuses.every(status => status === 'empty')) {
-        const error = {
-          message: 'ERROR: go back to specify at least 1 page'
-        };
-        await serveError(error, response);
-      }
-      // Otherwise, i.e. if all requests are valid and there are any:
+      // Otherwise, i.e. if all requests are valid and there are at least 2:
       else {
         // Get the requested page specifications.
         const pageSpecs = [1, 2, 3, 4, 5]
@@ -247,7 +247,7 @@ exports.screenRequestHandler = async (request, response) => {
           });
         }
         // Log the scores.
-        console.log('Job scores:', jobsData.map(job => `${job.what}: ${job.score}`).join('\n'));
+        console.log('Job scores:\n', jobsData.map(job => `${job.what}: ${job.score}`).join('\n'));
         // Digest the results.
         jobsData.id = requestID;
         const resultsDigest = await digest(digester, jobsData, {

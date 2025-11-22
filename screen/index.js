@@ -183,14 +183,14 @@ exports.screenRequestHandler = async (request, response) => {
       // If only 0 or 1 request is non-empty:
       if (pageStatuses.filter(status => status === 'empty').length >= 4) {
         const error = {
-          message: 'ERROR: go back to specify at least 2 pages'
+          message: 'ERROR: Go back to specify at least 2 pages'
         };
         await serveError(error, response);
       }
       // Otherwise, if any request is invalid:
       else if (pageStatuses.includes('invalid')) {
         const error = {
-          message: `ERROR: go back to correct page ${pageStatuses.indexOf('invalid') + 1}`
+          message: `ERROR: Go back to correct page ${pageStatuses.indexOf('invalid') + 1}`
         }
         await serveError(error, response);
       }

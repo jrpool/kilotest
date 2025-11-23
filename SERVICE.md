@@ -4,7 +4,7 @@ This document describes one deployment of Kilotest as a web service.
 
 ## Host
 
-The host of the service is a [Vultr](https://www.vultr.com) High Frequency virtual machine named `jpdev` with the IPV4 address 149.28.208.106. The host has 1 vCPU, 2MB of RAM, and 64GB NVMe of storage.
+The host of the service is a [Vultr](https://www.vultr.com) Cloud Compute High Frequency virtual machine named `jpdev` with the IPV4 address 149.28.208.106. The host has 1 vCPU, 2MB of RAM, and 64GB NVMe of storage.
 
 The server operating system is Ubuntu LTS 22.04.
 
@@ -34,7 +34,7 @@ The SSH configuration on both the server and the local client is customized so t
 
 ## Internet domain
 
-The domain name `kilotest.com` is registered with [Porkbun](https://porkbun.com) for this application.
+The domain name `kilotest.com` is registered with [Porkbun](https://porkbun.com) for use by this application.
 
 ## DNS Configuration
 
@@ -67,7 +67,7 @@ Requests to `https://kilotest.com` are received on port 443 and processed by Cad
 
 Caddy also manages request and response encryption by subscribing to a periodically renewed Let’s Encrypt certificate.
 
-This Caddy configuration is maintained in `/etc/caddy/Caddyfile`:
+This Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`:
 
 ```
 kilotest.com {
@@ -82,6 +82,15 @@ kilotest.com {
 ```
 
 This configuration prevents the granular reporting of Testaro from being buffered, so the updates reach the browser without delay.
+
+## Version management
+
+When a new version of the `kilotest` package has been published, the service can be updated as follows:
+- Connect to the server: `ssh linuxuser@kilotest.com`
+- Navigate to the package root: `cd /opt/jpdev/kilotest`
+- Fetch and merge the new version: `git pull`
+- Update the dependencies: `npm update`
+- Restart the service: `pm2 restart kilotest`
 
 ## Performance
 

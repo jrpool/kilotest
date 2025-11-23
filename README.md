@@ -4,9 +4,11 @@ An ensemble testing service with a focus on accessibility
 
 ## Features
 
-This service uses an ensemble of 11 tools to test any public web page for accessibility.
+This application uses an ensemble of 11 tools to test public web pages for accessibility and conformity to HTML standards.
 
-It asks the user for a URL and then runs all the tests of the tools, totaling about 1000 tests, on that page. In a few minutes, it gets 11 reports, one from each tool, and combines them into a single standardized report telling the user which issues were reported and which tools reported them.
+In Dev mode, it asks the user for a URL and then runs all the tests of the tools, totaling about 1000 tests, on that page. In typically about 2 minutes, it gets 11 reports, one from each tool, and combines them into a single standardized report telling the user which issues were reported and which tools reported them.
+
+In Screen mode, it asks the user for 2 to 5 URLs and then runs the tests of a subset of the tools, totaling about 340 tests, on those pages. In typically about half a minute per page, it gets one report per tool per page, derives a preliminary estimate of the relative over-all qualities of the pages, and reports those relative estimates.
 
 To learn why Kilotest uses an ensemble of tools, instead of only one tool, see:
 - [How to run a thousand accessibility tests](https://medium.com/cvs-health-tech-blog/how-to-run-a-thousand-accessibility-tests-63692ad120c3)

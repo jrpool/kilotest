@@ -247,7 +247,8 @@ exports.screenRequestHandler = async (request, response) => {
           });
         }
         // Log the scores.
-        console.log('Job scores:\n', jobsData.map(job => `${job.what}: ${job.score}`).join('\n'));
+        const jobTimeLines = jobsData.map(job => `${job.what}: ${job.score}`).join('\n');
+        console.log(`Job scores:\n${jobTimeLines}`);
         // Digest the results.
         jobsData.id = requestID;
         const resultsDigest = await digest(digester, jobsData, {

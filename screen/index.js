@@ -224,7 +224,7 @@ exports.screenRequestHandler = async (request, response) => {
         // Create a script for the jobs.
         const jobScript = script('jobScript', 'job script', 'default', {
           type: 'tools',
-          specs: ['aslint', 'ed11y', 'htmlcs', 'qualWeb']
+          specs: ['aslint', 'axe', 'ed11y', 'htmlcs']
         });
         // Merge the batch and the script into jobs.
         const jobs = merge(jobScript, jobBatch, '');

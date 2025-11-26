@@ -31,13 +31,15 @@ const DEMO_SSE_DELAY = parseInt(process.env.DEMO_SSE_DELAY || '2000', 10);
 
 // FUNCTIONS
 
-// Publishes an event to all clients connected to an event stream.
+// Publishes an event to all clients connected to the event stream of a job.
 const publishEvent = (jobID, event) => {
   // Get the response sinks for the job.
   const sinks = eventStreams.get(jobID) || [];
   // Create the payload.
   const payload = `data: ${JSON.stringify(event)}\n\n`;
+  // For each response sink:
   for (const response of sinks) {
+    // Send the payload.
     try {
       response.write(payload);
     }
@@ -196,12 +198,13 @@ exports.devRequestHandler = async (request, response) => {
         jobScript.observe = true;
         // Merge the batch and the script into a job.
         const job = merge(jobScript, jobBatch, '')[0];
-        // Perform the job, publish its progress events, and get the report from Testaro.
+        // Make the job publish its progress events.
         const jobOpts = {
           onProgress: payload => {
             publishEvent(jobID, {eventType: 'progress', payload});
           }
         };
+        // Perform the job and get its report.
         const report = await doJob(job, jobOpts);
         // Score the report in place.
         score(scorer, report);

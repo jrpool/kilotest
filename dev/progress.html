@@ -33,13 +33,18 @@
                 startedPar.textContent = 'Testing started';
                 statusDiv.appendChild(startedPar);
               }
-              // Otherwise, if the event is a tool or test start:
+              // Otherwise, if the event is a progress event:
               else if (eventType === 'progress' && payload) {
                 // Add a paragraph with a progress message based on the payload property.
                 const progressPar = document.createElement('p');
                 const {type, which} = payload;
                 const scope = type === 'test' ? 'tool' : type;
-                progressPar.innerHTML = `Starting tests of ${scope} <strong>${which}</strong>`;
+                if (scope === 'tool') {
+                  progressPar.innerHTML = `Starting tests of ${scope} <strong>${which}</strong>`;
+                }
+                else if (scope === 'standardization' && which === 'start') {
+                  progressPar.innerHTML = 'Starting standardization';
+                }
                 statusDiv.appendChild(progressPar);
               }
               // Otherwise, if the event is the end of the job:

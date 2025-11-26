@@ -12,6 +12,8 @@ Kilotest is installed at `/opt/jpdev/kilotest` on the server.
 
 The server has a `sudo`-capable non-root user named `linuxuser`, which is the owner of the project directory and files.
 
+Connection to the host is made with `ssh linuxuser@kilotest.com`. Periodically the server requires password authentication in addition to public key authentication. The password is available in the server details on the Vultr web console, after the administrator logs in via GitHub.
+
 ## Process management
 
 The service is managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`.
@@ -90,6 +92,7 @@ When a new version of the `kilotest` package has been published, the service can
 - Navigate to the package root: `cd /opt/jpdev/kilotest`
 - Fetch and merge the new version: `git pull`
 - Update the dependencies: `npm update`
+- Update the Playwright browsers: `npx playwright install`
 - Restart the service: `pm2 restart kilotest`
 
 ## Performance

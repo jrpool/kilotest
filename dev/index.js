@@ -27,7 +27,7 @@ const {digester} = require('./digesters/kd00/index');
 // Functions from Testaro
 const {doJob} = require('testaro/run');
 // Temporary import.
-const DEMO_SSE_DELAY = parseInt(process.env.DEMO_SSE_DELAY || '2000', 10);
+const DEMO_SSE_DELAY = Number.parseInt(process.env.DEMO_SSE_DELAY || '2000', 10);
 
 // FUNCTIONS
 

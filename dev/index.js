@@ -191,7 +191,17 @@ exports.devRequestHandler = async (request, response) => {
         const jobScript = script('jobScript', 'job script', 'default', {
           type: 'tools',
           specs: [
-            'alfa', 'aslint', 'axe', 'ed11y', 'htmlcs', 'ibm', 'nuVal', 'qualWeb', 'testaro', 'wax'
+            'alfa',
+            'aslint',
+            'axe',
+            'ed11y',
+            'htmlcs',
+            'ibm',
+            'nuVal',
+            'nuVnu',
+            'qualWeb',
+            'testaro',
+            'wax'
           ]
         });
         // Specify granular reporting.

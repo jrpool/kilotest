@@ -24,7 +24,7 @@ const outerJoiner = '\n      ';
 // Adds parameters to a query for a digest.
 const populateQuery = async (report, query) => {
   const {score} = report;
-  const {details, summary} = score;
+  const {details} = score;
   const {issue} = details;
   const issueData = [];
   Object.keys(issue).forEach(issueID => {

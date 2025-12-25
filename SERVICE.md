@@ -154,3 +154,23 @@ To evaluate a new host before deciding to keep it, do this after deploying it:
 1. Observe the elapsed time reported in the result basics.
 
 Experimentation revealed that a high-frequency instance could decrease the elapsed-time ratio (compared with the MacBook Pro) to 1.3 to 1.5, and a dedicated instance could decrease it further to about 1.2. Swapping was found eliminated with 4GB of RAM, but that elimination had no significant impact on elapsed time.
+
+## Security
+
+### Browser privileges
+
+Kilotest uses Testaro to run jobs, and Testaro in turn uses Playwright to launch and control headless browsers, most commonly `chromium`. Those browsers navigate to web pages that are tested by the tools that Testaro integrates. Two tools, `ibm` and `qualWeb`, under some conditions launch their own browsers via Puppeteer as a dependency to perform their tests. Playwright, too, uses Puppeteer to launch browsers. The `puppeteer.launch` method by default configure its `chromium` browsers in sandboxes, but some hosts prohibit sandboxed browsers. For example, the Vultr Cloud Compute host contains by default a file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.unprivileged_userns_clone = 0`, which prohibits sandboxed browsers.
+
+One modification that overcomes this prohibition on the Vultr Cloud Compute host is to explicitly permit Puppeteer to launch non-sandboxed browsers:
+
+- For the `ibm` tool, this is done in the `aceconfig.js` file, of which a copy has been created at the root of the Kilotest project. That file defines a `module.exports` object with a `puppeteerArgs` property, and, if its array value includes `--no-sandbox`, then a `chromium` browser launched by `puppeteer` within that tool will not be sandboxed.
+- For the `qualWeb` tool, this is done in the `tests/qualweb.js` file, where the `qualWeb.start` method is called with an options argument whose `args` array property includes `'--no-sandbox'`.
+
+Non-sandboxed browsers are less secure than sandboxed ones, particularly when there is no restriction on who can use the service and what web pages they can test with it. Therefore, the above modification introduces some risk. An alternative modification is to permit browsers to be sandboxed. For the `ibm` and `qualWeb` tools, the omission of the above-described `'--no-sandbox'` arguments does this. On the Vultr Cloud Compute host, this requires explicit operating-system permission. These commands achieve that:
+
+```bash
+sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/99-kilotest-userns.conf
+```
+
+This makes the `/etc/sysctl.d/99-kilotest-userns.conf` file content `kernel.unprivileged_userns_clone = 1`.

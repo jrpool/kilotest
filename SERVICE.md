@@ -41,6 +41,8 @@ The domain name `kilotest.com` is registered with [Porkbun](https://porkbun.com)
 
 ## DNS Configuration
 
+### kilotest.com
+
 The DNS records for `kilotest.com` are configured as follows. In each case, `TTL` is set to 3600 (1 hour). (The Porkbun interface uses `kilotest.com` as a name where some others use `@`.)
 
 1. **A**
@@ -63,6 +65,43 @@ The DNS records for `kilotest.com` are configured as follows. In each case, `TTL
 5. **TXT** (domain validation)
    - **Host**: _acme-challenge.kilotest.com
    - **Answers**: validation tokens provided by Porkbun ACME client
+
+### Kilotest service
+
+Reliance on the default Vultr DNS resolvers has caused erratic failures. Therefore, the service has been configured to use specific DNS resolvers.
+
+These commands disabled cloud-init network management:
+
+```bash
+sudo mkdir -p /etc/cloud/cloud.cfg.d
+printf "network: {config: disabled}\n" | sudo tee /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+```
+
+The following `/etc/netplan/01-dns.yaml` file with `root` as owner and groupwas created and given permissions 600. It custom-configures network management and specifies the DNS resolvers of APNIC Research and Development and Google LLC.
+
+```yaml
+network:
+  version: 2
+  ethernets:
+    enp1s0:
+      dhcp4: true
+      dhcp6: true
+      nameservers:
+        addresses:
+          - 1.1.1.1
+          - 8.8.8.8
+          - 2606:4700:4700::1111
+          - 2001:4860:4860::8888
+```
+
+These commands applied and verified the configuration:
+
+```bash
+sudo netplan generate
+sudo netplan apply
+resolvectl status
+dig +short A example.com
+curl -sv https://example.com/ -o /dev/null```
 
 ## Request management
 

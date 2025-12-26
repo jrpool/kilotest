@@ -66,6 +66,19 @@ The DNS records for `kilotest.com` are configured as follows. In each case, `TTL
    - **Host**: _acme-challenge.kilotest.com
    - **Answers**: validation tokens provided by Porkbun ACME client
 
+The DNS configuration as CSV:
+
+```csv
+DOMAIN,HOST,TYPE,ANSWER,TTL,PRIO
+kilotest.com,kilotest.com,A,149.28.208.106,3600,0
+kilotest.com,www.kilotest.com,CNAME,kilotest.com,3600,0
+kilotest.com,kilotest.com,MX,fwd1.porkbun.com,3600,10
+kilotest.com,kilotest.com,MX,fwd2.porkbun.com,3600,20
+kilotest.com,kilotest.com,TXT,"v=spf1 include:_spf.porkbun.com ~all",3600,0
+kilotest.com,_acme-challenge.kilotest.com,TXT,GIzAHOFW416fHp7cuTkg4gvJDsyuPZvsPlSsnyViFLQ,3600,0
+kilotest.com,_acme-challenge.kilotest.com,TXT,qQdIIiUSC76PvYuku-AxPsRPY-fJV7T7i3b8fimlFjU,3600,0
+```
+
 ### Kilotest service
 
 Reliance on the default Vultr DNS resolvers has caused erratic failures. Therefore, the service has been configured to use specific DNS resolvers.
@@ -105,11 +118,9 @@ curl -sv https://example.com/ -o /dev/null```
 
 ## Request management
 
-Requests to `https://kilotest.com` are received on port 443 and processed by Caddy, which forwards them via HTTP to the application at `localhost:3000`. Caddy manages TLS via Let’s Encrypt. Any request to `http://kilotest.com` is received on port 80, and Caddy redirects it to an `https` request. Caddy forwards `https` requests to the [local server](http://localhost:3000), where it is processed by the Kilotest service.
+Requests to `https://kilotest.com` are received on port 443 and processed by [Caddy](https://caddyserver.com/), which forwards them via HTTP to the application at `localhost:3000`. Caddy manages provisions and renews a TLS certificate via Let’s Encrypt. Any request to `http://kilotest.com` is received on port 80, and Caddy redirects it to an `https` request. Caddy forwards `https` requests to the [local server](http://localhost:3000), where it is processed by the Kilotest service.
 
-Caddy also manages request and response encryption by subscribing to a periodically renewed Let’s Encrypt certificate.
-
-This Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`:
+The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`:
 
 ```javascript
 kilotest.com {

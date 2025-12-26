@@ -159,18 +159,30 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 ### Browser privileges
 
-Kilotest uses Testaro to run jobs, and Testaro in turn uses Playwright to launch and control headless browsers, most commonly `chromium`. Those browsers navigate to web pages that are tested by the tools that Testaro integrates. Two tools, `ibm` and `qualWeb`, under some conditions launch their own browsers via Puppeteer as a dependency to perform their tests. Playwright, too, uses Puppeteer to launch browsers. The `puppeteer.launch` method by default configure its `chromium` browsers in sandboxes, but some hosts prohibit sandboxed browsers. For example, the Vultr Cloud Compute host contains by default a file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.unprivileged_userns_clone = 0`, which prohibits sandboxed browsers.
+Kilotest uses Testaro to run jobs, and Testaro in turn uses Playwright to launch and control headless browsers, often `chromium`. Those browsers navigate to web pages that are tested by the tools that Testaro integrates. Two tools, `ibm` and `qualWeb`, under some conditions launch their own browsers via Puppeteer as a dependency to perform their tests.
 
-One modification that overcomes this prohibition on the Vultr Cloud Compute host is to explicitly permit Puppeteer to launch non-sandboxed browsers:
+When either Playwright or Puppeteer launches a `chromium` browser, in most environments it is [sandboxed](https://www.geeksforgeeks.org/ethical-hacking/what-is-browser-sandboxing/). Sandboxing is a security feature that prevents the browser from accessing potentially unsafe system resources. But in the Ubuntu operating system that was installedon the Vultr Cloud Compute host a sandboxed browser requires an [unprivileged user namespace](https://ubuntu.com/blog/ubuntu-23-10-restricted-unprivileged-user-namespaces), and when Ubuwntu was installed its configuration disallowed such namespaces. The file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.apparmor_restrict_unprivileged_userns = 1` prohibited unprivileged user namespaces and thereby made sandboxed browsers unlaunchable.
 
-- For the `ibm` tool, this is done in the `aceconfig.js` file, of which a copy has been created at the root of the Kilotest project. That file defines a `module.exports` object with a `puppeteerArgs` property, and, if its array value includes `--no-sandbox`, then a `chromium` browser launched by `puppeteer` within that tool will not be sandboxed.
-- For the `qualWeb` tool, this is done in the `tests/qualweb.js` file, where the `qualWeb.start` method is called with an options argument whose `args` array property includes `'--no-sandbox'`.
+### Potential modification
 
-Non-sandboxed browsers are less secure than sandboxed ones, particularly when there is no restriction on who can use the service and what web pages they can test with it. Therefore, the above modification introduces some risk. An alternative modification is to permit browsers to be sandboxed. For the `ibm` and `qualWeb` tools, the omission of the above-described `'--no-sandbox'` arguments does this. On the Vultr Cloud Compute host, this requires explicit operating-system permission. These commands achieve that:
+One modification to cope with this prohibition on the Vultr Cloud Compute host would be to configure Playwright and Puppeteer to launch `chromium` non-sandboxed. In both cases, launch arguments `'--no-sandbox'` and `'--disable-setuid-sandbox'` are available to specify this.
+
+- For Playwright, `'--no-sandbox'` and `'--disable-setuid-sandbox'` would be added to the arguments of `browserOptionArgs.push` in the Testaro `run.js` file.
+- For the `ibm` tool, this would be done in the Testaro `aceconfig.js` file, of which a copy has been created at the root of the Kilotest project. That file defines a `module.exports` object with a `puppeteerArgs` property, and, `--no-sandbox` and `--disable-setuid-sandbox` would be added to its array value.
+- For the `qualWeb` tool, this would be done in the Testaro `tests/qualweb.js` file, where the `qualWeb.start` method is called with an options argument. Its `args` array property would include `'--no-sandbox'` and `'--disable-setuid-sandbox'`.
+
+### Current modification
+
+However, non-sandboxed browsers are less secure than sandboxed ones, particularly when there is no restriction on who can use the service and what web pages they can test with it. Therefore, the potential modification described above would introduce nontrivial risk. An alternative solution was adopted instead. In it, the `chromium` configuration was left unchanged.
+
+This solution required configuring the operating system of the Vultr Cloud Compute host to permit a sandboxed browser to be launched. This reconfiguration was performed with:
 
 ```bash
+sudo sysctl -w kernel.unprivileged_userns_clone=1
 sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/99-kilotest-userns.conf
+sudo tee /etc/sysctl.d/99-kilotest-userns.conf >/dev/null <<'EOF'
+kernel.unprivileged_userns_clone = 1
+kernel.apparmor_restrict_unprivileged_userns = 0
+EOF
+sudo sysctl --system
 ```
-
-This makes the `/etc/sysctl.d/99-kilotest-userns.conf` file content `kernel.unprivileged_userns_clone = 1`.

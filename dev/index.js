@@ -168,9 +168,18 @@ exports.devRequestHandler = async (request, response) => {
     if (requestURL === '/dev/progress.html') {
       // Get the data from it.
       const postData = await getPostData(request);
-      const {pageWhat, pageURL} = postData;
-      // If the request is valid:
-      if (pageURL && pageURL.startsWith('http') && pageWhat) {
+      const {authCode, pageWhat, pageURL} = postData;
+      const authCodeGood = authCode === process.env.AUTH_CODE;
+      const authCodeBad = authCode && ! authCodeGood;
+      // If an invalid authorization code was specified:
+      if (authCodeBad) {
+        // Report this.
+        const message = 'ERROR: invalid authorization code';
+        console.log(message);
+        await serveError(message, response);
+      }
+      // Otherwise, if no or a valid authorization code was specified and the request is valid:
+      else if (pageURL && pageURL.startsWith('http') && pageWhat) {
         // Create a unique ID for the job.
         const jobID = Date.now().toString(36).slice(2, -1);
         console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);

@@ -211,7 +211,8 @@ exports.devRequestHandler = async (request, response) => {
           const jobTemplateJSON = await fs.readFile(`${__dirname}/job.json`, 'utf8');
           const job = JSON.parse(jobTemplateJSON);
           // Populate the template with job properties.
-          job.id = Date.now().toString(36).slice(2, -1);
+          const jobID = Date.now().toString(36).slice(2, -1);
+          job.id = jobID;
           job.creationTimeStamp = getNowStamp();
           job.executionTimeStamp = getNowStamp();
           job.target.what = pageWhat;
@@ -229,7 +230,7 @@ exports.devRequestHandler = async (request, response) => {
           // Make the job publish its progress events.
           const jobOpts = {
             onProgress: payload => {
-              publishEvent(job.id, {eventType: 'progress', payload});
+              publishEvent(jobID, {eventType: 'progress', payload});
             }
           };
           // Perform the job and get its report.

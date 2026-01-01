@@ -31,7 +31,8 @@ const DEMO_SSE_DELAY = Number.parseInt(process.env.DEMO_SSE_DELAY || '2000', 10)
 
 // VARIABLES
 
-let lastJobCompletion = Date.now() - 600000;
+// Time when the last anonymous job started.
+let lastAnonymousJob = Date.now() - 600000;
 
 // FUNCTIONS
 
@@ -185,16 +186,21 @@ exports.devRequestHandler = async (request, response) => {
           };
           await serveError(error, response);
         }
-        // Otherwise, if no authorization code was specified and the request is too early:
-        else if (! authCode && Date.now() - lastJobCompletion < 600000) {
+        // Otherwise, if the request is anonymous and too early:
+        else if (! authCode && Date.now() - lastAnonymousJob < 600000) {
           // Report this.
           const error = {
-            message: 'ERROR: Requests too frequest; please wait 10 minutes'
+            message: 'ERROR: Requests too frequest; please wait about 10 minutes'
           };
           await serveError(error, response);
         }
         // Otherwise, i.e. if a valid authorization code was specified or unnecessary:
         else {
+          // If the request is anonymous:
+          if (! authCode) {
+            // Update the last anonymous job start time.
+            lastAnonymousJob = Date.now();
+          }
           // Create a unique ID for the job.
           const jobID = Date.now().toString(36).slice(2, -1);
           console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
@@ -261,8 +267,6 @@ exports.devRequestHandler = async (request, response) => {
           });
           // Store the digest HTML in memory for retrieval.
           results.set(jobID, jobDigest);
-          // Update the last job completion time.
-          lastJobCompletion = Date.now();
         }
       }
       // Otherwise, i.e. if the request is invalid:

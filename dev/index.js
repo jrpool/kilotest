@@ -32,7 +32,7 @@ const DEMO_SSE_DELAY = Number.parseInt(process.env.DEMO_SSE_DELAY || '2000', 10)
 // VARIABLES
 
 // Time when the last anonymous job started.
-let lastAnonymousJob = Date.now() - 600000;
+let lastAnonymousJob = Date.now() - 650000;
 
 // FUNCTIONS
 

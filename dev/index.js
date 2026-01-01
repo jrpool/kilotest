@@ -186,14 +186,14 @@ exports.devRequestHandler = async (request, response) => {
           await serveError(error, response);
         }
         // Otherwise, if no authorization code was specified and the request is too early:
-        if (! authCode && Date.now() - lastJobCompletion < 600000) {
+        else if (! authCode && Date.now() - lastJobCompletion < 600000) {
           // Report this.
           const error = {
             message: 'ERROR: Requests too frequest; please wait 10 minutes'
           };
           await serveError(error, response);
         }
-        // Otherwise, i.e. if a valid authoriation code was specified or unnecessary:
+        // Otherwise, i.e. if a valid authorization code was specified or unnecessary:
         else {
           // Create a unique ID for the job.
           const jobID = Date.now().toString(36).slice(2, -1);

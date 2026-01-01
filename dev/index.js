@@ -49,7 +49,7 @@ const publishEvent = (jobID, event) => {
 
 // Serves an error message.
 const serveError = async (error, response) => {
-  console.log(error.message);
+  console.log(erroMessage);
   if (! response.writableEnded) {
     response.statusCode = 400;
     const errorTemplate = await fs.readFile('error.html', 'utf8');
@@ -174,9 +174,10 @@ exports.devRequestHandler = async (request, response) => {
       // If an invalid authorization code was specified:
       if (authCodeBad) {
         // Report this.
-        const message = 'ERROR: invalid authorization code';
-        console.log(message);
-        await serveError(message, response);
+        const error = {
+          message: 'ERROR: invalid authorization code'
+        };
+        await serveError(error, response);
       }
       // Otherwise, if no or a valid authorization code was specified and the request is valid:
       else if (pageURL && pageURL.startsWith('http') && pageWhat) {
@@ -250,15 +251,19 @@ exports.devRequestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report this.
-        const message = 'ERROR: invalid request';
-        console.log(message);
-        await serveError(message, response);
+        const error = {
+          message: 'ERROR: invalid request'
+        };
+        await serveError(error, response);
       }
     }
   }
   // Otherwise, i.e. if it uses another method:
   else {
     // Report this.
-    console.log(`ERROR: Request with prohibited method ${method} received`);
+    const error = {
+      message: `ERROR: Request with prohibited method ${method} received`
+    };
+    await serveError(error, response);
   }
 };

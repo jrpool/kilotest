@@ -213,6 +213,9 @@ exports.devRequestHandler = async (request, response) => {
           // Populate the template with job properties.
           const jobID = Date.now().toString(36).slice(2, -1);
           job.id = jobID;
+          if (authCode) {
+            job.sources.authorizedUser = true;
+          }
           job.creationTimeStamp = getNowStamp();
           job.executionTimeStamp = getNowStamp();
           job.target.what = pageWhat;

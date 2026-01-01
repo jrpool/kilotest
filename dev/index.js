@@ -178,6 +178,8 @@ exports.devRequestHandler = async (request, response) => {
       const authCodeBad = authCode && ! authCodeGood;
       // If the request is valid:
       if (pageURL && pageURL.startsWith('http') && pageWhat) {
+        // Modify the required wait by a random amount to prevent denials of service.
+        const waitAdjustment = 100000 * Math.random() - 50000;
         // If an invalid authorization code was specified:
         if (authCodeBad) {
           // Report this.
@@ -187,7 +189,7 @@ exports.devRequestHandler = async (request, response) => {
           await serveError(error, response);
         }
         // Otherwise, if the request is anonymous and too early:
-        else if (! authCode && Date.now() - lastAnonymousJob < 600000) {
+        else if (! authCode && Date.now() + waitAdjustment - lastAnonymousJob < 600000) {
           // Report this.
           const error = {
             message: 'ERROR: Requests too frequest; please wait about 10 minutes'

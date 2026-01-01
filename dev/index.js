@@ -17,9 +17,6 @@ const results = new Map();
 // Module to access files.
 const fs = require('fs/promises');
 // Functions from Testilo.
-const {batch} = require('testilo/batch');
-const {script} = require('testilo/script');
-const {merge} = require('testilo/merge');
 const {score} = require('testilo/score');
 const {digest} = require('testilo/digest');
 const {scorer} = require('testilo/procs/score/tsp');
@@ -36,6 +33,12 @@ let lastAnonymousJob = Date.now() - 650000;
 
 // FUNCTIONS
 
+// Returns a string representing a date and time.
+const getTimeString = date => date.toISOString().slice(0, 19);
+// Returns a time stamp representing a date and time.
+const getTimeStamp = date => getTimeString(date).replace(/[-:]/g, '').slice(2, 13);
+// Returns a time stamp representing the date and time.
+const getNowStamp = () => getTimeStamp(new Date());
 // Publishes an event to all clients connected to the event stream of a job.
 const publishEvent = (jobID, event) => {
   // Get the response sinks for the job.
@@ -51,7 +54,6 @@ const publishEvent = (jobID, event) => {
     catch (error) {}
   };
 }
-
 // Serves an error message.
 const serveError = async (error, response) => {
   console.log(error.message);
@@ -205,8 +207,15 @@ exports.devRequestHandler = async (request, response) => {
             // Update the last anonymous job start time.
             lastAnonymousJob = Date.now();
           }
-          // Create a unique ID for the job.
-          const jobID = Date.now().toString(36).slice(2, -1);
+          // Get the job template.
+          const jobTemplateJSON = await fs.readFile(`${__dirname}/job.json`, 'utf8');
+          const job = JSON.parse(jobTemplateJSON);
+          // Populate the template with job properties.
+          job.id = Date.now().toString(36).slice(2, -1);
+          job.creationTimeStamp = getNowStamp();
+          job.executionTimeStamp = getNowStamp();
+          job.target.what = pageWhat;
+          job.target.url = pageURL;
           console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
           // Serve a progress page.
           response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -217,35 +226,10 @@ exports.devRequestHandler = async (request, response) => {
           await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY));
           // Notify the client that the job has started.
           publishEvent(jobID, {eventType: 'jobStart', payload: {}});
-          // Create a target list.
-          const targetList = [[pageWhat, pageURL]];
-          // Create a batch from the target list.
-          const jobBatch = batch('jobTarget', 'job target', targetList);
-          // Create a script for the job.
-          const jobScript = script('jobScript', 'job script', 'default', {
-            type: 'tools',
-            specs: [
-              'alfa',
-              'aslint',
-              'axe',
-              'ed11y',
-              'htmlcs',
-              'ibm',
-              'nuVal',
-              'nuVnu',
-              'qualWeb',
-              'testaro',
-              'wax'
-            ]
-          });
-          // Specify granular reporting.
-          jobScript.observe = true;
-          // Merge the batch and the script into a job.
-          const job = merge(jobScript, jobBatch, '')[0];
           // Make the job publish its progress events.
           const jobOpts = {
             onProgress: payload => {
-              publishEvent(jobID, {eventType: 'progress', payload});
+              publishEvent(job.id, {eventType: 'progress', payload});
             }
           };
           // Perform the job and get its report.

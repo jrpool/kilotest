@@ -1,0 +1,105 @@
+{
+  "id": "",
+  "what": "Kilotest Dev job",
+  "strict": false,
+  "standard": "only",
+  "observe": true,
+  "device": {
+    "id": "default",
+    "windowOptions": {
+      "reducedMotion": "no-preference"
+    }
+  },
+  "browserID": "chromium",
+  "creationTimeStamp": "",
+  "executionTimeStamp": "",
+  "sendReportTo": "",
+  "target": {
+    "what": "",
+    "url": ""
+  },
+  "sources": {},
+  "acts": [
+    {
+      "type": "test",
+      "launch": {},
+      "which": "alfa",
+      "what": "Alfa"
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "aslint",
+      "what": "ASLint"
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "axe",
+      "what": "Axe by Deque",
+      "detailLevel": 2
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "ed11y",
+      "what": "Editoria11y by Princeton University"
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "htmlcs",
+      "what": "HTML CodeSniffer by Squiz Labs"
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "ibm",
+      "what": "Accessibility Checker by IBM",
+      "withItems": true,
+      "withNewContent": false
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "nuVal",
+      "what": "Nu Html Checker API by World Wide Web Consortium",
+      "withSource": false
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "nuVnu",
+      "what": "Nu Html Checker by World Wide Web Consortium",
+      "withSource": false
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "qualWeb",
+      "what": "QualWeb by University of Lisbon",
+      "withNewContent": false
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "testaro",
+      "what": "Testaro by CVS Health and contributors",
+      "withItems": true,
+      "stopOnFail": false
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "wave",
+      "what": "WAVE by Utah State University",
+      "reportType": 4
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "wax",
+      "what": "WallyAX by Wally"
+    }
+  ]
+}

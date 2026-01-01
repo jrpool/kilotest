@@ -29,6 +29,10 @@ const {doJob} = require('testaro/run');
 // Temporary import.
 const DEMO_SSE_DELAY = Number.parseInt(process.env.DEMO_SSE_DELAY || '2000', 10);
 
+// VARIABLES
+
+let lastJobCompletion = Date.now() - 600000;
+
 // FUNCTIONS
 
 // Publishes an event to all clients connected to the event stream of a job.
@@ -171,82 +175,95 @@ exports.devRequestHandler = async (request, response) => {
       const {authCode, pageWhat, pageURL} = postData;
       const authCodeGood = authCode === process.env.AUTH_CODE;
       const authCodeBad = authCode && ! authCodeGood;
-      // If an invalid authorization code was specified:
-      if (authCodeBad) {
-        // Report this.
-        const error = {
-          message: 'ERROR: invalid authorization code'
-        };
-        await serveError(error, response);
-      }
-      // Otherwise, if no or a valid authorization code was specified and the request is valid:
-      else if (pageURL && pageURL.startsWith('http') && pageWhat) {
-        // Create a unique ID for the job.
-        const jobID = Date.now().toString(36).slice(2, -1);
-        console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
-        // Serve a progress page.
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        let progressPage = await fs.readFile(`${__dirname}/progress.html`, 'utf8');
-        progressPage = progressPage.replace(/__jobID__/g, jobID);
-        response.end(progressPage);
-        console.log(`Waiting ${DEMO_SSE_DELAY}ms before publishing jobStart`);
-        await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY));
-        // Notify the client that the job has started.
-        publishEvent(jobID, {eventType: 'jobStart', payload: {}});
-        // Create a target list.
-        const targetList = [[pageWhat, pageURL]];
-        // Create a batch from the target list.
-        const jobBatch = batch('jobTarget', 'job target', targetList);
-        // Create a script for the job.
-        const jobScript = script('jobScript', 'job script', 'default', {
-          type: 'tools',
-          specs: [
-            'alfa',
-            'aslint',
-            'axe',
-            'ed11y',
-            'htmlcs',
-            'ibm',
-            'nuVal',
-            'nuVnu',
-            'qualWeb',
-            'testaro',
-            'wax'
-          ]
-        });
-        // Specify granular reporting.
-        jobScript.observe = true;
-        // Merge the batch and the script into a job.
-        const job = merge(jobScript, jobBatch, '')[0];
-        // Make the job publish its progress events.
-        const jobOpts = {
-          onProgress: payload => {
-            publishEvent(jobID, {eventType: 'progress', payload});
-          }
-        };
-        // Perform the job and get its report.
-        const report = await doJob(job, jobOpts);
-        // Score the report in place.
-        score(scorer, report);
-        // Digest the scored report.
-        const jobDigest = await digest(digester, report, {
-          title: 'Kilotest dev report',
-          jobID,
-          testDate: new Date().toISOString().slice(0, 10),
-          pageID: pageWhat,
-          pageURL,
-          issueCount: Object.keys(report.score.details.issue).length,
-          impact: report.score.summary.total,
-          elapsedSeconds: report.jobData.elapsedSeconds,
-          report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        });
-        // Tell the client to retrieve the digest.
-        publishEvent(jobID, {
-          eventType: 'digestDone',
-          payload: {url: `/dev/results/${jobID}`}
-        });
-        // Store the digest HTML in memory for retrieval.
-        results.set(jobID, jobDigest);
+      // If the request is valid:
+      if (pageURL && pageURL.startsWith('http') && pageWhat) {
+        // If an invalid authorization code was specified:
+        if (authCodeBad) {
+          // Report this.
+          const error = {
+            message: 'ERROR: invalid authorization code'
+          };
+          await serveError(error, response);
+        }
+        // Otherwise, if no authorization code was specified and the request is too early:
+        if (! authCode && Date.now() - lastJobCompletion < 600000) {
+          // Report this.
+          const error = {
+            message: 'ERROR: Requests too frequest; please wait 10 minutes'
+          };
+          await serveError(error, response);
+        }
+        // Otherwise, i.e. if a valid authoriation code was specified or unnecessary:
+        else {
+          // Create a unique ID for the job.
+          const jobID = Date.now().toString(36).slice(2, -1);
+          console.log(`Request to test ${pageWhat} (${pageURL}) assigned to job ${jobID}`);
+          // Serve a progress page.
+          response.setHeader('Content-Type', 'text/html; charset=utf-8');
+          let progressPage = await fs.readFile(`${__dirname}/progress.html`, 'utf8');
+          progressPage = progressPage.replace(/__jobID__/g, jobID);
+          response.end(progressPage);
+          console.log(`Waiting ${DEMO_SSE_DELAY}ms before publishing jobStart`);
+          await new Promise(resolve => setTimeout(resolve, DEMO_SSE_DELAY));
+          // Notify the client that the job has started.
+          publishEvent(jobID, {eventType: 'jobStart', payload: {}});
+          // Create a target list.
+          const targetList = [[pageWhat, pageURL]];
+          // Create a batch from the target list.
+          const jobBatch = batch('jobTarget', 'job target', targetList);
+          // Create a script for the job.
+          const jobScript = script('jobScript', 'job script', 'default', {
+            type: 'tools',
+            specs: [
+              'alfa',
+              'aslint',
+              'axe',
+              'ed11y',
+              'htmlcs',
+              'ibm',
+              'nuVal',
+              'nuVnu',
+              'qualWeb',
+              'testaro',
+              'wax'
+            ]
+          });
+          // Specify granular reporting.
+          jobScript.observe = true;
+          // Merge the batch and the script into a job.
+          const job = merge(jobScript, jobBatch, '')[0];
+          // Make the job publish its progress events.
+          const jobOpts = {
+            onProgress: payload => {
+              publishEvent(jobID, {eventType: 'progress', payload});
+            }
+          };
+          // Perform the job and get its report.
+          const report = await doJob(job, jobOpts);
+          // Score the report in place.
+          score(scorer, report);
+          // Digest the scored report.
+          const jobDigest = await digest(digester, report, {
+            title: 'Kilotest dev report',
+            jobID,
+            testDate: new Date().toISOString().slice(0, 10),
+            pageID: pageWhat,
+            pageURL,
+            issueCount: Object.keys(report.score.details.issue).length,
+            impact: report.score.summary.total,
+            elapsedSeconds: report.jobData.elapsedSeconds,
+            report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          });
+          // Tell the client to retrieve the digest.
+          publishEvent(jobID, {
+            eventType: 'digestDone',
+            payload: {url: `/dev/results/${jobID}`}
+          });
+          // Store the digest HTML in memory for retrieval.
+          results.set(jobID, jobDigest);
+          // Update the last job completion time.
+          lastJobCompletion = Date.now();
+        }
       }
       // Otherwise, i.e. if the request is invalid:
       else {

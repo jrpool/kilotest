@@ -195,6 +195,8 @@ exports.devRequestHandler = async (request, response) => {
             message: 'ERROR: Requests too frequest; please wait about 10 minutes'
           };
           await serveError(error, response);
+          // Add an increment to the required wait to prevent service monopsonization.
+          lastAnonymousJob += 5000;
         }
         // Otherwise, i.e. if a valid authorization code was specified or unnecessary:
         else {

@@ -13,12 +13,14 @@
   "browserID": "chromium",
   "creationTimeStamp": "",
   "executionTimeStamp": "",
-  "sendReportTo": "",
   "target": {
     "what": "",
     "url": ""
   },
-  "sources": {},
+  "sources": {
+    "application": "Kilotest",
+    "authorizedUser": false
+  },
   "acts": [
     {
       "type": "test",

@@ -18,7 +18,6 @@ const results = new Map();
 const fs = require('fs/promises');
 // Functions from Testilo.
 const {score} = require('testilo/score');
-const {digest} = require('testilo/digest');
 const {scorer} = require('testilo/procs/score/tsp');
 const {digester} = require('./digesters/kd00/index');
 // Functions from Testaro
@@ -93,6 +92,14 @@ const getPostData = async request => {
       }
     });
   });
+};
+// Digests a scored report and returns it, digested.
+const digest = async (digester, report, query = {}) => {
+  // Create a digest.
+  const digest = await digester(report, query);
+  console.log(`Report ${report.id} digested`);
+  // Return the digest.
+  return digest;
 };
 // Handles a request.
 exports.devRequestHandler = async (request, response) => {

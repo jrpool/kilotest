@@ -49,7 +49,7 @@ const publishEvent = (jobID, event) => {
 
 // Serves an error message.
 const serveError = async (error, response) => {
-  console.log(erroMessage);
+  console.log(error.message);
   if (! response.writableEnded) {
     response.statusCode = 400;
     const errorTemplate = await fs.readFile('error.html', 'utf8');

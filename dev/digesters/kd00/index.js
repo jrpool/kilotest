@@ -28,10 +28,11 @@ const populateQuery = async (report, query) => {
   const {element, issue} = details;
   const issueData = [];
   Object.keys(issue).forEach(issueID => {
-    const {score, summary, tools, wcag, weight} = issue[issueID];
+    const {instanceCounts, score, summary, tools, wcag, weight} = issue[issueID];
     const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
     const issueXPaths = element[issueID];
     const issueXPathCount = issueXPaths.length;
+    const instanceCountValues = Object.values(instanceCounts);
     issueData.push({
       summary,
       wcag,
@@ -39,6 +40,7 @@ const populateQuery = async (report, query) => {
       weight,
       score,
       issueToolNames,
+      instanceCountRange: [Math.min(...instanceCountValues), Math.max(...instanceCountValues)],
       issueXPathCount
     });
   });
@@ -53,6 +55,7 @@ const populateQuery = async (report, query) => {
     dataLines.push(`<p>Why it matters: ${why}</p>`);
     dataLines.push(`<p>Estimated importance: ${weight} per instance, ${score} overall.</p>`);
     dataLines.push(`<p>Reported by: ${issueToolNames.join(', ')}</p>`);
+    dataLines.push(`<p>Range of reported instances: ${instanceCountRange.join(' to ')}</p>`);
     dataLines.push(`<p>Offending elements identified: ${issueXPathCount}</p>`);
   });
   query.data = dataLines.join(outerJoiner);

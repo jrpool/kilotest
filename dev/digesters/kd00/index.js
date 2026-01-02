@@ -46,12 +46,14 @@ const populateQuery = async (report, query) => {
   const dataLines = [];
   issueData.forEach(issueDatum => {
     const {issueToolNames, issueXPathCount, score, summary, wcag, weight, why} = issueDatum;
-    const wcagSuffix = wcag ? ` (cf. WCAG ${wcag})` : '';
-    dataLines.push(`<h3>${summary}${wcagSuffix}</h3>`);
-    dataLines.push(`<p>Impact description: ${why}</p>`);
+    dataLines.push(`<h3>${summary}</h3>`);
+    if (wcag) {
+      dataLines.push(`<p>Related WCAG standard: ${wcag}</p>`);
+    }
+    dataLines.push(`<p>Why it matters: ${why}</p>`);
     dataLines.push(`<p>Estimated importance: ${weight} per instance, ${score} overall.</p>`);
     dataLines.push(`<p>Reported by: ${issueToolNames.join(', ')}</p>`);
-    dataLines.push(`<p>Count of offending elements identified: ${issueXPathCount}</p>`);
+    dataLines.push(`<p>Offending elements identified: ${issueXPathCount}</p>`);
   });
   query.data = dataLines.join(outerJoiner);
 };

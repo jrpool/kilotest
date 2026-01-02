@@ -47,7 +47,9 @@ const populateQuery = async (report, query) => {
   issueData.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
   const dataLines = [];
   issueData.forEach(issueDatum => {
-    const {issueToolNames, issueXPathCount, score, summary, wcag, weight, why} = issueDatum;
+    const {
+      instanceCountRange, issueToolNames, issueXPathCount, score, summary, wcag, weight, why
+    } = issueDatum;
     dataLines.push(`<h3>${summary}</h3>`);
     if (wcag) {
       dataLines.push(`<p>Related WCAG standard: ${wcag}</p>`);

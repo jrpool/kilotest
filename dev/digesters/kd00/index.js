@@ -28,37 +28,28 @@ const populateQuery = async (report, query) => {
   const {element, issue} = details;
   const issueData = [];
   Object.keys(issue).forEach(issueID => {
-    const {instanceCounts, score, summary, tools, wcag, weight} = issue[issueID];
+    const {summary, tools, wcag} = issue[issueID];
     const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
     const issueXPaths = element[issueID];
-    const issueXPathCount = issueXPaths.length;
-    const instanceCountValues = Object.values(instanceCounts);
+    const elementCount = issueXPaths.length;
     issueData.push({
       summary,
       wcag,
       why: issues[issueID].why,
-      weight,
-      score,
       issueToolNames,
-      instanceCountRange: [Math.min(...instanceCountValues), Math.max(...instanceCountValues)],
-      issueXPathCount
+      elementCount
     });
   });
   issueData.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
   const dataLines = [];
   issueData.forEach(issueDatum => {
-    const {
-      instanceCountRange, issueToolNames, issueXPathCount, score, summary, wcag, weight, why
-    } = issueDatum;
+    const {elementCount, issueToolNames, summary, wcag} = issueDatum;
     dataLines.push(`<h3>${summary}</h3>`);
     if (wcag) {
       dataLines.push(`<p>Related WCAG standard: ${wcag}</p>`);
     }
-    dataLines.push(`<p>Why it matters: ${why}</p>`);
-    dataLines.push(`<p>Estimated importance: ${weight} per instance, ${score} overall.</p>`);
     dataLines.push(`<p>Reported by: ${issueToolNames.join(', ')}</p>`);
-    dataLines.push(`<p>Range of reported instances: ${instanceCountRange.join(' to ')}</p>`);
-    dataLines.push(`<p>Offending elements identified: ${issueXPathCount}</p>`);
+    dataLines.push(`<p>Elements identified: ${elementCount}</p>`);
   });
   query.data = dataLines.join(outerJoiner);
 };

@@ -101,6 +101,17 @@ const digest = async (digester, report, query = {}) => {
   // Return the digest.
   return digest;
 };
+// Deletes obsolete ibm results.
+const killOldIBMResults = async () => {
+  const resultFileNames = await fs.readdir('results');
+  for (const fileName of resultFileNames) {
+    const fileStats = await fs.stat(`results/${fileName}`);
+    const fileAge = Date.now() - fileStats.mtimeMs;
+    if (fileAge > 1200000) {
+      await fs.unlink(`results/${fileName}`);
+    }
+  }
+}
 // Handles a request.
 exports.devRequestHandler = async (request, response) => {
   const {method} = request;
@@ -209,6 +220,8 @@ exports.devRequestHandler = async (request, response) => {
         }
         // Otherwise, i.e. if a valid authorization code was specified or unnecessary:
         else {
+          // Delete any obsolete IBM results.
+          await killOldIBMResults();
           // If the request is anonymous:
           if (! authCode) {
             // Update the last anonymous job start time.
@@ -247,6 +260,27 @@ exports.devRequestHandler = async (request, response) => {
           const report = await doJob(job, jobOpts);
           // Score the report in place.
           score(scorer, report);
+          const nowStamp = getNowStamp();
+          const fileBaseName = `${nowStamp}-${jobID}`;
+          // If the requester was authorized:
+          if (authCodeGood) {
+            // Create a directory for reports if necessary.
+            await fs.mkdir('reports', {recursive: true});
+            // Save a copy of the scored report as a file.
+            await fs.writeFile(`reports/${fileBaseName}.json`, JSON.stringify(report, null, 2));
+          }
+          await fs.mkdir('logs', {recursive: true});
+          const log = {
+            timeStamp: nowStamp,
+            jobID,
+            pageWhat,
+            pageURL,
+            score: report.score.summary.total,
+            solos: report.jobData.solos,
+            authorized: authCodeGood
+          };
+          // Save a log as a file.
+          await fs.writeFile(`logs/${fileBaseName}.json`, JSON.stringify(log, null, 2));
           // Digest the scored report.
           const jobDigest = await digest(digester, report, {
             title: 'Kilotest dev report',

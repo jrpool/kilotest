@@ -268,6 +268,7 @@ exports.devRequestHandler = async (request, response) => {
             await fs.mkdir('reports', {recursive: true});
             // Save a copy of the scored report as a file.
             await fs.writeFile(`reports/${fileBaseName}.json`, JSON.stringify(report, null, 2));
+            console.log('Report saved');
           }
           await fs.mkdir('logs', {recursive: true});
           const log = {
@@ -281,6 +282,7 @@ exports.devRequestHandler = async (request, response) => {
           };
           // Save a log as a file.
           await fs.writeFile(`logs/${fileBaseName}.json`, JSON.stringify(log, null, 2));
+          console.log('Job logged');
           // Digest the scored report.
           const jobDigest = await digest(digester, report, {
             title: 'Kilotest dev report',

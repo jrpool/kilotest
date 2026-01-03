@@ -6,11 +6,15 @@ node_modules/
 .env.*
 !.env.example
 
-# Stores VSCode versions used for testing VSCode extensions
+# Stored VSCode versions used for testing VSCode extensions
 .vscode-test
 
 # OS files
 .DS_Store
 
 # Logs
+logs/
 results/
+
+# Reports
+reports/

@@ -45,6 +45,7 @@ const populateQuery = async (report, query) => {
   issueData.forEach(issueDatum => {
     const {elementCount, issueToolNames, summary, wcag} = issueDatum;
     dataLines.push(`<h3>${summary}</h3>`);
+    dataLines.push(`<p>Why it matters: ${issueDatum.why}</p>`);
     if (wcag) {
       dataLines.push(`<p>Related WCAG standard: ${wcag}</p>`);
     }

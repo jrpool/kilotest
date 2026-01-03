@@ -268,7 +268,7 @@ exports.devRequestHandler = async (request, response) => {
             await fs.mkdir('reports', {recursive: true});
             // Save a copy of the scored report as a file.
             await fs.writeFile(`reports/${fileBaseName}.json`, JSON.stringify(report, null, 2));
-            console.log('Report saved');
+            console.log('Scored report saved');
           }
           await fs.mkdir('logs', {recursive: true});
           const log = {

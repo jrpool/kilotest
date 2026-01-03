@@ -267,7 +267,9 @@ exports.devRequestHandler = async (request, response) => {
             // Create a directory for reports if necessary.
             await fs.mkdir('reports', {recursive: true});
             // Save a copy of the scored report as a file.
-            await fs.writeFile(`reports/${fileBaseName}.json`, JSON.stringify(report, null, 2));
+            await fs.writeFile(
+              `reports/${fileBaseName}.json`, `${JSON.stringify(report, null, 2)}\n`
+            );
             console.log('Scored report saved');
           }
           await fs.mkdir('logs', {recursive: true});
@@ -281,7 +283,7 @@ exports.devRequestHandler = async (request, response) => {
             authorized: authCodeGood
           };
           // Save a log as a file.
-          await fs.writeFile(`logs/${fileBaseName}.json`, JSON.stringify(log, null, 2));
+          await fs.writeFile(`logs/${fileBaseName}.json`, `${JSON.stringify(log, null, 2)}\n`);
           console.log('Job logged');
           // Digest the scored report.
           const jobDigest = await digest(digester, report, {

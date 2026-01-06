@@ -19,10 +19,10 @@ const fs = require('fs/promises');
 const http = require('http');
 // Module to create an HTTPS server and client.
 const https = require('https');
-// Module to handle dev requests.
-const {devRequestHandler} = require('./dev/index');
-// Module to handle screen requests.
+// Modules to handle requests.
 const {screenRequestHandler} = require('./screen/index');
+const {devRequestHandler} = require('./dev/index');
+const {reviewRequestHandler} = require('./review/index');
 
 // FUNCTIONS
 
@@ -54,6 +54,10 @@ const requestHandler = async (request, response) => {
   // Otherwise, if the request is for the dev service:
   else if (requestURL.startsWith('/dev')) {
     await devRequestHandler(request, response);
+  }
+  // Otherwise, if the request is for the review service:
+  else if (requestURL.startsWith('/review')) {
+    await reviewRequestHandler(request, response);
   }
   // Otherwise, if the request is a GET request:
   else if (method === 'GET') {

@@ -15,16 +15,16 @@ const {getPostData, serveError} = require('../util');
 // FUNCTIONS
 
 // Handles a request.
-exports.devRequestHandler = async (request, response) => {
+exports.reviewRequestHandler = async (request, response) => {
   const {method} = request;
   // Get its URL.
   const requestURL = request.url;
-  // If the request is a GET request:
-  if (method === 'GET') {
-    // If it is for the page-selection form:
-    if (requestURL === '/review/index.html') {
+  // If it is valid:
+  if (requestURL === '/review/index.html') {
+    // If the request is a GET request:
+    if (method === 'GET') {
       // Get the form page.
-      let formPage = await fs.readFile(`${__dirname}/form.html`, 'utf8');
+      let formPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
       const pageWhats = {};
       // Get the page descriptions and their file names.
       const logNames = await fs.readdir(`${__dirname}/../logs`);
@@ -37,29 +37,20 @@ exports.devRequestHandler = async (request, response) => {
         pageWhats[pageWhat] = logName;
       }
       const pageWhatLines = Object.keys(pageWhats).map(
-        pageWhat => `<div><input type="radio" name="reportFileName" value="${pageWhats[pageWhat]}"> ${pageWhat}</div>`
+        pageWhat => {
+          const fileName = pageWhats[pageWhat];
+          return `<div><input type="radio" name="reportFileName" value="${fileName}"> ${pageWhat}</div>`;
+        }
       );
       // Insert radio buttons for the pages into the form page, with file names as values.
       formPage = formPage.replace(/__pageWhats__/, pageWhatLines.join('\n          '));
-      // Serve it.
+      // Serve the form page.
       response.setHeader('Content-Type', 'text/html');
       response.setHeader('Content-Location', '/review/form.html');
       response.end(formPage);
     }
-    // Otherwise, i.e. if it is invalid:
-    else {
-      const error = {
-        message: `ERROR: Invalid request (${requestURL})`
-      };
-      // Report the error.
-      console.log(error.message);
-      await serveError(error, response);
-    }
-  }
-  // Otherwise, if the request is a POST request:
-  else if (method === 'POST') {
-    // If the request is a review specification:
-    if (requestURL === '/review/digest.html') {
+    // Otherwise, if the request is a POST request:
+    else if (method === 'POST') {
       // Get the data from it.
       const postData = await getPostData(request);
       const {reportFileName} = postData;
@@ -90,18 +81,27 @@ exports.devRequestHandler = async (request, response) => {
       else {
         // Report this.
         const error = {
-          message: 'ERROR: invalid request'
+          message: 'ERROR: invalid POST request'
         };
         await serveError(error, response);
       }
     }
+    // Otherwise, i.e. if it uses another method:
+    else {
+      // Report this.
+      const error = {
+        message: `ERROR: Request with prohibited method ${method} received`
+      };
+      await serveError(error, response);
+    }
   }
-  // Otherwise, i.e. if it uses another method:
+  // Otherwise, i.e. if the URL is invalid:
   else {
-    // Report this.
     const error = {
-      message: `ERROR: Request with prohibited method ${method} received`
+      message: `ERROR: Invalid request (${requestURL})`
     };
+    // Report the error.
+    console.log(error.message);
     await serveError(error, response);
   }
 };

@@ -47,6 +47,15 @@ const requestHandler = async (request, response) => {
     response.writeHead(301, {'Location': requestURL.slice(0, -1)});
     response.end();
   }
+  // Otherwise, if the request is for the application icon:
+  else if (requestURL.includes('favicon.')) {
+    // Get the site icon.
+    const icon = await fs.readFile(`${__dirname}/favicon.ico`);
+    // Serve it.
+    response.setHeader('Content-Type', 'image/x-icon');
+    response.write(icon, 'binary');
+    response.end('');
+  }
   // Otherwise, if the request is for the screen service:
   if (requestURL.startsWith('/screen/')) {
     await screenRequestHandler(request, response);
@@ -75,15 +84,6 @@ const requestHandler = async (request, response) => {
       catch (error) {
         await serveError(error, response);
       }
-    }
-    // Otherwise, if it is for the application icon:
-    else if (requestURL.includes('favicon.')) {
-      // Get the site icon.
-      const icon = await fs.readFile('favicon.ico');
-      // Serve it.
-      response.setHeader('Content-Type', 'image/x-icon');
-      response.write(icon, 'binary');
-      response.end('');
     }
     // Otherwise, if it is for the home page:
     else if (['/', '/index.html'].includes(requestURL)) {

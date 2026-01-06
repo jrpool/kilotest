@@ -29,22 +29,22 @@ exports.reviewRequestHandler = async (request, response) => {
       let formPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
       const pageWhats = {};
       // Get the page descriptions and their file names.
-      const logNames = await fs.readdir(`${__dirname}/../logs`);
-      for (const logName of logNames) {
-        const logPath = `${__dirname}/../logs/${logName}`;
+      const reportNames = await fs.readdir(`${__dirname}/../reports`);
+      for (const reportName of reportNames) {
+        const logPath = `${__dirname}/../logs/${reportName}`;
         const logJSON = await fs.readFile(logPath, 'utf8');
         const log = JSON.parse(logJSON);
         const {pageWhat} = log;
         // Replace any earlier file name for the same page description.
-        pageWhats[pageWhat] = logName;
+        pageWhats[pageWhat] = reportName;
       }
       const pageWhatLines = Object.keys(pageWhats).map(
         pageWhat => {
-          const fileName = pageWhats[pageWhat];
-          return `<div><input type="radio" name="reportFileName" value="${fileName}"> ${pageWhat}</div>`;
+          const reportName = pageWhats[pageWhat];
+          return `<div><input type="radio" name="reportName" value="${reportName}"> ${pageWhat}</div>`;
         }
       );
-      // Insert radio buttons for the pages into the form page, with file names as values.
+      // Insert radio buttons for the pages into the form page, with report names as values.
       formPage = formPage.replace(/__pageWhats__/, pageWhatLines.join('\n          '));
       // Serve the form page.
       response.setHeader('Content-Type', 'text/html');
@@ -55,35 +55,50 @@ exports.reviewRequestHandler = async (request, response) => {
     else if (method === 'POST') {
       // Get the data from it.
       const postData = await getPostData(request);
-      const {reportFileName} = postData;
+      const {reportName} = postData;
       // If the request is valid:
-      if (reportFileName) {
+      if (reportName) {
         // Get the scored report.
-        const reportPath = `${__dirname}/../reports/${reportFileName}`;
+        const reportPath = `${__dirname}/../reports/${reportName}`;
         const reportJSON = await fs.readFile(reportPath, 'utf8');
-        const report = JSON.parse(reportJSON);
-        // Digest it.
-        const reportDigest = await digest(digester, report, {
-          title: 'Kilotest dev report',
-          jobID: report.jobID,
-          testDate: `20${report.jobData.endTime.slice(0, 8)}`,
-          pageID: report.target.pageWhat,
-          pageURL: report.target.pageURL,
-          issueCount: Object.keys(report.score.details.issue).length,
-          impact: report.score.summary.total,
-          elapsedSeconds: report.jobData.elapsedSeconds,
-          report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        });
-        // Serve the digest.
-        response.setHeader('Content-Type', 'text/html');
-        response.setHeader('Content-Location', '/review/form.html');
-        response.end(reportDigest);
+        // If it exists:
+        if (reportJSON) {
+          try {
+            const report = JSON.parse(reportJSON);
+            // Digest it.
+            const reportDigest = await digest(digester, report, {
+              title: 'Kilotest dev report',
+              jobID: report.jobID,
+              testDate: `20${report.jobData.endTime.slice(0, 8)}`,
+              pageID: report.target.pageWhat,
+              pageURL: report.target.pageURL,
+              issueCount: Object.keys(report.score.details.issue).length,
+              impact: report.score.summary.total,
+              elapsedSeconds: report.jobData.elapsedSeconds,
+              report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            });
+            // Serve the digest.
+            response.setHeader('Content-Type', 'text/html');
+            response.setHeader('Content-Location', '/review/form.html');
+            response.end(reportDigest);
+          }
+          // If digesting fails because the report is not JSON or otherwise:
+          catch (error) {
+            // Report this.
+            await serveError(error, response);
+          }
+        }
+        // Otherwise, i.e. if it does not exist:
+        else {
+          // Report this.
+          await serveError('Requested report not found', response);
+        }
       }
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report this.
         const error = {
-          message: 'ERROR: invalid POST request'
+          message: 'Invalid POST request'
         };
         await serveError(error, response);
       }
@@ -92,18 +107,17 @@ exports.reviewRequestHandler = async (request, response) => {
     else {
       // Report this.
       const error = {
-        message: `ERROR: Request with prohibited method ${method} received`
+        message: `Request with prohibited method ${method} received`
       };
       await serveError(error, response);
     }
   }
   // Otherwise, i.e. if the URL is invalid:
   else {
+    // Report this.
     const error = {
-      message: `ERROR: Invalid request (${requestURL})`
+      message: `Invalid request (${requestURL})`
     };
-    // Report the error.
-    console.log(error.message);
     await serveError(error, response);
   }
 };

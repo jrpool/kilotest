@@ -50,3 +50,11 @@ exports.serveError = async (error, response) => {
     response.end(errorPage);
   }
 };
+// Digests a scored report and returns it, digested.
+exports.digest = async (digester, report, query = {}) => {
+  // Create a digest.
+  const digest = await digester(report, query);
+  console.log(`Report ${report.id} digested`);
+  // Return the digest.
+  return digest;
+};

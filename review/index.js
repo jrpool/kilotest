@@ -9,8 +9,10 @@
 
 // Module to access files.
 const fs = require('fs/promises');
-// Module to perform utility functions..
-const {getPostData, serveError} = require('../util');
+// Module to digest a report.
+const {digester} = require('../dev/digesters/kd00/index');
+// Module to perform utility functions.
+const {digest, getPostData, serveError} = require('../util');
 
 // FUNCTIONS
 

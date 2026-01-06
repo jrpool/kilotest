@@ -18,7 +18,7 @@ const results = new Map();
 // Module to access files.
 const fs = require('fs/promises');
 // Module to perform utility functions..
-const {getPostData, serveError} = require('../util');
+const {digest, getPostData, serveError} = require('../util');
 // Functions from Testilo.
 const {score} = require('testilo/score');
 const {scorer} = require('testilo/procs/score/tsp');
@@ -56,14 +56,6 @@ const publishEvent = (jobID, event) => {
     catch (error) {}
   };
 }
-// Digests a scored report and returns it, digested.
-const digest = async (digester, report, query = {}) => {
-  // Create a digest.
-  const digest = await digester(report, query);
-  console.log(`Report ${report.id} digested`);
-  // Return the digest.
-  return digest;
-};
 // Deletes obsolete ibm results.
 const killOldIBMResults = async () => {
   const resultFileNames = await fs.readdir('results');

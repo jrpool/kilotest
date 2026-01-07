@@ -23,7 +23,7 @@ exports.reviewRequestHandler = async (request, response) => {
   const requestURL = request.url;
   // If it is valid:
   if (requestURL === '/review/index.html') {
-    // If the request is a GET request:
+    // If the request is a GET request and therefore for the review form:
     if (method === 'GET') {
       // Get the form page.
       let formPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
@@ -38,7 +38,7 @@ exports.reviewRequestHandler = async (request, response) => {
         // Replace any earlier file name for the same page description.
         pageWhats[pageWhat] = reportName;
       }
-      const pageWhatLines = Object.keys(pageWhats).map(
+      const pageWhatLines = Object.keys(pageWhats).sort().map(
         pageWhat => {
           const reportName = pageWhats[pageWhat];
           return `<div><input type="radio" name="reportName" value="${reportName}"> ${pageWhat}</div>`;

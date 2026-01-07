@@ -52,7 +52,7 @@ const populateQuery = async (report, query) => {
     const {elementCount, issueToolNames, summary, wcag} = issueDatum;
     // Add a details element with the issue summary as a summary element to the lines.
     dataLines.push('<details>');
-    dataLines.push(`  <summary><h3>${summary}</h3></summary>`);
+    dataLines.push(`  <summary>${summary}</summary>`);
     dataLines.push(`  <p>Why it matters: ${issueDatum.why}</p>`);
     if (wcag) {
       dataLines.push(`  <p>Related WCAG standard: ${wcag}</p>`);

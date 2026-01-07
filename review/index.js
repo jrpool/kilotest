@@ -68,10 +68,10 @@ exports.reviewRequestHandler = async (request, response) => {
             // Digest it.
             const reportDigest = await digest(digester, report, {
               title: 'Kilotest dev report',
-              jobID: report.jobID,
+              jobID: report.id,
               testDate: `20${report.jobData.endTime.slice(0, 8)}`,
-              pageID: report.target.pageWhat,
-              pageURL: report.target.pageURL,
+              pageID: report.target.what,
+              pageURL: report.target.url,
               issueCount: Object.keys(report.score.details.issue).length,
               impact: report.score.summary.total,
               elapsedSeconds: report.jobData.elapsedSeconds,

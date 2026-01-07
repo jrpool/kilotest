@@ -41,7 +41,7 @@ exports.reviewRequestHandler = async (request, response) => {
       const pageWhatLines = Object.keys(pageWhats).sort().map(
         pageWhat => {
           const reportName = pageWhats[pageWhat];
-          return `<div><input type="radio" name="reportName" value="${reportName}"> ${pageWhat}</div>`;
+          return `<div><input type="radio" name="reportName" value="${reportName}" required> ${pageWhat}</div>`;
         }
       );
       // Insert radio buttons for the pages into the form page, with report names as values.

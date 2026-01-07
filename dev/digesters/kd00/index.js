@@ -32,15 +32,15 @@ const populateQuery = async (report, query) => {
   Object.keys(issue).forEach(issueID => {
     const {summary, tools, wcag} = issue[issueID];
     const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
-    const issueXPaths = element[issueID];
-    const elementCount = issueXPaths.length;
+    const elementData = element[issueID];
     // Add data on it to the array.
     issueData.push({
+      issueID,
       summary,
       wcag,
       why: issues[issueID].why,
       issueToolNames,
-      elementCount
+      elementData
     });
   });
   // Sort the array in order of decreasing count of reporting tools.
@@ -49,7 +49,7 @@ const populateQuery = async (report, query) => {
   const dataLines = [];
   // For each issue:
   issueData.forEach(issueDatum => {
-    const {elementCount, issueToolNames, summary, wcag} = issueDatum;
+    const {elementData, issueID, issueToolNames, summary, wcag} = issueDatum;
     // Add a details element with the issue summary as a summary element to the lines.
     dataLines.push('<details>');
     dataLines.push(`  <summary>${summary}</summary>`);
@@ -58,7 +58,13 @@ const populateQuery = async (report, query) => {
       dataLines.push(`  <p>Related WCAG standard: ${wcag}</p>`);
     }
     dataLines.push(`  <p>Reported by: ${issueToolNames.join(', ')}</p>`);
-    dataLines.push(`  <p>Elements identified: ${elementCount}</p>`);
+    Object.keys(elementData).forEach(toolList => {
+      dataLines.push(`  <p>Reported by ${toolList} in:</p>`);
+      dataLines.push('  <ul>');
+      elementData[toolList].forEach(xPath => {
+        dataLines.push((`    <li>${xPath}</li>`));
+      });
+    });
     dataLines.push('</details>');
   });
   query.data = dataLines.join(outerJoiner);

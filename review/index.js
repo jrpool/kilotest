@@ -11,6 +11,9 @@
 const fs = require('fs/promises');
 // Module to digest a report.
 const {digester} = require('../dev/digesters/kd00/index');
+// Functions to score a report.
+const {score} = require('testilo/score');
+const {scorer} = require('testilo/procs/score/tsp');
 // Module to perform utility functions.
 const {digest, getPostData, serveError} = require('../util');
 
@@ -63,6 +66,11 @@ exports.reviewRequestHandler = async (request, response) => {
         const reportJSON = await fs.readFile(reportPath, 'utf8');
         // If it exists:
         if (reportJSON) {
+          // If it has been scored without reporter classification of elements:
+          if (Array.isArray(report.score.details.element)) {
+            // Rescore it.
+            score(scorer, report);
+          }
           try {
             const report = JSON.parse(reportJSON);
             // Digest it.

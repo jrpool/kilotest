@@ -35,7 +35,6 @@ const populateQuery = async (report, query) => {
     const elementData = element[issueID];
     // Add data on it to the array.
     issueData.push({
-      issueID,
       summary,
       wcag,
       why: issues[issueID].why,
@@ -49,7 +48,7 @@ const populateQuery = async (report, query) => {
   const dataLines = [];
   // For each issue:
   issueData.forEach(issueDatum => {
-    const {elementData, issueID, issueToolNames, summary, wcag} = issueDatum;
+    const {elementData, issueToolNames, summary, wcag} = issueDatum;
     // Add a details element with the issue summary as a summary element to the lines.
     dataLines.push('<details>');
     dataLines.push(`  <summary>${summary}</summary>`);

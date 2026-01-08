@@ -56,14 +56,23 @@ const populateQuery = async (report, query) => {
     if (wcag) {
       dataLines.push(`  <p>Related WCAG standard: ${wcag}</p>`);
     }
-    dataLines.push(`  <p>Reported by: ${issueToolNames.join(', ')}</p>`);
-    Object.keys(elementData).forEach(toolList => {
-      dataLines.push(`  <p>Reported by ${toolList} in:</p>`);
-      dataLines.push('  <ul>');
-      elementData[toolList].forEach(xPath => {
-        dataLines.push((`    <li>${xPath}</li>`));
+    dataLines.push(`  <p>Reported by: ${issueToolNames.join(' + ')}</p>`);
+    // If any elements were reported as exhibiting the issue:
+    if (elementData && Object.keys(elementData).length) {
+      // Add lines reporting which tools reported which elements as doing so.
+      dataLines.push('  <p>Where reported:');
+      Object.keys(elementData).forEach(toolList => {
+        dataLines.push('  <ul>');
+        dataLines.push(`    <li>Reported by ${toolList} in:`);
+        dataLines.push('    <ul>');
+        elementData[toolList].forEach(xPath => {
+          dataLines.push((`    <li>${xPath}</li>`));
+        });
+        dataLines.push('    </ul>');
+        dataLines.push('    </li>');
+        dataLines.push('  </ul>');
       });
-    });
+    }
     dataLines.push('</details>');
   });
   query.data = dataLines.join(outerJoiner);

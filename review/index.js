@@ -69,7 +69,7 @@ exports.reviewRequestHandler = async (request, response) => {
           try {
             const report = JSON.parse(reportJSON);
             // If it has been scored without reporter classification of issue elements:
-            if (Array.isArray(report.score.details.element)) {
+            if (Object.values(report.score.details.element).some(data => Array.isArray(data))) {
               // Rescore it.
               score(scorer, report);
             }

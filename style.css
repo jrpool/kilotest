@@ -131,3 +131,7 @@ thead th {
 .thirdCellRight td:nth-child(3) {
   text-align: right;
 }
+ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}

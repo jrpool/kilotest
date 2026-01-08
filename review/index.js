@@ -66,13 +66,13 @@ exports.reviewRequestHandler = async (request, response) => {
         const reportJSON = await fs.readFile(reportPath, 'utf8');
         // If it exists:
         if (reportJSON) {
-          // If it has been scored without reporter classification of elements:
-          if (Array.isArray(report.score.details.element)) {
-            // Rescore it.
-            score(scorer, report);
-          }
           try {
             const report = JSON.parse(reportJSON);
+            // If it has been scored without reporter classification of issue elements:
+            if (Array.isArray(report.score.details.element)) {
+              // Rescore it.
+              score(scorer, report);
+            }
             // Digest it.
             const reportDigest = await digest(digester, report, {
               title: 'Kilotest dev report',

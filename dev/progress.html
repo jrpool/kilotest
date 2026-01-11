@@ -17,6 +17,20 @@
       </div>
       <script>
         (function(){
+          const tools = {
+            alfa: 'Alfa (Siteimprove)',
+            aslint: 'ASLint (eSSENTIAL Accessibility)',
+            axe: 'Axe (Deque)',
+            ed11y: 'Editoria11y (Princeton University)',
+            htmlcs: 'HTML CodeSniffer (Squiz Labs)',
+            ibm: 'Accessibility Checker (IBM)',
+            nuVal: 'Nu Html Checker API (W3C)',
+            nuVnu: 'Nu Html Checker (W3C)',
+            qualWeb: 'QualWeb (University of Lisbon)',
+            testaro: 'Testaro (CVS Health et al.)',
+            wax: 'WallyAX (Wally)',
+            wave: 'WAVE (Utah State University)'
+          };
           const statusDiv = document.getElementById('status');
           // Define the URL of the event source for this job.
           const eventSource = new EventSource('/dev/events/__jobID__');
@@ -40,10 +54,10 @@
                 const {type, which} = payload;
                 const scope = type === 'test' ? 'tool' : type;
                 if (scope === 'tool') {
-                  progressPar.innerHTML = `Starting tests of ${scope} <strong>${which}</strong>`;
+                  progressPar.innerHTML = `Starting tests of tool <strong>${tools[which]}</strong>`;
                 }
                 else if (scope === 'standardization' && which === 'start') {
-                  progressPar.innerHTML = 'Starting standardization';
+                  progressPar.innerHTML = 'Starting report standardization';
                 }
                 statusDiv.appendChild(progressPar);
               }

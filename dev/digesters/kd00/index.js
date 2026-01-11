@@ -62,8 +62,10 @@ const populateQuery = async (report, query) => {
       // Add lines reporting which tools reported which elements as doing so.
       dataLines.push('  <p>Where reported:');
       Object.keys(elementData).forEach(toolList => {
+        const elementToolIDs = toolList.split(/ \+ /);
+        const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
         dataLines.push('  <ul>');
-        dataLines.push(`    <li>Reported by ${toolList} in:`);
+        dataLines.push(`    <li>Reported by ${elementToolNameList} in:`);
         dataLines.push('    <ul>');
         elementData[toolList].forEach(xPath => {
           dataLines.push((`    <li>${xPath}</li>`));

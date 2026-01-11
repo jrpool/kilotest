@@ -7,6 +7,7 @@
 
 // Module to keep secrets.
 require('dotenv').config();
+const { LegacyESLint } = require('eslint/use-at-your-own-risk');
 // Module to process files.
 const fs = require('fs/promises');
 // Issues module.
@@ -59,15 +60,19 @@ const populateQuery = async (report, query) => {
     dataLines.push(`  <p>Reported by: ${issueToolNames.join(' + ')}</p>`);
     // If any elements were reported as exhibiting the issue:
     if (elementData && Object.keys(elementData).length) {
+      let elementToolLists = Object.keys(elementData).sort();
+      elementToolLists = elementToolLists.sort(
+        (a, b) => b.split(/ \+ /).length - a.split(/ \+ /).length
+      );
       // Add lines reporting which tools reported which elements as doing so.
       dataLines.push('  <p>Where reported:');
-      Object.keys(elementData).forEach(toolList => {
-        const elementToolIDs = toolList.split(/ \+ /);
+      elementToolLists.forEach(elementToolList => {
+        const elementToolIDs = elementToolList.split(/ \+ /);
         const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
         dataLines.push('  <ul>');
         dataLines.push(`    <li>Reported by ${elementToolNameList} in:`);
         dataLines.push('    <ul>');
-        elementData[toolList].forEach(xPath => {
+        elementData[elementToolList].forEach(xPath => {
           dataLines.push((`    <li>${xPath}</li>`));
         });
         dataLines.push('    </ul>');

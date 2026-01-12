@@ -105,6 +105,13 @@ pre {
 section:not(.wide) {
   max-width: 36rem;
 }
+summary {
+  padding: 0 0.25rem;
+}
+summary:hover {
+  color: #fff ;
+  background-color: #555;
+}
 #synopsis > p {
   margin: 0;
   padding: 0;

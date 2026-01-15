@@ -142,3 +142,16 @@ ul {
   margin-top: 0;
   margin-bottom: 0;
 }
+ul.whereList {
+  margin-left: 2rem;
+  padding-left: 0;
+}
+ul.xPathList {
+  margin-left: 0;
+  padding-left: 0;
+}
+ul.xPathList li {
+  margin-left: 1rem;
+  padding-left: 0;
+  overflow-wrap: break-word;
+}

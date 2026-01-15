@@ -75,6 +75,7 @@ h3.bars {
   padding-top: 1rem;
 }
 h3.priority {
+  display: inline;
   margin: 0.5rem 0 0.5rem 0;
 }
 h4 {

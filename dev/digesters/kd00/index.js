@@ -77,11 +77,10 @@ const populateQuery = async (report, query) => {
         const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
         dataLines.push('  <ul>');
         const toolCount = elementToolIDs.length;
-        if (toolCount > 1) {
-          dataLines.push(`    <li>Reported by ${toolCount} tools (${elementToolNameList}) in:`);
-        } else {
-          dataLines.push(`    <li>Reported by 1 tool (${elementToolNameList}) in:`);
-        }
+        const elementCount = elementData[elementToolList].length;
+        const inWhat = elementCount > 1 ? `${elementCount} elements` : '1 element';
+        const byWhat = toolCount > 1 ? `${toolCount} tools` : '1 tool';
+        dataLines.push(`    <li>Reported in ${inWhat} by ${byWhat} (${elementToolNameList}):</li>`);
         dataLines.push('    <ul>');
         elementData[elementToolList].forEach(xPath => {
           dataLines.push((`    <li>${xPath}</li>`));

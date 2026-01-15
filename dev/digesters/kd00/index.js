@@ -31,66 +31,77 @@ const populateQuery = async (report, query) => {
   const issueData = [];
   // For each issue:
   Object.keys(issue).forEach(issueID => {
-    const {summary, tools, wcag} = issue[issueID];
+    const {summary, tools, wcag, weight} = issue[issueID];
     const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
     const elementData = element[issueID];
     // Add data on it to the array.
     issueData.push({
       summary,
       wcag,
+      weight,
       why: issues[issueID].why,
       issueToolNames,
       elementData
     });
   });
-  // Sort the array in order of decreasing count of reporting tools.
-  issueData.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
   // Initialize the HTML lines rendering the facts about the issues.
   const dataLines = [];
-  // For each issue:
-  issueData.forEach(issueDatum => {
-    const {elementData, issueToolNames, summary, wcag} = issueDatum;
-    // Add a summary and expandable details to the lines.
-    dataLines.push('<details>');
-    dataLines.push(`  <summary>${summary}</summary>`);
-    dataLines.push(`  <p>Why it matters: ${issueDatum.why}</p>`);
-    if (wcag) {
-      dataLines.push(`  <p>Related WCAG standard: ${wcag}</p>`);
-    }
-    const toolCount = issueToolNames.length;
-    const toolNameList = issueToolNames.join(' + ');
-    if (toolCount > 1) {
-      dataLines.push(`  <p>Reported by ${toolCount} tools (${toolNameList})</p>`);
-    } else {
-      dataLines.push(`  <p>Reported by 1 tool (${toolNameList})</p>`);
-    }
-    // If any elements were reported as exhibiting the issue:
-    if (elementData && Object.keys(elementData).length) {
-      let elementToolLists = Object.keys(elementData).sort();
-      elementToolLists = elementToolLists.sort(
-        (a, b) => b.split(/ \+ /).length - a.split(/ \+ /).length
-      );
-      // Add lines reporting which tools reported which elements as doing so.
-      dataLines.push('  <p>Where reported:');
-      elementToolLists.forEach(elementToolList => {
-        const elementToolIDs = elementToolList.split(/ \+ /);
-        const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
-        dataLines.push('  <ul class="whereList">');
-        const toolCount = elementToolIDs.length;
-        const elementCount = elementData[elementToolList].length;
-        const inWhat = elementCount > 1 ? `${elementCount} elements` : '1 element';
-        const byWhat = toolCount > 1 ? `${toolCount} tools` : '1 tool';
-        dataLines.push(`    <li>Reported in ${inWhat} by ${byWhat} (${elementToolNameList}):</li>`);
-        dataLines.push('    <ul class="xPathList">');
-        elementData[elementToolList].forEach(xPath => {
-          dataLines.push((`    <li>${xPath}</li>`));
-        });
-        dataLines.push('    </ul>');
-        dataLines.push('    </li>');
-        dataLines.push('  </ul>');
+  const weightNames = ['Highest', 'High', 'Low', 'Lowest'];
+  // For each weight:
+  [4, 3, 2, 1].forEach(weight => {
+    const weightIssues = issueData.filter(issueDatum => issueDatum.weight === weight);
+    // If any issues of this weight were reported:
+    if (weightIssues.length) {
+      const weightName = weightNames[4 - weight];
+      dataLines.push(`<h3 class="priority">${weightName} priority</h3>`);
+      // Sort the issue data in order of decreasing count of reporting tools.
+      weightIssues.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
+      // For each issue:
+      weightIssues.forEach(issueDatum => {
+        const {elementData, issueToolNames, summary, wcag} = issueDatum;
+        // Add a summary and expandable details to the lines.
+        dataLines.push('<details>');
+        dataLines.push(`  <summary>${summary}</summary>`);
+        dataLines.push(`  <p>Why it matters: ${issueDatum.why}</p>`);
+        if (wcag) {
+          dataLines.push(`  <p>Related WCAG standard: ${wcag}</p>`);
+        }
+        const toolCount = issueToolNames.length;
+        const toolNameList = issueToolNames.join(' + ');
+        if (toolCount > 1) {
+          dataLines.push(`  <p>Reported by ${toolCount} tools (${toolNameList})</p>`);
+        } else {
+          dataLines.push(`  <p>Reported by 1 tool (${toolNameList})</p>`);
+        }
+        // If any elements were reported as exhibiting the issue:
+        if (elementData && Object.keys(elementData).length) {
+          let elementToolLists = Object.keys(elementData).sort();
+          elementToolLists = elementToolLists.sort(
+            (a, b) => b.split(/ \+ /).length - a.split(/ \+ /).length
+          );
+          // Add lines reporting which tools reported which elements as doing so.
+          dataLines.push('  <p>Where reported:');
+          elementToolLists.forEach(elementToolList => {
+            const elementToolIDs = elementToolList.split(/ \+ /);
+            const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
+            dataLines.push('  <ul class="whereList">');
+            const toolCount = elementToolIDs.length;
+            const elementCount = elementData[elementToolList].length;
+            const inWhat = elementCount > 1 ? `${elementCount} elements` : '1 element';
+            const byWhat = toolCount > 1 ? `${toolCount} tools` : '1 tool';
+            dataLines.push(`    <li>Reported in ${inWhat} by ${byWhat} (${elementToolNameList}):</li>`);
+            dataLines.push('    <ul class="xPathList">');
+            elementData[elementToolList].forEach(xPath => {
+              dataLines.push((`    <li>${xPath}</li>`));
+            });
+            dataLines.push('    </ul>');
+            dataLines.push('    </li>');
+            dataLines.push('  </ul>');
+          });
+        }
+        dataLines.push('</details>');
       });
     }
-    dataLines.push('</details>');
   });
   query.data = dataLines.join(outerJoiner);
 };

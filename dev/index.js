@@ -217,16 +217,13 @@ exports.devRequestHandler = async (request, response) => {
           score(scorer, report);
           const nowStamp = getNowStamp();
           const fileBaseName = `${nowStamp}-${jobID}`;
-          // If the requester was authorized:
-          if (authCodeGood) {
-            // Create a directory for reports if necessary.
-            await fs.mkdir('reports', {recursive: true});
-            // Save a copy of the scored report as a file.
-            await fs.writeFile(
-              `reports/${fileBaseName}.json`, `${JSON.stringify(report, null, 2)}\n`
-            );
-            console.log('Scored report saved');
-          }
+          // Create a directory for reports if necessary.
+          await fs.mkdir('reports', {recursive: true});
+          // Save a copy of the scored report as a file.
+          await fs.writeFile(
+            `reports/${fileBaseName}.json`, `${JSON.stringify(report, null, 2)}\n`
+          );
+          console.log('Scored report saved');
           await fs.mkdir('logs', {recursive: true});
           const log = {
             timeStamp: nowStamp,

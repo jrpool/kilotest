@@ -109,7 +109,7 @@ const populateQuery = async (report, query) => {
   });
   query.data = dataLines.join(outerJoiner);
 };
-// Returns a digested report with the complete report as a collapsed appendix.
+// Returns a report digest.
 exports.digester = async (report, query) => {
   // Create a query to replace placeholders.
   await populateQuery(report, query);

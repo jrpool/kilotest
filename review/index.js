@@ -49,7 +49,8 @@ exports.reviewRequestHandler = async (request, response) => {
         const pageWhatLines = Object.keys(pageWhats).sort().map(
           pageWhat => {
             const reportID = pageWhats[pageWhat].slice(0, -5);
-            return `<li><a href="/review/digest/${reportID}">${pageWhat}</a></li>`;
+            const label = `aria-label="results for ${pageWhat}"`;
+            return `<li><a href="/review/digest/${reportID}" ${label}>${pageWhat}</a></li>`;
           }
         );
         // Insert links to the available digests into the form page.

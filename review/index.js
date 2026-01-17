@@ -26,41 +26,43 @@ exports.reviewRequestHandler = async (request, response) => {
   const requestURL = request.url;
   // If it is valid:
   if (requestURL === '/review/index.html') {
-    // If the request is a GET request and therefore for the review form:
+    // If the request is a GET request:
     if (method === 'GET') {
-      // Get the form page.
-      let formPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
-      const pageWhats = {};
-      // Get the page descriptions and their file names.
-      const reportNames = await fs.readdir(`${__dirname}/../reports`);
-      for (const reportName of reportNames) {
-        const logPath = `${__dirname}/../logs/${reportName}`;
-        const logJSON = await fs.readFile(logPath, 'utf8');
-        const log = JSON.parse(logJSON);
-        const {pageWhat} = log;
-        // Replace any earlier file name for the same page description.
-        pageWhats[pageWhat] = reportName;
-      }
-      const pageWhatLines = Object.keys(pageWhats).sort().map(
-        pageWhat => {
-          const reportName = pageWhats[pageWhat];
-          return `<div><input type="radio" name="reportName" value="${reportName}" required> ${pageWhat}</div>`;
+      // If it requests the review form:
+      if (requestURL === '/review/index.html') {
+        // Get the form page.
+        let formPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+        // Initialize a directory of page descriptions and their latest file names.
+        const pageWhats = {};
+        // Get the names of the report files.
+        const reportNames = await fs.readdir(`${__dirname}/../reports`);
+        // For each of them:
+        for (const reportName of reportNames) {
+          const logPath = `${__dirname}/../logs/${reportName}`;
+          // Get the corresponding log.
+          const logJSON = await fs.readFile(logPath, 'utf8');
+          const log = JSON.parse(logJSON);
+          const {pageWhat} = log;
+          // Add the page description to the directory or update its file name.
+          pageWhats[pageWhat] = reportName;
         }
-      );
-      // Insert radio buttons for the pages into the form page, with report names as values.
-      formPage = formPage.replace(/__pageWhats__/, pageWhatLines.join('\n          '));
-      // Serve the form page.
-      response.setHeader('Content-Type', 'text/html');
-      response.setHeader('Content-Location', '/review/form.html');
-      response.end(formPage);
-    }
-    // Otherwise, if the request is a POST request:
-    else if (method === 'POST') {
-      // Get the data from it.
-      const postData = await getPostData(request);
-      const {reportName} = postData;
-      // If the request is valid:
-      if (reportName) {
+        const pageWhatLines = Object.keys(pageWhats).sort().map(
+          pageWhat => {
+            const reportID = pageWhats[pageWhat].slice(0, -5);
+            return `<li><a href="/review/digest/${reportID}">${pageWhat}</a></li>`;
+          }
+        );
+        // Insert links to the available digests into the form page.
+        formPage = formPage.replace(/__pageWhats__/, pageWhatLines.join('\n          '));
+        // Serve the form page.
+        response.setHeader('Content-Type', 'text/html');
+        response.setHeader('Content-Location', '/review/form.html');
+        response.end(formPage);
+      }
+      // Otherwise, if it requests a digest:
+      else if (requestURL.startsWith('/review/digest/')) {
+        // Get the report name.
+        const reportName = `${requestURL.replace('/review/digest/', '')}.json`;
         // Get the scored report.
         const reportPath = `${__dirname}/../reports/${reportName}`;
         const reportJSON = await fs.readFile(reportPath, 'utf8');
@@ -75,7 +77,7 @@ exports.reviewRequestHandler = async (request, response) => {
             }
             // Digest it.
             const reportDigest = await digest(digester, report, {
-              title: 'Kilotest dev report',
+              title: `${report.target.what} | Kilotest Dev report`,
               jobID: report.id,
               testDate: `20${report.jobData.endTime.slice(0, 8)}`,
               pageID: report.target.what,
@@ -106,7 +108,7 @@ exports.reviewRequestHandler = async (request, response) => {
       else {
         // Report this.
         const error = {
-          message: 'Invalid POST request'
+          message: 'Invalid request'
         };
         await serveError(error, response);
       }

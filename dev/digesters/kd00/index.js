@@ -57,7 +57,9 @@ const populateQuery = async (report, query) => {
       dataLines.push('<details>');
       // Add the priority as a summary.
       dataLines.push(`  <summary><h3 class="priority">${weightName} priority</h3></summary>`);
-      // Sort the issue data in order of decreasing count of reporting tools.
+      // Sort the issue data alphabetically by summary.
+      weightIssues.sort((a, b) => a.summary.localeCompare(b.summary, {sensitivity: 'base'}));
+      // Then sort the issue data in order of decreasing count of reporting tools.
       weightIssues.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
       // For each issue:
       weightIssues.forEach(issueDatum => {

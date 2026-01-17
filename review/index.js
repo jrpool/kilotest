@@ -53,7 +53,7 @@ exports.reviewRequestHandler = async (request, response) => {
           }
         );
         // Insert links to the available digests into the form page.
-        formPage = formPage.replace(/__pageWhats__/, pageWhatLines.join('\n          '));
+        formPage = formPage.replace(/__pageWhats__/, pageWhatLines.join('\n        '));
         // Serve the form page.
         response.setHeader('Content-Type', 'text/html');
         response.setHeader('Content-Location', '/review/form.html');

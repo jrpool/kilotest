@@ -24,8 +24,8 @@ exports.reviewRequestHandler = async (request, response) => {
   const {method} = request;
   // Get its URL.
   const requestURL = request.url;
-  // If it is valid:
-  if (requestURL === '/review/index.html') {
+  // If it is potentially valid:
+  if (requestURL.startsWith('/review/')) {
     // If the request is a GET request:
     if (method === 'GET') {
       // If it requests the review form:
@@ -60,9 +60,9 @@ exports.reviewRequestHandler = async (request, response) => {
         response.end(formPage);
       }
       // Otherwise, if it requests a digest:
-      else if (requestURL.startsWith('/review/digest/')) {
+      else if (/^\/review\/digest\/\d{6}T\d{4}-[a-z\d]{5}$/.test(requestURL)) {
         // Get the report name.
-        const reportName = `${requestURL.replace('/review/digest/', '')}.json`;
+        const reportName = `${requestURL.slice(15)}.json`;
         // Get the scored report.
         const reportPath = `${__dirname}/../reports/${reportName}`;
         const reportJSON = await fs.readFile(reportPath, 'utf8');

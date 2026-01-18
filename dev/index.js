@@ -17,6 +17,7 @@ const fs = require('fs/promises');
 // Module to perform utility functions..
 const {digest, getPostData, serveError} = require('../util');
 // Functions from Testilo.
+const {collateExcerpts} = require('testilo/procs/excerpts/excerpts');
 const {issueAnnotate} = require('testilo/procs/classify/classify');
 const {score} = require('testilo/score');
 const {scorer} = require('testilo/procs/score/tsp');
@@ -213,6 +214,8 @@ exports.devRequestHandler = async (request, response) => {
           const report = await doJob(job, jobOpts);
           // Annotate the standard instances in the report with issue IDs in place.
           issueAnnotate(report);
+          // Add a directory of element excerpts to the report in place.
+          collateExcerpts(report);
           // Score it in place.
           score(scorer, report);
           const nowStamp = getNowStamp();

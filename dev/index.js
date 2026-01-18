@@ -3,11 +3,6 @@
   Manages Kilotest Dev.
 */
 
-// ENVIRONMENT
-
-// Module to keep secrets local.
-require('dotenv').config({quiet: true});
-
 // CONSTANTS
 
 const eventStreams = new Map();
@@ -15,11 +10,14 @@ const results = new Map();
 
 // IMPORTS
 
+// Module to keep secrets local.
+require('dotenv').config({quiet: true});
 // Module to access files.
 const fs = require('fs/promises');
 // Module to perform utility functions..
 const {digest, getPostData, serveError} = require('../util');
 // Functions from Testilo.
+const {issueAnnotate} = require('testilo/procs/classify/classify');
 const {score} = require('testilo/score');
 const {scorer} = require('testilo/procs/score/tsp');
 const {digester} = require('./digesters/kd00/index');
@@ -213,7 +211,9 @@ exports.devRequestHandler = async (request, response) => {
           };
           // Perform the job and get its report.
           const report = await doJob(job, jobOpts);
-          // Score the report in place.
+          // Annotate the standard instances in the report in place.
+          issueAnnotate(report);
+          // Score it in place.
           score(scorer, report);
           const nowStamp = getNowStamp();
           const fileBaseName = `${nowStamp}-${jobID}`;
@@ -223,7 +223,7 @@ exports.devRequestHandler = async (request, response) => {
           await fs.writeFile(
             `reports/${fileBaseName}.json`, `${JSON.stringify(report, null, 2)}\n`
           );
-          console.log('Scored report saved');
+          console.log('Annotated and scored report saved');
           await fs.mkdir('logs', {recursive: true});
           const log = {
             timeStamp: nowStamp,

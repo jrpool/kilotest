@@ -211,7 +211,7 @@ exports.devRequestHandler = async (request, response) => {
           };
           // Perform the job and get its report.
           const report = await doJob(job, jobOpts);
-          // Annotate the standard instances in the report in place.
+          // Annotate the standard instances in the report with issue IDs in place.
           issueAnnotate(report);
           // Score it in place.
           score(scorer, report);

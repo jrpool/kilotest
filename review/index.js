@@ -46,7 +46,10 @@ exports.reviewRequestHandler = async (request, response) => {
           // Add the page description to the directory or update its file name.
           pageWhats[pageWhat] = reportName;
         }
-        const pageWhatLines = Object.keys(pageWhats).sort().map(
+        const pageWhatLines = Object
+        .keys(pageWhats)
+        .sort((a, b) => a.localeCompare(b, {sensitivity: 'base'}))
+        .map(
           pageWhat => {
             const reportID = pageWhats[pageWhat].slice(0, -5);
             const label = `aria-label="results for ${pageWhat}"`;

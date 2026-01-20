@@ -107,7 +107,7 @@ const populateQuery = async (report, query) => {
                 const encodedText = encodeURIComponent(elementText).replace(/-/g, '%2D');
                 // Add the XPath as a link to the text as a text fragment.
                 dataLines.push(
-                  `          <li><a href="${url}#text=:~:${encodedText}">${xPath}</a></li>`
+                  `          <li><a href="${url}#:~:text=${encodedText}">${xPath}</a></li>`
                 );
               }
               // Otherwise, i.e. if the XPath has no unanimous text:

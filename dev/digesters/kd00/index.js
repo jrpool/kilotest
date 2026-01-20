@@ -24,8 +24,9 @@ const outerJoiner = '\n      ';
 
 // Adds parameters to a query for a digest.
 const populateQuery = async (report, query) => {
-  const {score} = report;
+  const {score, target, texts} = report;
   const {details} = score;
+  const {url} = target;
   const {element, issue} = details;
   // Initialize an array of data on the reported issues.
   const issueData = [];
@@ -86,6 +87,7 @@ const populateQuery = async (report, query) => {
           );
           // Add lines reporting which tools reported which elements as doing so.
           dataLines.push('    <p>Where reported:');
+          // For each tool combination:
           elementToolLists.forEach(elementToolList => {
             const elementToolIDs = elementToolList.split(/ \+ /);
             const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
@@ -96,8 +98,23 @@ const populateQuery = async (report, query) => {
             const byWhat = toolCount > 1 ? `${toolCount} tools` : '1 tool';
             dataLines.push(`      <li>Reported in ${inWhat} by ${byWhat} (${elementToolNameList}):`);
             dataLines.push('        <ul class="xPathList">');
+            // For each XPath of an element reported by the combination for the issue:
             elementData[elementToolList].forEach(xPath => {
-              dataLines.push((`          <li>${xPath}</li>`));
+              const elementTexts = texts[xPath];
+              const elementText = elementTexts.unanimous;
+              // If the XPath has a unanimous text:
+              if (elementText) {
+                const encodedText = encodeURIComponent(elementText).replace(/-/g, '%2D');
+                // Add the XPath as a link to the text as a text fragment.
+                dataLines.push(
+                  `          <li><a href="${url}#text=:~:${encodedText}">${xPath}</a></li>`
+                );
+              }
+              // Otherwise, i.e. if the XPath has no unanimous text:
+              else {
+                // Add the XPath as a plain list item.
+                dataLines.push(`          <li>${xPath}</li>`);
+              }
             });
             dataLines.push('        </ul>');
             dataLines.push('      </li>');

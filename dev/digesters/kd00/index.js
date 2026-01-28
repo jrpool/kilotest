@@ -22,6 +22,10 @@ const outerJoiner = '\n      ';
 
 // FUNCTIONS
 
+// Encodes a string for use as a URL fragment.
+const fragmentEncode = string => {
+  return encodeURIComponent(string).replace(/-/g, '%2D');
+};
 // Adds parameters to a query for a digest.
 const populateQuery = async (report, query) => {
   const {score, target, texts} = report;
@@ -101,13 +105,15 @@ const populateQuery = async (report, query) => {
             // For each XPath of an element reported by the combination for the issue:
             elementData[elementToolList].forEach(xPath => {
               const elementTexts = texts[xPath];
-              const elementText = elementTexts.unanimous;
+              const unanimousText = elementTexts.unanimous;
               // If the XPath has a unanimous text:
-              if (elementText) {
-                const encodedText = encodeURIComponent(elementText).replace(/-/g, '%2D');
+              if (unanimousText) {
+                const fragment = unanimousText.length === 2
+                ? `${fragmentEncode(unanimousText[0])},${fragmentEncode(unanimousText[1])}`
+                : `${fragmentEncode(unanimousText[0])}`;
                 // Add the XPath as a link to the text as a text fragment.
                 dataLines.push(
-                  `          <li><a href="${url}#:~:text=${encodedText}">${xPath}</a></li>`
+                  `          <li><a href="${url}#:~:text=${fragment}">${xPath}</a></li>`
                 );
               }
               // Otherwise, i.e. if the XPath has no unanimous text:

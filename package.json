@@ -23,7 +23,7 @@
   "homepage": "https://github.com/jrpool/kilotest",
   "dependencies": {
     "dotenv": "*",
-    "testaro": "*",
+    "testaro": "67.1.0",
     "testilo": "*"
   },
   "devDependencies": {

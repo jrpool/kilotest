@@ -7,13 +7,12 @@
 
 // Module to keep secrets.
 require('dotenv').config();
-const { LegacyESLint } = require('eslint/use-at-your-own-risk');
 // Module to process files.
 const fs = require('fs/promises');
-// Issues module.
-const {issues} = require('testilo/procs/score/tic');
+// Module to classify rules into issues.
+const {tally} = require('../../../tally');
 // Utility module.
-const toolNames = require('testilo/procs/util').tools;
+const toolNames = require('testaro/procs/job').tools;
 
 // CONSTANTS
 
@@ -28,15 +27,13 @@ const fragmentEncode = string => {
 };
 // Adds parameters to a query for a digest.
 const populateQuery = async (report, query) => {
-  const {score, target, texts} = report;
-  const {details} = score;
+  const {catalog, target} = report;
   const {url} = target;
-  const {element, issue} = details;
-  // Initialize an array of data on the reported issues.
-  const issueData = [];
+  // Get data on the reported rule violations classified by issue.
+  const issueData = tally(report);
   // For each issue:
-  Object.keys(issue).forEach(issueID => {
-    const {summary, tools, wcag, weight} = issue[issueID];
+  Object.keys(issueData).forEach(issueID => {
+    const {summary, why, wcag, weight, count, catalogIndexes, pathIDs} = issueData[issueID];
     const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
     const elementData = element[issueID];
     // Add data on it to the array.

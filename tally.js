@@ -68,8 +68,9 @@ exports.tally = report => {
     const issue = issues[issueID];
     // Initialize the violation count of the issue.
     issue.count ??= 0;
-    // Initialize data on the reported violations of rules belonging to the issue.
+    // Initialize data on the reported violators of rules belonging to the issue.
     issue.violators ??= {};
+    const {violators} = issue;
     const {tools} = issue;
     // For each tool that has any rules belonging to the issue:
     Object.keys(tools).forEach(toolID => {
@@ -83,43 +84,21 @@ exports.tally = report => {
           // Add its count to that of the issue.
           issue.count += instanceCount;
           // If the instance discloses a catalog index:
-          if (instance.catalogIndex) {
-            issue.violators[] ??= {};
-            issue.catalogIndexes ??= {};
-            issue.catalogIndexes[instance.catalogIndex] ??= new Set();
-            issue.catalogIndexes[instance.catalogIndex].add(toolID);
-          }
-          const ruleToolInstances = ruleToolAct.result.standardResult.instances;
-        });
-        // Get the instances of violations of the rule.
-        const ruleInstances = acts[actTools[toolID]]
-        .map(act => act.result.standardResult.instances)
-        .flat();
-        // With respect to the issue, for each such instance:
-        ruleInstances.forEach(instance => {
-          const count = instance.count ?? 1;
-          issue.count ??= 0;
-          // Add its violation count to the total violation count.
-          issue.count += count;
-          const {catalogIndex, pathID} = instance;
-          // If it has a catalog index:
           if (catalogIndex) {
-            issue.catalogIndexes ??= {};
-            issue.catalogIndexes[catalogIndex] ??= new Set();
-            // Add the reporting tool to the set of tools reporting the element.
-            issue.catalogIndexes[catalogIndex].add(toolID);
+            violators[catalogIndex] ??= new Set();
+            // Include the tool among those reporting the violator.
+            violators[catalogIndex].add(toolID);
           }
-          // Otherwise, if it has a path ID:
+          // Otherwise, if the instance discloses a path ID:
           else if (pathID) {
-            issue.pathIDs ??= {};
-            issue.pathIDs[pathID] ??= 0;
-            // Increment the count of violations by the element with the path ID.
-            issue.pathIDs[pathID]++;
+            violators[pathID] ??= new Set();
+            // Include the tool among those reporting the violator.
+            violators[pathID].add(toolID);
           }
         });
       });
     });
   });
-  // Return the classification.
+  // Return the augmented classification.
   return issues;
 };

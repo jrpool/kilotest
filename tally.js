@@ -8,8 +8,9 @@
 const {issues} = require('testilo/procs/score/tic');
 
 // Compiles an array of variable rule IDs.
-const getVariableRuleIDs = () => {
-  // Initialize data on variable rule IDs.
+const getRuleIDs = () => {
+  // Initialize data on invariant and variable rule IDs.
+  const invariantRuleIDs = {};
   const variableRuleIDs = {};
   // For each classified issue:
   Object.keys(issues).forEach(issueID => {
@@ -25,16 +26,25 @@ const getVariableRuleIDs = () => {
           // Add it to the data.
           variableRuleIDs[toolID].push(ruleID);
         }
+        // Otherwise, i.e. if it is invariant:
+        else {
+          invariantRuleIDs[toolID] ??= [];
+          // Add it to the data.
+          invariantRuleIDs[toolID].push(ruleID);
+        }
       });
     });
   });
   // Return the data.
-  return variableRuleIDs;
+  return {
+    invariantRuleIDs,
+    variableRuleIDs
+  };
 };
 // Adds violation data to a rule classifier.
 exports.tally = report => {
   // Get data on the variable classified rules.
-  const variableRuleIDs = getVariableRuleIDs();
+  const ruleIDs = getRuleIDs();
   const {acts} = report;
   // Initialize data on the standard instances of classified rules.
   const ruleInstances = {};
@@ -44,16 +54,17 @@ exports.tally = report => {
     if (act.type === 'test') {
       const toolID = act.which;
       ruleInstances[toolID] ??= {};
-      const {instances} = act.result.standardResult;
+      const {instances} = act.result.standardResult ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {
         // Initialize the rule ID of the instance as if invariant.
         let {ruleID} = instance;
-        const rule = issues.tools[toolID][ruleID];
-        // If no classified rule with that ID exists:
-        if (! rule) {
-          // Get the first variable rule ID of the tool that it matches.
-          ruleID = variableRuleIDs[toolID]?.find(variableRuleID => variableRuleID.test(ruleID));
+        // If that invariant rule ID does not exist:
+        if (! ruleIDs.invariantRuleIDs[ruleID]) {
+          // Change the rule ID to the first variable rule ID of the tool that it matches.
+          ruleID = ruleIDs
+          .variableRuleIDs[toolID]
+          ?.find(variableRuleID => variableRuleID.test(ruleID));
         }
         // If a classified rule has an ID that is or matches that of the instance:
         if (ruleID) {

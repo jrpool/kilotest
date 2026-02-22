@@ -30,104 +30,95 @@ const populateQuery = async (report, query) => {
   const {catalog, target} = report;
   const {url} = target;
   // Get data on the reported rule violations classified by issue.
-  const issueData = tally(report);
+  const issues = tally(report);
   // For each issue:
-  Object.keys(issueData).forEach(issueID => {
-    const {summary, why, wcag, weight, count, catalogIndexes, pathIDs} = issueData[issueID];
-    const issueToolNames = Object.keys(tools).map(toolID => toolNames[toolID]);
-    const elementData = element[issueID];
-    // Add data on it to the array.
-    issueData.push({
-      summary,
-      wcag,
-      weight,
-      why: issues[issueID].why,
-      issueToolNames,
-      elementData
-    });
-  });
-  // Initialize the HTML lines rendering the facts about the issues.
-  const dataLines = [];
-  const weightNames = ['Highest', 'High', 'Low', 'Lowest'];
-  // For each weight:
-  [4, 3, 2, 1].forEach(weight => {
-    const weightIssues = issueData.filter(issueDatum => issueDatum.weight === weight);
-    // If any issues of this weight were reported:
-    if (weightIssues.length) {
-      const weightName = weightNames[4 - weight];
-      // Add a details element to the lines.
-      dataLines.push('<details>');
-      // Add the priority as a summary.
-      dataLines.push(`  <summary><h3 class="priority">${weightName} priority</h3></summary>`);
-      // Sort the issue data alphabetically by summary.
-      weightIssues.sort((a, b) => a.summary.localeCompare(b.summary, {sensitivity: 'base'}));
-      // Then sort the issue data in order of decreasing count of reporting tools.
-      weightIssues.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
-      // For each issue:
-      weightIssues.forEach(issueDatum => {
-        const {elementData, issueToolNames, summary, wcag} = issueDatum;
-        // Add a summary and expandable details to the lines.
-        dataLines.push('  <details>');
-        dataLines.push(`    <summary>${summary}</summary>`);
-        dataLines.push(`    <p>Why it matters: ${issueDatum.why}</p>`);
-        if (wcag) {
-          dataLines.push(`    <p>Related WCAG standard: ${wcag}</p>`);
-        }
-        const toolCount = issueToolNames.length;
-        const toolNameList = issueToolNames.join(' + ');
-        if (toolCount > 1) {
-          dataLines.push(`    <p>Reported by ${toolCount} tools (${toolNameList})</p>`);
-        } else {
-          dataLines.push(`    <p>Reported by 1 tool (${toolNameList})</p>`);
-        }
-        // If any elements were reported as exhibiting the issue:
-        if (elementData && Object.keys(elementData).length) {
-          let elementToolLists = Object.keys(elementData).sort();
-          elementToolLists = elementToolLists.sort(
-            (a, b) => b.split(/ \+ /).length - a.split(/ \+ /).length
-          );
-          // Add lines reporting which tools reported which elements as doing so.
-          dataLines.push('    <p>Where reported:');
-          // For each tool combination:
-          elementToolLists.forEach(elementToolList => {
-            const elementToolIDs = elementToolList.split(/ \+ /);
-            const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
-            dataLines.push('    <ul class="whereList">');
-            const toolCount = elementToolIDs.length;
-            const elementCount = elementData[elementToolList].length;
-            const inWhat = elementCount > 1 ? `${elementCount} elements` : '1 element';
-            const byWhat = toolCount > 1 ? `${toolCount} tools` : '1 tool';
-            dataLines.push(`      <li>Reported in ${inWhat} by ${byWhat} (${elementToolNameList}):`);
-            dataLines.push('        <ul class="xPathList">');
-            // For each XPath of an element reported by the combination for the issue:
-            elementData[elementToolList].forEach(xPath => {
-              const elementTexts = texts[xPath];
-              const unanimousText = elementTexts.unanimous;
-              // If the XPath has a unanimous text:
-              if (unanimousText) {
-                const fragment = unanimousText.length === 2
-                ? `${fragmentEncode(unanimousText[0])},${fragmentEncode(unanimousText[1])}`
-                : `${fragmentEncode(unanimousText[0])}`;
-                // Add the XPath as a link to the text as a text fragment.
-                dataLines.push(
-                  `          <li><a href="${url}#:~:text=${fragment}">${xPath}</a></li>`
-                );
-              }
-              // Otherwise, i.e. if the XPath has no unanimous text:
-              else {
-                // Add the XPath as a plain list item.
-                dataLines.push(`          <li>${xPath}</li>`);
-              }
-            });
-            dataLines.push('        </ul>');
-            dataLines.push('      </li>');
-            dataLines.push('    </ul>');
+  Object.keys(issues).forEach(issueID => {
+    const issue = issues[issueID];
+    // If any rules belonging to it were violated:
+    if (issue.count) {
+      const {summary, why, wcag, weight, count, violators} = issue;
+      // Initialize the HTML lines rendering facts about the issues.
+      const dataLines = [];
+      const weightNames = ['Highest', 'High', 'Low', 'Lowest'];
+      // For each weight:
+      [4, 3, 2, 1].forEach(weight => {
+        const weightIssues = issueData.filter(issueDatum => issueDatum.weight === weight);
+        // If any issues of this weight were reported:
+        if (weightIssues.length) {
+          const weightName = weightNames[4 - weight];
+          // Add a details element to the lines.
+          dataLines.push('<details>');
+          // Add the priority as a summary.
+          dataLines.push(`  <summary><h3 class="priority">${weightName} priority</h3></summary>`);
+          // Sort the issue data alphabetically by summary.
+          weightIssues.sort((a, b) => a.summary.localeCompare(b.summary, {sensitivity: 'base'}));
+          // Then sort the issue data in order of decreasing count of reporting tools.
+          weightIssues.sort((a, b) => b.issueToolNames.length - a.issueToolNames.length);
+          // For each issue:
+          weightIssues.forEach(issueDatum => {
+            const {elementData, issueToolNames, summary, wcag} = issueDatum;
+            // Add a summary and expandable details to the lines.
+            dataLines.push('  <details>');
+            dataLines.push(`    <summary>${summary}</summary>`);
+            dataLines.push(`    <p>Why it matters: ${issueDatum.why}</p>`);
+            if (wcag) {
+              dataLines.push(`    <p>Related WCAG standard: ${wcag}</p>`);
+            }
+            const toolCount = issueToolNames.length;
+            const toolNameList = issueToolNames.join(' + ');
+            if (toolCount > 1) {
+              dataLines.push(`    <p>Reported by ${toolCount} tools (${toolNameList})</p>`);
+            } else {
+              dataLines.push(`    <p>Reported by 1 tool (${toolNameList})</p>`);
+            }
+            // If any elements were reported as exhibiting the issue:
+            if (elementData && Object.keys(elementData).length) {
+              let elementToolLists = Object.keys(elementData).sort();
+              elementToolLists = elementToolLists.sort(
+                (a, b) => b.split(/ \+ /).length - a.split(/ \+ /).length
+              );
+              // Add lines reporting which tools reported which elements as doing so.
+              dataLines.push('    <p>Where reported:');
+              // For each tool combination:
+              elementToolLists.forEach(elementToolList => {
+                const elementToolIDs = elementToolList.split(/ \+ /);
+                const elementToolNameList = elementToolIDs.map(toolID => toolNames[toolID]).join(' + ');
+                dataLines.push('    <ul class="whereList">');
+                const toolCount = elementToolIDs.length;
+                const elementCount = elementData[elementToolList].length;
+                const inWhat = elementCount > 1 ? `${elementCount} elements` : '1 element';
+                const byWhat = toolCount > 1 ? `${toolCount} tools` : '1 tool';
+                dataLines.push(`      <li>Reported in ${inWhat} by ${byWhat} (${elementToolNameList}):`);
+                dataLines.push('        <ul class="xPathList">');
+                // For each XPath of an element reported by the combination for the issue:
+                elementData[elementToolList].forEach(xPath => {
+                  const elementTexts = texts[xPath];
+                  const unanimousText = elementTexts.unanimous;
+                  // If the XPath has a unanimous text:
+                  if (unanimousText) {
+                    const fragment = unanimousText.length === 2
+                    ? `${fragmentEncode(unanimousText[0])},${fragmentEncode(unanimousText[1])}`
+                    : `${fragmentEncode(unanimousText[0])}`;
+                    // Add the XPath as a link to the text as a text fragment.
+                    dataLines.push(
+                      `          <li><a href="${url}#:~:text=${fragment}">${xPath}</a></li>`
+                    );
+                  }
+                  // Otherwise, i.e. if the XPath has no unanimous text:
+                  else {
+                    // Add the XPath as a plain list item.
+                    dataLines.push(`          <li>${xPath}</li>`);
+                  }
+                });
+                dataLines.push('        </ul>');
+                dataLines.push('      </li>');
+                dataLines.push('    </ul>');
+              });
+            }
+            dataLines.push('  </details>');
           });
+          dataLines.push('</details>');
         }
-        dataLines.push('  </details>');
-      });
-      dataLines.push('</details>');
-    }
   });
   query.data = dataLines.join(outerJoiner);
 };

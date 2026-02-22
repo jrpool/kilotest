@@ -57,7 +57,7 @@ exports.tally = report => {
         // If a classified rule has an ID that is or matches that of the instance:
         if (ruleID) {
           ruleInstances[toolID][ruleID] ??= [];
-          // Add the instance to the directory.
+          // Add the instance to the data.
           ruleInstances[toolID][ruleID].push(instance);
         }
       });
@@ -70,8 +70,7 @@ exports.tally = report => {
     issue.count ??= 0;
     // Initialize data on the reported violators of rules belonging to the issue.
     issue.violators ??= {};
-    const {violators} = issue;
-    const {tools} = issue;
+    const {tools, violators} = issue;
     // For each tool that has any rules belonging to the issue:
     Object.keys(tools).forEach(toolID => {
       // For each such rule:
@@ -80,7 +79,7 @@ exports.tally = report => {
         // For each instance with that rule:
         instances.forEach(instance => {
           const {catalogIndex, count, pathID} = instance;
-          const instanceCount = instance.count ?? 1;
+          const instanceCount = count ?? 1;
           // Add its count to that of the issue.
           issue.count += instanceCount;
           // If the instance discloses a catalog index:
@@ -95,6 +94,16 @@ exports.tally = report => {
             // Include the tool among those reporting the violator.
             violators[pathID].add(toolID);
           }
+          // For each violator:
+          Object.keys(violators).forEach(violatorID => {
+            // Convert the set of IDs of tools reporting it to a sorted array.
+            violators[violatorID] = Array.from(violators[violatorID]).sort();
+          });
+          // Convert the violators object to a sorted array.
+          issue.violators = Object
+          .entries(violators)
+          .sort((a, b) => a[1].join('+').localeCompare(b[1].join('+')))
+          .sort((a, b) => b[1].length - (a[1].length));
         });
       });
     });

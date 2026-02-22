@@ -139,10 +139,3 @@ exports.digester = async (report, query) => {
   // Return the digest.
   return template;
 };
-
-  // For each issue:
-  Object.keys(issues).forEach(issueID => {
-    const issue = issues[issueID];
-    const {summary, why, wcag, weight, count, violators} = issue;
-    // If any rules belonging to it were violated:
-    if (count) {

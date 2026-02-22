@@ -93,7 +93,7 @@
     {
       "type": "test",
       "launch": {},
-      "which": "wave",
+      "which": "xwave",
       "what": "WAVE by Utah State University",
       "reportType": 4
     },

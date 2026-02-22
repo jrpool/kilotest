@@ -40,6 +40,7 @@ exports.tally = report => {
   const ruleInstances = {};
   // For each act in the report:
   acts.forEach(act => {
+    // If it is a test act:
     if (act.type === 'test') {
       const toolID = act.which;
       ruleInstances[toolID] ??= {};
@@ -63,12 +64,17 @@ exports.tally = report => {
       });
     }
   });
-  // For each classified issue:
-  Object.keys(issues).forEach(issueID => {
+  // Get the IDs of the classified issues in alphabetical order of their summaries.
+  const issueIDs = Object.keys(issues).sort(
+    (a, b) => issues[a].summary.localeCompare(issues[b].summary)
+  );
+  // For each classified issue in that order:
+  issueIDs.forEach(issueID => {
     const issue = issues[issueID];
     // Initialize the violation count of the issue.
     issue.count ??= 0;
-    // Initialize data on the reported violators of rules belonging to the issue.
+    // Initialize data on the reporters and violators of rules belonging to the issue.
+    issue.reporters ??= new Set();
     issue.violators ??= {};
     const {tools, violators} = issue;
     // For each tool that has any rules belonging to the issue:
@@ -76,12 +82,14 @@ exports.tally = report => {
       // For each such rule:
       Object.keys(tools[toolID]).forEach(ruleID => {
         const instances = ruleInstances[toolID][ruleID] ?? [];
-        // For each instance with that rule:
+        // For each instance of a violation of that rule:
         instances.forEach(instance => {
           const {catalogIndex, count, pathID} = instance;
           const instanceCount = count ?? 1;
           // Add its count to that of the issue.
           issue.count += instanceCount;
+          // Include the tool among those reporting the issue.
+          issue.reporters.add(toolID);
           // If the instance discloses a catalog index:
           if (catalogIndex) {
             violators[catalogIndex] ??= new Set();
@@ -94,12 +102,14 @@ exports.tally = report => {
             // Include the tool among those reporting the violator.
             violators[pathID].add(toolID);
           }
-          // For each violator:
+          // Convert the set of IDs of tools reporting the issue to a sorted array.
+          issue.reporters = Array.from(issue.reporters).sort();
+          // For each violator (identified by its catalog index or path ID):
           Object.keys(violators).forEach(violatorID => {
             // Convert the set of IDs of tools reporting it to a sorted array.
             violators[violatorID] = Array.from(violators[violatorID]).sort();
           });
-          // Convert the violators object to a sorted array.
+          // Convert the violators object to a sorted array of identifier-tools arrays.
           issue.violators = Object
           .entries(violators)
           .sort((a, b) => a[1].join('+').localeCompare(b[1].join('+')))

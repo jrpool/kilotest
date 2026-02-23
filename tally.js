@@ -92,7 +92,7 @@ exports.tally = report => {
     Object.keys(tools).forEach(toolID => {
       // For each such rule:
       Object.keys(tools[toolID]).forEach(ruleID => {
-        const instances = ruleInstances[toolID][ruleID] ?? [];
+        const instances = ruleInstances[toolID]?.[ruleID] ?? [];
         // For each instance of a violation of that rule:
         instances.forEach(instance => {
           const {catalogIndex, count, pathID} = instance;

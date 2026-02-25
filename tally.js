@@ -31,24 +31,38 @@
           summary: 'line height absolute',
           why: 'User cannot adjust the line height of text for readability',
           wcag: '1.4.12',
-          count: 34,
+          violatorCount: 34,
           reporters: [
             'alfa',
             'axe',
             'htmlcs',
             'wave'
           ],
-          violators: {
-            'alfa + axe + htmlcs + wave': [
-              'html/body/div[1]/svg[1]'
-              'html/body/div[1]/noscript[3]',
-              '318',
-              '29'
-            ],
-            'htmlcs + wave': [
-              '44'
-            ]
-          }
+          violators: [
+            {
+              reporters: [
+                'alfa',
+                'axe',
+                'htmlcs',
+                'wave'
+              ],
+              violators: [
+                'html/body/div[1]/svg[1]'
+                'html/body/div[1]/noscript[3]',
+                '318',
+                '29'
+              ]
+            },
+            {
+              reporters: [
+                'htmlcs',
+                'wave'
+              ],
+              violators: [
+                '44'
+              ]
+            }
+          ]
         },
         {
           issueID: 'imageNoText',
@@ -65,18 +79,20 @@
     …
   ]
 
-  The only issues included in this returned array are those whose count values are positive.
+  In the returned array, the 4 items are data on issues of weights 4, 3, 2, and 1, in that order. In each of those items, the objects in the issues array are data on issues with the weight of the item whose counts are positive. The reporters array in each issue object is an array of the IDs of the tools that reported a violation of any rule belonging to the issue. tools that reported the issue. The violators object in each issue object is an object with the identifiers of the violators as keys and the tools that reported them as values.
 */
 
 // IMPORTS
 
 const {issues} = require('testilo/procs/score/tic');
 
-// Compiles arrays of invariant and variable rule IDs.
+// Compiles a directory of the issue classifications of invariant and variable rules.
 const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
-  const invariantRuleIDs = {};
-  const variableRuleIDs = {};
+  const invariant = {};
+  const variable = {};
+  // Initialize a conflict checker.
+  const conflictChecker = {};
   // For each classified issue:
   Object.keys(issues).forEach(issueID => {
     const tools = issues[issueID];
@@ -84,26 +100,32 @@ const getRuleIDs = () => {
     Object.keys(tools).forEach(toolID => {
       // For each such rule:
       Object.keys(tools[toolID]).forEach(ruleID => {
+        // Check it for conflicts.
+        if (conflictChecker[toolID]?.has(ruleID)) {
+          throw new Error(`ERROR: Rule ${ruleID} of tool ${toolID} belongs to 2 issues`);
+        }
+        conflictChecker[toolID] ??= new Set();
+        conflictChecker[toolID].add(ruleID);
         const rule = tools[toolID][ruleID];
         // If it is variable:
         if (rule.variable) {
-          variableRuleIDs[toolID] ??= [];
-          // Add its ID to the variable rule IDs.
-          variableRuleIDs[toolID].push(ruleID);
+          variable[toolID] ??= {};
+          // Add its ID and the issue ID to the variable rule IDs.
+          variable[toolID][ruleID] = issueID;
         }
         // Otherwise, i.e. if it is invariant:
         else {
-          invariantRuleIDs[toolID] ??= [];
-          // Add its ID to the invariant rule IDs.
-          invariantRuleIDs[toolID].push(ruleID);
+          invariant[toolID] ??= {};
+          // Add its ID and the issue ID to the invariant rule IDs.
+          invariant[toolID][ruleID] = issueID;
         }
       });
     });
   });
   // Return the data.
   return {
-    invariantRuleIDs,
-    variableRuleIDs
+    invariant,
+    variable
   };
 };
 // Returns data on violations of rules by issue weight and reporters.
@@ -113,10 +135,10 @@ exports.getTally = report => {
   [4, 3, 2, 1].forEach(weight => {
     tally.push({
       weight,
-      issues: []
+      issues: {}
     });
   });
-  // Get the invariant and variable classified rules.
+  // Get the invariant and variable classified rules with issue IDs.
   const ruleIDs = getRuleIDs();
   const {acts} = report;
   // For each act in the report:
@@ -127,19 +149,37 @@ exports.getTally = report => {
       const instances = act.result?.standardResult?.instances ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {
-        // Initialize the rule ID of the instance as if invariant.
+        // Initialize its rule ID.
         let {ruleID} = instance;
-        // If that invariant rule ID does not exist:
-        if (! ruleIDs.invariantRuleIDs[ruleID]) {
-          // Change the rule ID to the first variable rule ID of the tool that it matches.
+        let issueID = ruleIDs.invariant[toolID]?.[ruleID];
+        // If its rule ID is not invariant:
+        if (! issueID) {
+          // Change the rule ID to the first matching variable rule ID of the tool.
           ruleID = ruleIDs
-          .variableRuleIDs[toolID]
+          .variable[toolID]
           ?.find(variableRuleID => variableRuleID.test(ruleID));
+          issueID = ruleIDs.variable[toolID]?.[ruleID];
         }
         // If a classified rule has an ID that is or matches that of the instance:
-        if (ruleID) {
-          ruleInstances[toolID][ruleID] ??= [];
-          // Add the instance to the data.
+        if (issueID) {
+          const issue = issues[issueID];
+          const weight = issue.weight;
+          const weightIssues = tally[4 - weight].issues;
+          // Add data on the instance to data on the issue in the tally.
+          weightIssues[issueID] ??= issues[issueID];
+          const issueData = weightIssues[issueID];
+          issueData.count ??= 0;
+          issueData.violators ??= new Set();
+          const {violators} = issueData;
+          const violatorID = instance.catalogIndex ?? instance.pathID;
+          // If the instance discloses a new catalog index or path ID:
+          if (violatorID && ! violators.has(violatorID)) {
+            // Add the violator ID to the issue data.
+            violators.add(violatorID);
+            //
+          }
+          tally[4 - weight].issues[issueID].count += instance.count ?? 1;
+          tally[4 - weight].issues[issueID].reporters.add(toolID);
           ruleInstances[toolID][ruleID].push(instance);
         }
       });

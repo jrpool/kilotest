@@ -1,13 +1,78 @@
 /*
   tally.js
   Adds violation data to issues.
+
+  The issues object imported from testilo/procs/score/tic has this structure:
+
+  lineHeightAbsolute: {
+    summary: 'line height absolute',
+    why: 'User cannot adjust the line height of text for readability',
+    wcag: '1.4.12',
+    weight: 2,
+    tools: {
+      alfa: {
+        r80: {
+          variable: false,
+          quality: 1,
+          what: 'Paragraph text has an absolute line height'
+        }
+      }
+    }
+  }
+
+  The getTally function returns a 4-item array with this structure:
+
+  [
+    {
+      weight: 4,
+      issues: [
+        {
+          issueID: 'lineHeightAbsolute',
+          summary: 'line height absolute',
+          why: 'User cannot adjust the line height of text for readability',
+          wcag: '1.4.12',
+          count: 34,
+          reporters: [
+            'alfa',
+            'axe',
+            'htmlcs',
+            'wave'
+          ],
+          violators: {
+            'alfa + axe + htmlcs + wave': [
+              'html/body/div[1]/svg[1]'
+              'html/body/div[1]/noscript[3]',
+              '318',
+              '29'
+            ],
+            'htmlcs + wave': [
+              '44'
+            ]
+          }
+        },
+        {
+          issueID: 'imageNoText',
+          …
+        }
+      ]
+    },
+    {
+      weight: 3,
+      issues: [
+        …
+      ]
+    },
+    …
+  ]
+
+  The only issues included in this returned array are those whose count values are positive.
 */
 
 // IMPORTS
 
 const {issues} = require('testilo/procs/score/tic');
 
-// Compiles an array of variable rule IDs.
+// Compiles arrays of invariant and variable rule IDs.
 const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
   const invariantRuleIDs = {};
@@ -23,13 +88,13 @@ const getRuleIDs = () => {
         // If it is variable:
         if (rule.variable) {
           variableRuleIDs[toolID] ??= [];
-          // Add it to the data.
+          // Add its ID to the variable rule IDs.
           variableRuleIDs[toolID].push(ruleID);
         }
         // Otherwise, i.e. if it is invariant:
         else {
           invariantRuleIDs[toolID] ??= [];
-          // Add it to the data.
+          // Add its ID to the invariant rule IDs.
           invariantRuleIDs[toolID].push(ruleID);
         }
       });
@@ -41,20 +106,25 @@ const getRuleIDs = () => {
     variableRuleIDs
   };
 };
-// Adds violation data to a rule classifier.
-exports.tally = report => {
-  // Get data on the variable classified rules.
+// Returns data on violations of rules by issue weight and reporters.
+exports.getTally = report => {
+  // Initialize the tally.
+  const tally = [];
+  [4, 3, 2, 1].forEach(weight => {
+    tally.push({
+      weight,
+      issues: []
+    });
+  });
+  // Get the invariant and variable classified rules.
   const ruleIDs = getRuleIDs();
   const {acts} = report;
-  // Initialize data on the standard instances of classified rules.
-  const ruleInstances = {};
   // For each act in the report:
   acts.forEach(act => {
     // If it is a test act:
     if (act.type === 'test') {
       const toolID = act.which;
-      ruleInstances[toolID] ??= {};
-      const {instances} = act.result.standardResult ?? [];
+      const instances = act.result?.standardResult?.instances ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {
         // Initialize the rule ID of the instance as if invariant.
@@ -129,6 +199,6 @@ exports.tally = report => {
       });
     });
   });
-  // Return the augmented classification.
+  // Return the classification with count, reporters, and violators properties added to each issue.
   return issues;
 };

@@ -10,7 +10,7 @@ require('dotenv').config();
 // Module to process files.
 const fs = require('fs/promises');
 // Module to classify rules into issues.
-const {tally} = require('../../../tally');
+const {getTally} = require('../../../tally');
 // Utility module.
 const toolNames = require('testaro/procs/job').tools;
 
@@ -30,15 +30,38 @@ const populateQuery = async (report, query) => {
   const {catalog, target} = report;
   const {url} = target;
   // Get data on the classified issues and the reported violators of rules belonging to them.
-  const issues = tally(report);
+  const tally = getTally(report);
   // Initialize the HTML lines rendering facts about the issues.
   const lines = [];
-  const weightNames = ['Highest', 'High', 'Low', 'Lowest'];
+  const weightIssues = {
+    'Highest': {},
+    'High': {},
+    'Low': {},
+    'Lowest': {}
+  };
+  // For each issue:
+  Object.keys(issues).forEach(issueID => {
+    const issue = issues[issueID];
+    const {weight} = issue;
+    // If it has a weight:
+    if (weight) {
+
+    }
+    // If it has any violations:
+    if (count) {
+      weightIssues[weight][issueID] = issues[issueID];
+    }
+  })
   // For each weight:
-  [4, 3, 2, 1].forEach(weight => {
-    const violationIssues = issues.filter(issue => issue.weight === weight && issue.count);
+  ['Highest', 'High', 'Low', 'Lowest'].forEach((weightName, index) => {
+    object.keys(issues).forEach(issueID => {
+      const issue = issues[issueID];
+      if (issue.weight !== weight || ! issue.count) {
+        delete issues[issueID];
+      }
+    });
     // If any violations of rules belonging to issues of the weight were reported:
-    if (violationIssues.length) {
+    if (issues.length) {
       const weightName = weightNames[4 - weight];
       // Add a details element to the lines for the weight.
       lines.push('<details>');

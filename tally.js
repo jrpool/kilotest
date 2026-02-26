@@ -169,18 +169,29 @@ exports.getTally = report => {
           weightIssues[issueID] ??= issues[issueID];
           const issueData = weightIssues[issueID];
           issueData.count ??= 0;
-          issueData.violators ??= new Set();
-          const {violators} = issueData;
+          issueData.reporters ??= new Set();
+          issueData.violators ??= {};
+          const {count, reporters, violators} = issueData;
           const violatorID = instance.catalogIndex ?? instance.pathID;
-          // If the instance discloses a new catalog index or path ID:
-          if (violatorID && ! violators.has(violatorID)) {
-            // Add the violator ID to the issue data.
-            violators.add(violatorID);
-            //
+          // If the instance discloses a catalog index or path ID:
+          if (violatorID) {
+            const violator = violators[violatorID];
+            // If the violator is new for the issue:
+            if (! violator) {
+              // Add data on the violator to the issue data.
+              count += instance.count ?? 1;
+              reporters.add(toolID);
+              violators[violatorID] = {
+                reporters: new Set([toolID])
+              };
+            }
+            // Otherwise, i.e. if the violator is not new for the issue:
+            else {
+              // Add data on the violator to the issue data.
+              reporters.add(toolID);
+              violator.reporters.add(toolID);
+            }
           }
-          tally[4 - weight].issues[issueID].count += instance.count ?? 1;
-          tally[4 - weight].issues[issueID].reporters.add(toolID);
-          ruleInstances[toolID][ruleID].push(instance);
         }
       });
     }

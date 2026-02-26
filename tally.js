@@ -32,13 +32,14 @@
           why: 'User cannot adjust the line height of text for readability',
           wcag: '1.4.12',
           violatorCount: 34,
+          reporterCount: 4,
           reporters: [
             'alfa',
             'axe',
             'htmlcs',
             'wave'
           ],
-          violators: [
+          ensembles: [
             {
               reporters: [
                 'alfa',
@@ -85,6 +86,7 @@
 // IMPORTS
 
 const {issues} = require('testilo/procs/score/tic');
+const toolNames = require('testaro/procs/job').tools;
 
 // Compiles a directory of the issue classifications of invariant and variable rules.
 const getRuleIDs = () => {
@@ -173,28 +175,58 @@ exports.getTally = report => {
           issueData.violators ??= {};
           const {count, reporters, violators} = issueData;
           const violatorID = instance.catalogIndex ?? instance.pathID;
+          const violator = violators[violatorID];
+          // Ensure that the tool is included in the reporters of the issue.
+          reporters.add(toolID);
           // If the instance discloses a catalog index or path ID:
           if (violatorID) {
-            const violator = violators[violatorID];
-            // If the violator is new for the issue:
-            if (! violator) {
+            // If the violator has already been reported for the issue:
+            if (violator) {
+              // Ensure that the tool is included in the reporters of the violator.
+              violator.reporters.add(toolID);
+            }
+            // Otherwise, i.e. if the violator is new for the issue:
+            else {
               // Add data on the violator to the issue data.
               count += instance.count ?? 1;
-              reporters.add(toolID);
               violators[violatorID] = {
                 reporters: new Set([toolID])
               };
             }
-            // Otherwise, i.e. if the violator is not new for the issue:
-            else {
-              // Add data on the violator to the issue data.
-              reporters.add(toolID);
-              violator.reporters.add(toolID);
-            }
+          }
+          // Otherwise, i.e. if the instance does not disclose a catalog index or path ID:
+          else {
+            // Ensure that the tool is included in the reporters of the issue.
+            reporters.add(toolID);
           }
         }
       });
     }
+  });
+  // For each weight:
+  [4, 3, 2, 1].forEach(weight => {
+    const weightIssues = tally[4 - weight].issues;
+    const issueArray = [];
+    Object.keys(weightIssues).forEach(issueID => {
+      const weightIssue = weightIssues[issueID];
+      const issue = issues[issueID];
+      const {summary, wcag, why} = issue;
+      // Initialize an item for the issue in the tally.
+      const issueData = {
+        issueID,
+        summary,
+        why,
+        wcag,
+        violatorCount: weightIssue.count,
+        reporterCount: weightIssue.reporters.size,
+        reporters: Array.from(weightIssue.reporters).map(toolID => toolNames[toolID]).sort(),
+        ensembles: []
+      };
+    });
+    const issues = issueArray.sort(
+      (a, b) => a.count - b.count
+    );
+    tally[4 - weight].issues = issues;
   });
   // Get the IDs of the classified issues in alphabetical order of their summaries.
   const issueIDs = Object.keys(issues).sort(

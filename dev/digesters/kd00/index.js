@@ -8,7 +8,6 @@
 require('dotenv').config();
 const fs = require('fs/promises');
 const {getTally} = require('../../../tally');
-const toolNames = require('testaro/procs/job').tools;
 
 // CONSTANTS
 
@@ -40,7 +39,7 @@ const populateQuery = async (report, query) => {
     lines.push(`  <summary><h3 class="priority">${weightName} priority</h3></summary>`);
     // For each issue of the weight with any violations:
     issues.forEach(issue => {
-      const {reporters, summary, violators, wcag, why} = issue;
+      const {ensembles, reporters, summary, violators, wcag, why} = issue;
       // Add issue details, a summary, an impact, and a related WCAG standard to the lines.
       dataLines.push('  <details>');
       dataLines.push(`    <summary>${summary}</summary>`);
@@ -49,73 +48,51 @@ const populateQuery = async (report, query) => {
         dataLines.push(`    <p>Related WCAG standard: ${wcag}</p>`);
       }
       const reporterCount = reporters.length;
-      const reporterList = reporters.map(reporter => toolNames[reporter]).join(' + ');
+      const reporterList = reporters.join(' + ');
       // Add the names and a count of issue reporters to the lines.
       if (reporterCount > 1) {
         dataLines.push(`    <p>Reported by ${reporterCount} tools (${reporterList})</p>`);
       } else {
         dataLines.push(`    <p>Reported by 1 tool (${reporterList})</p>`);
       }
-      let currentReporterList = '';
-      const violatorIDs = Object.keys(violators);
-      // If any violations were attributed to elements:
-      if (violatorIDs.length) {
-        // Add a heading for the violators to the lines.
-        dataLines.push('    <h3>Elements with this issue</h3>');
-        // For each such violator:
-        violatorIDs.forEach(violatorID => {
-          const reporters = violators[violatorID];
-          const reporterList = reporters.map(reporter => toolNames[reporter]).join(' + ');
-          // If it is the first or its reporters differ from those of the previous violator:
-          if (reporterList !== currentReporterList) {
-            // If it is not the first:
-            if (currentReporterList) {
-              // Close the previous violator list.
-              dataLines.push('    </ul>');
-            }
-            currentReporterList = reporterList;
-            // Add a heading for its reporters.
-            dataLines.push(`    <h4>Reported by ${reporterList}</h4>`);
-            // Start a list of the violators with those reporters.
-            dataLines.push('    <ul>');
+      // For each ensemble of reporters:
+      ensembles.forEach(ensemble => {
+        // Add ensemble details, a summary, and violator references to the lines.
+        dataLines.push('    <details>');
+        const {id, reporters} = ensemble;
+        if (ensemble.reporters.length > 1) {
+          dataLines.push(`      <summary>Reported by ${reporters.length} tools (${ensemble.reporters.join(' + ')})</summary>`);
+        } else {
+          dataLines.push(`      <summary>Reported by 1 tool (${reporters[0]})</summary>`);
+        }
+        dataLines.push(`      <p>Reported by ${reporters.length} tools</p>`);
+        violators.forEach(violator => {
+          const {id} = violator;
+          if (id.startsWith('html/')) {
+            dataLines.push(`      <p>${id}</p>`);
           }
-          // Initialize the path ID and text fragments of the violator.
-          let pathID = violatorID;
-          let text = '';
-          // If the violator ID is a catalog index:
-          if (! violatorID.startsWith('html/')) {
-            const catalogData = catalog[violatorID];
-            // Correct the path ID.
-            ({pathID} = catalogData);
-            // If the violator has linkable text fragments:
-            if (catalogData.isLinkableText) {
-              // Correct the text fragments.
-              ({text} = catalogData);
+          else {
+            const catalogData = catalog[id];
+            const {isLinkableText, pathID, text} = catalogData;
+            if (isLinkableText) {
+              const fragmentList = text
+              .split('\n')
+              .map(fragment => fragmentEncode(fragment))
+              .join(',');
+              dataLines.push(`      <p><a href="${url}:~:text=${fragmentList}">${pathID}</a></p>`);
+            }
+            else {
+              dataLines.push(`      <p>${pathID}</p>`);
             }
           }
-          // Initialize the list item as the path ID.
-          let listItemContent = pathID;
-          // If the element has linkable text fragments:
-          if (text) {
-            const fragmentList = text
-            .split('\n')
-            .map(fragment => fragmentEncode(fragment))
-            .join(',');
-            // Convert the list item to a link.
-            listItemContent = `<a href="${url}:~:text=${fragmentList}">${pathID}</a>`;
-          }
-          // Add the element path ID, as a link if possible, to the list.
-          dataLines.push(`      <li>${listItemContent}</li>`);
-        });
-      }
-      // Close the final violator list.
-      dataLines.push('    </ul>');
+        })
+        dataLines.push('    </details>');
+      });
       // Close the issue details.
       dataLines.push('  </details>');
     });
     // Close the weight details.
     dataLines.push('</details>');
-    }
   });
   // Add the lines to the query.
   query.data = dataLines.join(outerJoiner);

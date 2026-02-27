@@ -206,82 +206,64 @@ exports.getTally = report => {
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     const weightIssues = tally[4 - weight].issues;
+    // Initialize an array to replace the issues object in the tally.
     const issueArray = [];
+    // For each issue with the weight:
     Object.keys(weightIssues).forEach(issueID => {
-      const weightIssue = weightIssues[issueID];
+      const issueData = weightIssues[issueID];
       const issue = issues[issueID];
       const {summary, wcag, why} = issue;
-      // Initialize an item for the issue in the tally.
-      const issueData = {
+      // Initialize an item to be added to the array.
+      const issueItem = {
         issueID,
         summary,
         why,
         wcag,
-        violatorCount: weightIssue.count,
-        reporterCount: weightIssue.reporters.size,
-        reporters: Array.from(weightIssue.reporters).map(toolID => toolNames[toolID]).sort(),
-        ensembles: []
+        violatorCount: issueData.count,
+        reporterCount: issueData.reporters.size,
+        reporters: Array.from(issueData.reporters).map(toolID => toolNames[toolID]).sort()
       };
-    });
-    const issues = issueArray.sort(
-      (a, b) => a.count - b.count
-    );
-    tally[4 - weight].issues = issues;
-  });
-  // Get the IDs of the classified issues in alphabetical order of their summaries.
-  const issueIDs = Object.keys(issues).sort(
-    (a, b) => issues[a].summary.localeCompare(issues[b].summary)
-  );
-  // For each classified issue in that order:
-  issueIDs.forEach(issueID => {
-    const issue = issues[issueID];
-    // Initialize the violation count of the issue.
-    issue.count ??= 0;
-    // Initialize data on the reporters and violators of rules belonging to the issue.
-    issue.reporters ??= new Set();
-    issue.violators ??= {};
-    const {tools, violators} = issue;
-    // For each tool that has any rules belonging to the issue:
-    Object.keys(tools).forEach(toolID => {
-      // For each such rule:
-      Object.keys(tools[toolID]).forEach(ruleID => {
-        const instances = ruleInstances[toolID]?.[ruleID] ?? [];
-        // For each instance of a violation of that rule:
-        instances.forEach(instance => {
-          const {catalogIndex, count, pathID} = instance;
-          const instanceCount = count ?? 1;
-          // Add its count to that of the issue.
-          issue.count += instanceCount;
-          // Include the tool among those reporting the issue.
-          issue.reporters.add(toolID);
-          // If the instance discloses a catalog index:
-          if (catalogIndex) {
-            violators[catalogIndex] ??= new Set();
-            // Include the tool among those reporting the violator.
-            violators[catalogIndex].add(toolID);
-          }
-          // Otherwise, if the instance discloses a path ID:
-          else if (pathID) {
-            violators[pathID] ??= new Set();
-            // Include the tool among those reporting the violator.
-            violators[pathID].add(toolID);
-          }
-          // Convert the set of IDs of tools reporting the issue to a sorted array.
-          issue.reporters = Array.from(issue.reporters).sort();
-          // For each violator (identified by its catalog index or path ID):
-          Object.keys(violators).forEach(violatorID => {
-            // Convert the set of IDs of tools reporting it to a sorted array.
-            violators[violatorID] = Array.from(violators[violatorID]).sort();
-          });
-          // Convert the violators object to a sorted array of identifier-tools arrays.
-          issue.violators = Object
-          .entries(violators)
-          .sort((a, b) => a[1].join('+').localeCompare(b[1].join('+')))
-          .sort((a, b) => b[1].length - (a[1].length));
+      // Initialize an array of data on the violators of any rule belonging to the issue.
+      const violators = [];
+      // Initialize a set of ensemble-describing strings.
+      const ensembles = new Set();
+      // For each violator of any rule belonging to the issue:
+      Object.keys(issueData.violators).forEach(violatorID => {
+        // Get a string describing the ensemble of its reporters.
+        const ensembleString = Array
+        .from(issueData.violators[violatorID].reporters)
+        .map(toolID => toolNames[toolID])
+        .sort()
+        .join(' + ');
+        // Ensure that the ensemble string is in the set.
+        ensembles.add(ensembleString);
+        // Add data on the violator to the array.
+        violators.push({
+          id: violatorID,
+          ensembleString
         });
       });
+      // Sort the data on the violators by violator ID.
+      violators.sort((a, b) => a.id.localeCompare(b.id));
+      // Initialize an array of the ensembles sorted alphabetically.
+      ensembleArray = Array.from(ensembles).sort();
+      // Sort the sorted array by decreasing ensemble size.
+      ensembleArray.sort((a, b) => b.split(' + ').length - a.split(' + ').length);
+      // Add an array of ensemble data to the the issue item.
+      issueItem.ensembles = ensembleArray.map(ensembleString => ({
+        reporters: ensembleString.split(' + '),
+        violators: violators
+        .filter(violator => violator.ensembleString === ensembleString)
+        .map(violator => violator.id)
+      }));
+      // Add the issue item to the issue array.
+      issueArray.push(issueItem);
     });
+    // Sort the items in the issue array by violation count.
+    issueArray.sort((a, b) => a.count - b.count);
+    // Replace the issues object for the weight in the tally with the issue array.
+    tally[4 - weight].issues = issueArray;
   });
-  // Return the classification with count, reporters, and violators properties added to each issue.
-  return issues;
+  // Return the tally.
+  return tally;
 };

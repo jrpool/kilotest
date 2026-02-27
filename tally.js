@@ -97,7 +97,7 @@ const getRuleIDs = () => {
   const conflictChecker = {};
   // For each classified issue:
   Object.keys(issues).forEach(issueID => {
-    const tools = issues[issueID];
+    const {tools} = issues[issueID];
     // For each tool that has any rules belonging to the issue:
     Object.keys(tools).forEach(toolID => {
       // For each such rule:

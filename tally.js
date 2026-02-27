@@ -97,32 +97,40 @@ const getRuleIDs = () => {
   const conflictChecker = {};
   // For each classified issue:
   Object.keys(issues).forEach(issueID => {
-    const {tools} = issues[issueID];
-    // For each tool that has any rules belonging to the issue:
-    Object.keys(tools).forEach(toolID => {
-      // For each such rule:
-      Object.keys(tools[toolID]).forEach(ruleID => {
-        // Check it for conflicts.
-        if (conflictChecker[toolID]?.has(ruleID)) {
-          throw new Error(`ERROR: Rule ${ruleID} of tool ${toolID} belongs to 2 issues`);
-        }
-        conflictChecker[toolID] ??= new Set();
-        conflictChecker[toolID].add(ruleID);
-        const rule = tools[toolID][ruleID];
-        // If it is variable:
-        if (rule.variable) {
-          variable[toolID] ??= {};
-          // Add its ID and the issue ID to the variable rule IDs.
-          variable[toolID][ruleID] = issueID;
-        }
-        // Otherwise, i.e. if it is invariant:
-        else {
-          invariant[toolID] ??= {};
-          // Add its ID and the issue ID to the invariant rule IDs.
-          invariant[toolID][ruleID] = issueID;
-        }
+    // If the issue is not deprecated:
+    if (issueID !== 'ignorable') {
+      const {tools} = issues[issueID];
+      // For each tool that has any rules belonging to the issue:
+      Object.keys(tools).forEach(toolID => {
+        // For each such rule:
+        Object.keys(tools[toolID]).forEach(ruleID => {
+          // If it is a duplicate:
+          if (conflictChecker[toolID]?.has(ruleID)) {
+            // Report this.
+            console.log(`ERROR: Rule ${ruleID} of tool ${toolID} belongs to 2 issues`);
+          }
+          // Otherwise, i.e. if it is not a duplicate:
+          else {
+            // Add it to the classified rules of the tool.
+            conflictChecker[toolID] ??= new Set();
+            conflictChecker[toolID].add(ruleID);
+          }
+          const rule = tools[toolID][ruleID];
+          // If it is variable:
+          if (rule.variable) {
+            variable[toolID] ??= {};
+            // Add its ID and the issue ID to the variable rule IDs.
+            variable[toolID][ruleID] = issueID;
+          }
+          // Otherwise, i.e. if it is invariant:
+          else {
+            invariant[toolID] ??= {};
+            // Add its ID and the issue ID to the invariant rule IDs.
+            invariant[toolID][ruleID] = issueID;
+          }
+        });
       });
-    });
+    }
   });
   // Return the data.
   return {
@@ -165,7 +173,8 @@ exports.getTally = report => {
         // If a classified rule has an ID that is or matches that of the instance:
         if (issueID) {
           const issue = issues[issueID];
-          const weight = issue.weight;
+          const {weight} = issue;
+          console.log(`XXX Weight is ${weight}`);
           const weightIssues = tally[4 - weight].issues;
           // Add data on the instance to data on the issue in the tally.
           weightIssues[issueID] ??= issues[issueID];
@@ -173,7 +182,8 @@ exports.getTally = report => {
           issueData.count ??= 0;
           issueData.reporters ??= new Set();
           issueData.violators ??= {};
-          const {count, reporters, violators} = issueData;
+          let {count} = issueData;
+          const {reporters, violators} = issueData;
           const violatorID = instance.catalogIndex ?? instance.pathID;
           const violator = violators[violatorID];
           // Ensure that the tool is included in the reporters of the issue.

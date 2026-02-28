@@ -270,7 +270,7 @@ exports.getTally = report => {
         const ensembleString = Array
         .from(issueData.violators[violatorID].reporters)
         .map(toolID => toolNames[toolID])
-        .sort()
+        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
         .join(' + ');
         // Ensure that the ensemble string is in the set.
         ensembles.add(ensembleString);
@@ -296,15 +296,18 @@ exports.getTally = report => {
       // Add the issue item to the issue array.
       issueArray.push(issueItem);
     });
-    // Sort the items in the issue array by violation count.
-    issueArray.sort((a, b) => a.count - b.count);
+    // Sort the items in the issue array by decreasing reporter count.
+    issueArray.sort((a, b) => b.reporterCount - a.reporterCount);
     // Replace the issues object for the weight in the tally with the issue array.
     tally.weights[4 - weight].issues = issueArray;
   });
   // Add the issue count, reporter count, and reporter list to the tally.
   tally.issueCount = reportedIssues.size;
   tally.reporterCount = reporters.size;
-  tally.reporters = Array.from(reporters).map(toolID => toolNames[toolID]).sort();
+  tally.reporters = Array
+  .from(reporters)
+  .map(toolID => toolNames[toolID])
+  .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
   // Return the tally.
   return tally;
 };

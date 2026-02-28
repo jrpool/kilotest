@@ -61,10 +61,10 @@ const populateQuery = async (report, query) => {
         const {reporters, violators} = ensemble;
         if (reporters.length > 1) {
           lines.push(
-            `      <summary>Reported by ${reporters.length} tools (${reporters.join(' + ')})</summary>`
+            `      <summary>Elements reported by ${reporters.length} tools (${reporters.join(' + ')})</summary>`
           );
         } else {
-          lines.push(`      <summary>Reported by 1 tool (${reporters[0]})</summary>`);
+          lines.push(`      <summary>Elements reported by 1 tool (${reporters[0]})</summary>`);
         }
         violators.forEach(violatorID => {
           if (violatorID.startsWith('html/')) {

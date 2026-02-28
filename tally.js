@@ -23,6 +23,7 @@
   The getTally function returns an object with this structure:
 
   {
+    issueCount: 88,
     reporterCount: 4,
     reporters: [
       'alfa',
@@ -152,6 +153,7 @@ const getRuleIDs = () => {
 exports.getTally = report => {
   // Initialize the tally.
   const tally = {
+    issueCount: 0,
     reporterCount: 0,
     reporters: [],
     weights: []
@@ -228,6 +230,9 @@ exports.getTally = report => {
       });
     }
   });
+  // Initialize sets of reported issues and reporters.
+  const reportedIssues = new Set();
+  const reporters = new Set();
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     const weightIssues = tally.weights[4 - weight].issues;
@@ -235,7 +240,14 @@ exports.getTally = report => {
     const issueArray = [];
     // For each issue with the weight:
     Object.keys(weightIssues).forEach(issueID => {
+      // Ensure that the issue is included in the reported issues.
+      reportedIssues.add(issueID);
       const issueData = weightIssues[issueID];
+      // For each reporter of the issue:
+      issueData.reporters.forEach(reporter => {
+        // Ensure that the reporter is included in the reporters.
+        reporters.add(reporter);
+      });
       const issue = issues[issueID];
       const {summary, wcag, why} = issue;
       // Initialize an item to be added to the array.
@@ -289,6 +301,10 @@ exports.getTally = report => {
     // Replace the issues object for the weight in the tally with the issue array.
     tally.weights[4 - weight].issues = issueArray;
   });
+  // Add the issue count, reporter count, and reporter list to the tally.
+  tally.issueCount = reportedIssues.size;
+  tally.reporterCount = reporters.size;
+  tally.reporters = Array.from(reporters).map(toolID => toolNames[toolID]).sort();
   // Return the tally.
   return tally;
 };

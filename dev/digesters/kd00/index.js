@@ -30,16 +30,14 @@ const populateQuery = async (report, query) => {
   const tally = getTally(report);
   // Initialize the HTML lines rendering facts about the issues.
   const lines = [];
-  const issueCount = tally.map(weightData => weightData.issues.length).reduce((a, b) => a + b);
+  const {issueCount, reporterCount, reporters} = tally;
   // Add the count of issues to the lines.
   lines.push(`<p>Count of issues: ${issueCount}</p>`);
-  // Add the reporter count to the lines.
-  const {reporterCount, reporters} = tally;
-  const reporterList = Array.from(reporters).map(toolID => toolNames[toolID]).sort().join(' + ');
+  // Add the reporter count and list to the lines.
   const reporterCountString = reporterCount > 1 ? `${reporterCount} tools` : '1 tool';
-  lines.push(`<p>Reported by ${reporterCountString} (${reporterList})</p>`);
+  lines.push(`<p>Reported by ${reporterCountString} (${reporters.join(' + ')})</p>`);
   // For each classified issue with any violations:
-  tally.forEach((weightData, index) => {
+  tally.weights.forEach((weightData, index) => {
     const {issues} = weightData;
     const weightName = weightNames[index];
     // Add a details element to the lines for the weight.

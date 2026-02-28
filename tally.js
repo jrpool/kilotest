@@ -161,20 +161,21 @@ exports.getTally = report => {
       instances.forEach(instance => {
         // Initialize its rule ID.
         let {ruleID} = instance;
+        // Initialize the issue ID of the rule.
         let issueID = ruleIDs.invariant[toolID]?.[ruleID];
-        // If its rule ID is not invariant:
+        // If the rule ID is not invariant:
         if (! issueID) {
           // Change the rule ID to the first matching variable rule ID of the tool.
-          ruleID = ruleIDs
-          .variable[toolID]
-          ?.find(variableRuleID => variableRuleID.test(ruleID));
+          ruleID = Object
+          .keys(ruleIDs.variable[toolID])
+          .find(variableRuleID => variableRuleID.test(ruleID));
+          // Reassign the issue ID as that of the variable rule.
           issueID = ruleIDs.variable[toolID]?.[ruleID];
         }
         // If a classified rule has an ID that is or matches that of the instance:
         if (issueID) {
           const issue = issues[issueID];
           const {weight} = issue;
-          console.log(`XXX Weight is ${weight}`);
           const weightIssues = tally[4 - weight].issues;
           // Add data on the instance to data on the issue in the tally.
           weightIssues[issueID] ??= issues[issueID];

@@ -66,7 +66,6 @@ const populateQuery = async (report, query) => {
         } else {
           lines.push(`      <summary>Reported by 1 tool (${reporters[0]})</summary>`);
         }
-        lines.push(`      <p>Reported by ${reporters.length} tools</p>`);
         violators.forEach(violatorID => {
           if (violatorID.startsWith('html/')) {
             lines.push(`      <p>${violatorID}</p>`);

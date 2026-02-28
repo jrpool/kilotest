@@ -230,7 +230,7 @@ exports.getTally = report => {
   });
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
-    const weightIssues = tally[4 - weight].issues;
+    const weightIssues = tally.weights[4 - weight].issues;
     // Initialize an array to replace the issues object in the tally.
     const issueArray = [];
     // For each issue with the weight:

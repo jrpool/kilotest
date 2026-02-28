@@ -67,13 +67,12 @@ const populateQuery = async (report, query) => {
           lines.push(`      <summary>Reported by 1 tool (${reporters[0]})</summary>`);
         }
         lines.push(`      <p>Reported by ${reporters.length} tools</p>`);
-        violators.forEach(violator => {
-          const {id} = violator;
-          if (id.startsWith('html/')) {
-            lines.push(`      <p>${id}</p>`);
+        violators.forEach(violatorID => {
+          if (violatorID.startsWith('html/')) {
+            lines.push(`      <p>${violatorID}</p>`);
           }
           else {
-            const catalogData = catalog[id];
+            const catalogData = catalog[violatorID];
             const {isLinkableText, pathID, text} = catalogData;
             if (isLinkableText) {
               const fragmentList = text

@@ -17,8 +17,8 @@ const fs = require('fs/promises');
 // Module to perform utility functions..
 const {digest, getPostData, serveError} = require('../util');
 // Functions from Testilo.
-const {collateExcerpts} = require('testilo/procs/excerpts/excerpts');
-const {issueAnnotate} = require('testilo/procs/classify/classify');
+// XXX const {collateExcerpts} = require('testilo/procs/excerpts/excerpts');
+// XXX const {issueAnnotate} = require('testilo/procs/classify/classify');
 const {score} = require('testilo/score');
 const {scorer} = require('testilo/procs/score/tsp');
 const {digester} = require('./digesters/kd00/index');
@@ -212,17 +212,16 @@ exports.devRequestHandler = async (request, response) => {
           };
           // Perform the job and get its report.
           const report = await doJob(job, jobOpts);
-          // Annotate the standard instances in the report with issue IDs in place.
-          issueAnnotate(report);
           // Add a directory of element excerpts to the report in place.
-          collateExcerpts(report);
+          // XXX collateExcerpts(report);
           // Score it in place.
-          score(scorer, report);
+          // XXX score(scorer, report);
           const nowStamp = getNowStamp();
           const fileBaseName = `${nowStamp}-${jobID}`;
           // Create a directory for reports if necessary.
           await fs.mkdir('reports', {recursive: true});
-          // Save a copy of the scored report as a file.
+          // Save a copy of the report as a file.
+          // XXX Save a copy of the scored report as a file.
           await fs.writeFile(
             `reports/${fileBaseName}.json`, `${JSON.stringify(report, null, 2)}\n`
           );
@@ -233,22 +232,23 @@ exports.devRequestHandler = async (request, response) => {
             jobID,
             pageWhat,
             pageURL,
-            score: report.score.summary.total,
+            // XXX score: report.score.summary.total,
             solos: report.jobData.solos,
             authorized: authCodeGood
           };
           // Save a log as a file.
           await fs.writeFile(`logs/${fileBaseName}.json`, `${JSON.stringify(log, null, 2)}\n`);
           console.log('Job logged');
-          // Digest the scored report.
+          // Digest the report.
+          // XXX Digest the scored report.
           const jobDigest = await digest(digester, report, {
-            title: 'Kilotest dev report',
+            // XXX title: 'Kilotest dev report',
             jobID,
             testDate: new Date().toISOString().slice(0, 10),
             pageID: pageWhat,
             pageURL,
-            issueCount: Object.keys(report.score.details.issue).length,
-            impact: report.score.summary.total,
+            // XXX issueCount: Object.keys(report.score.details.issue).length,
+            // XXX impact: report.score.summary.total,
             elapsedSeconds: report.jobData.elapsedSeconds,
             report: JSON.stringify(report, null, 2).replace(/&/g, '&amp;').replace(/</g, '&lt;')
           });

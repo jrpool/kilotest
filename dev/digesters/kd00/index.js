@@ -13,6 +13,7 @@ const {getTally} = require('../../../tally');
 
 // Newline with indentations.
 const outerJoiner = '\n      ';
+const toolNames = require('testaro/procs/job').tools;
 const weightNames = ['Highest', 'High', 'Low', 'Lowest'];
 
 // FUNCTIONS
@@ -29,6 +30,20 @@ const populateQuery = async (report, query) => {
   const tally = getTally(report);
   // Initialize the HTML lines rendering facts about the issues.
   const lines = [];
+  const issueCount = tally.map(weightData => weightData.issues.length).reduce((a, b) => a + b);
+  // Add the count of issues to the lines.
+  lines.push(`<p>Count of issues: ${issueCount}</p>`);
+  // Add the reporter count to the lines.
+  const reporterCount = tally.map(weightData => weightData.reporterCount).reduce((a, b) => a + b);
+  const reporters = new Set();
+  tally.forEach(weightData => {
+    weightData.reporters.forEach(reporter => {
+      reporters.add(reporter);
+    });
+  });
+  const reporterList = Array.from(reporters).map(toolID => toolNames[toolID]).sort().join(' + ');
+  const reporterCountString = reporterCount > 1 ? `${reporterCount} tools` : '1 tool';
+  lines.push(`<p>Reported by ${reporterCountString} (${reporterList})</p>`);
   // For each classified issue with any violations:
   tally.forEach((weightData, index) => {
     const {issues} = weightData;

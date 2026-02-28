@@ -20,65 +20,75 @@
     }
   }
 
-  The getTally function returns a 4-item array with this structure:
+  The getTally function returns an object with this structure:
 
-  [
-    {
-      weight: 4,
-      issues: [
-        {
-          issueID: 'lineHeightAbsolute',
-          summary: 'line height absolute',
-          why: 'User cannot adjust the line height of text for readability',
-          wcag: '1.4.12',
-          violatorCount: 34,
-          reporterCount: 4,
-          reporters: [
-            'alfa',
-            'axe',
-            'htmlcs',
-            'wave'
-          ],
-          ensembles: [
-            {
-              reporters: [
-                'alfa',
-                'axe',
-                'htmlcs',
-                'wave'
-              ],
-              violators: [
-                'html/body/div[1]/svg[1]'
-                'html/body/div[1]/noscript[3]',
-                '318',
-                '29'
-              ]
-            },
-            {
-              reporters: [
-                'htmlcs',
-                'wave'
-              ],
-              violators: [
-                '44'
-              ]
-            }
-          ]
-        },
-        {
-          issueID: 'imageNoText',
+  {
+    reporterCount: 4,
+    reporters: [
+      'alfa',
+      'axe',
+      'htmlcs',
+      'wave'
+    ],
+    weights: [
+      {
+        weight: 4,
+        issues: [
+          {
+            issueID: 'lineHeightAbsolute',
+            summary: 'line height absolute',
+            why: 'User cannot adjust the line height of text for readability',
+            wcag: '1.4.12',
+            violatorCount: 34,
+            reporterCount: 4,
+            reporters: [
+              'alfa',
+              'axe',
+              'htmlcs',
+              'wave'
+            ],
+            ensembles: [
+              {
+                reporters: [
+                  'alfa',
+                  'axe',
+                  'htmlcs',
+                  'wave'
+                ],
+                violators: [
+                  'html/body/div[1]/svg[1]'
+                  'html/body/div[1]/noscript[3]',
+                  '318',
+                  '29'
+                ]
+              },
+              {
+                reporters: [
+                  'htmlcs',
+                  'wave'
+                ],
+                violators: [
+                  '44'
+                ]
+              }
+            ]
+          },
+          {
+            issueID: 'imageNoText',
+            …
+          }
+        ]
+      },
+      {
+        weight: 3,
+        issues: [
           …
-        }
-      ]
-    },
-    {
-      weight: 3,
-      issues: [
-        …
-      ]
-    },
-    …
-  ]
+        ]
+      },
+      …
+      }
+    ]
+  }
 
   In the returned array, the 4 items are data on issues of weights 4, 3, 2, and 1, in that order. In each of those items, the objects in the issues array are data on issues with the weight of the item whose counts are positive. The reporters array in each issue object is an array of the IDs of the tools that reported a violation of any rule belonging to the issue. tools that reported the issue. The violators object in each issue object is an object with the identifiers of the violators as keys and the tools that reported them as values.
 */
@@ -141,9 +151,13 @@ const getRuleIDs = () => {
 // Returns data on violations of rules by issue weight and reporters.
 exports.getTally = report => {
   // Initialize the tally.
-  const tally = [];
+  const tally = {
+    reporterCount: 0,
+    reporters: [],
+    weights: []
+  };
   [4, 3, 2, 1].forEach(weight => {
-    tally.push({
+    tally.weights.push({
       weight,
       issues: {}
     });
@@ -176,7 +190,7 @@ exports.getTally = report => {
         if (issueID) {
           const issue = issues[issueID];
           const {weight} = issue;
-          const weightIssues = tally[4 - weight].issues;
+          const weightIssues = tally.weights[4 - weight].issues;
           // Add data on the instance to data on the issue in the tally.
           weightIssues[issueID] ??= issues[issueID];
           const issueData = weightIssues[issueID];
@@ -273,7 +287,7 @@ exports.getTally = report => {
     // Sort the items in the issue array by violation count.
     issueArray.sort((a, b) => a.count - b.count);
     // Replace the issues object for the weight in the tally with the issue array.
-    tally[4 - weight].issues = issueArray;
+    tally.weights[4 - weight].issues = issueArray;
   });
   // Return the tally.
   return tally;

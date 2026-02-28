@@ -167,8 +167,8 @@ exports.getTally = report => {
         if (! issueID) {
           // Change the rule ID to the first matching variable rule ID of the tool.
           ruleID = Object
-          .keys(ruleIDs.variable[toolID])
-          .find(variableRuleID => variableRuleID.test(ruleID));
+          .keys(ruleIDs.variable[toolID] ?? {})
+          .find(variableRuleID => new RegExp(variableRuleID).test(ruleID));
           // Reassign the issue ID as that of the variable rule.
           issueID = ruleIDs.variable[toolID]?.[ruleID];
         }

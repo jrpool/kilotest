@@ -41,35 +41,37 @@ const populateQuery = async (report, query) => {
     issues.forEach(issue => {
       const {ensembles, reporters, summary, violators, wcag, why} = issue;
       // Add issue details, a summary, an impact, and a related WCAG standard to the lines.
-      dataLines.push('  <details>');
-      dataLines.push(`    <summary>${summary}</summary>`);
-      dataLines.push(`    <p>Why it matters: ${why}</p>`);
+      lines.push('  <details>');
+      lines.push(`    <summary>${summary}</summary>`);
+      lines.push(`    <p>Why it matters: ${why}</p>`);
       if (wcag) {
-        dataLines.push(`    <p>Related WCAG standard: ${wcag}</p>`);
+        lines.push(`    <p>Related WCAG standard: ${wcag}</p>`);
       }
       const reporterCount = reporters.length;
       const reporterList = reporters.join(' + ');
       // Add the names and a count of issue reporters to the lines.
       if (reporterCount > 1) {
-        dataLines.push(`    <p>Reported by ${reporterCount} tools (${reporterList})</p>`);
+        lines.push(`    <p>Reported by ${reporterCount} tools (${reporterList})</p>`);
       } else {
-        dataLines.push(`    <p>Reported by 1 tool (${reporterList})</p>`);
+        lines.push(`    <p>Reported by 1 tool (${reporterList})</p>`);
       }
       // For each ensemble of reporters:
       ensembles.forEach(ensemble => {
         // Add ensemble details, a summary, and violator references to the lines.
-        dataLines.push('    <details>');
-        const {id, reporters} = ensemble;
-        if (ensemble.reporters.length > 1) {
-          dataLines.push(`      <summary>Reported by ${reporters.length} tools (${ensemble.reporters.join(' + ')})</summary>`);
+        lines.push('    <details>');
+        const {reporters} = ensemble;
+        if (reporters.length > 1) {
+          lines.push(
+            `      <summary>Reported by ${reporters.length} tools (${reporters.join(' + ')})</summary>`
+          );
         } else {
-          dataLines.push(`      <summary>Reported by 1 tool (${reporters[0]})</summary>`);
+          lines.push(`      <summary>Reported by 1 tool (${reporters[0]})</summary>`);
         }
-        dataLines.push(`      <p>Reported by ${reporters.length} tools</p>`);
+        lines.push(`      <p>Reported by ${reporters.length} tools</p>`);
         violators.forEach(violator => {
           const {id} = violator;
           if (id.startsWith('html/')) {
-            dataLines.push(`      <p>${id}</p>`);
+            lines.push(`      <p>${id}</p>`);
           }
           else {
             const catalogData = catalog[id];
@@ -79,23 +81,23 @@ const populateQuery = async (report, query) => {
               .split('\n')
               .map(fragment => fragmentEncode(fragment))
               .join(',');
-              dataLines.push(`      <p><a href="${url}:~:text=${fragmentList}">${pathID}</a></p>`);
+              lines.push(`      <p><a href="${url}:~:text=${fragmentList}">${pathID}</a></p>`);
             }
             else {
-              dataLines.push(`      <p>${pathID}</p>`);
+              lines.push(`      <p>${pathID}</p>`);
             }
           }
         })
-        dataLines.push('    </details>');
+        lines.push('    </details>');
       });
       // Close the issue details.
-      dataLines.push('  </details>');
+      lines.push('  </details>');
     });
     // Close the weight details.
-    dataLines.push('</details>');
+    lines.push('</details>');
   });
   // Add the lines to the query.
-  query.data = dataLines.join(outerJoiner);
+  query.data = lines.join(outerJoiner);
 };
 // Returns a report digest.
 exports.digester = async (report, query) => {

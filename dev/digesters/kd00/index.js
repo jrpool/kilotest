@@ -37,7 +37,7 @@ const populateQuery = async (report, query) => {
   const reporterCount = tally.map(weightData => weightData.reporterCount).reduce((a, b) => a + b);
   const reporters = new Set();
   tally.forEach(weightData => {
-    weightData.issues.reporters.forEach(reporter => {
+    weightData.reporters.forEach(reporter => {
       reporters.add(reporter);
     });
   });

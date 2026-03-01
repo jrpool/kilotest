@@ -104,25 +104,30 @@ const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
   const invariant = {};
   const variable = {};
-  // Initialize a conflict checker.
-  const conflictChecker = {};
+  // Initialize a validity checker.
+  const validityChecker = {};
   // For each classified issue:
   Object.keys(issues).forEach(issueID => {
-    const {tools} = issues[issueID];
+    const {tools, weight} = issues[issueID];
+    // If the weight is invalid:
+    if (weight < 1 || weight > 4) {
+      // Report this.
+      console.log(`ERROR: Issue ${issueID} weight is invalid`);
+    }
     // For each tool that has any rules belonging to the issue:
     Object.keys(tools).forEach(toolID => {
       // For each such rule:
       Object.keys(tools[toolID]).forEach(ruleID => {
         // If it is a duplicate:
-        if (conflictChecker[toolID]?.has(ruleID)) {
+        if (validityChecker[toolID]?.has(ruleID)) {
           // Report this.
           console.log(`ERROR: Rule ${ruleID} of tool ${toolID} belongs to 2 issues`);
         }
         // Otherwise, i.e. if it is not a duplicate:
         else {
           // Add it to the classified rules of the tool.
-          conflictChecker[toolID] ??= new Set();
-          conflictChecker[toolID].add(ruleID);
+          validityChecker[toolID] ??= new Set();
+          validityChecker[toolID].add(ruleID);
         }
         const rule = tools[toolID][ruleID];
         // If it is variable:

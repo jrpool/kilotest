@@ -63,7 +63,7 @@ const populateQuery = async (report, query) => {
       }
       // For each ensemble of reporters:
       ensembles.forEach(ensemble => {
-        // Add ensemble details, a summary, and violator references to the lines.
+        // Add a details element for the ensemble to the lines.
         lines.push('    <details>');
         const {reporters, violators} = ensemble;
         if (reporters.length > 1) {
@@ -73,31 +73,40 @@ const populateQuery = async (report, query) => {
         } else {
           lines.push(`      <summary>Elements reported by 1 tool (${reporters[0]})</summary>`);
         }
+        // For each violator reported by the ensemble:
         violators.forEach(violatorID => {
+          // If the violator ID is a path ID:
           if (violatorID.startsWith('html/')) {
+            // Add the path ID to the lines.
             lines.push(`      <p>${violatorID}</p>`);
           }
+          // Otherwise, i.e. if it is a catalog index:
           else {
             const catalogData = catalog[violatorID];
-            const {isLinkableText, pathID, text} = catalogData;
-            if (isLinkableText) {
+            const {textLinkable, pathID, text} = catalogData;
+            // If the text of the catalog entry is linkable:
+            if (textLinkable) {
               const fragmentList = text
               .split('\n')
               .map(fragment => fragmentEncode(fragment))
               .join(',');
-              lines.push(`      <p><a href="${url}:~:text=${fragmentList}">${pathID}</a></p>`);
+              // Add the path ID as a text-fragment link to the lines.
+              lines.push(`      <p><a href="${url}#:~:text=${fragmentList}">${pathID}</a></p>`);
             }
+            // Otherwise, i.e. if it is not linkable:
             else {
+              // Add the path ID to the lines.
               lines.push(`      <p>${pathID}</p>`);
             }
           }
         })
+        // Close the ensemble details element.
         lines.push('    </details>');
       });
-      // Close the issue details.
+      // Close the issue details element.
       lines.push('  </details>');
     });
-    // Close the weight details.
+    // Close the weight details element.
     lines.push('</details>');
   });
   // Add the lines to the query.

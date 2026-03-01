@@ -210,7 +210,7 @@ exports.devRequestHandler = async (request, response) => {
           await fs.writeFile(
             `reports/${fileBaseName}.json`, `${JSON.stringify(report, null, 2)}\n`
           );
-          console.log('Annotated and scored report saved');
+          console.log('Report saved');
           await fs.mkdir('logs', {recursive: true});
           const log = {
             timeStamp: nowStamp,

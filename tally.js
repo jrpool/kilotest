@@ -200,13 +200,14 @@ exports.getTally = report => {
             const issue = issues[issueID];
             const {weight} = issue;
             const weightIssues = tally.weights[4 - weight].issues;
-            // Add data on the instance to data on the issue in the tally.
+            // If necessary, nitialize the data on the issue as the classifier issue entry.
             weightIssues[issueID] ??= issues[issueID];
             const issueData = weightIssues[issueID];
-            issueData.count ??= 0;
+            // If necessary, add initialized violation data to the issue data.
+            issueData.violatorCount ??= 0;
             issueData.reporters ??= new Set();
             issueData.violators ??= {};
-            let {count} = issueData;
+            let {violatorCount} = issueData;
             const {reporters, violators} = issueData;
             const violatorID = instance.catalogIndex ?? instance.pathID;
             const violator = violators[violatorID];
@@ -221,8 +222,8 @@ exports.getTally = report => {
               }
               // Otherwise, i.e. if the violator is new for the issue:
               else {
-                // Add data on the violator to the issue data.
-                count += instance.count ?? 1;
+                // Add data on the violation to the issue data.
+                violatorCount += instance.count ?? 1;
                 violators[violatorID] = {
                   reporters: new Set([toolID])
                 };
@@ -275,7 +276,7 @@ exports.getTally = report => {
         summary,
         why,
         wcag,
-        violatorCount: issueData.count,
+        violatorCount: issueData.violatorCount,
         reporterCount: issueData.reporters.size,
         reporters: Array.from(issueData.reporters).map(toolID => toolNames[toolID]).sort()
       };

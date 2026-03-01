@@ -108,40 +108,37 @@ const getRuleIDs = () => {
   const conflictChecker = {};
   // For each classified issue:
   Object.keys(issues).forEach(issueID => {
-    // If the issue is not deprecated:
-    if (issueID !== 'ignorable') {
-      const {tools} = issues[issueID];
-      // For each tool that has any rules belonging to the issue:
-      Object.keys(tools).forEach(toolID => {
-        // For each such rule:
-        Object.keys(tools[toolID]).forEach(ruleID => {
-          // If it is a duplicate:
-          if (conflictChecker[toolID]?.has(ruleID)) {
-            // Report this.
-            console.log(`ERROR: Rule ${ruleID} of tool ${toolID} belongs to 2 issues`);
-          }
-          // Otherwise, i.e. if it is not a duplicate:
-          else {
-            // Add it to the classified rules of the tool.
-            conflictChecker[toolID] ??= new Set();
-            conflictChecker[toolID].add(ruleID);
-          }
-          const rule = tools[toolID][ruleID];
-          // If it is variable:
-          if (rule.variable) {
-            variable[toolID] ??= {};
-            // Add its ID and the issue ID to the variable rule IDs.
-            variable[toolID][ruleID] = issueID;
-          }
-          // Otherwise, i.e. if it is invariant:
-          else {
-            invariant[toolID] ??= {};
-            // Add its ID and the issue ID to the invariant rule IDs.
-            invariant[toolID][ruleID] = issueID;
-          }
-        });
+    const {tools} = issues[issueID];
+    // For each tool that has any rules belonging to the issue:
+    Object.keys(tools).forEach(toolID => {
+      // For each such rule:
+      Object.keys(tools[toolID]).forEach(ruleID => {
+        // If it is a duplicate:
+        if (conflictChecker[toolID]?.has(ruleID)) {
+          // Report this.
+          console.log(`ERROR: Rule ${ruleID} of tool ${toolID} belongs to 2 issues`);
+        }
+        // Otherwise, i.e. if it is not a duplicate:
+        else {
+          // Add it to the classified rules of the tool.
+          conflictChecker[toolID] ??= new Set();
+          conflictChecker[toolID].add(ruleID);
+        }
+        const rule = tools[toolID][ruleID];
+        // If it is variable:
+        if (rule.variable) {
+          variable[toolID] ??= {};
+          // Add its ID and the issue ID to the variable rule IDs.
+          variable[toolID][ruleID] = issueID;
+        }
+        // Otherwise, i.e. if it is invariant:
+        else {
+          invariant[toolID] ??= {};
+          // Add its ID and the issue ID to the invariant rule IDs.
+          invariant[toolID][ruleID] = issueID;
+        }
       });
-    }
+    });
   });
   // Return the data.
   return {
@@ -155,6 +152,7 @@ exports.getTally = report => {
   const tally = {
     issueCount: 0,
     reporterCount: 0,
+    solos: {},
     reporters: [],
     weights: []
   };
@@ -164,6 +162,7 @@ exports.getTally = report => {
       issues: {}
     });
   });
+  const solos = new Set();
   // Get the invariant and variable classified rules with issue IDs.
   const ruleIDs = getRuleIDs();
   const {acts} = report;
@@ -177,6 +176,7 @@ exports.getTally = report => {
       instances.forEach(instance => {
         // Initialize its rule ID.
         let {ruleID} = instance;
+        const reportedRuleID = ruleID;
         // Initialize the issue ID of the rule.
         let issueID = ruleIDs.invariant[toolID]?.[ruleID];
         // If the rule ID is not invariant:
@@ -190,41 +190,55 @@ exports.getTally = report => {
         }
         // If a classified rule has an ID that is or matches that of the instance:
         if (issueID) {
-          const issue = issues[issueID];
-          const {weight} = issue;
-          const weightIssues = tally.weights[4 - weight].issues;
-          // Add data on the instance to data on the issue in the tally.
-          weightIssues[issueID] ??= issues[issueID];
-          const issueData = weightIssues[issueID];
-          issueData.count ??= 0;
-          issueData.reporters ??= new Set();
-          issueData.violators ??= {};
-          let {count} = issueData;
-          const {reporters, violators} = issueData;
-          const violatorID = instance.catalogIndex ?? instance.pathID;
-          const violator = violators[violatorID];
-          // Ensure that the tool is included in the reporters of the issue.
-          reporters.add(toolID);
-          // If the instance discloses a catalog index or path ID:
-          if (violatorID) {
-            // If the violator has already been reported for the issue:
-            if (violator) {
-              // Ensure that the tool is included in the reporters of the violator.
-              violator.reporters.add(toolID);
-            }
-            // Otherwise, i.e. if the violator is new for the issue:
-            else {
-              // Add data on the violator to the issue data.
-              count += instance.count ?? 1;
-              violators[violatorID] = {
-                reporters: new Set([toolID])
-              };
-            }
-          }
-          // Otherwise, i.e. if the instance does not disclose a catalog index or path ID:
-          else {
+          // If the rule is not deprecated:
+          if (issueID !== 'ignorable') {
+            const issue = issues[issueID];
+            const {weight} = issue;
+            const weightIssues = tally.weights[4 - weight].issues;
+            // Add data on the instance to data on the issue in the tally.
+            weightIssues[issueID] ??= issues[issueID];
+            const issueData = weightIssues[issueID];
+            issueData.count ??= 0;
+            issueData.reporters ??= new Set();
+            issueData.violators ??= {};
+            let {count} = issueData;
+            const {reporters, violators} = issueData;
+            const violatorID = instance.catalogIndex ?? instance.pathID;
+            const violator = violators[violatorID];
             // Ensure that the tool is included in the reporters of the issue.
             reporters.add(toolID);
+            // If the instance discloses a catalog index or path ID:
+            if (violatorID) {
+              // If the violator has already been reported for the issue:
+              if (violator) {
+                // Ensure that the tool is included in the reporters of the violator.
+                violator.reporters.add(toolID);
+              }
+              // Otherwise, i.e. if the violator is new for the issue:
+              else {
+                // Add data on the violator to the issue data.
+                count += instance.count ?? 1;
+                violators[violatorID] = {
+                  reporters: new Set([toolID])
+                };
+              }
+            }
+            // Otherwise, i.e. if the instance does not disclose a catalog index or path ID:
+            else {
+              // Ensure that the tool is included in the reporters of the issue.
+              reporters.add(toolID);
+            }
+          }
+        }
+        // Otherwise, i.e. if no classified rule has an ID that is or matches that of the instance:
+        else {
+          const soloString = `${toolID}:${reportedRuleID}`;
+          // If the rule is not yet included in the solos:
+          if (! solos.has(soloString)) {
+            // Add it to the solos:
+            solos.add(`${toolID}:${reportedRuleID}`);
+            // Report it.
+            console.log(`ERROR: Rule ${soloString} does not belong to any issue`);
           }
         }
       });
@@ -301,13 +315,14 @@ exports.getTally = report => {
     // Replace the issues object for the weight in the tally with the issue array.
     tally.weights[4 - weight].issues = issueArray;
   });
-  // Add the issue count, reporter count, and reporter list to the tally.
+  // Add the issue count, reporter count, reporter list, and solos to the tally.
   tally.issueCount = reportedIssues.size;
   tally.reporterCount = reporters.size;
   tally.reporters = Array
   .from(reporters)
   .map(toolID => toolNames[toolID])
   .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  tally.solos = Array.from(solos);
   // Return the tally.
   return tally;
 };

@@ -63,22 +63,20 @@ const populateQuery = async (report, query) => {
       }
       // For each ensemble of reporters:
       ensembles.forEach(ensemble => {
-        // Add a details element for the ensemble to the lines.
-        lines.push('    <details>');
         const {reporters, violators} = ensemble;
         if (reporters.length > 1) {
           lines.push(
-            `      <summary>Elements reported by ${reporters.length} tools (${reporters.join(' + ')})</summary>`
+            `    <h4>Elements reported by ${reporters.length} tools (${reporters.join(' + ')})</h4>`
           );
         } else {
-          lines.push(`      <summary>Elements reported by 1 tool (${reporters[0]})</summary>`);
+          lines.push(`    <h4>Elements reported by 1 tool (${reporters[0]})</h4>`);
         }
         // For each violator reported by the ensemble:
         violators.forEach(violatorID => {
           // If the violator ID is a path ID:
           if (violatorID.startsWith('html/')) {
             // Add the path ID to the lines.
-            lines.push(`      <p>${violatorID}</p>`);
+            lines.push(`    <p>${violatorID}</p>`);
           }
           // Otherwise, i.e. if it is a catalog index:
           else {
@@ -91,17 +89,15 @@ const populateQuery = async (report, query) => {
               .map(fragment => fragmentEncode(fragment))
               .join(',');
               // Add the path ID as a text-fragment link to the lines.
-              lines.push(`      <p><a href="${url}#:~:text=${fragmentList}">${pathID}</a></p>`);
+              lines.push(`    <p><a href="${url}#:~:text=${fragmentList}">${pathID}</a></p>`);
             }
             // Otherwise, i.e. if it is not linkable:
             else {
               // Add the path ID to the lines.
-              lines.push(`      <p>${pathID}</p>`);
+              lines.push(`    <p>${pathID}</p>`);
             }
           }
         })
-        // Close the ensemble details element.
-        lines.push('    </details>');
       });
       // Close the issue details element.
       lines.push('  </details>');

@@ -35,6 +35,8 @@ const populateQuery = async (report, query) => {
   // Add the reporter count and list to the lines.
   const reporterCountString = reporterCount > 1 ? `${reporterCount} tools` : '1 tool';
   lines.push(`<p>Reported by ${reporterCountString} (${reporters.join(' + ')})</p>`);
+  // Add an external-links notice to the lines.
+  lines.push(`<p>Notice: To preserve this page, all links open in new tabs.</p>`);
   // For each weight:
   tally.weights.forEach((weightData, index) => {
     const weightName = weightNames[index];
@@ -84,19 +86,24 @@ const populateQuery = async (report, query) => {
           else {
             const catalogData = catalog[violatorID];
             const {textLinkable, pathID, text} = catalogData;
-            // If the text of the catalog entry is linkable:
+            const textString = text ? ` (${text
+            .replace(/\n/, ' … ')
+            .slice(0, 30)
+            .concat(text.length > 35 ? ' …' : '')})` : '';
+            const entryString = `${pathID}${textString}`;
+            // If the catalog entry contains a linkable text:
             if (textLinkable) {
               const fragmentList = text
               .split('\n')
               .map(fragment => fragmentEncode(fragment))
               .join(',');
-              // Add the path ID as a text-fragment link to the lines.
-              lines.push(`    <p><a href="${url}#:~:text=${fragmentList}">${pathID}</a></p>`);
+              // Add the path ID and inner text as a text-fragment link to the lines.
+              lines.push(`    <p><a href="${url}#:~:text=${fragmentList}" target="_blank">${entryString}</a></p>`);
             }
-            // Otherwise, i.e. if it is not linkable:
+            // Otherwise, i.e. if it does not contain a linkable text:
             else {
-              // Add the path ID to the lines.
-              lines.push(`    <p>${pathID}</p>`);
+              // Add the path ID and inner text to the lines.
+              lines.push(`    <p>${entryString}</p>`);
             }
           }
         })

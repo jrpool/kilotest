@@ -35,14 +35,17 @@ const populateQuery = async (report, query) => {
   // Add the reporter count and list to the lines.
   const reporterCountString = reporterCount > 1 ? `${reporterCount} tools` : '1 tool';
   lines.push(`<p>Reported by ${reporterCountString} (${reporters.join(' + ')})</p>`);
-  // For each classified issue with any violations:
+  // For each weight:
   tally.weights.forEach((weightData, index) => {
-    const {issues} = weightData;
     const weightName = weightNames[index];
+    const {issues} = weightData;
     // Add a details element to the lines for the weight.
     lines.push('<details>');
-    // Add the weight name as a summary.
-    lines.push(`  <summary><h3 class="priority">${weightName} priority</h3></summary>`);
+    const issueCountString = issues.length > 1 ? `${issues.length} issues` : '1 issue';
+    // Add the weight name and its issue count as a summary.
+    lines.push(
+      `  <summary><h3 class="priority">${weightName} priority (${issueCountString})</h3></summary>`
+    );
     // For each issue of the weight with any violations:
     issues.forEach(issue => {
       const {ensembles, reporterCount, reporters, summary, wcag, why} = issue;

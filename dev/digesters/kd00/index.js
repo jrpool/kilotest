@@ -48,7 +48,7 @@ const populateQuery = async (report, query) => {
       const {ensembles, reporterCount, reporters, summary, wcag, why} = issue;
       // Add issue details, a summary, an impact, and a related WCAG standard to the lines.
       lines.push('  <details>');
-      lines.push(`    <summary><h4>${summary}</h4></summary>`);
+      lines.push(`    <summary><h4 class="priority">${summary}</h4></summary>`);
       lines.push(`    <p>Why it matters: ${why}</p>`);
       if (wcag) {
         lines.push(`    <p>Related WCAG standard: ${wcag}</p>`);
@@ -68,7 +68,7 @@ const populateQuery = async (report, query) => {
             `    <h5>Elements reported by ${reporters.length} tools (${reporters.join(' + ')})</h5>`
           );
         } else {
-          lines.push(`    <h4>Elements reported by 1 tool (${reporters[0]})</h4>`);
+          lines.push(`    <h5>Elements reported by 1 tool (${reporters[0]})</h5>`);
         }
         // For each violator reported by the ensemble:
         violators.forEach(violatorID => {

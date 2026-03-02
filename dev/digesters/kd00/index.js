@@ -21,6 +21,15 @@ const weightNames = ['Highest', 'High', 'Low', 'Lowest'];
 const fragmentEncode = string => {
   return encodeURIComponent(string).replace(/-/g, '%2D');
 };
+// Encodes a string for use as an HTML text node.
+const htmlEncode = string => {
+  return string
+    .replace(/&/g, '&amp')
+    .replace(/</g, '&lt')
+    .replace(/>/g, '&gt')
+    .replace(/"/g, '&quot')
+    .replace(/'/g, '&apos');
+};
 // Adds parameters to a query for a digest.
 const populateQuery = async (report, query) => {
   const {catalog, target} = report;
@@ -36,7 +45,9 @@ const populateQuery = async (report, query) => {
   const reporterCountString = reporterCount > 1 ? `${reporterCount} tools` : '1 tool';
   lines.push(`<p>Reported by ${reporterCountString} (${reporters.join(' + ')})</p>`);
   // Add an external-links notice to the lines.
-  lines.push(`<p>Notice: To preserve this page, all links open in new tabs.</p>`);
+  lines.push(
+    `<p>Notice: To preserve this page, each link opens in a new tab. Close it to return here.</p>`
+  );
   // For each weight:
   tally.weights.forEach((weightData, index) => {
     const weightName = weightNames[index];
@@ -86,19 +97,21 @@ const populateQuery = async (report, query) => {
           else {
             const catalogData = catalog[violatorID];
             const {textLinkable, pathID, text} = catalogData;
-            const textString = text ? ` (${text
+            const textString = text ? ` (${htmlEncode(text
             .replace(/\n/, ' … ')
-            .slice(0, 30)
-            .concat(text.length > 35 ? ' …' : '')})` : '';
+            .slice(0, 35)
+            .concat(text.length > 35 ? ' …' : ''))})` : '';
             const entryString = `${pathID}${textString}`;
-            // If the catalog entry contains a linkable text:
-            if (textLinkable) {
+            // If the catalog entry contains a linkable non-code text:
+            if (textLinkable && ! text.includes('&')) {
               const fragmentList = text
               .split('\n')
               .map(fragment => fragmentEncode(fragment))
               .join(',');
               // Add the path ID and inner text as a text-fragment link to the lines.
-              lines.push(`    <p><a href="${url}#:~:text=${fragmentList}" target="_blank">${entryString}</a></p>`);
+              lines.push(
+                `    <p><a href="${url}#:~:text=${fragmentList}" target="_blank">${entryString}</a></p>`
+              );
             }
             // Otherwise, i.e. if it does not contain a linkable text:
             else {

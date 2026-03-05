@@ -40,10 +40,10 @@ const populateQuery = async query => {
     itemLines.push(`${margin}  </ul>`);
     itemLines.push(`${margin}</li>`)
   });
-  query.itemLines = itemLines.join('\n');
+  query.itemLines = itemLines;
 };
 // Returns a page answering the targets question.
-exports.answer = async () => {
+exports.issuesRequestHandler = async (request, response) => {
   const query = {};
   // Create a query to replace placeholders.
   await populateQuery(query);

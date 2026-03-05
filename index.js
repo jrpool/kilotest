@@ -16,9 +16,11 @@ const protocol = process.env.PROTOCOL || 'http';
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
-const {howTestRequestHandler} = require('./howtest/index');
-const {issuesRequestHandler} = require('./issues/index');
-const {targetsRequestHandler} = require('./targets/index');
+const answer = {
+  howtest: require('./howtest/index').answer,
+  issues: require('/issues/index').answer,
+  targets: require('/targets/index').answer
+};
 
 // FUNCTIONS
 
@@ -45,6 +47,28 @@ const requestHandler = async (request, response) => {
       response.writeHead(301, {'Location': requestURL.slice(0, -1)});
       response.end();
     }
+    // Otherwise, if it is for the home page:
+    if (['/', '/index.html'].includes(requestURL)) {
+      // Get the home page.
+      const homePage = await fs.readFile('index.html', 'utf8');
+      // Serve it.
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      response.setHeader('Content-Location', '/index.html');
+      response.end(homePage);
+    }
+    // Otherwise, if it is for an HTML page other than the home page:
+    else if (requestURL.endsWith('.html')) {
+      const topic = requestURL.slice(1, -5);
+      // If the page can be generated:
+      if (answer[topic]) {
+        // Get it.
+        const answerPage = await answer[topic]();
+        // Serve it.
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.setHeader('Content-Location', requestURL);
+        response.end(answerPage);
+      }
+    }
     // Otherwise, if it is for the application icon:
     else if (requestURL.includes('favicon.')) {
       // Get the site icon.
@@ -53,18 +77,6 @@ const requestHandler = async (request, response) => {
       response.setHeader('Content-Type', 'image/x-icon');
       response.write(icon, 'binary');
       response.end('');
-    }
-    // Otherwise, if it is for the targets answer:
-    if (requestURL === '/targets.html') {
-      await targetsRequestHandler(request, response);
-    }
-    // Otherwise, if it is for the issues answer:
-    else if (requestURL === '/issues.html') {
-      await issuesRequestHandler(request, response);
-    }
-    // Otherwise, if it is for the how-to-test answer:
-    else if (requestURL === '/howtest.html') {
-      await howTestRequestHandler(request, response);
     }
     // Otherwise, if it is for the stylesheet:
     else if (requestURL === '/style.css') {
@@ -80,15 +92,6 @@ const requestHandler = async (request, response) => {
       catch (error) {
         await serveError(error, response);
       }
-    }
-    // Otherwise, if it is for the home page:
-    else if (['/', '/index.html'].includes(requestURL)) {
-      // Get the home page.
-      const homePage = await fs.readFile('index.html', 'utf8');
-      // Serve it.
-      response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      response.setHeader('Content-Location', '/index.html');
-      response.end(homePage);
     }
     // Otherwise, i.e. if it is any other GET request:
     else {

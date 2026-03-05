@@ -40,7 +40,7 @@ const populateQuery = async query => {
     itemLines.push(`${margin}  </ul>`);
     itemLines.push(`${margin}</li>`)
   });
-  query.itemLines = itemLines.join('\n');
+  query.testedPages = itemLines.join('\n');
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {

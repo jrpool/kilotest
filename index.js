@@ -13,16 +13,12 @@ require('dotenv').config({quiet: true});
 const protocol = process.env.PROTOCOL || 'http';
 
 // IMPORTS
-// Module to access files.
 const fs = require('fs/promises');
-// Module to create an HTTP server and client.
 const http = require('http');
-// Module to create an HTTPS server and client.
 const https = require('https');
-// Modules to handle requests.
-const {screenRequestHandler} = require('./screen/index');
-const {devRequestHandler} = require('./dev/index');
-const {reviewRequestHandler} = require('./review/index');
+const {howTestRequestHandler} = require('./howtest/index');
+const {issuesRequestHandler} = require('./issues/index');
+const {targetsRequestHandler} = require('./targets/index');
 
 // FUNCTIONS
 
@@ -39,39 +35,39 @@ const serveError = async (error, response) => {
 // Handles a request.
 const requestHandler = async (request, response) => {
   const {method} = request;
-  // Get its URL.
-  const requestURL = request.url;
-  // If the URL has a path that ends with a slash:
-  if (requestURL.length > 1 && requestURL.endsWith('/')) {
-    // Redirect the client permanently.
-    response.writeHead(301, {'Location': requestURL.slice(0, -1)});
-    response.end();
-  }
-  // Otherwise, if the request is for the application icon:
-  else if (requestURL.includes('favicon.')) {
-    // Get the site icon.
-    const icon = await fs.readFile(`${__dirname}/favicon.ico`);
-    // Serve it.
-    response.setHeader('Content-Type', 'image/x-icon');
-    response.write(icon, 'binary');
-    response.end('');
-  }
-  // Otherwise, if the request is for the screen service:
-  if (requestURL.startsWith('/screen/')) {
-    await screenRequestHandler(request, response);
-  }
-  // Otherwise, if the request is for the dev service:
-  else if (requestURL.startsWith('/dev')) {
-    await devRequestHandler(request, response);
-  }
-  // Otherwise, if the request is for the review service:
-  else if (requestURL.startsWith('/review')) {
-    await reviewRequestHandler(request, response);
-  }
-  // Otherwise, if the request is a GET request:
-  else if (method === 'GET') {
-    // If it is for the stylesheet:
-    if (requestURL === '/style.css') {
+  // If the request is a GET request:
+  if (method === 'GET') {
+    // Get its URL.
+    const requestURL = request.url;
+    // If the URL has a path that ends with a slash:
+    if (requestURL.length > 1 && requestURL.endsWith('/')) {
+      // Redirect the client permanently.
+      response.writeHead(301, {'Location': requestURL.slice(0, -1)});
+      response.end();
+    }
+    // Otherwise, if it is for the application icon:
+    else if (requestURL.includes('favicon.')) {
+      // Get the site icon.
+      const icon = await fs.readFile(`${__dirname}/favicon.ico`);
+      // Serve it.
+      response.setHeader('Content-Type', 'image/x-icon');
+      response.write(icon, 'binary');
+      response.end('');
+    }
+    // Otherwise, if it is for the targets answer:
+    if (requestURL === '/targets.html') {
+      await targetsRequestHandler(request, response);
+    }
+    // Otherwise, if it is for the issues answer:
+    else if (requestURL === '/issues.html') {
+      await issuesRequestHandler(request, response);
+    }
+    // Otherwise, if it is for the how-to-test answer:
+    else if (requestURL === '/howtest.html') {
+      await howTestRequestHandler(request, response);
+    }
+    // Otherwise, if it is for the stylesheet:
+    else if (requestURL === '/style.css') {
       try {
         // Serve it.
         const styleSheet = await fs.readFile('style.css', 'utf8');

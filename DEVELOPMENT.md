@@ -5705,3 +5705,150 @@ All still textual, short, and scannable.
   - **linkability/visibility**
   - **multi-tool agreement**
 - Present with **counts + percentages** and only make strong statements when the distribution is clearly dominated.
+
+## Shift to FAQ interface
+
+### Analysis: FAQ + LLM-driven interface vs. static digests
+
+Your intuition aligns with real industry trends. Here's what the evidence shows:
+
+#### Current industry practice (web apps + interaction design)
+
+**Static documents are declining** in favor of interactive, query-driven interfaces:
+
+- **SaaS analytics tools** (Mixpanel, Amplitude, Looker) moved away from "standard reports" toward **ad-hoc query builders** + saved queries.
+- **Data exploration platforms** (Observable, Jupyter, Notion) emphasize **interactive notebooks** over static exports.
+- **Customer support** has shifted from FAQs alone to **FAQ + chatbot + escalation** (Intercom, Zendesk).
+- **LLM-augmented interfaces** are becoming standard: GitHub Copilot, Cursor, Claude in IDE, etc. use **context + question answering** rather than pre-written docs.
+
+The pattern: **static documents are now a *fallback*, not the primary interface**.
+
+---
+
+#### Why your proposed shift is sound
+
+##### 1) **Diversity of users → diversity of questions**
+You're right that a single "digest" document can't satisfy managers, developers, QA, and accessibility specialists simultaneously. A **question-answering interface** naturally handles this because each user asks what they need.
+
+##### 2) **Reports as a queryable library is more powerful**
+Storing raw reports + allowing queries (FAQ + custom LLM) gives you:
+
+- **Comparisons** ("How did this site's issues change since last month?")
+- **Trends** ("Which rule violations are most common across our portfolio?")
+- **Drill-down** ("Show me all links in the footer with no accessible name")
+- **Synthesis** ("What's the most impactful fix for this issue?")
+
+A static digest can't do any of this without being massive.
+
+##### 3) **FAQ evolution is realistic with LLMs**
+Your idea of:
+
+- Starting with hand-written FAQs
+- Observing which custom questions users ask
+- Auto-generating FAQ-equivalent versions
+- Creating algorithms to answer them
+
+…is **exactly what modern support systems do** (e.g., Intercom's "Operator" feature). This is not utopian; it's proven.
+
+---
+
+#### Risks and mitigations
+
+##### Risk 1: LLM hallucination on report data
+**Problem**: LLM might invent statistics or misread the report.
+
+**Mitigation**:
+- LLM queries the report library via **structured APIs** (not raw text dumps).
+- Algorithms answer FAQs deterministically (no LLM involved for FAQ answers).
+- LLM only handles custom questions, and you validate its reasoning before surfacing answers.
+- Show the LLM's "working" (which report entries it used, which aggregations) so users can verify.
+
+##### Risk 2: User confusion ("Is this answer from an algorithm or an LLM?")
+**Mitigation**:
+- Label FAQ answers as "Algorithmic" (deterministic, reproducible).
+- Label custom-question answers as "AI-assisted" (may hallucinate, verify before trusting).
+- Show the report data / reasoning chain.
+
+##### Risk 3: Scope creep ("The LLM can answer anything")
+**Mitigation**:
+- Scope the LLM strictly: it can only query the reports library and existing FAQs.
+- It cannot make recommendations outside the data (e.g., "You should use ARIA" is out of scope; "X% of your issues are ARIA-related" is in scope).
+
+##### Risk 4: Cold start (no FAQs yet)
+**Mitigation**:
+- Start with 5–10 hand-written FAQs based on your current digest structure.
+- Let users ask custom questions; use analytics to see which ones are most common.
+- Gradually promote the top custom questions to FAQs with algorithms.
+
+---
+
+#### Recommended architecture (phased)
+
+##### Phase 1: FAQ + custom question interface (no LLM yet)
+- Hand-write 5–10 FAQs covering the current digest categories.
+- Let users ask custom questions; you answer them manually or via simple heuristics.
+- Log all custom questions to identify patterns.
+
+**Why**: Validates the interaction model before adding LLM complexity.
+
+##### Phase 2: Add LLM for custom questions (with guardrails)
+- LLM maps custom question to FAQ (if close match exists).
+- If no match, LLM queries the reports library via structured API.
+- Show reasoning; require user confirmation before surfacing answer.
+
+**Why**: Reduces manual effort; starts learning user intent.
+
+##### Phase 3: Auto-generate FAQ candidates
+- Analyze logs of custom questions + LLM answers.
+- Identify questions that recur or would benefit from a deterministic algorithm.
+- Propose new FAQs; implement algorithms to answer them.
+
+**Why**: FAQ library evolves with actual user needs.
+
+---
+
+#### Concrete next steps (if you want to pursue this)
+
+1. **Audit current digest usage**: What questions do your current users actually ask? (If you have access to user feedback, support tickets, etc.)
+
+2. **Draft initial FAQ set** (5–10 questions):
+   - Based on your current digest structure
+   - Based on the "central tendency summaries" we discussed earlier
+   - Examples:
+     - "What are the most common issues in this report?"
+     - "Which elements are reported by the most tools?"
+     - "What issues are in the footer?"
+     - "How does this report compare to the previous one?"
+
+3. **Design the query API** for the reports library:
+   - What queries should be possible? (filter by rule, by element type, by region, by tool agreement, etc.)
+   - What aggregations? (counts, distributions, trends)
+   - This becomes the "knowledge base" the LLM can query.
+
+4. **Prototype the UI**:
+   - FAQ list + search
+   - Custom question input
+   - Answer display (with reasoning/data provenance)
+
+5. **Pilot with a small user group**:
+   - Collect feedback on whether the FAQ/question model is more useful than static digests.
+   - Log custom questions to identify FAQ gaps.
+
+---
+
+#### Is this a good gamble?
+
+**Yes, with caveats**:
+
+- ✅ **Aligns with industry trends** (interactive > static).
+- ✅ **Solves your real problem** (diverse users, diverse questions).
+- ✅ **Leverages your assets** (reports library, LLM availability).
+- ⚠️ **Requires careful scoping** to avoid hallucination / scope creep.
+- ⚠️ **Cold start problem**: you need initial FAQs + a way to observe user intent.
+
+The gamble is **not** on whether the concept is sound (it is), but on **execution complexity** and **whether your users will engage with it** (rather than just wanting a PDF to email around).
+
+---
+
+#### Summary
+Your architectural shift from static digests to interactive FAQ + LLM-driven Q&A is **well-grounded in current practice** and **solves real UX problems**. The risks are manageable with proper scoping and validation. I'd recommend a **phased rollout** starting with FAQs + manual custom-question handling, then adding LLM assistance once you understand user intent patterns.

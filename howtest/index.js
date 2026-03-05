@@ -43,7 +43,7 @@ const populateQuery = async query => {
   query.itemLines = itemLines;
 };
 // Returns a page answering the targets question.
-exports.howTestRequestHandler = async (request, response) => {
+exports.answer = async () => {
   const query = {};
   // Create a query to replace placeholders.
   await populateQuery(query);

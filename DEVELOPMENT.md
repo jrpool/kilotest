@@ -5594,3 +5594,114 @@ Options:
 - Copy a single message or code block: use the copy button on that bubble/block (if shown), or triple‑click in the message to select it, then Cmd+C.
 
 Then paste into a new .md file in VS Code and save. Note: Copilot Chat doesn’t have an export feature; copy/paste is the way to go.
+
+## Making reports more user-friendly (2026-02-03)
+
+### Strategy (by GPT-5.2)
+
+#### Yes — an “element summary” per issue is a strong addition (and it stays textual)
+This fits your constraints well:
+
+- **No screenshots needed**
+- **Works even when individual elements are hard to deep-link**
+- Helps both managers (pattern recognition) and devs (triage + scoping)
+- Scales well because it’s *O(n)* over the ~10-ish elements per issue (or whatever count)
+
+The main design risk is **overstating certainty** when your inference is weak, so the summary should be phrased with counts and confidence.
+
+---
+
+### What to summarize (high ROI, low controversy)
+
+#### 1) Role/type distribution (“what kinds of things are affected?”)
+Compute a histogram over element “types”:
+
+- Prefer **accessible role** if you have it (link/button/checkbox/heading/region/etc.)
+- Fall back to tag name (`a`, `button`, `input`, …)
+
+Then summarize central tendencies:
+
+- “9/10 elements are links”
+- “Mostly form controls (7/12): textbox (4), checkbox (2), select (1)”
+
+This is usually the most actionable.
+
+#### 2) Page region distribution (“where on the page?”)
+Using the context fields we discussed (landmark + nearest heading), you can say:
+
+- “8/10 are in `footer`”
+- “Most are under heading: `Pricing` (h2)”
+- “Clustered in navigation”
+
+If you don’t yet have landmark/heading, you can do a weaker version using:
+
+- parent tag (`footer`, `nav`, `main`)
+- or even bbox (“mostly near bottom of page”) but that’s less interpretable.
+
+#### 3) Locator quality / deep-linkability (sets expectations)
+Given your experience with text-fragment links, it’s useful to expose:
+
+- “Text-fragment links available for 6/10 elements”
+- “Stable selector available for 4/10 elements (id/data-*)”
+- “5/10 elements are hidden/offscreen at time of test”
+
+This helps users understand *why* “Take me there” is sometimes missing.
+
+#### 4) Multi-tool agreement distribution (credibility)
+You already subclassify by number of tools reporting each element; aggregate it too:
+
+- “3 elements reported by 4 tools; 5 by 3 tools; 2 by 1 tool”
+
+This is a good “confidence shape” summary.
+
+---
+
+### How to present it (so it doesn’t mislead)
+
+- **Always show counts** alongside percentages when n is small:
+  - Prefer `“9/10 (90%)”` over just `“90%”`.
+- **Avoid implying causality**:
+  - Say “located in footer” not “caused by footer”.
+- **Use a short “Top signals” block** (2–5 lines max) above the list.
+- **Only emit a sentence when dominance is real**:
+  - e.g., if a bucket is `>= 70%` (or `>= 80%`) or if the top bucket is at least `2x` the next bucket.
+  - Otherwise show a compact breakdown.
+
+---
+
+### Minimal algorithm (easy to implement)
+For each issue’s element list:
+
+- **Role bucket**: `role ?? tagName ?? "unknown"`
+- **Region bucket**: `landmark ?? nearestHeading ?? parentTag ?? "unknown"`
+- **Visibility bucket**: `visible | hidden(reason) | offscreen`
+- **Linkability bucket**: `hasUniqueTextFragment`, `hasStableSelector`, `xpathOnly`
+- **Agreement bucket**: `toolsCount`
+
+Then compute:
+
+- top category + share
+- optional breakdown table/list if not dominated
+
+---
+
+### Example summary text (style suggestion)
+Above the elements list:
+
+- **Element types**: `9/10 (90%) links`
+- **Location**: `8/10 (80%) in footer`
+- **Deep-linking**: `Text-fragment links: 6/10`
+- **Tool agreement**: `Reported by >=3 tools: 7/10`
+
+All still textual, short, and scannable.
+
+---
+
+### Summary
+- Adding per-issue “central tendency” summaries is a **high-value, low-cost** usability improvement.
+- Focus on:
+  - **role/type**
+  - **page region**
+  - **linkability/visibility**
+  - **multi-tool agreement**
+- Present with **counts + percentages** and only make strong statements when the distribution is clearly dominated.

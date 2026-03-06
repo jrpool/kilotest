@@ -12,11 +12,32 @@
   </head>
   <body>
     <main>
-      <h1>Pages tested by <a href="/">Kilotest</a></h1>
-      <p>Kilotest has tested these pages:</p>
-      <ul>
-        __testedPages__
-      </ul>
+      <h1>Issues reported by <a href="/">Kilotest</a></h1>
+      <p>In the latest test of each page, Kilotest has reported these issues:</p>
+      <details>
+        <summary><h2>Highest priority</h2></summary>
+        <ul>
+          __highestIssues__
+        </ul>
+      </details>
+      <details>
+        <summary><h2>High priority</h2></summary>
+        <ul>
+          __highIssues__
+        </ul>
+      </details>
+      <details>
+        <summary><h2>Low priority</h2></summary>
+        <ul>
+          __lowIssues__
+        </ul>
+      </details>
+      <details>
+        <summary><h2>Lowest priority</h2></summary>
+        <ul>
+          __lowestIssues__
+        </ul>
+      </details>
     </main>
   </body>
 </html>

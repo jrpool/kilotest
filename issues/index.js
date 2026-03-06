@@ -5,29 +5,48 @@
 
 // IMPORTS
 
+const {annotateReport} = require('../classify');
+const {getTargetLogs} = require('./targets');
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Returns a date string from a time stamp.
-const getDateString = timeStamp =>
-  `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  const logNames = await fs.readdir('./logs');
-  // Initialize a directory of tested targets.
-  const targetDirectory = {};
-  // For each log:
-  for (const logName of logNames) {
-    const logJSON = await fs.readFile(`./logs/${logName}`, 'utf8');
-    const log = JSON.parse(logJSON);
-    // Add its data to the targets directory, replacing any entry for the same target URL.
-    targetDirectory[log.pageURL] = log;
+  // Initialize the issue data.
+  const issueReporters = {};
+  // Get the logs of the reports to be inspected.
+  const logs = await getTargetLogs();
+  // For each of those logs:
+  for (const log of logs) {
+    const {annotated, timeStamp, jobID} = log;
+    // If the report has not yet been annotated:
+    if (! annotated) {
+      // Annotate it.
+      await annotateReport(timeStamp, jobID);
+    }
+    // Get the corresponding report.
+    const reportJSON = await fs.readFile(
+      `${__dirname}/../reports/${timeStamp}-${jobID}.json`, 'utf8'
+    );
+    const report = JSON.parse(reportJSON);
+    // For each act in it:
+    report.acts.forEach(act => {
+      // If it is a test act:
+      if (act.type === 'test') {
+        const {which} = act;
+        const instances = act.result?.standardResult?.instances ?? [];
+        // For each of its standard instances:
+        instances.forEach(instance => {
+          const {ruleID} = instance;
+          // Ensure that the issue that the rule belongs to has the tool as a reporter.
+          issueReporters[ruleID] ??= new Set();
+          issueReporters[ruleID].add(which);
+        });
+      }
+    });
   }
   // Get an array of target data sorted by description.
-  const targets = Object
-  .values(targetDirectory)
-  .sort((a, b) => a.pageWhat.localeCompare(b.pageWhat, 'en', {sensitivity: 'accent'}));
   const itemLines = [];
   const margin = ' '.repeat(6);
   // Get an array of HTML list items describing the targets.

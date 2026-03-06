@@ -61,7 +61,7 @@ const getRuleIDs = () => {
   };
 };
 // Returns the non-ignorable issue that a rule belongs to.
-exports.getIssue = (toolID, ruleID) => {
+const getIssue = (toolID, ruleID) => {
   const ruleIDs = getRuleIDs();
   const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.
@@ -123,8 +123,8 @@ exports.annotateReport = async (timeStamp, jobID) => {
   // Get a copy of the log of the report.
   const logJSON = await fs.readFile(`./logs/${timeStamp}-${jobID}.json`, 'utf8');
   const log = JSON.parse(logJSON);
-  // Annotate the log to mark the report as annotated.
+  // Mark the report as annotated in the log.
   log.annotated = true;
-  // Save the annotated log.
+  // Save the revised log.
   await fs.writeFile(`./logs/${timeStamp}-${jobID}.json`, `${JSON.stringify(log, null, 2)}\n`);
 };

@@ -20,9 +20,9 @@ const getIssueData = async logs => {
   // For each log:
   for (const log of logs) {
     const {annotated, timeStamp, jobID} = log;
-    // If it is not yet annotated:
+    // If the corresponding report is not yet annotated:
     if (! annotated) {
-      // Annotate it.
+      // Annotate it and mark it as annotated in the log.
       await annotateReport(timeStamp, jobID);
     }
     // Get the corresponding report.
@@ -84,17 +84,18 @@ const populateQuery = async query => {
     // Get an array of HTML list items describing the issues.
     weightIssues.forEach(issue => {
       const {count, issueID, reporters} = issue;
-      const issueProps = issues[issueID];
-      lines.push(`${margin}<li>${issueProps.summary}</li>`);
+      const {summary, wcag, why} = issues[issueID];
+      lines.push(`${margin}<li>${summary}</li>`);
       lines.push(`${margin}  <ul>`);
-      lines.push(`${margin}    <li>Why it matters: ${issueProps.why}</li>`);
-      linesines.push(`${margin}    <li>Related WCAG standard: ${issueProps.wcag}</li>`);
-      linesines.push(`${margin}    <li>Violation count: ${issue.count}</li>`);
-      linesines.push(`${margin}    <li>Reported by: ${issue.reporters}</li>`);
+      lines.push(`${margin}    <li>Why it matters: ${why}</li>`);
+      lines.push(`${margin}    <li>Related WCAG standard: ${wcag}</li>`);
+      lines.push(`${margin}    <li>Violation count: ${count}</li>`);
+      lines.push(`${margin}    <li>Reported by: ${reporters.join(' + ')}</li>`);
       lines.push(`${margin}  </ul>`);
-      lines.push(`${margin}</li>`)
+      lines.push(`${margin}</li>`);
     });
-    query.itemLines = itemLines;
+    query[weightName] = lines.join('\n');
+  });
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {

@@ -6,21 +6,21 @@
 // IMPORTS
 
 const {annotateReport} = require('../classify');
-const {getTargetLogs} = require('./targets');
+const {getTargetLogs} = require('../targets/index');
+const {issues} = require('testilo/procs/score/tic');
+const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Adds parameters to a query for the answer page.
-const populateQuery = async query => {
+// Gets data on the issues reported in a set of reports.
+const getIssueData = async logs => {
   // Initialize the issue data.
-  const issueReporters = {};
-  // Get the logs of the reports to be inspected.
-  const logs = await getTargetLogs();
-  // For each of those logs:
+  const issueData = {};
+  // For each log:
   for (const log of logs) {
     const {annotated, timeStamp, jobID} = log;
-    // If the report has not yet been annotated:
+    // If it is not yet annotated:
     if (! annotated) {
       // Annotate it.
       await annotateReport(timeStamp, jobID);
@@ -38,28 +38,63 @@ const populateQuery = async query => {
         const instances = act.result?.standardResult?.instances ?? [];
         // For each of its standard instances:
         instances.forEach(instance => {
-          const {ruleID} = instance;
-          // Ensure that the issue that the rule belongs to has the tool as a reporter.
-          issueReporters[ruleID] ??= new Set();
-          issueReporters[ruleID].add(which);
+          const {count, issueID} = instance;
+          // Increment the issue data with its count and reporter.
+          issueData[issueID] ??= {
+            count: 0,
+            reporters: new Set()
+          };
+          issueData[issueID].count += count ?? 1;
+          issueData[issueID].reporters.add(which);
         });
       }
     });
   }
-  // Get an array of target data sorted by description.
-  const itemLines = [];
-  const margin = ' '.repeat(6);
-  // Get an array of HTML list items describing the targets.
-  targets.forEach(target => {
-    const {pageURL, pageWhat, timeStamp} = target;
-    itemLines.push(`${margin}<li>${pageWhat}</li>`);
-    itemLines.push(`${margin}  <ul>`);
-    itemLines.push(`${margin}    <li>URL: ${pageURL}</li>`);
-    itemLines.push(`${margin}    <li>Last tested: ${getDateString(timeStamp)}</li>`);
-    itemLines.push(`${margin}  </ul>`);
-    itemLines.push(`${margin}</li>`)
-  });
-  query.itemLines = itemLines;
+  // Return the issue data.
+  return issueData;
+};
+// Adds parameters to a query for the answer page.
+const populateQuery = async query => {
+  // Get the logs of the reports to be inspected.
+  const logs = await getTargetLogs();
+  // Get the issue data from their corresponding reports.
+  const reportedIssueData = await getIssueData(logs);
+  // For each issue weight:
+  ['Lowest', 'Low', 'High', 'Highest'].forEach((weightName, index) => {
+    const weightIssueIDs = Object
+    .keys(reportedIssueData)
+    .filter(issueID => issues[issueID]?.weight === index + 1);
+    // Get data on the reported issues with the weight, sorted by reporter and violation counts.
+    const weightIssues = weightIssueIDs
+    .map(issueID => {
+      const issueData = reportedIssueData[issueID];
+      return {
+        issueID,
+        count: issueData.count,
+        reporters: Array
+        .from(issueData.reporters)
+        .map(toolID => toolNames[toolID])
+        .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'}))
+      };
+    })
+    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => b.reporters.length - a.reporters.length);
+    const lines = [];
+    const margin = ' '.repeat(6);
+    // Get an array of HTML list items describing the issues.
+    weightIssues.forEach(issue => {
+      const {count, issueID, reporters} = issue;
+      const issueProps = issues[issueID];
+      lines.push(`${margin}<li>${issueProps.summary}</li>`);
+      lines.push(`${margin}  <ul>`);
+      lines.push(`${margin}    <li>Why it matters: ${issueProps.why}</li>`);
+      linesines.push(`${margin}    <li>Related WCAG standard: ${issueProps.wcag}</li>`);
+      linesines.push(`${margin}    <li>Violation count: ${issue.count}</li>`);
+      linesines.push(`${margin}    <li>Reported by: ${issue.reporters}</li>`);
+      lines.push(`${margin}  </ul>`);
+      lines.push(`${margin}</li>`)
+    });
+    query.itemLines = itemLines;
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {

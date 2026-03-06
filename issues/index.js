@@ -14,7 +14,7 @@ const fs = require('fs/promises');
 // FUNCTIONS
 
 // Gets data on the issues reported in a set of reports.
-const getIssueData = async logs => {
+const getIssueData = exports.getIssueData = async logs => {
   // Initialize the issue data.
   const issueData = {};
   // For each log:

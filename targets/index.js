@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+const {getIssueData} = require('../issues/index');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -32,20 +33,24 @@ const getDateString = timeStamp =>
   `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  const targets = await getTargetLogs();
-  const itemLines = [];
+  const targetLogs = await getTargetLogs();
+  // Initialize an array of list-item lines.
+  const lines = [];
   const margin = ' '.repeat(6);
-  // Get an array of HTML list items describing the targets.
-  targets.forEach(target => {
-    const {pageURL, pageWhat, timeStamp} = target;
-    itemLines.push(`${margin}<li>${pageWhat}</li>`);
-    itemLines.push(`${margin}  <ul>`);
-    itemLines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
-    itemLines.push(`${margin}    <li>Last tested: ${getDateString(timeStamp)}</li>`);
-    itemLines.push(`${margin}  </ul>`);
-    itemLines.push(`${margin}</li>`)
+  // For each target:
+  targetLogs.forEach(async targetLog => {
+    const {pageURL, pageWhat, timeStamp} = targetLog;
+    const issueData = await getIssueData([targetLog]);
+    // Add lines to the array.
+    lines.push(`${margin}<li>${pageWhat}</li>`);
+    lines.push(`${margin}  <ul>`);
+    lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
+    lines.push(`${margin}    <li>Last tested: ${getDateString(timeStamp)}</li>`);
+    lines.push(`${margin}    <li>Issues reported: ${Object.keys(issueData).length}</li>`);
+    lines.push(`${margin}  </ul>`);
+    lines.push(`${margin}</li>`)
   });
-  query.testedPages = itemLines.join('\n');
+  query.testedPages = lines.join('\n');
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {

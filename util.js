@@ -18,6 +18,51 @@ const reportsPath = `${__dirname}/reports`;
 
 // FUNCTIONS
 
+// Returns the path of a log file.
+const getLogPath = exports.getLogPath
+= (timeStamp, jobID) => `${logsPath}/${timeStamp}-${jobID}.json`;
+// Returns the path of a report file.
+const getReportPath = exports.getReportPath
+= (timeStamp, jobID) => `${reportsPath}/${timeStamp}-${jobID}.json`;
+// Returns the JSON stringification of an object.
+const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
+// Sorts strings alphabetically and case-insensitively.
+const alphaSort = exports.alphaSort = strings => strings
+.sort((a, b) => a.localeCompare(b, en, {sensitivity: 'accent'}));
+// Sorts objects by a property value.
+const objectSort = exports.objectSort = (objects, property, sortType) => objects
+.sort((a, b) => {
+  // If the property values are numbers to be sorted in increasing order:
+  if (sortType === 'numericUp') {
+    // Sort by increasing numeric value.
+    return a[property] - b[property];
+  }
+  // Otherwise, if they are numbers to be sorted in decreasing order:
+  else if (sortType === 'numericDown') {
+    // Sort by decreasing numeric value.
+    return b[property] - a[property];
+  }
+  // Otherwise, if they are strings to be sorted alphabetically:
+  else if (sortType === 'alpha') {
+    // Sort alphabetically.
+    return a[property].localeCompare(b[property], en, {sensitivity: 'accent'});
+  }
+  // Otherwise, do not sort.
+  return 0;
+});
+// Sorts violator by ID, numerically for catalog indexes, then alphabetically for path IDs.
+const violatorSort = exports.violatorSort = violators => violators.sort((a, b) => {
+  if (a.id.startsWith('html/')) {
+    if (b.id.startsWith('html/')) {
+      return a.id.localeCompare(b.id, en, {sensitivity: 'accent'});
+    }
+    return -1;
+  }
+  if (b.id.startsWith('html/')) {
+    return 1;
+  }
+  return Number(a.id) - Number(b.id);
+});
 // Compiles a directory of the issue classifications of invariant and variable rules.
 const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
@@ -107,7 +152,7 @@ const getIssue = (toolID, ruleID) => {
 // Annotates the standard instances of a report with issue IDs.
 const annotateReport = async (timeStamp, jobID) => {
   // Get a copy of the report.
-  const reportJSON = await fs.readFile(`${reportsPath}/${timeStamp}-${jobID}.json`, 'utf8');
+  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
   const report = JSON.parse(reportJSON);
   // For each of its acts:
   for (const act of report.acts) {
@@ -127,16 +172,14 @@ const annotateReport = async (timeStamp, jobID) => {
     }
   }
   // Save the annotated report.
-  await fs.writeFile(
-    `${reportsPath}/${timeStamp}-${jobID}.json`, `${JSON.stringify(report, null, 2)}\n`
-  );
+  await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
   // Get a copy of the log of the report.
-  const logJSON = await fs.readFile(`${logsPath}/${timeStamp}-${jobID}.json`, 'utf8');
+  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
   const log = JSON.parse(logJSON);
   // Mark the report as annotated in the log.
   log.annotated = true;
   // Save the revised log.
-  await fs.writeFile(`${logsPath}/${timeStamp}-${jobID}.json`, `${JSON.stringify(log, null, 2)}\n`);
+  await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
 };
 // Gets data on the issues reported in a set of reports.
 exports.getIssueData = async logs => {
@@ -151,9 +194,7 @@ exports.getIssueData = async logs => {
       await annotateReport(timeStamp, jobID);
     }
     // Get the corresponding report.
-    const reportJSON = await fs.readFile(
-      `${reportsPath}/${timeStamp}-${jobID}.json`, 'utf8'
-    );
+    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
     const report = JSON.parse(reportJSON);
     // For each act in it:
     report.acts.forEach(act => {
@@ -335,7 +376,7 @@ exports.getTally = report => {
         wcag,
         violatorCount: issueData.violatorCount,
         reporterCount: issueData.reporters.size,
-        reporters: Array.from(issueData.reporters).map(toolID => toolNames[toolID]).sort()
+        reporters: alphaSort(Array.from(issueData.reporters).map(toolID => toolNames[toolID]))
       };
       // Initialize an array of data on the violators of any rule belonging to the issue.
       const violators = [];
@@ -344,11 +385,9 @@ exports.getTally = report => {
       // For each violator of any rule belonging to the issue:
       Object.keys(issueData.violators).forEach(violatorID => {
         // Get a string describing the ensemble of its reporters.
-        const ensembleString = Array
-        .from(issueData.violators[violatorID].reporters)
-        .map(toolID => toolNames[toolID])
-        .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-        .join(' + ');
+        const ensembleString = alphaSort(
+          Array.from(issueData.violators[violatorID].reporters).map(toolID => toolNames[toolID])
+        ).join(' + ');
         // Ensure that the ensemble string is in the set.
         ensembles.add(ensembleString);
         // Add data on the violator to the array.
@@ -358,9 +397,9 @@ exports.getTally = report => {
         });
       });
       // Sort the data on the violators by violator ID.
-      violators.sort((a, b) => a.id.localeCompare(b.id));
+      violatorSort(violators);
       // Initialize an array of the ensembles sorted alphabetically.
-      ensembleArray = Array.from(ensembles).sort();
+      const ensembleArray = alphaSort(Array.from(ensembles));
       // Sort the sorted array by decreasing ensemble size.
       ensembleArray.sort((a, b) => b.split(' + ').length - a.split(' + ').length);
       // Add an array of ensemble data to the the issue item.
@@ -374,17 +413,14 @@ exports.getTally = report => {
       issueArray.push(issueItem);
     });
     // Sort the items in the issue array by decreasing reporter count.
-    issueArray.sort((a, b) => b.reporterCount - a.reporterCount);
+    objectSort(issueArray, 'reporterCount', 'numericDown');
     // Replace the issues object for the weight in the tally with the issue array.
     tally.weights[4 - weight].issues = issueArray;
   });
   // Add the issue count, reporter count, reporter list, and solos to the tally.
   tally.issueCount = reportedIssues.size;
   tally.reporterCount = reporters.size;
-  tally.reporters = Array
-  .from(reporters)
-  .map(toolID => toolNames[toolID])
-  .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+  tally.reporters = alphaSort(Array.from(reporters).map(toolID => toolNames[toolID]));
   tally.solos = Array.from(solos);
   // Return the tally.
   return tally;
@@ -402,9 +438,7 @@ exports.getTargetLogs = async () => {
     targetDirectory[log.pageURL] = log;
   }
   // Get an array of those target logs, sorted by description.
-  const targets = Object
-  .values(targetDirectory)
-  .sort((a, b) => a.pageWhat.localeCompare(b.pageWhat, 'en', {sensitivity: 'accent'}));
+  const targets = objectSort(Object.values(targetDirectory), 'pageWhat', 'alpha');
   return targets;
 };
 // Serves an error message.

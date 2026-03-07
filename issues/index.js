@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssueData, getTargetLogs} = require('../util');
+const {alphaSort, getIssueData, getTargetLogs, objectSort} = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
@@ -24,19 +24,14 @@ const populateQuery = async query => {
     .keys(reportedIssueData)
     .filter(issueID => issues[issueID]?.weight === index + 1);
     // Get data on the reported issues with the weight, sorted by reporter and violation counts.
-    const weightIssues = weightIssueIDs
-    .map(issueID => {
+    const weightIssues = objectSort(weightIssueIDs.map(issueID => {
       const issueData = reportedIssueData[issueID];
       return {
         issueID,
         count: issueData.count,
-        reporters: Array
-        .from(issueData.reporters)
-        .map(toolID => toolNames[toolID])
-        .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'}))
+        reporters: alphaSort(Array.from(issueData.reporters).map(toolID => toolNames[toolID]))
       };
-    })
-    .sort((a, b) => b.count - a.count)
+    }), 'count', 'numericDown')
     .sort((a, b) => b.reporters.length - a.reporters.length);
     const lines = [];
     const margin = ' '.repeat(6);

@@ -7,6 +7,7 @@
 
 // IMPORTS
 
+const {objectSort} = require('../../../util');
 require('dotenv').config();
 const fs = require('fs/promises');
 
@@ -19,7 +20,7 @@ const outerJoiner = '\n      ';
 
 // Adds parameters to a query for a digest.
 const populateQuery = async (jobsData, query) => {
-  jobsData.sort((a, b) => a.score - b.score);
+  objectSort(jobsData, 'score', 'numericUp');
   const bestScore = jobsData[0].score + 1;
   for (let i = 0; i < jobsData.length; i++) {
     jobsData[i].worsePercent = Math.round(100 * ((jobsData[i].score + 1) / bestScore - 1));

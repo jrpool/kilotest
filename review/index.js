@@ -3,8 +3,6 @@
   Serve the form for Kilotest Review.
 */
 
-// ENVIRONMENT
-
 // IMPORTS
 
 // Module to access files.
@@ -15,7 +13,7 @@ const {digester} = require('../dev/digesters/kd00/index');
 const {score} = require('testilo/score');
 const {scorer} = require('testilo/procs/score/tsp');
 // Module to perform utility functions.
-const {digest, getPostData, serveError} = require('../util');
+const {alphaSort, digest, serveError} = require('../util');
 
 // FUNCTIONS
 
@@ -46,16 +44,11 @@ exports.reviewRequestHandler = async (request, response) => {
           // Add the page description to the directory or update its file name.
           pageWhats[pageWhat] = reportName;
         }
-        const pageWhatLines = Object
-        .keys(pageWhats)
-        .sort((a, b) => a.localeCompare(b, {sensitivity: 'base'}))
-        .map(
-          pageWhat => {
-            const reportID = pageWhats[pageWhat].slice(0, -5);
-            const label = `aria-label="results for ${pageWhat}"`;
-            return `<li><a href="/review/digest/${reportID}" ${label}>${pageWhat}</a></li>`;
-          }
-        );
+        const pageWhatLines = alphaSort(Object.keys(pageWhats)).map(pageWhat => {
+          const reportID = pageWhats[pageWhat].slice(0, -5);
+          const label = `aria-label="results for ${pageWhat}"`;
+          return `<li><a href="/review/digest/${reportID}" ${label}>${pageWhat}</a></li>`;
+        });
         // Insert links to the available digests into the form page.
         formPage = formPage.replace(/__pageWhats__/, pageWhatLines.join('\n        '));
         // Serve the form page.

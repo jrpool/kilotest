@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+const {objectSort} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -25,9 +26,7 @@ const populateQuery = async query => {
     targetDirectory[log.pageURL] = log;
   }
   // Get an array of target data sorted by description.
-  const targets = Object
-  .values(targetDirectory)
-  .sort((a, b) => a.pageWhat.localeCompare(b.pageWhat, 'en', {sensitivity: 'accent'}));
+  const targets = objectSort(Object.values(targetDirectory), 'pageWhat', 'alpha');
   const itemLines = [];
   const margin = ' '.repeat(6);
   // Get an array of HTML list items describing the targets.

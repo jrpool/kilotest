@@ -9,6 +9,13 @@ const {issues} = require('testilo/procs/score/tic');
 const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
 
+// CONSTANTS
+
+// Path of the logs directory.
+const logsPath = `${__dirname}/logs`;
+// Path of the reports directory.
+const reportsPath = `${__dirname}/reports`;
+
 // FUNCTIONS
 
 // Compiles a directory of the issue classifications of invariant and variable rules.
@@ -100,7 +107,7 @@ const getIssue = (toolID, ruleID) => {
 // Annotates the standard instances of a report with issue IDs.
 const annotateReport = async (timeStamp, jobID) => {
   // Get a copy of the report.
-  const reportJSON = await fs.readFile(`./reports/${timeStamp}-${jobID}.json`, 'utf8');
+  const reportJSON = await fs.readFile(`${reportsPath}/${timeStamp}-${jobID}.json`, 'utf8');
   const report = JSON.parse(reportJSON);
   // For each of its acts:
   for (const act of report.acts) {
@@ -121,15 +128,15 @@ const annotateReport = async (timeStamp, jobID) => {
   }
   // Save the annotated report.
   await fs.writeFile(
-    `./reports/${timeStamp}-${jobID}.json`, `${JSON.stringify(report, null, 2)}\n`
+    `${reportsPath}/${timeStamp}-${jobID}.json`, `${JSON.stringify(report, null, 2)}\n`
   );
   // Get a copy of the log of the report.
-  const logJSON = await fs.readFile(`./logs/${timeStamp}-${jobID}.json`, 'utf8');
+  const logJSON = await fs.readFile(`${logsPath}/${timeStamp}-${jobID}.json`, 'utf8');
   const log = JSON.parse(logJSON);
   // Mark the report as annotated in the log.
   log.annotated = true;
   // Save the revised log.
-  await fs.writeFile(`./logs/${timeStamp}-${jobID}.json`, `${JSON.stringify(log, null, 2)}\n`);
+  await fs.writeFile(`${logsPath}/${timeStamp}-${jobID}.json`, `${JSON.stringify(log, null, 2)}\n`);
 };
 // Gets data on the issues reported in a set of reports.
 exports.getIssueData = async logs => {
@@ -145,7 +152,7 @@ exports.getIssueData = async logs => {
     }
     // Get the corresponding report.
     const reportJSON = await fs.readFile(
-      `${__dirname}/../reports/${timeStamp}-${jobID}.json`, 'utf8'
+      `${reportsPath}/${timeStamp}-${jobID}.json`, 'utf8'
     );
     const report = JSON.parse(reportJSON);
     // For each act in it:
@@ -386,10 +393,10 @@ exports.getTally = report => {
 exports.getTargetLogs = async () => {
   // Initialize a directory of tested targets.
   const targetDirectory = {};
-  const logNames = await fs.readdir('./logs');
+  const logNames = await fs.readdir(logsPath);
   // For each log:
   for (const logName of logNames) {
-    const logJSON = await fs.readFile(`./logs/${logName}`, 'utf8');
+    const logJSON = await fs.readFile(`${logsPath}/${logName}`, 'utf8');
     const log = JSON.parse(logJSON);
     // Add its data to the targets directory, replacing any entry for the same target URL.
     targetDirectory[log.pageURL] = log;

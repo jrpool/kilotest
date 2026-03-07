@@ -5,54 +5,13 @@
 
 // IMPORTS
 
-const {annotateReport} = require('../classify');
-const {getTargetLogs} = require('../targets/index');
+const {getIssueData, getTargetLogs} = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Gets data on the issues reported in a set of reports.
-const getIssueData = exports.getIssueData = async logs => {
-  // Initialize the issue data.
-  const issueData = {};
-  // For each log:
-  for (const log of logs) {
-    const {annotated, timeStamp, jobID} = log;
-    // If the corresponding report is not yet annotated:
-    if (! annotated) {
-      // Annotate it and mark it as annotated in the log.
-      await annotateReport(timeStamp, jobID);
-    }
-    // Get the corresponding report.
-    const reportJSON = await fs.readFile(
-      `${__dirname}/../reports/${timeStamp}-${jobID}.json`, 'utf8'
-    );
-    const report = JSON.parse(reportJSON);
-    // For each act in it:
-    report.acts.forEach(act => {
-      // If it is a test act:
-      if (act.type === 'test') {
-        const {which} = act;
-        const instances = act.result?.standardResult?.instances ?? [];
-        // For each of its standard instances:
-        instances.forEach(instance => {
-          const {count, issueID} = instance;
-          // Increment the issue data with its count and reporter.
-          issueData[issueID] ??= {
-            count: 0,
-            reporters: new Set()
-          };
-          issueData[issueID].count += count ?? 1;
-          issueData[issueID].reporters.add(which);
-        });
-      }
-    });
-  }
-  // Return the issue data.
-  return issueData;
-};
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   // Get the logs of the reports to be inspected.

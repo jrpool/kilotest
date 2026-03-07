@@ -5,29 +5,11 @@
 
 // IMPORTS
 
-const {getIssueData} = require('../issues/index');
+const {getIssueData, getTargetLogs} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Returns an array of the latest logs of tested targets.
-const getTargetLogs = exports.getTargetLogs = async () => {
-  // Initialize a directory of tested targets.
-  const targetDirectory = {};
-  const logNames = await fs.readdir('./logs');
-  // For each log:
-  for (const logName of logNames) {
-    const logJSON = await fs.readFile(`./logs/${logName}`, 'utf8');
-    const log = JSON.parse(logJSON);
-    // Add its data to the targets directory, replacing any entry for the same target URL.
-    targetDirectory[log.pageURL] = log;
-  }
-  // Get an array of those target logs, sorted by description.
-  const targets = Object
-  .values(targetDirectory)
-  .sort((a, b) => a.pageWhat.localeCompare(b.pageWhat, 'en', {sensitivity: 'accent'}));
-  return targets;
-};
 // Returns a date string from a time stamp.
 const getDateString = timeStamp =>
   `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;

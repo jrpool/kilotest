@@ -7,12 +7,8 @@
 
 // IMPORTS
 
-// Module to keep secrets.
 require('dotenv').config();
-// Module to process files.
 const fs = require('fs/promises');
-// Utility module.
-const toolNames = require('testilo/procs/util').tools;
 
 // CONSTANTS
 

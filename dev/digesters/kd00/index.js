@@ -7,7 +7,7 @@
 
 require('dotenv').config();
 const fs = require('fs/promises');
-const {getTally} = require('../../../tally');
+const {getTally} = require('../../../util');
 
 // CONSTANTS
 

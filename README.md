@@ -42,3 +42,83 @@ This service is deployable as a non-containerized application on a Debian stable
 ### Contributing
 
 Contributions are welcome! You can use GitHub issues to initiate discussions and propose changes. If you want to contribute code, please fork the repository and create a pull request.
+
+## Internals
+
+### Tally
+
+The getTally function returns an object with this structure:
+
+```javascript
+{
+  issueCount: 88,
+  reporterCount: 4,
+  reporters: [
+    'alfa',
+    'axe',
+    'htmlcs',
+    'wave'
+  ],
+  weights: [
+    {
+      weight: 4,
+      issues: [
+        {
+          issueID: 'lineHeightAbsolute',
+          summary: 'line height absolute',
+          why: 'User cannot adjust the line height of text for readability',
+          wcag: '1.4.12',
+          violatorCount: 34,
+          reporterCount: 4,
+          reporters: [
+            'alfa',
+            'axe',
+            'htmlcs',
+            'wave'
+          ],
+          ensembles: [
+            {
+              reporters: [
+                'alfa',
+                'axe',
+                'htmlcs',
+                'wave'
+              ],
+              violators: [
+                'html/body/div[1]/svg[1]'
+                'html/body/div[1]/noscript[3]',
+                '318',
+                '29'
+              ]
+            },
+            {
+              reporters: [
+                'htmlcs',
+                'wave'
+              ],
+              violators: [
+                '44'
+              ]
+            }
+          ]
+        },
+        {
+          issueID: 'imageNoText',
+          …
+        }
+      ]
+    },
+    {
+      weight: 3,
+      issues: [
+        …
+      ]
+    },
+    {
+    …
+    }
+  ]
+}
+```
+
+In the `weights` array, the 4 items are data on issues of weights 4, 3, 2, and 1, in that order. In each of those items, the objects in the issues array are data on issues with the weight of the item whose counts are positive. The `reporters` array in each issue object is an array of the IDs of the tools that reported a violation of any rule belonging to the issue. The `ensembles` array in each issue object is an array of the path IDs of the elements reported by particular ensembles of tools as violating any rules belonging to the issue.

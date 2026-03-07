@@ -26,9 +26,10 @@ const getReportPath = exports.getReportPath
 = (timeStamp, jobID) => `${reportsPath}/${timeStamp}-${jobID}.json`;
 // Returns the JSON stringification of an object.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
+// Compares strings alphabetically and case-insensitively.
+const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'});
 // Sorts strings alphabetically and case-insensitively.
-const alphaSort = exports.alphaSort = strings => strings
-.sort((a, b) => a.localeCompare(b, en, {sensitivity: 'accent'}));
+const alphaSort = exports.alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value.
 const objectSort = exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
@@ -45,16 +46,16 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   // Otherwise, if they are strings to be sorted alphabetically:
   else if (sortType === 'alpha') {
     // Sort alphabetically.
-    return a[property].localeCompare(b[property], en, {sensitivity: 'accent'});
+    return alphaCompare(a[property], b[property]);
   }
   // Otherwise, do not sort.
   return 0;
 });
 // Sorts violator by ID, numerically for catalog indexes, then alphabetically for path IDs.
-const violatorSort = exports.violatorSort = violators => violators.sort((a, b) => {
+const violatorSort = violators => violators.sort((a, b) => {
   if (a.id.startsWith('html/')) {
     if (b.id.startsWith('html/')) {
-      return a.id.localeCompare(b.id, en, {sensitivity: 'accent'});
+      return alphaCompare(a.id, b.id);
     }
     return -1;
   }

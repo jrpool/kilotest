@@ -154,7 +154,17 @@ const getIssue = (toolID, ruleID) => {
 const annotateReport = async (timeStamp, jobID) => {
   // Get a copy of the report.
   const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-  const report = JSON.parse(reportJSON);
+  let report = {};
+  try {
+    report = JSON.parse(reportJSON);
+  }
+  // If it is invalid:
+  catch (error) {
+    // Report this.
+    console.log(`ERROR: Report ${getReportPath(timeStamp, jobID)} is not JSON`);
+    // Leave the report and log unchanged.
+    return;
+  }
   // For each of its acts:
   for (const act of report.acts) {
     // If it is a test act:

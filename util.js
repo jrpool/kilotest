@@ -137,8 +137,7 @@ const getIssue = (toolID, ruleID) => {
     // Return the issue ID.
     return variable[toolID][ruleID];
   }
-  // Otherwise, i.e. if no issue was found, report this and return a failure result.
-  console.log(`ERROR: Classification of rule ${ruleID} of tool ${toolID} failed`);
+  // Otherwise, i.e. if no issue was found, return a failure result.
   return null;
 };
 // Annotates the standard instances of a report with issue IDs.
@@ -156,6 +155,7 @@ const annotateReport = async (timeStamp, jobID) => {
     // Leave the report and log unchanged.
     return;
   }
+  const unclassifiableRules = new Set();
   // For each of its acts:
   for (const act of report.acts) {
     const {result, type, which} = act;
@@ -168,8 +168,19 @@ const annotateReport = async (timeStamp, jobID) => {
         const issueID = getIssue(which, ruleID);
         // Add the issue ID to the instance.
         instance.issueID = issueID;
+        if (! issueID) {
+          unclassifiableRules.add(`${which}:${ruleID}`);
+        }
       }
     }
+  }
+  // If any rules were unclassifiable:
+  if (unclassifiableRules.size) {
+    const errorsJSON = JSON.stringify(Array.from(unclassifiableRules).sort(), null, 2);
+    // Report them.
+    console.log(
+      `ERROR: Unclassifiable rules:\n${errorsJSON}`
+    );
   }
   // Save the annotated report.
   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));

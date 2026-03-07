@@ -30,7 +30,7 @@ const populateQuery = async query => {
     lines.push(`${margin}  <ul>`);
     lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
     lines.push(
-      `${margin}    <li>Last tested on ${getDateString(timeStamp)} at ${getTimeString(timeStamp)} (job ${jobID})</li>`
+      `${margin}    <li>Last tested on ${getDateString(timeStamp)} at ${getTimeString(timeStamp)} (job <code>${jobID}</code>)</li>`
     );
     lines.push(`${margin}    <li>Issues reported: ${Object.keys(issueData).length}</li>`);
     lines.push(`${margin}  </ul>`);

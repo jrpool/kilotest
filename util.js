@@ -167,17 +167,23 @@ const annotateReport = async (timeStamp, jobID) => {
   }
   // For each of its acts:
   for (const act of report.acts) {
+    const {result, type, which} = act;
     // If it is a test act:
-    if (act.type === 'test') {
+    if (type === 'test') {
       // For each standard instance of the result:
-      for (const instance of act.result?.standardResult?.instances ?? []) {
+      for (const instance of result?.standardResult?.instances ?? []) {
         const {ruleID} = instance;
         // Classify its rule.
-        const issueID = getIssue(ruleID);
+        const issueID = getIssue(which, ruleID);
         // If the classification succeeded:
         if (issueID) {
           // Add the issue ID to the instance.
           instance.issueID = issueID;
+        }
+        // Otherwise, i.e. if the classification failed:
+        else {
+          // Report this.
+          console.log(`ERROR: Could not classify rule ${ruleID} of tool ${which}`);
         }
       }
     }

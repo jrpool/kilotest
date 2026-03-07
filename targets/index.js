@@ -13,25 +13,29 @@ const fs = require('fs/promises');
 // Returns a date string from a time stamp.
 const getDateString = timeStamp =>
   `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
+// Returns a time string from a time stamp.
+const getTimeString = timeStamp => `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   const targetLogs = await getTargetLogs();
   // Initialize an array of list-item lines.
   const lines = [];
   const margin = ' '.repeat(6);
-  // For each target:
-  targetLogs.forEach(async targetLog => {
-    const {pageURL, pageWhat, timeStamp} = targetLog;
+  // For the latest log on each target:
+  for (const targetLog of targetLogs) {
+    const {jobID, pageURL, pageWhat, timeStamp} = targetLog;
     const issueData = await getIssueData([targetLog]);
     // Add lines to the array.
     lines.push(`${margin}<li>${pageWhat}</li>`);
     lines.push(`${margin}  <ul>`);
     lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
-    lines.push(`${margin}    <li>Last tested: ${getDateString(timeStamp)}</li>`);
+    lines.push(
+      `${margin}    <li>Last tested on ${getDateString(timeStamp)} at ${getTimeString(timeStamp)} (job ${jobID})</li>`
+    );
     lines.push(`${margin}    <li>Issues reported: ${Object.keys(issueData).length}</li>`);
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`)
-  });
+  }
   query.testedPages = lines.join('\n');
 };
 // Returns a page answering the targets question.

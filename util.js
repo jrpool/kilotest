@@ -116,39 +116,30 @@ const getRuleIDs = () => {
     variable
   };
 };
-// Returns the non-ignorable issue that a rule belongs to.
+// Returns the issue that a rule belongs to.
 const getIssue = (toolID, ruleID) => {
+  console.log(`XXX Tool ${toolID}, rule ${ruleID}`);
   const ruleIDs = getRuleIDs();
   const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.
   let issueID = invariant[toolID]?.[ruleID];
-  // If the initialization succeeded and the issue ID is not ignorable:
-  if (issueID && issueID !== 'ignorable') {
+  // If the initialization succeeded:
+  if (issueID) {
     // Return it.
     return issueID;
   }
-  // Otherwise, i.e. if the initialization failed:
-  else {
-    // Change the rule ID to the first matching variable rule ID of the tool.
-    ruleID = Object
-    .keys(variable[toolID] ?? {})
-    .find(variableRuleID => new RegExp(variableRuleID).test(ruleID));
-    // If the change succeeded:
-    if (ruleID) {
-      // Reassign the issue ID as that of the variable rule.
-      issueID = variable[toolID][ruleID];
-    }
-    // If the issue ID is ignorable or was not found:
-    if (issueID == 'ignorable' || ! issueID) {
-      // Return blank.
-      return '';
-    }
-    // Otherwise, i.e. if it was found and is not ignorable:
-    else {
-      // Return it
-      return issueID;
-    }
+  // Otherwise, change the rule ID to the first matching variable rule ID of the tool.
+  ruleID = Object
+  .keys(variable[toolID] ?? {})
+  .find(variableRuleID => new RegExp(variableRuleID).test(ruleID));
+  // If the change succeeded:
+  if (ruleID) {
+    // Return the issue ID.
+    return variable[toolID][ruleID];
   }
+  // Otherwise, i.e. if no issue was found, report this and return a failure result.
+  console.log(`ERROR: Classification of rule ${ruleID} of tool ${toolID} failed`);
+  return null;
 };
 // Annotates the standard instances of a report with issue IDs.
 const annotateReport = async (timeStamp, jobID) => {
@@ -175,16 +166,8 @@ const annotateReport = async (timeStamp, jobID) => {
         const {ruleID} = instance;
         // Classify its rule.
         const issueID = getIssue(which, ruleID);
-        // If the classification succeeded:
-        if (issueID) {
-          // Add the issue ID to the instance.
-          instance.issueID = issueID;
-        }
-        // Otherwise, i.e. if the classification failed:
-        else {
-          // Report this.
-          console.log(`ERROR: Could not classify rule ${ruleID} of tool ${which}`);
-        }
+        // Add the issue ID to the instance.
+        instance.issueID = issueID;
       }
     }
   }

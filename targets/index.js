@@ -5,7 +5,13 @@
 
 // IMPORTS
 
-const {annotateReport, getReporterString, getTargetLogs} = require('../util');
+const {
+  annotateReport,
+  getLogPath,
+  getReporterString,
+  getReportPath,
+  getTargetLogs
+} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS

@@ -64,6 +64,9 @@ const violatorSort = violators => violators.sort((a, b) => {
   }
   return Number(a.id) - Number(b.id);
 });
+// Returns a string of tool names.
+const getReporterString = exports.getReporterString = toolIDs =>
+  alphaSort(Array.from(toolIDs).map(toolID => toolNames[toolID])).join(' + ');
 // Compiles a directory of the issue classifications of invariant and variable rules.
 const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
@@ -378,7 +381,7 @@ exports.getTally = report => {
         wcag,
         violatorCount: issueData.violatorCount,
         reporterCount: issueData.reporters.size,
-        reporters: alphaSort(Array.from(issueData.reporters).map(toolID => toolNames[toolID]))
+        reporters: getReporterString(issueData.reporters)
       };
       // Initialize an array of data on the violators of any rule belonging to the issue.
       const violators = [];
@@ -387,9 +390,7 @@ exports.getTally = report => {
       // For each violator of any rule belonging to the issue:
       Object.keys(issueData.violators).forEach(violatorID => {
         // Get a string describing the ensemble of its reporters.
-        const ensembleString = alphaSort(
-          Array.from(issueData.violators[violatorID].reporters).map(toolID => toolNames[toolID])
-        ).join(' + ');
+        const ensembleString = getReporterString(issueData.violators[violatorID].reporters);
         // Ensure that the ensemble string is in the set.
         ensembles.add(ensembleString);
         // Add data on the violator to the array.
@@ -422,7 +423,7 @@ exports.getTally = report => {
   // Add the issue count, reporter count, reporter list, and solos to the tally.
   tally.issueCount = reportedIssues.size;
   tally.reporterCount = reporters.size;
-  tally.reporters = alphaSort(Array.from(reporters).map(toolID => toolNames[toolID]));
+  tally.reporters = getReporterString(reporters);
   tally.solos = Array.from(solos);
   // Return the tally.
   return tally;

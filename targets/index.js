@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssueData, getReportPath, getTally, getTargetLogs} = require('../util');
+const {alphaSort, getReportPath, getTally, getTargetLogs} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -28,8 +28,6 @@ const populateQuery = async query => {
     const report = JSON.parse(reportJSON);
     const tally = getTally(report);
     const {issueCount, reporterCount, reporters} = tally;
-    const reporterString = sortAlpha(Array.from(reporters).map(toolID => toolNames[toolID]))
-    .join(' + ');
     // Add lines to the array.
     lines.push(`${margin}<li>${pageWhat}</li>`);
     lines.push(`${margin}  <ul>`);
@@ -39,7 +37,7 @@ const populateQuery = async query => {
     );
     lines.push(`${margin}    <li>Issues reported: ${issueCount}</li>`);
     lines.push(
-      `${margin}    <li>Tools reporting issues: ${reporterCount} (${reporterString})</li>`
+      `${margin}    <li>Tools reporting issues: ${reporterCount} (${getReporterString(reporters)})</li>`
     );
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`)

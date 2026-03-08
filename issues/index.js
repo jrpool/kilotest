@@ -5,9 +5,8 @@
 
 // IMPORTS
 
-const {alphaSort, getIssueData, getTargetLogs, objectSort} = require('../util');
+const {getIssueData, getReporterString, getTargetLogs, objectSort} = require('../util');
 const {issues} = require('testilo/procs/score/tic');
-const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -29,7 +28,7 @@ const populateQuery = async query => {
       return {
         issueID,
         count: issueData.count,
-        reporters: alphaSort(Array.from(issueData.reporters).map(toolID => toolNames[toolID]))
+        reporters: getReporterString(issueData.reporters)
       };
     }), 'count', 'numericDown')
     .sort((a, b) => b.reporters.length - a.reporters.length);

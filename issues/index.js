@@ -64,9 +64,9 @@ const getIssuesSummary = async logs => {
   // Populate it with the data.
   for (const [issueID, data] of Object.entries(issuesData)) {
     const {count, reporters} = data;
-    const {issues, totalCount} = summary;
+    const {totalCount} = summary;
     summary.totalCount += count;
-    issues.push({
+    summary.issues.push({
       issueID,
       percentage: Math.round(100 * (count / totalCount)),
       reporters: getReporterString(reporters)
@@ -85,7 +85,7 @@ const populateQuery = async query => {
   // Initialize the lines.
   const lines = [];
   // For each summarized issue:
-  issuesSummary.forEach(issueSummary => {
+  issuesSummary.issues.forEach(issueSummary => {
     const {issueID, percentage, reporters} = issueSummary;
     // If its percentage is at least 2:
     if (percentage >= 2) {
@@ -98,7 +98,7 @@ const populateQuery = async query => {
       lines.push(`${margin}    <li>Priority: ${getWeightName(weight)}`);
       lines.push(`${margin}    <li>Related WCAG standard: ${wcag}`);
       lines.push(`${margin}    <li>Violation share: ${percentage}%</li>`);
-      lines.push(`${margin}    <li>Reported by: ${reporters}</li>`);
+      lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
       lines.push(`${margin}  </ul>`);
       lines.push(`${margin}</li>`);
     }

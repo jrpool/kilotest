@@ -72,7 +72,7 @@ const getIssuesSummary = async logs => {
       reporters: getReporterString(reporters)
     });
     // Sort it in descending count order.
-    objectSort(issues, 'share', 'numericDown');
+    objectSort(summary.issues, 'share', 'numericDown');
   }
   // Return the summary.
   return summary;

@@ -108,9 +108,8 @@ const populateQuery = async query => {
         lines.push(`${margin}<li>${summary}`);
         lines.push(`${margin}  <ul>`);
         lines.push(`${margin}    <li>Why it matters: ${why}`);
-        lines.push(`${margin}    <li>Priority: ${getWeightName(weight)}`);
         lines.push(`${margin}    <li>Related WCAG standard: ${wcag}`);
-        lines.push(`${margin}    <li>Violation share: ${percentage}%</li>`);
+        lines.push(`${margin}    <li>Share of violations: ${percentage}%</li>`);
         lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
         lines.push(`${margin}  </ul>`);
         lines.push(`${margin}</li>`);

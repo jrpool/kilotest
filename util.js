@@ -65,8 +65,8 @@ const violatorSort = violators => violators.sort((a, b) => {
   return Number(a.id) - Number(b.id);
 });
 // Returns a string of tool names.
-const getReporterString = exports.getReporterString = toolIDs =>
-  alphaSort(Array.from(toolIDs).map(toolID => toolNames[toolID])).join(' + ');
+const getReporterString = exports.getReporterString = toolIDSet =>
+  alphaSort(Array.from(toolIDSet).map(toolID => toolNames[toolID])).join(' + ');
 // Compiles a directory of the issue classifications of invariant and variable rules.
 const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
@@ -303,7 +303,7 @@ exports.getTally = report => {
             const issue = issues[issueID];
             const {weight} = issue;
             const weightIssues = tally.weights[4 - weight].issues;
-            // If necessary, nitialize the data on the issue as the classifier issue entry.
+            // If necessary, initialize the data on the issue as the classifier issue entry.
             weightIssues[issueID] ??= issues[issueID];
             const issueData = weightIssues[issueID];
             // If necessary, add initialized violation data to the issue data.
@@ -427,6 +427,46 @@ exports.getTally = report => {
   tally.solos = Array.from(solos);
   // Return the tally.
   return tally;
+};
+// Returns summary data on the results of testing of a target.
+exports.getTargetSummary = async (timeStamp, jobID) => {
+  const targetLogJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
+  const targetLog = JSON.parse(targetLogJSON);
+  // If the target report has not been annotated yet:
+  if (! targetLog.annotated) {
+    // Annotate it.
+    await annotateReport(timeStamp, jobID);
+  }
+  const summary = {
+    issueSet: new Set(),
+    reporterSet: new Set()
+  };
+  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+  const report = JSON.parse(reportJSON);
+  // For each act of the report:
+  report.acts.forEach(act => {
+    // If it is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      const instances = result?.standardResult?.instances ?? [];
+      // If it has any standard instances:
+      if (instances.length > 0) {
+        // Ensure that the tool is in the summary.
+        summary.reporterSet.add(which);
+        // For each standard instance:
+        instances.forEach(instance => {
+          const {issueID} = instance;
+          // If it has an issue ID:
+          if (issueID) {
+            // Ensure that the issue is in the summary.
+            summary.issueSet.add(issueID);
+          }
+        });
+      }
+    }
+  });
+  // Return the summary.
+  return summary;
 };
 // Returns an array of the latest logs of tested targets.
 exports.getTargetLogs = async () => {

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReporterString, getReportPath, getTally, getTargetLogs} = require('../util');
+const {getReporterString, getReportPath, getTally, getTargetLogs, getTargetSummary} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -26,8 +26,8 @@ const populateQuery = async query => {
     const {jobID, pageURL, pageWhat, timeStamp} = targetLog;
     const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
     const report = JSON.parse(reportJSON);
-    const tally = getTally(report);
-    const {issueCount, reporterCount, reporters} = tally;
+    const summary = getTargetSummary(timeStamp, jobID);
+    const {issueSet, reporterSet} = tally;
     // Add lines to the array.
     lines.push(`${margin}<li>${pageWhat}</li>`);
     lines.push(`${margin}  <ul>`);
@@ -35,9 +35,9 @@ const populateQuery = async query => {
     lines.push(
       `${margin}    <li>Last tested on ${getDateString(timeStamp)} at ${getTimeString(timeStamp)} (job <code>${jobID}</code>)</li>`
     );
-    lines.push(`${margin}    <li>Issues reported: ${issueCount}</li>`);
+    lines.push(`${margin}    <li>Issues reported: ${issueSet.size}</li>`);
     lines.push(
-      `${margin}    <li>Tools reporting issues: ${reporterCount} (${getReporterString(reporters)})</li>`
+      `${margin}    <li>Tools reporting issues: ${reporterSet.size} (${getReporterString(reporterSet)})</li>`
     );
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`)

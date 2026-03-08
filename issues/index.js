@@ -61,19 +61,24 @@ const getIssuesSummary = async logs => {
     totalCount: 0,
     issues: []
   };
-  // Populate it with the data.
-  for (const [issueID, data] of Object.entries(issuesData)) {
+  // Populate it with the data, including an initialized percentage.
+  Object.entries(issuesData).forEach(([issueID, data]) => {
     const {count, reporters} = data;
-    const {totalCount} = summary;
     summary.totalCount += count;
     summary.issues.push({
       issueID,
-      percentage: Math.round(100 * (count / totalCount)),
+      count,
+      percentage: 0,
       reporters: getReporterString(reporters)
     });
-    // Sort it in descending count order.
-    objectSort(summary.issues, 'share', 'numericDown');
-  }
+  });
+  // Sort its issues in descending count order.
+  objectSort(summary.issues, 'count', 'numericDown');
+  // For each summarized issue:
+  summary.issues.forEach(issue => {
+    // Add its percentage to its entry.
+    issue.percentage = Math.round(100 * (issue.count / summary.totalCount));
+  });
   // Return the summary.
   return summary;
 };

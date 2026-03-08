@@ -5,50 +5,103 @@
 
 // IMPORTS
 
-const {getIssueData, getReporterString, getTargetLogs, objectSort} = require('../util');
+const {
+  annotateReport,
+  getReporterString,
+  getReportPath,
+  objectSort,
+  getWeightName
+} = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
+// Gets summary data on the issues reported in a set of reports.
+const getIssuesSummary = async logs => {
+  // Initialize the issues summary.
+  const issuesData = {};
+  // For each log of a report to be inspected:
+  for (const log of logs) {
+    const {annotated, timeStamp, jobID} = log;
+    // If the corresponding report is not yet annotated:
+    if (! annotated) {
+      // Annotate it and mark it as annotated in the log.
+      await annotateReport(timeStamp, jobID);
+    }
+    // Get the corresponding report.
+    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+    const report = JSON.parse(reportJSON);
+    // For each act in it:
+    report.acts.forEach(act => {
+      // If it is a test act:
+      if (act.type === 'test') {
+        const {result, which} = act;
+        const instances = result?.standardResult?.instances ?? [];
+        // For each of its standard instances:
+        instances.forEach(instance => {
+          const {count, issueID} = instance;
+          // If the instance has a non-ignorable issue ID:
+          if (issueID && issueID !== 'ignorable') {
+            issuesData[issueID] ??= {
+              count: 0,
+              reporters: new Set()
+            };
+            // Increment the issue data with the count and reporter of the instance.
+            issuesData[issueID].count += count ?? 1;
+            issuesData[issueID].reporters.add(which);
+          }
+        });
+      }
+    });
+  }
+  // Initialize the summary.
+  const summary = {
+    totalCount: 0,
+    issues: []
+  };
+  // Populate it with the data.
+  for (const [issueID, data] of Object.entries(issuesData)) {
+    const {count, reporters} = data;
+    const {issues, totalCount} = summary;
+    summary.totalCount += count;
+    issues.push({
+      issueID,
+      percentage: Math.round(100 * (count / totalCount)),
+      reporters: getReporterString(reporters)
+    });
+    // Sort it in descending count order.
+    objectSort(issues, 'share', 'numericDown');
+  }
+  // Return the summary.
+  return summary;
+};
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  // Get the logs of the reports to be inspected.
-  const logs = await getTargetLogs();
-  // Get the issue data from their corresponding reports.
-  const reportedIssueData = await getIssueData(logs);
-  // For each issue weight:
-  ['Lowest', 'Low', 'High', 'Highest'].forEach((weightName, index) => {
-    const weightIssueIDs = Object
-    .keys(reportedIssueData)
-    .filter(issueID => issues[issueID]?.weight === index + 1);
-    // Get data on the reported issues with the weight, sorted by reporter and violation counts.
-    const weightIssues = objectSort(weightIssueIDs.map(issueID => {
-      const issueData = reportedIssueData[issueID];
-      return {
-        issueID,
-        count: issueData.count,
-        reporters: getReporterString(issueData.reporters)
-      };
-    }), 'count', 'numericDown')
-    .sort((a, b) => b.reporters.length - a.reporters.length);
-    const lines = [];
-    const margin = ' '.repeat(6);
-    // Get an array of HTML list items describing the issues.
-    weightIssues.forEach(issue => {
-      const {count, issueID, reporters} = issue;
-      const {summary, wcag, why} = issues[issueID];
-      lines.push(`${margin}<li>${summary}</li>`);
+  // Get summary data on the issues.
+  const issuesSummary = await getIssuesSummary();
+  // Initialize the lines.
+  const lines = [];
+  // For each summarized issue:
+  issuesSummary.forEach(issueSummary => {
+    const {issueID, percentage, reporters} = issueSummary;
+    // If its percentage is at least 2:
+    if (percentage >= 2) {
+      const issue = issues[issueID];
+      const {summary, wcag, weight, why} = issue;
+      // Add a description of it to the lines.
+      lines.push(`${margin}<li>${summary}`);
       lines.push(`${margin}  <ul>`);
-      lines.push(`${margin}    <li>Why it matters: ${why}</li>`);
-      lines.push(`${margin}    <li>Related WCAG standard: ${wcag}</li>`);
-      lines.push(`${margin}    <li>Violation count: ${count}</li>`);
-      lines.push(`${margin}    <li>Reported by: ${reporters.join(' + ')}</li>`);
+      lines.push(`${margin}    <li>Why it matters: ${why}`);
+      lines.push(`${margin}    <li>Priority: ${getWeightName(weight)}`);
+      lines.push(`${margin}    <li>Related WCAG standard: ${wcag}`);
+      lines.push(`${margin}    <li>Violation share: ${percentage}%</li>`);
+      lines.push(`${margin}    <li>Reported by: ${reporters}</li>`);
       lines.push(`${margin}  </ul>`);
       lines.push(`${margin}</li>`);
-    });
-    query[weightName] = lines.join('\n');
+    }
   });
+  query[issues] = lines.join('\n');
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {

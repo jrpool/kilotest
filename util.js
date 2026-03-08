@@ -67,6 +67,8 @@ const violatorSort = violators => violators.sort((a, b) => {
 // Returns a string of tool names.
 const getReporterString = exports.getReporterString = toolIDSet =>
   alphaSort(Array.from(toolIDSet).map(toolID => toolNames[toolID])).join(' + ');
+// Gets the name of an issue weight.
+exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
 // Compiles a directory of the issue classifications of invariant and variable rules.
 const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
@@ -142,8 +144,8 @@ const getIssue = (toolID, ruleID) => {
   // Otherwise, i.e. if no issue was found, return a failure result.
   return null;
 };
-// Annotates the standard instances of a report with issue IDs.
-const annotateReport = async (timeStamp, jobID) => {
+// Adds issue IDs to the standard instances of a report.
+exports.annotateReport = async (timeStamp, jobID) => {
   // Get a copy of the report.
   const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
   let report = {};
@@ -427,47 +429,6 @@ exports.getTally = report => {
   tally.solos = Array.from(solos);
   // Return the tally.
   return tally;
-};
-// Returns summary data on the results of testing of a target.
-exports.getTargetSummary = async (timeStamp, jobID) => {
-  const targetLogJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
-  const targetLog = JSON.parse(targetLogJSON);
-  // If the target report has not been annotated yet:
-  if (! targetLog.annotated) {
-    // Annotate it.
-    await annotateReport(timeStamp, jobID);
-  }
-  const summary = {
-    issueSet: new Set(),
-    reporterSet: new Set()
-  };
-  const {issueSet, reporterSet} = summary;
-  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-  const report = JSON.parse(reportJSON);
-  // For each act of the report:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // If it has any standard instances:
-      if (instances.length > 0) {
-        // Ensure that the tool is in the summary.
-        reporterSet.add(which);
-        // For each standard instance:
-        instances.forEach(instance => {
-          const {issueID} = instance;
-          // If it has an issue ID:
-          if (issueID) {
-            // Ensure that the issue is in the summary.
-            issueSet.add(issueID);
-          }
-        });
-      }
-    }
-  });
-  // Return the summary.
-  return summary;
 };
 // Returns an array of the latest logs of tested targets.
 exports.getTargetLogs = async () => {

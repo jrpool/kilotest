@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReporterString, getTargetLogs, getTargetSummary} = require('../util');
+const {annotateReport, getReporterString, getTargetLogs} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -15,6 +15,47 @@ const getDateString = timeStamp =>
   `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
 // Returns a time string from a time stamp.
 const getTimeString = timeStamp => `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
+// Returns summary data on the results of testing of a target.
+const getTargetSummary = async (timeStamp, jobID) => {
+  const targetLogJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
+  const targetLog = JSON.parse(targetLogJSON);
+  // If the target report has not been annotated yet:
+  if (! targetLog.annotated) {
+    // Annotate it.
+    await annotateReport(timeStamp, jobID);
+  }
+  const summary = {
+    issueSet: new Set(),
+    reporterSet: new Set()
+  };
+  const {issueSet, reporterSet} = summary;
+  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+  const report = JSON.parse(reportJSON);
+  // For each act of the report:
+  report.acts.forEach(act => {
+    // If it is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      const instances = result?.standardResult?.instances ?? [];
+      // If it has any standard instances:
+      if (instances.length > 0) {
+        // Ensure that the tool is in the summary.
+        reporterSet.add(which);
+        // For each standard instance:
+        instances.forEach(instance => {
+          const {issueID} = instance;
+          // If it has an issue ID:
+          if (issueID) {
+            // Ensure that the issue is in the summary.
+            issueSet.add(issueID);
+          }
+        });
+      }
+    }
+  });
+  // Return the summary.
+  return summary;
+};
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   const targetLogs = await getTargetLogs();

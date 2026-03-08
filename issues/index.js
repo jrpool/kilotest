@@ -67,6 +67,7 @@ const getIssuesSummary = async logs => {
     summary.totalCount += count;
     summary.issues.push({
       issueID,
+      weight: issues[issueID].weight,
       count,
       percentage: 0,
       reporters: getReporterString(reporters)
@@ -79,6 +80,8 @@ const getIssuesSummary = async logs => {
     // Add its percentage to its entry.
     issue.percentage = Math.round(100 * (issue.count / summary.totalCount));
   });
+  // Sort its issues in order of descending priority.
+  objectSort(summary.issues, 'weight', 'numericDown');
   // Return the summary.
   return summary;
 };
@@ -90,25 +93,31 @@ const populateQuery = async query => {
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
-  // For each summarized issue:
-  issuesSummary.issues.forEach(issueSummary => {
-    const {issueID, percentage, reporters} = issueSummary;
-    // If its percentage is at least 2:
-    if (percentage >= 2) {
-      const issue = issues[issueID];
-      const {summary, wcag, weight, why} = issue;
-      // Add a description of it to the lines.
-      lines.push(`${margin}<li>${summary}`);
-      lines.push(`${margin}  <ul>`);
-      lines.push(`${margin}    <li>Why it matters: ${why}`);
-      lines.push(`${margin}    <li>Priority: ${getWeightName(weight)}`);
-      lines.push(`${margin}    <li>Related WCAG standard: ${wcag}`);
-      lines.push(`${margin}    <li>Violation share: ${percentage}%</li>`);
-      lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
-      lines.push(`${margin}  </ul>`);
-      lines.push(`${margin}</li>`);
-    }
+  // For each weight:
+  [4, 3, 2, 1].forEach(weight => {
+    // Add a heading to the lines.
+    lines.push(`${margin}<h2>${getWeightName(weight)} priority</h2>`);
+    // For each summarized issue:
+    issuesSummary.issues.forEach(issueSummary => {
+      const {issueID, percentage, reporters} = issueSummary;
+      // If it has the weight and its percentage is at least 2:
+      if (issueSummary.weight === weight && percentage >= 2) {
+        const issue = issues[issueID];
+        const {summary, wcag, weight, why} = issue;
+        // Add a description of it to the lines.
+        lines.push(`${margin}<li>${summary}`);
+        lines.push(`${margin}  <ul>`);
+        lines.push(`${margin}    <li>Why it matters: ${why}`);
+        lines.push(`${margin}    <li>Priority: ${getWeightName(weight)}`);
+        lines.push(`${margin}    <li>Related WCAG standard: ${wcag}`);
+        lines.push(`${margin}    <li>Violation share: ${percentage}%</li>`);
+        lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
+        lines.push(`${margin}  </ul>`);
+        lines.push(`${margin}</li>`);
+      }
+    });
   });
+  // Add the lines to the query.
   query.issues = lines.join('\n');
 };
 // Returns a page answering the targets question.

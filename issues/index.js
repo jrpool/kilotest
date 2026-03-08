@@ -84,6 +84,7 @@ const populateQuery = async query => {
   const issuesSummary = await getIssuesSummary(targetLogs);
   // Initialize the lines.
   const lines = [];
+  const margin = ' '.repeat(6);
   // For each summarized issue:
   issuesSummary.issues.forEach(issueSummary => {
     const {issueID, percentage, reporters} = issueSummary;

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReporterString, getReportPath, getTally, getTargetLogs, getTargetSummary} = require('../util');
+const {getReporterString, getTargetLogs, getTargetSummary} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -24,10 +24,8 @@ const populateQuery = async query => {
   // For the latest log on each target:
   for (const targetLog of targetLogs) {
     const {jobID, pageURL, pageWhat, timeStamp} = targetLog;
-    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-    const report = JSON.parse(reportJSON);
-    const summary = getTargetSummary(timeStamp, jobID);
-    const {issueSet, reporterSet} = tally;
+    const summary = await getTargetSummary(timeStamp, jobID);
+    const {issueSet, reporterSet} = summary;
     // Add lines to the array.
     lines.push(`${margin}<li>${pageWhat}</li>`);
     lines.push(`${margin}  <ul>`);

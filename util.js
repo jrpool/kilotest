@@ -441,6 +441,7 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
     issueSet: new Set(),
     reporterSet: new Set()
   };
+  const {issueSet, reporterSet} = summary;
   const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
   const report = JSON.parse(reportJSON);
   // For each act of the report:
@@ -452,14 +453,14 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
       // If it has any standard instances:
       if (instances.length > 0) {
         // Ensure that the tool is in the summary.
-        summary.reporterSet.add(which);
+        reporterSet.add(which);
         // For each standard instance:
         instances.forEach(instance => {
           const {issueID} = instance;
           // If it has an issue ID:
           if (issueID) {
             // Ensure that the issue is in the summary.
-            summary.issueSet.add(issueID);
+            issueSet.add(issueID);
           }
         });
       }

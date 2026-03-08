@@ -104,7 +104,7 @@ const populateQuery = async query => {
       lines.push(`${margin}</li>`);
     }
   });
-  query[issues] = lines.join('\n');
+  query.issues = lines.join('\n');
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {

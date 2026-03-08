@@ -9,8 +9,9 @@ const {
   annotateReport,
   getReporterString,
   getReportPath,
-  objectSort,
-  getWeightName
+  getTargetLogs,
+  getWeightName,
+  objectSort
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
@@ -78,8 +79,9 @@ const getIssuesSummary = async logs => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
+  const targetLogs = await getTargetLogs();
   // Get summary data on the issues.
-  const issuesSummary = await getIssuesSummary();
+  const issuesSummary = await getIssuesSummary(targetLogs);
   // Initialize the lines.
   const lines = [];
   // For each summarized issue:

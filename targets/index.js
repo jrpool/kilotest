@@ -21,6 +21,8 @@ const getDateString = timeStamp =>
   `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
 // Returns a time string from a time stamp.
 const getTimeString = timeStamp => `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
+// Returns a description of a tool count.
+const getToolCountString = toolCount => toolCount === 1 ? '1 tool' : `${toolCount} tools`;
 // Returns summary data on the results of testing of a target.
 const getTargetSummary = async (timeStamp, jobID) => {
   const targetLogJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
@@ -82,7 +84,7 @@ const populateQuery = async query => {
     );
     lines.push(`${margin}    <li>Issues reported: ${issueSet.size}</li>`);
     lines.push(
-      `${margin}    <li>Tools reporting issues: ${reporterSet.size} (${getReporterString(reporterSet)})</li>`
+      `${margin}    <li>Reported by ${getToolCountString(reporterSet.size)}: ${getReporterString(reporterSet)}</li>`
     );
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`)

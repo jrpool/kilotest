@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {alphaSort, getReportPath, getTally, getTargetLogs} = require('../util');
+const {getReporterString, getReportPath, getTally, getTargetLogs} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS

@@ -43,7 +43,7 @@ const populateQuery = async (report, query) => {
   lines.push(`<p>Count of issues: ${issueCount}</p>`);
   // Add the reporter count and list to the lines.
   const reporterCountString = reporterCount > 1 ? `${reporterCount} tools` : '1 tool';
-  lines.push(`<p>Reported by ${reporterCountString} (${reporters.join(' + ')})</p>`);
+  lines.push(`<p>Tools reporting issues: ${reporterCountString} (${reporters.join(' + ')})</p>`);
   // Add an external-links notice to the lines.
   lines.push(
     `<p>Notice: To preserve this page, each link opens in a new tab. Close it to return here.</p>`

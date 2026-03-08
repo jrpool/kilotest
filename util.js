@@ -118,7 +118,6 @@ const getRuleIDs = () => {
 };
 // Returns the issue that a rule belongs to.
 const getIssue = (toolID, ruleID) => {
-  console.log(`XXX Tool ${toolID}, rule ${ruleID}`);
   const ruleIDs = getRuleIDs();
   const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.
@@ -216,13 +215,16 @@ exports.getIssueData = async logs => {
         // For each of its standard instances:
         instances.forEach(instance => {
           const {count, issueID} = instance;
-          // Increment the issue data with its count and reporter.
-          issueData[issueID] ??= {
-            count: 0,
-            reporters: new Set()
-          };
-          issueData[issueID].count += count ?? 1;
-          issueData[issueID].reporters.add(which);
+          // If the instance has a non-ignorable issue ID:
+          if (issueID && issueID !== 'ignorable') {
+            issueData[issueID] ??= {
+              count: 0,
+              reporters: new Set()
+            };
+            // Increment the issue data with the count and reporter of the instance.
+            issueData[issueID].count += count ?? 1;
+            issueData[issueID].reporters.add(which);
+          }
         });
       }
     });
@@ -278,7 +280,6 @@ exports.getTally = report => {
   });
   const solos = new Set();
   // Get the invariant and variable classified rules with issue IDs.
-  const ruleIDs = getRuleIDs();
   const {acts} = report;
   // For each act in the report:
   acts.forEach(act => {
@@ -290,19 +291,9 @@ exports.getTally = report => {
       instances.forEach(instance => {
         // Initialize its rule ID.
         let {ruleID} = instance;
-        const reportedRuleID = ruleID;
-        // Initialize the issue ID of the rule.
-        let issueID = ruleIDs.invariant[toolID]?.[ruleID];
-        // If the rule ID is not invariant:
-        if (! issueID) {
-          // Change the rule ID to the first matching variable rule ID of the tool.
-          ruleID = Object
-          .keys(ruleIDs.variable[toolID] ?? {})
-          .find(variableRuleID => new RegExp(variableRuleID).test(ruleID));
-          // Reassign the issue ID as that of the variable rule.
-          issueID = ruleIDs.variable[toolID]?.[ruleID];
-        }
-        // If a classified rule has an ID that is or matches that of the instance:
+        // Get the issue that the rule belongs to.
+        const issueID = getIssue(toolID, ruleID);
+        // If the acquisition succeeded:
         if (issueID) {
           // If the rule is not deprecated:
           if (issueID !== 'ignorable') {
@@ -345,7 +336,7 @@ exports.getTally = report => {
             }
           }
         }
-        // Otherwise, i.e. if no classified rule has an ID that is or matches that of the instance:
+        // Otherwise, i.e. if the acquisition failed:
         else {
           const soloString = `${toolID}:${reportedRuleID}`;
           // If the rule is not yet included in the solos:

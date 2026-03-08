@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssueData, getTargetLogs} = require('../util');
+const {getIssueData, getReportPath, getTally, getTargetLogs} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -24,7 +24,12 @@ const populateQuery = async query => {
   // For the latest log on each target:
   for (const targetLog of targetLogs) {
     const {jobID, pageURL, pageWhat, timeStamp} = targetLog;
-    const issueData = await getIssueData([targetLog]);
+    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+    const report = JSON.parse(reportJSON);
+    const tally = getTally(report);
+    const {issueCount, reporterCount, reporters} = tally;
+    const reporterString = sortAlpha(Array.from(reporters).map(toolID => toolNames[toolID]))
+    .join(' + ');
     // Add lines to the array.
     lines.push(`${margin}<li>${pageWhat}</li>`);
     lines.push(`${margin}  <ul>`);
@@ -32,7 +37,10 @@ const populateQuery = async query => {
     lines.push(
       `${margin}    <li>Last tested on ${getDateString(timeStamp)} at ${getTimeString(timeStamp)} (job <code>${jobID}</code>)</li>`
     );
-    lines.push(`${margin}    <li>Issues reported: ${Object.keys(issueData).length}</li>`);
+    lines.push(`${margin}    <li>Issues reported: ${issueCount}</li>`);
+    lines.push(
+      `${margin}    <li>Tools reporting issues: ${reporterCount} (${reporterString})</li>`
+    );
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`)
   }

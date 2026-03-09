@@ -1,6 +1,6 @@
 /*
   index.js
-  Manages Kilotest Dev.
+  Answers the can-I-test question.
 */
 
 // CONSTANTS
@@ -13,7 +13,7 @@ const results = new Map();
 require('dotenv').config({quiet: true});
 const fs = require('fs/promises');
 const {digest, getPostData, serveError} = require('../util');
-const {digester} = require('./digesters/kd00/index');
+const {digester} = require('../dev/digesters/kd00/index');
 const {doJob} = require('testaro/run');
 const DEMO_SSE_DELAY = Number.parseInt(process.env.DEMO_SSE_DELAY || '2000', 10);
 

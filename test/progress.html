@@ -6,12 +6,12 @@
     <meta name="publisher" content="Jonathan Robert Pool">
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="report,accessibility,a11y">
-    <title>Progress | Kilotest</title>
+    <title>Test in progress | Kilotest</title>
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <main>
-      <h1>Kilotest Dev progress</h1>
+      <h1>Kilotest test in progress</h1>
       <div id="status">
         <p>This is job <code>__jobID__</code></p>
       </div>
@@ -33,7 +33,7 @@
           };
           const statusDiv = document.getElementById('status');
           // Define the URL of the event source for this job.
-          const eventSource = new EventSource('/dev/events/__jobID__');
+          const eventSource = new EventSource('/test/events/__jobID__');
           // When the event source sends a message:
           eventSource.onmessage = event => {
             try {
@@ -52,17 +52,13 @@
                 // Add a paragraph with a progress message based on the payload property.
                 const progressPar = document.createElement('p');
                 const {type, which} = payload;
-                const scope = type === 'test' ? 'tool' : type;
-                if (scope === 'tool') {
+                if (type === 'test') {
                   progressPar.innerHTML = `Starting tests of tool <strong>${tools[which]}</strong>`;
-                }
-                else if (scope === 'standardization' && which === 'start') {
-                  progressPar.innerHTML = 'Starting report standardization';
                 }
                 statusDiv.appendChild(progressPar);
               }
               // Otherwise, if the event is the end of the job:
-              else if (eventType === 'digestDone') {
+              else if (eventType === 'jobEnd') {
                 // Fetch the digest and replace the page.
                 fetch(payload.url, {credentials: 'same-origin'})
                 .then(response => response.text())
@@ -70,19 +66,24 @@
                   document.open();
                   document.write(digestHTML);
                   document.close();
-                }).catch(error => {
+                })
+                .catch(error => {
                   const errorDiv = document.createElement('div');
                   errorDiv.textContent = `Failed to fetch final report: ${error.message}`;
                   statusDiv.appendChild(errorDiv);
                 });
                 eventSource.close();
-              } else if (eventType === 'error') {
+              }
+              else if (eventType === 'error') {
                 const errorDiv = document.createElement('div');
                 errorDiv.textContent = `[error] ${eventData.message || 'unknown error'}`;
                 statusDiv.appendChild(errorDiv);
                 eventSource.close();
               }
-            } catch (error) {}
+            }
+            catch (error) {
+              console.error('Error processing event:', error);
+            }
           };
         })();
       </script>

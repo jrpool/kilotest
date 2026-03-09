@@ -17,7 +17,7 @@ const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
 const answer = {
-  howtest: require('./howtest/index').answer,
+  test: require('./test/index').answer,
   issues: require('./issues/index').answer,
   targets: require('./targets/index').answer
 };

@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the targets question.
+  Answers the can-I-test question.
 */
 
 // IMPORTS

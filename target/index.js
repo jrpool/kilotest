@@ -28,60 +28,19 @@ const getDateString = timeStamp =>
 const getTimeString = timeStamp => `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
 // Returns a description of a tool count.
 const getToolCountString = toolCount => toolCount === 1 ? '1 tool' : `${toolCount} tools`;
-// Returns summary data on the results of testing of a target.
-const getTargetSummary = async (timeStamp, jobID) => {
-  const targetLogJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
-  const targetLog = JSON.parse(targetLogJSON);
-  // If the target report has not been annotated yet:
-  if (! targetLog.annotated) {
-    // Annotate it.
-    await annotateReport(timeStamp, jobID);
-  }
-  const summary = {
-    issueSet: new Set(),
-    reporterSet: new Set()
-  };
-  const {issueSet, reporterSet} = summary;
-  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-  const report = JSON.parse(reportJSON);
-  // For each act of the report:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // If it has any standard instances:
-      if (instances.length > 0) {
-        // Ensure that the tool is in the summary.
-        reporterSet.add(which);
-        // For each standard instance:
-        instances.forEach(instance => {
-          const {issueID} = instance;
-          // If it has an issue ID:
-          if (issueID) {
-            // Ensure that the issue is in the summary.
-            issueSet.add(issueID);
-          }
-        });
-      }
-    }
-  });
-  // Return the summary.
-  return summary;
-};
-// Returns data on violations of rules by issue weight and reporters.
+// Returns data on rule violations in a report.
 const getReportData = report => {
   // Initialize the data.
   const reportData = {
     issueCount: 0,
-    reporterCount: 0,
-    reporters: [],
+    reporters: new Set(),
     solos: new Set(),
     weights: []
   };
   [4, 3, 2, 1].forEach(weight => {
     reportData.weights.push({
       weightName: getWeightName(weight),
+      issueCount: 0,
       issues: {}
     });
   });
@@ -94,23 +53,28 @@ const getReportData = report => {
       const instances = act.result?.standardResult?.instances ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {
-        // Initialize its rule ID.
-        let {ruleID} = instance;
-        // Get the issue that the rule belongs to.
-        const issueID = getIssue(toolID, ruleID);
+        // Get the issue that its rule belongs to.
+        const issueID = getIssue(toolID, instance.ruleID);
         // If the acquisition succeeded:
         if (issueID) {
           // If the rule is not deprecated:
           if (issueID !== 'ignorable') {
             const issue = issues[issueID];
             const {weight} = issue;
-            const weightIssues = reportData.weights[4 - weight].issues;
-            weightIssues[issueID] ??= issues[issueID];
-            const issueData = weightIssues[issueID];
-            issueData.violatorCount ??= 0;
-            issueData.reporters ??= new Set();
-            issueData.violators ??= {};
-            let {violatorCount} = issueData;
+            const weightData = reportData.weights[4 - weight];
+            const weightIssues = weightData.issues;
+            // If the issue has not yet been encountered:
+            if (! weightIssues[issueID]) {
+              // Add the classifier data on the issue to the data.
+              weightIssues[issueID] = issues[issueID];
+              // Increment the issue counts.
+              reportData.issueCount++;
+              reportData.weights[4 - weight].issueCount++;
+              // Add initialized violation data to them.
+              issueData.violatorCount = 0;
+              issueData.reporters = new Set();
+              issueData.violators = {};
+            }
             const {reporters, violators} = issueData;
             const violatorID = instance.catalogIndex ?? instance.pathID;
             const violator = violators[violatorID];
@@ -126,16 +90,11 @@ const getReportData = report => {
               // Otherwise, i.e. if the violator is new for the issue:
               else {
                 // Add data on the violation to the issue data.
-                violatorCount += instance.count ?? 1;
+                issueData.violatorCount += instance.count ?? 1;
                 violators[violatorID] = {
                   reporters: new Set([toolID])
                 };
               }
-            }
-            // Otherwise, i.e. if the instance does not disclose a catalog index or path ID:
-            else {
-              // Ensure that the tool is included in the reporters of the issue.
-              reporters.add(toolID);
             }
           }
         }
@@ -144,9 +103,9 @@ const getReportData = report => {
           // Report this.
           const soloString = `${toolID}:${reportedRuleID}`;
           // If the rule is not yet included in the solos:
-          if (! solos.has(soloString)) {
+          if (! solos.includes(soloString)) {
             // Add it to the solos:
-            solos.add(`${toolID}:${reportedRuleID}`);
+            solos.push(soloString);
             // Report it.
             console.log(`ERROR: Rule ${soloString} does not belong to any issue`);
           }

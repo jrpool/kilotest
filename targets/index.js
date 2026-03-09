@@ -86,6 +86,9 @@ const populateQuery = async query => {
     lines.push(
       `${margin}    <li>Reported by ${getToolCountString(reporterSet.size)}: ${getReporterString(reporterSet)}</li>`
     );
+    lines.push(
+      `${margin}    <li><a href="target.html/${timeStamp}-${jobID}">Details for ${pageWhat}</a></li>`
+    );
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`)
   }

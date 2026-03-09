@@ -52,7 +52,7 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   return 0;
 });
 // Sorts violator by ID, numerically for catalog indexes, then alphabetically for path IDs.
-const violatorSort = violators => violators.sort((a, b) => {
+const violatorSort = exports.violatorSort = violators => violators.sort((a, b) => {
   if (a.id.startsWith('html/')) {
     if (b.id.startsWith('html/')) {
       return alphaCompare(a.id, b.id);
@@ -122,7 +122,7 @@ const getRuleIDs = () => {
   };
 };
 // Returns the issue that a rule belongs to.
-const getIssue = (toolID, ruleID) => {
+const getIssue = exports.getIssue = (toolID, ruleID) => {
   const ruleIDs = getRuleIDs();
   const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.

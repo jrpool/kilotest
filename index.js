@@ -17,8 +17,8 @@ const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
 const answer = {
-  test: require('./test/index').answer,
   issues: require('./issues/index').answer,
+  target: require('./target/index').answer,
   targets: require('./targets/index').answer
 };
 
@@ -41,6 +41,7 @@ const requestHandler = async (request, response) => {
   if (method === 'GET') {
     // Get its URL.
     const requestURL = request.url;
+    const requestPage = requestURL.split('/')[1];
     // If the URL has a path that ends with a slash:
     if (requestURL.length > 1 && requestURL.endsWith('/')) {
       // Redirect the client permanently.
@@ -57,12 +58,12 @@ const requestHandler = async (request, response) => {
       response.end(homePage);
     }
     // Otherwise, if it is for an HTML page other than the home page:
-    else if (requestURL.endsWith('.html')) {
-      const topic = requestURL.slice(1, -5);
+    else if (requestPage.endsWith('.html')) {
+      const topic = requestPage.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
         // Get it.
-        const answerPage = await answer[topic]();
+        const answerPage = await answer[topic](requestURL);
         // Serve it.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', requestURL);

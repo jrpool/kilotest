@@ -2,6 +2,12 @@
 
 Notes about the further development of this project.
 
+## Testing candidates
+
+These URLs are candidates for testing:
+
+- [The Donovan’s Venom](https://www.thedonovan.org/)
+
 ## What alternatives to AWS EC2 are commonly considered as platforms for the hosting of a Node.js web application with Playwright as a dependency and a PostgreSQL database?
 
 Popular alternatives to AWS EC2 for hosting Node.js web applications with Playwright and a PostgreSQL database include platforms like Render, Railway, Fly.io, DigitalOcean, Google Cloud Platform, Microsoft Azure, and Heroku. These platforms offer integrated hosting and database solutions alongside support for modern automation tools like Playwright. Several managed platforms provide PostgreSQL capabilities natively, simplifying deployment and scaling for applications requiring backend databases.[^1_1][^1_2][^1_3][^1_4][^1_5][^1_6][^1_7][^1_8][^1_9]

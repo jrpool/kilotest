@@ -7,9 +7,7 @@
 
 const {
   alphaSort,
-  annotateReport,
   getIssue,
-  getLogPath,
   getReporterString,
   getReportPath,
   getWeightName,
@@ -18,6 +16,7 @@ const {
 } = require('../util');
 const fs = require('fs/promises');
 const {issues} = require('testilo/procs/score/tic');
+const {tools} = require('testaro/procs/job');
 
 // FUNCTIONS
 
@@ -44,6 +43,7 @@ const getReportData = report => {
       issues: {}
     });
   });
+  const {issueCount, reporters, solos, weights} = reportData;
   const {acts} = report;
   // For each act in the report:
   acts.forEach(act => {
@@ -69,53 +69,54 @@ const getReportData = report => {
               weightIssues[issueID] = issues[issueID];
               // Increment the issue counts.
               reportData.issueCount++;
-              reportData.weights[4 - weight].issueCount++;
+              weightData.issueCount++;
+              const issueData = weightData[issueID];
               // Add initialized violation data to them.
-              issueData.violatorCount = 0;
+              issueData.violationCount = 0;
               issueData.reporters = new Set();
               issueData.violators = {};
             }
+            // Increment the violation count of the issue.
+            issueData.violationCount += instance.count ?? 1;
             const {reporters, violators} = issueData;
             const violatorID = instance.catalogIndex ?? instance.pathID;
-            const violator = violators[violatorID];
             // Ensure that the tool is included in the reporters of the issue.
             reporters.add(toolID);
             // If the instance discloses a catalog index or path ID:
             if (violatorID) {
-              // If the violator has already been reported for the issue:
-              if (violator) {
-                // Ensure that the tool is included in the reporters of the violator.
-                violator.reporters.add(toolID);
-              }
-              // Otherwise, i.e. if the violator is new for the issue:
-              else {
-                // Add data on the violation to the issue data.
-                issueData.violatorCount += instance.count ?? 1;
-                violators[violatorID] = {
-                  reporters: new Set([toolID])
-                };
-              }
+              violators[violatorID] ??= new Set();
+              const violator = violators[violatorID];
+              // Ensure that the tool is included in the reporters of the violator.
+              violator.add(toolID);
             }
           }
         }
         // Otherwise, i.e. if the acquisition failed:
         else {
-          // Report this.
           const soloString = `${toolID}:${reportedRuleID}`;
-          // If the rule is not yet included in the solos:
-          if (! solos.includes(soloString)) {
-            // Add it to the solos:
-            solos.push(soloString);
-            // Report it.
-            console.log(`ERROR: Rule ${soloString} does not belong to any issue`);
-          }
+          // Ensure that the rule will be reported as unclassified.
+          solos.push(soloString);
         }
       });
     }
   });
+  // If any rules were not classified:
+  if (solos.size) {
+    // Report them:
+    console.log(`ERROR: Violations reported of unclassified rules:\n${JSON.stringify(Array.from(solos, null, 2))}`);
+  }
+  // Populate the issue count.
+  reportData.issueCount = weights
+  .reduce((count, currentWeight) => count +  Object.keys(currentWeight.issues).length, 0);
+  // Repopulate the reporters as an array of reporter names.
+  reportData.reporters = alphaSort(
+    Array.from(reportData.reporters).map(toolID => tools[toolID])
+  );
+  // Repopulate the weight-specific issue data as a
+  reportData.weights =
   // Initialize sets of reported issues and reporters.
   const reportedIssues = new Set();
-  const reporters = new Set();
+  // const reporters = new Set();
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     const weightIssues = tally.weights[4 - weight].issues;

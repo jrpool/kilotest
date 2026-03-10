@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the targets question.
+  Answers the report-issues question.
 */
 
 // IMPORTS
@@ -18,47 +18,47 @@ const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Gets summary data on the issues reported in a set of reports.
-const getIssuesSummary = async logs => {
-  // Initialize data for a summary.
+// Gets summary data on the issues reported in a report.
+const getIssuesSummary = async (timeStamp, jobID) => {
+  // Initialize data for the summary.
   const issuesData = {};
-  // For each log of a report to be inspected:
-  for (const log of logs) {
-    const {annotated, timeStamp, jobID} = log;
-    // If the corresponding report is not yet annotated:
-    if (! annotated) {
-      // Annotate it and mark it as annotated in the log.
-      await annotateReport(timeStamp, jobID);
-    }
-    // Get the corresponding report.
-    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-    const report = JSON.parse(reportJSON);
-    // For each act in it:
-    report.acts.forEach(act => {
-      // If it is a test act:
-      if (act.type === 'test') {
-        const {result, which} = act;
-        const instances = result?.standardResult?.instances ?? [];
-        // For each of its standard instances:
-        instances.forEach(instance => {
-          const {count, issueID} = instance;
-          // If the instance has a non-ignorable issue ID:
-          if (issueID && issueID !== 'ignorable') {
-            issuesData[issueID] ??= {
-              count: 0,
-              reporters: new Set()
-            };
-            // Increment the data with the count and reporter of the instance.
-            issuesData[issueID].count += count ?? 1;
-            issuesData[issueID].reporters.add(which);
-          }
-        });
-      }
-    });
+  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
+  const log = JSON.parse(logJSON);
+  const {annotated} = log;
+  // If the corresponding report is not yet annotated:
+  if (! annotated) {
+    // Annotate it and mark it as annotated in the log.
+    await annotateReport(timeStamp, jobID);
   }
+  // Get the report.
+  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+  const report = JSON.parse(reportJSON);
+  // For each act in it:
+  report.acts.forEach(act => {
+    // If it is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      const instances = result?.standardResult?.instances ?? [];
+      // For each of its standard instances:
+      instances.forEach(instance => {
+        const {count, issueID} = instance;
+        // If the instance has a non-ignorable issue ID:
+        if (issueID && issueID !== 'ignorable') {
+          issuesData[issueID] ??= {
+            count: 0,
+            reporters: new Set()
+          };
+          // Increment the issue data with the count and reporter of the instance.
+          issuesData[issueID].count += count ?? 1;
+          issuesData[issueID].reporters.add(which);
+        }
+      });
+    }
+  });
   // Initialize the summary.
   const summary = {
     totalCount: 0,
+    reporters: new Set(),
     issues: []
   };
   // For each issue:
@@ -66,6 +66,10 @@ const getIssuesSummary = async logs => {
     const {count, reporters} = data;
     // Increment the report violation count by the issue violation count.
     summary.totalCount += count;
+    // Ensure that the report reporters include the issue reporters.
+    reporters.forEach(reporter => {
+      summary.reporters.add(reporter);
+    });
     // Add the issue data and an initilized percentage to the summary.
     summary.issues.push({
       issueID,
@@ -89,6 +93,7 @@ const getIssuesSummary = async logs => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
+  query.target =
   const targetLogs = await getTargetLogs();
   // Get summary data on the issues.
   const issuesSummary = await getIssuesSummary(targetLogs);
@@ -121,7 +126,7 @@ const populateQuery = async query => {
   // Add the lines to the query.
   query.issues = lines.join('\n');
 };
-// Returns a page answering the targets question.
+// Returns a page answering the target-issues question.
 exports.answer = async () => {
   const query = {};
   // Create a query to replace placeholders.

@@ -113,7 +113,7 @@ const getReportData = report => {
     Array.from(reportData.reporters).map(toolID => tools[toolID])
   );
   // Repopulate the weight-specific issue data as a
-  reportData.weights =
+  reportData.weights = 'XXX';
   // Initialize sets of reported issues and reporters.
   const reportedIssues = new Set();
   // const reporters = new Set();
@@ -201,20 +201,19 @@ const populateQuery = async (requestURL, query) => {
   // Initialize an array of list-item lines.
   const lines = [];
   //////////// CONTINUE REFACTORING HERE
-    // Add lines to the array.
-    lines.push(`${margin}<li>${pageWhat}</li>`);
-    lines.push(`${margin}  <ul>`);
-    lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
-    lines.push(
-      `${margin}    <li>Last tested on ${getDateString(timeStamp)} at ${getTimeString(timeStamp)} (job <code>${jobID}</code>)</li>`
-    );
-    lines.push(`${margin}    <li>Issues reported: ${issueSet.size}</li>`);
-    lines.push(
-      `${margin}    <li>Reported by ${getToolCountString(reporterSet.size)}: ${getReporterString(reporterSet)}</li>`
-    );
-    lines.push(`${margin}  </ul>`);
-    lines.push(`${margin}</li>`)
-  }
+  // Add lines to the array.
+  lines.push(`${margin}<li>${pageWhat}</li>`);
+  lines.push(`${margin}  <ul>`);
+  lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
+  lines.push(
+    `${margin}    <li>Last tested on ${getDateString(timeStamp)} at ${getTimeString(timeStamp)} (job <code>${jobID}</code>)</li>`
+  );
+  lines.push(`${margin}    <li>Issues reported: ${issueSet.size}</li>`);
+  lines.push(
+    `${margin}    <li>Reported by ${getToolCountString(reporterSet.size)}: ${getReporterString(reporterSet)}</li>`
+  );
+  lines.push(`${margin}  </ul>`);
+  lines.push(`${margin}</li>`)
   query.testedPages = lines.join('\n');
 };
 // Returns a page answering the targets question.

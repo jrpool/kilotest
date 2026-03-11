@@ -26,6 +26,11 @@ const getReportPath = exports.getReportPath
 = (timeStamp, jobID) => `${reportsPath}/${timeStamp}-${jobID}.json`;
 // Returns the JSON stringification of an object.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
+// Returns a date string from a time stamp.
+exports.getDateString = timeStamp =>
+  `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
+// Returns a time string from a time stamp.
+exports.getTimeString = timeStamp => `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
 // Compares strings alphabetically and case-insensitively.
 const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'});
 // Sorts strings alphabetically and case-insensitively.

@@ -7,9 +7,10 @@
 
 const {
   annotateReport,
+  getDateString,
   getReporterString,
   getReportPath,
-  getTargetLogs,
+  getTimeString,
   getWeightName,
   objectSort
 } = require('../util');
@@ -96,31 +97,33 @@ const getIssuesSummary = async (timeStamp, jobID) => {
   return summary;
 };
 // Adds parameters to a query for the answer page.
-const populateQuery = async query => {
-  query.target =
-  const targetLogs = await getTargetLogs();
-  // Get summary data on the issues.
-  const issuesSummary = await getIssuesSummary(targetLogs);
+const populateQuery = async (timeStamp, jobID, query) => {
+  // Get a summary of data on the target.
+  const summary = await getIssuesSummary(timeStamp, jobID);
+  const {pageURL, pageWhat, timeStamp} = summary;
+  query.target = pageWhat;
+  query.url = pageURL;
+  query.dateTime = `${getDateString(timeStamp)} ${getTimeString(timeStamp)}`;
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     // Add a heading to the lines.
-    lines.push(`${margin}<h2>${getWeightName(weight)} priority</h2>`);
+    lines.push(`${margin}<h3>${getWeightName(weight)} priority</h3>`);
     // For each summarized issue:
-    issuesSummary.issues.forEach(issueSummary => {
-      const {issueID, percentage, reporters} = issueSummary;
-      // If it has the weight and its percentage is at least 2:
-      if (issueSummary.weight === weight && percentage >= 2) {
+    summary.issues.forEach(issueSummary => {
+      const {issueID, count, reporters} = issueSummary;
+      // If it has the weight:
+      if (summary.weight === weight) {
         const issue = issues[issueID];
-        const {summary, wcag, weight, why} = issue;
+        const {wcag, why} = issue;
         // Add a description of it to the lines.
-        lines.push(`${margin}<li>${summary}`);
+        lines.push(`${margin}<li>${issue.summary}`);
         lines.push(`${margin}  <ul>`);
         lines.push(`${margin}    <li>Why it matters: ${why}`);
         lines.push(`${margin}    <li>Related WCAG standard: ${wcag}`);
-        lines.push(`${margin}    <li>Share of violations: ${percentage}%</li>`);
+        lines.push(`${margin}    <li>Violation count: ${count}</li>`);
         lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
         lines.push(`${margin}  </ul>`);
         lines.push(`${margin}</li>`);
@@ -131,10 +134,10 @@ const populateQuery = async query => {
   query.issues = lines.join('\n');
 };
 // Returns a page answering the target-issues question.
-exports.answer = async () => {
+exports.answer = async (timeStamp, jobID) => {
   const query = {};
   // Create a query to replace placeholders.
-  await populateQuery(query);
+  await populateQuery(timeStamp, jobID, query);
   // Get the template.
   let template = await fs.readFile(`${__dirname}/index.html`, 'utf8');
   // Replace its placeholders.

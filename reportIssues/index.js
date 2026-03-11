@@ -21,11 +21,17 @@ const fs = require('fs/promises');
 // Gets summary data on the issues reported in a report.
 const getIssuesSummary = async (timeStamp, jobID) => {
   // Initialize data for the summary.
-  const issuesData = {};
   const logJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
   const log = JSON.parse(logJSON);
-  const {annotated} = log;
-  // If the corresponding report is not yet annotated:
+  const {annotated, jobID, pageURL, pageWhat, timeStamp} = log;
+  const issuesData = {
+    timeStamp,
+    jobID,
+    pageWhat,
+    pageURL,
+    issues: {}
+  };
+  // If the report is not yet annotated:
   if (! annotated) {
     // Annotate it and mark it as annotated in the log.
     await annotateReport(timeStamp, jobID);
@@ -44,20 +50,24 @@ const getIssuesSummary = async (timeStamp, jobID) => {
         const {count, issueID} = instance;
         // If the instance has a non-ignorable issue ID:
         if (issueID && issueID !== 'ignorable') {
-          issuesData[issueID] ??= {
+          issuesData.issues[issueID] ??= {
             count: 0,
             reporters: new Set()
           };
-          // Increment the issue data with the count and reporter of the instance.
-          issuesData[issueID].count += count ?? 1;
-          issuesData[issueID].reporters.add(which);
+          // Add the instance data on violations to the data on its issue.
+          issuesData.issues[issueID].count += count ?? 1;
+          issuesData.issues[issueID].reporters.add(which);
         }
       });
     }
   });
   // Initialize the summary.
   const summary = {
-    totalCount: 0,
+    timeStamp: issuesData.timeStamp,
+    jobID: issuesData.jobID,
+    pageWhat: issuesData.pageWhat,
+    pageURL: issuesData.pageURL,
+    count: 0,
     reporters: new Set(),
     issues: []
   };
@@ -65,28 +75,22 @@ const getIssuesSummary = async (timeStamp, jobID) => {
   Object.entries(issuesData).forEach(([issueID, data]) => {
     const {count, reporters} = data;
     // Increment the report violation count by the issue violation count.
-    summary.totalCount += count;
+    summary.count += count;
     // Ensure that the report reporters include the issue reporters.
     reporters.forEach(reporter => {
       summary.reporters.add(reporter);
     });
-    // Add the issue data and an initilized percentage to the summary.
+    // Add the issue data to the summary.
     summary.issues.push({
       issueID,
       weight: issues[issueID].weight,
       count,
-      percentage: 0,
       reporters: getReporterString(reporters)
     });
   });
-  // For each summarized issue:
-  summary.issues.forEach(issue => {
-    // Add its percentage to its entry.
-    issue.percentage = Math.round(100 * (issue.count / summary.totalCount));
-  });
   // Sort the issues in descending count order.
   objectSort(summary.issues, 'count', 'numericDown');
-  // Sort the issues in descending priority order.
+  // Sort them again in descending priority order, making this the primary order.
   objectSort(summary.issues, 'weight', 'numericDown');
   // Return the summary.
   return summary;

@@ -100,11 +100,14 @@ exports.answer = async () => {
   // Create a query to replace placeholders.
   await populateQuery(query);
   // Get the template.
-  let template = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+  let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
-    template = template.replace(new RegExp(`__${param}__`, 'g'), query[param]);
+    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
   });
   // Return the populated page.
-  return template;
+  return {
+    status: 'ok',
+    page: answerPage
+  };
 };

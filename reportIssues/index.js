@@ -100,7 +100,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 const populateQuery = async (timeStamp, jobID, query) => {
   // Get a summary of data on the target.
   const summary = await getIssuesSummary(timeStamp, jobID);
-  const {pageURL, pageWhat, timeStamp} = summary;
+  const {pageURL, pageWhat} = summary;
   query.target = pageWhat;
   query.url = pageURL;
   const dateString = getDateString(timeStamp);

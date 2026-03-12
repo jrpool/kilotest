@@ -25,9 +25,9 @@ const getLogPath = exports.getLogPath
 const getReportPath = exports.getReportPath
 = (timeStamp, jobID) => `${reportsPath}/${timeStamp}-${jobID}.json`;
 // Returns the JSON stringification of an object.
-const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
+const getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.
-exports.getDateString = timeStamp => {
+const getDateString = timeStamp => {
   const dateString = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
   // If the date part of the time stamp is valid:
   if (Date.parse(dateString)) {
@@ -38,7 +38,7 @@ exports.getDateString = timeStamp => {
   return '';
 };
 // Returns a time string from a time stamp.
-exports.getTimeString = timeStamp => {
+const getTimeString = timeStamp => {
   const timeString = `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
   // If the time part of the time stamp is valid:
   if (Date.parse(`2000-01-01T${timeString}`)) {
@@ -48,10 +48,17 @@ exports.getTimeString = timeStamp => {
   // Otherwise, return a failure.
   return '';
 };
+// Returns a date-and-time string.
+exports.getDateTimeString = timeStamp => {
+  const dateString = getDateString(timeStamp);
+  const timeString = getTimeString(timeStamp);
+  const dateTimeString = `${dateString} at ${timeString}`;
+  return dateTimeString;
+}
 // Compares strings alphabetically and case-insensitively.
 const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'});
 // Sorts strings alphabetically and case-insensitively.
-const alphaSort = exports.alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
+const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value.
 const objectSort = exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
@@ -73,21 +80,8 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   // Otherwise, do not sort.
   return 0;
 });
-// Sorts violator by ID, numerically for catalog indexes, then alphabetically for path IDs.
-const violatorSort = exports.violatorSort = violators => violators.sort((a, b) => {
-  if (a.id.startsWith('html/')) {
-    if (b.id.startsWith('html/')) {
-      return alphaCompare(a.id, b.id);
-    }
-    return -1;
-  }
-  if (b.id.startsWith('html/')) {
-    return 1;
-  }
-  return Number(a.id) - Number(b.id);
-});
 // Returns a string of tool names.
-const getReporterString = exports.getReporterString = toolIDSet =>
+exports.getReporterString = toolIDSet =>
   alphaSort(Array.from(toolIDSet).map(toolID => toolNames[toolID])).join(' + ');
 // Gets the name of an issue weight.
 exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
@@ -144,7 +138,7 @@ const getRuleIDs = () => {
   };
 };
 // Returns the issue that a rule belongs to.
-const getIssue = exports.getIssue = (toolID, ruleID) => {
+const getIssue = (toolID, ruleID) => {
   const ruleIDs = getRuleIDs();
   const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.
@@ -218,240 +212,6 @@ exports.annotateReport = async (timeStamp, jobID) => {
   // Save the revised log.
   await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
 };
-// Gets data on the issues reported in a set of reports.
-exports.getIssueData = async logs => {
-  // Initialize the issue data.
-  const issueData = {};
-  // For each log:
-  for (const log of logs) {
-    const {annotated, timeStamp, jobID} = log;
-    // If the corresponding report is not yet annotated:
-    if (! annotated) {
-      // Annotate it and mark it as annotated in the log.
-      await annotateReport(timeStamp, jobID);
-    }
-    // Get the corresponding report.
-    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-    const report = JSON.parse(reportJSON);
-    // For each act in it:
-    report.acts.forEach(act => {
-      // If it is a test act:
-      if (act.type === 'test') {
-        const {which} = act;
-        const instances = act.result?.standardResult?.instances ?? [];
-        // For each of its standard instances:
-        instances.forEach(instance => {
-          const {count, issueID} = instance;
-          // If the instance has a non-ignorable issue ID:
-          if (issueID && issueID !== 'ignorable') {
-            issueData[issueID] ??= {
-              count: 0,
-              reporters: new Set()
-            };
-            // Increment the issue data with the count and reporter of the instance.
-            issueData[issueID].count += count ?? 1;
-            issueData[issueID].reporters.add(which);
-          }
-        });
-      }
-    });
-  }
-  // Return the issue data.
-  return issueData;
-};
-// Gets the data from a POST request.
-exports.getPostData = async request => {
-  return new Promise((resolve, reject) => {
-    const bodyParts = [];
-    request.on('error', async err => {
-      reject(err);
-    })
-    .on('data', chunk => {
-      bodyParts.push(chunk);
-    })
-    // When the request has arrived:
-    .on('end', async () => {
-      try {
-        // Get a query string from the request body.
-        const queryString = Buffer.concat(bodyParts).toString();
-        // Parse it as an array of key-value pairs.
-        const requestParams = new URLSearchParams(queryString);
-        // Convert it to an object with string-valued properties.
-        const postData = {};
-        requestParams.forEach((value, name) => {
-          postData[name] = value;
-        });
-        resolve(postData);
-      }
-      catch (err) {
-        reject(err);
-      }
-    });
-  });
-};
-// Returns data on violations of rules by issue weight and reporters.
-exports.getTally = report => {
-  // Initialize the tally.
-  const tally = {
-    issueCount: 0,
-    reporterCount: 0,
-    solos: {},
-    reporters: [],
-    weights: []
-  };
-  [4, 3, 2, 1].forEach(weight => {
-    tally.weights.push({
-      weight,
-      issues: {}
-    });
-  });
-  const solos = new Set();
-  // Get the invariant and variable classified rules with issue IDs.
-  const {acts} = report;
-  // For each act in the report:
-  acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const toolID = act.which;
-      const instances = act.result?.standardResult?.instances ?? [];
-      // For each standard instance of the act:
-      instances.forEach(instance => {
-        // Initialize its rule ID.
-        let {ruleID} = instance;
-        // Get the issue that the rule belongs to.
-        const issueID = getIssue(toolID, ruleID);
-        // If the acquisition succeeded:
-        if (issueID) {
-          // If the rule is not deprecated:
-          if (issueID !== 'ignorable') {
-            const issue = issues[issueID];
-            const {weight} = issue;
-            const weightIssues = tally.weights[4 - weight].issues;
-            // If necessary, initialize the data on the issue as the classifier issue entry.
-            weightIssues[issueID] ??= issues[issueID];
-            const issueData = weightIssues[issueID];
-            // If necessary, add initialized violation data to the issue data.
-            issueData.violatorCount ??= 0;
-            issueData.reporters ??= new Set();
-            issueData.violators ??= {};
-            let {violatorCount} = issueData;
-            const {reporters, violators} = issueData;
-            const violatorID = instance.catalogIndex ?? instance.pathID;
-            const violator = violators[violatorID];
-            // Ensure that the tool is included in the reporters of the issue.
-            reporters.add(toolID);
-            // If the instance discloses a catalog index or path ID:
-            if (violatorID) {
-              // If the violator has already been reported for the issue:
-              if (violator) {
-                // Ensure that the tool is included in the reporters of the violator.
-                violator.reporters.add(toolID);
-              }
-              // Otherwise, i.e. if the violator is new for the issue:
-              else {
-                // Add data on the violation to the issue data.
-                violatorCount += instance.count ?? 1;
-                violators[violatorID] = {
-                  reporters: new Set([toolID])
-                };
-              }
-            }
-            // Otherwise, i.e. if the instance does not disclose a catalog index or path ID:
-            else {
-              // Ensure that the tool is included in the reporters of the issue.
-              reporters.add(toolID);
-            }
-          }
-        }
-        // Otherwise, i.e. if the acquisition failed:
-        else {
-          const soloString = `${toolID}:${reportedRuleID}`;
-          // If the rule is not yet included in the solos:
-          if (! solos.has(soloString)) {
-            // Add it to the solos:
-            solos.add(`${toolID}:${reportedRuleID}`);
-            // Report it.
-            console.log(`ERROR: Rule ${soloString} does not belong to any issue`);
-          }
-        }
-      });
-    }
-  });
-  // Initialize sets of reported issues and reporters.
-  const reportedIssues = new Set();
-  const reporters = new Set();
-  // For each weight:
-  [4, 3, 2, 1].forEach(weight => {
-    const weightIssues = tally.weights[4 - weight].issues;
-    // Initialize an array to replace the issues object in the tally.
-    const issueArray = [];
-    // For each issue with the weight:
-    Object.keys(weightIssues).forEach(issueID => {
-      // Ensure that the issue is included in the reported issues.
-      reportedIssues.add(issueID);
-      const issueData = weightIssues[issueID];
-      // For each reporter of the issue:
-      issueData.reporters.forEach(reporter => {
-        // Ensure that the reporter is included in the reporters.
-        reporters.add(reporter);
-      });
-      const issue = issues[issueID];
-      const {summary, wcag, why} = issue;
-      // Initialize an item to be added to the array.
-      const issueItem = {
-        issueID,
-        summary,
-        why,
-        wcag,
-        violatorCount: issueData.violatorCount,
-        reporterCount: issueData.reporters.size,
-        reporters: getReporterString(issueData.reporters)
-      };
-      // Initialize an array of data on the violators of any rule belonging to the issue.
-      const violators = [];
-      // Initialize a set of ensemble-describing strings.
-      const ensembles = new Set();
-      // For each violator of any rule belonging to the issue:
-      Object.keys(issueData.violators).forEach(violatorID => {
-        // Get a string describing the ensemble of its reporters.
-        const ensembleString = getReporterString(issueData.violators[violatorID].reporters);
-        // Ensure that the ensemble string is in the set.
-        ensembles.add(ensembleString);
-        // Add data on the violator to the array.
-        violators.push({
-          id: violatorID,
-          ensembleString
-        });
-      });
-      // Sort the data on the violators by violator ID.
-      violatorSort(violators);
-      // Initialize an array of the ensembles sorted alphabetically.
-      const ensembleArray = alphaSort(Array.from(ensembles));
-      // Sort the sorted array by decreasing ensemble size.
-      ensembleArray.sort((a, b) => b.split(' + ').length - a.split(' + ').length);
-      // Add an array of ensemble data to the the issue item.
-      issueItem.ensembles = ensembleArray.map(ensembleString => ({
-        reporters: ensembleString.split(' + '),
-        violators: violators
-        .filter(violator => violator.ensembleString === ensembleString)
-        .map(violator => violator.id)
-      }));
-      // Add the issue item to the issue array.
-      issueArray.push(issueItem);
-    });
-    // Sort the items in the issue array by decreasing reporter count.
-    objectSort(issueArray, 'reporterCount', 'numericDown');
-    // Replace the issues object for the weight in the tally with the issue array.
-    tally.weights[4 - weight].issues = issueArray;
-  });
-  // Add the issue count, reporter count, reporter list, and solos to the tally.
-  tally.issueCount = reportedIssues.size;
-  tally.reporterCount = reporters.size;
-  tally.reporters = getReporterString(reporters);
-  tally.solos = Array.from(solos);
-  // Return the tally.
-  return tally;
-};
 // Returns an array of the latest logs of tested targets.
 exports.getTargetLogs = async () => {
   // Initialize a directory of tested targets.
@@ -467,22 +227,4 @@ exports.getTargetLogs = async () => {
   // Get an array of those target logs, sorted by description.
   const targets = objectSort(Object.values(targetDirectory), 'pageWhat', 'alpha');
   return targets;
-};
-// Serves an error message.
-exports.serveError = async (error, response) => {
-  console.log(error.message);
-  if (! response.writableEnded) {
-    response.statusCode = 400;
-    const errorTemplate = await fs.readFile('error.html', 'utf8');
-    const errorPage = errorTemplate.replace(/__error__/, error.message);
-    response.end(errorPage);
-  }
-};
-// Digests a scored report and returns it, digested.
-exports.digest = async (digester, report, query = {}) => {
-  // Create a digest.
-  const digest = await digester(report, query);
-  console.log(`Report ${report.id} digested`);
-  // Return the digest.
-  return digest;
 };

@@ -19,7 +19,6 @@ const https = require('https');
 const answer = {
   issues: require('./issues/index').answer,
   reportIssues: require('./reportIssues/index').answer,
-  target: require('./target/index').answer,
   targets: require('./targets/index').answer
 };
 

@@ -7,11 +7,10 @@
 
 const {
   annotateReport,
-  getDateString,
+  getDateTimeString,
   getLogPath,
   getReporterString,
   getReportPath,
-  getTimeString,
   getWeightName,
   objectSort
 } = require('../util');
@@ -104,9 +103,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const {pageURL, pageWhat} = summary;
   query.target = pageWhat;
   query.url = pageURL;
-  const dateString = getDateString(timeStamp);
-  const timeString = getTimeString(timeStamp);
-  query.dateTime = dateString && timeString ? `${dateString} ${timeString}` : '';
+  query.dateTime = getDateTimeString(timeStamp);
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);

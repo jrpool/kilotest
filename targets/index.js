@@ -7,6 +7,7 @@
 
 const {
   annotateReport,
+  getDateTimeString,
   getLogPath,
   getReporterString,
   getReportPath,
@@ -16,11 +17,6 @@ const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Returns a date string from a time stamp.
-const getDateString = timeStamp =>
-  `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
-// Returns a time string from a time stamp.
-const getTimeString = timeStamp => `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
 // Returns a description of a tool count.
 const getToolCountString = toolCount => toolCount === 1 ? '1 tool' : `${toolCount} tools`;
 // Returns summary data on the results of testing of a target.
@@ -79,9 +75,7 @@ const populateQuery = async query => {
     lines.push(`${margin}<li>${pageWhat}</li>`);
     lines.push(`${margin}  <ul>`);
     lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
-    const dateString = getDateString(timeStamp);
-    const timeString = getTimeString(timeStamp);
-    const dateTimeString = `${dateString} at ${timeString}`;
+    const dateTimeString = getDateTimeString(timeStamp);
     lines.push(
       `${margin}    <li>Last tested on ${dateTimeString} (job <code>${jobID}</code>)</li>`
     );

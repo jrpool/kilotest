@@ -59,7 +59,7 @@ fieldset {
 form {
   margin-top: 1rem;
 }
-h3, h4, h5, h6 {
+h4, h5, h6 {
   margin-top: 1rem;
   margin-bottom: 0;
 }
@@ -70,6 +70,7 @@ h2 {
 }
 h3 {
   font-size: 1.6rem;
+  margin: 1rem auto 0.5rem auto;
 }
 h3.bars {
   border-top: solid black 0.1rem;

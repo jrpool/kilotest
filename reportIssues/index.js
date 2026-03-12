@@ -74,7 +74,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     issues: []
   };
   // For each issue:
-  Object.entries(issuesData).forEach(([issueID, data]) => {
+  Object.entries(issuesData.issues).forEach(([issueID, data]) => {
     const {count, reporters} = data;
     // Increment the report violation count by the issue violation count.
     summary.count += count;

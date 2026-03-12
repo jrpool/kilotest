@@ -8,7 +8,7 @@
 const {
   annotateReport,
   getDateTimeString,
-  getLogPath,
+  getLog,
   getReporterString,
   getReportPath,
   getWeightName,
@@ -22,9 +22,11 @@ const fs = require('fs/promises');
 // Gets summary data on the issues reported in a report.
 const getIssuesSummary = async (timeStamp, jobID) => {
   // Initialize data for the summary.
-  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
-  const log = JSON.parse(logJSON);
-  const {annotated, pageURL, pageWhat} = log;
+  const log = getLog(timeStamp, jobID, true);
+  const {pageURL, pageWhat} = log;
+  query.target = pageWhat;
+  query.url = pageURL;
+  query.dateTime = getDateTimeString(timeStamp);
   const issuesData = {
     timeStamp,
     jobID,
@@ -97,10 +99,15 @@ const getIssuesSummary = async (timeStamp, jobID) => {
   return summary;
 };
 // Adds parameters to a query for the answer page.
-const populateQuery = async (timeStamp, jobID, query) => {
+const populateQuery = async (issueID, timeStamp, jobID, query) => {
+  query.issue = issues[issueID].summary;
+  const log = getLog(timeStamp, jobID, true);
+  const {pageURL, pageWhat} = log;
+  query.target = pageWhat;
+  query.url = pageURL;
+  query.dateTime = getDateTimeString(timeStamp);
   // Get a summary of data on the target.
   const summary = await getIssuesSummary(timeStamp, jobID);
-  const {pageURL, pageWhat} = summary;
   query.target = pageWhat;
   query.url = pageURL;
   query.dateTime = getDateTimeString(timeStamp);
@@ -128,7 +135,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
         const violationQuestionString = count === 1 ? 'What was it?' : 'What were they?';
         const labelCountString = count === 1 ? 'violation was' : 'violations were';
         const labelString = `What ${issue.summary} ${labelCountString} reported for ${pageWhat}?`;
-        const href = `href="/reportIssue/${timeStamp}-${jobID}"`;
+        const href = `href="/reportIssue/${issueID}/${timeStamp}-${jobID}"`;
         const label = `aria-label="${labelString}"`;
         const violationLink = `<a ${href} ${label}>${violationQuestionString}</a>`;
         lines.push(`${margin}      <li>${violationCountString} reported: ${violationLink}</li>`);
@@ -143,11 +150,11 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.issues = lines.join('\n');
 };
 // Returns a page answering the target-issues question.
-exports.answer = async reportSpec => {
+exports.answer = async (issueID, reportSpec) => {
   const [timeStamp, jobID] = reportSpec.split('-');
   const query = {};
   // Create a query to replace the placeholders.
-  await populateQuery(timeStamp, jobID, query);
+  await populateQuery(issueID, timeStamp, jobID, query);
   // If the date and time are valid:
   if (query.dateTime) {
     // Get the template.

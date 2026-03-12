@@ -24,6 +24,12 @@ const getLogPath = exports.getLogPath
 // Returns the path of a report file.
 const getReportPath = exports.getReportPath
 = (timeStamp, jobID) => `${reportsPath}/${timeStamp}-${jobID}.json`;
+// Returns a report.
+const getReport = exports.getReport = async (timeStamp, jobID) => {
+  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID));
+  const report = JSON.parse(reportJSON);
+  return report;
+};
 // Returns the JSON stringification of an object.
 const getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.
@@ -161,12 +167,11 @@ const getIssue = (toolID, ruleID) => {
   return null;
 };
 // Adds issue IDs to the standard instances of a report.
-exports.annotateReport = async (timeStamp, jobID) => {
-  // Get a copy of the report.
-  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
   let report = {};
   try {
-    report = JSON.parse(reportJSON);
+    // Get a copy of the report.
+    report = getReport(timeStamp, jobID);
   }
   // If it is invalid:
   catch (error) {
@@ -205,12 +210,21 @@ exports.annotateReport = async (timeStamp, jobID) => {
   // Save the annotated report.
   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
   // Get a copy of the log of the report.
-  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
-  const log = JSON.parse(logJSON);
+  const log = getLog(timeStamp, jobID, false);
   // Mark the report as annotated in the log.
   log.annotated = true;
   // Save the revised log.
   await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
+};
+// Returns the log of a report.
+const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false) => {
+  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
+  const log = JSON.parse(logJSON);
+  const {annotated, jobID, timeStamp} = log;
+  if (forceAnnotation && ! annotated) {
+    annotateReport(timeStamp, jobID);
+  }
+  return log;
 };
 // Returns an array of the latest logs of tested targets.
 exports.getTargetLogs = async () => {

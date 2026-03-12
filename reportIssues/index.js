@@ -8,7 +8,7 @@
 const {
   annotateReport,
   getDateTimeString,
-  getLogPath,
+  getLog,
   getReporterString,
   getReportPath,
   getWeightName,
@@ -22,9 +22,8 @@ const fs = require('fs/promises');
 // Gets summary data on the issues reported in a report.
 const getIssuesSummary = async (timeStamp, jobID) => {
   // Initialize data for the summary.
-  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
-  const log = JSON.parse(logJSON);
-  const {annotated, pageURL, pageWhat} = log;
+  const log = getLog(timeStamp, jobID, true);
+  const {pageURL, pageWhat} = log;
   const issuesData = {
     timeStamp,
     jobID,
@@ -32,11 +31,6 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     pageURL,
     issues: {}
   };
-  // If the report is not yet annotated:
-  if (! annotated) {
-    // Annotate it and mark it as annotated in the log.
-    await annotateReport(timeStamp, jobID);
-  }
   // Get the report.
   const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
   const report = JSON.parse(reportJSON);

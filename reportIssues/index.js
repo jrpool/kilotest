@@ -8,6 +8,7 @@
 const {
   annotateReport,
   getDateString,
+  getLogPath,
   getReporterString,
   getReportPath,
   getTimeString,

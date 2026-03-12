@@ -118,7 +118,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     summary.issues.forEach(issueSummary => {
       const {issueID, count, reporters} = issueSummary;
       // If it has the weight:
-      if (summary.weight === weight) {
+      if (issueSummary.weight === weight) {
         const issue = issues[issueID];
         const {wcag, why} = issue;
         // Add a description of it to the lines.

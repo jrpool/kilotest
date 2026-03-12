@@ -27,10 +27,27 @@ const getReportPath = exports.getReportPath
 // Returns the JSON stringification of an object.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.
-exports.getDateString = timeStamp =>
-  `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
+exports.getDateString = timeStamp => {
+  const dateString = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
+  // If the date part of the time stamp is valid:
+  if (Date.parse(dateString)) {
+    // Return a date string from it.
+    return dateString;
+  }
+  // Otherwise, return a failure.
+  return '';
+};
 // Returns a time string from a time stamp.
-exports.getTimeString = timeStamp => `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
+exports.getTimeString = timeStamp => {
+  const timeString = `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
+  // If the time part of the time stamp is valid:
+  if (Date.parse(`2000-01-01T${timeString}`)) {
+    // Return a time string from it.
+    return timeString;
+  }
+  // Otherwise, return a failure.
+  return '';
+};
 // Compares strings alphabetically and case-insensitively.
 const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'});
 // Sorts strings alphabetically and case-insensitively.

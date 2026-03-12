@@ -105,7 +105,7 @@ const populateQuery = async query => {
       // If it has the weight and its percentage is at least 2:
       if (issueSummary.weight === weight && percentage >= 2) {
         const issue = issues[issueID];
-        const {summary, wcag, weight, why} = issue;
+        const {summary, wcag, why} = issue;
         // Add a description of it to the lines.
         lines.push(`${margin}<li>${summary}`);
         lines.push(`${margin}  <ul>`);

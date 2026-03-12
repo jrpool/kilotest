@@ -18,6 +18,7 @@ const http = require('http');
 const https = require('https');
 const answer = {
   issues: require('./issues/index').answer,
+  reportIssues: require('./reportIssues/index').answer,
   target: require('./target/index').answer,
   targets: require('./targets/index').answer
 };
@@ -41,7 +42,9 @@ const requestHandler = async (request, response) => {
   if (method === 'GET') {
     // Get its URL.
     const requestURL = request.url;
-    const requestPage = requestURL.split('/')[1];
+    const requestParts = requestURL.split('/');
+    const requestPage = requestParts[1];
+    const pathParts = requestParts.slice(2);
     // If the URL has a path that ends with a slash:
     if (requestURL.length > 1 && requestURL.endsWith('/')) {
       // Redirect the client permanently.
@@ -62,12 +65,28 @@ const requestHandler = async (request, response) => {
       const topic = requestPage.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
-        // Get it.
-        const answerPage = await answer[topic](requestURL);
-        // Serve it.
+        // Serve headers for it.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', requestURL);
-        response.end(answerPage);
+        // Get the answer data.
+        const answerData = await answer[topic](... pathParts);
+        // If it is valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.page);
+        }
+        // Otherwise, i.e. if it is invalid:
+        else {
+          // Report the error.
+          console.log(answerData.error);
+          await serveError({message: answerData.error}, response);
+        }
+      }
+      // Otherwise, i.e. if the answer cannot be generated:
+      else {
+        // Report the error.
+        console.log('ERROR: Invalid request');
+        await serveError({message: 'Invalid request'}, response);
       }
     }
     // Otherwise, if it is for the application icon:

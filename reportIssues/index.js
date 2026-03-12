@@ -103,7 +103,9 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const {pageURL, pageWhat, timeStamp} = summary;
   query.target = pageWhat;
   query.url = pageURL;
-  query.dateTime = `${getDateString(timeStamp)} ${getTimeString(timeStamp)}`;
+  const dateString = getDateString(timeStamp);
+  const timeString = getTimeString(timeStamp);
+  query.dateTime = dateString && timeString ? `${dateString} ${timeString}` : '';
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
@@ -134,16 +136,28 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.issues = lines.join('\n');
 };
 // Returns a page answering the target-issues question.
-exports.answer = async (timeStamp, jobID) => {
+exports.answer = async reportSpec => {
+  const [timeStamp, jobID] = reportSpec.split('-');
   const query = {};
-  // Create a query to replace placeholders.
+  // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);
-  // Get the template.
-  let template = await fs.readFile(`${__dirname}/index.html`, 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    template = template.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
-  // Return the populated page.
-  return template;
+  // If the date and time are valid:
+  if (query.dateTime) {
+    // Get the template.
+    let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+    // Replace its placeholders.
+    Object.keys(query).forEach(param => {
+      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
+    });
+    // Return the populated page.
+    return {
+      status: 'ok',
+      page: answerPage
+    };
+  }
+  // Otherwise, report this.
+  return {
+    status: 'bad',
+    error: 'Error: Invalid report specification.'
+  };
 };

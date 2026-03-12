@@ -24,7 +24,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
   // Initialize data for the summary.
   const logJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
   const log = JSON.parse(logJSON);
-  const {annotated, jobID, pageURL, pageWhat, timeStamp} = log;
+  const {annotated, pageURL, pageWhat} = log;
   const issuesData = {
     timeStamp,
     jobID,

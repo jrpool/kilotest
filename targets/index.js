@@ -108,6 +108,6 @@ exports.answer = async () => {
   // Return the populated page.
   return {
     status: 'ok',
-    page: answerPage
+    answerPage
   };
 };

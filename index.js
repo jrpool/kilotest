@@ -73,7 +73,7 @@ const requestHandler = async (request, response) => {
         // If it is valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.
-          response.end(answerData.page);
+          response.end(answerData.answerPage);
         }
         // Otherwise, i.e. if it is invalid:
         else {

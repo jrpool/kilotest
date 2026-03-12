@@ -152,7 +152,7 @@ exports.answer = async reportSpec => {
     // Return the populated page.
     return {
       status: 'ok',
-      page: answerPage
+      answerPage
     };
   }
   // Otherwise, report this.

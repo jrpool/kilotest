@@ -114,6 +114,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   [4, 3, 2, 1].forEach(weight => {
     // Add a heading to the lines.
     lines.push(`${margin}<h3>${getWeightName(weight)} priority</h3>`);
+    lines.push(`${margin}<ul>`);
     // For each summarized issue:
     summary.issues.forEach(issueSummary => {
       const {issueID, count, reporters} = issueSummary;
@@ -122,16 +123,17 @@ const populateQuery = async (timeStamp, jobID, query) => {
         const issue = issues[issueID];
         const {wcag, why} = issue;
         // Add a description of it to the lines.
-        lines.push(`${margin}<li>${issue.summary}`);
-        lines.push(`${margin}  <ul>`);
-        lines.push(`${margin}    <li>Why it matters: ${why}`);
-        lines.push(`${margin}    <li>Related WCAG standard: ${wcag}`);
-        lines.push(`${margin}    <li>Violation count: ${count}</li>`);
-        lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
-        lines.push(`${margin}  </ul>`);
-        lines.push(`${margin}</li>`);
+        lines.push(`${margin}  <li>${issue.summary}`);
+        lines.push(`${margin}    <ul>`);
+        lines.push(`${margin}      <li>Why it matters: ${why}`);
+        lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
+        lines.push(`${margin}      <li>Violation count: ${count}</li>`);
+        lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+        lines.push(`${margin}    </ul>`);
+        lines.push(`${margin}  </li>`);
       }
     });
+    lines.push(`${margin}</ul>`);
   });
   // Add the lines to the query.
   query.issues = lines.join('\n');

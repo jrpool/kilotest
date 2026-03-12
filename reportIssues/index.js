@@ -124,7 +124,14 @@ const populateQuery = async (timeStamp, jobID, query) => {
         lines.push(`${margin}    <ul>`);
         lines.push(`${margin}      <li>Why it matters: ${why}`);
         lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
-        lines.push(`${margin}      <li>Violation count: ${count}</li>`);
+        const violationCountString = count === 1 ? '1 violation' : `${count} violations`;
+        const violationQuestionString = count === 1 ? 'What was it?' : 'What were they?';
+        const labelCountString = count === 1 ? 'violation was' : 'violations were';
+        const labelString = `What ${issue.summary} ${labelCountString} reported for ${pageWhat}?`;
+        const href = `href="/reportIssue/${timeStamp}-${jobID}"`;
+        const label = `aria-label="${labelString}"`;
+        const violationLink = `<a ${href} ${label}>${violationQuestionString}</a>`;
+        lines.push(`${margin}      <li>${violationCountString} reported: ${violationLink}</li>`);
         lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         lines.push(`${margin}    </ul>`);
         lines.push(`${margin}  </li>`);

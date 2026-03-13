@@ -13,6 +13,7 @@ const {
   getReport,
   getReporterString,
   getWeightName,
+  makeBreakable,
   objectSort
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
@@ -175,7 +176,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     lines.push(`${margin}<ul>`);
     // Add properties of the violator to the lines.
     if (pathID && ! violatorID.startsWith('/html')) {
-      lines.push(`${margin}  <li>XPath: <code>${pathID}</code></li>`);
+      lines.push(`${margin}  <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
     }
     if (tagName) {
       lines.push(`${margin}  <li>Tag name: <code>${tagName}</code></li>`);

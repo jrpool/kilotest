@@ -86,6 +86,8 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   // Otherwise, do not sort.
   return 0;
 });
+// Makes a string breakable before non-initial slashes.
+exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
 // Returns the path ID of the element of a standard instance.
 exports.getPathID = (catalog, catalogIndex, pathID) => {
   if (catalogIndex) {

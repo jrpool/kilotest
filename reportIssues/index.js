@@ -40,16 +40,12 @@ const getIssuesSummary = async (timeStamp, jobID) => {
       const instances = result?.standardResult?.instances ?? [];
       // For each of its standard instances:
       instances.forEach(instance => {
-        const {count, issueID} = instance;
+        const {issueID} = instance;
         // If the instance has a non-ignorable issue ID:
         if (issueID && issueID !== 'ignorable') {
-          issuesData.issues[issueID] ??= {
-            count: 0,
-            reporters: new Set()
-          };
-          // Add the instance data on violations to the data on its issue.
-          issuesData.issues[issueID].count += count ?? 1;
-          issuesData.issues[issueID].reporters.add(which);
+          issuesData.issues[issueID] ??= new Set();
+          // Ensure that the tool is in the issue data.
+          issuesData.issues[issueID].add(which);
         }
       });
     }
@@ -60,15 +56,12 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     jobID: issuesData.jobID,
     pageWhat: issuesData.pageWhat,
     pageURL: issuesData.pageURL,
-    count: 0,
     reporters: new Set(),
     issues: []
   };
   // For each issue:
   Object.entries(issuesData.issues).forEach(([issueID, data]) => {
-    const {count, reporters} = data;
-    // Increment the report violation count by the issue violation count.
-    summary.count += count;
+    const {reporters} = data;
     // Ensure that the report reporters include the issue reporters.
     reporters.forEach(reporter => {
       summary.reporters.add(reporter);
@@ -77,14 +70,13 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     summary.issues.push({
       issueID,
       weight: issues[issueID].weight,
-      count,
       reporterCount: reporters.size,
       reporters: getReporterString(reporters)
     });
   });
-  // Sort the issues in descending count order.
-  objectSort(summary.issues, 'count', 'numericDown');
-  // Sort them again in descending reporter-count order, making this the primary order.
+  // Sort the issues in alphabetical order by reporter string.
+  objectSort(summary.issues, 'reporters', 'alpha');
+  // Sort the issues again in descending reporter-count order, making this the primary order.
   objectSort(summary.issues, 'reporterCount', 'numericDown');
   // Return the summary.
   return summary;
@@ -107,7 +99,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     lines.push(`${margin}<ul>`);
     // For each summarized issue:
     summary.issues.forEach(issueSummary => {
-      const {issueID, count, reporters} = issueSummary;
+      const {issueID, reporters} = issueSummary;
       // If it has the weight:
       if (issueSummary.weight === weight) {
         const issue = issues[issueID];
@@ -117,14 +109,12 @@ const populateQuery = async (timeStamp, jobID, query) => {
         lines.push(`${margin}    <ul>`);
         lines.push(`${margin}      <li>Why it matters: ${why}`);
         lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
-        const violationCountString = count === 1 ? '1 violation' : `${count} violations`;
-        const violationQuestionString = count === 1 ? 'What was it?' : 'What were they?';
-        const labelCountString = count === 1 ? 'violation was' : 'violations were';
-        const labelString = `What ${issue.summary} ${labelCountString} reported for ${pageWhat}?`;
+        const whereQuestionString = 'Where was the issue found?';
+        const labelString = `Where was the ${issue.summary} issue found on the ${pageWhat} page?`;
         const href = `href="/reportIssue.html/${issueID}/${timeStamp}-${jobID}"`;
         const label = `aria-label="${labelString}"`;
-        const violationLink = `<a ${href} ${label}>${violationQuestionString}</a>`;
-        lines.push(`${margin}      <li>${violationCountString} reported: ${violationLink}</li>`);
+        const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
+        lines.push(`${margin}      <li>${whereLink}</li>`);
         lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         lines.push(`${margin}    </ul>`);
         lines.push(`${margin}  </li>`);

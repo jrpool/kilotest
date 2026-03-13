@@ -7,6 +7,7 @@
 
 const {
   annotateReport,
+  getReport,
   getReporterString,
   getReportPath,
   getTargetLogs,
@@ -31,8 +32,7 @@ const getIssuesSummary = async logs => {
       await annotateReport(timeStamp, jobID);
     }
     // Get the corresponding report.
-    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-    const report = JSON.parse(reportJSON);
+    const report = await getReport(timeStamp, jobID);
     // For each act in it:
     report.acts.forEach(act => {
       // If it is a test act:

@@ -9,8 +9,8 @@ const {
   annotateReport,
   getDateTimeString,
   getLogPath,
+  getReport,
   getReporterString,
-  getReportPath,
   getTargetLogs
 } = require('../util');
 const fs = require('fs/promises');
@@ -33,8 +33,7 @@ const getTargetSummary = async (timeStamp, jobID) => {
     reporterSet: new Set()
   };
   const {issueSet, reporterSet} = summary;
-  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-  const report = JSON.parse(reportJSON);
+  const report = await getReport(timeStamp, jobID);
   // For each act of the report:
   report.acts.forEach(act => {
     // If it is a test act:

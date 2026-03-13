@@ -6,11 +6,10 @@
 // IMPORTS
 
 const {
-  annotateReport,
   getDateTimeString,
   getLog,
+  getReport,
   getReporterString,
-  getReportPath,
   getWeightName,
   objectSort
 } = require('../util');
@@ -22,7 +21,7 @@ const fs = require('fs/promises');
 // Gets summary data on the issues reported in a report.
 const getIssuesSummary = async (timeStamp, jobID) => {
   // Initialize data for the summary.
-  const log = getLog(timeStamp, jobID, true);
+  const log = await getLog(timeStamp, jobID, true);
   const {pageURL, pageWhat} = log;
   const issuesData = {
     timeStamp,
@@ -32,8 +31,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     issues: {}
   };
   // Get the report.
-  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-  const report = JSON.parse(reportJSON);
+  const report = await getReport(timeStamp, jobID);
   // For each act in it:
   report.acts.forEach(act => {
     // If it is a test act:

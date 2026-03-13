@@ -9,8 +9,8 @@ const {
   annotateReport,
   getDateTimeString,
   getLog,
+  getReport,
   getReporterString,
-  getReportPath,
   getWeightName,
   objectSort
 } = require('../util');
@@ -22,7 +22,7 @@ const fs = require('fs/promises');
 // Gets summary data on the issues reported in a report.
 const getIssuesSummary = async (timeStamp, jobID) => {
   // Initialize data for the summary.
-  const log = getLog(timeStamp, jobID, true);
+  const log = await getLog(timeStamp, jobID, true);
   const {pageURL, pageWhat} = log;
   query.target = pageWhat;
   query.url = pageURL;
@@ -40,8 +40,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     await annotateReport(timeStamp, jobID);
   }
   // Get the report.
-  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
-  const report = JSON.parse(reportJSON);
+  const report = await getReport(timeStamp, jobID);
   // For each act in it:
   report.acts.forEach(act => {
     // If it is a test act:
@@ -101,7 +100,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, query) => {
   query.issue = issues[issueID].summary;
-  const log = getLog(timeStamp, jobID, true);
+  const log = await getLog(timeStamp, jobID, true);
   const {pageURL, pageWhat} = log;
   query.target = pageWhat;
   query.url = pageURL;

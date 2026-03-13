@@ -171,7 +171,7 @@ const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
   let report = {};
   try {
     // Get a copy of the report.
-    report = getReport(timeStamp, jobID);
+    report = await getReport(timeStamp, jobID);
   }
   // If it is invalid:
   catch (error) {
@@ -210,7 +210,7 @@ const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
   // Save the annotated report.
   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
   // Get a copy of the log of the report.
-  const log = getLog(timeStamp, jobID, false);
+  const log = await getLog(timeStamp, jobID, false);
   // Mark the report as annotated in the log.
   log.annotated = true;
   // Save the revised log.

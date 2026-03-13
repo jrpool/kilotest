@@ -172,7 +172,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   violators.forEach(violator => {
     const {violatorID, pathID, tagName, text, reporters} = violator;
     // Add a heading to the lines.
-    lines.push(`${margin}<h3><code class="thin">${violatorID}</code></h3>`);
+    lines.push(`${margin}<h3><code class="thin">${makeBreakable(violatorID)}</code></h3>`);
     lines.push(`${margin}<ul>`);
     // Add properties of the violator to the lines.
     if (pathID && ! violatorID.startsWith('/html')) {

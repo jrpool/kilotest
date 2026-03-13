@@ -99,22 +99,71 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, query) => {
+  // Add facts about the issue to the query.
   query.issue = issues[issueID].summary;
   const log = await getLog(timeStamp, jobID, true);
   const {pageURL, pageWhat} = log;
   query.target = pageWhat;
   query.url = pageURL;
   query.dateTime = getDateTimeString(timeStamp);
-  // Get a summary of data on the target.
-  const summary = await getIssuesSummary(timeStamp, jobID);
-  query.target = pageWhat;
-  query.url = pageURL;
-  query.dateTime = getDateTimeString(timeStamp);
+  const issue = issues[issueID];
+  const {summary, wcag, weight, why} = issue;
+  query.why = why;
+  query.priority = getWeightName(weight);
+  query.wcag = wcag;
+  // Initialize those whose values depend on instance inspection.
+  query.count = 0;
+  query.reporters = new Set();
+  let violators = {};
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
+  const {acts, catalog} = report;
+  const testActs = acts.filter(act => act.type === 'test');
+  // For each test act:
+  testActs.forEach(act => {
+    const issueInstances = act.result?.standardResult?.instances?.filter(
+      instance => instance.issueID === issueID
+    );
+    // If the rule of any of its standard instances belongs to the issue:
+    if (issueInstances.length) {
+      query.reporters.add(act.which);
+    }
+    // For each standard instance whose rule bolongs to the issue:
+    issueInstances.forEach(instance => {
+      const {catalogIndex, count, pathID} = instance;
+      // Add its violation count to the query.
+      query.count += count;
+      const tagName = catalog[catalogIndex]?.tagName
+      ?? pathID.split('/').pop().replace(/\[.+$/, '').toUpperCase()
+      ?? `HTML`;
+      const violatorID = catalog[catalogIndex]?.pathID ?? pathID ?? '/html';
+      violators[violatorID] ??= {
+        tagName,
+        text: catalog[catalogIndex]?.text ?? '',
+        reporters: new Set()
+      };
+      // Ensure that the tool is in the sets of reporters of the violator and the issue.
+      violators[violatorID].reporters.add(which);
+      query.reporters.add(which);
+    });
+    // For each violator:
+    Object.values(violators).forEach(violatorData => {
+      // Convert the set of its reporters to a string.
+      violatorData.reporters = getReporterString(violatorData.reporters);
+    });
+  });
+  // Convert the set of issue reporters to a string.
+  query.reporters = getReporterString(query.reporters);
+  // Convert the violators to an array.
+  violators = Object.entries(violators);
+  // Sort the violators in order of decreasing reporter count.
+  violators.sort((a, b) => b[1].reporters.size - a[1].reporters.size);
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
-  // For each weight:
-  [4, 3, 2, 1].forEach(weight => {
+  // For each violator:
+  Object.entries(query.violators).forEach(violator => {
+    const [violatorID, violatorData] = violator;
     // Add a heading to the lines.
     lines.push(`${margin}<h3>${getWeightName(weight)} priority</h3>`);
     lines.push(`${margin}<ul>`);

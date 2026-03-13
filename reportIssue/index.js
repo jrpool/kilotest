@@ -180,7 +180,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     if (tagName) {
       lines.push(`${margin}  <li>Tag name: <code>${tagName}</code></li>`);
     }
-    if (text) {
+    if (text && ! ['HTML', 'HEAD', 'BODY', 'MAIN', 'NOSCRIPT'].includes(tagName)) {
       const textString = text.split('\n').join(' … ');
       lines.push(`${margin}  <li>Text: <q>${textString}</q></li>`);
     }

@@ -41,6 +41,9 @@ code {
   font-family: sans-serif;
   color: #832703;
 }
+code.thin {
+  font-weight: 400;
+}
 details {
   padding: 0.5rem;
   border: solid #000 1px;

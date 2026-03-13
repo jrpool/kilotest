@@ -231,8 +231,7 @@ const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
 const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false) => {
   const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
   const log = JSON.parse(logJSON);
-  const {annotated, jobID, timeStamp} = log;
-  if (forceAnnotation && ! annotated) {
+  if (forceAnnotation && ! log.annotated) {
     annotateReport(timeStamp, jobID);
   }
   return log;

@@ -108,7 +108,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   query.url = pageURL;
   query.dateTime = getDateTimeString(timeStamp);
   const issue = issues[issueID];
-  const {summary, wcag, weight, why} = issue;
+  const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
   query.wcag = wcag;
@@ -149,21 +149,18 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       violators[violatorID].reporters.add(which);
       query.reporters.add(which);
     });
-    // For each violator:
-    Object.values(violators).forEach(violatorData => {
-      // Convert the set of its reporters to a string.
-      violatorData.reporters = getReporterString(violatorData.reporters);
-    });
+  });
+  // For each violator:
+  Object.values(violators).forEach(violatorData => {
+    // Convert the set of its reporters to a string.
+    violatorData.reporters = getReporterString(violatorData.reporters);
   });
   // Convert the set of issue reporters to a string.
   query.reporters = getReporterString(query.reporters);
   // Convert the violators to an array.
   violators = Object.entries(violators).map(entry => ({
     violatorID: entry[0],
-    pathID: entry[1].pathID,
-    tagName: entry[1].tagName,
-    text: entry[1].text,
-    reporters: getReporterString(entry[1].reporters)
+    ... entry[1]
   }));
   // Sort the violators in XPath order.
   violators.sort((a, b) => a.pathID.localeCompare(b.pathID));

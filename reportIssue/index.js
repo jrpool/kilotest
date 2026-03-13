@@ -171,14 +171,14 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   violators.forEach(violator => {
     const {violatorID, pathID, tagName, text, reporters} = violator;
     // Add a heading to the lines.
-    lines.push(`${margin}<h3>${violatorID}</h3>`);
+    lines.push(`${margin}<h3><code>${violatorID}</code></h3>`);
     lines.push(`${margin}<ul>`);
     // Add properties of the violator to the lines.
     if (pathID && ! violatorID.startsWith('/html')) {
-      lines.push(`${margin}  <li>XPath: ${pathID}</li>`);
+      lines.push(`${margin}  <li>XPath: <code>${pathID}</code></li>`);
     }
     if (tagName) {
-      lines.push(`${margin}  <li>Tag name: ${tagName}</li>`);
+      lines.push(`${margin}  <li>Tag name: <code>${tagName}</code></li>`);
     }
     if (text) {
       const textString = text.split('\n').join(' … ');

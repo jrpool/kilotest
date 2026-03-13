@@ -78,13 +78,14 @@ const getIssuesSummary = async (timeStamp, jobID) => {
       issueID,
       weight: issues[issueID].weight,
       count,
+      reporterCount: reporters.size,
       reporters: getReporterString(reporters)
     });
   });
   // Sort the issues in descending count order.
   objectSort(summary.issues, 'count', 'numericDown');
-  // Sort them again in descending priority order, making this the primary order.
-  objectSort(summary.issues, 'weight', 'numericDown');
+  // Sort them again in descending reporter-count order, making this the primary order.
+  objectSort(summary.issues, 'reporterCount', 'numericDown');
   // Return the summary.
   return summary;
 };

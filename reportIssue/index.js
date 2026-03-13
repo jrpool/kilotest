@@ -176,34 +176,22 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     lines.push(`${margin}<h3>${violatorID}</h3>`);
     lines.push(`${margin}<ul>`);
     // Add properties of the violator to the lines.
-    lines.push(`${margin}  <li>XPath: ${pathID}</li>`);
-    lines.push(`${margin}  <li>Tag name: ${tagName}</li>`);
-    lines.push(`${margin}  <li>Text: ${text}</li>`);
-    lines.push(`${margin}  <li>Reporters: ${reporters}</li>`);
-        // Add a description of it to the lines.
-        lines.push(`${margin}  <li>${issue.summary}`);
-        lines.push(`${margin}    <ul>`);
-        lines.push(`${margin}      <li>Why it matters: ${why}`);
-        lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
-        const violationCountString = count === 1 ? '1 violation' : `${count} violations`;
-        const violationQuestionString = count === 1 ? 'What was it?' : 'What were they?';
-        const labelCountString = count === 1 ? 'violation was' : 'violations were';
-        const labelString = `What ${issue.summary} ${labelCountString} reported for ${pageWhat}?`;
-        const href = `href="/reportIssue/${issueID}/${timeStamp}-${jobID}"`;
-        const label = `aria-label="${labelString}"`;
-        const violationLink = `<a ${href} ${label}>${violationQuestionString}</a>`;
-        lines.push(`${margin}      <li>${violationCountString} reported: ${violationLink}</li>`);
-        lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
-        lines.push(`${margin}    </ul>`);
-        lines.push(`${margin}  </li>`);
-      }
-    });
+    if (pathID && ! violatorID.startsWith('/html')) {
+      lines.push(`${margin}  <li>XPath: ${pathID}</li>`);
+    }
+    if (tagName) {
+      lines.push(`${margin}  <li>Tag name: ${tagName}</li>`);
+    }
+    if (text) {
+      lines.push(`${margin}  <li>Text: ${text}</li>`);
+    }
+    lines.push(`${margin}  <li>Reported by ${reporters}</li>`);
     lines.push(`${margin}</ul>`);
   });
   // Add the lines to the query.
-  query.issues = lines.join('\n');
+  query.violators = lines.join('\n');
 };
-// Returns a page answering the target-issues question.
+// Returns a page answering the report-issue-violations question.
 exports.answer = async (issueID, reportSpec) => {
   const [timeStamp, jobID] = reportSpec.split('-');
   const query = {};

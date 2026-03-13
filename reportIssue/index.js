@@ -136,7 +136,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       // Add its violation count to the query.
       query.count += count;
       const tagName = catalog[catalogIndex]?.tagName
-      ?? pathID.split('/').pop().replace(/\[.+$/, '').toUpperCase()
+      ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()
       ?? `HTML`;
       const violatorID = catalog[catalogIndex]?.pathID ?? pathID ?? '/html';
       violators[violatorID] ??= {

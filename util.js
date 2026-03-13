@@ -86,6 +86,17 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   // Otherwise, do not sort.
   return 0;
 });
+// Returns the path ID of the element of a standard instance.
+exports.getPathID = (catalog, catalogIndex, pathID) => {
+  if (catalogIndex) {
+    const catalogItem = catalog[catalogIndex];
+    if (catalogItem.pathID) {
+      return catalogItem.pathID;
+    }
+    return pathID ?? '';
+  }
+  return pathID ?? '';
+};
 // Returns a string of tool names.
 exports.getReporterString = toolIDSet =>
   alphaSort(Array.from(toolIDSet).map(toolID => toolNames[toolID])).join(' + ');

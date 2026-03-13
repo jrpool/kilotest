@@ -9,6 +9,7 @@ const {
   annotateReport,
   getDateTimeString,
   getLog,
+  getPathID,
   getReport,
   getReporterString,
   getWeightName,
@@ -138,6 +139,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       ?? `HTML`;
       const violatorID = catalog[catalogIndex]?.pathID ?? pathID ?? '/html';
       violators[violatorID] ??= {
+        pathID: getPathID(catalog, catalogIndex, pathID),
         tagName,
         text: catalog[catalogIndex]?.text ?? '',
         reporters: new Set()
@@ -155,25 +157,29 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Convert the set of issue reporters to a string.
   query.reporters = getReporterString(query.reporters);
   // Convert the violators to an array.
-  violators = Object.entries(violators);
-  // Sort the violators in order of decreasing reporter count.
-  violators.sort((a, b) => b[1].reporters.size - a[1].reporters.size);
+  violators = Object.entries(violators).map(entry => ({
+    violatorID: entry[0],
+    pathID: entry[1].pathID,
+    tagName: entry[1].tagName,
+    text: entry[1].text,
+    reporters: getReporterString(entry[1].reporters)
+  }));
+  // Sort the violators in XPath order.
+  violators.sort((a, b) => a.pathID.localeCompare(b.pathID));
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
   // For each violator:
-  Object.entries(query.violators).forEach(violator => {
-    const [violatorID, violatorData] = violator;
+  violators.forEach(violator => {
+    const {violatorID, pathID, tagName, text, reporters} = violator;
     // Add a heading to the lines.
-    lines.push(`${margin}<h3>${getWeightName(weight)} priority</h3>`);
+    lines.push(`${margin}<h3>${violatorID}</h3>`);
     lines.push(`${margin}<ul>`);
-    // For each summarized issue:
-    summary.issues.forEach(issueSummary => {
-      const {issueID, count, reporters} = issueSummary;
-      // If it has the weight:
-      if (issueSummary.weight === weight) {
-        const issue = issues[issueID];
-        const {wcag, why} = issue;
+    // Add properties of the violator to the lines.
+    lines.push(`${margin}  <li>XPath: ${pathID}</li>`);
+    lines.push(`${margin}  <li>Tag name: ${tagName}</li>`);
+    lines.push(`${margin}  <li>Text: ${text}</li>`);
+    lines.push(`${margin}  <li>Reporters: ${reporters}</li>`);
         // Add a description of it to the lines.
         lines.push(`${margin}  <li>${issue.summary}`);
         lines.push(`${margin}    <ul>`);

@@ -182,7 +182,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     }
     if (text) {
       const textString = text.split('\n').join(' … ');
-      lines.push(`${margin}  <li>Text: ${textString}</li>`);
+      lines.push(`${margin}  <li>Text: <q>${textString}</q></li>`);
     }
     lines.push(`${margin}  <li>Reported by ${reporters}</li>`);
     lines.push(`${margin}</ul>`);

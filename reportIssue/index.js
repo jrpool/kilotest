@@ -122,12 +122,13 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   const testActs = acts.filter(act => act.type === 'test');
   // For each test act:
   testActs.forEach(act => {
-    const issueInstances = act.result?.standardResult?.instances?.filter(
+    const {result, which} = act;
+    const issueInstances = result?.standardResult?.instances?.filter(
       instance => instance.issueID === issueID
     );
     // If the rule of any of its standard instances belongs to the issue:
     if (issueInstances.length) {
-      query.reporters.add(act.which);
+      query.reporters.add(which);
     }
     // For each standard instance whose rule bolongs to the issue:
     issueInstances.forEach(instance => {

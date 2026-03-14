@@ -108,13 +108,13 @@ const populateQuery = async (timeStamp, jobID, query) => {
         lines.push(`${margin}    <ul>`);
         lines.push(`${margin}      <li>Why it matters: ${why}`);
         lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
+        lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         const whereQuestionString = 'Where was the issue found?';
         const labelString = `Where was the ${issue.summary} issue found on the ${pageWhat} page?`;
         const href = `href="/reportIssue.html/${issueID}/${timeStamp}-${jobID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
         lines.push(`${margin}      <li>${whereLink}</li>`);
-        lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         lines.push(`${margin}    </ul>`);
         lines.push(`${margin}  </li>`);
       }

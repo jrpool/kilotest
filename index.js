@@ -44,8 +44,6 @@ const requestHandler = async (request, response) => {
     // Get its URL.
     const requestURL = new URL(request.url, 'https://localhost:3000');
     const {pathname, search} = requestURL;
-    console.log(`XXX Initially, pathname is ${pathname}`);
-    console.log(`XXX search is ${search}`);
     const pageName = pathname.split('/')[1];
     const pageArgs = pathname.split('/').slice(2).join('/');
     // If it is the home page:

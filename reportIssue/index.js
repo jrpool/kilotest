@@ -91,22 +91,27 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // For each violator:
   violators.forEach(violator => {
     const {violatorID, pathID, tagName, text, reporters} = violator;
+    lines.push(`${margin}<ol>`);
     // Add a heading to the lines.
-    lines.push(`${margin}<h3><code class="thin">${makeBreakable(violatorID)}</code></h3>`);
-    lines.push(`${margin}<ul>`);
+    lines.push(`${margin}  <li><h3><code class="thin">${makeBreakable(violatorID)}</code></h3>`);
+    lines.push(`${margin}    <ul>`);
     // Add properties of the violator to the lines.
     if (pathID && ! violatorID.startsWith('/html')) {
-      lines.push(`${margin}  <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
+      lines.push(`${margin}      <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
     }
     if (tagName) {
-      lines.push(`${margin}  <li>Tag name: <code>${tagName}</code></li>`);
+      lines.push(`${margin}      <li>Tag name: <code>${tagName}</code></li>`);
     }
     if (text && ! ['HTML', 'HEAD', 'BODY', 'MAIN', 'NOSCRIPT'].includes(tagName)) {
       const textString = text.split('\n').join(' … ');
-      lines.push(`${margin}  <li>Text: <q>${textString}</q></li>`);
+      lines.push(`${margin}      <li>Text: <q>${textString}</q></li>`);
     }
-    lines.push(`${margin}  <li>Reported by ${reporters}</li>`);
-    lines.push(`${margin}</ul>`);
+    lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+    const questionString = 'What violation details were reported';
+    lines.push(`${margin}      <li><a href="" aria-label="${questionString} for ">${questionString}?</a></li>`);
+    lines.push(`${margin}    </ul>`);
+    lines.push(`${margin}  </li>`);
+    lines.push(`${margin}</ol>`);
   });
   // Add the lines to the query.
   query.violators = lines.join('\n');

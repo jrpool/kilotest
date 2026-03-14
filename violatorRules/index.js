@@ -91,8 +91,8 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.violations = lines.join('\n');
 };
 // Returns a page answering the violator-violations question.
-exports.answer = async (pathName, search) => {
-  const [issueID, reportSpec, catalogIndex] = pathName.slice(1).split('/');
+exports.answer = async (pageArgs, search) => {
+  const [issueID, reportSpec, catalogIndex] = pageArgs.split('/');
   const [timeStamp, jobID] = reportSpec.split('-');
   const params = new URLSearchParams(search);
   const pathID = params.get('pathID');

@@ -124,8 +124,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   query.violators = lines.join('\n');
 };
 // Returns a page answering the report-issue-violations question.
-exports.answer = async (pathname) => {
-  const [issueID, reportSpec] = pathname.slice(1).split('/');
+exports.answer = async (pageArgs) => {
+  const [issueID, reportSpec] = pageArgs.split('/');
   const [timeStamp, jobID] = reportSpec.split('-');
   const query = {};
   // Create a query to replace the placeholders.

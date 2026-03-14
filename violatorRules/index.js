@@ -44,7 +44,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   else {
     query.text = '[not applicable]';
   }
-  query.startTag = startTag ?? '[not obtained]';
+  query.startTag = htmlSafe(startTag) ?? '[not obtained]';
   if (pathID) {
     query.pathID = pathID;
   }

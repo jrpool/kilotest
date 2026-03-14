@@ -37,14 +37,15 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   const report = await getReport(timeStamp, jobID);
   const {acts, catalog} = report;
   const catalogItem = catalog[catalogIndex] ?? {};
-  const {boxID, pathID, startTag, tagName, text} = catalogItem;
+  const {boxID, startTag, tagName, text} = catalogItem;
   query.tagName = tagName ?? 'HTML';
   if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
     query.text = text;
   }
   query.startTag = startTag;
-  if (pathID) {
-    query.pathID = pathID;
+  eitherPathID = pathID || catalogItem.pathID;
+  if (eitherPathID) {
+    query.pathID = eitherPathID;
   }
   if (boxID) {
     query.box = boxID;

@@ -42,7 +42,7 @@ const requestHandler = async (request, response) => {
   // If the request is a GET request:
   if (method === 'GET') {
     // Get its URL.
-    const requestURL = URL(request.url);
+    const requestURL = new URL(request.url);
     const {pathname, search} = requestURL;
     // If it is the home page:
     if (['/', '/index.html'].includes(pathname)) {

@@ -21,7 +21,7 @@ const answer = {
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
   targets: require('./targets/index').answer,
-  violations: require('./violations/index').answer
+  violatorRules: require('./violatorRules/index').answer
 };
 
 // FUNCTIONS

@@ -43,9 +43,8 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     query.text = text;
   }
   query.startTag = startTag;
-  eitherPathID = pathID || catalogItem.pathID;
-  if (eitherPathID) {
-    query.pathID = eitherPathID;
+  if (pathID) {
+    query.pathID = pathID;
   }
   if (boxID) {
     query.box = boxID;
@@ -92,8 +91,11 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.violations = lines.join('\n');
 };
 // Returns a page answering the violator-violations question.
-exports.answer = async (issueID, reportSpec, catalogIndex, pathID) => {
+exports.answer = async (pathName, search) => {
+  const [issueID, reportSpec, catalogIndex] = pathName.slice(1).split('/');
   const [timeStamp, jobID] = reportSpec.split('-');
+  const params = new URLSearchParams(search);
+  const pathID = params.get('pathID');
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, catalogIndex, pathID, query);

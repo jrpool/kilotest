@@ -43,17 +43,9 @@ const requestHandler = async (request, response) => {
   if (method === 'GET') {
     // Get its URL.
     const requestURL = request.url;
-    const requestParts = requestURL.split('/');
-    const requestPage = requestParts[1];
-    const pathParts = requestParts.slice(2);
-    // If the URL has a path that ends with a slash:
-    if (requestURL.length > 1 && requestURL.endsWith('/')) {
-      // Redirect the client permanently.
-      response.writeHead(301, {'Location': requestURL.slice(0, -1)});
-      response.end();
-    }
-    // Otherwise, if it is for the home page:
-    if (['/', '/index.html'].includes(requestURL)) {
+    const {pathname, search} = requestURL;
+    // If it is the home page:
+    if (['/', '/index.html'].includes(pathname)) {
       // Get the home page.
       const homePage = await fs.readFile('index.html', 'utf8');
       // Serve it.
@@ -61,16 +53,16 @@ const requestHandler = async (request, response) => {
       response.setHeader('Content-Location', '/index.html');
       response.end(homePage);
     }
-    // Otherwise, if it is for an HTML page other than the home page:
-    else if (requestPage.endsWith('.html')) {
-      const topic = requestPage.slice(0, -5);
+    // Otherwise, if it is an HTML page other than the home page:
+    else if (pathname.endsWith('.html')) {
+      const topic = pathname.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
         // Serve headers for it.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.setHeader('Content-Location', requestURL);
+        response.setHeader('Content-Location', `${pathname}${search}`);
         // Get the answer data.
-        const answerData = await answer[topic](... pathParts);
+        const answerData = await answer[topic](pathname, search);
         // If it is valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.

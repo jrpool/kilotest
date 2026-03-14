@@ -123,7 +123,7 @@ const populateQuery = async query => {
   // Add the lines to the query.
   query.issues = lines.join('\n');
 };
-// Returns a page answering the targets question.
+// Returns a page answering the issues question.
 exports.answer = async () => {
   const query = {};
   // Create a query to replace placeholders.

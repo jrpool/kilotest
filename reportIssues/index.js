@@ -60,8 +60,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     issues: []
   };
   // For each issue:
-  Object.entries(issuesData.issues).forEach(([issueID, data]) => {
-    const {reporters} = data;
+  Object.entries(issuesData.issues).forEach(([issueID, reporters]) => {
     // Ensure that the report reporters include the issue reporters.
     reporters.forEach(reporter => {
       summary.reporters.add(reporter);

@@ -88,10 +88,10 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
+  lines.push(`${margin}<ol>`);
   // For each violator:
   violators.forEach(violator => {
     const {violatorID, pathID, tagName, text, reporters} = violator;
-    lines.push(`${margin}<ol>`);
     // Add a heading to the lines.
     lines.push(`${margin}  <li><h3><code class="thin">${makeBreakable(violatorID)}</code></h3>`);
     lines.push(`${margin}    <ul>`);
@@ -111,8 +111,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     lines.push(`${margin}      <li><a href="" aria-label="${questionString} for ">${questionString}?</a></li>`);
     lines.push(`${margin}    </ul>`);
     lines.push(`${margin}  </li>`);
-    lines.push(`${margin}</ol>`);
   });
+  lines.push(`${margin}</ol>`);
   // Add the lines to the query.
   query.violators = lines.join('\n');
 };

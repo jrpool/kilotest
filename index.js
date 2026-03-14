@@ -43,7 +43,7 @@ const requestHandler = async (request, response) => {
   if (method === 'GET') {
     // Get its URL.
     const requestURL = new URL(request.url);
-    const {pathname, search} = requestURL;
+    const {href, pathname, search} = requestURL;
     // If it is the home page:
     if (['/', '/index.html'].includes(pathname)) {
       // Get the home page.
@@ -83,7 +83,7 @@ const requestHandler = async (request, response) => {
       }
     }
     // Otherwise, if it is for the application icon:
-    else if (requestURL.includes('favicon.')) {
+    else if (pathname.includes('favicon.')) {
       // Get the site icon.
       const icon = await fs.readFile(`${__dirname}/favicon.ico`);
       // Serve it.
@@ -92,7 +92,7 @@ const requestHandler = async (request, response) => {
       response.end('');
     }
     // Otherwise, if it is for the stylesheet:
-    else if (requestURL === '/style.css') {
+    else if (pathname === '/style.css') {
       try {
         // Serve it.
         const styleSheet = await fs.readFile('style.css', 'utf8');
@@ -109,7 +109,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, i.e. if it is any other GET request:
     else {
       const error = {
-        message: `ERROR: Invalid GET request (${requestURL})`
+        message: `ERROR: Invalid GET request (${href})`
       };
       // Report the error.
       console.log(error.message);

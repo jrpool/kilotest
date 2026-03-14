@@ -18,6 +18,13 @@ const reportsPath = `${__dirname}/reports`;
 
 // FUNCTIONS
 
+// Makes a string HTML-safe.
+exports.htmlSafe = string => string
+.replace(/&/g, '&amp;')
+.replace(/</g, '&lt;')
+.replace(/>/g, '&gt;')
+.replace(/"/g, '&quot;')
+.replace(/'/g, '&apos;');
 // Returns the path of a log file.
 const getLogPath = exports.getLogPath
 = (timeStamp, jobID) => `${logsPath}/${timeStamp}-${jobID}.json`;

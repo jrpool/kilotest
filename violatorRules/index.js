@@ -10,6 +10,7 @@ const {
   getLog,
   getReport,
   getWeightName,
+  htmlSafe,
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
@@ -38,14 +39,23 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   const {boxID, startTag, tagName, text} = catalogItem;
   query.tagName = tagName ?? 'HTML';
   if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
-    query.text = text;
+    query.text = htmlSafe(text);
   }
-  query.startTag = startTag;
+  else {
+    query.text = '[not applicable]';
+  }
+  query.startTag = startTag ?? '[not obtained]';
   if (pathID) {
     query.pathID = pathID;
   }
+  else {
+    query.pathID = '[not obtained]';
+  }
   if (boxID) {
     query.box = boxID;
+  }
+  else {
+    query.box = '[not obtained]';
   }
   // Initialize an array of violations.
   let violations = [];

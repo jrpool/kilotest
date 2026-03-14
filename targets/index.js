@@ -78,16 +78,16 @@ const populateQuery = async query => {
     lines.push(
       `${margin}    <li>Last tested on ${dateTimeString} (job <code>${jobID}</code>)</li>`
     );
-    const issueCountString = issueSet.size === 1 ? '1 issue' : `${issueSet.size} issues`;
-    const questionString = issueSet.size === 1 ? 'was it' : 'were they';
+    const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
+    lines.push(`${margin}    <li>${issueCountString} reported</li>`);
     const labelString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
     const href = `href="reportIssues.html/${timeStamp}-${jobID}"`;
     const label = `aria-label="What ${labelString} reported for ${pageWhat}?"`;
-    const link = `<a ${href} ${label}>What ${questionString}?</a>`;
-    lines.push(`${margin}    <li>${issueCountString} reported: ${link}</li>`);
+    const link = `<a ${href} ${label}>What ${labelString}?</a>`;
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);
-    lines.push(`${margin}    <li>Reported by ${toolCountString}: ${reporterString}</li>`);
+    lines.push(`${margin}    <li>${toolCountString} reported: ${reporterString}</li>`);
+    lines.push(`${margin}    <li>${link}</li>`);
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`)
   }

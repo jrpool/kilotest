@@ -6,7 +6,6 @@
 // IMPORTS
 
 const {
-  annotateReport,
   getDateTimeString,
   getLog,
   getPathID,
@@ -14,91 +13,12 @@ const {
   getReporterString,
   getWeightName,
   makeBreakable,
-  objectSort
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Gets summary data on the issues reported in a report.
-const getIssuesSummary = async (timeStamp, jobID) => {
-  // Initialize data for the summary.
-  const log = await getLog(timeStamp, jobID, true);
-  const {pageURL, pageWhat} = log;
-  query.target = pageWhat;
-  query.url = pageURL;
-  query.dateTime = getDateTimeString(timeStamp);
-  const issuesData = {
-    timeStamp,
-    jobID,
-    pageWhat,
-    pageURL,
-    issues: {}
-  };
-  // If the report is not yet annotated:
-  if (! annotated) {
-    // Annotate it and mark it as annotated in the log.
-    await annotateReport(timeStamp, jobID);
-  }
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // For each act in it:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // For each of its standard instances:
-      instances.forEach(instance => {
-        const {count, issueID} = instance;
-        // If the instance has a non-ignorable issue ID:
-        if (issueID && issueID !== 'ignorable') {
-          issuesData.issues[issueID] ??= {
-            count: 0,
-            reporters: new Set()
-          };
-          // Add the instance data on violations to the data on its issue.
-          issuesData.issues[issueID].count += count ?? 1;
-          issuesData.issues[issueID].reporters.add(which);
-        }
-      });
-    }
-  });
-  // Initialize the summary.
-  const summary = {
-    timeStamp: issuesData.timeStamp,
-    jobID: issuesData.jobID,
-    pageWhat: issuesData.pageWhat,
-    pageURL: issuesData.pageURL,
-    count: 0,
-    reporters: new Set(),
-    issues: []
-  };
-  // For each issue:
-  Object.entries(issuesData.issues).forEach(([issueID, data]) => {
-    const {count, reporters} = data;
-    // Increment the report violation count by the issue violation count.
-    summary.count += count;
-    // Ensure that the report reporters include the issue reporters.
-    reporters.forEach(reporter => {
-      summary.reporters.add(reporter);
-    });
-    // Add the issue data to the summary.
-    summary.issues.push({
-      issueID,
-      weight: issues[issueID].weight,
-      count,
-      reporters: getReporterString(reporters)
-    });
-  });
-  // Sort the issues in descending count order.
-  objectSort(summary.issues, 'count', 'numericDown');
-  // Sort them again in descending priority order, making this the primary order.
-  objectSort(summary.issues, 'weight', 'numericDown');
-  // Return the summary.
-  return summary;
-};
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Add facts about the issue to the query.
@@ -133,9 +53,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     }
     // For each standard instance whose rule bolongs to the issue:
     issueInstances.forEach(instance => {
-      const {catalogIndex, count, pathID} = instance;
-      // Add its violation count to the query.
-      query.count += count;
+      const {catalogIndex, pathID} = instance;
       const tagName = catalog[catalogIndex]?.tagName
       ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()
       ?? `HTML`;
@@ -150,6 +68,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       violators[violatorID].reporters.add(which);
       query.reporters.add(which);
     });
+    // Populate the violator count.
+    query.count = Object.keys(violators).length;
   });
   // For each violator:
   Object.values(violators).forEach(violatorData => {
@@ -158,7 +78,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   });
   // Convert the set of issue reporters to a string.
   query.reporters = getReporterString(query.reporters);
-  // Convert the violators to an array.
+  // Convert the violator data to an array.
   violators = Object.entries(violators).map(entry => ({
     violatorID: entry[0],
     ... entry[1]

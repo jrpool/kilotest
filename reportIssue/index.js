@@ -51,7 +51,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     if (issueInstances.length) {
       query.reporters.add(which);
     }
-    // For each standard instance whose rule bolongs to the issue:
+    // For each standard instance whose rule belongs to the issue:
     issueInstances.forEach(instance => {
       const {catalogIndex, pathID} = instance;
       const tagName = catalog[catalogIndex]?.tagName
@@ -108,8 +108,9 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       lines.push(`${margin}      <li>Text: <q>${textString}</q></li>`);
     }
     lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+    catalogIndex ??= '0';
     const href
-    = `/violations.html/${timeStamp}-${jobID}/${issueID}/${catalogIndex ?? ''}?pathID=${pathID}`;
+    = `/violatorRules.html/${issueID}/${timeStamp}-${jobID}/${catalogIndex}?pathID=${pathID}`;
     const questionString = 'What violation details were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(

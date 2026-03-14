@@ -1,0 +1,118 @@
+/*
+  index.js
+  Answers the report-issues question.
+*/
+
+// IMPORTS
+
+const {
+  getDateTimeString,
+  getLog,
+  getPathID,
+  getReport,
+  getReporterString,
+  getWeightName,
+  makeBreakable,
+} = require('../util');
+const {issues} = require('testilo/procs/score/tic');
+const fs = require('fs/promises');
+
+// FUNCTIONS
+
+// Adds parameters to a query for the answer page.
+const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, query) => {
+  // Add facts about the issue to the query.
+  query.catalogIndex = catalogIndex;
+  const log = await getLog(timeStamp, jobID, true);
+  const {pageURL, pageWhat} = log;
+  query.target = pageWhat;
+  query.issue = issues[issueID].summary;
+  query.url = pageURL;
+  query.dateTime = getDateTimeString(timeStamp);
+  const issue = issues[issueID];
+  const {wcag, weight, why} = issue;
+  query.why = why;
+  query.priority = getWeightName(weight);
+  query.wcag = wcag;
+  const report = await getReport(timeStamp, jobID);
+  const {acts, catalog} = report;
+  const catalogItem = catalog[catalogIndex] ?? {};
+  const {boxID, pathID, startTag, tagName, text} = catalogItem;
+  query.tagName = tagName ?? 'HTML';
+  if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
+    query.text = text;
+  }
+  query.startTag = startTag;
+  if (pathID) {
+    query.pathID = pathID;
+  }
+  if (boxID) {
+    query.box = boxID;
+  }
+  // Initialize an array of violations.
+  let violations = [];
+  const testActs = acts.filter(act => act.type === 'test');
+  // For each test act:
+  testActs.forEach(act => {
+    const {result, which} = act;
+    const caseInstances = result?.standardResult?.instances?.filter(
+      instance => instance.issueID === issueID
+      && (instance.catalogIndex === catalogIndex || instance.pathID === pathID)
+    );
+    // For each standard instance that pertains to this combination of issue and violator:
+    caseInstances.forEach(instance => {
+      const {ruleID, what} = instance;
+      // Add lines for it to the array.
+      violations.push({
+        toolID: which,
+        ruleID,
+        what
+      });
+    });
+  });
+  // Initialize the lines.
+  const lines = [];
+  const margin = ' '.repeat(6);
+  lines.push(`${margin}<ol>`);
+  // For each violation:
+  violations.forEach((violation, index) => {
+    const {toolID, ruleID, what} = violation;
+    // Add lines.
+    lines.push(`${margin}  <li>Report ${index + 1}`);
+    lines.push(`${margin}    <ul>`);
+    lines.push(`${margin}      <li>Tool: ${getToolName(toolID)}</li>`);
+    lines.push(`${margin}      <li>Rule: ${ruleID}</li>`);
+    lines.push(`${margin}      <li>Diagnosis: ${what}</li>`);
+    lines.push(`${margin}    </ul>`);
+    lines.push(`${margin}  </li>`);
+  });
+  lines.push(`${margin}</ol>`);
+  // Add the lines to the query.
+  query.violations = lines.join('\n');
+};
+// Returns a page answering the violator-violations question.
+exports.answer = async (issueID, reportSpec) => {
+  const [timeStamp, jobID] = reportSpec.split('-');
+  const query = {};
+  // Create a query to replace the placeholders.
+  await populateQuery(issueID, timeStamp, jobID, catalogIndex, pathID, query);
+  // If the date and time are valid:
+  if (query.dateTime) {
+    // Get the template.
+    let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+    // Replace its placeholders.
+    Object.keys(query).forEach(param => {
+      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
+    });
+    // Return the populated page.
+    return {
+      status: 'ok',
+      answerPage
+    };
+  }
+  // Otherwise, report this.
+  return {
+    status: 'bad',
+    error: 'Error: Invalid report specification.'
+  };
+};

@@ -44,6 +44,7 @@ const requestHandler = async (request, response) => {
     // Get its URL.
     const requestURL = new URL(request.url, 'https://localhost:3000');
     const {pathname, search} = requestURL;
+    const pageName = pathname.split('/')[1];
     // If it is the home page:
     if (['/', '/index.html'].includes(pathname)) {
       // Get the home page.
@@ -54,7 +55,7 @@ const requestHandler = async (request, response) => {
       response.end(homePage);
     }
     // Otherwise, if it is an HTML page other than the home page:
-    else if (pathname.endsWith('.html')) {
+    else if (pageName.endsWith('.html')) {
       const topic = pathname.slice(1, -5);
       // If the page can be generated:
       if (answer[topic]) {
@@ -109,7 +110,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, i.e. if it is any other GET request:
     else {
       const error = {
-        message: `ERROR: Invalid GET request (${pathname}${search}})`
+        message: `ERROR: Invalid GET request (${pathname}${search})`
       };
       // Report the error.
       console.log(error.message);

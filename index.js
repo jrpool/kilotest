@@ -55,7 +55,7 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is an HTML page other than the home page:
     else if (pathname.endsWith('.html')) {
-      const topic = pathname.slice(0, -5);
+      const topic = pathname.slice(1, -5);
       // If the page can be generated:
       if (answer[topic]) {
         // Serve headers for it.

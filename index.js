@@ -42,8 +42,8 @@ const requestHandler = async (request, response) => {
   // If the request is a GET request:
   if (method === 'GET') {
     // Get its URL.
-    const requestURL = new URL(request.url);
-    const {href, pathname, search} = requestURL;
+    const requestURL = new URL(request.url, 'https://localhost:3000');
+    const {pathname, search} = requestURL;
     // If it is the home page:
     if (['/', '/index.html'].includes(pathname)) {
       // Get the home page.
@@ -109,7 +109,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, i.e. if it is any other GET request:
     else {
       const error = {
-        message: `ERROR: Invalid GET request (${href})`
+        message: `ERROR: Invalid GET request (${pathname}${search}})`
       };
       // Report the error.
       console.log(error.message);

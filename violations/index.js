@@ -59,7 +59,6 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       ?? `HTML`;
       const violatorID = catalog[catalogIndex]?.pathID ?? pathID ?? '/html';
       violators[violatorID] ??= {
-        catalogIndex,
         pathID: getPathID(catalog, catalogIndex, pathID),
         tagName,
         text: catalog[catalogIndex]?.text ?? '',
@@ -92,7 +91,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   lines.push(`${margin}<ol>`);
   // For each violator:
   violators.forEach((violator, index) => {
-    const {catalogIndex, pathID, reporters, tagName, text, violatorID} = violator;
+    const {violatorID, pathID, tagName, text, reporters} = violator;
     // Add a heading to the lines.
     lines.push(`${margin}  <li><h3><code class="thin">${makeBreakable(violatorID)}</code></h3>`);
     lines.push(`${margin}    <ul>`);
@@ -108,8 +107,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       lines.push(`${margin}      <li>Text: <q>${textString}</q></li>`);
     }
     lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
-    const href
-    = `/violations.html/${timeStamp}-${jobID}/${issueID}/${catalogIndex ?? ''}?pathID=${pathID}`;
+    const href = `https://example.com/violation/${index + 1}`;
     const questionString = 'What violation details were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(

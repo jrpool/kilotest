@@ -92,7 +92,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.violations = lines.join('\n');
 };
 // Returns a page answering the violator-violations question.
-exports.answer = async (issueID, reportSpec) => {
+exports.answer = async (issueID, reportSpec, catalogIndex, pathID) => {
   const [timeStamp, jobID] = reportSpec.split('-');
   const query = {};
   // Create a query to replace the placeholders.

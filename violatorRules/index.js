@@ -8,14 +8,12 @@
 const {
   getDateTimeString,
   getLog,
-  getPathID,
   getReport,
-  getReporterString,
   getWeightName,
-  makeBreakable,
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
+const toolNames = require('testaro/procs/job').tools;
 
 // FUNCTIONS
 
@@ -80,7 +78,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     // Add lines.
     lines.push(`${margin}  <li>Report ${index + 1}`);
     lines.push(`${margin}    <ul>`);
-    lines.push(`${margin}      <li>Tool: ${getToolName(toolID)}</li>`);
+    lines.push(`${margin}      <li>Tool: ${toolNames[toolID]}</li>`);
     lines.push(`${margin}      <li>Rule: ${ruleID}</li>`);
     lines.push(`${margin}      <li>Diagnosis: ${what}</li>`);
     lines.push(`${margin}    </ul>`);

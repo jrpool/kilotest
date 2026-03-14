@@ -45,6 +45,7 @@ const requestHandler = async (request, response) => {
     const requestURL = new URL(request.url, 'https://localhost:3000');
     const {pathname, search} = requestURL;
     const pageName = pathname.split('/')[1];
+    const pageArgs = pathname.split('/').slice(2).join('/');
     // If it is the home page:
     if (['/', '/index.html'].includes(pathname)) {
       // Get the home page.
@@ -63,7 +64,7 @@ const requestHandler = async (request, response) => {
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', `${pathname}${search}`);
         // Get the answer data.
-        const answerData = await answer[topic](pathname, search);
+        const answerData = await answer[topic](pageArgs, search);
         // If it is valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.

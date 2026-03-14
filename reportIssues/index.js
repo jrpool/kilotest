@@ -126,7 +126,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
 };
 // Returns a page answering the target-issues question.
 exports.answer = async pathname => {
-  const [timeStamp, jobID] = pathname.slice(1).split('-');
+  const [timeStamp, jobID] = pathname.split('/')[2].split('-');
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);

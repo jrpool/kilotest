@@ -100,9 +100,6 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     lines.push(`${margin}  <li><h3>Element ${catalogIndex}</h3>`);
     lines.push(`${margin}    <ul>`);
     // Add properties of the violator to the lines.
-    if (pathID) {
-      lines.push(`${margin}      <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
-    }
     if (catalogIndex) {
       const catalogItem = catalog[catalogIndex];
       if (catalogItem.textLinkable) {
@@ -112,6 +109,9 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
         lines.push(`${margin}      <li>${link}</li>`);
       }
       lines.push(`${margin}      <li>Catalog index: ${catalogIndex}</li>`);
+    }
+    if (pathID) {
+      lines.push(`${margin}      <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
     }
     if (tagName) {
       lines.push(`${margin}      <li>Tag name: <code>${tagName}</code></li>`);

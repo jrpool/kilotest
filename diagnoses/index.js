@@ -81,12 +81,12 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
-  lines.push(`${margin}<ol>`);
+  lines.push(`${margin}<ul>`);
   // For each diagnosis:
   diagnoses.forEach((diagnosis, index) => {
     const {toolID, ruleID, what} = diagnosis;
     // Add lines.
-    lines.push(`${margin}  <li>Report ${index + 1}`);
+    lines.push(`${margin}  <li>Diagnosis ${index + 1}`);
     lines.push(`${margin}    <ul>`);
     lines.push(`${margin}      <li>Tool: ${toolNames[toolID]}</li>`);
     lines.push(`${margin}      <li>Rule: ${ruleID}</li>`);

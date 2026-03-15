@@ -108,7 +108,6 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
         const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
         lines.push(`${margin}      <li>${link}</li>`);
       }
-      lines.push(`${margin}      <li>Catalog index: ${catalogIndex}</li>`);
     }
     if (pathID) {
       lines.push(`${margin}      <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);

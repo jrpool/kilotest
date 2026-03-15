@@ -29,6 +29,15 @@ exports.htmlSafe = string => string
 const fragmentEncode = string => {
   return encodeURIComponent(string).replace(/-/g, '%2D');
 };
+// Converts a catalog item text to a text-fragment link destination.
+exports.getTextFragmentHref = (text, url) => {
+  const fragmentList = text
+  .split('\n')
+  .map(fragment => fragmentEncode(fragment))
+  .join(',');
+  // Return a text-fragment link.
+  return `${url}#:~:text=${fragmentList}`;
+};
 // Returns the path of a log file.
 const getLogPath = exports.getLogPath
 = (timeStamp, jobID) => `${logsPath}/${timeStamp}-${jobID}.json`;

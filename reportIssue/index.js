@@ -102,6 +102,13 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     if (pathID) {
       lines.push(`${margin}      <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
     }
+    if (catalogIndex) {
+      const catalogItem = catalog[catalogIndex];
+      if (catalogItem.textLinkable) {
+
+      }
+      lines.push(`${margin}      <li>Catalog index: ${catalogIndex}</li>`);
+    }
     if (tagName) {
       lines.push(`${margin}      <li>Tag name: <code>${tagName}</code></li>`);
     }

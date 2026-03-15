@@ -57,7 +57,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       const tagName = catalog[catalogIndex]?.tagName
       ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()
       ?? `HTML`;
-      const violatorID = catalogIndex ?? '0';
+      const violatorID = catalogIndex || '0';
       violators[violatorID] ??= {
         pathID: getPathID(catalog, catalogIndex, pathID),
         tagName,
@@ -91,7 +91,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   lines.push(`${margin}<ol>`);
   // For each violator:
   violators.forEach((violator, index) => {
-    const {catalogIndex, pathID, reporters, tagName, text, violatorID} = violator;
+    const {pathID, reporters, tagName, text, violatorID} = violator;
     // Add a heading to the lines.
     lines.push(`${margin}  <li><h3>Element ${violatorID}</h3>`);
     lines.push(`${margin}    <ul>`);
@@ -107,9 +107,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       lines.push(`${margin}      <li>Text: <q>${textString}</q></li>`);
     }
     lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
-    catalogIndex ??= '0';
     const href
-    = `/diagnoses.html/${issueID}/${timeStamp}-${jobID}/${catalogIndex}?pathID=${pathID}`;
+    = `/diagnoses.html/${issueID}/${timeStamp}-${jobID}/${violatorID}?pathID=${pathID}`;
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(

@@ -25,6 +25,10 @@ exports.htmlSafe = string => string
 .replace(/>/g, '&gt;')
 .replace(/"/g, '&quot;')
 .replace(/'/g, '&apos;');
+// Encodes a string for use as a URL fragment.
+const fragmentEncode = string => {
+  return encodeURIComponent(string).replace(/-/g, '%2D');
+};
 // Returns the path of a log file.
 const getLogPath = exports.getLogPath
 = (timeStamp, jobID) => `${logsPath}/${timeStamp}-${jobID}.json`;

@@ -39,7 +39,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   const {boxID, startTag, tagName, text} = catalogItem;
   query.tagName = tagName ?? 'HTML';
   if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
-    query.text = htmlSafe(text);
+    query.text = `<q>${htmlSafe(text)}</q>`;
   }
   else {
     query.text = '[not applicable]';

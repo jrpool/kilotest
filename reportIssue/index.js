@@ -12,6 +12,7 @@ const {
   getReport,
   getReporterString,
   getWeightName,
+  htmlSafe,
   makeBreakable,
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
@@ -104,7 +105,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     }
     if (text && ! ['HTML', 'HEAD', 'BODY', 'MAIN', 'NOSCRIPT'].includes(tagName)) {
       const textString = text.split('\n').join(' … ');
-      lines.push(`${margin}      <li>Text: <q>${textString}</q></li>`);
+      lines.push(`${margin}      <li>Text: <q>${htmlSafe(textString)}</q></li>`);
     }
     lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
     const href

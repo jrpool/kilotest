@@ -54,19 +54,21 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     }
     // For each standard instance whose rule belongs to the issue:
     issueInstances.forEach(instance => {
-      const {catalogIndex, pathID} = instance;
-      const tagName = catalog[catalogIndex]?.tagName
+      const {pathID} = instance;
+      const catalogIndex = instance.catalogIndex || '0';
+      const catalogItem = catalog[catalogIndex];
+      const {text, textLinkable} = catalogItem;
+      const tagName = catalogItem.tagName
       ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()
-      ?? `HTML`;
-      const violatorID = catalogIndex || '0';
-      violators[violatorID] ??= {
+      ?? 'HTML';
+      violators[catalogIndex] ??= {
         pathID: getPathID(catalog, catalogIndex, pathID),
         tagName,
         text: catalog[catalogIndex]?.text ?? '',
         reporters: new Set()
       };
       // Ensure that the tool is in the sets of reporters of the violator and the issue.
-      violators[violatorID].reporters.add(which);
+      violators[catalogIndex].reporters.add(which);
       query.reporters.add(which);
     });
     // Populate the violator count.
@@ -81,7 +83,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   query.reporters = getReporterString(query.reporters);
   // Convert the violator data to an array.
   violators = Object.entries(violators).map(entry => ({
-    violatorID: entry[0],
+    catalogIndex: entry[0],
     ... entry[1]
   }));
   // Sort the violators in XPath order.
@@ -92,9 +94,9 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   lines.push(`${margin}<ol>`);
   // For each violator:
   violators.forEach((violator, index) => {
-    const {pathID, reporters, tagName, text, violatorID} = violator;
+    const {catalogIndex, pathID, reporters, tagName, text} = violator;
     // Add a heading to the lines.
-    lines.push(`${margin}  <li><h3>Element ${violatorID}</h3>`);
+    lines.push(`${margin}  <li><h3>Element ${catalogIndex}</h3>`);
     lines.push(`${margin}    <ul>`);
     // Add properties of the violator to the lines.
     if (pathID) {
@@ -108,8 +110,9 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       lines.push(`${margin}      <li>Text: <q>${htmlSafe(textString)}</q></li>`);
     }
     lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+
     const href
-    = `/diagnoses.html/${issueID}/${timeStamp}-${jobID}/${violatorID}?pathID=${pathID}`;
+    = `/diagnoses.html/${issueID}/${timeStamp}-${jobID}/${catalogIndex}?pathID=${pathID}`;
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(

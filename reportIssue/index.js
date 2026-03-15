@@ -94,10 +94,10 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   violators.forEach((violator, index) => {
     const {catalogIndex, pathID, reporters, tagName, text, violatorID} = violator;
     // Add a heading to the lines.
-    lines.push(`${margin}  <li><h3><code class="thin">${makeBreakable(violatorID)}</code></h3>`);
+    lines.push(`${margin}  <li><h3>Element ${catalogIndex || violatorID}</h3>`);
     lines.push(`${margin}    <ul>`);
     // Add properties of the violator to the lines.
-    if (pathID && ! violatorID.startsWith('/html')) {
+    if (pathID) {
       lines.push(`${margin}      <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
     }
     if (tagName) {

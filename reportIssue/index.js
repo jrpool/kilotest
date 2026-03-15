@@ -108,7 +108,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       if (catalogItem.textLinkable) {
         const href = getTextFragmentHref(catalogItem.text, pageURL);
         const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
-        const link = `<a href="${href} target="_blank" aria-label="${label}">Take me there</a>`;
+        const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
         lines.push(`${margin}      <li>${link}</li>`);
       }
       lines.push(`${margin}      <li>Catalog index: ${catalogIndex}</li>`);

@@ -57,8 +57,8 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   else {
     query.box = '[not obtained]';
   }
-  // Initialize an array of violations.
-  let violations = [];
+  // Initialize an array of diagnoses.
+  let diagnoses = [];
   const testActs = acts.filter(act => act.type === 'test');
   // For each test act:
   testActs.forEach(act => {
@@ -71,7 +71,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     caseInstances.forEach(instance => {
       const {ruleID, what} = instance;
       // Add lines for it to the array.
-      violations.push({
+      diagnoses.push({
         toolID: which,
         ruleID,
         what
@@ -82,9 +82,9 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   const lines = [];
   const margin = ' '.repeat(6);
   lines.push(`${margin}<ol>`);
-  // For each violation:
-  violations.forEach((violation, index) => {
-    const {toolID, ruleID, what} = violation;
+  // For each diagnosis:
+  diagnoses.forEach((diagnosis, index) => {
+    const {toolID, ruleID, what} = diagnosis;
     // Add lines.
     lines.push(`${margin}  <li>Report ${index + 1}`);
     lines.push(`${margin}    <ul>`);
@@ -96,9 +96,9 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   });
   lines.push(`${margin}</ol>`);
   // Add the lines to the query.
-  query.violations = lines.join('\n');
+  query.diagnoses = lines.join('\n');
 };
-// Returns a page answering the violator-violations question.
+// Returns a page answering the diagnoses question.
 exports.answer = async (pageArgs, search) => {
   const [issueID, reportSpec, catalogIndex] = pageArgs.split('/');
   const [timeStamp, jobID] = reportSpec.split('-');

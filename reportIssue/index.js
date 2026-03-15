@@ -110,8 +110,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
     catalogIndex ??= '0';
     const href
-    = `/violatorRules.html/${issueID}/${timeStamp}-${jobID}/${catalogIndex}?pathID=${pathID}`;
-    const questionString = 'What violation details were reported';
+    = `/diagnoses.html/${issueID}/${timeStamp}-${jobID}/${catalogIndex}?pathID=${pathID}`;
+    const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(
       `${margin}      <li><a href="${href}" aria-label="${labelString}">${questionString}?</a></li>`
@@ -123,7 +123,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Add the lines to the query.
   query.violators = lines.join('\n');
 };
-// Returns a page answering the report-issue-violations question.
+// Returns a page answering the violators question.
 exports.answer = async (pageArgs) => {
   const [issueID, reportSpec] = pageArgs.split('/');
   const [timeStamp, jobID] = reportSpec.split('-');

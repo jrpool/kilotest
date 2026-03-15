@@ -102,9 +102,9 @@ exports.getPathID = (catalog, catalogIndex, pathID) => {
     if (catalogItem.pathID) {
       return catalogItem.pathID;
     }
-    return pathID ?? '';
+    return pathID ?? '/html';
   }
-  return pathID ?? '';
+  return pathID ?? '/html';
 };
 // Returns a string of tool names.
 exports.getReporterString = toolIDSet =>

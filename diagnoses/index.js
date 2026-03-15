@@ -89,7 +89,9 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     lines.push(`${margin}  <li>Diagnosis ${index + 1}`);
     lines.push(`${margin}    <ul>`);
     lines.push(`${margin}      <li>Tool: ${toolNames[toolID]}</li>`);
-    lines.push(`${margin}      <li>Rule: ${ruleID}</li>`);
+    if (ruleID !== what) {
+      lines.push(`${margin}      <li>Rule: ${ruleID}</li>`);
+    }
     lines.push(`${margin}      <li>Diagnosis: ${what}</li>`);
     lines.push(`${margin}    </ul>`);
     lines.push(`${margin}  </li>`);

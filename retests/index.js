@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the targets question.
+  Answers the retests question.
 */
 
 // IMPORTS
@@ -8,8 +8,7 @@
 const {
   getDateTimeString,
   getDateString,
-  getLog,
-  htmlSafe
+  getLog
 } = require('../util');
 const fs = require('fs/promises');
 
@@ -42,7 +41,7 @@ const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
   }
   query.timeStamp = timeStamp;
 };
-// Returns a page answering the issues question.
+// Returns a page answering the retests question.
 exports.answer = async pageArgs => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);

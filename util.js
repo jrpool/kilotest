@@ -51,7 +51,7 @@ const getReport = exports.getReport = async (timeStamp, jobID) => {
   return report;
 };
 // Returns the JSON stringification of an object.
-const getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
+const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.
 const getDateString = exports.getDateString = timeStamp => {
   const dateString = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
@@ -62,6 +62,11 @@ const getDateString = exports.getDateString = timeStamp => {
   }
   // Otherwise, return a failure.
   return '';
+};
+// Returns a time stamp from a date.
+exports.getTimeStamp = date => {
+  const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
+  return timeStamp;
 };
 // Returns a time string from a time stamp.
 const getTimeString = timeStamp => {

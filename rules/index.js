@@ -11,7 +11,7 @@ const {
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
-const {toolNames} = require('testaro/procs/job');
+const toolNames = require('testaro/procs/job').tools;
 
 // FUNCTIONS
 

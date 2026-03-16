@@ -77,7 +77,7 @@ const populateQuery = async query => {
     const dateTimeString = getDateTimeString(timeStamp);
     const testedString = `Last tested by job <code>${jobID}</code> on ${dateTimeString}`;
     const retestContent = 'When will this page be retested?';
-    const retestHref = `retests.html/${pageWhat}/${timeStamp}/${jobID}`;
+    const retestHref = `retests.html/${timeStamp}/${jobID}`;
     const retestLink = `<a href="${retestHref}">${retestContent}</a>`;
     lines.push(`${margin}    <li>${testedString} (${retestLink})</li>`);
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;

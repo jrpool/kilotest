@@ -8,6 +8,7 @@
 const {
   getDateTimeString,
   getDateString,
+  getLog,
   htmlSafe
 } = require('../util');
 const fs = require('fs/promises');
@@ -39,7 +40,9 @@ const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
 };
 // Returns a page answering the issues question.
 exports.answer = async pageArgs => {
-  const [targetWhat, timeStamp, jobID] = pageArgs.split('/');
+  const [timeStamp, jobID] = pageArgs.split('/');
+  const log = await getLog(timeStamp, jobID);
+  const targetWhat = log.pageWhat;
   const query = {};
   // Create a query to replace placeholders.
   await populateQuery(targetWhat, timeStamp, jobID, query);

@@ -9,7 +9,6 @@ const {
   annotateReport,
   getReport,
   getReporterString,
-  getReportPath,
   getTargetLogs,
   getWeightName,
   objectSort
@@ -114,6 +113,12 @@ const populateQuery = async query => {
         lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
         lines.push(`${margin}      <li>Share of violations: ${percentage}%</li>`);
         lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+        const linkText = 'What rules belong to this issue?';
+        const label = `What rules belong to the <q>${summary}</q> issue?`;
+        const href = `/rules/${issueID}`;
+        lines.push(
+          `${margin}      <li><a href="${href}" aria-label="${label}">${linkText}</a></li>`
+        );
         lines.push(`${margin}    </ul>`);
         lines.push(`${margin}  </li>`);
       }

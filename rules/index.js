@@ -35,7 +35,7 @@ const populateQuery = async (issueID, query) => {
     // For each rule of the tool belonging to the issue:
     issues[issueID][tool].forEach(ruleID => {
       const rule = issues[issueID][tool][ruleID];
-      const {ruleID, what} = rule;
+      const {what} = rule;
       // Add facts about the rule.
       if (what === ruleID) {
         lines.push(`${margin}      <li>${ruleID}</li>`);

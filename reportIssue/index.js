@@ -136,7 +136,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   query.violators = lines.join('\n');
 };
 // Returns a page answering the violators question.
-exports.answer = async (pageArgs) => {
+exports.answer = async pageArgs => {
   const [issueID, reportSpec] = pageArgs.split('/');
   const [timeStamp, jobID] = reportSpec.split('-');
   const query = {};

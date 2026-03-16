@@ -28,8 +28,12 @@ const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
   query.dateTime = getDateTimeString(timeStamp);
   query.job = jobID;
   const nextTimeStamp = retestSchedule[targetWhat];
+  const nextDate = new Date(getDateString(nextTimeStamp));
+  const fromNowDays = Math.floor((nextDate - currentDate) / (1000 * 60 * 60 * 24));
+  const fromNowString = fromNowDays === 1 ? '1 day' : `${fromNowDays} days`;
   if (nextTimeStamp) {
-    query.retest = `scheduled for ${getDateTimeString(nextTimeStamp)}`;
+    query.retest
+    = `scheduled for ${fromNowString} from now, on ${getDateTimeString(nextTimeStamp)}`;
     query.requestType = 'an earlier';
   }
   else {

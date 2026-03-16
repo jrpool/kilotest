@@ -17,7 +17,7 @@ const fs = require('fs/promises');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (targetWhat, query) => {
-  const log = getTargetLogs(targetWhat);
+  const log = await getTargetLogs(targetWhat);
   const {timeStamp} = log;
   const retestScheduleJSON = await fs.readFile(`${__dirname}/retests.json`, 'utf8');
   const retestSchedule = JSON.parse(retestScheduleJSON);

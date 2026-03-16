@@ -40,7 +40,7 @@ const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
     query.retest = 'not scheduled';
     query.requestType = 'a';
   }
-  query.safeTarget = htmlSafe(targetWhat);
+  query.timeStamp = timeStamp;
 };
 // Returns a page answering the issues question.
 exports.answer = async pageArgs => {

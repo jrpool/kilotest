@@ -40,10 +40,10 @@ const populateQuery = async (issueID, query) => {
       const {what} = rule;
       // Add facts about the rule.
       if (what === ruleID) {
-        lines.push(`${margin}      <li>${ruleID}</li>`);
+        lines.push(`${margin}      <li><code>${ruleID}</code></li>`);
       }
       else {
-        lines.push(`${margin}      <li>${ruleID}: ${htmlSafe(what)}</li>`);
+        lines.push(`${margin}      <li><code>${ruleID}</code>: ${htmlSafe(what)}</li>`);
       }
     });
     lines.push(`${margin}    </ul>`);

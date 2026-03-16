@@ -29,9 +29,11 @@ const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
   const nextTimeStamp = retestSchedule[targetWhat];
   if (nextTimeStamp) {
     query.retest = `scheduled for ${getDateTimeString(nextTimeStamp)}`;
+    query.requestType = 'an earlier';
   }
   else {
     query.retest = 'not scheduled';
+    query.requestType = 'a';
   }
   query.safeTarget = htmlSafe(targetWhat);
 };

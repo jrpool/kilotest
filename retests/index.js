@@ -37,7 +37,7 @@ const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
 };
 // Returns a page answering the issues question.
 exports.answer = async pageArgs => {
-  const {targetWhat, timeStamp, jobID} = pageArgs.split('/');
+  const [targetWhat, timeStamp, jobID] = pageArgs.split('/');
   const query = {};
   // Create a query to replace placeholders.
   await populateQuery(targetWhat, timeStamp, jobID, query);

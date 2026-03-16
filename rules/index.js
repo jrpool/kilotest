@@ -32,9 +32,10 @@ const populateQuery = async (issueID, query) => {
     // Add a line.
     lines.push(`${margin}  <li><h3>${toolID} rules</h3>`);
     lines.push(`${margin}    <ul>`);
+    const tool = tools[toolID];
     // For each rule of the tool belonging to the issue:
-    Object.keys(issue[toolID]).forEach(ruleID => {
-      const rule = issue[toolID][ruleID];
+    Object.keys(tool).forEach(ruleID => {
+      const rule = tool[ruleID];
       const {what} = rule;
       // Add facts about the rule.
       if (what === ruleID) {

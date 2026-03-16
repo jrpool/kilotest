@@ -19,7 +19,7 @@ const populateQuery = async (issueID, query) => {
   // Add facts about the issue to the query.
   query.issue = issues[issueID].summary;
   const issue = issues[issueID];
-  const {wcag, weight, why} = issue;
+  const {tools, wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
   query.wcag = wcag;
@@ -28,13 +28,13 @@ const populateQuery = async (issueID, query) => {
   const margin = ' '.repeat(6);
   lines.push(`${margin}<ul>`);
   // For each tool with any rules belonging to the issue:
-  Object.keys(issues[issueID]).forEach(tool => {
+  Object.keys(tools).forEach(toolID => {
     // Add a line.
-    lines.push(`${margin}  <li><h3>${tool} rules</h3>`);
+    lines.push(`${margin}  <li><h3>${toolID} rules</h3>`);
     lines.push(`${margin}    <ul>`);
     // For each rule of the tool belonging to the issue:
-    Object.keys(issues[issueID][tool]).forEach(ruleID => {
-      const rule = issues[issueID][tool][ruleID];
+    Object.keys(issue[toolID]).forEach(ruleID => {
+      const rule = issue[toolID][ruleID];
       const {what} = rule;
       // Add facts about the rule.
       if (what === ruleID) {

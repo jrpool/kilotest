@@ -7,6 +7,7 @@
 
 const {
   getDateTimeString,
+  getDateString,
   getTargetLogs,
   htmlSafe
 } = require('../util');
@@ -22,7 +23,7 @@ const populateQuery = async (targetWhat, query) => {
   const retestSchedule = JSON.parse(retestScheduleJSON);
   // Add the required properties to the query.
   query.target = targetWhat;
-  const lastDate = new Date(timeStamp);
+  const lastDate = new Date(getDateString(timeStamp));
   const currentDate = new Date();
   const agoDays = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
   query.ago = agoDays === 1 ? '1 day' : `${agoDays} days`;

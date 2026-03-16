@@ -199,6 +199,15 @@ const getIssue = (toolID, ruleID) => {
   // Otherwise, i.e. if no issue was found, return a failure result.
   return null;
 };
+// Returns the log of a report.
+const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false) => {
+  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
+  const log = JSON.parse(logJSON);
+  if (forceAnnotation && ! log.annotated) {
+    annotateReport(timeStamp, jobID);
+  }
+  return log;
+};
 // Adds issue IDs to the standard instances of a report.
 const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
   let report = {};
@@ -248,15 +257,6 @@ const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
   log.annotated = true;
   // Save the revised log.
   await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
-};
-// Returns the log of a report.
-const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false) => {
-  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
-  const log = JSON.parse(logJSON);
-  if (forceAnnotation && ! log.annotated) {
-    annotateReport(timeStamp, jobID);
-  }
-  return log;
 };
 // Returns an array of the latest logs of tested targets.
 exports.getTargetLogs = async () => {

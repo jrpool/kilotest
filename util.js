@@ -53,7 +53,7 @@ const getReport = exports.getReport = async (timeStamp, jobID) => {
 // Returns the JSON stringification of an object.
 const getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.
-const getDateString = timeStamp => {
+const getDateString = exports.getDateString = timeStamp => {
   const dateString = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
   // If the date part of the time stamp is valid:
   if (Date.parse(dateString)) {

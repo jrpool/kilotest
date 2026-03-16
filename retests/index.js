@@ -6,12 +6,10 @@
 // IMPORTS
 
 const {
-  getDateString,
+  getDateTimeString,
   getTargetLogs,
-  getTimeString,
   htmlSafe
 } = require('../util');
-const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -30,8 +28,7 @@ const populateQuery = async (targetWhat, query) => {
   query.ago = agoDays === 1 ? '1 day' : `${agoDays} days`;
   const nextTimeStamp = retestSchedule[targetWhat];
   if (nextTimeStamp) {
-    const nextDateString = `${getDateString(nextTimeStamp)} at ${getTimeString(nextTimeStamp)}`;
-    query.retest = `scheduled for ${nextDateString}`;
+    query.retest = `scheduled for ${getDateTimeString(nextTimeStamp)}`;
   }
   else {
     query.retest = 'not scheduled';

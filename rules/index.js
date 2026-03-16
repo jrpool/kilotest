@@ -11,6 +11,7 @@ const {
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
+const {toolNames} = require('testaro/procs/job');
 
 // FUNCTIONS
 
@@ -30,7 +31,7 @@ const populateQuery = async (issueID, query) => {
   // For each tool with any rules belonging to the issue:
   Object.keys(tools).forEach(toolID => {
     // Add a line.
-    lines.push(`${margin}  <li><h3>${toolID} rules</h3>`);
+    lines.push(`${margin}  <li><h3>${toolNames[toolID]} rules</h3>`);
     lines.push(`${margin}    <ul>`);
     const tool = tools[toolID];
     // For each rule of the tool belonging to the issue:

@@ -80,9 +80,9 @@ const populateQuery = async query => {
     );
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     lines.push(`${margin}    <li>${issueCountString} reported</li>`);
-    const labelString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
+    const labelString = issueSet.size === 1 ? 'issue was' : 'issues were';
     const href = `href="reportIssues.html/${timeStamp}-${jobID}"`;
-    const label = `aria-label="What ${labelString} reported for ${pageWhat}?"`;
+    const label = `aria-label="What ${labelString} reported for the ${pageWhat} page?"`;
     const link = `<a ${href} ${label}>What ${labelString}?</a>`;
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);

@@ -20,7 +20,7 @@ const fs = require('fs/promises');
 const populateQuery = async (targetWhat, query) => {
   const log = getTargetLogs(targetWhat);
   const {timeStamp} = log;
-  const retestScheduleJSON = await fs.readFile('./retests.json', 'utf8');
+  const retestScheduleJSON = await fs.readFile(`${__dirname}/retests.json`, 'utf8');
   const retestSchedule = JSON.parse(retestScheduleJSON);
   // Add the required properties to the query.
   query.target = targetWhat;

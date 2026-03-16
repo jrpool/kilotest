@@ -115,7 +115,7 @@ const populateQuery = async query => {
         lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         const linkText = 'What rules belong to this issue?';
         const label = `What rules belong to the <q>${summary}</q> issue?`;
-        const href = `/rules/${issueID}`;
+        const href = `/rules.html/${issueID}`;
         lines.push(
           `${margin}      <li><a href="${href}" aria-label="${label}">${linkText}</a></li>`
         );

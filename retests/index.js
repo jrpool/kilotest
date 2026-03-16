@@ -39,10 +39,10 @@ const populateQuery = async (targetWhat, query) => {
   query.safeTarget = htmlSafe(targetWhat);
 };
 // Returns a page answering the issues question.
-exports.answer = async () => {
+exports.answer = async targetWhat => {
   const query = {};
   // Create a query to replace placeholders.
-  await populateQuery(query);
+  await populateQuery(targetWhat, query);
   // Get the template.
   let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
   // Replace its placeholders.

@@ -123,17 +123,28 @@ const requestHandler = async (request, response) => {
   }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
-    const {body} = request;
-    // If it is valid:
-    if (
-      pageName === 'retest.html'
-      && pageArgs.length === 2
-      && isTimeStamp(pageArgs[0])
-      && isJobID(pageArgs[1])
-      && body.length
-    ) {
-      // TODO: Handle retest POST request
-    }
+    // Assemble the request body from its readable stream.
+    const bodyParts = [];
+    request.on('data', chunk => {
+      bodyParts.push(chunk);
+    });
+    request.on('end', () => {
+      const body = bodyParts.join('');
+      const query = querystring.parse(body);
+      // If the request is a valid retest recommendation:
+      if (
+        pageName === 'retest.html'
+        && pageArgs.length === 2
+        && isTimeStamp(pageArgs[0])
+        && isJobID(pageArgs[1])
+        && query.why
+      ) {
+        // Get the recommendation data.
+        const wantsJSON = await fs.readFile(`${__dirname}/wants.json`, 'utf8');
+        const wants = JSON.parse(wantsJSON);
+
+        // TODO: Handle retest POST request
+      }
     // Report invalidity.
     const message = 'ERROR: invalid POST request';
     console.log(message);

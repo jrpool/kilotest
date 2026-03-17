@@ -19,16 +19,19 @@ exports.answer = async (pageArgs, why) => {
   const wantsJSON = await fs.readFile(`${__dirname}/wants.json`, 'utf8');
   const wants = JSON.parse(wantsJSON);
   wants[targetWhat] ??= [];
+  why = getPlainText(why);
   // Add the recommendation to those for the target.
   wants[targetWhat].push({
     timeStamp: getTimeStamp(new Date()),
-    why: getPlainText(why)
+    why
   });
   // Save the revised data.
   await fs.writeFile(`${__dirname}/wants.json`, getJSON(wants));
   const query = {
     target: targetWhat
   };
+  // Log the recommendation.
+  console.log(`Retest recommendation received for ${targetWhat}: ${why}`);
   // Get the template.
   let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
   // Replace its placeholders.

@@ -14,32 +14,35 @@ const fs = require('fs/promises');
 
 // FUNCTIONS
 
+// Returns whether a job to retest a target is in the queue.
+const isQueued = async targetWhat => {
+  const queuedJobFileNames = await fs.readdir(`${__dirname}/../jobs/queue`);
+  for (const fileName of queuedJobFileNames) {
+    const jobJSON = await fs.readFile(`${__dirname}/../jobs/queue/${fileName}`);
+    const job = JSON.parse(jobJSON);
+    if (job.target.what === targetWhat) {
+      return true;
+    }
+  }
+  return false;
+};
 // Adds parameters to a query for the answer page.
 const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
   const retestScheduleJSON = await fs.readFile(`${__dirname}/retests.json`, 'utf8');
   const retestSchedule = JSON.parse(retestScheduleJSON);
-  // Add the required properties to the query.
+  // Add the target name to the query.
   query.target = targetWhat;
+  // Add facts about the latest test of the target to the queue.
   const lastDate = new Date(getDateString(timeStamp));
   const currentDate = new Date();
   const agoDays = Math.floor((currentDate - lastDate) / (1000 * 60 * 60 * 24));
   query.ago = agoDays === 1 ? '1 day' : `${agoDays} days`;
   query.dateTime = getDateTimeString(timeStamp);
   query.job = jobID;
-  const nextTimeStamp = retestSchedule[targetWhat];
-  const nextDate = new Date(getDateString(nextTimeStamp));
-  const fromNowDays = Math.floor((nextDate - currentDate) / (1000 * 60 * 60 * 24));
-  const fromNowString = fromNowDays === 1 ? '1 day' : `${fromNowDays} days`;
-  if (nextTimeStamp) {
-    query.retest
-    = `scheduled for ${fromNowString} from now, on ${getDateTimeString(nextTimeStamp)}`;
-    query.requestType = 'an earlier';
-  }
-  else {
-    query.retest = 'not scheduled';
-    query.requestType = 'a';
-  }
-  query.timeStamp = timeStamp;
+  // Add facts about the queued state of the target to the queue.
+  const queued = await isQueued(targetWhat);
+  query.queued = queued ? 'already' : 'not yet';
+  query.
 };
 // Returns a page answering the retests question.
 exports.answer = async pageArgs => {

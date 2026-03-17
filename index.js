@@ -13,6 +13,7 @@ require('dotenv').config({quiet: true});
 const protocol = process.env.PROTOCOL || 'http';
 
 // IMPORTS
+const {isTimeStamp, isJobID} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
@@ -40,14 +41,14 @@ const serveError = async (error, response) => {
 };
 // Handles a request.
 const requestHandler = async (request, response) => {
-  const {method} = request;
+  const {method, url} = request;
+  const requestURL = new URL(url, 'https://localhost:3000');
+  const {pathname, search} = requestURL;
+  const pageName = pathname.split('/')[1];
+  const pageArgs = pathname.split('/').slice(2).join('/');
   // If the request is a GET request:
   if (method === 'GET') {
     // Get its URL.
-    const requestURL = new URL(request.url, 'https://localhost:3000');
-    const {pathname, search} = requestURL;
-    const pageName = pathname.split('/')[1];
-    const pageArgs = pathname.split('/').slice(2).join('/');
     // If it is the home page:
     if (['/', '/index.html'].includes(pathname)) {
       // Get the home page.
@@ -122,6 +123,17 @@ const requestHandler = async (request, response) => {
   }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
+    const {body} = request;
+    // If it is valid:
+    if (
+      pageName === 'retest.html'
+      && pageArgs.length === 2
+      && isTimeStamp(pageArgs[0])
+      && isJobID(pageArgs[1])
+      && body.length
+    ) {
+      // TODO: Handle retest POST request
+    }
     // Report invalidity.
     const message = 'ERROR: invalid POST request';
     console.log(message);

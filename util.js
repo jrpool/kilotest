@@ -18,6 +18,10 @@ const reportsPath = `${__dirname}/reports`;
 
 // FUNCTIONS
 
+// Returns whether a string is a time stamp.
+exports.isTimeStamp = string => {
+  return /^\d{6}$/.test(string);
+};
 // Makes a string HTML-safe.
 exports.htmlSafe = string => string
 .replace(/&/g, '&amp;')
@@ -62,6 +66,14 @@ const getDateString = exports.getDateString = timeStamp => {
   }
   // Otherwise, return a failure.
   return '';
+};
+// Returns whether a string is a time stamp.
+exports.isTimeStamp = string => {
+  return !! getDateString(string);
+};
+// Returns whether a string is a job ID.
+exports.isJobID = string => {
+  return /^[a-z0-9]{5}$/.test(string);
 };
 // Returns a time stamp from a date.
 exports.getTimeStamp = date => {

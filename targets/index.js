@@ -76,10 +76,11 @@ const populateQuery = async query => {
     lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
     const dateTimeString = getDateTimeString(timeStamp);
     const testedString = `Last tested by job <code>${jobID}</code> on ${dateTimeString}`;
+    lines.push(`${margin}    <li>${testedString}</li>`);
     const retestContent = 'When will this page be retested?';
     const retestHref = `retests.html/${timeStamp}/${jobID}`;
     const retestLink = `<a href="${retestHref}">${retestContent}</a>`;
-    lines.push(`${margin}    <li>${testedString} (${retestLink})</li>`);
+    lines.push(`${margin}    <li>${retestLink}</li>`);
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);

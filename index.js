@@ -17,6 +17,7 @@ const {isTimeStamp, isJobID} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
+const querystring = require('querystring');
 const answer = {
   issues: require('./issues/index').answer,
   reportIssue: require('./reportIssue/index').answer,

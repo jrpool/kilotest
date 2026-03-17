@@ -141,12 +141,24 @@ const requestHandler = async (request, response) => {
         && isJobID(jobID)
         && why
       ) {
-        // Serve headers for a response.
+        // Serve a content-type header for a response.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.setHeader('Content-Location', pathname);
-        // Get the answer data.
-        const answerData = await require('./retest/index').answer(pageArgs, why);
-        // If they are valid:
+        let answerData;
+        // If the request is an authorized retest order:
+        if (why === process.env.AUTH_CODE) {
+          // Get the answer data.
+          answerData = await require('./retestOrder/index').answer(pageArgs);
+          // Serve a content-location header for a response.
+          response.setHeader('Content-Location', pathname.replace('retest', 'retestOrder'));
+        }
+        // Otherwise, i.e. if it is a retest recommendation:
+        else {
+          // Get the answer data.
+          answerData = await require('./retestRec/index').answer(pageArgs, why);
+          // Serve a content-location header for a response.
+          response.setHeader('Content-Location', pathname.replace('retest', 'retestRec'));
+        }
+        // If the answer data are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.
           response.end(answerData.answerPage);

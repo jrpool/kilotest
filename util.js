@@ -18,6 +18,8 @@ const reportsPath = `${__dirname}/reports`;
 
 // FUNCTIONS
 
+// Converts a string to a plain-text 1-line ASCII string.
+exports.getPlainText = string => string.replace(/&/g, '+').replace(/[^-+=/#%,;:.?! \w]/g, ' ');
 // Returns whether a string is a time stamp.
 exports.isTimeStamp = string => {
   return /^\d{6}$/.test(string);

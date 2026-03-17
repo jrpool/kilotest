@@ -63,17 +63,17 @@ const requestHandler = async (request, response) => {
       const topic = pageName.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
-        // Serve headers for it.
+        // Serve headers for a response.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', `${pathname}${search}`);
         // Get the answer data.
         const answerData = await answer[topic](pageArgs, search);
-        // If it is valid:
+        // If they are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.
           response.end(answerData.answerPage);
         }
-        // Otherwise, i.e. if it is invalid:
+        // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
           console.log(answerData.error);
@@ -128,32 +128,50 @@ const requestHandler = async (request, response) => {
     request.on('data', chunk => {
       bodyParts.push(chunk);
     });
-    request.on('end', () => {
+    request.on('end', async () => {
       const body = bodyParts.join('');
       const query = querystring.parse(body);
+      const {why} = query;
+      const [timeStamp, jobID] = pageArgs.split('/');
       // If the request is a valid retest recommendation:
       if (
         pageName === 'retest.html'
-        && pageArgs.length === 2
-        && isTimeStamp(pageArgs[0])
-        && isJobID(pageArgs[1])
-        && query.why
+        && isTimeStamp(timeStamp)
+        && isJobID(jobID)
+        && why
       ) {
-        // Get the recommendation data.
-        const wantsJSON = await fs.readFile(`${__dirname}/wants.json`, 'utf8');
-        const wants = JSON.parse(wantsJSON);
-
-        // TODO: Handle retest POST request
+        // Serve headers for a response.
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.setHeader('Content-Location', pathname);
+        // Get the answer data.
+        const answerData = require('./retest/index').answer(pageArgs, why);
+        // If they are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          console.log(answerData.error);
+          await serveError({message: answerData.error}, response);
+        }
       }
-    // Report invalidity.
-    const message = 'ERROR: invalid POST request';
+      // Otherwise, i.e. if the POST request is any other request:
+      else {
+        // Report its invalidity.
+        const message = 'ERROR: invalid POST request';
+        console.log(message);
+        await serveError(message, response);
+      }
+    });
+  }
+  // Otherwise, i.e. if the request method is neither GET nor POST:
+  else {
+    // Report its invalidity.
+    const message = 'ERROR: invalid request method';
     console.log(message);
     await serveError(message, response);
-  }
-  // Otherwise, i.e. if it is any other request:
-  else {
-    // Report this.
-    console.log(`ERROR: Request with prohibited method ${method} received`);
   }
 };
 

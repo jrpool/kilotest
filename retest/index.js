@@ -5,20 +5,26 @@
 
 // IMPORTS
 
-const {getJSON, getLog, getTimeStamp} = require('../util');
+const {getJSON, getLog, getPlainText, getTimeStamp} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
 // Records a retest recommendation and returns an acknowledgement page.
-exports.answer = async pageArgs => {
+exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);
   const targetWhat = log.pageWhat;
+  // Get the data on waiting recommendations.
   const wantsJSON = await fs.readFile(`${__dirname}/wants.json`, 'utf8');
   const wants = JSON.parse(wantsJSON);
   wants[targetWhat] ??= [];
-  wants[targetWhat].push(getTimeStamp(new Date()));
+  // Add the recommendation to those for the target.
+  wants[targetWhat].push({
+    timeStamp: getTimeStamp(new Date()),
+    why: getPlainText(why)
+  });
+  // Save the revised data.
   await fs.writeFile(`${__dirname}/wants.json`, getJSON(wants));
   const query = {
     target: targetWhat

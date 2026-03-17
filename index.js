@@ -124,7 +124,6 @@ const requestHandler = async (request, response) => {
   }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
-    console.log('XXX POST request received');
     // Assemble the request body from its readable stream.
     const bodyParts = [];
     request.on('data', chunk => {

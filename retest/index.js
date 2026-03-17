@@ -28,7 +28,8 @@ exports.answer = async (pageArgs, why) => {
   // Save the revised data.
   await fs.writeFile(`${__dirname}/wants.json`, getJSON(wants));
   const query = {
-    target: targetWhat
+    target: targetWhat,
+    why
   };
   // Log the recommendation.
   console.log(`Retest recommendation received for ${targetWhat}: ${why}`);

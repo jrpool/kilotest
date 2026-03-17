@@ -13,11 +13,10 @@ require('dotenv').config({quiet: true});
 const protocol = process.env.PROTOCOL || 'http';
 
 // IMPORTS
-const {isTimeStamp, isJobID} = require('./util');
+const {getPOSTData, isTimeStamp, isJobID} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
-const querystring = require('querystring');
 const answer = {
   issues: require('./issues/index').answer,
   reportIssue: require('./reportIssue/index').answer,
@@ -124,60 +123,53 @@ const requestHandler = async (request, response) => {
   }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
-    // Assemble the request body from its readable stream.
-    const bodyParts = [];
-    request.on('data', chunk => {
-      bodyParts.push(chunk);
-    });
-    request.on('end', async () => {
-      const body = bodyParts.join('');
-      const query = querystring.parse(body);
-      const {why} = query;
-      const [timeStamp, jobID] = pageArgs.split('/');
-      // If the request is a valid retest recommendation:
-      if (
-        pageName === 'retest.html'
-        && isTimeStamp(timeStamp)
-        && isJobID(jobID)
-        && why
-      ) {
-        // Serve a content-type header for a response.
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        let answerData;
-        // If the request is an authorized retest order:
-        if (why === process.env.AUTH_CODE) {
-          // Get the answer data.
-          answerData = await require('./retestOrder/index').answer(pageArgs);
-          // Serve a content-location header for a response.
-          response.setHeader('Content-Location', pathname.replace('retest', 'retestOrder'));
-        }
-        // Otherwise, i.e. if it is a retest recommendation:
-        else {
-          // Get the answer data.
-          answerData = await require('./retestRec/index').answer(pageArgs, why);
-          // Serve a content-location header for a response.
-          response.setHeader('Content-Location', pathname.replace('retest', 'retestRec'));
-        }
-        // If the answer data are valid:
-        if (answerData.status === 'ok') {
-          // Serve the answer page.
-          response.end(answerData.answerPage);
-        }
-        // Otherwise, i.e. if they are invalid:
-        else {
-          // Report the error.
-          console.log(answerData.error);
-          await serveError({message: answerData.error}, response);
-        }
+    // Get the data from the request body.
+    const query = await getPOSTData(request);
+    const {why} = query;
+    const [timeStamp, jobID] = pageArgs.split('/');
+    // If the request is a valid retest recommendation or order:
+    if (
+      pageName === 'retest.html'
+      && isTimeStamp(timeStamp)
+      && isJobID(jobID)
+      && why
+    ) {
+      // Serve a content-type header for a response.
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      let answerData;
+      // If the request is an authorized retest order:
+      if (why === process.env.AUTH_CODE) {
+        // Get the answer data.
+        answerData = await require('./retestOrder/index').answer(pageArgs);
+        // Serve a content-location header for a response.
+        response.setHeader('Content-Location', pathname.replace('retest', 'retestOrder'));
       }
-      // Otherwise, i.e. if the POST request is any other request:
+      // Otherwise, i.e. if it is a retest recommendation:
       else {
-        // Report its invalidity.
-        const message = 'ERROR: invalid POST request';
-        console.log(message);
-        await serveError(message, response);
+        // Get the answer data.
+        answerData = await require('./retestRec/index').answer(pageArgs, why);
+        // Serve a content-location header for a response.
+        response.setHeader('Content-Location', pathname.replace('retest', 'retestRec'));
       }
-    });
+      // If the answer data are valid:
+      if (answerData.status === 'ok') {
+        // Serve the answer page.
+        response.end(answerData.answerPage);
+      }
+      // Otherwise, i.e. if they are invalid:
+      else {
+        // Report the error.
+        console.log(answerData.error);
+        await serveError({message: answerData.error}, response);
+      }
+    }
+    // Otherwise, i.e. if the POST request is any other request:
+    else {
+      // Report its invalidity.
+      const message = 'ERROR: invalid POST request';
+      console.log(message);
+      await serveError(message, response);
+    }
   }
   // Otherwise, i.e. if the request method is neither GET nor POST:
   else {

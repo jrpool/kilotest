@@ -18,6 +18,18 @@ const reportsPath = `${__dirname}/reports`;
 
 // FUNCTIONS
 
+// Returns the data from a POST request.
+exports.getPOSTData = async request => {
+  const bodyParts = [];
+  request.on('data', chunk => {
+    bodyParts.push(chunk);
+  });
+  request.on('end', async () => {
+    const body = bodyParts.join('');
+    const query = querystring.parse(body);
+    return query;
+  });
+};
 // Converts a string to a plain-text 1-line ASCII string.
 exports.getPlainText = string => string.replace(/&/g, '+').replace(/[^-+=/#%,;:.?! \w]/g, ' ');
 // Returns whether a string is a time stamp.
@@ -81,6 +93,10 @@ exports.isJobID = string => {
 exports.getTimeStamp = date => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
   return timeStamp;
+};
+// Returns a time stamp for now.
+exports.getNowStamp = () => {
+  return getTimeStamp(new Date());
 };
 // Returns a time string from a time stamp.
 const getTimeString = timeStamp => {

@@ -124,6 +124,7 @@ const requestHandler = async (request, response) => {
   }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
+    console.log('XXX POST request received');
     // Assemble the request body from its readable stream.
     const bodyParts = [];
     request.on('data', chunk => {
@@ -145,7 +146,7 @@ const requestHandler = async (request, response) => {
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', pathname);
         // Get the answer data.
-        const answerData = require('./retest/index').answer(pageArgs, why);
+        const answerData = await require('./retest/index').answer(pageArgs, why);
         // If they are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.

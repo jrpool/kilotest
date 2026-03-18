@@ -17,6 +17,7 @@ const {getPOSTData, isTimeStamp, isJobID} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
+const path = require('path');
 const answer = {
   issues: require('./issues/index').answer,
   reportIssue: require('./reportIssue/index').answer,
@@ -92,7 +93,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for the application icon:
     else if (pathname.includes('favicon.')) {
       // Get the site icon.
-      const icon = await fs.readFile(`${__dirname}/favicon.ico`);
+      const icon = await fs.readFile(path.join(__dirname, 'favicon.ico'));
       // Serve it.
       response.setHeader('Content-Type', 'image/x-icon');
       response.write(icon, 'binary');

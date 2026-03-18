@@ -7,6 +7,7 @@
 
 const {getJSON, getLog, getNowStamp, getPlainText} = require('../util');
 const fs = require('fs/promises');
+const path = require('path');
 
 // FUNCTIONS
 
@@ -15,7 +16,7 @@ exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);
   const targetWhat = log.pageWhat;
-  const recsPath = `${__dirname}/../jobs/recs.json`;
+  const recsPath = path.join(__dirname, '..', 'jobs', 'recs.json');
   // Get the data on waiting recommendations.
   const recsJSON = await fs.readFile(recsPath, 'utf8');
   const recs = JSON.parse(recsJSON);
@@ -35,7 +36,7 @@ exports.answer = async (pageArgs, why) => {
   // Log the recommendation.
   console.log(`Retest recommendation received for ${targetWhat}: ${plainWhy}`);
   // Get the template.
-  let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

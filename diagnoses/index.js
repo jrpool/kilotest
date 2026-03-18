@@ -14,6 +14,7 @@ const {
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
+const path = require('path');
 const toolNames = require('testaro/procs/job').tools;
 
 // FUNCTIONS
@@ -113,7 +114,7 @@ exports.answer = async (pageArgs, search) => {
   // If the date and time are valid:
   if (query.dateTime) {
     // Get the template.
-    let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+    let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
     // Replace its placeholders.
     Object.keys(query).forEach(param => {
       answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

@@ -8,72 +8,27 @@
 const {issues} = require('testilo/procs/score/tic');
 const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
+const path = require('path');
 
 // CONSTANTS
 
 // Path of the logs directory.
-const logsPath = `${__dirname}/logs`;
+const logsPath = path.join(__dirname, 'logs');
 // Path of the reports directory.
-const reportsPath = `${__dirname}/reports`;
+const reportsPath = path.join(__dirname, 'reports');
 
 // FUNCTIONS
 
-// Returns whether a job to retest a target is in the queue.
-exports.isQueued = async targetWhat => {
-  const queuedJobFileNames = await fs.readdir(`${__dirname}/jobs/queue`);
-  for (const fileName of queuedJobFileNames) {
-    const jobJSON = await fs.readFile(`${__dirname}/jobs/queue/${fileName}`);
-    const job = JSON.parse(jobJSON);
-    if (job.target.what === targetWhat) {
-      return true;
-    }
-  }
-  return false;
-};
-// Returns the data from a POST request.
-exports.getPOSTData = async request => {
-  const bodyParts = [];
-  request.on('data', chunk => {
-    bodyParts.push(chunk);
-  });
-  request.on('end', async () => {
-    const body = bodyParts.join('');
-    const query = querystring.parse(body);
-    return query;
-  });
-};
-// Converts a string to a plain-text 1-line ASCII string.
-exports.getPlainText = string => string.replace(/&/g, '+').replace(/[^-+=/#%,;:.?! \w]/g, ' ');
-// Returns whether a string is a time stamp.
-exports.isTimeStamp = string => {
-  return /^\d{6}$/.test(string);
-};
-// Makes a string HTML-safe.
-exports.htmlSafe = string => string
-.replace(/&/g, '&amp;')
-.replace(/</g, '&lt;')
-.replace(/>/g, '&gt;')
-.replace(/"/g, '&quot;')
-.replace(/'/g, '&apos;');
 // Encodes a string for use as a URL fragment.
 const fragmentEncode = string => {
   return encodeURIComponent(string).replace(/-/g, '%2D');
 };
-// Converts a catalog item text to a text-fragment link destination.
-exports.getTextFragmentHref = (text, url) => {
-  const fragmentList = text
-  .split('\n')
-  .map(fragment => fragmentEncode(fragment))
-  .join(',');
-  // Return a text-fragment link.
-  return `${url}#:~:text=${fragmentList}`;
-};
 // Returns the path of a log file.
 const getLogPath = exports.getLogPath
-= (timeStamp, jobID) => `${logsPath}/${timeStamp}-${jobID}.json`;
+= (timeStamp, jobID) => path.join(logsPath, `${timeStamp}-${jobID}.json`);
 // Returns the path of a report file.
 const getReportPath = exports.getReportPath
-= (timeStamp, jobID) => `${reportsPath}/${timeStamp}-${jobID}.json`;
+= (timeStamp, jobID) => path.join(reportsPath, `${timeStamp}-${jobID}.json`);
 // Returns a report.
 const getReport = exports.getReport = async (timeStamp, jobID) => {
   const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID));
@@ -104,28 +59,6 @@ const getDateTime = timeStamp => {
 const getAgoDays = timeStamp => Math.round(
   (Date.now() - getDateTime(timeStamp)) / (1000 * 60 * 60 * 24)
 );
-// Returns a string describing the time in days since a time stamp.
-exports.getAgoString = (currentDate, lastDate) => {
-  const agoDays = getAgoDays(currentDate, lastDate);
-  return agoDays === 1 ? '1 day' : `${agoDays} days`;
-};
-// Returns whether a string is a time stamp.
-exports.isTimeStamp = string => {
-  return !! getDateString(string);
-};
-// Returns whether a string is a job ID.
-exports.isJobID = string => {
-  return /^[a-z0-9]{5}$/.test(string);
-};
-// Returns a time stamp from a date.
-exports.getTimeStamp = date => {
-  const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
-  return timeStamp;
-};
-// Returns a time stamp for now.
-exports.getNowStamp = () => {
-  return getTimeStamp(new Date());
-};
 // Returns a time string from a time stamp.
 const getTimeString = timeStamp => {
   const timeString = `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
@@ -137,13 +70,6 @@ const getTimeString = timeStamp => {
   // Otherwise, return a failure.
   return '';
 };
-// Returns a date-and-time string.
-exports.getDateTimeString = timeStamp => {
-  const dateString = getDateString(timeStamp);
-  const timeString = getTimeString(timeStamp);
-  const dateTimeString = `${dateString} at ${timeString}`;
-  return dateTimeString;
-}
 // Compares strings alphabetically and case-insensitively.
 const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'});
 // Sorts strings alphabetically and case-insensitively.
@@ -169,24 +95,6 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   // Otherwise, do not sort.
   return 0;
 });
-// Makes a string breakable before non-initial slashes.
-exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
-// Returns the path ID of the element of a standard instance.
-exports.getPathID = (catalog, catalogIndex, pathID) => {
-  if (catalogIndex) {
-    const catalogItem = catalog[catalogIndex];
-    if (catalogItem.pathID) {
-      return catalogItem.pathID;
-    }
-    return pathID ?? '/html';
-  }
-  return pathID ?? '/html';
-};
-// Returns a string of tool names.
-exports.getReporterString = toolIDSet =>
-  alphaSort(Array.from(toolIDSet).map(toolID => toolNames[toolID])).join(' + ');
-// Gets the name of an issue weight.
-exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
 // Compiles a directory of the issue classifications of invariant and variable rules.
 const getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
@@ -321,6 +229,65 @@ const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
   // Save the revised log.
   await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
 };
+// Returns a string describing the time in days since a time stamp.
+exports.getAgoString = (currentDate, lastDate) => {
+  const agoDays = getAgoDays(currentDate, lastDate);
+  return agoDays === 1 ? '1 day' : `${agoDays} days`;
+};
+// Returns a date-and-time string.
+exports.getDateTimeString = timeStamp => {
+  const dateString = getDateString(timeStamp);
+  const timeString = getTimeString(timeStamp);
+  const dateTimeString = `${dateString} at ${timeString}`;
+  return dateTimeString;
+}
+// Returns the path ID of the element of a standard instance.
+exports.getPathID = (catalog, catalogIndex, pathID) => {
+  if (catalogIndex) {
+    const catalogItem = catalog[catalogIndex];
+    if (catalogItem.pathID) {
+      return catalogItem.pathID;
+    }
+    return pathID ?? '/html';
+  }
+  return pathID ?? '/html';
+};
+// Converts a string to a plain-text 1-line ASCII string.
+exports.getPlainText = string => string.replace(/&/g, '+').replace(/[^-+=/#%,;:.?! \w]/g, ' ');
+// Returns a time stamp for now.
+exports.getNowStamp = () => {
+  return getTimeStamp(new Date());
+};
+// Returns the data from a POST request.
+exports.getPOSTData = async request => {
+  const bodyParts = [];
+  request.on('data', chunk => {
+    bodyParts.push(chunk);
+  });
+  request.on('end', async () => {
+    const body = bodyParts.join('');
+    const query = querystring.parse(body);
+    return query;
+  });
+};
+// Get the retest recommendations.
+exports.getRecs = async () => {
+  const recsJSON = await fs.readFile(path.join(__dirname, '/jobs/recs.json'), 'utf8');
+  const recs = JSON.parse(recsJSON);
+  return recs;
+};
+// Returns a string of tool names.
+exports.getReporterString = toolIDSet =>
+  alphaSort(Array.from(toolIDSet).map(toolID => toolNames[toolID])).join(' + ');
+// Converts a catalog item text to a text-fragment link destination.
+exports.getTextFragmentHref = (text, url) => {
+  const fragmentList = text
+  .split('\n')
+  .map(fragment => fragmentEncode(fragment))
+  .join(',');
+  // Return a text-fragment link.
+  return `${url}#:~:text=${fragmentList}`;
+};
 // Returns an array of the latest logs of tested targets.
 exports.getTargetLogs = async () => {
   // Initialize a directory of tested targets.
@@ -328,7 +295,7 @@ exports.getTargetLogs = async () => {
   const logNames = await fs.readdir(logsPath);
   // For each log:
   for (const logName of logNames) {
-    const logJSON = await fs.readFile(`${logsPath}/${logName}`, 'utf8');
+    const logJSON = await fs.readFile(path.join(logsPath, logName), 'utf8');
     const log = JSON.parse(logJSON);
     // Add its data to the targets directory, replacing any entry for the same target URL.
     targetDirectory[log.pageURL] = log;
@@ -337,3 +304,39 @@ exports.getTargetLogs = async () => {
   const targets = objectSort(Object.values(targetDirectory), 'pageWhat', 'alpha');
   return targets;
 };
+// Returns a time stamp from a date.
+exports.getTimeStamp = date => {
+  const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
+  return timeStamp;
+};
+// Gets the name of an issue weight.
+exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
+// Makes a string HTML-safe.
+exports.htmlSafe = string => string
+.replace(/&/g, '&amp;')
+.replace(/</g, '&lt;')
+.replace(/>/g, '&gt;')
+.replace(/"/g, '&quot;')
+.replace(/'/g, '&apos;');
+// Returns whether a string is a job ID.
+exports.isJobID = string => {
+  return /^[a-z0-9]{5}$/.test(string);
+};
+// Returns whether a job to retest a target is in the queue.
+exports.isQueued = async targetWhat => {
+  const queuedJobFileNames = await fs.readdir(path.join(__dirname, 'jobs/queue'));
+  for (const fileName of queuedJobFileNames) {
+    const jobJSON = await fs.readFile(path.join(__dirname, `jobs/queue/${fileName}`));
+    const job = JSON.parse(jobJSON);
+    if (job.target.what === targetWhat) {
+      return true;
+    }
+  }
+  return false;
+};
+// Returns whether a string is a time stamp.
+exports.isTimeStamp = string => {
+  return !! getDateString(string);
+};
+// Makes a string breakable before non-initial slashes.
+exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');

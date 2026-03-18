@@ -5,8 +5,9 @@
 
 // IMPORTS
 
-const {getJSON, getLog, getNowStamp} = require('../util');
+const {getJSON, getLog, getNowStamp, getRecs} = require('../util');
 const fs = require('fs/promises');
+const path = require('path');
 
 // FUNCTIONS
 
@@ -18,7 +19,7 @@ exports.answer = async (pageArgs, authCode) => {
     const log = await getLog(timeStamp, jobID);
     const {pageWhat, pageURL} = log;
     // Get the job template.
-    const jobTemplateJSON = await fs.readFile(`${__dirname}/job.json`, 'utf8');
+    const jobTemplateJSON = await fs.readFile(path.join(__dirname, '..', 'jobs/job.json'), 'utf8');
     const job = JSON.parse(jobTemplateJSON);
     // Populate the template with job properties.
     const newJobID = Date.now().toString(36).slice(5);
@@ -34,18 +35,19 @@ exports.answer = async (pageArgs, authCode) => {
       jobName
     };
     // Save the job in the queue.
-    await fs.writeFile(`${__dirname}/../jobs/queue/${jobName}.json`, getJSON(job));
+    await fs.writeFile(
+      path.join(__dirname, '..', 'jobs', 'queue', `${jobName}.json`), getJSON(job)
+    );
     // Log the order.
     console.log(`Retest queued for ${pageWhat} as job ${jobName}`);
     // Get the recommendations.
-    const recsJSON = await fs.readFile(`${__dirname}/../jobs/recs.json`, 'utf8');
-    const recs = JSON.parse(recsJSON);
+    const recs = await getRecs();
     // Delete the recommendations to retest the target.
     delete recs[pageWhat];
     // Save the revised recommendations.
-    await fs.writeFile(`${__dirname}/../jobs/recs.json`, getJSON(recs));
+    await fs.writeFile(path.join(__dirname, '..', 'jobs', 'recs.json'), getJSON(recs));
     // Get the answer template.
-    let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+    let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
     // Replace its placeholders.
     Object.keys(query).forEach(param => {
       answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

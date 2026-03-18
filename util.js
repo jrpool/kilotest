@@ -51,9 +51,9 @@ const getDateString = exports.getDateString = timeStamp => {
 };
 // Returns the date and time represented by a time stamp.
 const getDateTime = timeStamp => {
-  const dateTime = new Date(
-    `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(6,8)}:${timeStamp.slice(8,10)}Z`
-  );
+  const dateString
+  = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(7,9)}:${timeStamp.slice(9,11)}Z`;
+  const dateTime = new Date(dateString);
   return dateTime;
 };
 // Returns the time in days since a time stamp.

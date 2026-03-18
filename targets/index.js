@@ -103,7 +103,7 @@ const populateQuery = async query => {
       retestString = 'Currently in the queue for retesting';
     }
     else {
-      const href = `/retestRec.html/${timeStamp}/${jobID}`;
+      const href = `/retestRecForm.html/${timeStamp}/${jobID}`;
       const retestContent = 'Should Kilotest retest the page?';
       retestString = `<a href="${href}">${retestContent}</a>`;
     }

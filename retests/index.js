@@ -8,24 +8,13 @@
 const {
   getDateTimeString,
   getDateString,
-  getLog
+  getLog,
+  isQueued
 } = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
 
-// Returns whether a job to retest a target is in the queue.
-const isQueued = async targetWhat => {
-  const queuedJobFileNames = await fs.readdir(`${__dirname}/../jobs/queue`);
-  for (const fileName of queuedJobFileNames) {
-    const jobJSON = await fs.readFile(`${__dirname}/../jobs/queue/${fileName}`);
-    const job = JSON.parse(jobJSON);
-    if (job.target.what === targetWhat) {
-      return true;
-    }
-  }
-  return false;
-};
 // Adds parameters to a query for the answer page.
 const populateQuery = async (targetWhat, timeStamp, jobID, query) => {
   const retestScheduleJSON = await fs.readFile(`${__dirname}/retests.json`, 'utf8');

@@ -18,6 +18,18 @@ const reportsPath = `${__dirname}/reports`;
 
 // FUNCTIONS
 
+// Returns whether a job to retest a target is in the queue.
+exports.isQueued = async targetWhat => {
+  const queuedJobFileNames = await fs.readdir(`${__dirname}/jobs/queue`);
+  for (const fileName of queuedJobFileNames) {
+    const jobJSON = await fs.readFile(`${__dirname}/jobs/queue/${fileName}`);
+    const job = JSON.parse(jobJSON);
+    if (job.target.what === targetWhat) {
+      return true;
+    }
+  }
+  return false;
+};
 // Returns the data from a POST request.
 exports.getPOSTData = async request => {
   const bodyParts = [];

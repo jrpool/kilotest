@@ -11,7 +11,8 @@ const {
   getLogPath,
   getReport,
   getReporterString,
-  getTargetLogs
+  getTargetLogs,
+  isQueued
 } = require('../util');
 const fs = require('fs/promises');
 
@@ -70,28 +71,39 @@ const populateQuery = async query => {
     const {jobID, pageURL, pageWhat, timeStamp} = targetLog;
     const summary = await getTargetSummary(timeStamp, jobID);
     const {issueSet, reporterSet} = summary;
-    // Add lines to the array.
     lines.push(`${margin}<li>${pageWhat}</li>`);
     lines.push(`${margin}  <ul>`);
+    // Add the URL of the target to the array.
     lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
+    // Add facts about the job to the array.
     const dateTimeString = getDateTimeString(timeStamp);
     const testedString = `Last tested by job <code>${jobID}</code> on ${dateTimeString}`;
     lines.push(`${margin}    <li>${testedString}</li>`);
-    const retestContent = 'When will this page be retested?';
-    const retestHref = `retests.html/${timeStamp}/${jobID}`;
-    const retestLink = `<a href="${retestHref}">${retestContent}</a>`;
-    lines.push(`${margin}    <li>${retestLink}</li>`);
+    // Add facts about the test results to the array.
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);
     lines.push(
       `${margin}    <li>${issueCountString} reported by ${toolCountString}: ${reporterString}</li>`
     );
+    // Add a question link about the reported issues to the array.
     const href = `href="reportIssues.html/${timeStamp}-${jobID}"`;
     const label = `aria-label="What ${issueCountString} reported for the ${pageWhat} page?"`;
     const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
     const link = `<a ${href} ${label}>What ${questionString}?</a>`;
     lines.push(`${margin}    <li>${link}</li>`);
+    // Add the status of, and if necessary a question link about, retesting to the array.
+    const queued = await isQueued(pageWhat);
+    let retestString;
+    if (queued) {
+      retestString = 'Currently in the queue for retesting';
+    }
+    else {
+      const href = `/retestRec.html/${timeStamp}/${jobID}`;
+      const retestContent = 'Will Kilotest retest the page?';
+      retestString = `<a href="${href}">${retestContent}</a>`;
+    }
+    lines.push(`${margin}    <li>${retestString}</li>`);
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`);
   }

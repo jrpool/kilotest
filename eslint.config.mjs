@@ -7,7 +7,10 @@ import { defineConfig } from "eslint/config";
 
 export default defineConfig([
   {
-    ignores: ["DEVELOPMENT.md"]
+    ignores: [
+      "DEVELOPMENT.md",
+      "package-lock.json"
+    ]
   },
   {
     files: ["**/*.{js,mjs,cjs}"],

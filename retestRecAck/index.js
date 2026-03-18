@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getLog, getPlainText, getTimeStamp} = require('../util');
+const {getJSON, getLog, getNowStamp, getPlainText} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -15,24 +15,25 @@ exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);
   const targetWhat = log.pageWhat;
+  const recsPath = `${__dirname}/../jobs/recs.json`;
   // Get the data on waiting recommendations.
-  const wantsJSON = await fs.readFile(`${__dirname}/wants.json`, 'utf8');
-  const wants = JSON.parse(wantsJSON);
+  const recsJSON = await fs.readFile(recsPath, 'utf8');
+  const recs = JSON.parse(recsJSON);
   wants[targetWhat] ??= [];
-  why = getPlainText(why);
+  const plainWhy = getPlainText(why);
   // Add the recommendation to those for the target.
-  wants[targetWhat].push({
-    timeStamp: getTimeStamp(new Date()),
-    why
+  recs[targetWhat].push({
+    timeStamp: getNowStamp(),
+    why: plainWhy
   });
-  // Save the revised data.
-  await fs.writeFile(`${__dirname}/wants.json`, getJSON(wants));
+  // Save the revised recommendations.
+  await fs.writeFile(recsPath, getJSON(recs));
   const query = {
     target: targetWhat,
-    why
+    why: plainWhy
   };
   // Log the recommendation.
-  console.log(`Retest recommendation received for ${targetWhat}: ${why}`);
+  console.log(`Retest recommendation received for ${targetWhat}: ${plainWhy}`);
   // Get the template.
   let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
   // Replace its placeholders.

@@ -87,6 +87,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const {pageURL, pageWhat} = summary;
   query.target = pageWhat;
   query.url = pageURL;
+  query.jobID = jobID;
   query.dateTime = getDateTimeString(timeStamp);
   // Initialize the lines.
   const lines = [];

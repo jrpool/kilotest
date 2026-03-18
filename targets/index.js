@@ -100,7 +100,7 @@ const populateQuery = async query => {
     }
     else {
       const href = `/retestRec.html/${timeStamp}/${jobID}`;
-      const retestContent = 'Will Kilotest retest the page?';
+      const retestContent = 'Should Kilotest retest the page?';
       retestString = `<a href="${href}">${retestContent}</a>`;
     }
     lines.push(`${margin}    <li>${retestString}</li>`);

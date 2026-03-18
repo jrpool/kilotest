@@ -93,6 +93,22 @@ const getDateString = exports.getDateString = timeStamp => {
   // Otherwise, return a failure.
   return '';
 };
+// Returns the date and time represented by a time stamp.
+const getDateTime = timeStamp => {
+  const dateTime = new Date(
+    `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(6,8)}:${timeStamp.slice(8,10)}Z`
+  );
+  return dateTime;
+};
+// Returns the time in days since a time stamp.
+const getAgoDays = timeStamp => Math.round(
+  (Date.now() - getDateTime(timeStamp)) / (1000 * 60 * 60 * 24)
+);
+// Returns a string describing the time in days since a time stamp.
+exports.getAgoString = (currentDate, lastDate) => {
+  const agoDays = getAgoDays(currentDate, lastDate);
+  return agoDays === 1 ? '1 day' : `${agoDays} days`;
+};
 // Returns whether a string is a time stamp.
 exports.isTimeStamp = string => {
   return !! getDateString(string);

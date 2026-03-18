@@ -20,7 +20,7 @@ exports.answer = async (pageArgs, why) => {
   // Get the data on waiting recommendations.
   const recsJSON = await fs.readFile(recsPath, 'utf8');
   const recs = JSON.parse(recsJSON);
-  wants[targetWhat] ??= [];
+  recs[targetWhat] ??= [];
   const plainWhy = getPlainText(why);
   // Add the recommendation to those for the target.
   recs[targetWhat].push({

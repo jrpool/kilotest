@@ -9,6 +9,7 @@ const {issues} = require('testilo/procs/score/tic');
 const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
 const path = require('path');
+const querystring = require('querystring');
 
 // CONSTANTS
 
@@ -181,13 +182,13 @@ const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false
 };
 // Adds issue IDs to the standard instances of a report.
 const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
-  let report = {};
+  let report;
   try {
     // Get a copy of the report.
     report = await getReport(timeStamp, jobID);
   }
   // If it is invalid:
-  catch (error) {
+  catch {
     // Report this.
     console.log(`ERROR: Report ${getReportPath(timeStamp, jobID)} is not JSON`);
     // Leave the report and log unchanged.
@@ -228,6 +229,11 @@ const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
   log.annotated = true;
   // Save the revised log.
   await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
+};
+// Returns a time stamp from a date.
+const getTimeStamp = exports.getTimeStamp = date => {
+  const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
+  return timeStamp;
 };
 // Returns a string describing the time in days since a time stamp.
 exports.getAgoString = (currentDate, lastDate) => {
@@ -303,11 +309,6 @@ exports.getTargetLogs = async () => {
   // Get an array of those target logs, sorted by description.
   const targets = objectSort(Object.values(targetDirectory), 'pageWhat', 'alpha');
   return targets;
-};
-// Returns a time stamp from a date.
-exports.getTimeStamp = date => {
-  const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
-  return timeStamp;
 };
 // Gets the name of an issue weight.
 exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';

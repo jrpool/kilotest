@@ -59,7 +59,6 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       const {pathID} = instance;
       const catalogIndex = instance.catalogIndex || '0';
       const catalogItem = catalog[catalogIndex];
-      const {text, textLinkable} = catalogItem;
       const tagName = catalogItem.tagName
       ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()
       ?? 'HTML';

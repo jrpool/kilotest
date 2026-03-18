@@ -24,7 +24,6 @@ const answer = {
   reportIssues: require('./reportIssues/index').answer,
   retestOrderForm: require('./retestOrderForm/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
-  retests: require('./retests/index').answer,
   rules: require('./rules/index').answer,
   targets: require('./targets/index').answer,
   diagnoses: require('./diagnoses/index').answer

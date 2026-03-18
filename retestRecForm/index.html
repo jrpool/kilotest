@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="report,accessibility,a11y">
+    <title>__target__ retest recommendation | Kilotest</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1><a href="/">Kilotest</a>: Retest recommendation for __target__</h1>
+      <p>The __target__ page was <a href="/reportIssues.html/__timeStamp__/__jobID__">last tested</a> __ago__ ago by job __jobID__ on __dateTime__.</p>
+      <p>You may recommend a retest by submitting the following form.</p>
+      <form action="/retestRec.html/__timeStamp__/__jobID__" method="post">
+        <p><label>
+          Why retest the page (answer required)?<br>
+          <input size="70" maxlength="100" name="why" required>
+        </label></p>
+        <p><button type="submit">Submit</button></p>
+      </form>
+      <p>Kilotest managers can <a href="/retestOrderForm.html/__timeStamp__/__jobID__">order a retest of the page</a>.</p>
+    </main>
+  </body>
+</html>

@@ -13,10 +13,18 @@
   <body>
     <main>
       <h1><a href="/">Kilotest</a>: Retest order for __target__</h1>
-      <p>A job that will retest the __target__ page has been placed into the job queue.</p>
-      <p>The job name is <code>__jobName__</code>.</p>
-      <p>When Kilotest is not busy, a job is typically completed within about a day after submission.</p>
-      <p>Once the job has been completed, it will appear in the answer to the question, <q>Which web pages have been tested?</q>.</p>
+      <p>The __target__ page was <a href="/reportIssues.html/__timeStamp__/__jobID__">last tested</a> __ago__ ago by job __jobID__ on __dateTime__.</p>
+      <p>Retest recommendations received:</p>
+      <ul>
+        __recs__
+      </ul>
+      <p>To add a retest to the queue, submit your authorization code.</p>
+      <form action="/retestOrder.html/__timeStamp__/__jobID__" method="post">
+        <p><label>
+          Authorization code: <input size="3" maxlength="3" name="authCode" required>
+        </label></p>
+        <p><button type="submit">Submit</button></p>
+      </form>
     </main>
   </body>
 </html>

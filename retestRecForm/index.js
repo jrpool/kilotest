@@ -1,0 +1,36 @@
+/*
+  index.js
+  Answers the retest question.
+*/
+
+// IMPORTS
+
+const {getAgoString, getDateTimeString, getLog} = require('../util');
+const fs = require('fs/promises');
+
+// FUNCTIONS
+
+// Returns a retest recommendation form.
+exports.answer = async pageArgs => {
+  const [timeStamp, jobID] = pageArgs.split('/');
+  const log = await getLog(timeStamp, jobID);
+  const targetWhat = log.pageWhat;
+  const query = {
+    target: targetWhat,
+    timeStamp,
+    jobID,
+    ago: getAgoString(timeStamp),
+    dateTime: getDateTimeString(timeStamp)
+  };
+  // Get the recommendation form template.
+  let answerPage = await fs.readFile(`${__dirname}/index.html`, 'utf8');
+  // Replace its placeholders.
+  Object.keys(query).forEach(param => {
+    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
+  });
+  // Return the populated page.
+  return {
+    status: 'ok',
+    answerPage
+  };
+};

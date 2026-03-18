@@ -21,6 +21,8 @@ const answer = {
   issues: require('./issues/index').answer,
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
+  retestOrderForm: require('./retestOrderForm/index').answer,
+  retestRecForm: require('./retestRecForm/index').answer,
   retests: require('./retests/index').answer,
   rules: require('./rules/index').answer,
   targets: require('./targets/index').answer,
@@ -125,32 +127,44 @@ const requestHandler = async (request, response) => {
   else if (method === 'POST') {
     // Get the data from the request body.
     const query = await getPOSTData(request);
-    const {why} = query;
+    const {authCode, why} = query;
     const [timeStamp, jobID] = pageArgs.split('/');
-    // If the request is a valid retest recommendation or order:
+    // If the request is a valid retest recommendation:
     if (
-      pageName === 'retest.html'
+      pageName === 'retestRec.html'
       && isTimeStamp(timeStamp)
       && isJobID(jobID)
       && why
     ) {
-      // Serve a content-type header for a response.
+      // Serve headers for a response.
       response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      let answerData;
-      // If the request is an authorized retest order:
-      if (why === process.env.AUTH_CODE) {
-        // Get the answer data.
-        answerData = await require('./retestOrder/index').answer(pageArgs);
-        // Serve a content-location header for a response.
-        response.setHeader('Content-Location', pathname.replace('retest', 'retestOrder'));
+      response.setHeader('Content-Location', `${pathname}${search}`);
+      // Get the answer data.
+      const answerData = await require('./retestRec/index').answer(pageArgs, why);
+      // If they are valid:
+      if (answerData.status === 'ok') {
+        // Serve the answer page.
+        response.end(answerData.answerPage);
       }
-      // Otherwise, i.e. if it is a retest recommendation:
+      // Otherwise, i.e. if they are invalid:
       else {
-        // Get the answer data.
-        answerData = await require('./retestRec/index').answer(pageArgs, why);
-        // Serve a content-location header for a response.
-        response.setHeader('Content-Location', pathname.replace('retest', 'retestRec'));
+        // Report the error.
+        console.log(answerData.error);
+        await serveError({message: answerData.error}, response);
       }
+    }
+    // Otherwise, if it is a valid retest order:
+    else if (
+      pageName === 'retestOrder.html'
+      && isTimeStamp(timeStamp)
+      && isJobID(jobID)
+      && authCode
+    ) {
+      // Serve headers for a response.
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      response.setHeader('Content-Location', `${pathname}${search}`);
+      // Get the answer data.
+      const answerData = await require('./retestOrder/index').answer(pageArgs, authCode);
       // If the answer data are valid:
       if (answerData.status === 'ok') {
         // Serve the answer page.

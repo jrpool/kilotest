@@ -236,8 +236,8 @@ const getTimeStamp = exports.getTimeStamp = date => {
   return timeStamp;
 };
 // Returns a string describing the time in days since a time stamp.
-exports.getAgoString = (currentDate, lastDate) => {
-  const agoDays = getAgoDays(currentDate, lastDate);
+exports.getAgoString = timeStamp => {
+  const agoDays = getAgoDays(timeStamp);
   return agoDays === 1 ? '1 day' : `${agoDays} days`;
 };
 // Returns a date-and-time string.

@@ -7,6 +7,7 @@
 
 const {
   annotateReport,
+  getAgoString,
   getDateTimeString,
   getLogPath,
   getReport,
@@ -78,7 +79,9 @@ const populateQuery = async query => {
     lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
     // Add facts about the job to the array.
     const dateTimeString = getDateTimeString(timeStamp);
-    const testedString = `Last tested by job <code>${jobID}</code> on ${dateTimeString}`;
+    const agoString = getAgoString(timeStamp);
+    const testedString
+    = `Last tested ${agoString} ago by job <code>${jobID}</code> on ${dateTimeString}`;
     lines.push(`${margin}    <li>${testedString}</li>`);
     // Add facts about the test results to the array.
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;

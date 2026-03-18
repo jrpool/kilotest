@@ -113,7 +113,7 @@ const populateQuery = async query => {
         lines.push(`${margin}      <li>Why it matters: ${why}`);
         lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
         lines.push(`${margin}      <li>Share of violations: ${percentage}%</li>`);
-        lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+        lines.push(`${margin}      <li>Violations reported by ${reporters}</li>`);
         const linkText = 'What rules belong to this issue?';
         const label = `What rules belong to the <q>${summary}</q> issue?`;
         const href = `/rules.html/${issueID}`;

@@ -122,7 +122,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
 
     const href
-    = `/diagnoses.html/${issueID}/${timeStamp}-${jobID}/${catalogIndex}?pathID=${pathID}`;
+    = `/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}?pathID=${pathID}`;
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(
@@ -137,8 +137,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
 };
 // Returns a page answering the violators question.
 exports.answer = async pageArgs => {
-  const [issueID, reportSpec] = pageArgs.split('/');
-  const [timeStamp, jobID] = reportSpec.split('-');
+  const [issueID, timeStamp, jobID] = pageArgs.split('/');
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, query);

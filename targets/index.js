@@ -91,7 +91,7 @@ const populateQuery = async query => {
       `${margin}    <li>${issueCountString} reported by ${toolCountString}: ${reporterString}</li>`
     );
     // Add a question link about the reported issues to the array.
-    const href = `href="reportIssues.html/${timeStamp}-${jobID}"`;
+    const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
     const label = `aria-label="What ${issueCountString} reported for the ${pageWhat} page?"`;
     const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
     const link = `<a ${href} ${label}>What ${questionString}?</a>`;

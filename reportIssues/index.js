@@ -113,7 +113,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
         lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         const whereQuestionString = 'Where was the issue found?';
         const labelString = `Where was the ${issue.summary} issue found on the ${pageWhat} page?`;
-        const href = `href="/reportIssue.html/${issueID}/${timeStamp}-${jobID}"`;
+        const href = `href="/reportIssue.html/${issueID}/${timeStamp}/${jobID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
         lines.push(`${margin}      <li>${whereLink}</li>`);
@@ -128,7 +128,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
 };
 // Returns a page answering the target-issues question.
 exports.answer = async pageArgs => {
-  const [timeStamp, jobID] = pageArgs.split('-');
+  const [timeStamp, jobID] = pageArgs.split('/');
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);

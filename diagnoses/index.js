@@ -104,8 +104,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
 };
 // Returns a page answering the diagnoses question.
 exports.answer = async (pageArgs, search) => {
-  const [issueID, reportSpec, catalogIndex] = pageArgs.split('/');
-  const [timeStamp, jobID] = reportSpec.split('-');
+  const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/');
   const params = new URLSearchParams(search);
   const pathID = params.get('pathID');
   const query = {};

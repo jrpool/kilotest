@@ -265,7 +265,7 @@ exports.getNowStamp = () => {
   return getTimeStamp(new Date());
 };
 // Returns the data from a POST request.
-exports.getPOSTData = async request => {
+exports.getPOSTData = async request => new Promise(resolve => {
   const bodyParts = [];
   request.on('data', chunk => {
     bodyParts.push(chunk);
@@ -273,9 +273,9 @@ exports.getPOSTData = async request => {
   request.on('end', async () => {
     const body = bodyParts.join('');
     const query = querystring.parse(body);
-    return query;
+    resolve(query);
   });
-};
+});
 // Get the retest recommendations.
 exports.getRecs = async () => {
   const recsJSON = await fs.readFile(path.join(__dirname, '/jobs/recs.json'), 'utf8');

@@ -20,6 +20,7 @@ const https = require('https');
 const path = require('path');
 const answer = {
   issues: require('./issues/index').answer,
+  manage: require('./manage/index').answer,
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
   retestOrderForm: require('./retestOrderForm/index').answer,

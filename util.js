@@ -259,7 +259,7 @@ exports.getPathID = (catalog, catalogIndex, pathID) => {
   return pathID ?? '/html';
 };
 // Converts a string to a plain-text 1-line ASCII string.
-exports.getPlainText = string => string.replace(/&/g, '+').replace(/[^-+=/#%,;:.?! \w]/g, ' ');
+exports.getPlainText = string => string.replace(/&/g, '+').replace(/[<>"'&]/g, ' ');
 // Returns a time stamp for now.
 exports.getNowStamp = () => {
   return getTimeStamp(new Date());

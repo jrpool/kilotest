@@ -21,7 +21,7 @@
       <p>To add a retest to the queue, submit your authorization code.</p>
       <form action="/retestOrder.html/__timeStamp__/__jobID__" method="post">
         <p><label>
-          Authorization code: <input size="3" maxlength="3" name="authCode" required>
+          Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required>
         </label></p>
         <p><button type="submit">Submit</button></p>
       </form>

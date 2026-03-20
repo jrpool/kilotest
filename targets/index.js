@@ -13,6 +13,7 @@ const {
   getReport,
   getReporterString,
   getTargetLogs,
+  isClaimed,
   isQueued
 } = require('../util');
 const fs = require('fs/promises');
@@ -98,8 +99,12 @@ const populateQuery = async query => {
     lines.push(`${margin}    <li>${link}</li>`);
     // Add the status of, and if necessary a question link about, retesting to the array.
     const queued = await isQueued(pageWhat);
+    const claimed = await isClaimed(pageWhat);
     let retestString;
-    if (queued) {
+    if (claimed) {
+      retestString = 'Currently being retested';
+    }
+    else if (queued) {
       retestString = 'Currently in the queue for retesting';
     }
     else {

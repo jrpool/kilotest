@@ -337,6 +337,18 @@ exports.htmlSafe = string => string
 exports.isJobID = string => {
   return /^[a-z0-9]{5}$/.test(string);
 };
+// Returns whether a job to retest a target is being performed.
+exports.isClaimed = async targetWhat => {
+  const claimedJobFileNames = await fs.readdir(path.join(__dirname, 'jobs/claimed'));
+  for (const fileName of claimedJobFileNames) {
+    const jobJSON = await fs.readFile(path.join(__dirname, `jobs/claimed/${fileName}`));
+    const job = JSON.parse(jobJSON);
+    if (job.target.what === targetWhat) {
+      return true;
+    }
+  }
+  return false;
+};
 // Returns whether a job to retest a target is in the queue.
 exports.isQueued = async targetWhat => {
   const queuedJobFileNames = await fs.readdir(path.join(__dirname, 'jobs/queue'));

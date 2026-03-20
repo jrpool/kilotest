@@ -23,14 +23,20 @@ const http = require('http');
 const https = require('https');
 const path = require('path');
 const answer = {
+  diagnoses: require('./diagnoses/index').answer,
   issues: require('./issues/index').answer,
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
+  retestOrder: require('./retestOrder/index').answer,
   retestOrderForm: require('./retestOrderForm/index').answer,
+  retestRec: require('./retestRec/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
   rules: require('./rules/index').answer,
   targets: require('./targets/index').answer,
-  diagnoses: require('./diagnoses/index').answer
+  testOrder: require('./testOrder/index').answer,
+  testOrderForm: require('./testOrderForm/index').answer,
+  testRec: require('./testRec/index').answer,
+  testRecForm: require('./testRecForm/index').answer
 };
 
 // FUNCTIONS

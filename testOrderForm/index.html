@@ -6,20 +6,22 @@
     <meta name="publisher" content="Jonathan Robert Pool">
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="report,accessibility,a11y">
-    <title>__target__ retest order | Kilotest</title>
+    <title>Test order | Kilotest</title>
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <main>
-      <h1><a href="/">Kilotest</a>: Retest order for __target__</h1>
-      <p>The __target__ page was <a href="/reportIssues.html/__timeStamp__/__jobID__">last tested</a> __ago__ ago by job __jobID__ on __dateTime__.</p>
-      <p>Retest recommendations received:</p>
-      <ul>
-        __recs__
-      </ul>
-      <p>To add a retest to the queue, submit your authorization code.</p>
-      <form action="/retestOrder.html/__timeStamp__/__jobID__" method="post">
+      <h1><a href="/">Kilotest</a>: Test order</h1>
+      <p>To add a page to the queue for testing, you must select one of the following recommendations and enter your authorization code.</p>
+      <p>If the page is not yet recommended, first <a href="targets.html">recommend it</a>.</p>
+      <form action="/testOrder.html" method="post">
+        <fieldset>
+          <legend>Recommendations</legend>
+          <ul>
+            __recs__
+          </ul>
+        </fieldset>
         <p><label>
           Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required>
         </label></p>

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getLog, getNowStamp, getPlainText} = require('../util');
+const {getJSON, getLog, getNowStamp, getPlainText, getRecs, jobsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -15,20 +15,19 @@ const path = require('path');
 exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);
-  const targetWhat = log.pageWhat;
-  const recsPath = path.join(__dirname, '..', 'jobs', 'recs.json');
+  const targetURL = log.pageURL;
   // Get the data on waiting recommendations.
-  const recsJSON = await fs.readFile(recsPath, 'utf8');
-  const recs = JSON.parse(recsJSON);
-  recs[targetWhat] ??= [];
+  const recs = await getRecs();
+  recs[targetURL] ??= [];
   const plainWhy = getPlainText(why);
   // Add the recommendation to those for the target.
-  recs[targetWhat].push({
+  recs[targetURL].push({
     timeStamp: getNowStamp(),
+    pageWhat: log.pageWhat,
     why: plainWhy
   });
   // Save the revised recommendations.
-  await fs.writeFile(recsPath, getJSON(recs));
+  await fs.writeFile(path.join(jobsPath, 'recs.json'), getJSON(recs));
   const query = {
     target: targetWhat,
     why: plainWhy

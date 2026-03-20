@@ -12,7 +12,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Implements a retest order and returns an acknowledgement page.
-exports.answer = async (pageArgs, authCode) => {
+exports.answer = async (target, authCode) => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     const [timeStamp, jobID] = pageArgs.split('/');

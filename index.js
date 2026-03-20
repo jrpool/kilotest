@@ -174,72 +174,137 @@ const requestHandler = async (request, response) => {
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
     // Get the data from the request body.
-    const query = await getPOSTData(request);
-    const {authCode, why} = query;
-    const [timeStamp, jobID] = pageArgs.split('/');
-    // If the request is a valid retest recommendation:
-    if (
-      pageName === 'retestRec.html'
-      && isTimeStamp(timeStamp)
-      && isJobID(jobID)
-      && why
-    ) {
-      // Serve headers for a response.
-      response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      response.setHeader('Content-Location', `${pathname}${search}`);
-      // Get the answer data.
-      const answerData = await require('./retestRec/index').answer(pageArgs, why);
-      // If they are valid:
-      if (answerData.status === 'ok') {
-        // Serve the answer page.
-        response.end(answerData.answerPage);
+    const postData = await getPOSTData(request);
+    // If the request is a retest recommendation:
+    if (pageName === 'retestRec.html') {
+      const {authCode, why} = postData;
+      const [timeStamp, jobID] = pageArgs.split('/');
+      // If the request is valid:
+      if (isTimeStamp(timeStamp) && isJobID(jobID) && why && authCode === process.env.AUTH_CODE) {
+        // Serve headers for a response.
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.setHeader('Content-Location', `${pathname}${search}`);
+        // Get the answer data.
+        const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
+        .answer(pageArgs, why);
+        // If they are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          console.log(answerData.error);
+          await serveError({message: answerData.error}, response);
+        }
       }
-      // Otherwise, i.e. if they are invalid:
+      // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        console.log(answerData.error);
-        await serveError({message: answerData.error}, response);
+        const message = 'Invalid retest recommendation';
+        console.log(`ERROR: ${message}`);
+        await serveError({message}, response);
       }
     }
-    // Otherwise, if it is a valid retest order:
-    else if (
-      pageName === 'retestOrder.html'
-      && isTimeStamp(timeStamp)
-      && isJobID(jobID)
-      && authCode
-    ) {
-      // Serve headers for a response.
-      response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      response.setHeader('Content-Location', `${pathname}${search}`);
-      // Get the answer data.
-      const answerData = await require('./retestOrder/index').answer(pageArgs, authCode);
-      // If the answer data are valid:
-      if (answerData.status === 'ok') {
-        // Serve the answer page.
-        response.end(answerData.answerPage);
+    // Otherwise, if it is a test recommendation:
+    else if (pageName === 'testRec.html') {
+      const {authCode, targetWhat, targetURL, why} = postData;
+      // If the request is valid:
+      if (
+        targetWhat && targetURL.startsWith('https://') && why && authCode === process.env.AUTH_CODE
+      ) {
+        // Serve headers for a response.
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.setHeader('Content-Location', `${pathname}${search}`);
+        // Get the answer data.
+        const answerData = await require(path.join(__dirname, 'testRec', 'index'))
+        .answer(pageArgs, why);
+        // If they are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          console.log(answerData.error);
+          await serveError({message: answerData.error}, response);
+        }
       }
-      // Otherwise, i.e. if they are invalid:
+      // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        console.log(answerData.error);
-        await serveError({message: answerData.error}, response);
+        const message = 'Invalid test recommendation';
+        console.log(`ERROR: ${message}`);
+        await serveError({message}, response);
       }
     }
-    // Otherwise, if it is a valid Testaro report:
+    // Otherwise, if it is a test order:
+    else if (pageName === 'testOrder.html') {
+      const {target, authCode} = postData;
+      const [targetURL, targetWhat] = target.split('\t');
+      // If the request is valid:
+      if (targetWhat && targetURL.startsWith('https://') && authCode === process.env.AUTH_CODE) {
+        // Serve headers for a response.
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.setHeader('Content-Location', `${pathname}${search}`);
+        // Get the answer data.
+        const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
+        .answer(targetURL, targetWhat, authCode);
+        // If the answer data are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          console.log(answerData.error);
+          await serveError({message: answerData.error}, response);
+        }
+      }
+      // Otherwise, i.e. if the request is invalid:
+      else {
+        // Report the error.
+        const message = 'Invalid test order';
+        console.log(`ERROR: ${message}`);
+        await serveError({message}, response);
+      }
+    }
+    // Otherwise, if it is a Testaro report:
     else if (pathname === '/report' && pageArgs === testaroAgent) {
-      const report = await getPOSTData(request);
+      const {agentPW, report} = await getPOSTData(request);
       const {id} = report;
-      console.log(`Testaro report ${id} received`);
-      // Save it.
-      await fs.writeFile(`${__dirname}/reports/${id}.json`, getJSON(report));
-      // Acknowledge receipt.
-      response.end('ok');
+      // If the request is valid:
+      if (id && agentPW === `process.env.${testaroAgent}_AGENT_PW`) {
+        console.log(`Testaro report ${id} received`);
+        // Save the report.
+        await fs.writeFile(`${__dirname}/reports/${id}.json`, getJSON(report));
+        // Acknowledge receipt.
+        response.end('ok');
+      }
+      // Otherwise, i.e. if the request is invalid:
+      else {
+        const message = 'Report submission invalid';
+        console.log(`ERROR: ${message}`);
+        // Refuse the request.
+        response.writeHead(400, {
+          'Content-Type': 'text/plain; charset=utf-8'
+        });
+        response.end('Report submission invalid');
+      }
     }
     // Otherwise, i.e. if the POST request is any other request:
     else {
       // Report its invalidity.
       const message = 'ERROR: invalid POST request';
       console.log(message);
+      // Send an error response.
+      response.writeHead(200, {
+        'Content-Type': 'text/plain; charset=utf-8'
+      });
+      response.end('');
       await serveError(message, response);
     }
   }

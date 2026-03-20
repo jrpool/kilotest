@@ -1,39 +1,38 @@
 /*
   index.js
-  Answers the retest question.
+  Serves a form for ordering a recommended test.
 */
 
 // IMPORTS
 
-const {getAgoString, getDateTimeString, getLog} = require('../util');
+const {getAgoString, getDateTimeString, getRecs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
 // FUNCTIONS
 
-// Returns a retest order form.
-exports.answer = async pageArgs => {
-  const [timeStamp, jobID] = pageArgs.split('/');
-  const log = await getLog(timeStamp, jobID);
-  const targetWhat = log.pageWhat;
-  const recsPath = path.join(__dirname, '..', 'jobs', 'recs.json');
-  const recsJSON = await fs.readFile(recsPath, 'utf8');
-  const recs = JSON.parse(recsJSON);
-  const targetRecs = recs[targetWhat] || [];
-  const margin = ' '.repeat(8);
+// Returns a test order form.
+exports.answer = async () => {
+  const recs = await getRecs();
+  const pageURLs = Object.keys(recs);
+  const margin = ' '.repeat(12);
   const lines = [];
-  targetRecs.forEach(rec => {
-    lines.push(`${margin}<li>${rec.timeStamp}: ${rec.why}</li>`);
+  // For each page with any recommendations:
+  pageURLs.forEach(pageURL => {
+    // Add its URL to the lines.
+    lines.push(`${margin}<li>${pageURL}`);
+    lines.push(`${margin}  <ul>`)
+    // For each recommendation of the page:
+    recs[pageURL].forEach(rec => {
+      const radio = `<input type="radio" name="target" value="${pageURL}\t${rec.pageWhat}">`;
+      // Add a line with a radio button and the recommended page name.
+      lines.push(`${margin}    <li>${radio} ${rec.pageWhat}</li>`);
+    });
   });
   const query = {
-    target: targetWhat,
-    ago: getAgoString(timeStamp),
-    jobID,
-    timeStamp,
-    dateTime: getDateTimeString(timeStamp),
     recs: lines.join('\n')
   };
-  // Get the recommendation form template.
+  // Get the order form template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {

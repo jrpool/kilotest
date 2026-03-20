@@ -11,11 +11,11 @@ const {
   getReport,
   getWeightName,
   htmlSafe,
+  tools
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 const path = require('path');
-const toolNames = require('testaro/procs/job').tools;
 
 // FUNCTIONS
 
@@ -90,7 +90,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     // Add lines.
     lines.push(`${margin}  <li>Diagnosis ${index + 1}`);
     lines.push(`${margin}    <ul>`);
-    lines.push(`${margin}      <li>Tool: ${toolNames[toolID]}</li>`);
+    lines.push(`${margin}      <li>Tool: ${tools[toolID][0]} (${tools[toolID][1]})</li>`);
     if (ruleID !== what) {
       lines.push(`${margin}      <li>Rule: <code>${ruleID}</code></li>`);
     }

@@ -8,11 +8,11 @@
 const {
   getWeightName,
   htmlSafe,
+  tools
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 const path = require('path');
-const toolNames = require('testaro/procs/job').tools;
 
 // FUNCTIONS
 
@@ -21,7 +21,7 @@ const populateQuery = async (issueID, query) => {
   // Add facts about the issue to the query.
   query.issue = issues[issueID].summary;
   const issue = issues[issueID];
-  const {tools, wcag, weight, why} = issue;
+  const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
   query.wcag = wcag;
@@ -30,11 +30,11 @@ const populateQuery = async (issueID, query) => {
   const margin = ' '.repeat(6);
   lines.push(`${margin}<ul>`);
   // For each tool with any rules belonging to the issue:
-  Object.keys(tools).forEach(toolID => {
+  Object.keys(issue.tools).forEach(toolID => {
     // Add a line.
-    lines.push(`${margin}  <li><h3>${toolNames[toolID]} rules</h3>`);
+    lines.push(`${margin}  <li><h3>${tools[toolID][0]} rules</h3>`);
     lines.push(`${margin}    <ul>`);
-    const tool = tools[toolID];
+    const tool = issue.tools[toolID];
     // For each rule of the tool belonging to the issue:
     Object.keys(tool).forEach(ruleID => {
       const rule = tool[ruleID];

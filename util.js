@@ -6,7 +6,6 @@
 // IMPORTS
 
 const {issues} = require('testilo/procs/score/tic');
-const toolNames = require('testaro/procs/job').tools;
 const fs = require('fs/promises');
 const path = require('path');
 const querystring = require('querystring');
@@ -17,6 +16,21 @@ const querystring = require('querystring');
 const logsPath = path.join(__dirname, 'logs');
 // Path of the reports directory.
 const reportsPath = path.join(__dirname, 'reports');
+// IDs, names, and sponsors of Testaro tools.
+const tools = exports.tools = {
+  alfa: ['Alfa', 'Siteimprove'],
+  aslint: ['ASLint', 'eSSENTIAL Accessibility'],
+  axe: ['Axe', 'Deque'],
+  ed11y: ['Editoria11y', 'Princeton University'],
+  htmlcs: ['HTML CodeSniffer', 'Squiz Labs'],
+  ibm: ['Accessibility Checker', 'IBM'],
+  nuVal: ['Html Checker API', 'W3C'],
+  nuVnu: ['Html Checker', 'W3C'],
+  qualWeb: ['QualWeb', 'University of Lisbon'],
+  testaro: ['Testaro', 'CVS Health'],
+  wax: ['WallyAX', 'Wally'],
+  wave: ['WAVE', 'Utah State University'],
+};
 
 // FUNCTIONS
 
@@ -284,7 +298,7 @@ exports.getRecs = async () => {
 };
 // Returns a string of tool names.
 exports.getReporterString = toolIDSet =>
-  alphaSort(Array.from(toolIDSet).map(toolID => toolNames[toolID])).join(' + ');
+  alphaSort(Array.from(toolIDSet).map(toolID => tools[toolID][0])).join(' + ');
 // Converts a catalog item text to a text-fragment link destination.
 exports.getTextFragmentHref = (text, url) => {
   const fragmentList = text

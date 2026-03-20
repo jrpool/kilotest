@@ -17,7 +17,7 @@ const claimedDir = `${jobsDir}/claimed`;
 const testaroAgent = process.env.TESTARO_AGENT;
 
 // IMPORTS
-const {getPOSTData, isTimeStamp, isJobID} = require('./util');
+const {getJSON, getPOSTData, isTimeStamp, isJobID} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
@@ -218,6 +218,16 @@ const requestHandler = async (request, response) => {
         console.log(answerData.error);
         await serveError({message: answerData.error}, response);
       }
+    }
+    // Otherwise, if it is a valid Testaro report:
+    else if (pathname === '/report' && pageArgs === testaroAgent) {
+      const report = await getPOSTData(request);
+      const {id} = report;
+      console.log(`Testaro report ${id} received`);
+      // Save it.
+      await fs.writeFile(`${__dirname}/reports/${id}.json`, getJSON(report));
+      // Acknowledge receipt.
+      response.end('ok');
     }
     // Otherwise, i.e. if the POST request is any other request:
     else {

@@ -44,6 +44,12 @@ exports.answer = async (pageArgs, authCode) => {
     const recs = await getRecs();
     // Delete the recommendations to retest the target.
     delete recs[pageWhat];
+    // Also delete any recommendations for pages with the same URL but different names.
+    Object.keys(recs).forEach(pageWhat => {
+      if (recs[pageWhat].url === pageURL) {
+        delete recs[pageWhat];
+      }
+    });
     // Save the revised recommendations.
     await fs.writeFile(path.join(__dirname, '..', 'jobs', 'recs.json'), getJSON(recs));
     // Get the answer template.

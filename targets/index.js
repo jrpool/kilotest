@@ -13,8 +13,7 @@ const {
   getReport,
   getReporterString,
   getTargetLogs,
-  isClaimed,
-  isQueued
+  isRecommendable
 } = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
@@ -98,13 +97,12 @@ const populateQuery = async query => {
     const link = `<a ${href} ${label}>What ${questionString}?</a>`;
     lines.push(`${margin}    <li>${link}</li>`);
     // Add the status of, and if necessary a question link about, retesting to the array.
-    const queued = await isQueued(pageWhat);
-    const claimed = await isClaimed(pageWhat);
+    const status = await isRecommendable(pageURL);
     let retestString;
-    if (claimed) {
+    if (status === 'claimed') {
       retestString = 'Currently being retested';
     }
-    else if (queued) {
+    else if (status === 'queued') {
       retestString = 'Currently in the queue for retesting';
     }
     else {

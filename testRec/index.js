@@ -1,23 +1,49 @@
 /*
   index.js
-  Answers the retest question.
+  Processes a test recommendation.
 */
 
 // IMPORTS
 
-const {getJSON, getLog, getNowStamp, getPlainText} = require('../util');
+const {getJSON, getNowStamp, getPlainText, getJob} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
 // FUNCTIONS
 
-// Records a retest recommendation and returns an acknowledgement page.
+// Records a test recommendation and returns an acknowledgement page.
 exports.answer = async (pageArgs, why) => {
-  const [timeStamp, jobID] = pageArgs.split('/');
-  const log = await getLog(timeStamp, jobID);
-  const targetWhat = log.pageWhat;
-  const recsPath = path.join(__dirname, '..', 'jobs', 'recs.json');
-  // Get the data on waiting recommendations.
+  const [what, url, why] = pageArgs.split('/');
+  const queuePath = path.join(__dirname, '..', 'jobs', 'queue');
+  const claimedPath = path.join(__dirname, '..', 'jobs', 'claimed');
+  // Get the data on pages being tested.
+  const claimNames = await fs.readdir(claimedPath);
+  // For each claimed job:
+  for (const claimName of claimNames) {
+    const job = await getJob(path.join(claimedPath, claimName));
+    // If its target is the recommended page:
+    if (job.target.url === url) {
+      // Return an answer reporting this.
+      return {
+        status: 'error',
+        error: 'Page is already being tested'
+      };
+    }
+  }
+  // If the page is not claimed, get the data on queued pages.
+  const queuedNames = await fs.readdir(queuePath);
+  // For each queued job:
+  for (const queuedName of queuedNames) {
+    const job = await getJob(path.join(queuePath, queuedName));
+    // If its target is the recommended page:
+    if (job.target.url === url) {
+      // Return an answer reporting this.
+      return {
+        status: 'error',
+        error: 'Page is already queued for testing'
+      };
+    }
+  }
   const recsJSON = await fs.readFile(recsPath, 'utf8');
   const recs = JSON.parse(recsJSON);
   recs[targetWhat] ??= [];

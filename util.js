@@ -12,8 +12,12 @@ const querystring = require('querystring');
 
 // CONSTANTS
 
+// Path of the jobs directory.
+exports.jobsPath = path.join(__dirname, 'jobs');
 // Path of the logs directory.
 const logsPath = path.join(__dirname, 'logs');
+// Path of the recommendations file.
+const recsPath = exports.recsPath = path.join(__dirname, 'jobs', 'recs.json');
 // Path of the reports directory.
 const reportsPath = path.join(__dirname, 'reports');
 // IDs, names, and sponsors of Testaro tools.
@@ -24,8 +28,8 @@ const tools = exports.tools = {
   ed11y: ['Editoria11y', 'Princeton University'],
   htmlcs: ['HTML CodeSniffer', 'Squiz Labs'],
   ibm: ['Accessibility Checker', 'IBM'],
-  nuVal: ['Html Checker API', 'W3C'],
-  nuVnu: ['Html Checker', 'W3C'],
+  nuVal: ['Html Checker API', 'World Wide Web Consortium'],
+  nuVnu: ['Html Checker', 'World Wide Web Consortium'],
   qualWeb: ['QualWeb', 'University of Lisbon'],
   testaro: ['Testaro', 'CVS Health'],
   wax: ['WallyAX', 'Wally'],
@@ -249,6 +253,12 @@ const getTimeStamp = exports.getTimeStamp = date => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
   return timeStamp;
 };
+// Returns a job from a file.
+const getJob = exports.getJob = async jobPath => {
+  const jobJSON = await fs.readFile(jobPath, 'utf8');
+  const job = JSON.parse(jobJSON);
+  return job;
+}
 // Returns a string describing the time in days since a time stamp.
 exports.getAgoString = timeStamp => {
   const agoDays = getAgoDays(timeStamp);
@@ -290,9 +300,9 @@ exports.getPOSTData = async request => new Promise(resolve => {
     resolve(query);
   });
 });
-// Get the retest recommendations.
+// Get the test recommendations.
 exports.getRecs = async () => {
-  const recsJSON = await fs.readFile(path.join(__dirname, '/jobs/recs.json'), 'utf8');
+  const recsJSON = await fs.readFile(recsPath, 'utf8');
   const recs = JSON.parse(recsJSON);
   return recs;
 };
@@ -337,29 +347,30 @@ exports.htmlSafe = string => string
 exports.isJobID = string => {
   return /^[a-z0-9]{5}$/.test(string);
 };
-// Returns whether a job to retest a target is being performed.
-exports.isClaimed = async targetWhat => {
-  const claimedJobFileNames = await fs.readdir(path.join(__dirname, 'jobs/claimed'));
+// Returns whether a job to test a target is eligible for a recommendation.
+exports.isRecommendable = async targetURL => {
+  const claimedJobFileNames = await fs.readdir(path.join(jobsPath, 'claimed'));
+  // For each claimed job:
   for (const fileName of claimedJobFileNames) {
-    const jobJSON = await fs.readFile(path.join(__dirname, `jobs/claimed/${fileName}`));
-    const job = JSON.parse(jobJSON);
-    if (job.target.what === targetWhat) {
-      return true;
+    const job = await getJob(path.join(jobsPath, 'claimed', fileName));
+    // If its URL is that of the recommended target:
+    if (job.target.url === targetURL) {
+      // Return this.
+      return 'claimed';
     }
   }
-  return false;
-};
-// Returns whether a job to retest a target is in the queue.
-exports.isQueued = async targetWhat => {
-  const queuedJobFileNames = await fs.readdir(path.join(__dirname, 'jobs/queue'));
+  const queuedJobFileNames = await fs.readdir(path.join(jobsPath, 'queue'));
+  // If no claimed job has the URL of the target, for each queued job:
   for (const fileName of queuedJobFileNames) {
-    const jobJSON = await fs.readFile(path.join(__dirname, `jobs/queue/${fileName}`));
-    const job = JSON.parse(jobJSON);
-    if (job.target.what === targetWhat) {
-      return true;
+    const job = await getJob(path.join(jobsPath, 'queue', fileName));
+    // If its URL is that of the recommended target:
+    if (job.target.url === targetURL) {
+      // Return this.
+      return 'queued';
     }
   }
-  return false;
+  // If no claimed or queued job has the URL of the target, return this.
+  return '';
 };
 // Returns whether a string is a time stamp.
 exports.isTimeStamp = string => {

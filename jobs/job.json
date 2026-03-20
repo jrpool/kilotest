@@ -3,7 +3,7 @@
   "what": "Kilotest job",
   "strict": false,
   "standard": "only",
-  "observe": true,
+  "observe": false,
   "device": {
     "id": "default",
     "windowOptions": {

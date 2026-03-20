@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the retest question.
+  Answers the test question.
 */
 
 // IMPORTS

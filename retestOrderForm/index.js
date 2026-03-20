@@ -23,7 +23,7 @@ exports.answer = async pageArgs => {
   const margin = ' '.repeat(8);
   const lines = [];
   targetRecs.forEach(rec => {
-    lines.push(`${margin}<li>${rec.timeStamp}: ${rec.why}</li>`);
+    lines.push(`${margin}<li>${getDateTimeString(rec.timeStamp)}: ${rec.why}</li>`);
   });
   const query = {
     target: targetWhat,

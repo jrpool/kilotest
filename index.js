@@ -11,6 +11,10 @@ require('dotenv').config({quiet: true});
 // CONSTANTS
 
 const protocol = process.env.PROTOCOL || 'http';
+const jobsDir = `${__dirname}/jobs`;
+const queueDir = `${jobsDir}/queue`;
+const claimedDir = `${jobsDir}/claimed`;
+const testaroAgent = process.env.TESTARO_AGENT;
 
 // IMPORTS
 const {getPOSTData, isTimeStamp, isJobID} = require('./util');
@@ -111,6 +115,44 @@ const requestHandler = async (request, response) => {
       }
       catch (error) {
         await serveError(error, response);
+      }
+    }
+    // Otherwise, if it a valid request from Testaro for a job:
+    else if (pathname === '/job' && pageArgs === testaroAgent) {
+      const claimedJobNames = await fs.readdir(claimedDir);
+      // If any jobs are claimed:
+      if (claimedJobNames.length) {
+        // Report this.
+        console.log('ERROR: Testaro requested a job before finishing another job');
+        // Refuse the request.
+        response.writeHead(400, {
+          'Content-Type': 'text/plain; charset=utf-8'
+        });
+        response.end('ERROR: You requested a job before finishing another job');
+      }
+      // Otherwise, i.e. if no jobs are claimed:
+      else {
+        const queuedJobNames = await fs.readdir(queueDir);
+        // If any jobs are queued:
+        if (queuedJobNames.length) {
+          const oldestJobName = queuedJobNames[0];
+          const firstJob = await fs.readFile(`${queueDir}/${oldestJobName}`, 'utf8');
+          // Send the first one to Testaro.
+          response.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8'
+          });
+          response.end(firstJob);
+          // Move the job from the queue to the claimed-jobs directory.
+          await fs.rename(`${queueDir}/${oldestJobName}`, `${claimedDir}/${oldestJobName}`);
+        }
+        // Otherwise, i.e. if no jobs are queued:
+        else {
+          // Send a no-jobs response.
+          response.writeHead(200, {
+            'Content-Type': 'text/plain; charset=utf-8'
+          });
+          response.end('');
+        }
       }
     }
     // Otherwise, i.e. if it is any other GET request:

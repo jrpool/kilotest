@@ -28,12 +28,11 @@ const populateQuery = async (issueID, query) => {
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
-  lines.push(`${margin}<ul>`);
   // For each tool with any rules belonging to the issue:
   Object.keys(issue.tools).forEach(toolID => {
     // Add a line.
-    lines.push(`${margin}  <li><h3>${tools[toolID][0]} rules</h3>`);
-    lines.push(`${margin}    <ul>`);
+    lines.push(`${margin}<li><h3>${tools[toolID][0]} rules</h3>`);
+    lines.push(`${margin}  <ul>`);
     const tool = issue.tools[toolID];
     // For each rule of the tool belonging to the issue:
     Object.keys(tool).forEach(ruleID => {
@@ -41,16 +40,15 @@ const populateQuery = async (issueID, query) => {
       const {what} = rule;
       // Add facts about the rule.
       if (what === ruleID) {
-        lines.push(`${margin}      <li><code>${htmlSafe(ruleID)}</code></li>`);
+        lines.push(`${margin}    <li><code>${htmlSafe(ruleID)}</code></li>`);
       }
       else {
-        lines.push(`${margin}      <li><code>${htmlSafe(ruleID)}</code>: ${htmlSafe(what)}</li>`);
+        lines.push(`${margin}    <li><code>${htmlSafe(ruleID)}</code>: ${htmlSafe(what)}</li>`);
       }
     });
-    lines.push(`${margin}    </ul>`);
-    lines.push(`${margin}  </li>`);
+    lines.push(`${margin}  </ul>`);
+    lines.push(`${margin}</li>`);
   });
-  lines.push(`${margin}</ul>`);
   // Add the lines to the query.
   query.rules = lines.join('\n');
 };

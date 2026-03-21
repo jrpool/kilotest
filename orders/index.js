@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJobNames, getObject} = require('../util');
+const {getJobNames, getObject, jobsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -21,22 +21,18 @@ const populateQuery = async query => {
     queue: [],
     claimed: []
   };
-  // For each job in the queue:
-  for (const jobName of jobNames.queue) {
-    // Get the job.
-    const job = await getObject(path.join(jobsPath, 'queue', jobName));
-    lines.queue.push(`${margin}<li>${job.target.what}: <code>${job.target.url}</code></li>`);
-  }
-  // For each claimed job:
-  for (const jobName of jobNames.claimed) {
-    // Get the job.
-    const job = await getObject(path.join(jobsPath, 'queue', jobName));
-    lines.claimed.push(`${margin}<li>${job.target.what}: <code>${job.target.url}</code></li>`);
-  }
-  // Add the lines to the query.
-  ['queue', 'claimed'].forEach(category => {
+  // For each job category:
+  for (const category of ['queue', 'claimed']) {
+    // For each job in the category:
+    for (const jobName of jobNames[category]) {
+      // Get the job.
+      const job = await getObject(path.join(jobsPath, category, jobName));
+      // Add a line.
+      lines[category].push(`${margin}<li><code>${job.target.url}</code> (${job.target.what})</li>`);
+    }
+    // Add the lines to the query.
     query[category] = lines[category].join('\n');
-  });
+  }
 };
 // Returns a page answering the orders question.
 exports.answer = async () => {

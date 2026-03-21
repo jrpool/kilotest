@@ -28,6 +28,8 @@ const populateQuery = async query => {
   lines.sort();
   // Add the lines to the query.
   query.recs = lines.join('\n');
+  // Add a no-recommendations message, if applicable, to the query.
+  query.noRecs = lines.length ? '' : 'No recommendations await approval now.';
 };
 // Returns a page answering the orders question.
 exports.answer = async () => {

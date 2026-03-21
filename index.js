@@ -217,7 +217,7 @@ const requestHandler = async (request, response) => {
         response.setHeader('Content-Location', `${pathname}${search}`);
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'testRec', 'index'))
-        .answer(pageArgs, why);
+        .answer(what, url, why);
         // If they are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.

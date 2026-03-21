@@ -331,7 +331,7 @@ exports.getTargetLogs = async () => {
     targetDirectory[log.pageURL] = log;
   }
   // Get an array of those target logs, sorted by description.
-  const targets = objectSort(Object.values(targetDirectory), 'pageWhat', 'alpha');
+  const targets = objectSort(Object.values(targetDirectory), 'what', 'alpha');
   return targets;
 };
 // Gets the name of an issue weight.

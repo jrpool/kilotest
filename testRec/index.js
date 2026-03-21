@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getNowStamp, getPlainText, getJob} = require('../util');
+const {getJSON, getNowStamp, getPlainText, getPOSTData, isRecommendable} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -13,44 +13,22 @@ const path = require('path');
 
 // Records a test recommendation and returns an acknowledgement page.
 exports.answer = async (pageArgs, why) => {
-  const [what, url, why] = pageArgs.split('/');
-  const queuePath = path.join(__dirname, '..', 'jobs', 'queue');
-  const claimedPath = path.join(__dirname, '..', 'jobs', 'claimed');
-  // Get the data on pages being tested.
-  const claimNames = await fs.readdir(claimedPath);
-  // For each claimed job:
-  for (const claimName of claimNames) {
-    const job = await getJob(path.join(claimedPath, claimName));
-    // If its target is the recommended page:
-    if (job.target.url === url) {
-      // Return an answer reporting this.
-      return {
-        status: 'error',
-        error: 'Page is already being tested'
-      };
-    }
+  const [what, url] = pageArgs.split('/');
+  const status = await isRecommendable(url);
+  // If the target is not recommendable:
+  if (status) {
+    // Return an answer reporting this.
+    return {
+      status: 'error',
+      error: `Page is already ${status}`
+    };
   }
-  // If the page is not claimed, get the data on queued pages.
-  const queuedNames = await fs.readdir(queuePath);
-  // For each queued job:
-  for (const queuedName of queuedNames) {
-    const job = await getJob(path.join(queuePath, queuedName));
-    // If its target is the recommended page:
-    if (job.target.url === url) {
-      // Return an answer reporting this.
-      return {
-        status: 'error',
-        error: 'Page is already queued for testing'
-      };
-    }
-  }
-  const recsJSON = await fs.readFile(recsPath, 'utf8');
-  const recs = JSON.parse(recsJSON);
-  recs[targetWhat] ??= [];
+  // Otherwise, i.e. if it is recommendable, make the reason display-safe.
   const plainWhy = getPlainText(why);
   // Add the recommendation to those for the target.
   recs[targetWhat].push({
     timeStamp: getNowStamp(),
+    what,
     why: plainWhy
   });
   // Save the revised recommendations.

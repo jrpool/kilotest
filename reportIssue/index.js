@@ -27,9 +27,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Add facts about the issue to the query.
   query.issue = issues[issueID].summary;
   const log = await getLog(timeStamp, jobID, true);
-  const {pageURL, pageWhat} = log;
-  query.target = pageWhat;
-  query.url = pageURL;
+  query.target = log.what;
+  query.url = log.url;
   query.dateTime = getDateTimeString(timeStamp);
   const issue = issues[issueID];
   const {wcag, weight, why} = issue;

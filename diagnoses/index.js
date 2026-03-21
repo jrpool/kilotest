@@ -24,8 +24,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   // Add facts about the issue to the query.
   query.catalogIndex = catalogIndex;
   const log = await getLog(timeStamp, jobID, true);
-  const {pageURL, pageWhat} = log;
-  query.target = pageWhat;
+  query.target = log.what;
   query.issue = issues[issueID].summary;
   query.url = pageURL;
   query.dateTime = getDateTimeString(timeStamp);

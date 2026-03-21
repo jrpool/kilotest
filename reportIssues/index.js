@@ -23,12 +23,12 @@ const path = require('path');
 const getIssuesSummary = async (timeStamp, jobID) => {
   // Initialize data for the summary.
   const log = await getLog(timeStamp, jobID, true);
-  const {pageURL, pageWhat} = log;
+  const {url, what} = log;
   const issuesData = {
     timeStamp,
     jobID,
-    pageWhat,
-    pageURL,
+    what,
+    url,
     issues: {}
   };
   // Get the report.
@@ -55,8 +55,8 @@ const getIssuesSummary = async (timeStamp, jobID) => {
   const summary = {
     timeStamp: issuesData.timeStamp,
     jobID: issuesData.jobID,
-    pageWhat: issuesData.pageWhat,
-    pageURL: issuesData.pageURL,
+    what: issuesData.what,
+    url: issuesData.url,
     reporters: new Set(),
     issues: []
   };
@@ -85,9 +85,9 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 const populateQuery = async (timeStamp, jobID, query) => {
   // Get a summary of data on the target.
   const summary = await getIssuesSummary(timeStamp, jobID);
-  const {pageURL, pageWhat} = summary;
-  query.target = pageWhat;
-  query.url = pageURL;
+  const {what} = summary;
+  query.target = what;
+  query.url = summary.url;
   query.jobID = jobID;
   query.dateTime = getDateTimeString(timeStamp);
   // Initialize the lines.
@@ -112,7 +112,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
         lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
         lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         const whereQuestionString = 'Where was the issue found?';
-        const labelString = `Where was the ${issue.summary} issue found on the ${pageWhat} page?`;
+        const labelString = `Where was the ${issue.summary} issue found on the ${what} page?`;
         const href = `href="/reportIssue.html/${issueID}/${timeStamp}/${jobID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;

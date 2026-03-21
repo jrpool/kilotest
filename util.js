@@ -253,11 +253,20 @@ const getTimeStamp = exports.getTimeStamp = date => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
   return timeStamp;
 };
-// Returns a job from a file.
-const getJob = exports.getJob = async jobPath => {
-  const jobJSON = await fs.readFile(jobPath, 'utf8');
-  const job = JSON.parse(jobJSON);
-  return job;
+// Gets the names of the job files.
+const getJobNames = exports.getJobNames = async () => {
+  const jobNames = {};
+  for (const category of ['queue', 'claimed', 'failed']) {
+    const fileNames = await fs.readdir(path.join(jobsPath, category));
+    jobNames[category] = fileNames;
+  }
+  return jobNames;
+}
+// Returns an object from a JSON file.
+const getObject = exports.getObject = async filePath => {
+  const fileContent = await fs.readFile(filePath, 'utf8');
+  const object = JSON.parse(fileContent);
+  return object;
 }
 // Returns a string describing the time in days since a time stamp.
 exports.getAgoString = timeStamp => {
@@ -349,20 +358,19 @@ exports.isJobID = string => {
 };
 // Returns whether a job to test a target is eligible for a recommendation.
 exports.isRecommendable = async targetURL => {
-  const claimedJobFileNames = await fs.readdir(path.join(jobsPath, 'claimed'));
+  const jobNames = await getJobNames();
   // For each claimed job:
-  for (const fileName of claimedJobFileNames) {
-    const job = await getJob(path.join(jobsPath, 'claimed', fileName));
+  for (const fileName of jobNames.claimed) {
+    const job = await getObject(path.join(jobsPath, 'claimed', fileName));
     // If its URL is that of the recommended target:
     if (job.target.url === targetURL) {
       // Return this.
       return 'claimed';
     }
   }
-  const queuedJobFileNames = await fs.readdir(path.join(jobsPath, 'queue'));
   // If no claimed job has the URL of the target, for each queued job:
-  for (const fileName of queuedJobFileNames) {
-    const job = await getJob(path.join(jobsPath, 'queue', fileName));
+  for (const fileName of jobNames.queue) {
+    const job = await getObject(path.join(jobsPath, 'queue', fileName));
     // If its URL is that of the recommended target:
     if (job.target.url === targetURL) {
       // Return this.

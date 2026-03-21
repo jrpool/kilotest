@@ -25,8 +25,10 @@ const path = require('path');
 const answer = {
   diagnoses: require('./diagnoses/index').answer,
   issues: require('./issues/index').answer,
+  orders: require('./orders/index').answer,
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
+  recs: require('./recs/index').answer,
   retestRec: require('./retestRec/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
   rules: require('./rules/index').answer,

@@ -27,8 +27,6 @@ const answer = {
   issues: require('./issues/index').answer,
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
-  retestOrder: require('./retestOrder/index').answer,
-  retestOrderForm: require('./retestOrderForm/index').answer,
   retestRec: require('./retestRec/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
   rules: require('./rules/index').answer,

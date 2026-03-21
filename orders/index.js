@@ -5,10 +5,7 @@
 
 // IMPORTS
 
-const {
-  getJobNames,
-  getObject,
-} = require('../util');
+const {getJobNames, getObject} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 

@@ -34,7 +34,7 @@ exports.answer = async (pageArgs, why) => {
     why: plainWhy
   };
   // Log the recommendation.
-  console.log(`Retest recommendation received for ${targetWhat}: ${plainWhy}`);
+  console.log(`Retest recommendation received for ${what}: ${plainWhy}`);
   // Get the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.

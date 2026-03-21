@@ -26,7 +26,7 @@ exports.answer = async (pageArgs, why) => {
   // Otherwise, i.e. if it is recommendable, make the reason display-safe.
   const plainWhy = getPlainText(why);
   // Add the recommendation to those for the target.
-  recs[targetWhat].push({
+  recs[what].push({
     timeStamp: getNowStamp(),
     what,
     why: plainWhy
@@ -34,11 +34,11 @@ exports.answer = async (pageArgs, why) => {
   // Save the revised recommendations.
   await fs.writeFile(recsPath, getJSON(recs));
   const query = {
-    target: targetWhat,
+    target: what,
     why: plainWhy
   };
   // Log the recommendation.
-  console.log(`Retest recommendation received for ${targetWhat}: ${plainWhy}`);
+  console.log(`Retest recommendation received for ${what}: ${plainWhy}`);
   // Get the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.

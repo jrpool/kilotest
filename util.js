@@ -357,13 +357,13 @@ exports.isJobID = string => {
   return /^[a-z0-9]{5}$/.test(string);
 };
 // Returns whether a job to test a target is eligible for a recommendation.
-exports.isRecommendable = async targetURL => {
+exports.isRecommendable = async url => {
   const jobNames = await getJobNames();
   // For each claimed job:
   for (const fileName of jobNames.claimed) {
     const job = await getObject(path.join(jobsPath, 'claimed', fileName));
     // If its URL is that of the recommended target:
-    if (job.target.url === targetURL) {
+    if (job.target.url === url) {
       // Return this.
       return 'claimed';
     }
@@ -372,7 +372,7 @@ exports.isRecommendable = async targetURL => {
   for (const fileName of jobNames.queue) {
     const job = await getObject(path.join(jobsPath, 'queue', fileName));
     // If its URL is that of the recommended target:
-    if (job.target.url === targetURL) {
+    if (job.target.url === url) {
       // Return this.
       return 'queued';
     }

@@ -209,10 +209,10 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is a test recommendation:
     else if (pageName === 'testRec.html') {
-      const {authCode, targetWhat, targetURL, why} = postData;
+      const {authCode, what, url, why} = postData;
       // If the request is valid:
       if (
-        targetWhat && targetURL.startsWith('https://') && why && authCode === process.env.AUTH_CODE
+        what && url.startsWith('https://') && why && authCode === process.env.AUTH_CODE
       ) {
         // Serve headers for a response.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -243,15 +243,15 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is a test order:
     else if (pageName === 'testOrder.html') {
       const {target, authCode} = postData;
-      const [targetURL, targetWhat] = target.split('\t');
+      const [url, what] = target.split('\t');
       // If the request is valid:
-      if (targetWhat && targetURL.startsWith('https://') && authCode === process.env.AUTH_CODE) {
+      if (what && url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
         // Serve headers for a response.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', `${pathname}${search}`);
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
-        .answer(targetURL, targetWhat, authCode);
+        .answer(url, what, authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.

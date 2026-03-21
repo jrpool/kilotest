@@ -15,21 +15,22 @@ const path = require('path');
 exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);
-  const targetURL = log.pageURL;
+  const {url, what} = log;
   // Get the data on waiting recommendations.
   const recs = await getRecs();
-  recs[targetURL] ??= [];
+  recs[url] ??= [];
   const plainWhy = getPlainText(why);
   // Add the recommendation to those for the target.
-  recs[targetURL].push({
+  recs[url].push({
     timeStamp: getNowStamp(),
-    what: log.what,
+    what,
     why: plainWhy
   });
   // Save the revised recommendations.
   await fs.writeFile(path.join(jobsPath, 'recs.json'), getJSON(recs));
+  // Add the recommendation facts to the query.
   const query = {
-    target: targetWhat,
+    target: what,
     why: plainWhy
   };
   // Log the recommendation.

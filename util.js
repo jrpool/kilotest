@@ -329,18 +329,18 @@ exports.getTextFragmentHref = (text, url) => {
 };
 // Returns an array of the latest logs of tested targets.
 exports.getTargetLogs = async () => {
-  // Initialize a directory of tested targets.
-  const targetDirectory = {};
+  // Initialize data on the tested targets.
+  const targetData = {};
   const logNames = await fs.readdir(logsPath);
   // For each log:
   for (const logName of logNames) {
     const logJSON = await fs.readFile(path.join(logsPath, logName), 'utf8');
     const log = JSON.parse(logJSON);
     // Add its data to the targets directory, replacing any entry for the same target URL.
-    targetDirectory[log.pageURL] = log;
+    targetData[log.url] = log;
   }
   // Get an array of those target logs, sorted by description.
-  const targets = objectSort(Object.values(targetDirectory), 'what', 'alpha');
+  const targets = objectSort(Object.values(targetData), 'what', 'alpha');
   return targets;
 };
 // Gets the name of an issue weight.

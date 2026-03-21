@@ -27,8 +27,9 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Add facts about the issue to the query.
   query.issue = issues[issueID].summary;
   const log = await getLog(timeStamp, jobID, true);
-  query.target = log.what;
-  query.url = log.url;
+  const {url, what} = log;
+  query.target = what;
+  query.url = url;
   query.dateTime = getDateTimeString(timeStamp);
   const issue = issues[issueID];
   const {wcag, weight, why} = issue;
@@ -103,7 +104,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       const catalogItem = catalog[catalogIndex];
       if (catalogItem.textLinkable) {
         takeMeAdviceNeeded = true;
-        const href = getTextFragmentHref(catalogItem.text, pageURL);
+        const href = getTextFragmentHref(catalogItem.text, url);
         const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
         const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
         lines.push(`${margin}    <li>${link}</li>`);

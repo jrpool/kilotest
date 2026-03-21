@@ -17,7 +17,7 @@ exports.answer = async (target, authCode) => {
   if (authCode === process.env.AUTH_CODE) {
     const [timeStamp, jobID] = pageArgs.split('/');
     const log = await getLog(timeStamp, jobID);
-    const {pageWhat, pageURL} = log;
+    const {what, url} = log;
     // Get the job template.
     const jobTemplateJSON = await fs.readFile(path.join(__dirname, '..', 'jobs/job.json'), 'utf8');
     const job = JSON.parse(jobTemplateJSON);
@@ -27,11 +27,11 @@ exports.answer = async (target, authCode) => {
     const nowStamp = getNowStamp();
     job.creationTimeStamp = nowStamp;
     job.executionTimeStamp = nowStamp;
-    job.target.what = pageWhat;
-    job.target.url = pageURL;
+    job.target.what = what;
+    job.target.url = url;
     const jobName = `${nowStamp}-${newJobID}`;
     const query = {
-      target: pageWhat,
+      target: what,
       jobName
     };
     // Save the job in the queue.
@@ -39,11 +39,11 @@ exports.answer = async (target, authCode) => {
       path.join(__dirname, '..', 'jobs', 'queue', `${jobName}.json`), getJSON(job)
     );
     // Log the order.
-    console.log(`Retest queued for ${pageWhat} as job ${jobName}`);
+    console.log(`Retest queued for ${what} as job ${jobName}`);
     // Get the recommendations.
     const recs = await getRecs();
     // Delete the recommendations to retest the target.
-    delete recs[pageWhat];
+    delete recs[what];
     // Save the revised recommendations.
     await fs.writeFile(path.join(__dirname, '..', 'jobs', 'recs.json'), getJSON(recs));
     // Get the answer template.

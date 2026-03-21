@@ -14,19 +14,20 @@ const path = require('path');
 // Returns a test order form.
 exports.answer = async () => {
   const recs = await getRecs();
-  const pageURLs = Object.keys(recs);
+  const urls = Object.keys(recs);
   const margin = ' '.repeat(12);
   const lines = [];
   // For each page with any recommendations:
-  pageURLs.forEach(pageURL => {
+  urls.forEach(url => {
     // Add its URL to the lines.
-    lines.push(`${margin}<li>${pageURL}`);
+    lines.push(`${margin}<li>${url}`);
     lines.push(`${margin}  <ul>`)
     // For each recommendation of the page:
-    recs[pageURL].forEach(rec => {
-      const radio = `<input type="radio" name="target" value="${pageURL}\t${rec.pageWhat}">`;
+    recs[url].forEach(rec => {
+      const {what} = rec;
+      const radio = `<input type="radio" name="target" value="${url}\t${what}">`;
       // Add a line with a radio button and the recommended page name.
-      lines.push(`${margin}    <li>${radio} ${rec.pageWhat}</li>`);
+      lines.push(`${margin}    <li>${radio} ${what}</li>`);
     });
   });
   const query = {

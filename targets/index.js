@@ -70,13 +70,13 @@ const populateQuery = async query => {
   const margin = ' '.repeat(6);
   // For the latest log on each target:
   for (const targetLog of targetLogs) {
-    const {jobID, pageURL, pageWhat, timeStamp} = targetLog;
+    const {jobID, url, what, timeStamp} = targetLog;
     const summary = await getTargetSummary(timeStamp, jobID);
     const {issueSet, reporterSet} = summary;
-    lines.push(`${margin}<li>${pageWhat}</li>`);
+    lines.push(`${margin}<li>${what}</li>`);
     lines.push(`${margin}  <ul>`);
     // Add the URL of the target to the array.
-    lines.push(`${margin}    <li>URL: <code>${pageURL}</code></li>`);
+    lines.push(`${margin}    <li>URL: <code>${url}</code></li>`);
     // Add facts about the job to the array.
     const dateTimeString = getDateTimeString(timeStamp);
     const agoString = getAgoString(timeStamp);
@@ -92,12 +92,12 @@ const populateQuery = async query => {
     );
     // Add a question link about the reported issues to the array.
     const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
-    const label = `aria-label="What ${issueCountString} reported for the ${pageWhat} page?"`;
+    const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
     const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
     const link = `<a ${href} ${label}>What ${questionString}?</a>`;
     lines.push(`${margin}    <li>${link}</li>`);
     // Add the status of, and if necessary a question link about, retesting to the array.
-    const status = await isRecommendable(pageURL);
+    const status = await isRecommendable(url);
     let retestString;
     if (status === 'claimed') {
       retestString = 'Currently being retested';

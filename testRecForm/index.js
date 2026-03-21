@@ -15,9 +15,8 @@ const path = require('path');
 exports.answer = async pageArgs => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);
-  const targetWhat = log.pageWhat;
   const query = {
-    target: targetWhat,
+    target: log.what,
     timeStamp,
     jobID,
     ago: getAgoString(timeStamp),

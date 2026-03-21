@@ -23,7 +23,7 @@ exports.answer = async (pageArgs, why) => {
   // Add the recommendation to those for the target.
   recs[targetURL].push({
     timeStamp: getNowStamp(),
-    what: log.pageWhat,
+    what: log.what,
     why: plainWhy
   });
   // Save the revised recommendations.

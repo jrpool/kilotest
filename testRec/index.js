@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getNowStamp, getPlainText, getPOSTData, isRecommendable} = require('../util');
+const {getJSON, getNowStamp, getPlainText, getRecs, isRecommendable} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -25,6 +25,9 @@ exports.answer = async (pageArgs, why) => {
   }
   // Otherwise, i.e. if it is recommendable, make the reason display-safe.
   const plainWhy = getPlainText(why);
+  // Get the existing recommendations.
+  const recs = await getRecs();
+  recs[what] ??= [];
   // Add the recommendation to those for the target.
   recs[what].push({
     timeStamp: getNowStamp(),

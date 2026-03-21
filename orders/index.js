@@ -33,6 +33,8 @@ const populateQuery = async query => {
     // Add the lines to the query.
     query[category] = lines[category].join('\n');
   }
+  // Add a no-claimed message, if applicable, to the query.
+  query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
 };
 // Returns a page answering the orders question.
 exports.answer = async () => {

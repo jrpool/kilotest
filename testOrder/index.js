@@ -5,19 +5,16 @@
 
 // IMPORTS
 
-const {getJSON, getLog, getNowStamp, getRecs} = require('../util');
+const {getJSON, getNowStamp, getRecs, isURL} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
 // FUNCTIONS
 
 // Implements a test order and returns an acknowledgement page.
-exports.answer = async (target, authCode) => {
-  // If the authorization code is valid:
-  if (authCode === process.env.AUTH_CODE) {
-    const [timeStamp, jobID] = pageArgs.split('/');
-    const log = await getLog(timeStamp, jobID);
-    const {what, url} = log;
+exports.answer = async (url, what, authCode) => {
+  // If the arguments are valid:
+  if (isURL(url) && what && authCode === process.env.AUTH_CODE) {
     // Get the job template.
     const jobTemplateJSON = await fs.readFile(path.join(__dirname, '..', 'jobs/job.json'), 'utf8');
     const job = JSON.parse(jobTemplateJSON);
@@ -38,12 +35,11 @@ exports.answer = async (target, authCode) => {
     await fs.writeFile(
       path.join(__dirname, '..', 'jobs', 'queue', `${jobName}.json`), getJSON(job)
     );
-    // Log the order.
     console.log(`Retest queued for ${what} as job ${jobName}`);
     // Get the recommendations.
     const recs = await getRecs();
     // Delete the recommendations to retest the target.
-    delete recs[what];
+    delete recs[url];
     // Save the revised recommendations.
     await fs.writeFile(path.join(__dirname, '..', 'jobs', 'recs.json'), getJSON(recs));
     // Get the answer template.

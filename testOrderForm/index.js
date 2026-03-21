@@ -25,7 +25,7 @@ exports.answer = async () => {
     // For each recommendation of the page:
     recs[url].forEach(rec => {
       const {what} = rec;
-      const radio = `<input type="radio" name="target" value="${url}\t${what}">`;
+      const radio = `<input type="radio" name="target" value="${url}\t${what}" required>`;
       // Add a line with a radio button and the recommended page name.
       lines.push(`${margin}    <li>${radio} ${what}</li>`);
     });

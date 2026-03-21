@@ -384,5 +384,13 @@ exports.isRecommendable = async url => {
 exports.isTimeStamp = string => {
   return !! getDateString(string);
 };
+// Returns whether a string is a URL.
+exports.isURL = string => {
+  try {
+    return string.startsWith('https://') && new URL(string);
+  } catch {
+    return false;
+  }
+};
 // Makes a string breakable before non-initial slashes.
 exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');

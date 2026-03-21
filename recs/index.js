@@ -18,13 +18,16 @@ const populateQuery = async query => {
   const margin = ' '.repeat(8);
   // Initialize the lines.
   const lines = [];
-  // For each recommendation:
+  // For each recommended URL:
   Object.keys(recs).forEach(url => {
-    const {what, why} = recs[url];
-    // Add a line.
-    lines.push(`${margin}<li><code>${url}</code> (${what}): ${why}</li>`);
+    // For each of its recommendations:
+    recs[url].forEach(rec => {
+      const {what, why} = rec;
+      // Add a line.
+      lines.push(`${margin}<li><code>${url}</code> (${what}): ${why}</li>`);
+    });
   });
-  // Sort the lines in alphabetical order by URL.
+  // Sort the lines in alphabetical order by URL and secondarily by proposed name.
   lines.sort();
   // Add the lines to the query.
   query.recs = lines.join('\n');

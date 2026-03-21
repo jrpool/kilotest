@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getNowStamp, getPlainText, getRecs, isRecommendable} = require('../util');
+const {getJSON, getNowStamp, getPlainText, getRecs, isRecommendable, recsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 

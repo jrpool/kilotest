@@ -12,8 +12,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Records a test recommendation and returns an acknowledgement page.
-exports.answer = async (pageArgs, why) => {
-  const [what, url] = pageArgs.split('/');
+exports.answer = async (what, url, why) => {
   const status = await isRecommendable(url);
   // If the target is not recommendable:
   if (status) {
@@ -27,9 +26,9 @@ exports.answer = async (pageArgs, why) => {
   const plainWhy = getPlainText(why);
   // Get the existing recommendations.
   const recs = await getRecs();
-  recs[what] ??= [];
+  recs[url] ??= [];
   // Add the recommendation to those for the target.
-  recs[what].push({
+  recs[url].push({
     timeStamp: getNowStamp(),
     what,
     why: plainWhy

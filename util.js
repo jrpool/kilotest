@@ -13,7 +13,7 @@ const querystring = require('querystring');
 // CONSTANTS
 
 // Path of the jobs directory.
-exports.jobsPath = path.join(__dirname, 'jobs');
+const jobsPath = exports.jobsPath = path.join(__dirname, 'jobs');
 // Path of the logs directory.
 const logsPath = path.join(__dirname, 'logs');
 // Path of the recommendations file.

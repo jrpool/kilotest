@@ -209,11 +209,9 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is a test recommendation:
     else if (pageName === 'testRec.html') {
-      const {authCode, what, url, why} = postData;
+      const {what, url, why} = postData;
       // If the request is valid:
-      if (
-        what && url.startsWith('https://') && why && authCode === process.env.AUTH_CODE
-      ) {
+      if (what && url.startsWith('https://') && why) {
         // Serve headers for a response.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', `${pathname}${search}`);

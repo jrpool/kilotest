@@ -20,7 +20,25 @@ Testaro is installed at `/opt/jpdev/testaro` on the server.
 
 ## Process management
 
-Kilotest and Testaro are managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`.
+Kilotest and Testaro are managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`:
+
+```javascript
+module.exports = {
+  apps: [{
+    name: 'kilotest',
+    script: 'index.js',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '500M',
+    env: {
+      NODE_ENV: 'production',
+      BASE_PATH: '/',
+      DEMO_SSE_DELAY_MS: '100'
+    }
+  }]
+};
+```
 
 When the PM2 configuration or environment is changed, restart PM2 with:
 

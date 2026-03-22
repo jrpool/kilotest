@@ -15,9 +15,10 @@ const jobsDir = `${__dirname}/jobs`;
 const queueDir = `${jobsDir}/queue`;
 const claimedDir = `${jobsDir}/claimed`;
 const testaroAgent = process.env.TESTARO_AGENT;
+const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
 // IMPORTS
-const {getJSON, getPOSTData, isTimeStamp, isJobID} = require('./util');
+const {getJobNames, getJSON, getPOSTData, isTimeStamp, isJobID} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
@@ -42,13 +43,17 @@ const answer = {
 // FUNCTIONS
 
 // Serves an error message.
-const serveError = async (error, response) => {
+const serveError = async (error, response, isHumanUser = true) => {
   console.log(error.message);
   if (! response.writableEnded) {
     response.statusCode = 400;
-    const errorTemplate = await fs.readFile('error.html', 'utf8');
-    const errorPage = errorTemplate.replace(/__error__/, error.message);
-    response.end(errorPage);
+    if (isHumanUser) {
+      const errorTemplate = await fs.readFile('error.html', 'utf8');
+      const errorPage = errorTemplate.replace(/__error__/, error.message);
+      response.end(errorPage);
+    } else {
+      response.end(error.message);
+    }
   }
 };
 // Handles a request.
@@ -121,44 +126,6 @@ const requestHandler = async (request, response) => {
       }
       catch (error) {
         await serveError(error, response);
-      }
-    }
-    // Otherwise, if it a valid request from Testaro for a job:
-    else if (pathname === '/job' && pageArgs === testaroAgent) {
-      const claimedJobNames = await fs.readdir(claimedDir);
-      // If any jobs are claimed:
-      if (claimedJobNames.length) {
-        // Report this.
-        console.log('ERROR: Testaro requested a job before finishing another job');
-        // Refuse the request.
-        response.writeHead(400, {
-          'Content-Type': 'text/plain; charset=utf-8'
-        });
-        response.end('ERROR: You requested a job before finishing another job');
-      }
-      // Otherwise, i.e. if no jobs are claimed:
-      else {
-        const queuedJobNames = await fs.readdir(queueDir);
-        // If any jobs are queued:
-        if (queuedJobNames.length) {
-          const oldestJobName = queuedJobNames[0];
-          const firstJob = await fs.readFile(`${queueDir}/${oldestJobName}`, 'utf8');
-          // Send the first one to Testaro.
-          response.writeHead(200, {
-            'Content-Type': 'application/json; charset=utf-8'
-          });
-          response.end(firstJob);
-          // Move the job from the queue to the claimed-jobs directory.
-          await fs.rename(`${queueDir}/${oldestJobName}`, `${claimedDir}/${oldestJobName}`);
-        }
-        // Otherwise, i.e. if no jobs are queued:
-        else {
-          // Send a no-jobs response.
-          response.writeHead(200, {
-            'Content-Type': 'text/plain; charset=utf-8'
-          });
-          response.end('');
-        }
       }
     }
     // Otherwise, i.e. if it is any other GET request:
@@ -270,48 +237,90 @@ const requestHandler = async (request, response) => {
         await serveError({message}, response);
       }
     }
-    // Otherwise, if it is a Testaro report:
-    else if (pathname === '/report' && pageArgs === testaroAgent) {
-      const {agentPW, report} = await getPOSTData(request);
-      const {id} = report;
-      // If the request is valid:
-      if (id && agentPW === `process.env.${testaroAgent}_AGENT_PW`) {
-        console.log(`Testaro report ${id} received`);
-        // Save the report.
-        await fs.writeFile(`${__dirname}/reports/${id}.json`, getJSON(report));
-        // Acknowledge receipt.
-        response.end('ok');
+    // Otherwise, if it is a request from a Testaro agent:
+    else if (pageName === 'api') {
+      const [agentID, service] = pageArgs.split('/');
+      // If the agent is authorized:
+      if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
+        // If the service is job assignment:
+        if (service === 'job') {
+          const jobNames = await getJobNames();
+          const claimedJobNames = jobNames.claimed;
+          // If any jobs are claimed:
+          if (claimedJobNames.length) {
+            const message = 'ERROR: Testaro requested a job before finishing another job';
+            // Report this.
+            await serveError({message}, response, false);
+          }
+          // Otherwise, i.e. if no jobs are claimed:
+          else {
+            const queuedJobNames = jobNames.queue;
+            // If any jobs are queued:
+            if (queuedJobNames.length) {
+              const oldestJobName = queuedJobNames[0];
+              const firstJob = await fs.readFile(path.join(queueDir, oldestJobName), 'utf8');
+              // Send the first one to Testaro.
+              response.writeHead(200, {
+                'Content-Type': 'application/json; charset=utf-8'
+              });
+              response.end(firstJob);
+              // Move the job from the queue to the claimed-jobs directory.
+              await fs.rename(
+                path.join(queueDir, oldestJobName), path.join(claimedDir, oldestJobName)
+              );
+            }
+            // Otherwise, i.e. if no jobs are queued:
+            else {
+              // Send a no-jobs response.
+              response.writeHead(200, {
+                'Content-Type': 'text/plain; charset=utf-8'
+              });
+              response.end('');
+            }
+          }
+        }
+        // Otherwise, if the service is report acquisition:
+        else if (service === 'report') {
+          const {report} = postData;
+          const {id} = report;
+          // If the request is valid:
+          if (id) {
+            console.log(`Testaro report ${id} received`);
+            // Save the report.
+            await fs.writeFile(path.join(__dirname, 'reports', `${id}.json`), getJSON(report));
+            // Acknowledge receipt.
+            response.end('ok');
+          }
+          // Otherwise, i.e. if the request is invalid:
+          else {
+            const message = 'ERROR: Report submission invalid';
+            await serveError({message}, response, false);
+          }
+        }
+        // Otherwise, if the service is not valid:
+        else {
+          const message = 'ERROR: Invalid service request from Testaro agent';
+          await serveError({message}, response, false);
+        }
       }
-      // Otherwise, i.e. if the request is invalid:
+      // Otherwise, i.e. if the agent is not authorized:
       else {
-        const message = 'Report submission invalid';
-        console.log(`ERROR: ${message}`);
-        // Refuse the request.
-        response.writeHead(400, {
-          'Content-Type': 'text/plain; charset=utf-8'
-        });
-        response.end('Report submission invalid');
+        const message = 'ERROR: Invalid Testaro agent';
+        await serveError({message}, response, false);
       }
     }
-    // Otherwise, i.e. if the POST request is any other request:
+    // Otherwise, i.e. if it is any other POST request:
     else {
       // Report its invalidity.
-      const message = 'ERROR: invalid POST request';
-      console.log(message);
-      // Send an error response.
-      response.writeHead(200, {
-        'Content-Type': 'text/plain; charset=utf-8'
-      });
-      response.end('');
-      await serveError(message, response);
+      const message = 'ERROR: Invalid POST request';
+      await serveError({message}, response, false);
     }
   }
-  // Otherwise, i.e. if the request method is neither GET nor POST:
+  // Otherwise, i.e. if it is neither a GET nor a POST request:
   else {
     // Report its invalidity.
-    const message = 'ERROR: invalid request method';
-    console.log(message);
-    await serveError(message, response);
+    const message = 'ERROR: Invalid request method';
+    await serveError({message}, response, false);
   }
 };
 

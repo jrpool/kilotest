@@ -1,10 +1,8 @@
 # Dependency directories
 node_modules/
 
-# dotenv environment variable files
+# dotenv environment variable file
 .env
-.env.*
-!.env.example
 
 # Stored VSCode versions used for testing VSCode extensions
 .vscode-test
@@ -18,3 +16,6 @@ results/
 
 # Reports
 reports/
+
+# Secrets
+.secrets

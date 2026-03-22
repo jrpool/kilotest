@@ -14,20 +14,21 @@ The testing paradigm employed by Kilotest is discussed in these papers:
 
 Kilotest acts as a server with human users (such as you) and with one or more testing agents that obtain jobs from Kilotest and do the actual testing. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package.
 
-An active production instance of Kilotest may require multiple Testaro agents to handle the testing load, because testing one web page typically takes about 3 minutes and Testaro agents test only one page at a time.
+An active production instance of Kilotest may require multiple testing agents to handle the load, because testing one web page typically takes about 3 minutes and agents test only one page at a time.
 
-## Getting started locally with 1 Testaro agent
+## Getting started locally with 1 testing agent
 
 ### Installation
 
-In the steps below, hosts `T` and `K` may be the same host or two different hosts. Host `T` can be a Debian stable, Ubuntu LTS, Windows, or macOS host. Host `K` can be any server host that can run the latest LTS version of Node.js. If hosts `T` and `K` differ, then they must be open to `http` traffic and host `K` must permit `https` requests from host `T`.
+In the steps below, hosts `T` and `K` may be the same host or two different hosts. Host `T` can be a Debian stable, Ubuntu LTS, Windows, or macOS host. Host `K` can be any server host that can run the latest LTS version of Node.js. If hosts `T` and `K` differ, then they must be open to `https` traffic and host `K` must permit `https` requests from host `T`.
 
 1. Clone the [Testaro project](https://github.com/jrpool/testaro) into a new directory on host `T`.
-1. Install the Testaro dependencies: `npm install`.
+1. In that directory, install the Testaro dependencies: `npm install`.
+1. Update the Testaro dependencies and rebuild: `npm run deps`.
 1. Clone the Kilotest repository into a new directory on host `K`.
-1. Install the Kilotest dependencies: `npm install`.
-1. Copy the `.env.testaro` file from the `kilotest` directory to `.env` in the `testaro` directory.
-1. Copy the `.env.example` file in the `kilotest` directory to a new `.env` file in the same directory and replace the `__placeholder__` values in `.env` with actual values.
+1. In that directory, install the Kilotest dependencies: `npm install`.
+1. Copy the `env.testaro` file from the `kilotest` directory to `.env` in the `testaro` directory.
+1. Copy the `env.example` file in the `kilotest` directory to a new `.env` file in the same directory and replace the `__placeholder__` values in `.env` with actual values.
 
 ### Usage
 

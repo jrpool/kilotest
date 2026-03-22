@@ -20,38 +20,67 @@ Testaro is installed at `/opt/jpdev/testaro` on the server.
 
 ## Process management
 
-Kilotest and Testaro are managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`:
+Kilotest is managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`:
 
 ```javascript
 module.exports = {
-  apps: [{
-    name: 'kilotest',
-    script: 'index.js',
-    instances: 1,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '500M',
-    env: {
-      NODE_ENV: 'production',
-      BASE_PATH: '/',
-      DEMO_SSE_DELAY_MS: '100'
+  apps: [
+    {
+      name: 'kilotest',
+      script: 'index.js',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      env: {
+        NODE_ENV: 'production',
+        BASE_PATH: '/',
+        DEMO_SSE_DELAY_MS: '100'
+      }
     }
-  }]
+  ]
 };
 ```
 
 When the PM2 configuration or environment is changed, restart PM2 with:
 
 ```text
-pm2 restart all --update-env
+pm2 restart kilotest --update-env
 pm2 save
 ```
 
-The server configuration has been tuned for improved performance. The file edited for this purpose is `/etc/default/zramswap`.
-
-This enables `zram` and decreases the amount of disk swapping.
+Testaro is not managed with PM2. Instead, you can make it begin watching for jobs from Kilotest by executing `node call netWatch true 30 true`. This will make Testaro poll Kilotest twice a minute for jobs. When Kilotest responds with a job, Testaro will perform it, send a report back to Kilotest in a `POST` request, and then resume polling.
 
 Testaro uses Playwright to create headless browsers. They are destroyed automatically when no longer needed, and the last ones are typically destroyed within a minute after the end of a job. Thus, neither Testaro nor Kilotest attempts to kill them when a job ends.
+
+The server configuration has been tuned for improved performance. The file edited for this purpose is `/etc/default/zramswap`:
+
+```properties
+# Compression algorithm selection
+# speed: lz4 > zstd > lzo
+# compression: zstd > lzo > lz4
+# This is not inclusive of all that is available in latest kernels
+# See /sys/block/zram0/comp_algorithm (when zram module is loaded) to see
+# what is currently set and available for your kernel[1]
+# [1]  https://github.com/torvalds/linux/blob/master/Documentation/blockdev/zram.txt#L86
+ALGO=zstd
+
+# Specifies the amount of RAM that should be used for zram
+# based on a percentage the total amount of available memory
+# This takes precedence and overrides SIZE below
+PERCENT=75
+
+# Specifies a static amount of RAM that should be used for
+# the ZRAM devices, this is in MiB
+#SIZE=256
+
+# Specifies the priority for the swap devices. See swapon(2)
+# for more details. Higher number = higher priority
+# This should probably be higher than hdd/ssd swaps.
+#PRIORITY=100
+```
+
+This enables `zram` and decreases the amount of disk swapping.
 
 ## Keepalive
 

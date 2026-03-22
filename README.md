@@ -4,121 +4,36 @@ An ensemble testing service with a focus on accessibility
 
 ## Features
 
-This application uses an ensemble of 11 tools to test public web pages for accessibility and conformity to HTML standards.
+This application uses an ensemble of 11 tools to test public web pages for standards conformity, usability, and accessibility. Then it makes the test results available, so you can learn what issues were reported by the tools.
 
-In Dev mode, it asks the user for a URL and then runs all the tests of the tools, totaling about 1000 tests, on that page. In typically about 2 minutes, it gets 11 reports, one from each tool, and combines them into a single standardized report telling the user which issues were reported and which tools reported them.
+The testing paradigm employed by Kilotest is discussed in these papers:
 
-In Screen mode, it asks the user for 2 to 5 URLs and then runs the tests of a subset of the tools, totaling about 340 tests, on those pages. In typically about half a minute per page, it gets one report per tool per page, derives a preliminary estimate of the relative over-all qualities of the pages, and reports those relative estimates.
-
-To learn why Kilotest uses an ensemble of tools, instead of only one tool, see:
 - [How to run a thousand accessibility tests](https://medium.com/cvs-health-tech-blog/how-to-run-a-thousand-accessibility-tests-63692ad120c3)
 - [Testaro: Efficient Ensemble Testing for Web Accessibility](https://arxiv.org/abs/2309.10167)
 - [Accessibility Metatesting: Comparing Nine Testing Tools](https://arxiv.org/abs/2304.07591)
 
-Bottom line: Using an ensemble of tools for testing web accessibility usually discovers many more issues than using only one tool.
+Kilotest acts as a server with human users (such as you) and with one or more testing agents that obtain jobs from Kilotest and do the actual testing. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package.
 
-## Getting started
+An active production instance of Kilotest may require multiple Testaro agents to handle the testing load, because testing one web page typically takes about 3 minutes and Testaro agents test only one page at a time.
 
-### Prerequisites
-
-- Node.js latest LTS version
-- `npm`
-- Git
+## Getting started locally with 1 Testaro agent
 
 ### Installation
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Start the service: `npm start`
+In the steps below, hosts `T` and `K` may be the same host or two different hosts. Host `T` can be a Debian stable, Ubuntu LTS, Windows, or macOS host. Host `K` can be any server host that can run the latest LTS version of Node.js. If hosts `T` and `K` differ, then they must be open to `http` traffic and host `K` must permit `https` requests from host `T`.
+
+1. Clone the [Testaro project](https://github.com/jrpool/testaro) into a new directory on host `T`.
+1. Install the Testaro dependencies: `npm install`.
+1. Clone the Kilotest repository into a new directory on host `K`.
+1. Install the Kilotest dependencies: `npm install`.
+1. Copy the `.env.testaro` file from the `kilotest` directory to `.env` in the `testaro` directory.
+1. Copy the `.env.example` file in the `kilotest` directory to a new `.env` file in the same directory and replace the `__placeholder__` values in `.env` with actual values.
 
 ### Usage
 
-To use the service, visit `localhost:3000`, enter a description and the URL of a page that you want to test, and click the “Test” button.
-
-### Deployment
-
-This service is deployable as a non-containerized application on a Debian stable, Ubuntu LTS, Windows, or macOS server.
+1. In the `testaro` directory, make Testaro start listening for jobs: `node call netWatch`.
+1. In the `kilotest` directory, start the Kilotest service: `node index`.
 
 ### Contributing
 
 Contributions are welcome! You can use GitHub issues to initiate discussions and propose changes. If you want to contribute code, please fork the repository and create a pull request.
-
-## Internals
-
-### Tally
-
-The getTally function returns an object with this structure:
-
-```javascript
-{
-  issueCount: 88,
-  reporterCount: 4,
-  reporters: [
-    'alfa',
-    'axe',
-    'htmlcs',
-    'wave'
-  ],
-  weights: [
-    {
-      weight: 4,
-      issues: [
-        {
-          issueID: 'lineHeightAbsolute',
-          summary: 'line height absolute',
-          why: 'User cannot adjust the line height of text for readability',
-          wcag: '1.4.12',
-          violatorCount: 34,
-          reporterCount: 4,
-          reporters: [
-            'alfa',
-            'axe',
-            'htmlcs',
-            'wave'
-          ],
-          ensembles: [
-            {
-              reporters: [
-                'alfa',
-                'axe',
-                'htmlcs',
-                'wave'
-              ],
-              violators: [
-                'html/body/div[1]/svg[1]'
-                'html/body/div[1]/noscript[3]',
-                '318',
-                '29'
-              ]
-            },
-            {
-              reporters: [
-                'htmlcs',
-                'wave'
-              ],
-              violators: [
-                '44'
-              ]
-            }
-          ]
-        },
-        {
-          issueID: 'imageNoText',
-          …
-        }
-      ]
-    },
-    {
-      weight: 3,
-      issues: [
-        …
-      ]
-    },
-    {
-    …
-    }
-  ]
-}
-```
-
-In the `weights` array, the 4 items are data on issues of weights 4, 3, 2, and 1, in that order. In each of those items, the objects in the issues array are data on issues with the weight of the item whose counts are positive. The `reporters` array in each issue object is an array of the IDs of the tools that reported a violation of any rule belonging to the issue. The `ensembles` array in each issue object is an array of the path IDs of the elements reported by particular ensembles of tools as violating any rules belonging to the issue.

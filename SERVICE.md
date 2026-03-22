@@ -8,20 +8,24 @@ The host of the service is a [Vultr](https://www.vultr.com) Cloud Compute High F
 
 The server operating system is Ubuntu LTS 22.04.
 
-Kilotest is installed at `/opt/jpdev/kilotest` on the server.
-
 The server has a `sudo`-capable non-root user named `linuxuser`, which is the owner of the project directory and files.
 
 Connection to the host is made with `ssh linuxuser@kilotest.com`. Periodically the server requires password authentication in addition to public key authentication. The password is available in the server details on the Vultr web console, after the administrator logs in via GitHub.
 
+## Applications
+
+Kilotest is installed at `/opt/jpdev/kilotest` on the server.
+
+Testaro is installed at `/opt/jpdev/testaro` on the server.
+
 ## Process management
 
-The service is managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`.
+Kilotest and Testaro are managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`.
 
 When the PM2 configuration or environment is changed, restart PM2 with:
 
 ```text
-pm2 restart kilotest --update-env
+pm2 restart all --update-env
 pm2 save
 ```
 
@@ -29,7 +33,7 @@ The server configuration has been tuned for improved performance. The file edite
 
 This enables `zram` and decreases the amount of disk swapping.
 
-When Kilotest leverages Testaro to run a job, Testaro uses Playwright to create headless browsers. They are destroyed automatically when no longer needed, and the last ones are typically destroyed within a minute after the end of a job. Thus, neither Testaro nor Kilotest attempts to kill them when a job ends.
+Testaro uses Playwright to create headless browsers. They are destroyed automatically when no longer needed, and the last ones are typically destroyed within a minute after the end of a job. Thus, neither Testaro nor Kilotest attempts to kill them when a job ends.
 
 ## Keepalive
 
@@ -90,7 +94,7 @@ sudo mkdir -p /etc/cloud/cloud.cfg.d
 printf "network: {config: disabled}\n" | sudo tee /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
 ```
 
-The following `/etc/netplan/01-dns.yaml` file with `root` as owner and groupwas created and given permissions 600. It custom-configures network management and specifies the DNS resolvers of APNIC Research and Development and Google LLC.
+The following `/etc/netplan/01-dns.yaml` file with `root` as owner and group was created and given permissions 600. It custom-configures network management and specifies the DNS resolvers of APNIC Research and Development and Google LLC.
 
 ```yaml
 network:
@@ -118,7 +122,7 @@ curl -sv https://example.com/ -o /dev/null```
 
 ## Request management
 
-Requests to `https://kilotest.com` are received on port 443 and processed by [Caddy](https://caddyserver.com/), which forwards them via HTTP to the application at `localhost:3000`. Caddy manages provisions and renews a TLS certificate via Let’s Encrypt. Any request to `http://kilotest.com` is received on port 80, and Caddy redirects it to an `https` request. Caddy forwards `https` requests to the [local server](http://localhost:3000), where it is processed by the Kilotest service.
+Requests to `https://kilotest.com` are received on port 443 and processed by [Caddy](https://caddyserver.com/), which forwards them via HTTP to the application at `localhost:3000`. Caddy manages, provisions, and renews a TLS certificate via Let’s Encrypt. Any request to `http://kilotest.com` is received on port 80, and Caddy redirects it to an `https` request. Caddy forwards `https` requests to the [local server](http://localhost:3000), where it is processed by the Kilotest service.
 
 The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`:
 

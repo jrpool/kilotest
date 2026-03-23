@@ -5,22 +5,5 @@
       "what": "Crossing Party Lines",
       "why": "It wants help with its website."
     }
-  ],
-  "https://example.com": [
-    {
-      "timeStamp": "260323T0255",
-      "what": "Example",
-      "why": "Just because"
-    },
-    {
-      "timeStamp": "260323T0256",
-      "what": "Example",
-      "why": "Time passes"
-    },
-    {
-      "timeStamp": "260323T0259",
-      "what": "Example",
-      "why": "Because WAVE was omitted in the latest test"
-    }
   ]
 }

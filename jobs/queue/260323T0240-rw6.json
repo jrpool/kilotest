@@ -1,9 +1,9 @@
 {
-  "id": "lnq",
+  "id": "rw6",
   "what": "Kilotest job",
   "strict": false,
   "standard": "only",
-  "observe": true,
+  "observe": false,
   "device": {
     "id": "default",
     "windowOptions": {
@@ -11,11 +11,11 @@
     }
   },
   "browserID": "chromium",
-  "creationTimeStamp": "260320T1552",
-  "executionTimeStamp": "260320T1552",
+  "creationTimeStamp": "260323T0240",
+  "executionTimeStamp": "260323T0240",
   "target": {
-    "what": "Example",
-    "url": "https://example.com"
+    "what": "GiveDirectly",
+    "url": "https://www.givedirectly.org/"
   },
   "sources": {
     "application": "Kilotest",

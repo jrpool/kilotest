@@ -304,9 +304,17 @@ exports.getPOSTData = async request => new Promise(resolve => {
     bodyParts.push(chunk);
   });
   request.on('end', async () => {
-    const body = bodyParts.join('');
-    const query = querystring.parse(body);
-    resolve(query);
+    const contentType = request.getHeader('content-type');
+    if (contentType === 'application/json') {
+      const bodyJSON = bodyParts.join('');
+      const body = JSON.parse(bodyJSON);
+      resolve(body);
+    }
+    else if (contentType === 'application/x-www-form-urlencoded') {
+      const body = bodyParts.join('');
+      const query = querystring.parse(body);
+      resolve(query);
+    }
   });
 });
 // Get the test recommendations.

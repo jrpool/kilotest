@@ -16,6 +16,11 @@
       "timeStamp": "260323T0256",
       "what": "Example",
       "why": "Time passes"
+    },
+    {
+      "timeStamp": "260323T0259",
+      "what": "Example",
+      "why": "Because WAVE was omitted in the latest test"
     }
   ]
 }

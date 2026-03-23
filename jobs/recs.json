@@ -5,5 +5,12 @@
       "what": "Crossing Party Lines",
       "why": "It wants help with its website."
     }
+  ],
+  "https://www.givedirectly.org/": [
+    {
+      "timeStamp": "260323T0232",
+      "what": "GiveDirectly",
+      "why": "A potentially worthy charity."
+    }
   ]
 }

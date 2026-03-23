@@ -93,14 +93,12 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          console.log(answerData.error);
           await serveError({message: answerData.error}, response);
         }
       }
       // Otherwise, i.e. if the answer cannot be generated:
       else {
         // Report the error.
-        console.log('ERROR: Invalid request');
         await serveError({message: 'Invalid request'}, response);
       }
     }
@@ -134,7 +132,6 @@ const requestHandler = async (request, response) => {
         message: `ERROR: Invalid GET request (${pathname}${search})`
       };
       // Report the error.
-      console.log(error.message);
       await serveError(error, response);
     }
   }
@@ -162,7 +159,6 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          console.log(answerData.error);
           await serveError({message: answerData.error}, response);
         }
       }
@@ -170,7 +166,6 @@ const requestHandler = async (request, response) => {
       else {
         // Report the error.
         const message = 'Invalid retest recommendation';
-        console.log(`ERROR: ${message}`);
         await serveError({message}, response);
       }
     }
@@ -193,7 +188,6 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          console.log(answerData.error);
           await serveError({message: answerData.error}, response);
         }
       }
@@ -201,7 +195,6 @@ const requestHandler = async (request, response) => {
       else {
         // Report the error.
         const message = 'Invalid test recommendation';
-        console.log(`ERROR: ${message}`);
         await serveError({message}, response);
       }
     }
@@ -225,7 +218,6 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          console.log(answerData.error);
           await serveError({message: answerData.error}, response);
         }
       }
@@ -233,7 +225,6 @@ const requestHandler = async (request, response) => {
       else {
         // Report the error.
         const message = 'Invalid test order';
-        console.log(`ERROR: ${message}`);
         await serveError({message}, response);
       }
     }

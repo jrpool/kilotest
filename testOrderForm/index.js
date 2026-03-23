@@ -29,6 +29,8 @@ exports.answer = async () => {
       // Add a line with a radio button and the recommended page name.
       lines.push(`${margin}    <li>${radio} ${what}</li>`);
     });
+    lines.push(`${margin}  </ul>`);
+    lines.push(`${margin}</li>`);
   });
   const query = {
     recs: lines.join('\n')

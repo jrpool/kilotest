@@ -141,10 +141,10 @@ const requestHandler = async (request, response) => {
     const postData = await getPOSTData(request);
     // If the request is a retest recommendation:
     if (pageName === 'retestRec.html') {
-      const {authCode, why} = postData;
+      const {why} = postData;
       const [timeStamp, jobID] = pageArgs.split('/');
       // If the request is valid:
-      if (isTimeStamp(timeStamp) && isJobID(jobID) && why && authCode === process.env.AUTH_CODE) {
+      if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
         // Serve headers for a response.
         response.setHeader('Content-Type', 'text/html; charset=utf-8');
         response.setHeader('Content-Location', `${pathname}${search}`);

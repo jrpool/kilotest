@@ -246,14 +246,14 @@ const requestHandler = async (request, response) => {
       if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
         // If the service is job assignment:
         if (service === 'job') {
-          console.log(`Testaro agent ${agentID} requested a job`);
+          const messageStart = `Testaro agent ${agentID} requested a job, `;
           const jobNames = await getJobNames();
           const claimedJobNames = jobNames.claimed;
           // If any jobs are claimed:
           if (claimedJobNames.length) {
-            const message = 'ERROR: Testaro requested a job before finishing another job';
+            const messageEnd = 'but a job assigned to the agent was not completed';
             // Report this.
-            await serveError({message}, response, false);
+            await serveError({message: `${messageStart}${messageEnd}`}, response, false);
           }
           // Otherwise, i.e. if no jobs are claimed:
           else {
@@ -263,14 +263,14 @@ const requestHandler = async (request, response) => {
               const oldestJobName = queuedJobNames[0];
               // Get the first one.
               const firstJob = await getObject(path.join(queueDir, oldestJobName));
-              // Send the job to Testaro.
+              // Send the job to the agent.
               response.writeHead(200, {
                 'content-type': 'application/json; charset=utf-8'
               });
               response.end(JSON.stringify(firstJob));
-              console.log(
-                `Assigned job ${firstJob.id} (${firstJob.target.what}) to Testaro agent ${agentID}`
-              );
+              const messageEnd
+              = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the agent`;
+              console.log(`${messageStart}${messageEnd}`);
               // Move the job from the queue to the claimed-jobs directory.
               await fs.rename(
                 path.join(queueDir, oldestJobName), path.join(claimedDir, oldestJobName)
@@ -278,26 +278,27 @@ const requestHandler = async (request, response) => {
             }
             // Otherwise, i.e. if no jobs are queued:
             else {
-              // Send a no-jobs response.
+              // Send a no-jobs response to the agent.
               response.writeHead(200, {
                 'content-type': 'application/json; charset=utf-8'
               });
               response.end(JSON.stringify({}));
-              console.log(`No job to assign to Testaro agent ${agentID}`);
+              const messageEnd = 'but no job was in the queue';
+              console.log(`${messageStart}${messageEnd}`);
             }
           }
         }
         // Otherwise, if the service is report acquisition:
         else if (service === 'report') {
           const {report} = postData;
-          const {id, sources, target} = report;
+          const {id, target} = report;
           const {what, url} = target;
           // If the request is valid:
           if (id) {
             // Acknowledge receipt.
             response.setHeader('content-type', 'application/json; charset=utf-8');
             response.end(JSON.stringify({status: 'ok'}));
-            console.log(`Testaro report ${id} received from Testaro agent ${agentID}`);
+            console.log(`Testaro report ${id} was received from Testaro agent ${agentID}`);
             const nowStamp = getNowStamp();
             const idParts = id.split('-');
             // Update the time-stamp part of its ID to ensure uniqueness.
@@ -315,7 +316,9 @@ const requestHandler = async (request, response) => {
             await fs.writeFile(getLogPath(... idParts), getJSON(log));
             // Annotate the report and mark it as annotated in the log.
             await annotateReport(... idParts);
-            console.log(`Testaro report ${id} annotated, saved, and logged with new ID ${newID}`);
+            console.log(
+              `Testaro report ${id} was annotated, saved, and logged with new ID ${newID}`
+            );
             // Delete the job.
             await fs.unlink(path.join(claimedDir, `${id}.json`));
             console.log(`Completed job ${id} deleted`);

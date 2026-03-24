@@ -18,7 +18,7 @@ const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
 // IMPORTS
-const {getJobNames, getJSON, getPOSTData, isTimeStamp, isJobID} = require('./util');
+const {getJobNames, getJSON, getNowStamp, getObject, getPOSTData, isTimeStamp, isJobID} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
@@ -48,11 +48,13 @@ const serveError = async (error, response, isHumanUser = true) => {
   if (! response.writableEnded) {
     response.statusCode = 400;
     if (isHumanUser) {
+      response.setHeader('Content-Type', 'text/html; charset=utf-8');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
       const errorPage = errorTemplate.replace(/__error__/, error.message);
       response.end(errorPage);
     } else {
-      response.end(error.message);
+      response.setHeader('Content-Type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({error: error.message}));
     }
   }
 };
@@ -249,12 +251,13 @@ const requestHandler = async (request, response) => {
             // If any jobs are queued:
             if (queuedJobNames.length) {
               const oldestJobName = queuedJobNames[0];
-              const firstJob = await fs.readFile(path.join(queueDir, oldestJobName), 'utf8');
-              // Send the first one to Testaro.
+              // Get the first one.
+              const firstJob = await getObject(path.join(queueDir, oldestJobName));
+              // Send the job to Testaro.
               response.writeHead(200, {
                 'Content-Type': 'application/json; charset=utf-8'
               });
-              response.end(firstJob);
+              response.end(JSON.stringify(firstJob));
               // Move the job from the queue to the claimed-jobs directory.
               await fs.rename(
                 path.join(queueDir, oldestJobName), path.join(claimedDir, oldestJobName)
@@ -277,10 +280,19 @@ const requestHandler = async (request, response) => {
           // If the request is valid:
           if (id) {
             console.log(`Testaro report ${id} received`);
+            const nowStamp = getNowStamp();
+            const idParts = id.split('-');
+            // Update the time-stamp part of its ID to ensure uniqueness.
+            idParts[1] = nowStamp;
+            const newID = idParts.join('-');
+            report.id = newID;
             // Save the report.
-            await fs.writeFile(path.join(__dirname, 'reports', `${id}.json`), getJSON(report));
+            await fs.writeFile(path.join(__dirname, 'reports', `${newID}.json`), getJSON(report));
+            console.log(`Testaro report ${id} saved with new ID ${newID}`);
             // Acknowledge receipt.
-            response.end('ok');
+            response.end("{status: 'ok'}");
+            // Delete the job.
+            await fs.unlink(path.join(claimedDir, `${id}.json`));
           }
           // Otherwise, i.e. if the request is invalid:
           else {

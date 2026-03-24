@@ -18,7 +18,16 @@ const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
 // IMPORTS
-const {getJobNames, getJSON, getNowStamp, getObject, getPOSTData, isTimeStamp, isJobID} = require('./util');
+const {
+  getJobNames,
+  getJSON,
+  getLogPath,
+  getNowStamp,
+  getObject,
+  getPOSTData,
+  isTimeStamp,
+  isJobID
+} = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
@@ -281,9 +290,13 @@ const requestHandler = async (request, response) => {
         // Otherwise, if the service is report acquisition:
         else if (service === 'report') {
           const {report} = postData;
-          const {id} = report;
+          const {id, sources, target} = report;
+          const {what, url} = target;
           // If the request is valid:
           if (id) {
+            // Acknowledge receipt.
+            response.setHeader('content-type', 'application/json; charset=utf-8');
+            response.end(JSON.stringify({status: 'ok'}));
             console.log(`Testaro report ${id} received from Testaro agent ${agentID}`);
             const nowStamp = getNowStamp();
             const idParts = id.split('-');
@@ -292,11 +305,17 @@ const requestHandler = async (request, response) => {
             const newID = idParts.join('-');
             report.id = newID;
             // Save the report.
-            await fs.writeFile(path.join(__dirname, 'reports', `${newID}.json`), getJSON(report));
-            console.log(`Testaro report ${id} saved with new ID ${newID}`);
-            // Acknowledge receipt.
-            response.setHeader('content-type', 'application/json; charset=utf-8');
-            response.end(JSON.stringify({status: 'ok'}));
+            await fs.writeFile(getReportPath(... idParts), getJSON(report));
+            // Create a log for the report.
+            const log = {
+              what,
+              url
+            };
+            // Save the log.
+            await fs.writeFile(getLogPath(... idParts), getJSON(log));
+            // Annotate the report and mark it as annotated in the log.
+            await annotateReport(... idParts);
+            console.log(`Testaro report ${id} annotated, saved, and logged with new ID ${newID}`);
             // Delete the job.
             await fs.unlink(path.join(claimedDir, `${id}.json`));
             console.log(`Completed job ${id} deleted`);

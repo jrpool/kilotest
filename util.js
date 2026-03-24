@@ -298,13 +298,13 @@ exports.getNowStamp = () => {
   return getTimeStamp(new Date());
 };
 // Returns the data from a POST request.
-exports.getPOSTData = async request => new Promise(resolve => {
+exports.getPOSTData = request => new Promise(resolve => {
   const bodyParts = [];
   request.on('data', chunk => {
     bodyParts.push(chunk);
   });
-  request.on('end', async () => {
-    const contentType = request.getHeader('content-type');
+  request.on('end', () => {
+    const contentType = request.headers['content-type'];
     if (contentType === 'application/json') {
       const bodyJSON = bodyParts.join('');
       const body = JSON.parse(bodyJSON);

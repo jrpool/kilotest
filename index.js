@@ -139,7 +139,6 @@ const requestHandler = async (request, response) => {
   else if (method === 'POST') {
     // Get the data from the request body.
     const postData = await getPOSTData(request);
-    console.log(`XXX POST data:\n${postData}`);
     // If the request is a retest recommendation:
     if (pageName === 'retestRec.html') {
       const {why} = postData;
@@ -231,11 +230,7 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is a request from a Testaro agent:
     else if (pageName === 'api') {
-      console.log('XXX Getting API request');
       const [agentID, service] = pageArgs.split('/');
-      console.log('XXX Agent ID:', agentID);
-      console.log('XXX Service:', service);
-      console.log(`XXX Agent PW: ${postData.agentPW}`);
       // If the agent is authorized:
       if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
         // If the service is job assignment:

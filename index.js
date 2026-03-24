@@ -48,12 +48,12 @@ const serveError = async (error, response, isHumanUser = true) => {
   if (! response.writableEnded) {
     response.statusCode = 400;
     if (isHumanUser) {
-      response.setHeader('Content-Type', 'text/html; charset=utf-8');
+      response.setHeader('content-type', 'text/html; charset=utf-8');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
       const errorPage = errorTemplate.replace(/__error__/, error.message);
       response.end(errorPage);
     } else {
-      response.setHeader('Content-Type', 'application/json; charset=utf-8');
+      response.setHeader('content-type', 'application/json; charset=utf-8');
       response.end(JSON.stringify({error: error.message}));
     }
   }
@@ -73,8 +73,8 @@ const requestHandler = async (request, response) => {
       // Get the home page.
       const homePage = await fs.readFile('index.html', 'utf8');
       // Serve it.
-      response.setHeader('Content-Type', 'text/html; charset=utf-8');
-      response.setHeader('Content-Location', '/index.html');
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      response.setHeader('content-location', '/index.html');
       response.end(homePage);
     }
     // Otherwise, if it is an HTML page other than the home page:
@@ -83,8 +83,8 @@ const requestHandler = async (request, response) => {
       // If the page can be generated:
       if (answer[topic]) {
         // Serve headers for a response.
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.setHeader('Content-Location', `${pathname}${search}`);
+        response.setHeader('content-type', 'text/html; charset=utf-8');
+        response.setHeader('content-location', `${pathname}${search}`);
         // Get the answer data.
         const answerData = await answer[topic](pageArgs, search);
         // If they are valid:
@@ -109,7 +109,7 @@ const requestHandler = async (request, response) => {
       // Get the site icon.
       const icon = await fs.readFile(path.join(__dirname, 'favicon.ico'));
       // Serve it.
-      response.setHeader('Content-Type', 'image/x-icon');
+      response.setHeader('content-type', 'image/x-icon');
       response.write(icon, 'binary');
       response.end('');
     }
@@ -119,8 +119,8 @@ const requestHandler = async (request, response) => {
         // Serve it.
         const styleSheet = await fs.readFile('style.css', 'utf8');
         response.writeHead(200, {
-          'Content-Type': 'text/css; charset=utf-8',
-          'Cache-Control': 'public, max-age=600'
+          'content-type': 'text/css; charset=utf-8',
+          'cache-control': 'public, max-age=600'
         });
         response.end(styleSheet);
       }
@@ -148,8 +148,8 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
         // Serve headers for a response.
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.setHeader('Content-Location', `${pathname}${search}`);
+        response.setHeader('content-type', 'text/html; charset=utf-8');
+        response.setHeader('content-location', `${pathname}${search}`);
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
         .answer(pageArgs, why);
@@ -177,8 +177,8 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (what && url.startsWith('https://') && why) {
         // Serve headers for a response.
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.setHeader('Content-Location', `${pathname}${search}`);
+        response.setHeader('content-type', 'text/html; charset=utf-8');
+        response.setHeader('content-location', `${pathname}${search}`);
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'testRec', 'index'))
         .answer(what, url, why);
@@ -207,8 +207,8 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (what && url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
         // Serve headers for a response.
-        response.setHeader('Content-Type', 'text/html; charset=utf-8');
-        response.setHeader('Content-Location', `${pathname}${search}`);
+        response.setHeader('content-type', 'text/html; charset=utf-8');
+        response.setHeader('content-location', `${pathname}${search}`);
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
         .answer(url, what, authCode);
@@ -255,7 +255,7 @@ const requestHandler = async (request, response) => {
               const firstJob = await getObject(path.join(queueDir, oldestJobName));
               // Send the job to Testaro.
               response.writeHead(200, {
-                'Content-Type': 'application/json; charset=utf-8'
+                'content-type': 'application/json; charset=utf-8'
               });
               response.end(JSON.stringify(firstJob));
               // Move the job from the queue to the claimed-jobs directory.
@@ -267,7 +267,7 @@ const requestHandler = async (request, response) => {
             else {
               // Send a no-jobs response.
               response.writeHead(200, {
-                'Content-Type': 'text/plain; charset=utf-8'
+                'content-type': 'text/plain; charset=utf-8'
               });
               response.end('');
             }
@@ -283,16 +283,18 @@ const requestHandler = async (request, response) => {
             const nowStamp = getNowStamp();
             const idParts = id.split('-');
             // Update the time-stamp part of its ID to ensure uniqueness.
-            idParts[1] = nowStamp;
+            idParts[0] = nowStamp;
             const newID = idParts.join('-');
             report.id = newID;
             // Save the report.
             await fs.writeFile(path.join(__dirname, 'reports', `${newID}.json`), getJSON(report));
             console.log(`Testaro report ${id} saved with new ID ${newID}`);
             // Acknowledge receipt.
-            response.end("{status: 'ok'}");
+            response.setHeader('content-type', 'application/json; charset=utf-8');
+            response.end(JSON.stringify({status: 'ok'}));
             // Delete the job.
             await fs.unlink(path.join(claimedDir, `${id}.json`));
+            console.log(`Completed job ${id} deleted`);
           }
           // Otherwise, i.e. if the request is invalid:
           else {

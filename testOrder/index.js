@@ -18,15 +18,15 @@ exports.answer = async (url, what, authCode) => {
     // Get the job template.
     const jobTemplateJSON = await fs.readFile(path.join(__dirname, '..', 'jobs/job.json'), 'utf8');
     const job = JSON.parse(jobTemplateJSON);
-    // Populate the template with job properties.
-    const newJobID = Date.now().toString(36).slice(5);
-    job.id = newJobID;
     const nowStamp = getNowStamp();
+    // Populate the template with job properties.
+    const jobIDSuffix = Date.now().toString(36).slice(5);
+    const jobName = `${nowStamp}-${jobIDSuffix}`;
+    job.id = jobName;
     job.creationTimeStamp = nowStamp;
     job.executionTimeStamp = nowStamp;
     job.target.what = what;
     job.target.url = url;
-    const jobName = `${nowStamp}-${newJobID}`;
     const query = {
       target: what,
       jobName

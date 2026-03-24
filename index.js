@@ -93,13 +93,13 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          await serveError({message: answerData.error}, response);
+          await serveError({message: answerData.error}, response, true);
         }
       }
       // Otherwise, i.e. if the answer cannot be generated:
       else {
         // Report the error.
-        await serveError({message: 'Invalid request'}, response);
+        await serveError({message: 'Invalid request'}, response, true);
       }
     }
     // Otherwise, if it is for the application icon:
@@ -123,7 +123,7 @@ const requestHandler = async (request, response) => {
         response.end(styleSheet);
       }
       catch (error) {
-        await serveError(error, response);
+        await serveError(error, response, true);
       }
     }
     // Otherwise, i.e. if it is any other GET request:
@@ -132,7 +132,7 @@ const requestHandler = async (request, response) => {
         message: `ERROR: Invalid GET request (${pathname}${search})`
       };
       // Report the error.
-      await serveError(error, response);
+      await serveError(error, response, true);
     }
   }
   // Otherwise, if the request is a POST request:
@@ -159,14 +159,14 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          await serveError({message: answerData.error}, response);
+          await serveError({message: answerData.error}, response, true);
         }
       }
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
         const message = 'Invalid retest recommendation';
-        await serveError({message}, response);
+        await serveError({message}, response, true);
       }
     }
     // Otherwise, if it is a test recommendation:
@@ -188,14 +188,14 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          await serveError({message: answerData.error}, response);
+          await serveError({message: answerData.error}, response, true);
         }
       }
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
         const message = 'Invalid test recommendation';
-        await serveError({message}, response);
+        await serveError({message}, response, true);
       }
     }
     // Otherwise, if it is a test order:
@@ -218,14 +218,14 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          await serveError({message: answerData.error}, response);
+          await serveError({message: answerData.error}, response, true);
         }
       }
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
         const message = 'Invalid test order';
-        await serveError({message}, response);
+        await serveError({message}, response, true);
       }
     }
     // Otherwise, if it is a request from a Testaro agent:

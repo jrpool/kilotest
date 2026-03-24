@@ -305,12 +305,12 @@ exports.getPOSTData = request => new Promise(resolve => {
   });
   request.on('end', () => {
     const contentType = request.headers['content-type'];
-    if (contentType === 'application/json') {
+    if (contentType.startsWith('application/json')) {
       const bodyJSON = bodyParts.join('');
       const body = JSON.parse(bodyJSON);
       resolve(body);
     }
-    else if (contentType === 'application/x-www-form-urlencoded') {
+    else if (contentType.startsWith('application/x-www-form-urlencoded')) {
       const body = bodyParts.join('');
       const query = querystring.parse(body);
       resolve(query);

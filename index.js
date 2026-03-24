@@ -237,6 +237,7 @@ const requestHandler = async (request, response) => {
       if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
         // If the service is job assignment:
         if (service === 'job') {
+          console.log(`Testaro agent ${agentID} requested a job`);
           const jobNames = await getJobNames();
           const claimedJobNames = jobNames.claimed;
           // If any jobs are claimed:
@@ -258,6 +259,9 @@ const requestHandler = async (request, response) => {
                 'content-type': 'application/json; charset=utf-8'
               });
               response.end(JSON.stringify(firstJob));
+              console.log(
+                `Assigned job ${firstJob.id} (${firstJob.target.what}) to Testaro agent ${agentID}`
+              );
               // Move the job from the queue to the claimed-jobs directory.
               await fs.rename(
                 path.join(queueDir, oldestJobName), path.join(claimedDir, oldestJobName)
@@ -267,9 +271,10 @@ const requestHandler = async (request, response) => {
             else {
               // Send a no-jobs response.
               response.writeHead(200, {
-                'content-type': 'text/plain; charset=utf-8'
+                'content-type': 'application/json; charset=utf-8'
               });
-              response.end('');
+              response.end(JSON.stringify({}));
+              console.log(`No job to assign to Testaro agent ${agentID}`);
             }
           }
         }
@@ -279,7 +284,7 @@ const requestHandler = async (request, response) => {
           const {id} = report;
           // If the request is valid:
           if (id) {
-            console.log(`Testaro report ${id} received`);
+            console.log(`Testaro report ${id} received from Testaro agent ${agentID}`);
             const nowStamp = getNowStamp();
             const idParts = id.split('-');
             // Update the time-stamp part of its ID to ensure uniqueness.

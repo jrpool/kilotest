@@ -65,6 +65,7 @@ const getTargetSummary = async (timeStamp, jobID) => {
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   const targetLogs = await getTargetLogs();
+  query.which = targetLogs.length ? 'the following' : 'no';
   // Initialize an array of list-item lines.
   const lines = [];
   const margin = ' '.repeat(6);

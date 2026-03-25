@@ -9,7 +9,9 @@ const {
   annotateReport,
   getAgoString,
   getDateTimeString,
+  getJobNames,
   getLogPath,
+  getObject,
   getReport,
   getReporterString,
   getTargetLogs,
@@ -64,41 +66,65 @@ const getTargetSummary = async (timeStamp, jobID) => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
+  const margin = ' '.repeat(8);
+  // Initialize the classes of lines.
+  const lines = {
+    queue: [],
+    claimed: [],
+    tested: []
+  };
+  // Get the file names of all queued and claimed jobs.
+  const jobNames = await getJobNames();
+  // For each job category:
+  for (const category of ['queue', 'claimed']) {
+    // For each job in the category:
+    for (const jobName of jobNames[category]) {
+      // Get the job.
+      const job = await getObject(path.join(jobsPath, category, jobName));
+      // Add a line.
+      lines[category].push(`${margin}<li><code>${job.target.url}</code> (${job.target.what})</li>`);
+    }
+    // Add the lines to the query.
+    query[category] = lines[category].join('\n');
+  }
+  // Add a no-queued message, if applicable, to the query.
+  query.noQueued = lines.queue.length ? '' : 'No pages are queued for testing.';
+  // Add a no-claimed message, if applicable, to the query.
+  query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
   const targetLogs = await getTargetLogs();
   query.which = targetLogs.length ? 'the following' : 'no';
-  query.some = targetLogs.length ? 'another' : 'a';
-  // Initialize an array of list-item lines.
-  const lines = [];
-  const margin = ' '.repeat(6);
-  // For the latest log on each target:
+  query.some = (targetLogs.length || jobNames.queue.length || jobNames.claimed.length)
+  ? 'another'
+  : 'a';
+  // For the latest log on each tested target:
   for (const targetLog of targetLogs) {
     const {jobID, url, what, timeStamp} = targetLog;
     const summary = await getTargetSummary(timeStamp, jobID);
     const {issueSet, reporterSet} = summary;
-    lines.push(`${margin}<li>${what}</li>`);
-    lines.push(`${margin}  <ul>`);
-    // Add the URL of the target to the array.
-    lines.push(`${margin}    <li>URL: <code>${url}</code></li>`);
-    // Add facts about the job to the array.
+    lines.tested.push(`${margin}<li>${what}</li>`);
+    lines.tested.push(`${margin}  <ul>`);
+    // Add the URL of the target to the lines.
+    lines.tested.push(`${margin}    <li>URL: <code>${url}</code></li>`);
+    // Add facts about the report to the lines.
     const dateTimeString = getDateTimeString(timeStamp);
     const agoString = getAgoString(timeStamp);
     const testedString
     = `Last tested ${agoString} ago by job <code>${jobID}</code> on ${dateTimeString}`;
     lines.push(`${margin}    <li>${testedString}</li>`);
-    // Add facts about the test results to the array.
+    // Add facts about the test results to the lines.
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);
     lines.push(
       `${margin}    <li>${issueCountString} reported by ${toolCountString}: ${reporterString}</li>`
     );
-    // Add a question link about the reported issues to the array.
+    // Add a question link about the reported issues to the lines.
     const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
     const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
     const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
     const link = `<a ${href} ${label}>What ${questionString}?</a>`;
     lines.push(`${margin}    <li>${link}</li>`);
-    // Add the status of, and if necessary a question link about, retesting to the array.
+    // Add the status of, and if necessary a question link about, retesting to the lines.
     const status = await isRecommendable(url);
     let retestString;
     if (status === 'claimed') {
@@ -112,11 +138,11 @@ const populateQuery = async query => {
       const retestContent = 'Should Kilotest retest the page?';
       retestString = `<a href="${href}">${retestContent}</a>`;
     }
-    lines.push(`${margin}    <li>${retestString}</li>`);
-    lines.push(`${margin}  </ul>`);
-    lines.push(`${margin}</li>`);
+    lines.tested.push(`${margin}    <li>${retestString}</li>`);
+    lines.tested.push(`${margin}  </ul>`);
+    lines.tested.push(`${margin}</li>`);
   }
-  query.testedPages = lines.join('\n');
+  query.testedPages = lines.tested.join('\n');
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {

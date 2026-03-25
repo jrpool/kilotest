@@ -66,6 +66,7 @@ const getTargetSummary = async (timeStamp, jobID) => {
 const populateQuery = async query => {
   const targetLogs = await getTargetLogs();
   query.which = targetLogs.length ? 'the following' : 'no';
+  query.some = targetLogs.length ? 'another' : 'a';
   // Initialize an array of list-item lines.
   const lines = [];
   const margin = ' '.repeat(6);

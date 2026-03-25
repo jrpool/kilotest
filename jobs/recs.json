@@ -1,1 +1,9 @@
-{}
+{
+  "https://pnsqc.org/": [
+    {
+      "timeStamp": "260325T1548",
+      "what": "Pacific Northwest Software Quality Conference",
+      "why": "Its mission is software quality, so it is likely to care about its accessibility."
+    }
+  ]
+}

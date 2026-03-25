@@ -339,13 +339,15 @@ exports.getTextFragmentHref = (text, url) => {
 exports.getTargetLogs = async () => {
   // Initialize data on the tested targets.
   const targetData = {};
-  const logNames = await fs.readdir(logsPath);
+  const logFileNames = await fs.readdir(logsPath);
   // For each log:
-  for (const logName of logNames) {
-    const log = await getObject(path.join(logsPath, logName));
-    // Add the target ID to the log.
-    log.jobName = logName.slice(0, -5);
-    // Add its data to the targets data, replacing any entry for the same target URL.
+  for (const fileName of logFileNames) {
+    const logName = fileName.slice(0, -5);
+    const [timeStamp, jobID] = logName.split('-');
+    const log = await getLog(timeStamp, jobID);
+    // Add the job name to the log.
+    log.jobName = logName;
+    // Add the job data to the targets data, replacing any entry for the same target URL.
     targetData[log.url] = log;
   }
   // Get an array of the target logs, sorted by description.

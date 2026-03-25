@@ -25,7 +25,8 @@ const getIssuesSummary = async logs => {
   const issuesData = {};
   // For each log of a report to be inspected:
   for (const log of logs) {
-    const {annotated, timeStamp, jobID} = log;
+    const {annotated, jobName} = log;
+    const [timeStamp, jobID] = jobName.split('-');
     // If the corresponding report is not yet annotated:
     if (! annotated) {
       // Annotate it and mark it as annotated in the log.

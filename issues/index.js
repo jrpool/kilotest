@@ -100,15 +100,16 @@ const populateQuery = async query => {
   [4, 3, 2, 1].forEach(weight => {
     // Add a heading to the lines.
     lines.push(`${margin}<h2>${getWeightName(weight)} priority</h2>`);
-    const {issues} = issuesSummary;
+    const reportedIssues = issuesSummary.issues;
     lines.push(`${margin}<ul>`);
     let existsIssue = false;
-    // For each summarized issue:
-    issuesSummary.issues.forEach(issueSummary => {
-      const {issueID, percentage, reporters} = issueSummary;
+    // For each reported issue:
+    reportedIssues.forEach(reportedIssue => {
+      const {issueID, percentage, reporters} = reportedIssue;
       // If it has the weight and its percentage is at least 2:
-      if (issueSummary.weight === weight && percentage >= 2) {
+      if (reportedIssue.weight === weight && percentage >= 2) {
         existsIssue = true;
+        // Get the data on it from the issue classification.
         const issue = issues[issueID];
         const {summary, wcag, why} = issue;
         // Add a description of it to the lines.

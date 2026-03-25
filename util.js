@@ -342,12 +342,13 @@ exports.getTargetLogs = async () => {
   const logNames = await fs.readdir(logsPath);
   // For each log:
   for (const logName of logNames) {
-    const logJSON = await fs.readFile(path.join(logsPath, logName), 'utf8');
-    const log = JSON.parse(logJSON);
-    // Add its data to the targets directory, replacing any entry for the same target URL.
+    const log = await getObject(path.join(logsPath, logName));
+    // Add the target ID to the log.
+    log.jobName = logName.slice(0, -5);
+    // Add its data to the targets data, replacing any entry for the same target URL.
     targetData[log.url] = log;
   }
-  // Get an array of those target logs, sorted by description.
+  // Get an array of the target logs, sorted by description.
   const targets = objectSort(Object.values(targetData), 'what', 'alpha');
   return targets;
 };

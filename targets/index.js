@@ -6,11 +6,10 @@
 // IMPORTS
 
 const {
-  annotateReport,
   getAgoString,
   getDateTimeString,
   getJobNames,
-  getLogPath,
+  getLog,
   getObject,
   getReport,
   getReporterString,
@@ -25,15 +24,10 @@ const path = require('path');
 
 // Returns a description of a tool count.
 const getToolCountString = toolCount => toolCount === 1 ? '1 tool' : `${toolCount} tools`;
-// Returns summary data on the results of testing of a target.
+// Returns summary data on the results in a report.
 const getTargetSummary = async (timeStamp, jobID) => {
-  const targetLogJSON = await fs.readFile(getLogPath(timeStamp, jobID), 'utf8');
-  const targetLog = JSON.parse(targetLogJSON);
-  // If the target report has not been annotated yet:
-  if (! targetLog.annotated) {
-    // Annotate it.
-    await annotateReport(timeStamp, jobID);
-  }
+  // Annotate the report if necessary.
+  await getLog(timeStamp, jobID, true);
   const summary = {
     issueSet: new Set(),
     reporterSet: new Set()
@@ -75,13 +69,13 @@ const populateQuery = async query => {
     tested: []
   };
   // Get the file names of all queued and claimed jobs.
-  const jobNames = await getJobNames();
+  const jobFileNames = await getJobNames();
   // For each job category:
   for (const category of ['queue', 'claimed']) {
     // For each job in the category:
-    for (const jobName of jobNames[category]) {
+    for (const fileName of jobFileNames[category]) {
       // Get the job.
-      const job = await getObject(path.join(jobsPath, category, jobName));
+      const job = await getObject(path.join(jobsPath, category, fileName));
       // Add a line.
       lines[category].push(`${margin}<li><code>${job.target.url}</code> (${job.target.what})</li>`);
     }
@@ -94,12 +88,13 @@ const populateQuery = async query => {
   query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
   const targetLogs = await getTargetLogs();
   query.which = targetLogs.length ? 'the following' : 'no';
-  query.some = (targetLogs.length || jobNames.queue.length || jobNames.claimed.length)
+  query.some = (targetLogs.length || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'
   : 'a';
   // For the latest log on each tested target:
   for (const targetLog of targetLogs) {
-    const {jobID, url, what, timeStamp} = targetLog;
+    const {jobName, url, what} = targetLog;
+    const [timeStamp, jobID] = jobName.split('-');
     const summary = await getTargetSummary(timeStamp, jobID);
     const {issueSet, reporterSet} = summary;
     lines.tested.push(`${margin}<li>${what}</li>`);

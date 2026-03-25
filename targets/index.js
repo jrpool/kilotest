@@ -86,7 +86,9 @@ const populateQuery = async query => {
   // Add the lines to the query.
   query.recs = lines.recs.join('\n');
   // Add a no-recommendations message, if applicable, to the query.
-  query.noRecs = lines.recs.length ? '' : 'No recommendations await approval now.';
+  query.noRecs = lines.recs.length
+  ? 'Kilotest managers can <a href="testOrderForm.html">approve recommendations</a>.'
+  : 'No recommendations await approval now.';
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
   // For each job category:

@@ -9,6 +9,7 @@ const {
   getDateTimeString,
   getLog,
   getReport,
+  getTextFragmentHref,
   getWeightName,
   htmlSafe,
   tools
@@ -21,9 +22,21 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, query) => {
-  // Add facts about the issue to the query.
-  query.catalogIndex = catalogIndex;
   const log = await getLog(timeStamp, jobID, true);
+  const report = await getReport(timeStamp, jobID);
+  const {acts, catalog} = report;
+  const catalogItem = catalog[catalogIndex] ?? {};
+  const {boxID, startTag, tagName, text} = catalogItem;
+  query.catalogIndex = catalogIndex;
+  const lines = [];
+  const margin = ' '.repeat(6);
+  if (catalogIndex && catalogItem.textLinkable) {
+    const href = getTextFragmentHref(text, log.url);
+    const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
+    const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
+    query.takeMeThere = `${margin}    <li>${link}</li>`;
+  }
+  // Add facts about the issue to the query.
   query.target = log.what;
   query.issue = issues[issueID].summary;
   query.url = log.url;
@@ -33,10 +46,6 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.why = why;
   query.priority = getWeightName(weight);
   query.wcag = wcag;
-  const report = await getReport(timeStamp, jobID);
-  const {acts, catalog} = report;
-  const catalogItem = catalog[catalogIndex] ?? {};
-  const {boxID, startTag, tagName, text} = catalogItem;
   query.tagName = tagName ?? 'HTML';
   if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
     query.text = `<q>${htmlSafe(text)}</q>`;
@@ -80,8 +89,6 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     });
   });
   // Initialize the lines.
-  const lines = [];
-  const margin = ' '.repeat(6);
   lines.push(`${margin}<ul>`);
   // For each diagnosis:
   diagnoses.forEach((diagnosis, index) => {

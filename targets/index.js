@@ -127,12 +127,12 @@ const populateQuery = async query => {
     const agoString = getAgoString(timeStamp);
     const testedString
     = `Last tested ${agoString} ago by job <code>${jobID}</code> on ${dateTimeString}`;
-    lines.push(`${margin}    <li>${testedString}</li>`);
+    lines.tested.push(`${margin}    <li>${testedString}</li>`);
     // Add facts about the test results to the lines.
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);
-    lines.push(
+    lines.tested.push(
       `${margin}    <li>${issueCountString} reported by ${toolCountString}: ${reporterString}</li>`
     );
     // Add a question link about the reported issues to the lines.
@@ -140,7 +140,7 @@ const populateQuery = async query => {
     const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
     const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
     const link = `<a ${href} ${label}>What ${questionString}?</a>`;
-    lines.push(`${margin}    <li>${link}</li>`);
+    lines.tested.push(`${margin}    <li>${link}</li>`);
     // Add the status of, and if necessary a question link about, retesting to the lines.
     const status = await isRecommendable(url);
     let retestString;

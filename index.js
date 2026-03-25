@@ -20,10 +20,10 @@ const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
 // IMPORTS
 const {
+  annotateReport,
   getJobNames,
   getJSON,
   getLogPath,
-  getNowStamp,
   getObject,
   getPOSTData,
   getReportPath,
@@ -142,11 +142,10 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, i.e. if it is any other GET request:
     else {
-      const error = {
-        message: `ERROR: Invalid GET request (${pathname}${search})`
-      };
       // Report the error.
-      await serveError(error, response, true);
+      await serveError(
+        {message: `ERROR: Invalid GET request (${pathname}${search})`}, response, true
+      );
     }
   }
   // Otherwise, if the request is a POST request:
@@ -179,8 +178,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        const message = 'Invalid retest recommendation';
-        await serveError({message}, response, true);
+        await serveError({message: 'Invalid retest recommendation'}, response, true);
       }
     }
     // Otherwise, if it is a test recommendation:
@@ -208,8 +206,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        const message = 'Invalid test recommendation';
-        await serveError({message}, response, true);
+        await serveError({message: 'Invalid test recommendation'}, response, true);
       }
     }
     // Otherwise, if it is a test order:
@@ -238,8 +235,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        const message = 'Invalid test order';
-        await serveError({message}, response, true);
+        await serveError({message: 'Invalid test order'}, response, true);
       }
     }
     // Otherwise, if it is a request from a Testaro agent:
@@ -315,66 +311,57 @@ const requestHandler = async (request, response) => {
           const {report} = postData;
           const {id, target} = report;
           const {what, url} = target;
+          const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
           // If the request is valid:
-          if (id) {
+          if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
             // Acknowledge receipt.
             response.setHeader('content-type', 'application/json; charset=utf-8');
             response.end(JSON.stringify({status: 'ok'}));
             console.log(`Testaro report ${id} was received from Testaro agent ${agentID}`);
-            const nowStamp = getNowStamp();
-            const idParts = id.split('-');
-            // Update the time-stamp part of its ID to ensure uniqueness.
-            idParts[0] = nowStamp;
-            const newID = idParts.join('-');
-            report.id = newID;
+            const [timeStamp, jobID] = id.split('-');
             // Save the report.
-            await fs.writeFile(getReportPath(... idParts), getJSON(report));
+            await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
             // Create a log for the report.
             const log = {
               what,
               url
             };
             // Save the log.
-            await fs.writeFile(getLogPath(... idParts), getJSON(log));
+            await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
             // Annotate the report and mark it as annotated in the log.
-            await annotateReport(... idParts);
-            console.log(
-              `Testaro report ${id} was annotated, saved, and logged with new ID ${newID}`
-            );
+            await annotateReport(timeStamp, jobID);
+            console.log(`Testaro report ${id} was annotated, saved, and logged`);
             // Delete the job.
             await fs.unlink(path.join(claimedDir, `${id}.json`));
             console.log(`Completed job ${id} deleted`);
           }
           // Otherwise, i.e. if the request is invalid:
           else {
-            const message = 'ERROR: Report submission invalid';
-            await serveError({message}, response, false);
+            await serveError({message: 'ERROR: Report invalid'}, response, false);
           }
         }
         // Otherwise, if the service is not valid:
         else {
-          const message = 'ERROR: Invalid service request from Testaro agent';
-          await serveError({message}, response, false);
+          await serveError(
+            {message: 'ERROR: Invalid service request from Testaro agent'}, response, false
+          );
         }
       }
       // Otherwise, i.e. if the agent is not authorized:
       else {
-        const message = 'ERROR: Invalid Testaro agent';
-        await serveError({message}, response, false);
+        await serveError({message: 'ERROR: Invalid Testaro agent'}, response, false);
       }
     }
     // Otherwise, i.e. if it is any other POST request:
     else {
       // Report its invalidity.
-      const message = 'ERROR: Invalid POST request';
-      await serveError({message}, response, false);
+      await serveError({message: 'ERROR: Invalid POST request'}, response, false);
     }
   }
   // Otherwise, i.e. if it is neither a GET nor a POST request:
   else {
     // Report its invalidity.
-    const message = 'ERROR: Invalid request method';
-    await serveError({message}, response, false);
+    await serveError({message: 'ERROR: Invalid request method'}, response, false);
   }
 };
 

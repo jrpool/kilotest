@@ -362,7 +362,7 @@ exports.htmlSafe = string => string
 .replace(/'/g, '&apos;');
 // Returns whether a string is a job ID.
 exports.isJobID = string => {
-  return /^[a-z0-9]{5}$/.test(string);
+  return /^[a-z0-9]{3}$/.test(string);
 };
 // Returns whether a job to test a target is eligible for a recommendation.
 exports.isRecommendable = async url => {

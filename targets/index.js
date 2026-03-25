@@ -15,7 +15,8 @@ const {
   getReport,
   getReporterString,
   getTargetLogs,
-  isRecommendable
+  isRecommendable,
+  jobsPath
 } = require('../util');
 const fs = require('fs/promises');
 const path = require('path');

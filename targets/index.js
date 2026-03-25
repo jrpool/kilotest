@@ -11,6 +11,7 @@ const {
   getJobNames,
   getLog,
   getObject,
+  getRecs,
   getReport,
   getReporterString,
   getTargetLogs,
@@ -64,10 +65,28 @@ const populateQuery = async query => {
   const margin = ' '.repeat(8);
   // Initialize the classes of lines.
   const lines = {
+    recs: [],
     queue: [],
     claimed: [],
     tested: []
   };
+  // Get the recommendations.
+  const recs = await getRecs();
+  // For each recommended URL:
+  Object.keys(recs).forEach(url => {
+    // For each of its recommendations:
+    recs[url].forEach(rec => {
+      const {what, why} = rec;
+      // Add a line.
+      lines.recs.push(`${margin}<li><code>${url}</code> (${what}): ${why}</li>`);
+    });
+  });
+  // Sort the lines in alphabetical order by URL and secondarily by proposed name.
+  lines.recs.sort();
+  // Add the lines to the query.
+  query.recs = lines.recs.join('\n');
+  // Add a no-recommendations message, if applicable, to the query.
+  query.noRecs = lines.recs.length ? '' : 'No recommendations await approval now.';
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
   // For each job category:

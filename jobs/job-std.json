@@ -18,8 +18,7 @@
     "url": ""
   },
   "sources": {
-    "application": "Kilotest",
-    "authorizedUser": true
+    "application": "Kilotest"
   },
   "acts": [
     {

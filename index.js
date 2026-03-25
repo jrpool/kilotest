@@ -25,6 +25,7 @@ const {
   getNowStamp,
   getObject,
   getPOSTData,
+  getReportPath,
   isTimeStamp,
   isJobID
 } = require('./util');
@@ -249,6 +250,18 @@ const requestHandler = async (request, response) => {
           const messageStart = `Testaro agent ${agentID} requested a job, `;
           const jobNames = await getJobNames();
           const claimedJobNames = jobNames.claimed;
+          // For each claimed job:
+          for (const jobName of claimedJobNames) {
+            const job = await getObject(path.join(jobsPath, 'claimed', jobName));
+            const {id, sources} = job;
+            const {agent} = sources;
+            // If its assignee is the agent:
+            if (agent === agentID) {
+              const messageEnd = `but has not completed job ${id}`;
+              // Report this.
+              await serveError({message: `${messageStart}${messageEnd}`}, response, false);
+            }
+          }
           // If any jobs are claimed:
           if (claimedJobNames.length) {
             const messageEnd = 'but a job assigned to the agent was not completed';
@@ -263,7 +276,12 @@ const requestHandler = async (request, response) => {
               const oldestJobName = queuedJobNames[0];
               // Get the first one.
               const firstJob = await getObject(path.join(queueDir, oldestJobName));
-              // Send the job to the agent.
+              // Add the agent ID to the job.
+              firstJob.sources.agent = agentID;
+              console.log(
+                `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the agent.`
+              );
+              // Assign the job to the agent.
               response.writeHead(200, {
                 'content-type': 'application/json; charset=utf-8'
               });

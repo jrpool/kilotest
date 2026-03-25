@@ -36,7 +36,7 @@ exports.answer = async () => {
   const query = {
     recs: lines.join('\n'),
     noRecs: urls.length ? '' : 'No recommendations exist now.',
-    isDisabled: urls.length ? 'false' : 'true'
+    disabled: urls.length ? '' : ' disabled'
   };
   // Get the order form template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');

@@ -34,7 +34,9 @@ exports.answer = async () => {
     lines.push(`${margin}</li>`);
   });
   const query = {
-    recs: lines.join('\n')
+    recs: lines.join('\n'),
+    noRecs: urls.length ? '' : 'No recommendations exist now.',
+    isDisabled: urls.length ? 'false' : 'true'
   };
   // Get the order form template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');

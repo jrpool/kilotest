@@ -14,6 +14,7 @@ const protocol = process.env.PROTOCOL || 'http';
 const jobsDir = `${__dirname}/jobs`;
 const queueDir = `${jobsDir}/queue`;
 const claimedDir = `${jobsDir}/claimed`;
+const failedDir = `${jobsDir}/failed`;
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
@@ -248,6 +249,7 @@ const requestHandler = async (request, response) => {
       if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
         // If the service is job assignment:
         if (service === 'job') {
+          let clean = true;
           const messageStart = `Testaro agent ${agentID} requested a job, `;
           const jobNames = await getJobNames();
           const claimedJobNames = jobNames.claimed;
@@ -261,16 +263,17 @@ const requestHandler = async (request, response) => {
               const messageEnd = `but has not completed job ${id}`;
               // Report this.
               await serveError({message: `${messageStart}${messageEnd}`}, response, false);
+              // Reclassify the job as failed.
+              await fs.rename(
+                path.join(claimedDir, jobName), path.join(failedDir, jobName)
+              );
+              clean = false;
+              // Stop checking claimed jobs.
+              break;
             }
           }
-          // If any jobs are claimed:
-          if (claimedJobNames.length) {
-            const messageEnd = 'but a job assigned to the agent was not completed';
-            // Report this.
-            await serveError({message: `${messageStart}${messageEnd}`}, response, false);
-          }
-          // Otherwise, i.e. if no jobs are claimed:
-          else {
+          // If no aborted-job error was found for the agent:
+          if (clean) {
             const queuedJobNames = jobNames.queue;
             // If any jobs are queued:
             if (queuedJobNames.length) {
@@ -297,10 +300,10 @@ const requestHandler = async (request, response) => {
             }
             // Otherwise, i.e. if no jobs are queued:
             else {
-              // Send a no-jobs response to the agent.
               response.writeHead(200, {
                 'content-type': 'application/json; charset=utf-8'
               });
+              // Send a no-jobs response to the agent.
               response.end(JSON.stringify({}));
               const messageEnd = 'but no job was in the queue';
               console.log(`${messageStart}${messageEnd}`);

@@ -369,7 +369,6 @@ const requestHandler = async (request, response) => {
 const serve = async (protocolModule, options) => {
   // Create any missing directories.
   for (const path of [queuePath, claimedPath, failedPath, logsPath, reportsPath]) {
-    console.log(`XXX path to be created is ${path}`);
     await fs.mkdir(path, {recursive: true});
   }
   const server = protocolModule === 'https'

@@ -19,7 +19,10 @@ const {
   getReportPath,
   isTimeStamp,
   isJobID,
-  jobsPath
+  jobsPath,
+  logsPath,
+  recsPath,
+  reportsPath
 } = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
@@ -43,9 +46,9 @@ const answer = {
 // CONSTANTS
 
 const protocol = process.env.PROTOCOL || 'http';
-const queueDir = path.join(jobsPath, 'queue');
-const claimedDir = path.join(jobsPath, 'claimed');
-const failedDir = path.join(jobsPath, 'failed');
+const queuePath = path.join(jobsPath, 'queue');
+const claimedPath = path.join(jobsPath, 'claimed');
+const failedPath = path.join(jobsPath, 'failed');
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
@@ -258,7 +261,7 @@ const requestHandler = async (request, response) => {
               await serveError({message: `${messageStart}${messageEnd}`}, response, false);
               // Reclassify the job as failed.
               await fs.rename(
-                path.join(claimedDir, jobName), path.join(failedDir, jobName)
+                path.join(claimedPath, jobName), path.join(failedPath, jobName)
               );
               clean = false;
               // Stop checking claimed jobs.
@@ -272,7 +275,7 @@ const requestHandler = async (request, response) => {
             if (queuedJobNames.length) {
               const oldestJobName = queuedJobNames[0];
               // Get the first one.
-              const firstJob = await getObject(path.join(queueDir, oldestJobName));
+              const firstJob = await getObject(path.join(queuePath, oldestJobName));
               // Add the agent ID to the job.
               firstJob.sources.agent = agentID;
               console.log(
@@ -288,7 +291,7 @@ const requestHandler = async (request, response) => {
               console.log(`${messageStart}${messageEnd}`);
               // Move the job from the queue to the claimed-jobs directory.
               await fs.rename(
-                path.join(queueDir, oldestJobName), path.join(claimedDir, oldestJobName)
+                path.join(queuePath, oldestJobName), path.join(claimedPath, oldestJobName)
               );
             }
             // Otherwise, i.e. if no jobs are queued:
@@ -329,7 +332,7 @@ const requestHandler = async (request, response) => {
             await annotateReport(timeStamp, jobID);
             console.log(`Testaro report ${id} was annotated, saved, and logged`);
             // Delete the job.
-            await fs.unlink(path.join(claimedDir, `${id}.json`));
+            await fs.unlink(path.join(claimedPath, `${id}.json`));
             console.log(`Completed job ${id} deleted`);
           }
           // Otherwise, i.e. if the request is invalid:
@@ -366,8 +369,8 @@ const requestHandler = async (request, response) => {
 
 const serve = async (protocolModule, options) => {
   // Create any missing directories.
-  for (const dir of [queueDir, claimedDir, failedDir, getLogPath(), getReportPath()]) {
-    await fs.mkdir(dir, {recursive: true});
+  for (const dir of [queuePath, claimedPath, failedPath, recsPath, logsPath, reportsPath]) {
+    await fs.mkdir(path, {recursive: true});
   }
   const server = protocolModule === 'https'
     ? https.createServer(options, requestHandler)

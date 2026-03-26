@@ -4,7 +4,7 @@ An ensemble testing service with a focus on accessibility
 
 ## Features
 
-This application uses an ensemble of 11 tools to test public web pages for standards conformity, usability, and accessibility. Then it makes the test results available, so you can learn what issues were reported by the tools.
+This application uses an ensemble of 11 tools to test public web pages for standards conformity, usability, and accessibility.
 
 The testing paradigm employed by Kilotest is discussed in these papers:
 
@@ -27,14 +27,18 @@ In the steps below, hosts `T` and `K` may be the same host or two different host
 1. Update the Testaro dependencies and rebuild: `npm run deps`.
 1. Clone the Kilotest repository into a new directory on host `K`.
 1. In that directory, install the Kilotest dependencies: `npm install`.
-1. Copy the `env.testaro` file from the `kilotest` directory to `.env` in the `testaro` directory.
+1. Copy the `env.testaro` file from the `kilotest` directory to `.env` in the `testaro` directory and replace the `__placeholder__` values in `.env` with actual values.
 1. Copy the `env.example` file in the `kilotest` directory to a new `.env` file in the same directory and replace the `__placeholder__` values in `.env` with actual values.
 
 ### Usage
 
-1. In the `testaro` directory, make Testaro start listening for jobs: `node call netWatch`.
+1. In the `testaro` directory, make Testaro start listening for jobs: `node call netWatch true nn true`, where `nn` is the number of seconds to wait between checks for new jobs.
 1. In the `kilotest` directory, start the Kilotest service: `node index`.
 
 ### Contributing
 
 Contributions are welcome! You can use GitHub issues to initiate discussions and propose changes. If you want to contribute code, please fork the repository and create a pull request.
+
+## Making Kilotest a service
+
+See the `SERVICE.md` file for instructions on how to make Kilotest a service.

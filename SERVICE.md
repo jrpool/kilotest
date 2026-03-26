@@ -20,7 +20,7 @@ Testaro is installed at `/opt/jpdev/testaro` on the server.
 
 ## Process management
 
-Kilotest is managed with PM2 on the server (not on the local development host). The PM2 configuration is tracked in the repository as `pm2.config.js`:
+Kilotest is managed with PM2 on the server (not on the local development host). The PM2 configuration is specified in the repository as `pm2.config.js`:
 
 ```javascript
 module.exports = {
@@ -49,7 +49,7 @@ pm2 restart kilotest --update-env
 pm2 save
 ```
 
-Testaro is not managed with PM2. Instead, you can make it begin watching for jobs from Kilotest by executing `node call netWatch true 30 true`. This will make Testaro poll Kilotest twice a minute for jobs. When Kilotest responds with a job, Testaro will perform it, send a report back to Kilotest in a `POST` request, and then resume polling.
+Testaro is not managed with PM2. Instead, you can make it begin watching for jobs from Kilotest by executing `node call netWatch true nn true`, replacing `nn` with the number of seconds to wait between checks for new jobs. This will make Testaro poll Kilotest periodically for jobs. When Kilotest responds with a job, Testaro will perform it, send a report back to Kilotest, and then resume polling. Testaro uses `POST` requests to request jobs and to submit reports. Each such request includes a password associated with the ID of the Testaro instance (i.e. “agent”).
 
 Testaro uses Playwright to create headless browsers. They are destroyed automatically when no longer needed, and the last ones are typically destroyed within a minute after the end of a job. Thus, neither Testaro nor Kilotest attempts to kill them when a job ends.
 
@@ -84,7 +84,20 @@ This enables `zram` and decreases the amount of disk swapping.
 
 ## Keepalive
 
-The SSH configuration on both the server and the local client is customized so that connections will be kept alive longer than the default. This customization is performed in `/etc/ssh/sshd_config` on the server and in `~/.ssh/config` on the client. The customized variables are `ClientAliveInterval` on the server, and `ServerAliveInterval`, `ServerAliveCountMax`, and `TCPKeepAlive` within `Host <ip.address>` on the client.
+The SSH configuration on the local client is customized so that connections will be kept alive longer than the default. This customization is performed in the `~/.ssh/config` file:
+
+```ssh-config
+Host kilotest.com 149.28.208.106
+  HostName 149.28.208.106
+  User linuxuser
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+  ServerAliveInterval 60
+  ServerAliveCountMax 3
+  TCPKeepAlive yes
+```
+
+The corresponding server file `/etc/ssh/sshd_config` needs no customization.
 
 ## Internet domain
 
@@ -223,7 +236,7 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 Kilotest uses Testaro to run jobs, and Testaro in turn uses Playwright to launch and control headless browsers, often `chromium`. Those browsers navigate to web pages that are tested by the tools that Testaro integrates. The `qualWeb` tool launches its own browser via Puppeteer as a dependency to perform its tests.
 
-When either Playwright or Puppeteer launches a `chromium` browser, in most environments it is [sandboxed](https://www.geeksforgeeks.org/ethical-hacking/what-is-browser-sandboxing/). Sandboxing is a security feature that prevents the browser from accessing potentially unsafe system resources. But in the Ubuntu Linux operating system that was installed on the Vultr Cloud Compute host a sandboxed browser requires an [unprivileged user namespace](https://ubuntu.com/blog/ubuntu-23-10-restricted-unprivileged-user-namespaces), and when Ubuwntu was installed its configuration disallowed such namespaces. The file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.apparmor_restrict_unprivileged_userns = 1` prohibited unprivileged user namespaces and thereby made sandboxed browsers unlaunchable.
+When either Playwright or Puppeteer launches a `chromium` browser, in most environments it is [sandboxed](https://www.geeksforgeeks.org/ethical-hacking/what-is-browser-sandboxing/). Sandboxing is a security feature that prevents the browser from accessing potentially unsafe system resources. But in the Ubuntu Linux operating system that was installed on the Vultr Cloud Compute host a sandboxed browser requires an [unprivileged user namespace](https://ubuntu.com/blog/ubuntu-23-10-restricted-unprivileged-user-namespaces), and when Ubuntu was installed its configuration disallowed such namespaces. The file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.apparmor_restrict_unprivileged_userns = 1` prohibited unprivileged user namespaces and thereby made sandboxed browsers unlaunchable.
 
 ### Potential modification
 
@@ -235,7 +248,7 @@ One modification to cope with this prohibition on the Vultr Cloud Compute host w
 
 ### Current modification
 
-However, non-sandboxed browsers are less secure than sandboxed ones, particularly when there is no restriction on who can use the service and what web pages they can test with it. Therefore, the potential modification described above would introduce nontrivial risk. An alternative solution was adopted instead. In it, the `chromium` configuration was left unchanged.
+However, non-sandboxed browsers are less secure than sandboxed ones, particularly when there is no restriction on who can use the service and what web pages they can test with it. Such restrictions are currently in place, but still permit testing of arbitrary web pages and may be relaxed in the future. Therefore, the potential modification described above would introduce nontrivial risk. An alternative solution was adopted instead. In it, the `chromium` configuration was left unchanged.
 
 This solution required configuring the operating system of the Vultr Cloud Compute host to permit a sandboxed browser to be launched. This reconfiguration was performed with:
 

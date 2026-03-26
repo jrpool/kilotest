@@ -8,16 +8,6 @@
 // Module to keep secrets local.
 require('dotenv').config({quiet: true});
 
-// CONSTANTS
-
-const protocol = process.env.PROTOCOL || 'http';
-const jobsDir = `${__dirname}/jobs`;
-const queueDir = `${jobsDir}/queue`;
-const claimedDir = `${jobsDir}/claimed`;
-const failedDir = `${jobsDir}/failed`;
-const testaroAgent = process.env.TESTARO_AGENT;
-const testaroAgentPW = process.env.TESTARO_AGENT_PW;
-
 // IMPORTS
 const {
   annotateReport,
@@ -49,6 +39,15 @@ const answer = {
   testRec: require('./testRec/index').answer,
   testRecForm: require('./testRecForm/index').answer
 };
+
+// CONSTANTS
+
+const protocol = process.env.PROTOCOL || 'http';
+const queueDir = path.join(jobsPath, 'queue');
+const claimedDir = path.join(jobsPath, 'claimed');
+const failedDir = path.join(jobsPath, 'failed');
+const testaroAgent = process.env.TESTARO_AGENT;
+const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
 // FUNCTIONS
 
@@ -365,7 +364,11 @@ const requestHandler = async (request, response) => {
 
 // SERVER
 
-const serve = (protocolModule, options) => {
+const serve = async (protocolModule, options) => {
+  // Create any missing directories.
+  for (const dir of [queueDir, claimedDir, failedDir, getLogPath(), getReportPath()]) {
+    await fs.mkdir(dir, {recursive: true});
+  }
   const server = protocolModule === 'https'
     ? https.createServer(options, requestHandler)
     : http.createServer(requestHandler);

@@ -15,11 +15,11 @@ const querystring = require('querystring');
 // Path of the jobs directory.
 const jobsPath = exports.jobsPath = path.join(__dirname, 'jobs');
 // Path of the logs directory.
-const logsPath = path.join(__dirname, 'logs');
+const logsPath = exports.logsPath = path.join(__dirname, 'logs');
 // Path of the recommendations file.
 const recsPath = exports.recsPath = path.join(__dirname, 'jobs', 'recs.json');
 // Path of the reports directory.
-const reportsPath = path.join(__dirname, 'reports');
+const reportsPath = exports.reportsPath = path.join(__dirname, 'reports');
 // IDs, names, and sponsors of Testaro tools.
 const tools = exports.tools = {
   alfa: ['Alfa', 'Siteimprove'],

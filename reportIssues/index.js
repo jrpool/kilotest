@@ -74,11 +74,6 @@ const getIssuesSummary = async (timeStamp, jobID) => {
       reporters: getReporterString(reporters)
     });
   });
-  // Add an issue count description to the query.
-  const issueCount = summary.issues.length;
-  query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
-  const reporterCount = summary.reporters.size;
-  query.reporters = reporterCount === 1 ? '1 reporter' : `${reporterCount} reporters`;
   // Sort the issues in alphabetical order by reporter string.
   objectSort(summary.issues, 'reporters', 'alpha');
   // Sort the issues again in descending reporter-count order, making this the primary order.
@@ -90,7 +85,14 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 const populateQuery = async (timeStamp, jobID, query) => {
   // Get a summary of data on the target.
   const summary = await getIssuesSummary(timeStamp, jobID);
-  const {what} = summary;
+  const {issues, reporters, what} = summary;
+  const issueCount = issues.length;
+  // Add an issue count description to the query.
+  query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
+  const reporterCount = reporters.size;
+  const reporterCountString = reporterCount === 1 ? '1 reporter' : `${reporterCount} reporters`;
+  // Add a reporter count and list to the query.
+  query.reporters = `${reporterCountString} (${getReporterString(reporters)})`;
   query.target = what;
   query.url = summary.url;
   query.jobID = jobID;

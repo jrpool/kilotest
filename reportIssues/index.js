@@ -104,7 +104,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     const weightData = [];
     // For each summarized issue:
     summary.issues.forEach(issueSummary => {
-      const {issueID, reporters} = issueSummary;
+      const {issueID, reporterCount, reporters} = issueSummary;
       // If it has the weight:
       if (issueSummary.weight === weight) {
         const issue = issues[issueID];
@@ -115,6 +115,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
           summary: issue.summary,
           why,
           wcag,
+          reporterCount,
           reporters
         });
       }
@@ -128,7 +129,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
       const weightLines = [];
       // For each issue that has the weight:
       weightData.forEach(weightIssue => {
-        const {issueID, reporters, wcag, why} = weightIssue;
+        const {issueID, reporterCount, reporters, wcag, why} = weightIssue;
         // Add a heading to the lines.
         weightLines.push(`${margin}  <h5>${weightIssue.summary}</h5>`);
         // Add the start of a fact list to the lines.
@@ -136,7 +137,10 @@ const populateQuery = async (timeStamp, jobID, query) => {
         // Add the issue facts to the lines.
         weightLines.push(`${margin}      <li>Why it matters: ${why}`);
         weightLines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
-        weightLines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+        const reporterCountString = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
+        weightLines.push(
+          `${margin}      <li>Reported by ${reporterCountString} (${reporters})</li>`
+        );
         const whereQuestionString = 'Where was the issue found?';
         const labelString = `Where was the ${weightIssue.summary} issue found on the ${what} page?`;
         const href = `href="/reportIssue.html/${issueID}/${timeStamp}/${jobID}"`;

@@ -95,9 +95,8 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const margin = ' '.repeat(6);
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
-    // Add a heading to the lines.
-    lines.push(`${margin}<h3>${getWeightName(weight)} priority</h3>`);
-    lines.push(`${margin}<ul>`);
+    // Initialize data on issues having the weight.
+    const weightData = [];
     // For each summarized issue:
     summary.issues.forEach(issueSummary => {
       const {issueID, reporters} = issueSummary;
@@ -105,26 +104,49 @@ const populateQuery = async (timeStamp, jobID, query) => {
       if (issueSummary.weight === weight) {
         const issue = issues[issueID];
         const {wcag, why} = issue;
-        // Add a description of it to the lines.
-        lines.push(`${margin}  <li>${issue.summary}`);
-        lines.push(`${margin}    <ul>`);
-        lines.push(`${margin}      <li>Why it matters: ${why}`);
-        lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
-        lines.push(`${margin}      <li>Reported by ${reporters}</li>`);
+        // Add data on it to the weight data.
+        weightData.push({
+          issueID,
+          summary: issue.summary,
+          why,
+          wcag,
+          reporters
+        });
+      }
+    });
+    const weightName = getWeightName(weight);
+    // Add the issue count to the query.
+    query[`${weightName}Count`] = weightData.length;
+    // If any reported issues have the weight:
+    if (weightData.length) {
+      // Initialize the lines for the weight.
+      const weightLines = [];
+      // For each issue that has the weight:
+      weightData.forEach(weightIssue => {
+        const {issueID, reporters, wcag, why} = weightIssue;
+        // Add a heading to the lines.
+        weightLines.push(`${margin}  <h5>${weightIssue.summary}</h5>`);
+        // Add the start of a fact list to the lines.
+        weightLines.push(`${margin}    <ul>`);
+        // Add the issue facts to the lines.
+        weightLines.push(`${margin}      <li>Why it matters: ${why}`);
+        weightLines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
+        weightLines.push(`${margin}      <li>Reported by ${reporters}</li>`);
         const whereQuestionString = 'Where was the issue found?';
-        const labelString = `Where was the ${issue.summary} issue found on the ${what} page?`;
+        const labelString = `Where was the ${weightIssue.summary} issue found on the ${what} page?`;
         const href = `href="/reportIssue.html/${issueID}/${timeStamp}/${jobID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
-        lines.push(`${margin}      <li>${whereLink}</li>`);
-        lines.push(`${margin}    </ul>`);
-        lines.push(`${margin}  </li>`);
-      }
-    });
-    lines.push(`${margin}</ul>`);
+        weightLines.push(`${margin}      <li>${whereLink}</li>`);
+        weightLines.push(`${margin}    </ul>`);
+      });
+      query[`${weightName}Details`] = weightLines.join('\n');
+    }
+    // Otherwise, i.e. if no reported issues have the weight:
+    else {
+      query[`${weightName}Details`] = `${margin}  <p>None</p>`;
+    }
   });
-  // Add the lines to the query.
-  query.issues = lines.join('\n');
 };
 // Returns a page answering the target-issues question.
 exports.answer = async pageArgs => {

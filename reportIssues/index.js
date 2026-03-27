@@ -85,8 +85,8 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 const populateQuery = async (timeStamp, jobID, query) => {
   // Get a summary of data on the target.
   const summary = await getIssuesSummary(timeStamp, jobID);
-  const {issues, reporters, what} = summary;
-  const issueCount = issues.length;
+  const {reporters, what} = summary;
+  const issueCount = summary.issues.length;
   // Add an issue count description to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
   const reporterCount = reporters.size;
@@ -97,8 +97,6 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.url = summary.url;
   query.jobID = jobID;
   query.dateTime = getDateTimeString(timeStamp);
-  // Initialize the lines.
-  const lines = [];
   const margin = ' '.repeat(6);
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {

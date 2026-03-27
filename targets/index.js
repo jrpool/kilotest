@@ -133,7 +133,7 @@ const populateQuery = async query => {
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);
     lines.tested.push(
-      `${margin}    <li>${issueCountString} reported by ${toolCountString}: ${reporterString}</li>`
+      `${margin}    <li>${issueCountString} reported by ${toolCountString} (${reporterString})</li>`
     );
     // Add a question link about the reported issues to the lines.
     const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;

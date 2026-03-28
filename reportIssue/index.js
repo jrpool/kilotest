@@ -80,6 +80,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     // Convert the set of its reporters to a string.
     violatorData.reporters = getReporterString(violatorData.reporters);
   });
+  const reporterCount = query.reporters.size;
+  query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
   // Convert the set of issue reporters to a string.
   query.reporters = getReporterString(query.reporters);
   // Convert the violator data to an array.

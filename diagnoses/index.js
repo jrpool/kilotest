@@ -48,7 +48,8 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.wcag = wcag;
   query.tagName = tagName ?? 'HTML';
   if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
-    query.text = `<q>${htmlSafe(text)}</q>`;
+    const textString = text.split('\n').join(' … ');
+    query.text = `${margin}    <li>Text: <q>${htmlSafe(textString)}</q></li>`;
   }
   else {
     query.text = '[not applicable]';

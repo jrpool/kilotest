@@ -36,6 +36,9 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
     query.takeMeThere = `${margin}    <li>${link}</li>`;
   }
+  else {
+    query.takeMeThere = '';
+  }
   // Add facts about the issue to the query.
   query.target = log.what;
   query.issue = issues[issueID].summary;

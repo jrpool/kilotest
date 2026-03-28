@@ -92,23 +92,17 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
       });
     });
   });
-  // Initialize the lines.
-  lines.push(`${margin}<ul>`);
   // For each diagnosis:
-  diagnoses.forEach((diagnosis, index) => {
+  diagnoses.forEach(diagnosis => {
     const {toolID, ruleID, what} = diagnosis;
     // Add lines.
-    lines.push(`${margin}  <li>Diagnosis ${index + 1}`);
-    lines.push(`${margin}    <ul>`);
-    lines.push(`${margin}      <li>Tool: ${tools[toolID][0]} (${tools[toolID][1]})</li>`);
+    lines.push(`${margin}<li>${htmlSafe(what)}`);
+    lines.push(`${margin}  <p>Tool: ${tools[toolID][0]} (${tools[toolID][1]})</p>`);
     if (ruleID !== what) {
-      lines.push(`${margin}      <li>Rule: <code>${ruleID}</code></li>`);
+      lines.push(`${margin}  <p>Rule: <code>${ruleID}</code></p>`);
     }
-    lines.push(`${margin}      <li>Diagnosis: ${htmlSafe(what)}</li>`);
-    lines.push(`${margin}    </ul>`);
-    lines.push(`${margin}  </li>`);
+    lines.push(`${margin}</li>`);
   });
-  lines.push(`${margin}</ol>`);
   // Add the lines to the query.
   query.diagnoses = lines.join('\n');
 };

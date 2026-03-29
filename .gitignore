@@ -14,6 +14,9 @@ node_modules/
 logs/
 results/
 
+# Jobs
+jobs/
+
 # Reports
 reports/
 

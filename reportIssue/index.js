@@ -30,6 +30,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   const {url, what} = log;
   query.target = what;
   query.url = url;
+  query.jobID = jobID;
   query.dateTime = getDateTimeString(timeStamp);
   const issue = issues[issueID];
   const {wcag, weight, why} = issue;

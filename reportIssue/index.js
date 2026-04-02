@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the report-issues question.
+  Answers the diagnoses question.
 */
 
 // IMPORTS
@@ -50,7 +50,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     const {result, which} = act;
     const issueInstances = result?.standardResult?.instances?.filter(
       instance => instance.issueID === issueID
-    );
+    ) ?? [];
     // If the rule of any of its standard instances belongs to the issue:
     if (issueInstances.length) {
       query.reporters.add(which);

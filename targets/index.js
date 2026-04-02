@@ -57,6 +57,9 @@ const getTargetSummary = async (timeStamp, jobID) => {
       }
     }
   });
+  const {jobData} = report;
+  // Add the IDs of any prevented tools to the summary.
+  summary.preventedTools = Object.keys(jobData?.preventions || {});
   // Return the summary.
   return summary;
 };
@@ -117,7 +120,7 @@ const populateQuery = async query => {
     const {jobName, url, what} = targetLog;
     const [timeStamp, jobID] = jobName.split('-');
     const summary = await getTargetSummary(timeStamp, jobID);
-    const {issueSet, reporterSet} = summary;
+    const {issueSet, preventedTools, reporterSet} = summary;
     lines.tested.push(`${margin}<li>${what}</li>`);
     lines.tested.push(`${margin}  <ul>`);
     // Add the URL of the target to the lines.
@@ -128,6 +131,15 @@ const populateQuery = async query => {
     const testedString
     = `Last tested ${agoString} ago by job <code>${jobID}</code> on ${dateTimeString}`;
     lines.tested.push(`${margin}    <li>${testedString}</li>`);
+    // If the page prevented any tool from performing its tests:
+    if (preventedTools?.length) {
+      const preventedToolSet = new Set(preventedTools);
+      const toolCountString = getToolCountString(preventedToolSet.size);
+      const toolsString = getReporterString(preventedToolSet);
+      lines.tested.push(
+        `${margin}    <li>Page prevented testing by ${toolCountString} (${toolsString})</li>`,
+      );
+    }
     // Add facts about the test results to the lines.
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const toolCountString = getToolCountString(reporterSet.size);

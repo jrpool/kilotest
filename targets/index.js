@@ -132,15 +132,19 @@ const populateQuery = async query => {
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const toolCountString = getToolCountString(reporterSet.size);
     const reporterString = getReporterString(reporterSet);
-    lines.tested.push(
-      `${margin}    <li>${issueCountString} reported by ${toolCountString} (${reporterString})</li>`
-    );
-    // Add a question link about the reported issues to the lines.
-    const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
-    const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
-    const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
-    const link = `<a ${href} ${label}>What ${questionString}?</a>`;
-    lines.tested.push(`${margin}    <li>${link}</li>`);
+    const issuesString = issueSet.size
+    ? `${issueCountString} reported by ${toolCountString} (${reporterString})`
+    : `${issueCountString} reported`;
+    lines.tested.push(`${margin}    <li>${issuesString}</li>`);
+    // If any issues were reported:
+    if (issueSet.size) {
+      // Add a question link about the reported issues to the lines.
+      const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
+      const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
+      const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
+      const link = `<a ${href} ${label}>What ${questionString}?</a>`;
+      lines.tested.push(`${margin}    <li>${link}</li>`);
+    }
     // Add the status of, and if necessary a question link about, retesting to the lines.
     const status = await isRecommendable(url);
     let retestString;

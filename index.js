@@ -35,6 +35,7 @@ const answer = {
   retestRec: require('./retestRec/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
   rules: require('./rules/index').answer,
+  solos: require('./solos/index').answer,
   targets: require('./targets/index').answer,
   testOrder: require('./testOrder/index').answer,
   testOrderForm: require('./testOrderForm/index').answer,

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssue, getReport, getTargetLogs} = require('../util');
+const {getIssue, getReport, getTargetLogs, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -34,7 +34,7 @@ const populateQuery = async query => {
           // If its issue ID is missing:
           if (! instance.issueID) {
             // Get the issue ID of the rule.
-            const issueID = getIssue(which, ruleID);
+            const issueID = getIssue(ruleIDs, which, ruleID);
             // If the rule is now classified:
             if (issueID) {
               // Add the rule and the report to the rules that are now classified.

@@ -21,7 +21,8 @@ const {
   isJobID,
   jobsPath,
   logsPath,
-  reportsPath
+  reportsPath,
+  ruleIDs
 } = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
@@ -328,8 +329,9 @@ const requestHandler = async (request, response) => {
             };
             // Save the log.
             await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
+            const ruleIDs = getRuleIDs();
             // Annotate the report and mark it as annotated in the log.
-            await annotateReport(timeStamp, jobID);
+            await annotateReport(ruleIDs, timeStamp, jobID);
             console.log(`Testaro report ${id} was annotated, saved, and logged`);
             // Delete the job.
             await fs.unlink(path.join(claimedPath, `${id}.json`));

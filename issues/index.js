@@ -11,7 +11,8 @@ const {
   getReporterString,
   getTargetLogs,
   getWeightName,
-  objectSort
+  objectSort,
+  ruleIDs
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
@@ -30,7 +31,7 @@ const getIssuesSummary = async logs => {
     // If the corresponding report is not yet annotated:
     if (! annotated) {
       // Annotate it and mark it as annotated in the log.
-      await annotateReport(timeStamp, jobID);
+      await annotateReport(ruleIDs, timeStamp, jobID);
     }
     // Get the corresponding report.
     const report = await getReport(timeStamp, jobID);

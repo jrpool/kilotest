@@ -115,7 +115,7 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   return 0;
 });
 // Compiles a directory of the issue classifications of invariant and variable rules.
-const getRuleIDs = () => {
+const getRuleIDs = exports.getRuleIDs = () => {
   // Initialize data on invariant and variable rule IDs.
   const invariant = {};
   const variable = {};
@@ -166,10 +166,11 @@ const getRuleIDs = () => {
     variable
   };
 };
-const ruleIDs = getRuleIDs();
-const {invariant, variable} = ruleIDs;
+// Variable and invariant rules.
+const ruleIDs = exports.ruleIDs = getRuleIDs();
 // Returns the issue that a rule belongs to.
-const getIssue = exports.getIssue = (toolID, ruleID) => {
+const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
+  const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.
   let issueID = invariant[toolID]?.[ruleID];
   // If the initialization succeeded:
@@ -177,6 +178,7 @@ const getIssue = exports.getIssue = (toolID, ruleID) => {
     // Return it.
     return issueID;
   }
+  console.log(`XXX Rule ${ruleID} of tool ${toolID} is not invariant`);
   // Otherwise, change the rule ID to the first matching variable rule ID of the tool.
   ruleID = Object
   .keys(variable[toolID] ?? {})
@@ -194,12 +196,12 @@ const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false
   const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
   const log = JSON.parse(logJSON);
   if (forceAnnotation && ! log.annotated) {
-    annotateReport(timeStamp, jobID);
+    annotateReport(ruleIDs, timeStamp, jobID);
   }
   return log;
 };
 // Adds issue IDs to the standard instances of a report.
-const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
+const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
   let report;
   try {
     // Get a copy of the report.
@@ -222,7 +224,7 @@ const annotateReport = exports.annotateReport = async (timeStamp, jobID) => {
       for (const instance of result?.standardResult?.instances ?? []) {
         const {ruleID} = instance;
         // Classify its rule.
-        const issueID = getIssue(which, ruleID);
+        const issueID = getIssue(ruleIDs, which, ruleID);
         // Add the issue ID to the instance.
         instance.issueID = issueID;
         if (! issueID) {

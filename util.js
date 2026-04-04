@@ -166,10 +166,10 @@ const getRuleIDs = () => {
     variable
   };
 };
+const ruleIDs = getRuleIDs();
+const {invariant, variable} = ruleIDs;
 // Returns the issue that a rule belongs to.
 const getIssue = (toolID, ruleID) => {
-  const ruleIDs = getRuleIDs();
-  const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.
   let issueID = invariant[toolID]?.[ruleID];
   // If the initialization succeeded:

@@ -83,7 +83,8 @@ const populateQuery = async query => {
   // Add the lines to the query.
   query.nowClassified = nowClassifiedLines.join('\n');
   if (nowClassifiedLines.length) {
-    query.how = 'To update the assignment of instances to issues, submit your authorization code.';
+    query.reannotationHeading = 'Reannotate';
+    query.how = 'Each <q>now classified</q> rule indicates that report annotations are out of date. To update them, submit your authorization code.';
     const formLines = [];
     formLines.push(`${margin}<form action="/reannotate.html" method="post">`);
     formLines.push(

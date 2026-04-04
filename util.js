@@ -178,7 +178,9 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
     // Return it.
     return issueID;
   }
-  console.log(`XXX Rule ${ruleID} of tool ${toolID} is not invariant`);
+  console.log(
+    `XXX Rule ${ruleID} of tool ${toolID} is not invariant; about to seek a matching variable rule among:\n${Object.keys(variable[toolID] ?? {}).join('\n')}`
+  );
   // Otherwise, change the rule ID to the first matching variable rule ID of the tool.
   ruleID = Object
   .keys(variable[toolID] ?? {})

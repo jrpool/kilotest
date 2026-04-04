@@ -14,7 +14,6 @@ const path = require('path');
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   const targetLogs = await getTargetLogs();
-  const solos = {};
   const stillUnclassified = {};
   const nowClassified = {};
   // For each target:

@@ -329,7 +329,6 @@ const requestHandler = async (request, response) => {
             };
             // Save the log.
             await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
-            const ruleIDs = getRuleIDs();
             // Annotate the report and mark it as annotated in the log.
             await annotateReport(ruleIDs, timeStamp, jobID);
             console.log(`Testaro report ${id} was annotated, saved, and logged`);

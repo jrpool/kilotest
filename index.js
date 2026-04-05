@@ -241,14 +241,14 @@ const requestHandler = async (request, response) => {
       }
     }
     // Otherwise, if it is a reannotation order:
-    else if (pageName === 'reannotateOrder.html') {
+    else if (pageName === 'reannotate.html') {
       // If the request is valid:
       if (authCode === process.env.AUTH_CODE) {
         // Serve headers for a response.
         response.setHeader('content-type', 'text/html; charset=utf-8');
         response.setHeader('content-location', `${pathname}${search}`);
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'reannotateOrder', 'index'))
+        const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
         .answer();
         // If the answer data are valid:
         if (answerData.status === 'ok') {

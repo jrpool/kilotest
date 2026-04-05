@@ -242,12 +242,13 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is a reannotation order:
     else if (pageName === 'reannotate.html') {
+      const {authCode} = postData;
       // Serve headers for a response.
       response.setHeader('content-type', 'text/html; charset=utf-8');
       response.setHeader('content-location', `${pathname}${search}`);
       // Get the answer data.
       const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
-      .answer();
+      .answer(authCode);
       // If the answer data are valid:
       if (answerData.status === 'ok') {
         // Serve the answer page.

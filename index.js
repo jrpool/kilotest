@@ -242,29 +242,21 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is a reannotation order:
     else if (pageName === 'reannotate.html') {
-      // If the request is valid:
-      if (postData.authCode === process.env.AUTH_CODE) {
-        // Serve headers for a response.
-        response.setHeader('content-type', 'text/html; charset=utf-8');
-        response.setHeader('content-location', `${pathname}${search}`);
-        // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
-        .answer();
-        // If the answer data are valid:
-        if (answerData.status === 'ok') {
-          // Serve the answer page.
-          response.end(answerData.answerPage);
-        }
-        // Otherwise, i.e. if they are invalid:
-        else {
-          // Report the error.
-          await serveError({message: answerData.error}, response, true);
-        }
+      // Serve headers for a response.
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      response.setHeader('content-location', `${pathname}${search}`);
+      // Get the answer data.
+      const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
+      .answer();
+      // If the answer data are valid:
+      if (answerData.status === 'ok') {
+        // Serve the answer page.
+        response.end(answerData.answerPage);
       }
-      // Otherwise, i.e. if the request is invalid:
+      // Otherwise, i.e. if they are invalid:
       else {
         // Report the error.
-        await serveError({message: 'Invalid reannotation order'}, response, true);
+        await serveError({message: answerData.error}, response, true);
       }
     }
     // Otherwise, if it is a request from a Testaro agent:

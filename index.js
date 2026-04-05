@@ -240,6 +240,33 @@ const requestHandler = async (request, response) => {
         await serveError({message: 'Invalid test order'}, response, true);
       }
     }
+    // Otherwise, if it is a reannotation order:
+    else if (pageName === 'reannotateOrder.html') {
+      // If the request is valid:
+      if (authCode === process.env.AUTH_CODE) {
+        // Serve headers for a response.
+        response.setHeader('content-type', 'text/html; charset=utf-8');
+        response.setHeader('content-location', `${pathname}${search}`);
+        // Get the answer data.
+        const answerData = await require(path.join(__dirname, 'reannotateOrder', 'index'))
+        .answer();
+        // If the answer data are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          await serveError({message: answerData.error}, response, true);
+        }
+      }
+      // Otherwise, i.e. if the request is invalid:
+      else {
+        // Report the error.
+        await serveError({message: 'Invalid reannotation order'}, response, true);
+      }
+    }
     // Otherwise, if it is a request from a Testaro agent:
     else if (pageName === 'api') {
       const [agentID, service] = pageArgs.split('/');
@@ -357,13 +384,13 @@ const requestHandler = async (request, response) => {
     // Otherwise, i.e. if it is any other POST request:
     else {
       // Report its invalidity.
-      await serveError({message: 'ERROR: Invalid POST request'}, response, false);
+      await serveError({message: 'ERROR: Invalid POST request'}, response, true);
     }
   }
   // Otherwise, i.e. if it is neither a GET nor a POST request:
   else {
     // Report its invalidity.
-    await serveError({message: 'ERROR: Invalid request method'}, response, false);
+    await serveError({message: 'ERROR: Invalid request method'}, response, true);
   }
 };
 

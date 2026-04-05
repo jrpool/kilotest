@@ -83,8 +83,7 @@ const populateQuery = async query => {
   // Add the lines to the query.
   query.nowClassified = nowClassifiedLines.join('\n');
   if (nowClassifiedLines.length) {
-    query.reannotationHeading = 'Reannotate';
-    query.how = 'Each <q>now classified</q> rule indicates that report annotations are out of date. To update them, submit your authorization code.';
+    query.how = 'Each <q>newly classified</q> rule indicates that report annotations are out of date. To update them, submit your authorization code.';
     const formLines = [];
     formLines.push(`${margin}<form action="/reannotate.html" method="post">`);
     formLines.push(
@@ -93,6 +92,10 @@ const populateQuery = async query => {
     formLines.push(`${margin}  <p><button type="submit">Reannotate</button></p>`);
     formLines.push(`${margin}</form>`);
     query.reannotateForm = formLines.join('\n');
+  }
+  else {
+    query.how = 'No rules have been classified since the last annotation, so reannotation of the reports is not necessary.';
+    query.reannotateForm = '';
   }
 };
 // Returns a page disclosing newly classified rules and a form to reannotate reports.

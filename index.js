@@ -243,7 +243,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is a reannotation order:
     else if (pageName === 'reannotate.html') {
       // If the request is valid:
-      if (authCode === process.env.AUTH_CODE) {
+      if (postData.authCode === process.env.AUTH_CODE) {
         // Serve headers for a response.
         response.setHeader('content-type', 'text/html; charset=utf-8');
         response.setHeader('content-location', `${pathname}${search}`);

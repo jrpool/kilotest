@@ -78,9 +78,8 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   testActs.forEach(act => {
     const {result, which} = act;
     const caseInstances = result?.standardResult?.instances?.filter(
-      instance => instance.issueID === issueID
-      && (instance.catalogIndex === catalogIndex || instance.pathID === pathID)
-    );
+      instance => instance.issueID === issueID && instance.catalogIndex === catalogIndex
+    ) ?? [];
     // For each standard instance that pertains to this combination of issue and violator:
     caseInstances.forEach(instance => {
       const {ruleID, what} = instance;

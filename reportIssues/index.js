@@ -21,18 +21,20 @@ const path = require('path');
 
 // Gets summary data on the issues reported in a report.
 const getIssuesSummary = async (timeStamp, jobID) => {
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
   // Initialize data for the summary.
   const log = await getLog(timeStamp, jobID, true);
   const {url, what} = log;
+  const preventedToolSet = new Set(Object.keys(report?.jobData?.preventions ?? {}));
   const issuesData = {
     timeStamp,
     jobID,
     what,
     url,
+    preventedToolSet,
     issues: {}
   };
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
   // For each act in it:
   report.acts.forEach(act => {
     // If it is a test act:
@@ -45,7 +47,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
         // If the instance has a non-ignorable issue ID:
         if (issueID && issueID !== 'ignorable') {
           issuesData.issues[issueID] ??= new Set();
-          // Ensure that the tool is in the issue data.
+          // Ensure that the tool is in the issues data.
           issuesData.issues[issueID].add(which);
         }
       });
@@ -57,6 +59,7 @@ const getIssuesSummary = async (timeStamp, jobID) => {
     jobID: issuesData.jobID,
     what: issuesData.what,
     url: issuesData.url,
+    preventedToolSet: issuesData.preventedToolSet,
     reporters: new Set(),
     issues: []
   };
@@ -85,8 +88,16 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 const populateQuery = async (timeStamp, jobID, query) => {
   // Get a summary of data on the target.
   const summary = await getIssuesSummary(timeStamp, jobID);
-  const {reporters, what} = summary;
+  const {preventedToolSet, reporters, what} = summary;
   const issueCount = summary.issues.length;
+  const preventedToolCountString = preventedToolSet.size === 1
+  ? '1 tool'
+  : `${preventedToolSet.size} tools`;
+  const preventedToolsString = getReporterString(preventedToolSet);
+  // Add a list of prevented tools, if any, to the query.
+  query.preventedTools = preventedToolSet.size
+  ? `<li>Page prevented testing by ${preventedToolCountString} (${preventedToolsString})</li>`
+  : '';
   // Add an issue count description to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
   const reporterCount = reporters.size;

@@ -94,7 +94,7 @@ const populateQuery = async query => {
     query.reannotateForm = formLines.join('\n');
   }
   else {
-    query.how = 'No rules have been classified since the last annotation, so reannotation of the reports is not necessary.';
+    query.how = 'No violated rules have been classified after being reported, so reannotation of the reports is not necessary.';
     query.reannotateForm = '';
   }
 };

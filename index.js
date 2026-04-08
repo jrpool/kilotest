@@ -31,6 +31,7 @@ const path = require('path');
 const answer = {
   diagnoses: require('./diagnoses/index').answer,
   issues: require('./issues/index').answer,
+  manage: require('./manage/index').answer,
   reannotate: require('./reannotate/index').answer,
   reannotateForm: require('./reannotateForm/index').answer,
   reportIssue: require('./reportIssue/index').answer,

@@ -41,15 +41,19 @@ exports.answer = async () => {
   // For each summary:
   reportSpecs.forEach((spec, index) => {
     const {timeStamp, jobID, issueCount, preventionCount, url} = spec;
+    const jobName = `${timeStamp}-${jobID}`;
+    const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventionCount}, issues ${issueCount}`;
     // If its report is a non-latest report:
     if (reportSpecs[index + 1]?.url === url) {
       // Add a line with a deletion checkbox.
-      lines.push(`${margin}<p><input type="checkbox" name="report" value="${timeStamp}-${jobID}"> <code>${url}</code>: preventions ${preventionCount}, issues ${issueCount}</p>`);
+      lines.push(
+        `${margin}<p><input type="checkbox" name="report" value="${jobName}"> ${specString}</p>`
+      );
     }
     // Otherwise, i.e. if its report is a latest report:
     else {
       // Add a line without a deletion checkbox.
-      lines.push(`${margin}<p><code>${url}</code>: preventions ${preventionCount}, issues ${issueCount}</p>`);
+      lines.push(`${margin}<p>${specString}</p>`);
     }
   });
   const query = {

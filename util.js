@@ -199,6 +199,45 @@ const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false
   }
   return log;
 };
+// Returns summary data on the results in a report.
+exports.getTargetSummary = async (timeStamp, jobID) => {
+  // Annotate the report if necessary.
+  const log = await getLog(timeStamp, jobID, true);
+  const summary = {
+    issueSet: new Set(),
+    reporterSet: new Set(),
+    url: log.url
+  };
+  const {issueSet, reporterSet} = summary;
+  const report = await getReport(timeStamp, jobID);
+  // For each act of the report:
+  report.acts.forEach(act => {
+    // If it is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      const instances = result?.standardResult?.instances ?? [];
+      // If it has any standard instances:
+      if (instances.length > 0) {
+        // Ensure that the tool is in the summary.
+        reporterSet.add(which);
+        // For each standard instance:
+        instances.forEach(instance => {
+          const {issueID} = instance;
+          // If it has an issue ID:
+          if (issueID) {
+            // Ensure that the issue is in the summary.
+            issueSet.add(issueID);
+          }
+        });
+      }
+    }
+  });
+  const {jobData} = report;
+  // Add the IDs of any prevented tools to the summary.
+  summary.preventedTools = Object.keys(jobData?.preventions || {});
+  // Return the summary.
+  return summary;
+};
 // Adds issue IDs to the standard instances of a report.
 const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
   let report;

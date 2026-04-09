@@ -15,6 +15,7 @@ const {
   getReport,
   getReporterString,
   getTargetLogs,
+  getTargetSummary,
   isRecommendable,
   jobsPath
 } = require('../util');
@@ -25,44 +26,6 @@ const path = require('path');
 
 // Returns a description of a tool count.
 const getToolCountString = toolCount => toolCount === 1 ? '1 tool' : `${toolCount} tools`;
-// Returns summary data on the results in a report.
-const getTargetSummary = async (timeStamp, jobID) => {
-  // Annotate the report if necessary.
-  await getLog(timeStamp, jobID, true);
-  const summary = {
-    issueSet: new Set(),
-    reporterSet: new Set()
-  };
-  const {issueSet, reporterSet} = summary;
-  const report = await getReport(timeStamp, jobID);
-  // For each act of the report:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // If it has any standard instances:
-      if (instances.length > 0) {
-        // Ensure that the tool is in the summary.
-        reporterSet.add(which);
-        // For each standard instance:
-        instances.forEach(instance => {
-          const {issueID} = instance;
-          // If it has an issue ID:
-          if (issueID) {
-            // Ensure that the issue is in the summary.
-            issueSet.add(issueID);
-          }
-        });
-      }
-    }
-  });
-  const {jobData} = report;
-  // Add the IDs of any prevented tools to the summary.
-  summary.preventedTools = Object.keys(jobData?.preventions || {});
-  // Return the summary.
-  return summary;
-};
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   const margin = ' '.repeat(8);

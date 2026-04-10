@@ -67,7 +67,7 @@ exports.answer = async (_, search) => {
     const jobName = `${timeStamp}-${jobID}`;
     const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventionCount}, issues ${issueCount}`;
     // If its report is the latest report on a target with at least 2 reports:
-    if (reportSpecs[index - 1]?.url === url) {
+    if (reportSpecs[index - 1]?.url === url && reportSpecs[index + 1]?.url !== url) {
       // Add a line with a deletion checkbox.
       lines.push(
         `${margin}<p><input type="checkbox" name="report" value="${jobName}"> ${specString}</p>`

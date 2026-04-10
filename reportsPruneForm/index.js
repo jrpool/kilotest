@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getTargetSummary, reportsPath, serveError} = require('../util');
+const {getTargetSummary, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -15,7 +15,7 @@ const path = require('path');
 exports.answer = async (_, search) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
-  const jobNames = searchParams?.getAll('jobName');
+  const jobNames = searchParams?.getAll('report');
   // If reports are to be deleted:
   if (jobNames?.length) {
     // If the authorization code is valid:
@@ -29,7 +29,10 @@ exports.answer = async (_, search) => {
     // Otherwise, i.e. if the authorization code is invalid:
     else {
       // Report the error.
-      await serveError({message: 'Invalid authorization code'}, response, true);
+      return {
+        status: 'error',
+        error: 'Invalid authorization code'
+      }
     }
   }
   const reportNames = await fs.readdir(reportsPath);
@@ -78,8 +81,8 @@ exports.answer = async (_, search) => {
     }
   });
   const intro = anyDeletable
-  ? 'Choose the non-latest reports to delete.'
-  : 'Each target has only 1 report.';
+  ? 'Choose the superseded reports to delete.'
+  : 'Each target has only 1 report, so there are no superseded reports to delete.';
   const disabled = anyDeletable ? '' : ' disabled';
   const query = {
     reports: lines.join('\n'),

@@ -12,7 +12,18 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns a form for deleting non-latest reports.
-exports.answer = async () => {
+exports.answer = async (_, search) => {
+  const searchParams = new URLSearchParams(search);
+  const authCode = searchParams?.get('authCode');
+  const jobNames = searchParams?.getAll('jobName');
+  // If reports are to be deleted:
+  if (searchParams && jobNames?.length && authCode === process.env.AUTH_CODE) {
+    // For each report to be deleted:
+    for (const jobName of jobNames) {
+      // Delete it.
+      await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+    }
+  }
   const reportNames = await fs.readdir(reportsPath);
   const reportSpecs = [];
   // For each report:
@@ -38,6 +49,7 @@ exports.answer = async () => {
   });
   const lines = [];
   const margin = ' '.repeat(12);
+  let anyDeletable = false;
   // For each summary:
   reportSpecs.forEach((spec, index) => {
     const {timeStamp, jobID, issueCount, preventionCount, url} = spec;
@@ -49,6 +61,7 @@ exports.answer = async () => {
       lines.push(
         `${margin}<p><input type="checkbox" name="report" value="${jobName}"> ${specString}</p>`
       );
+      anyDeletable = true;
     }
     // Otherwise, i.e. if its report is a latest report:
     else {
@@ -56,8 +69,14 @@ exports.answer = async () => {
       lines.push(`${margin}<p>${specString}</p>`);
     }
   });
+  const intro = anyDeletable
+  ? 'Choose the non-latest reports to delete.'
+  : 'Each target has only 1 report.';
+  const disabled = anyDeletable ? '' : ' disabled';
   const query = {
-    reports: lines.join('\n')
+    reports: lines.join('\n'),
+    intro,
+    disabled
   };
   // Get the order form template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');

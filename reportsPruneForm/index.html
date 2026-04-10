@@ -13,8 +13,8 @@
   <body>
     <main>
       <h1><a href="/">Kilotest</a>: Prune reports</h1>
-      <p>Check the non-latest reports to be deleted.</p>
-      <form action="/reportsPrune.html" method="post">
+      <p>__intro__</p>
+      <form action="/reportsPruneForm.html">
         <fieldset>
           <legend>Reports</legend>
           __reports__
@@ -22,7 +22,7 @@
         <p><label>
           Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required>
         </label></p>
-        <p><button type="submit">Submit</button></p>
+        <p><button type="submit"__disabled__>Submit</button></p>
       </form>
     </main>
   </body>

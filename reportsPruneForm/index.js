@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getTargetSummary, reportsPath} = require('../util');
+const {getTargetSummary, reportsPath, serveError} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -17,11 +17,19 @@ exports.answer = async (_, search) => {
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('jobName');
   // If reports are to be deleted:
-  if (searchParams && jobNames?.length && authCode === process.env.AUTH_CODE) {
-    // For each report to be deleted:
-    for (const jobName of jobNames) {
-      // Delete it.
-      await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+  if (jobNames?.length) {
+    // If the authorization code is valid:
+    if (authCode === process.env.AUTH_CODE) {
+      // For each report to be deleted:
+      for (const jobName of jobNames) {
+        // Delete it.
+        await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+      }
+    }
+    // Otherwise, i.e. if the authorization code is invalid:
+    else {
+      // Report the error.
+      await serveError({message: 'Invalid authorization code'}, response, true);
     }
   }
   const reportNames = await fs.readdir(reportsPath);

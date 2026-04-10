@@ -22,7 +22,8 @@ const {
   jobsPath,
   logsPath,
   reportsPath,
-  ruleIDs
+  ruleIDs,
+  serveError
 } = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
@@ -58,22 +59,6 @@ const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 
 // FUNCTIONS
 
-// Serves an error message.
-const serveError = async (error, response, isHumanUser = true) => {
-  console.log(error.message);
-  if (! response.writableEnded) {
-    response.statusCode = 400;
-    if (isHumanUser) {
-      response.setHeader('content-type', 'text/html; charset=utf-8');
-      const errorTemplate = await fs.readFile('error.html', 'utf8');
-      const errorPage = errorTemplate.replace(/__error__/, error.message);
-      response.end(errorPage);
-    } else {
-      response.setHeader('content-type', 'application/json; charset=utf-8');
-      response.end(JSON.stringify({error: error.message}));
-    }
-  }
-};
 // Handles a request.
 const requestHandler = async (request, response) => {
   const {method, url} = request;

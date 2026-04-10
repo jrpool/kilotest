@@ -445,3 +445,19 @@ exports.isURL = string => {
 };
 // Makes a string breakable before non-initial slashes.
 exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
+// Serves an error message.
+exports.serveError = async (error, response, isHumanUser = true) => {
+  console.log(error.message);
+  if (! response.writableEnded) {
+    response.statusCode = 400;
+    if (isHumanUser) {
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      const errorTemplate = await fs.readFile('error.html', 'utf8');
+      const errorPage = errorTemplate.replace(/__error__/, error.message);
+      response.end(errorPage);
+    } else {
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({error: error.message}));
+    }
+  }
+};

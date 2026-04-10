@@ -38,6 +38,7 @@ const answer = {
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
   reportsPruneForm: require('./reportsPruneForm/index').answer,
+  reportsRewindForm: require('./reportsRewindForm/index').answer,
   retestRec: require('./retestRec/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
   rules: require('./rules/index').answer,

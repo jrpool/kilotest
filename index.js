@@ -295,7 +295,6 @@ const requestHandler = async (request, response) => {
               response.writeHead(200, {
                 'content-type': 'application/json; charset=utf-8'
               });
-              console.log(`XXX firstJob:\n${JSON.stringify(firstJob, null, 2)}`);
               response.end(JSON.stringify(firstJob));
               const messageEnd
               = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the agent`;

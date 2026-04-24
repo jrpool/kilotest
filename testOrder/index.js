@@ -16,7 +16,7 @@ exports.answer = async (url, what, authCode) => {
   // If the arguments are valid:
   if (isURL(url) && what && authCode === process.env.AUTH_CODE) {
     // Get the job template.
-    const jobTemplateJSON = await fs.readFile(path.join(__dirname, '..', 'jobs/job.json'), 'utf8');
+    const jobTemplateJSON = await fs.readFile(path.join(__dirname, '..', 'job.json'), 'utf8');
     const job = JSON.parse(jobTemplateJSON);
     const nowStamp = getNowStamp();
     // Populate the template with job properties.

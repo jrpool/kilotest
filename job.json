@@ -95,12 +95,6 @@
       "which": "wave",
       "what": "WAVE by Utah State University",
       "reportType": 4
-    },
-    {
-      "type": "test",
-      "launch": {},
-      "which": "wax",
-      "what": "WallyAX by Wally"
     }
   ]
 }

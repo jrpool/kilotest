@@ -20,7 +20,7 @@ Testaro is installed at `/opt/jpdev/testaro` on the server.
 
 ## Process management
 
-Kilotest is managed with PM2 on the server (not on the local development host). The PM2 configuration is specified in the repository as `pm2.config.js`:
+Kilotest is managed with [PM2](https://pm2.keymetrics.io) on the server (not on the local development host). The PM2 configuration is specified in the repository as `pm2.config.js`:
 
 ```javascript
 module.exports = {

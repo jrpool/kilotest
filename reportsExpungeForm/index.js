@@ -1,6 +1,6 @@
 /*
   index.js
-  Serves a form for deleting latest superseding reports.
+  Serves a form for deleting sole reports.
 */
 
 // IMPORTS
@@ -11,7 +11,7 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Returns a form for deleting latest superseding reports.
+// Returns a form for deleting sole reports.
 exports.answer = async (_, search) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
@@ -66,23 +66,23 @@ exports.answer = async (_, search) => {
     const {timeStamp, jobID, issueCount, preventionCount, url} = spec;
     const jobName = `${timeStamp}-${jobID}`;
     const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventionCount}, issues ${issueCount}`;
-    // If its report is the latest report on a target with at least 2 reports:
-    if (reportSpecs[index - 1]?.url === url && reportSpecs[index + 1]?.url !== url) {
+    // If its report is the sole report on a target:
+    if (reportSpecs[index - 1]?.url !== url && reportSpecs[index + 1]?.url !== url) {
       // Add a line with a deletion checkbox.
       lines.push(
         `${margin}<p><input type="checkbox" name="report" value="${jobName}"> ${specString}</p>`
       );
       anyDeletable = true;
     }
-    // Otherwise, i.e. if its report is a superseded report or the only report on its target:
+    // Otherwise, i.e. if its report is not the sole report on a target:
     else {
       // Add a line without a deletion checkbox.
       lines.push(`${margin}<p>${specString}</p>`);
     }
   });
   const intro = anyDeletable
-  ? 'Choose the latest superseding reports to delete.'
-  : 'Each target has only 1 report, so there are no reports to delete.';
+  ? 'Choose the sole reports to delete.'
+  : 'Each target has at least 2 reports, so there are no reports to delete.';
   const disabled = anyDeletable ? '' : ' disabled';
   const query = {
     reports: lines.join('\n'),

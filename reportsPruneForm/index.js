@@ -1,6 +1,6 @@
 /*
   index.js
-  Serves a form for deleting non-latest reports.
+  Serves a form for deleting superseded reports.
 */
 
 // IMPORTS

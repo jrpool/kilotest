@@ -37,6 +37,7 @@ const answer = {
   reannotateForm: require('./reannotateForm/index').answer,
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
+  reportsExpungeForm: require('./reportsExpungeForm/index').answer,
   reportsPruneForm: require('./reportsPruneForm/index').answer,
   reportsRewindForm: require('./reportsRewindForm/index').answer,
   retestRec: require('./retestRec/index').answer,

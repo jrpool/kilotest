@@ -45,11 +45,11 @@ module.exports = {
 When the PM2 configuration or environment is changed, restart PM2 with:
 
 ```text
-pm2 restart kilotest --update-env
+pm2 restart kilotest --time --update-env
 pm2 save
 ```
 
-Testaro is not managed with PM2. Instead, you can make it begin watching for jobs from Kilotest by executing `node call netWatch true nn true`, replacing `nn` with the number of seconds to wait between checks for new jobs. This will make Testaro poll Kilotest periodically for jobs. When Kilotest responds with a job, Testaro will perform it, send a report back to Kilotest, and then resume polling. Testaro uses `POST` requests to request jobs and to submit reports. Each such request includes a password associated with the ID of the Testaro instance (i.e. “agent”).
+Testaro is not managed with PM2. Instead, you can make it begin watching for jobs from Kilotest by executing `node call netWatch true nn true`, replacing `nn` with the number of seconds to wait between checks for new jobs. This will make Testaro poll Kilotest periodically for jobs. When Kilotest responds with a job, Testaro will perform it, send a report back to Kilotest, and then resume polling. Testaro uses `POST` requests to request jobs and to submit reports. Each such request includes a password associated with the ID of the Testaro instance (i.e. the Testaro “agent”).
 
 Testaro uses Playwright to create headless browsers. They are destroyed automatically when no longer needed, and the last ones are typically destroyed within a minute after the end of a job. Thus, neither Testaro nor Kilotest attempts to kill them when a job ends.
 

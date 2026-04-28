@@ -57,13 +57,8 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   else {
     query.text = '[not applicable]';
   }
-  query.startTag = htmlSafe(startTag) ?? '[not obtained]';
-  if (pathID) {
-    query.pathID = pathID;
-  }
-  else {
-    query.pathID = '[not obtained]';
-  }
+  query.startTag = htmlSafe(startTag) || '[not obtained]';
+  query.pathID = pathID || '[not obtained]';
   if (boxID) {
     const dims = boxID.split(':');
     query.box = `x = ${dims[0]}, y = ${dims[1]}, width = ${dims[2]}, height = ${dims[3]}`;

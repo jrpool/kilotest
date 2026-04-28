@@ -397,12 +397,13 @@ exports.getTargetLogs = async () => {
 // Gets the name of an issue weight.
 exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
 // Makes a string HTML-safe.
-exports.htmlSafe = string => string
+exports.htmlSafe = string => string ? string
 .replace(/&/g, '&amp;')
 .replace(/</g, '&lt;')
 .replace(/>/g, '&gt;')
 .replace(/"/g, '&quot;')
-.replace(/'/g, '&apos;');
+.replace(/'/g, '&apos;')
+: '';
 // Returns whether a string is a job ID.
 exports.isJobID = string => {
   return /^[a-z0-9]{3}$/.test(string);

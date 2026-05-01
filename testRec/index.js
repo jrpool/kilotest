@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+const {alertManager} = require('../alerts');
 const {getJSON, getNowStamp, getPlainText, getRecs, isRecommendable, recsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
@@ -35,6 +36,8 @@ exports.answer = async (what, url, why) => {
   });
   // Save the revised recommendations.
   await fs.writeFile(recsPath, getJSON(recs));
+  // Alert the manager.
+  alertManager('testRec', {what, url, why: plainWhy});
   const query = {
     target: what,
     why: plainWhy

@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+const {alertManager} = require('./alerts');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 const path = require('path');
@@ -273,11 +274,14 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
   }
   // If any rules were unclassifiable:
   if (unclassifiableRules.size) {
-    const errorsJSON = JSON.stringify(Array.from(unclassifiableRules).sort(), null, 2);
+    const issuelessRules = Array.from(unclassifiableRules).sort();
+    const errorsJSON = JSON.stringify(issuelessRules, null, 2);
     // Report them.
     console.log(
-      `ERROR: Unclassifiable rules:\n${errorsJSON}`
+      `ERROR: Rules belonging to no issue:\n${errorsJSON}`
     );
+    report.jobData.issuelessRules = Array.from(unclassifiableRules).sort();
+    alertManager('issuelessRules', {rules: issuelessRules});
   }
   // Save the annotated report.
   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));

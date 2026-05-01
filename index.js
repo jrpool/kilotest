@@ -29,6 +29,7 @@ const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
 const path = require('path');
+const {checkReportAlerts} = require('./alerts');
 const answer = {
   diagnoses: require('./diagnoses/index').answer,
   issues: require('./issues/index').answer,
@@ -342,6 +343,8 @@ const requestHandler = async (request, response) => {
             // Annotate the report and mark it as annotated in the log.
             await annotateReport(ruleIDs, timeStamp, jobID);
             console.log(`Testaro report ${id} was annotated, saved, and logged`);
+            // Check for alert conditions.
+            checkReportAlerts(report).catch(error => console.log(`Alert check error: ${error.message}`));
             // Delete the job.
             await fs.unlink(path.join(claimedPath, `${id}.json`));
             console.log(`Completed job ${id} deleted`);

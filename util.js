@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {alertManager} = require('./alerts');
+const {sendAlert} = require('./alerts');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 const path = require('path');
@@ -280,8 +280,12 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
     console.log(
       `ERROR: Rules belonging to no issue:\n${errorsJSON}`
     );
-    report.jobData.issuelessRules = Array.from(unclassifiableRules).sort();
-    alertManager('issuelessRules', {rules: issuelessRules});
+    report.jobData.issuelessRules = issuelessRules;
+    // Alert a manager about them.
+    await sendAlert(
+      'Kilotest: unclassified rule violations',
+      `Job ${timeStamp}-${jobID}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
+    );
   }
   // Save the annotated report.
   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));

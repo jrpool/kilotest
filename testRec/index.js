@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {alertManager} = require('../alerts');
+const {sendAlert} = require('../alerts');
 const {getJSON, getNowStamp, getPlainText, getRecs, isRecommendable, recsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
@@ -36,14 +36,13 @@ exports.answer = async (what, url, why) => {
   });
   // Save the revised recommendations.
   await fs.writeFile(recsPath, getJSON(recs));
-  // Alert the manager.
-  alertManager('testRec', {what, url, why: plainWhy});
-  const query = {
-    target: what,
-    why: plainWhy
-  };
   // Log the recommendation.
   console.log(`Test recommendation received for ${what}: ${plainWhy}`);
+  // Alert a manager about it.
+  await sendAlert(
+    'Kilotest: new test recommendation',
+    `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
+  );
   // Get the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.

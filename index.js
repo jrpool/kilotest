@@ -29,7 +29,7 @@ const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
 const path = require('path');
-const {checkReportAlerts} = require('./alerts');
+const {sendAlert} = require('./alerts');
 const answer = {
   diagnoses: require('./diagnoses/index').answer,
   issues: require('./issues/index').answer,
@@ -59,9 +59,67 @@ const claimedPath = path.join(jobsPath, 'claimed');
 const failedPath = path.join(jobsPath, 'failed');
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
+// Values that may require alerts.
+const balancePath = path.join(__dirname, 'aiService0Balance.json');
+const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
+const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
+const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
+const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // FUNCTIONS
 
+// Checks a report for balances nearing exhaustion.
+const checkBalancesForAlerts = async report => {
+  // If the variables to be monitored for alerts are defined:
+  if (WAVE_THRESHOLD && AI_SERVICE0_THRESHOLD && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE) {
+    // WAVE.
+    const waveAct = report.acts.find(act => act.type === 'test' && act.which === 'wave');
+    const creditsRemaining = waveAct?.data?.creditsRemaining;
+    // If a WAVE balance nearing exhaustion is reported:
+    if (typeof creditsRemaining === 'number' && creditsRemaining < WAVE_THRESHOLD) {
+      // Alert a manager.
+      await sendAlert(
+        'Kilotest: WAVE balance low',
+        `Only ${creditsRemaining} WAVE credits remain (3 used per job)`
+      );
+    }
+    // AI service 0.
+    const testaroAct = report.acts.find(act => act.type === 'test' && act.which === 'testaro');
+    // Get the AI model token usage for the testaro allCaps test.
+    const usage = testaroAct?.data?.ruleData?.allCaps?.aiModelUsage;
+    // Get the recorded AI service 0 balance.
+    const balanceJSON = await fs.readFile(balancePath, 'utf8');
+    // If the variables required for an AI service 0 balance alert are defined:
+    if (usage && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE && balanceJSON) {
+      const inputCost = AI_MODEL0_INPUT_PRICE * usage.inputTokens;
+      const outputCost = AI_MODEL0_OUTPUT_PRICE * usage.outputTokens;
+      const cost = inputCost + outputCost;
+      try {
+        const balanceData = JSON.parse(balanceJSON);
+        // Get an estimate of the balance after this job.
+        const newBalance = balanceData.balance - cost;
+        if (typeof newBalance === 'number') {
+          // Update the recorded balance.
+          await fs.writeFile(balancePath, `${JSON.stringify({balance: newBalance}, null, 2)}\n`);
+          // If it is nearing exhaustion:
+          if (newBalance < AI_SERVICE0_THRESHOLD) {
+            // Alert a manager.
+            await sendAlert(
+              'Kilotest: AI service 0 balance low',
+              `Balance of AI service 0 account (https://console.anthropic.com) only about $${newBalance.toFixed(2)} (about $0.01 used per job)`
+            );
+          }
+        }
+        else {
+          console.log('ERROR: AI service 0 balance is not a number');
+        }
+      }
+      catch (error) {
+        console.log(`ERROR managing AI service 0 balance: ${error.message}`);
+      }
+    }
+  }
+};
 // Handles a request.
 const requestHandler = async (request, response) => {
   const {method, url} = request;
@@ -343,8 +401,8 @@ const requestHandler = async (request, response) => {
             // Annotate the report and mark it as annotated in the log.
             await annotateReport(ruleIDs, timeStamp, jobID);
             console.log(`Testaro report ${id} was annotated, saved, and logged`);
-            // Check for alert conditions.
-            checkReportAlerts(report).catch(error => console.log(`Alert check error: ${error.message}`));
+            // Check the monetary balances and send alerts if nearing exhaustion.
+            await checkBalancesForAlerts(report);
             // Delete the job.
             await fs.unlink(path.join(claimedPath, `${id}.json`));
             console.log(`Completed job ${id} deleted`);

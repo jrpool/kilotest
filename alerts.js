@@ -1,6 +1,6 @@
 /*
   alerts.js
-  Sends alert emails to the Kilotest manager.
+  Sends alert emails to a Kilotest manager.
 */
 
 // IMPORTS
@@ -11,13 +11,13 @@ const path = require('path');
 
 // CONSTANTS
 
-const balancePath = path.join(__dirname, 'anthropicBalance.json');
+const balancePath = path.join(__dirname, 'aiService0Balance.json');
 const MANAGER_EMAIL = process.env.MANAGER_EMAIL;
 const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD) || 100;
-const ANTHROPIC_THRESHOLD = Number(process.env.ANTHROPIC_BALANCE_THRESHOLD) || 5;
-// Per-token prices in dollars (Haiku 4.5 defaults: $0.80/MTok input, $4/MTok output).
-const INPUT_PRICE = Number(process.env.ANTHROPIC_INPUT_PRICE) || 0.0000008;
-const OUTPUT_PRICE = Number(process.env.ANTHROPIC_OUTPUT_PRICE) || 0.000004;
+const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD) || 5;
+// Per-token prices in dollars.
+const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
+const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // FUNCTIONS
 
@@ -73,24 +73,27 @@ exports.checkReportAlerts = async report => {
       `WAVE credits remaining: ${creditsRemaining} (threshold: ${WAVE_THRESHOLD}). One WAVE call costs 3 credits.`
     ).catch(error => console.log(`Alert error: ${error.message}`));
   }
-  // Event 3: Anthropic balance.
+  // Event 3: AI service 0 balance.
   const testaroAct = report.acts.find(act => act.type === 'test' && act.which === 'testaro');
-  const usage = testaroAct?.data?.ruleData?.allCaps?.anthropicUsage;
-  if (usage) {
-    const cost = usage.inputTokens * INPUT_PRICE + usage.outputTokens * OUTPUT_PRICE;
+  const usage = testaroAct?.data?.ruleData?.allCaps?.aiModelUsage;
+  const balanceJSON = await fs.readFile(balancePath, 'utf8');
+  if (usage && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE && balanceJSON) {
+    const inputCost = AI_MODEL0_INPUT_PRICE * usage.inputTokens;
+    const outputCost = AI_MODEL0_OUTPUT_PRICE * usage.outputTokens;
+    const cost = inputCost + outputCost;
     try {
-      const balanceData = JSON.parse(await fs.readFile(balancePath, 'utf8'));
+      const balanceData = JSON.parse(balanceJSON);
       const newBalance = balanceData.balance - cost;
       await fs.writeFile(balancePath, `${JSON.stringify({balance: newBalance}, null, 2)}\n`);
-      if (newBalance < ANTHROPIC_THRESHOLD) {
+      if (newBalance < AI_SERVICE0_THRESHOLD) {
         await sendAlert(
-          'Kilotest: Anthropic balance low',
-          `Estimated remaining Anthropic balance: $${newBalance.toFixed(2)} (threshold: $${ANTHROPIC_THRESHOLD}). Top up at console.anthropic.com.`
+          'Kilotest: AI service 0 balance low',
+          `Estimated remaining AI service 0 balance: $${newBalance.toFixed(2)} (threshold: $${AI_SERVICE0_THRESHOLD}). Top up at console.anthropic.com.`
         ).catch(error => console.log(`Alert error: ${error.message}`));
       }
     }
-    catch {
-      // No balance file initialized; skip check.
+    catch (error) {
+      console.log(`ERROR managing AI service 0 balance: ${error.message}`);
     }
   }
 };

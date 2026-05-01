@@ -1,6 +1,6 @@
 /*
   setBalance.js
-  CLI to initialize or reset the Anthropic running-balance file after a top-up.
+  CLI to initialize or reset the AI service 0 running-balance file after a top-up.
   Usage: node setBalance.js <dollars>
 */
 
@@ -12,9 +12,9 @@ if (isNaN(amount) || amount < 0) {
   console.error('Usage: node setBalance.js <dollars>');
   process.exit(1);
 }
-const balancePath = path.join(__dirname, 'anthropicBalance.json');
+const balancePath = path.join(__dirname, 'aiService0Balance.json');
 fs.writeFile(balancePath, `${JSON.stringify({balance: amount}, null, 2)}\n`)
-.then(() => console.log(`Anthropic balance set to $${amount}`))
+.then(() => console.log(`AI service 0 balance set to $${amount}`))
 .catch(error => {
   console.error(error.message);
   process.exit(1);

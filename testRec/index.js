@@ -43,6 +43,10 @@ exports.answer = async (what, url, why) => {
     'Kilotest: new test recommendation',
     `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
   );
+  const query = {
+    target: what,
+    why: plainWhy
+  };
   // Get the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.

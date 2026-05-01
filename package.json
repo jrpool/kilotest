@@ -24,7 +24,6 @@
   "homepage": "https://github.com/jrpool/kilotest",
   "dependencies": {
     "dotenv": "*",
-    "nodemailer": "^8.0.7",
     "testilo": "*"
   },
   "devDependencies": {

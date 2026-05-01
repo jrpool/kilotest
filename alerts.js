@@ -5,46 +5,62 @@
 
 // IMPORTS
 
-const nodemailer = require('nodemailer');
+const https = require('https');
 
 // CONSTANTS
 
-// Email configuration.
+// Alert configuration.
 const MANAGER_EMAIL = process.env.MANAGER_EMAIL;
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = Number(process.env.SMTP_PORT);
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
+const ALERT_API_HOST = process.env.ALERT_API_HOST;
+const ALERT_API_PATH = process.env.ALERT_API_PATH;
+const ALERT_API_KEY = process.env.ALERT_API_KEY;
+const ALERT_FROM = process.env.ALERT_FROM;
 
 // FUNCTIONS
 
 // Sends an email alert to a manager.
-exports.sendAlert = async (subject, body) => {
-  // If the email configuration is complete:
-  if (MANAGER_EMAIL && SMTP_HOST && SMTP_USER && SMTP_PASS) {
-    // Create a transporter.
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(SMTP_PORT),
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-    // Use it to send the specified alert.
-    await transporter.sendMail({
-      from: SMTP_USER,
-      to: MANAGER_EMAIL,
+exports.sendAlert = (subject, body) => new Promise((resolve, reject) => {
+  // If the alert configuration is complete:
+  if (MANAGER_EMAIL && ALERT_API_HOST && ALERT_API_PATH && ALERT_API_KEY && ALERT_FROM) {
+    const payload = JSON.stringify({
+      from: ALERT_FROM,
+      to: [MANAGER_EMAIL],
       subject,
       text: body
     });
-    console.log(`Alert on ${subject} sent`);
+    const req = https.request({
+      hostname: ALERT_API_HOST,
+      path: ALERT_API_PATH,
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${ALERT_API_KEY}`,
+        'content-type': 'application/json',
+        'content-length': Buffer.byteLength(payload)
+      }
+    }, res => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log(`Alert on ${subject} sent`);
+          resolve();
+        }
+        else {
+          reject(new Error(`Alert API responded ${res.statusCode}: ${data}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => req.destroy(new Error('Alert API timeout')));
+    req.write(payload);
+    req.end();
   }
-  // Otherwise, i.e. if the email configuration is incomplete:
+  // Otherwise, i.e. if the alert configuration is incomplete:
   else {
     // Report this.
     console.log(
-      `WARNING (${subject}): ${body}\nERROR: Email configuration incomplete, so no alert sent`
+      `WARNING (${subject}): ${body}\nERROR: Alert configuration incomplete, so no alert sent`
     );
+    resolve();
   }
-};
+});

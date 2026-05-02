@@ -101,6 +101,13 @@ const checkBalancesForAlerts = async report => {
       const inputCost = AI_MODEL0_INPUT_PRICE * usage.inputTokens;
       const outputCost = AI_MODEL0_OUTPUT_PRICE * usage.outputTokens;
       const cost = inputCost + outputCost;
+      // If any cost was incurred:
+      if (cost > 0) {
+        // Warn about this.
+        console.log(
+          'This job has made the production AI service 0 balance record wrong. Update it.'
+        );
+      }
       try {
         const balanceData = JSON.parse(balanceJSON);
         // Get an estimate of the balance after this job.

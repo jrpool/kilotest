@@ -1,24 +1,19 @@
 # Dependency directories
 node_modules/
 
-# dotenv environment variable file
-.env
-
 # Stored VSCode versions used for testing VSCode extensions
 .vscode-test
 
 # OS files
 .DS_Store
 
-# Logs
+# Transactional data
 logs/
 results/
-
-# Jobs
 jobs/
-
-# Reports
 reports/
+ai0Balance.json
 
-# Secrets
+# Secrets and environment-specific configurations
+.env
 .secrets

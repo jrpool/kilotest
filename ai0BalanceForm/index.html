@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="report,accessibility,a11y">
+    <title>Record AI service 0 balance | Kilotest</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1><a href="/">Kilotest</a>: Record AI service 0 balance</h1>
+      <p>__oldBalance__ recorded AI service 0 balance.</p>
+      <p>The current AI service 0 balance is available on the <a href="https://platform.claude.com/settings/billing">Claude Platform Billing page</a>.</p>
+      <form action="/ai0BalanceForm.html">
+        <p><label>
+          Balance (in $):
+          <input type="number" size="5" min="0" max="99.99" step="0.01" name="newBalance" required>
+        </label></p>
+        <p><label>
+          Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required>
+        </label></p>
+        <p><button type="submit">Submit</button></p>
+      </form>
+    </main>
+  </body>
+</html>

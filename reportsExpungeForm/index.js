@@ -16,7 +16,7 @@ exports.answer = async (_, search) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
-  // If reports are to be deleted:
+  // If the form will redisplay itself after reports are deleted:
   if (jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {

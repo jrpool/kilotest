@@ -31,6 +31,7 @@ const https = require('https');
 const path = require('path');
 const {sendAlert} = require('./alerts');
 const answer = {
+  ai0BalanceForm: require('./ai0BalanceForm/index').answer,
   diagnoses: require('./diagnoses/index').answer,
   issues: require('./issues/index').answer,
   manage: require('./manage/index').answer,
@@ -87,8 +88,14 @@ const checkBalancesForAlerts = async report => {
     const testaroAct = report.acts.find(act => act.type === 'test' && act.which === 'testaro');
     // Get the AI model token usage for the testaro allCaps test.
     const usage = testaroAct?.data?.ruleData?.allCaps?.aiModelUsage;
-    // Get the recorded AI service 0 balance.
-    const balanceJSON = await fs.readFile(balancePath, 'utf8');
+    let balanceJSON = null;
+    try {
+      // Get the recorded AI service 0 balance.
+      balanceJSON = await fs.readFile(balancePath, 'utf8');
+    }
+    catch (error) {
+      console.error('ERROR: AI service 0 balance file missing');
+    }
     // If the variables required for an AI service 0 balance alert are defined:
     if (usage && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE && balanceJSON) {
       const inputCost = AI_MODEL0_INPUT_PRICE * usage.inputTokens;

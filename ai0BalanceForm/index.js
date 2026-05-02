@@ -18,12 +18,13 @@ const balancePath = path.join(__dirname, '../ai0Balance.json');
 exports.answer = async (_, search) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
-  const newBalance = searchParams?.get('ai0Balance');
+  const newBalanceString = searchParams?.get('newBalance');
   let oldBalance;
-  // If the form has been displayed by itself:
-  if (newBalance) {
+  // If the form displayed itself:
+  if (newBalanceString) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
+      const newBalance = Number.parseFloat(newBalanceString);
       // If the new balance is valid:
       if (
         typeof newBalance === 'number'
@@ -37,7 +38,7 @@ exports.answer = async (_, search) => {
         // Record it.
         await fs.writeFile(balancePath, `${JSON.stringify(balanceData, null, 2)}\n`);
         // Make it the old balance.
-        oldBalance = newBalance;
+        oldBalance = `$${balanceData.balance} is the`;
       }
     }
     // Otherwise, i.e. if the authorization code is invalid:
@@ -53,8 +54,9 @@ exports.answer = async (_, search) => {
   else {
     // Get the current balance from the balance file.
     try {
-      const balanceData = await fs.readFile(balancePath, 'utf8');
-      oldBalance = `${JSON.parse(balanceData).balance} is the`;
+      const balanceDataJSON = await fs.readFile(balancePath, 'utf8');
+      const balanceData = JSON.parse(balanceDataJSON);
+      oldBalance = `$${balanceData.balance} is the`;
     }
     // If the balance file does not exist or is invalid:
     catch (error) {

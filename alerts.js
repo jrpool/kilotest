@@ -43,15 +43,22 @@ exports.sendAlert = (subject, body) => new Promise((resolve, reject) => {
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           console.log(`Alert on ${subject} sent`);
-          resolve();
         }
         else {
-          reject(new Error(`Alert API responded ${res.statusCode}: ${data}`));
+          console.log(`ERROR: Alert API responded ${res.statusCode}: ${data}`);
         }
+        resolve();
       });
     });
-    req.on('error', reject);
-    req.setTimeout(10000, () => req.destroy(new Error('Alert API timeout')));
+    req.on('error', error => {
+      console.log(`ERROR: Alert API error: ${error.message}`);
+      resolve();
+    });
+    req.setTimeout(10000, () => {
+      req.destroy();
+      console.log('ERROR: Alert API timeout');
+      resolve();
+    });
     req.write(payload);
     req.end();
   }

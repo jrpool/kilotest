@@ -276,35 +276,14 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is an action on a test or retest recommendation:
     else if (pageName === 'recAction.html') {
-      const {target, reject, authCode} = postData;
+      const {target, authCode} = postData;
       const [url, what] = target.split('\t');
       // If the request is valid:
-      if (what && url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
+      if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
         // Serve a content-type header for a response.
         response.setHeader('content-type', 'text/html; charset=utf-8');
-        // If the request is a rejection:
-        if (reject) {
-          // Get the recommendations.
-          const recs = await getRecs();
-          // Delete the rejected one.
-          delete recs[url][what];
-          // If no recommendations remain for its URL, delete it.
-          if (Object.keys(recs[url]).length === 0) {
-            delete recs[url];
-          }
-          // Save the revised recommendations.
-          await fs.writeFile(
-            path.join(__dirname, 'jobs', 'recs.json'), `${JSON.stringify(recs)}\n`
-          );
-          // Serve a location header for a response.
-          response.setHeader('content-location', '/recActionForm.html');
-          // Get the answer data.
-          const answerData = await require(path.join(__dirname, 'recActionForm', 'index')).answer();
-          // Serve the test-order form.
-          response.end(answerData.answerPage);
-        }
-        // Otherwise, i.e. if it is an approval:
-        else {
+        // If the request is an approval:
+        if (what) {
           // Serve a location header for a response.
           response.setHeader('content-location', `${pathname}${search}`);
           // Get the answer data.
@@ -320,6 +299,23 @@ const requestHandler = async (request, response) => {
             // Report the error.
             await serveError({message: answerData.error}, response, true);
           }
+        }
+        // Otherwise, i.e. if it is a rejection:
+        else {
+          // Get the recommendations.
+          const recs = await getRecs();
+          // Delete the rejected URL.
+          delete recs[url];
+          // Save the revised recommendations.
+          await fs.writeFile(
+            path.join(__dirname, 'jobs', 'recs.json'), `${JSON.stringify(recs, null, 2)}\n`
+          );
+          // Serve a location header for a response.
+          response.setHeader('content-location', '/recActionForm.html');
+          // Get the answer data.
+          const answerData = await require(path.join(__dirname, 'recActionForm', 'index')).answer();
+          // Serve the test-order form.
+          response.end(answerData.answerPage);
         }
       }
       // Otherwise, i.e. if the request is invalid:

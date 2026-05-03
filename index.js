@@ -38,6 +38,7 @@ const answer = {
   manage: require('./manage/index').answer,
   reannotate: require('./reannotate/index').answer,
   reannotateForm: require('./reannotateForm/index').answer,
+  recActionForm: require('./recActionForm/index').answer,
   reportIssue: require('./reportIssue/index').answer,
   reportIssues: require('./reportIssues/index').answer,
   reportsExpungeForm: require('./reportsExpungeForm/index').answer,

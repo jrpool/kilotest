@@ -273,7 +273,7 @@ const requestHandler = async (request, response) => {
         await serveError({message: 'Invalid test recommendation'}, response, true);
       }
     }
-    // Otherwise, if it is an approval or rejection of a test or retest recommendation:
+    // Otherwise, if it is an action on a test or retest recommendation:
     else if (pageName === 'recAction.html') {
       const {target, reject, authCode} = postData;
       const [url, what] = target.split('\t');

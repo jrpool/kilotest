@@ -21,16 +21,14 @@ exports.answer = async () => {
   urls.forEach(url => {
     // Add its URL to the lines.
     lines.push(`${margin}<li>${url}`);
-    lines.push(`${margin}  <ul>`)
     // Get the recommended target names for the page.
     const targetNames = new Set(recs[url].map(rec => rec.what));
     // For each recommended target name:
     targetNames.forEach(what => {
       const radio = `<input type="radio" name="target" value="${url}\t${what}" required>`;
       // Add a line with a radio button and the recommended page name.
-      lines.push(`${margin}    <li>${radio} ${what}</li>`);
+      lines.push(`${margin}    <p>${radio} ${what}</p>`);
     });
-    lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`);
   });
   const query = {

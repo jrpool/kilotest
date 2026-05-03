@@ -42,7 +42,7 @@ exports.sendAlert = (subject, body) => new Promise((resolve, reject) => {
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          console.log(`Alert on ${subject} sent`);
+          console.log(`Alert sent (${subject})`);
         }
         else {
           console.log(`ERROR: Alert API responded ${res.statusCode}: ${data}`);

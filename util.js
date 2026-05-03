@@ -339,12 +339,6 @@ exports.getPathID = (catalog, catalogIndex, pathID) => {
   }
   return pathID ?? '/html';
 };
-// Converts a string to a plain-text 1-line ASCII string.
-exports.getPlainText = string => string.replace(/&/g, '+').replace(/[<>"'&]/g, ' ');
-// Returns a time stamp for now.
-exports.getNowStamp = () => {
-  return getTimeStamp(new Date());
-};
 // Returns the data from a POST request.
 exports.getPOSTData = request => new Promise(resolve => {
   const bodyParts = [];
@@ -365,10 +359,20 @@ exports.getPOSTData = request => new Promise(resolve => {
     }
   });
 });
-// Get the test recommendations.
-exports.getRecs = async () => {
-  const recsJSON = await fs.readFile(recsPath, 'utf8');
-  const recs = JSON.parse(recsJSON);
+// Returns the test and retest recommendations.
+const getRecs = exports.getRecs = async () => {
+  let recs = {};
+  try {
+    // Get the waiting test and retest recommendations.
+    const recsJSON = await fs.readFile(recsPath, 'utf8');
+    recs = JSON.parse(recsJSON);
+  }
+  // If the recommendations file is missing or invalid:
+  catch(error) {
+    console.log(`ERROR: recs.json file missing or invalid; creating empty file (${error.message})`);
+    // Create an empty recommendations file.
+    await fs.writeFile(recsPath, '{}\n');
+  }
   return recs;
 };
 // Returns a string of tool names.
@@ -469,4 +473,48 @@ exports.serveError = async (error, response, isHumanUser = true) => {
       response.end(JSON.stringify({error: error.message}));
     }
   }
+};
+// Converts a string to a plain-text 1-line ASCII string.
+const getPlainText = string => string.replace(/&/g, '+').replace(/[<>"'&]/g, ' ');
+// Returns a time stamp for now.
+const getNowStamp = exports.getNowStamp = () => {
+  return getTimeStamp(new Date());
+};
+// Processes a test or retest recommendation.
+exports.processRec = async (testType, dirName, what, url, why) => {
+  // Make the reason display-safe.
+  const plainWhy = getPlainText(why);
+  // Get the data on waiting recommendations.
+  const recs = await getRecs();
+  recs[url] ??= [];
+  // Add the recommendation to those for the target.
+  recs[url].push({
+    timeStamp: getNowStamp(),
+    what,
+    why: plainWhy
+  });
+  // Save the revised recommendations.
+  await fs.writeFile(recsPath, getJSON(recs));
+  // Log the recommendation.
+  console.log(`Test recommendation received for ${what}: ${plainWhy}`);
+  // Alert a manager about it.
+  await sendAlert(
+    `Kilotest: new ${testType} recommendation`,
+    `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
+  );
+  // Get the template.
+  let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
+  const query = {
+    target: what,
+    why: plainWhy
+  };
+  // Replace its placeholders.
+  Object.keys(query).forEach(param => {
+    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
+  });
+  // Return the populated page.
+  return {
+    status: 'ok',
+    answerPage
+  };
 };

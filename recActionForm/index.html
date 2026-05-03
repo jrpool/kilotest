@@ -13,9 +13,9 @@
   <body>
     <main>
       <h1><a href="/">Kilotest</a>: Test order</h1>
-      <p>To add a page to the queue for testing, you must select one of the following recommendations and enter your authorization code as a Kilotest manager.</p>
-      <p>If the page is not yet recommended, first <a href="targets.html">recommend it</a>.</p>
-      <form action="/testOrder.html" method="post">
+      <p>To approve or reject a test or retest recommendation, submit this form.</p>
+      <p>To approve testing a page that is not yet recommended, first <a href="targets.html">recommend it</a>.</p>
+      <form action="/recAction.html" method="post">
         <fieldset>
           <legend>Recommendations</legend>
           <ul>
@@ -23,8 +23,10 @@
           </ul>
           <p>__noRecs__</p>
         </fieldset>
+        <p><input type="checkbox" name="reject"__disabled__> Reject</p>
         <p><label>
-          Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required>
+          Authorization code:
+          <input size="3" minLength="3" maxlength="3" name="authCode" required__disabled__>
         </label></p>
         <p><button type="submit"__disabled__>Submit</button></p>
       </form>

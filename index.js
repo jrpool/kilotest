@@ -16,6 +16,7 @@ const {
   getLogPath,
   getObject,
   getPOSTData,
+  getRecs,
   getReportPath,
   isTimeStamp,
   isJobID,
@@ -47,7 +48,6 @@ const answer = {
   rules: require('./rules/index').answer,
   targets: require('./targets/index').answer,
   testOrder: require('./testOrder/index').answer,
-  testOrderForm: require('./testOrderForm/index').answer,
   testRec: require('./testRec/index').answer,
   testRecForm: require('./testRecForm/index').answer
 };
@@ -273,27 +273,52 @@ const requestHandler = async (request, response) => {
         await serveError({message: 'Invalid test recommendation'}, response, true);
       }
     }
-    // Otherwise, if it is a test order:
-    else if (pageName === 'testOrder.html') {
-      const {target, authCode} = postData;
+    // Otherwise, if it is an approval or rejection of a test or retest recommendation:
+    else if (pageName === 'recAction.html') {
+      const {target, reject, authCode} = postData;
       const [url, what] = target.split('\t');
       // If the request is valid:
       if (what && url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
-        // Serve headers for a response.
+        // Serve a content-type header for a response.
         response.setHeader('content-type', 'text/html; charset=utf-8');
-        response.setHeader('content-location', `${pathname}${search}`);
-        // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
-        .answer(url, what, authCode);
-        // If the answer data are valid:
-        if (answerData.status === 'ok') {
-          // Serve the answer page.
+        // If the request is a rejection:
+        if (reject) {
+          // Get the recommendations.
+          const recs = await getRecs();
+          // Delete the rejected one.
+          delete recs[url][what];
+          // If no recommendations remain for its URL, delete it.
+          if (Object.keys(recs[url]).length === 0) {
+            delete recs[url];
+          }
+          // Save the revised recommendations.
+          await fs.writeFile(
+            path.join(__dirname, 'jobs', 'recs.json'), `${JSON.stringify(recs)}\n`
+          );
+          // Serve a location header for a response.
+          response.setHeader('content-location', '/recActionForm.html');
+          // Get the answer data.
+          const answerData = await require(path.join(__dirname, 'recActionForm', 'index')).answer();
+          // Serve the test-order form.
           response.end(answerData.answerPage);
         }
-        // Otherwise, i.e. if they are invalid:
+        // Otherwise, i.e. if it is an approval:
         else {
-          // Report the error.
-          await serveError({message: answerData.error}, response, true);
+          // Serve a location header for a response.
+          response.setHeader('content-location', `${pathname}${search}`);
+          // Get the answer data.
+          const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
+          .answer(url, what, authCode);
+          // If the answer data are valid:
+          if (answerData.status === 'ok') {
+            // Serve the answer page.
+            response.end(answerData.answerPage);
+          }
+          // Otherwise, i.e. if they are invalid:
+          else {
+            // Report the error.
+            await serveError({message: answerData.error}, response, true);
+          }
         }
       }
       // Otherwise, i.e. if the request is invalid:

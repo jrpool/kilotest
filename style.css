@@ -106,6 +106,10 @@ legend {
 li, p {
   line-height: 1.5;
 }
+li:has(a) {
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
 p {
   margin: 0.5rem 0;
 }

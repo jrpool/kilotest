@@ -169,7 +169,7 @@ const getRuleIDs = exports.getRuleIDs = () => {
 };
 // Variable and invariant rules.
 const ruleIDs = exports.ruleIDs = getRuleIDs();
-// Returns the issue that a rule belongs to.
+// Returns the issue that a rule belongs to, or null if none.
 const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   const {invariant, variable} = ruleIDs;
   // Initialize the issue ID of the rule as if the rule ID is invariant.

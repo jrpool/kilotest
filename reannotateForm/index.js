@@ -15,7 +15,7 @@ const path = require('path');
 const populateQuery = async query => {
   const targetLogs = await getTargetLogs();
   const stillUnclassified = {};
-  const nowClassified = {};
+  const reClassified = {};
   // For each target:
   for (const targetLog of targetLogs) {
     const {jobName} = targetLog;
@@ -30,31 +30,28 @@ const populateQuery = async query => {
         // For each standard instance:
         result.standardResult.instances.forEach(instance => {
           const {ruleID} = instance;
-          // If its issue ID is missing:
-          if (! instance.issueID) {
-            // Get the issue ID of the rule.
-            const issueID = getIssue(ruleIDs, which, ruleID);
-            // If the rule is now classified:
-            if (issueID) {
-              // Add the rule and the report to the rules that are now classified.
-              nowClassified[which] ??= {};
-              nowClassified[which][ruleID] ??= new Set();
-              nowClassified[which][ruleID].add(jobName);
-            }
-            // Otherwise, i.e. if the rule is still unclassified:
-            else {
-              // Add the rule and the report to the rules that are still unclassified.
-              stillUnclassified[which] ??= {};
-              stillUnclassified[which][ruleID] ??= new Set();
-              stillUnclassified[which][ruleID].add(jobName);
-            }
+          // Get the issue ID of the rule, or null if none.
+          const issueID = getIssue(ruleIDs, which, ruleID);
+          // If the issue ID of the instance differs from that of the rule:
+          if ((instance.issueID || null) !== issueID) {
+            // Add the rule and the report to the rules with changed issue IDs.
+            reClassified[which] ??= {};
+            reClassified[which][ruleID] ??= new Set();
+            reClassified[which][ruleID].add(jobName);
+          }
+          // Otherwise, if the instance and the rule both have no issue ID:
+          else if (! issueID){
+            // Add the rule and the report to the rules that are still unclassified.
+            stillUnclassified[which] ??= {};
+            stillUnclassified[which][ruleID] ??= new Set();
+            stillUnclassified[which][ruleID].add(jobName);
           }
         });
       }
     });
   };
   const stillUnclassifiedLines = [];
-  const nowClassifiedLines = [];
+  const reClassifiedLines = [];
   const margin = ' '.repeat(6);
   // For each tool reporting any violations of still unclassified rules:
   Object.keys(stillUnclassified).forEach(toolID => {
@@ -69,21 +66,21 @@ const populateQuery = async query => {
   });
   // Add the lines to the query.
   query.stillUnclassified = stillUnclassifiedLines.join('\n');
-  // For each tool reporting any violations of now classified rules:
-  Object.keys(nowClassified).forEach(toolID => {
+  // For each tool reporting any discrepancies in rule classification:
+  Object.keys(reClassified).forEach(toolID => {
     // For each such rule:
-    Object.keys(nowClassified[toolID]).forEach(ruleID => {
-      const reportIDs = Array.from(nowClassified[toolID][ruleID]);
+    Object.keys(reClassified[toolID]).forEach(ruleID => {
+      const reportIDs = Array.from(reClassified[toolID][ruleID]);
       // Add a line to the lines on the rule.
-      nowClassifiedLines.push(
+      reClassifiedLines.push(
         `${margin}<li>${toolID}: ${ruleID} (${reportIDs.join(', ')})</li>`
       );
     });
   });
   // Add the lines to the query.
-  query.nowClassified = nowClassifiedLines.join('\n');
-  if (nowClassifiedLines.length) {
-    query.how = 'Each <q>newly classified</q> rule indicates that report annotations are out of date. To update them, submit your authorization code.';
+  query.reClassified = reClassifiedLines.join('\n');
+  if (reClassifiedLines.length) {
+    query.how = 'Each <q>reclassified</q> rule indicates that report annotations are out of date. To update them, submit your authorization code.';
     const formLines = [];
     formLines.push(`${margin}<form action="/reannotate.html" method="post">`);
     formLines.push(
@@ -94,7 +91,7 @@ const populateQuery = async query => {
     query.reannotateForm = formLines.join('\n');
   }
   else {
-    query.how = 'No violated rules have been classified after being reported, so reannotation of the reports is not necessary.';
+    query.how = 'No violated rules have been classified or reclassified after being reported, so reannotation of the reports is not necessary.';
     query.reannotateForm = '';
   }
 };

@@ -106,12 +106,6 @@ legend {
 li, p {
   line-height: 1.5;
 }
-ul.nav > li:has(a) {
-  line-height: 2.75;
-}
-ul.nav > li > a {
-  display: block;
-}
 p {
   margin: 0.5rem 0;
 }
@@ -160,6 +154,12 @@ thead th {
 ul {
   margin-top: 0;
   margin-bottom: 0;
+}
+ul.nav > li > a {
+  display: block;
+  min-height: 44px;
+  min-width: 44px;
+  padding-top: 0.5rem;
 }
 ul.whereList {
   margin-left: 2rem;

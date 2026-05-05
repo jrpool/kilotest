@@ -84,23 +84,23 @@ const populateQuery = async query => {
     const [timeStamp, jobID] = jobName.split('-');
     const summary = await getTargetSummary(timeStamp, jobID);
     const {issueSet, preventedTools, reporterSet} = summary;
-    lines.tested.push(`${margin}<li>${what}</li>`);
-    lines.tested.push(`${margin}  <ul class="nav">`);
+    lines.tested.push(`${margin}  <li>${what}`);
+    lines.tested.push(`${margin}    <ul class="nav">`);
     // Add the URL of the target to the lines.
-    lines.tested.push(`${margin}    <li>URL: <code>${url}</code></li>`);
+    lines.tested.push(`${margin}      <li>URL: <code>${url}</code></li>`);
     // Add facts about the report to the lines.
     const dateTimeString = getDateTimeString(timeStamp);
     const agoString = getAgoString(timeStamp);
     const testedString
     = `Last tested ${agoString} ago by job <code>${jobID}</code> on ${dateTimeString}`;
-    lines.tested.push(`${margin}    <li>${testedString}</li>`);
+    lines.tested.push(`${margin}      <li>${testedString}</li>`);
     // If the page prevented any tool from performing its tests:
     if (preventedTools?.length) {
       const preventedToolSet = new Set(preventedTools);
       const toolCountString = getToolCountString(preventedToolSet.size);
       const toolsString = getReporterString(preventedToolSet);
       lines.tested.push(
-        `${margin}    <li>Page prevented testing by ${toolCountString} (${toolsString})</li>`,
+        `${margin}      <li>Page prevented testing by ${toolCountString} (${toolsString})</li>`,
       );
     }
     // Add facts about the test results to the lines.
@@ -110,7 +110,7 @@ const populateQuery = async query => {
     const issuesString = issueSet.size
     ? `${issueCountString} reported by ${toolCountString} (${reporterString})`
     : `${issueCountString} reported`;
-    lines.tested.push(`${margin}    <li>${issuesString}</li>`);
+    lines.tested.push(`${margin}      <li>${issuesString}</li>`);
     // If any issues were reported:
     if (issueSet.size) {
       // Add a question link about the reported issues to the lines.
@@ -118,7 +118,7 @@ const populateQuery = async query => {
       const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
       const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
       const link = `<a ${href} ${label}>What ${questionString}?</a>`;
-      lines.tested.push(`${margin}    <li>${link}</li>`);
+      lines.tested.push(`${margin}      <li>${link}</li>`);
     }
     // Add the status of, and if necessary a question link about, retesting to the lines.
     const status = await isRecommendable(url);
@@ -134,9 +134,9 @@ const populateQuery = async query => {
       const retestContent = 'Should Kilotest retest the page?';
       retestString = `<a href="${href}">${retestContent}</a>`;
     }
-    lines.tested.push(`${margin}    <li>${retestString}</li>`);
-    lines.tested.push(`${margin}  </ul>`);
-    lines.tested.push(`${margin}</li>`);
+    lines.tested.push(`${margin}      <li>${retestString}</li>`);
+    lines.tested.push(`${margin}    </ul>`);
+    lines.tested.push(`${margin}  </li>`);
   }
   query.testedPages = lines.tested.join('\n');
 };

@@ -144,7 +144,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
         // Add a heading to the lines.
         weightLines.push(`${margin}  <h5>${weightIssue.summary}</h5>`);
         // Add the start of a fact list to the lines.
-        weightLines.push(`${margin}    <ul>`);
+        weightLines.push(`${margin}    <ul class="nav">`);
         // Add the issue facts to the lines.
         weightLines.push(`${margin}      <li>Why it matters: ${why}`);
         weightLines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);

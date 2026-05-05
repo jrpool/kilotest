@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+const {sendAlert} = require('../alerts');
 const {
   annotateReport,
   getReport,
@@ -66,16 +67,26 @@ const getIssuesSummary = async logs => {
   // For each issue:
   Object.entries(issuesData).forEach(([issueID, data]) => {
     const {count, reporters} = data;
-    // Increment the report violation count by the issue violation count.
-    summary.totalCount += count;
-    // Add the issue data and an initilized percentage to the summary.
-    summary.issues.push({
-      issueID,
-      weight: issues[issueID].weight,
-      count,
-      percentage: 0,
-      reporters: getReporterString(reporters)
-    });
+    // If the issue is still classified:
+    if (issues[issueID]) {
+      // Increment the report violation count by the issue violation count.
+      summary.totalCount += count;
+      // Add the issue data and an initilized percentage to the summary.
+      summary.issues.push({
+        issueID,
+        weight: issues[issueID].weight,
+        count,
+        percentage: 0,
+        reporters: getReporterString(reporters)
+      });
+    }
+    // Otherwise, i.e. if it is no longer classified:
+    else {
+      // Report this.
+      console.log(`ERROR: Annotations obsolete for issue ${issueID}; reannotate`);
+      // Notify a manager.
+      sendAlert('Annotations obsolete', `Annotations for issue ${issueID} obsolete; reannotate.`);
+    }
   });
   // For each summarized issue:
   summary.issues.forEach(issue => {

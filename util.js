@@ -224,8 +224,8 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
         // For each standard instance:
         instances.forEach(instance => {
           const {issueID} = instance;
-          // If it has an issue ID:
-          if (issueID) {
+          // If it has a non-ignorable issue ID:
+          if (issueID && issueID !== 'ignorable') {
             // Ensure that the issue is in the summary.
             issueSet.add(issueID);
           }

@@ -101,7 +101,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     const {catalogIndex, pathID, reporters, tagName, text} = violator;
     // Add a heading to the lines.
     lines.push(`${margin}<li><h3>Element ${catalogIndex}</h3>`);
-    lines.push(`${margin}  <ul>`);
+    lines.push(`${margin}  <ul class="nav">`);
     // Add properties of the violator to the lines.
     if (catalogIndex) {
       const catalogItem = catalog[catalogIndex];

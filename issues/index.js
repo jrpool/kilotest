@@ -126,7 +126,7 @@ const populateQuery = async query => {
         const {summary, wcag, why} = issue;
         // Add a description of it to the lines.
         lines.push(`${margin}  <li>${summary}`);
-        lines.push(`${margin}    <ul>`);
+        lines.push(`${margin}    <ul class="nav">`);
         lines.push(`${margin}      <li>Why it matters: ${why}`);
         lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
         lines.push(`${margin}      <li>Share of violations: ${percentage}%</li>`);

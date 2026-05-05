@@ -85,7 +85,7 @@ const populateQuery = async query => {
     const summary = await getTargetSummary(timeStamp, jobID);
     const {issueSet, preventedTools, reporterSet} = summary;
     lines.tested.push(`${margin}<li>${what}</li>`);
-    lines.tested.push(`${margin}  <ul>`);
+    lines.tested.push(`${margin}  <ul class="nav">`);
     // Add the URL of the target to the lines.
     lines.tested.push(`${margin}    <li>URL: <code>${url}</code></li>`);
     // Add facts about the report to the lines.

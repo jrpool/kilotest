@@ -163,10 +163,13 @@ ul {
   margin-top: 0;
   margin-bottom: 0;
 }
+ul.pseudoTopLevel {
+  list-style: disc;
+}
 ul.nav {
   padding-inline-start: 0.25rem;
 }
-ul.nav > li {
+ul.nav > li, ul.headed > li {
   list-style: none;
 }
 ul.nav > li > a {

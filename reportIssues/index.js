@@ -6,6 +6,7 @@
 // IMPORTS
 
 const {
+  getAgoString,
   getDateTimeString,
   getLog,
   getReport,
@@ -108,6 +109,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.url = summary.url;
   query.jobID = jobID;
   query.dateTime = getDateTimeString(timeStamp);
+  query.agoDays = getAgoString(timeStamp);
   const margin = ' '.repeat(6);
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {

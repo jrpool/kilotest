@@ -144,7 +144,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
         // Add a heading to the lines.
         weightLines.push(`${margin}  <h5>${weightIssue.summary}</h5>`);
         // Add the start of a fact list to the lines.
-        weightLines.push(`${margin}    <ul class="nav">`);
+        weightLines.push(`${margin}    <ul>`);
         // Add the issue facts to the lines.
         weightLines.push(`${margin}      <li>Why it matters: ${why}`);
         weightLines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
@@ -152,6 +152,8 @@ const populateQuery = async (timeStamp, jobID, query) => {
         weightLines.push(
           `${margin}      <li>Reported by ${reporterCountString} (${reporters})</li>`
         );
+        weightLines.push(`${margin}    </ul>`);
+        weightLines.push(`${margin}    <ul class="nav">`);
         const whereQuestionString = 'Where was the issue found?';
         const labelString = `Where was the ${weightIssue.summary} issue found on the ${what} page?`;
         const href = `href="/reportIssue.html/${issueID}/${timeStamp}/${jobID}"`;

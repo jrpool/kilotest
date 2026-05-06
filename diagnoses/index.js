@@ -34,7 +34,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     const href = getTextFragmentHref(text, log.url);
     const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
     const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
-    query.takeMeThere = `${margin}    <li>${link}</li>`;
+    query.takeMeThere = `${margin}    <p>${link}</p>`;
   }
   else {
     query.takeMeThere = '';

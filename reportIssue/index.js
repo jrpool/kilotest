@@ -101,18 +101,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     const {catalogIndex, pathID, reporters, tagName, text} = violator;
     // Add a heading to the lines.
     lines.push(`${margin}<li><h3>Element ${catalogIndex}</h3>`);
-    lines.push(`${margin}  <ul class="nav">`);
+    lines.push(`${margin}  <ul>`);
     // Add properties of the violator to the lines.
-    if (catalogIndex) {
-      const catalogItem = catalog[catalogIndex];
-      if (catalogItem.textLinkable) {
-        takeMeAdviceNeeded = true;
-        const href = getTextFragmentHref(catalogItem.text, url);
-        const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
-        const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
-        lines.push(`${margin}    <li>${link}</li>`);
-      }
-    }
     if (pathID) {
       lines.push(`${margin}    <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
     }
@@ -124,7 +114,18 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       lines.push(`${margin}    <li>Text: <q>${htmlSafe(textString)}</q></li>`);
     }
     lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
-
+    lines.push(`${margin}  </ul>`);
+    lines.push(`${margin}  <ul class="nav">`);
+    if (catalogIndex) {
+      const catalogItem = catalog[catalogIndex];
+      if (catalogItem.textLinkable) {
+        takeMeAdviceNeeded = true;
+        const href = getTextFragmentHref(catalogItem.text, url);
+        const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
+        const takeMeLink = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
+        lines.push(`${margin}    <li>${takeMeLink}</li>`);
+      }
+    }
     const href
     = `/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}?pathID=${pathID}`;
     const questionString = 'What diagnoses were reported';

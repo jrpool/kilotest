@@ -13,12 +13,12 @@
   <body>
     <main>
       <h1><a href="/">Kilotest</a>: Retest recommendation for __target__</h1>
-      <p>The __target__ page was <a href="/reportIssues.html/__timeStamp__/__jobID__">last tested</a> by job <code>__jobID__</code> __ago__ ago on __dateTime__.</p>
+      <p>The __target__ page was <a href="/reportIssues.html/__timeStamp__/__jobID__">last tested</a> __ago__ ago by job <code>__jobID__</code> on __dateTime__.</p>
       <p>To recommend a retest, submit the following form.</p>
       <form action="/retestRec.html/__timeStamp__/__jobID__" method="post">
         <p><label>
           Why retest the page (answer required)?<br>
-          <input size="70" maxlength="100" name="why" required>
+          <input size="70" minlength="5" maxlength="100" name="why" required>
         </label></p>
         <p><button type="submit">Submit</button></p>
       </form>

@@ -21,11 +21,11 @@
         </label></p>
         <p><label>
           What is the URL (starting with <code>https://</code>)?<br>
-          <input size="60" maxlength="80" name="url" required>
+          <input type="url" size="60" maxlength="80" name="url" pattern="https://.+\..+" required>
         </label></p>
         <p><label>
           Why test the page?<br>
-          <input size="70" maxlength="100" name="why" required>
+          <input size="70" minlength="5" maxlength="100" name="why" required>
         </label></p>
         <p><button type="submit">Submit</button></p>
       </form>

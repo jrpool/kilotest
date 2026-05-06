@@ -449,7 +449,7 @@ exports.isTimeStamp = string => {
   return !! getDateString(string);
 };
 // Returns whether a string is a URL.
-exports.isURL = string => {
+const isURL = exports.isURL = string => {
   try {
     return string.startsWith('https://') && new URL(string);
   } catch {
@@ -482,39 +482,52 @@ const getNowStamp = exports.getNowStamp = () => {
 };
 // Processes a test or retest recommendation.
 exports.processRec = async (testType, dirName, what, url, why) => {
-  // Make the reason display-safe.
-  const plainWhy = getPlainText(why);
-  // Get the data on waiting recommendations.
-  const recs = await getRecs();
-  recs[url] ??= [];
-  // Add the recommendation to those for the target.
-  recs[url].push({
-    timeStamp: getNowStamp(),
-    what,
-    why: plainWhy
-  });
-  // Save the revised recommendations.
-  await fs.writeFile(recsPath, getJSON(recs));
-  // Log the recommendation.
-  console.log(`Test recommendation received for ${what}: ${plainWhy}`);
-  // Alert a manager about it.
-  await sendAlert(
-    `Kilotest: new ${testType} recommendation`,
-    `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
-  );
-  // Get the template.
-  let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
-  const query = {
-    target: what,
-    why: plainWhy
-  };
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
-  // Return the populated page.
+  // If the recommendation is valid:
+  if (
+    ['test', 'retest'].includes(testType)
+    && ['testRec', 'retestRec'].some(end => dirName.endsWith(end))
+    && what
+    && isURL(url)
+    && why.length > 4
+  ) {
+    // Make the reason display-safe.
+    const plainWhy = getPlainText(why);
+    // Get the data on waiting recommendations.
+    const recs = await getRecs();
+    recs[url] ??= [];
+    // Add the recommendation to those for the target.
+    recs[url].push({
+      timeStamp: getNowStamp(),
+      what,
+      why: plainWhy
+    });
+    // Save the revised recommendations.
+    await fs.writeFile(recsPath, getJSON(recs));
+    // Log the recommendation.
+    console.log(`Test recommendation received for ${what}: ${plainWhy}`);
+    // Alert a manager about it.
+    await sendAlert(
+      `Kilotest: new ${testType} recommendation`,
+      `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
+    );
+    // Get the template.
+    let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
+    const query = {
+      target: what,
+      why: plainWhy
+    };
+    // Replace its placeholders.
+    Object.keys(query).forEach(param => {
+      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
+    });
+    // Return the populated page.
+    return {
+      status: 'ok',
+      answerPage
+    };
+  }
   return {
-    status: 'ok',
-    answerPage
+    status: 'error',
+    error: 'Invalid recommendation'
   };
 };

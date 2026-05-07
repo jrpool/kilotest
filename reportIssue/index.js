@@ -59,8 +59,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     issueInstances.forEach(instance => {
       const {pathID} = instance;
       const catalogIndex = instance.catalogIndex || '0';
-      const catalogItem = catalog[catalogIndex];
-      const tagName = catalogItem.tagName
+      const tagName = catalog[catalogIndex]?.tagName
       ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()
       ?? 'HTML';
       violators[catalogIndex] ??= {

@@ -116,7 +116,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}  <ul class="nav">`);
     if (catalogIndex) {
-      const catalogItem = catalog[catalogIndex];
+      const catalogItem = catalog[catalogIndex] || {};
       if (catalogItem.textLinkable) {
         takeMeAdviceNeeded = true;
         const href = getTextFragmentHref(catalogItem.text, url);

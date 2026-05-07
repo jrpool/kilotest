@@ -331,7 +331,7 @@ exports.getDateTimeString = timeStamp => {
 // Returns the path ID of the element of a standard instance.
 exports.getPathID = (catalog, catalogIndex, pathID) => {
   if (catalogIndex) {
-    const catalogItem = catalog[catalogIndex];
+    const catalogItem = catalog[catalogIndex] || {};
     if (catalogItem.pathID) {
       return catalogItem.pathID;
     }

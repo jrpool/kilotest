@@ -57,7 +57,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     }
     // For each standard instance whose rule belongs to the issue:
     issueInstances.forEach(instance => {
-      const {pathID} = instance;
+      const pathID = instance.pathID || '/html';
       const catalogIndex = instance.catalogIndex || '0';
       const tagName = catalog[catalogIndex]?.tagName
       ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()

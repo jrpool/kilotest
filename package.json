@@ -1,6 +1,6 @@
 {
   "name": "kilotest",
-  "version": "17.2.5",
+  "version": "17.2.6",
   "description": "An ensemble testing service with a focus on accessibility",
   "main": "index.js",
   "scripts": {

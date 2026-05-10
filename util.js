@@ -323,7 +323,7 @@ exports.getAgoString = timeStamp => {
   return agoDays === 1 ? '1 day' : `${agoDays} days`;
 };
 // Returns a date-and-time string.
-exports.getDateTimeString = timeStamp => {
+const getDateTimeString = exports.getDateTimeString = timeStamp => {
   const dateString = getDateString(timeStamp);
   const timeString = getTimeString(timeStamp);
   const dateTimeString = `${dateString} at ${timeString}`;
@@ -536,4 +536,30 @@ exports.processRec = async (testType, dirName, what, url, why) => {
 exports.getWCAGLink = numericID => {
   // Return the link.
   return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
+};
+// Gets summary page data from a report.
+const getPageData = async (timeStamp, jobID) => {
+  // Get the log of the report.
+  const log = await getLog(timeStamp, jobID, false);
+  const {url, what} = log;
+  // Get the elapsed time in days since the test.
+  const daysAgo = getAgoDays(timeStamp);
+  // Return the summary data.
+  return {
+    url,
+    what,
+    daysAgo
+  };
+};
+// Gets HTML strings for page data from a report.
+exports.getPageDataStrings = async (timeStamp, jobID) => {
+  // Get the page data.
+  const pageData = await getPageData(timeStamp, jobID);
+  // Return the HTML strings.
+  return {
+    what: pageData.what,
+    url: pageData.url,
+    urlLink: `<a href="${pageData.url}">${pageData.url}</a>`,
+    testInfo: `Last tested ${pageData.daysAgo} days ago by job ${jobID} on ${getDateTimeString(timeStamp)}`
+  };
 };

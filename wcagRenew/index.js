@@ -23,26 +23,37 @@ exports.answer = async authCode => {
       const mapSourceHTML = await mapSourceResponse.text();
       // Get the entries from the HTML.
       const mapEntries = mapSourceHTML.matchAll(
-        /<a href="([^"]+)>.+<span class="secno">([\d.]+) *<\/span>/gs
-      ) ?? [];
-      // Initialize the WCAG map.
-      const wcagMap = {};
-      // For each entry:
-      for (const entry of mapEntries) {
-        // Add it to the map.
-        wcagMap[entry[2]] = entry[1];
-      }
-      // Save the map, replacing any existing one.
-      await fs.writeFile(
-        path.join(__dirname, '..', 'wcagMap.json'), `${JSON.stringify(wcagMap, null, 2)}\n`
+        /<a href="([^"]+)"><span class="secno">([\d.]+) *<\/span>/g
       );
-      // Get the acknowledgment page.
-      const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
-      // Return it.
-      return {
-        status: 'ok',
-        answerPage
-      };
+      // If there are entries:
+      if (mapEntries) {
+        // Initialize the WCAG map.
+        const wcagMap = {};
+        // For each entry:
+        for (const entry of mapEntries) {
+          // Add it to the map.
+          wcagMap[entry[2]] = entry[1];
+        }
+        // Save the map, replacing any existing one.
+        await fs.writeFile(
+          path.join(__dirname, '..', 'wcagMap.json'), `${JSON.stringify(wcagMap, null, 2)}\n`
+        );
+        // Get the acknowledgment page.
+        const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+        // Return it.
+        return {
+          status: 'ok',
+          answerPage
+        };
+      }
+      // Otherwise, i.e. if there are no entries:
+      else {
+        // Report this.
+        return {
+          status: 'error',
+          error: 'No entries found in WCAG map source'
+        };
+      }
     }
     else {
       return {

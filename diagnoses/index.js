@@ -8,6 +8,7 @@
 const {
   getDateTimeString,
   getLog,
+  getPageDataStrings,
   getReport,
   getTextFragmentHref,
   getWCAGLink,
@@ -23,7 +24,8 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, query) => {
-  const log = await getLog(timeStamp, jobID, true);
+  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
+  const {what, url, urlLink, testInfo} = pageDataStrings;
   const report = await getReport(timeStamp, jobID);
   const {acts, catalog} = report;
   const catalogItem = catalog[catalogIndex] ?? {};
@@ -32,7 +34,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   const lines = [];
   const margin = ' '.repeat(6);
   if (catalogIndex && catalogItem.textLinkable) {
-    const href = getTextFragmentHref(text, log.url);
+    const href = getTextFragmentHref(text, url);
     const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
     const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
     query.takeMeThere = `${margin}    <p>${link}</p>`;
@@ -41,10 +43,10 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     query.takeMeThere = '';
   }
   // Add facts about the issue to the query.
-  query.target = log.what;
+  query.target = what;
+  query.urlLink = urlLink;
+  query.testInfo = testInfo;
   query.issue = issues[issueID].summary;
-  query.url = log.url;
-  query.dateTime = getDateTimeString(timeStamp);
   const issue = issues[issueID];
   const {wcag, weight, why} = issue;
   query.why = why;
@@ -109,8 +111,8 @@ exports.answer = async (pageArgs, search) => {
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, catalogIndex, pathID, query);
-  // If the date and time are valid:
-  if (query.dateTime) {
+  // If the test specifications are valid:
+  if (query.testInfo) {
     // Get the template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
     // Replace its placeholders.

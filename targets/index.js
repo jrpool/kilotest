@@ -6,10 +6,10 @@
 // IMPORTS
 
 const {
-  getAgoString,
-  getDateTimeString,
+  getAgoDays,
   getJobNames,
   getObject,
+  getPageDataStrings,
   getRecs,
   getReporterString,
   getTargetLogs,
@@ -84,15 +84,14 @@ const populateQuery = async query => {
     const {issueSet, preventedTools, reporterSet} = summary;
     lines.tested.push(`${margin}<details>`);
     lines.tested.push(`${margin}  <summary>${what}</summary>`);
+    const daysAgo = getAgoDays(timeStamp);
+    const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
+    const {urlLink, testInfo} = pageDataStrings;
     lines.tested.push(`${margin}  <ul>`);
     // Add the URL of the target to the lines.
-    lines.tested.push(`${margin}    <li>URL: <a href="${url}"><code>${url}</code></a></li>`);
+    lines.tested.push(`${margin}    <li>URL: ${urlLink}</li>`);
     // Add facts about the report to the lines.
-    const dateTimeString = getDateTimeString(timeStamp);
-    const agoString = getAgoString(timeStamp);
-    const testedString
-    = `Last tested ${agoString} ago by job <code>${jobID}</code> on ${dateTimeString}`;
-    lines.tested.push(`${margin}    <li>${testedString}</li>`);
+    lines.tested.push(`${margin}    <li>${testInfo}</li>`);
     // If the page prevented any tool from performing its tests:
     if (preventedTools?.length) {
       const preventedToolSet = new Set(preventedTools);

@@ -6,9 +6,7 @@
 // IMPORTS
 
 const {
-  getAgoString,
-  getDateTimeString,
-  getLog,
+  getPageDataStrings,
   getPathID,
   getReport,
   getReporterString,
@@ -28,13 +26,12 @@ const path = require('path');
 const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Add facts about the issue to the query.
   query.issue = issues[issueID].summary;
-  const log = await getLog(timeStamp, jobID, true);
-  const {url, what} = log;
+  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
+  // const log = await getLog(timeStamp, jobID, true);
+  const {what, url, urlLink, testInfo} = pageDataStrings;
   query.target = what;
-  query.url = url;
-  query.jobID = jobID;
-  query.dateTime = getDateTimeString(timeStamp);
-  query.agoDays = getAgoString(timeStamp);
+  query.urlLink = urlLink;
+  query.testInfo = testInfo;
   const issue = issues[issueID];
   const {wcag, weight, why} = issue;
   query.why = why;
@@ -153,8 +150,8 @@ exports.answer = async pageArgs => {
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, query);
-  // If the date and time are valid:
-  if (query.dateTime) {
+  // If the test specifications are valid:
+  if (query.testInfo) {
     // Get the template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
     // Replace its placeholders.

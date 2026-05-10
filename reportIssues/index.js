@@ -6,9 +6,7 @@
 // IMPORTS
 
 const {
-  getAgoString,
-  getDateTimeString,
-  getLog,
+  getPageDataStrings,
   getReport,
   getReporterString,
   getWCAGLink,
@@ -25,15 +23,8 @@ const path = require('path');
 const getIssuesSummary = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  // Initialize data for the summary.
-  const log = await getLog(timeStamp, jobID, true);
-  const {url, what} = log;
   const preventedToolSet = new Set(Object.keys(report?.jobData?.preventions ?? {}));
   const issuesData = {
-    timeStamp,
-    jobID,
-    what,
-    url,
     preventedToolSet,
     issues: {}
   };
@@ -57,10 +48,6 @@ const getIssuesSummary = async (timeStamp, jobID) => {
   });
   // Initialize the summary.
   const summary = {
-    timeStamp: issuesData.timeStamp,
-    jobID: issuesData.jobID,
-    what: issuesData.what,
-    url: issuesData.url,
     preventedToolSet: issuesData.preventedToolSet,
     reporters: new Set(),
     issues: []
@@ -88,9 +75,11 @@ const getIssuesSummary = async (timeStamp, jobID) => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {
-  // Get a summary of data on the target.
+  // Get fact descriptions.
+  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
+  const {what, url, urlLink, testInfo} = pageDataStrings;
   const summary = await getIssuesSummary(timeStamp, jobID);
-  const {preventedToolSet, reporters, what} = summary;
+  const {preventedToolSet, reporters} = summary;
   const issueCount = summary.issues.length;
   const preventedToolCountString = preventedToolSet.size === 1
   ? '1 tool'
@@ -107,10 +96,8 @@ const populateQuery = async (timeStamp, jobID, query) => {
   // Add a reporter count and list to the query.
   query.reporters = getReporterString(reporters);
   query.target = what;
-  query.url = summary.url;
-  query.jobID = jobID;
-  query.dateTime = getDateTimeString(timeStamp);
-  query.agoDays = getAgoString(timeStamp);
+  query.urlLink = urlLink;
+  query.testInfo = testInfo;
   const margin = ' '.repeat(6);
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
@@ -191,7 +178,7 @@ exports.answer = async pageArgs => {
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);
   // If the date and time are valid:
-  if (query.dateTime) {
+  if (query.testInfo) {
     // Get the template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
     // Replace its placeholders.

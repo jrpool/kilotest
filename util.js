@@ -77,7 +77,7 @@ const getDateTime = timeStamp => {
   return dateTime;
 };
 // Returns the time in days since a time stamp.
-const getAgoDays = timeStamp => Math.round(
+const getAgoDays = exports.getAgoDays = timeStamp => Math.round(
   (Date.now() - getDateTime(timeStamp)) / (1000 * 60 * 60 * 24)
 );
 // Returns a time string from a time stamp.
@@ -546,20 +546,25 @@ const getPageData = async (timeStamp, jobID) => {
   const daysAgo = getAgoDays(timeStamp);
   // Return the summary data.
   return {
-    url,
     what,
+    url,
     daysAgo
   };
 };
 // Gets HTML strings for page data from a report.
-exports.getPageDataStrings = async (timeStamp, jobID) => {
-  // Get the page data.
-  const pageData = await getPageData(timeStamp, jobID);
+exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
+  // If the paga data were not specified:
+  if (! pageData) {
+    // Get them.
+    pageData = await getPageData(timeStamp, jobID);
+  }
+  const {what, url, daysAgo} = pageData;
+  const when = getDateTimeString(timeStamp);
   // Return the HTML strings.
   return {
-    what: pageData.what,
-    url: pageData.url,
-    urlLink: `<a href="${pageData.url}">${pageData.url}</a>`,
-    testInfo: `Last tested ${pageData.daysAgo} days ago by job ${jobID} on ${getDateTimeString(timeStamp)}`
+    what,
+    url,
+    urlLink: `<a href="${url}">${url}</a>`,
+    testInfo: `Last tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
 };

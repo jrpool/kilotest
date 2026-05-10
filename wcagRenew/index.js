@@ -22,16 +22,16 @@ exports.answer = async authCode => {
       // Get the HTML of the map source page.
       const mapSourceHTML = await mapSourceResponse.text();
       // Get the entries from the HTML.
-      const mapEntries = mapSourceHTML.match(
+      const mapEntries = mapSourceHTML.matchAll(
         /<a href="([^"]+)>.+<span class="secno">([\d.]+) *<\/span>/gs
-      );
+      ) ?? [];
       // Initialize the WCAG map.
       const wcagMap = {};
       // For each entry:
-      mapEntries.forEach(entry => {
+      for (const entry of mapEntries) {
         // Add it to the map.
         wcagMap[entry[2]] = entry[1];
-      });
+      }
       // Save the map, replacing any existing one.
       await fs.writeFile(
         path.join(__dirname, '..', 'wcagMap.json'), `${JSON.stringify(wcagMap, null, 2)}\n`

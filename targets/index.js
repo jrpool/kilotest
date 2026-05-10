@@ -9,10 +9,8 @@ const {
   getAgoString,
   getDateTimeString,
   getJobNames,
-  getLog,
   getObject,
   getRecs,
-  getReport,
   getReporterString,
   getTargetLogs,
   getTargetSummary,
@@ -88,7 +86,7 @@ const populateQuery = async query => {
     lines.tested.push(`${margin}  <summary>${what}</summary>`);
     lines.tested.push(`${margin}  <ul>`);
     // Add the URL of the target to the lines.
-    lines.tested.push(`${margin}    <li>URL: <code>${url}</code></li>`);
+    lines.tested.push(`${margin}    <li>URL: <a href="${url}"><code>${url}</code></a></li>`);
     // Add facts about the report to the lines.
     const dateTimeString = getDateTimeString(timeStamp);
     const agoString = getAgoString(timeStamp);

@@ -11,6 +11,7 @@ const {
   getLog,
   getReport,
   getReporterString,
+  getWCAGLink,
   getWeightName,
   objectSort
 } = require('../util');
@@ -124,12 +125,13 @@ const populateQuery = async (timeStamp, jobID, query) => {
       if (issueSummary.weight === weight) {
         const issue = issues[issueID];
         const {wcag, why} = issue;
+        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
         // Add data on it to the weight data.
         weightData.push({
           issueID,
           summary: issue.summary,
           why,
-          wcag,
+          wcag: wcagLink,
           reporterCount,
           reporters
         });

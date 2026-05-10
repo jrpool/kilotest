@@ -10,6 +10,7 @@ const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 const path = require('path');
 const querystring = require('querystring');
+const wcagMap = require('./wcagMap.json');
 
 // CONSTANTS
 
@@ -530,4 +531,9 @@ exports.processRec = async (testType, dirName, what, url, why) => {
     status: 'error',
     error: 'Invalid recommendation'
   };
+};
+// Gets the WCAG Understanding link for a numeric WCAG standard identifier.
+exports.getWCAGLink = numericID => {
+  // Return the link.
+  return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
 };

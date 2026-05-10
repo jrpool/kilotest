@@ -11,6 +11,7 @@ const {
   getReport,
   getReporterString,
   getTargetLogs,
+  getWCAGLink,
   getWeightName,
   objectSort,
   ruleIDs
@@ -124,13 +125,16 @@ const populateQuery = async query => {
         // Get the data on it from the issue classification.
         const issue = issues[issueID];
         const {summary, wcag, why} = issue;
+        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
         // Add a description of it to the lines.
         lines.push(`${margin}  <li>${summary}`);
-        lines.push(`${margin}    <ul class="nav">`);
+        lines.push(`${margin}    <ul>`);
         lines.push(`${margin}      <li>Why it matters: ${why}`);
-        lines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
+        lines.push(`${margin}      <li>Related WCAG standard: ${wcagLink}`);
         lines.push(`${margin}      <li>Share of violations: ${percentage}%</li>`);
         lines.push(`${margin}      <li>Violations reported by ${reporters}</li>`);
+        lines.push(`${margin}    </ul>`);
+        lines.push(`${margin}    <ul class="nav">`);
         const linkText = 'What rules belong to this issue?';
         const label = `What rules belong to the <q>${summary}</q> issue?`;
         const href = `/rules.html/${issueID}`;

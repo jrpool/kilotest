@@ -353,7 +353,7 @@ const requestHandler = async (request, response) => {
       response.setHeader('content-type', 'text/html; charset=utf-8');
       response.setHeader('content-location', `${pathname}${search}`);
       // Get the answer data.
-      const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
+      const answerData = await require(path.join(__dirname, 'wcagRenew', 'index'))
       .answer(authCode);
       // If the answer data are valid:
       if (answerData.status === 'ok') {

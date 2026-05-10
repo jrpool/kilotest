@@ -21,9 +21,10 @@ exports.answer = async authCode => {
     if (mapSourceStatus === 200) {
       // Get the HTML of the map source page.
       const mapSourceHTML = await mapSourceResponse.text();
-      // Get the map entries.
-      const mapEntries = mapSourceHTML
-      match(/<a href="([^"]+)>.+<span class="secno">([\d.]+) *<\/span>/gs);
+      // Get the entries from the HTML.
+      const mapEntries = mapSourceHTML.match(
+        /<a href="([^"]+)>.+<span class="secno">([\d.]+) *<\/span>/gs
+      );
       // Initialize the WCAG map.
       const wcagMap = {};
       // For each entry:

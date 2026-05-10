@@ -6,6 +6,7 @@
 // IMPORTS
 
 const {
+  getAgoString,
   getDateTimeString,
   getLog,
   getPathID,
@@ -33,6 +34,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   query.url = url;
   query.jobID = jobID;
   query.dateTime = getDateTimeString(timeStamp);
+  query.agoDays = getAgoString(timeStamp);
   const issue = issues[issueID];
   const {wcag, weight, why} = issue;
   query.why = why;

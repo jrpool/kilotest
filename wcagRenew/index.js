@@ -12,7 +12,6 @@ const path = require('path');
 
 // Renews the WCAG map and serves an acknowledgment.
 exports.answer = async (authCode) => {
-  const query = {message: ''};
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get the map source response.
@@ -36,24 +35,25 @@ exports.answer = async (authCode) => {
       await fs.writeFile(
         path.join(__dirname, '..', 'wcagMap.json'), `${JSON.stringify(wcagMap, null, 2)}\n`
       );
-      query.message = 'The WCAG map has been renewed';
+      // Get the acknowledgment page.
+      const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+      // Return it.
+      return {
+        status: 'ok',
+        answerPage
+      };
     }
     else {
-      query.message = 'ERROR: WCAG map source not retrieved';
+      return {
+        status: 'error',
+        error: 'WCAG map source not retrieved'
+      };
     }
   }
   else {
-    query.message = 'ERROR: Authorization code invalid';
+    return {
+      status: 'error',
+      error: 'Authorization code invalid'
+    };
   }
-  // Get the acknowledgment template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
-  // Return the populated page.
-  return {
-    status: 'ok',
-    answerPage
-  };
 };

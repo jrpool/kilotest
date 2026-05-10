@@ -11,7 +11,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Renews the WCAG map and serves an acknowledgment.
-exports.answer = async (authCode) => {
+exports.answer = async authCode => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get the map source response.

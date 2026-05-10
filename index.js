@@ -346,6 +346,26 @@ const requestHandler = async (request, response) => {
         await serveError({message: answerData.error}, response, true);
       }
     }
+    // Otherwise, if it is a WCAG map renewal:
+    else if (pageName === 'wcagRenew.html') {
+      const {authCode} = postData;
+      // Serve headers for a response.
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      response.setHeader('content-location', `${pathname}${search}`);
+      // Get the answer data.
+      const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
+      .answer(authCode);
+      // If the answer data are valid:
+      if (answerData.status === 'ok') {
+        // Serve the answer page.
+        response.end(answerData.answerPage);
+      }
+      // Otherwise, i.e. if they are invalid:
+      else {
+        // Report the error.
+        await serveError({message: answerData.error}, response, true);
+      }
+    }
     // Otherwise, if it is a request from a Testaro agent:
     else if (pageName === 'api') {
       const [agentID, service] = pageArgs.split('/');

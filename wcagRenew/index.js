@@ -11,9 +11,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Renews the WCAG map and serves an acknowledgment.
-exports.answer = async () => {
-  const searchParams = new URLSearchParams(search);
-  const authCode = searchParams?.get('authCode');
+exports.answer = async (authCode) => {
   const query = {message: ''};
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {

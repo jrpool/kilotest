@@ -51,6 +51,7 @@ const answer = {
   testOrder: require('./testOrder/index').answer,
   testRec: require('./testRec/index').answer,
   testRecForm: require('./testRecForm/index').answer,
+  wcagRenew: require('./wcagRenew/index').answer,
   wcagRenewForm: require('./wcagRenewForm/index').answer
 };
 

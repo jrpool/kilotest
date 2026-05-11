@@ -24,14 +24,22 @@
       <p>__reporterCount__ reported issues (__reporters__)</p>
       <p>__issueCount__ reported (__highestCount__ highest, __highCount__ high, __lowCount__ low, __lowestCount__ lowest priority)</p>
       <h3>Details</h3>
-      <h4>Highest priority</h4>
-      __highestDetails__
-      <h4>High priority</h4>
-      __highDetails__
-      <h4>Low priority</h4>
-      __lowDetails__
-      <h4>Lowest priority</h4>
-      __lowestDetails__
+      <details>
+        <summary>Highest priority: __highestCount__</summary>
+        __highestDetails__
+      </details>
+      <details>
+        <summary>High priority: __highCount__</summary>
+        __highDetails__
+      </details>
+      <details>
+        <summary>Low priority: __lowCount__</summary>
+        __lowDetails__
+      </details>
+      <details>
+        <summary>Lowest priority: __lowestCount__</summary>
+        __lowestDetails__
+      </details>
     </main>
   </body>
 </html>

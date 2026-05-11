@@ -130,12 +130,14 @@ const populateQuery = async (timeStamp, jobID, query) => {
     // If any reported issues have the weight:
     if (weightData.length) {
       // Add the start of a list of the issues with the weight to the lines.
-      weightLines.push(`${margin}  <ul class="headed">`);
+      weightLines.push(`${margin}<ul class="headed">`);
       // For each issue with the weight:
       weightData.forEach(weightIssue => {
         const {issueID, reporterCount, reporters, wcag, why} = weightIssue;
-        // Add the start of a list item and a summary of the issue to the lines.
-        weightLines.push(`${margin}  <li><h5>${weightIssue.summary}</h5>`);
+        // Add the start of a list item to the lines.
+        weightLines.push(`${margin}  <li>`);
+        // Add a heading summarizing the issue to the lines.
+        weightLines.push(`${margin}    <h5>${weightIssue.summary}</h5>`);
         // Add the start of alist of facts about the issue to the lines.
         weightLines.push(`${margin}    <ul class="pseudoTopLevel">`);
         // Add the issue facts to the lines.
@@ -158,11 +160,12 @@ const populateQuery = async (timeStamp, jobID, query) => {
         weightLines.push(`${margin}      <li>${whereLink}</li>`);
         // Add the end of the link list to the lines.
         weightLines.push(`${margin}    </ul>`);
-        // Add the end of the list item for the issue to the lines.
+        // Add the end of the list item to the lines.
         weightLines.push(`${margin}  </li>`);
       });
       // Add the end of the list of issues with the weight to the lines.
       weightLines.push(`${margin}</ul>`);
+      // Add the lines documenting the issues with the weight to the query.
       query[`${weightName}Details`] = weightLines.join('\n');
     }
     // Otherwise, i.e. if no reported issues have the weight:

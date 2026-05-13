@@ -211,7 +211,7 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
     violatorSet: new Set(),
     url: log.url
   };
-  const {issueSet, reporterSet} = summary;
+  const {issueSet, reporterSet, violatorSet} = summary;
   const report = await getReport(timeStamp, jobID);
   // For each act of the report:
   report.acts.forEach(act => {

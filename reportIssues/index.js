@@ -171,7 +171,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
         weightLines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
         const reporterCountString = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
         weightLines.push(
-          `${margin}      <li>Reported by ${reporterCountString} (${reporters})</li>`
+          `${margin}      <li>Reported by ${reporterCountString} (${reportersString})</li>`
         );
         const violatorCountString = violatorCount === 1
         ? '1 violator'

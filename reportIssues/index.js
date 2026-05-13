@@ -51,7 +51,7 @@ const getIssuesData = async (timeStamp, jobID) => {
         if (issueID && issues[issueID] && issueID !== 'ignorable') {
           // Ensure that the issues data include data on the issue.
           issuesObject[issueID] ??= {
-            id: issueID,
+            issueID,
             weight: issues[issueID].weight ?? 0,
             reporters: new Set(),
             reporterCount: 0,
@@ -78,9 +78,11 @@ const getIssuesData = async (timeStamp, jobID) => {
   // Populate the unpopulated subproperties of the issues data.
   issuesData.reporterCount = issuesData.reporters.size;
   issuesData.reportersString = getToolNamesString(issuesData.reporters);
+  issuesData.violatorCount = issuesData.violators.size;
   issuesData.preventedToolCount = issuesData.preventedTools.size;
   issuesData.preventedToolsString = getToolNamesString(issuesData.preventedTools);
-  issuesData.issues = Object.values(issuesData.issues);
+  issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
+  issuesData.issues = Object.values(issuesData.issuesObject);
   // For each issue in the issues data:
   issuesData.issues.forEach(issue => {
     // Populate its unpopulated properties.
@@ -128,9 +130,11 @@ const populateQuery = async (timeStamp, jobID, query) => {
     const weightLines = [];
     // For each issue:
     issuesData.issues.forEach(issueData => {
-      const {issueID, reporterCount, reportersString, violatorCount} = issueData;
+      const {
+        issueID, reporterCount, reportersString, violatorCount, weight: issueWeight
+      } = issueData;
       // If it has the weight:
-      if (issueSummary.weight === weight) {
+      if (issueWeight === weight) {
         const issue = issues[issueID];
         const {wcag, why} = issue;
         const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;

@@ -219,25 +219,22 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
     if (act.type === 'test') {
       const {result, which} = act;
       const instances = result?.standardResult?.instances ?? [];
-      // If it has any standard instances:
-      if (instances.length > 0) {
-        // Ensure that the tool is in the summary.
-        reporterSet.add(which);
-        // For each standard instance:
-        instances.forEach(instance => {
-          const {catalogIndex, issueID} = instance;
-          // If it has a non-ignorable issue ID:
-          if (issueID && issueID !== 'ignorable') {
-            // Ensure that the issue is in the summary.
-            issueSet.add(issueID);
-          }
+      // For each standard instance:
+      instances.forEach(instance => {
+        const {catalogIndex, issueID} = instance;
+        // If it has a non-ignorable classified issue ID:
+        if (issueID && issues[issueID] && issueID !== 'ignorable') {
+          // Ensure that the tool is in the summary.
+          reporterSet.add(which);
+          // Ensure that the issue is in the summary.
+          issueSet.add(issueID);
           // If it has a catalog index:
           if (catalogIndex) {
             // Ensure that the violator is in the summary.
             violatorSet.add(catalogIndex);
           }
-        });
-      }
+        }
+      });
     }
   });
   const {jobData} = report;

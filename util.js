@@ -377,7 +377,7 @@ const getRecs = exports.getRecs = async () => {
   return recs;
 };
 // Returns a string of tool names.
-exports.getReporterString = toolIDSet =>
+exports.getToolNamesString = toolIDSet =>
   alphaSort(Array.from(toolIDSet).map(toolID => tools[toolID][0])).join(' + ');
 // Converts a catalog item text to a text-fragment link destination.
 exports.getTextFragmentHref = (text, url) => {

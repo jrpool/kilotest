@@ -8,7 +8,7 @@
 const {
   getPageDataStrings,
   getReport,
-  getReporterString,
+  getToolNamesString,
   getWCAGLink,
   getWeightName,
   objectSort
@@ -23,13 +23,21 @@ const path = require('path');
 const getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  const preventedToolSet = new Set(Object.keys(report?.jobData?.preventions ?? {}));
+  const preventedTools = new Set(Object.keys(report?.jobData?.preventions ?? {}));
   const issuesData = {
     reporters: new Set(),
+    reporterCount: 0,
+    reportersString: '',
     violators: new Set(),
-    preventedToolSet,
-    issues: {}
+    violatorCount: 0,
+    preventedTools,
+    preventedToolCount: 0,
+    preventedToolsString: '',
+    issuesObject: {},
+    issueCount: 0,
+    issues: []
   };
+  const {issuesObject, reporters, violators} = issuesData;
   // For each act in it:
   report.acts.forEach(act => {
     // If it is a test act:
@@ -42,33 +50,48 @@ const getIssuesData = async (timeStamp, jobID) => {
         // If the instance has a non-ignorable classified issue:
         if (issueID && issues[issueID] && issueID !== 'ignorable') {
           // Ensure that the issues data include data on the issue.
-          issuesData.issues[issueID] ??= {
+          issuesObject[issueID] ??= {
             id: issueID,
             weight: issues[issueID].weight ?? 0,
             reporters: new Set(),
-            violators: new Set()
+            reporterCount: 0,
+            reportersString: '',
+            violators: new Set(),
+            violatorCount: 0
           };
           // Ensure that the tool is in the issues data.
-          issuesData.reporters.add(which);
+          reporters.add(which);
           // Ensure that it is in the issue data.
-          issuesData.issues[issueID].reporters.add(which);
+          issuesObject[issueID].reporters.add(which);
+          const {catalogIndex} = instance;
           // If the instance has a catalog index:
-          if (instance.catalogIndex) {
+          if (catalogIndex) {
             // Ensure that the violator is in the issues data.
-            issuesData.violators.add(instance.catalogIndex);
+            violators.add(catalogIndex);
             // Ensure that it is in the issue data.
-            issuesData.issues[issueID].violators.add(instance.catalogIndex);
+            issuesObject[issueID].violators.add(catalogIndex);
           }
         }
       });
     }
   });
-  // Change the issues to an array.
+  // Populate the unpopulated subproperties of the issues data.
+  issuesData.reporterCount = issuesData.reporters.size;
+  issuesData.reportersString = getToolNamesString(issuesData.reporters);
+  issuesData.preventedToolCount = issuesData.preventedTools.size;
+  issuesData.preventedToolsString = getToolNamesString(issuesData.preventedTools);
   issuesData.issues = Object.values(issuesData.issues);
-  // Sort the array alphabetically by reporter string
-  objectSort(issuesData.issues, 'reporters', 'alpha');
+  // For each issue in the issues data:
+  issuesData.issues.forEach(issue => {
+    // Populate its unpopulated properties.
+    issue.reporterCount = issue.reporters.size;
+    issue.reportersString = getToolNamesString(issue.reporters);
+    issue.violatorCount = issue.violators.size;
+  });
+  // Sort the issues alphabetically by reporters string.
+  objectSort(issuesData.issues, 'reportersString', 'alpha');
   // Sort the issues again in descending reporter-count order, making this the primary order.
-  objectSort(summary.issues, 'reporterCount', 'numericDown');
+  objectSort(issuesData.issues, 'reporterCount', 'numericDown');
   // Return the summary.
   return summary;
 };
@@ -83,7 +106,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const preventedToolCountString = preventedToolSet.size === 1
   ? '1 tool'
   : `${preventedToolSet.size} tools`;
-  const preventedToolsString = getReporterString(preventedToolSet);
+  const preventedToolsString = getToolNamesString(preventedToolSet);
   // Add a list of prevented tools, if any, to the query.
   query.preventedTools = preventedToolSet.size
   ? `<li>Page prevented testing by ${preventedToolCountString} (${preventedToolsString})</li>`
@@ -93,7 +116,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const reporterCount = reporters.size;
   query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
   // Add a reporter count and list to the query.
-  query.reporters = getReporterString(reporters);
+  query.reporters = getToolNamesString(reporters);
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;

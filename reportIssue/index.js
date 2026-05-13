@@ -9,7 +9,7 @@ const {
   getPageDataStrings,
   getPathID,
   getReport,
-  getReporterString,
+  getToolNamesString,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
@@ -78,12 +78,12 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // For each violator:
   Object.values(violators).forEach(violatorData => {
     // Convert the set of its reporters to a string.
-    violatorData.reporters = getReporterString(violatorData.reporters);
+    violatorData.reporters = getToolNamesString(violatorData.reporters);
   });
   const reporterCount = query.reporters.size;
   query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
   // Convert the set of issue reporters to a string.
-  query.reporters = getReporterString(query.reporters);
+  query.reporters = getToolNamesString(query.reporters);
   // Convert the violator data to an array.
   violators = Object.entries(violators).map(entry => ({
     catalogIndex: entry[0],

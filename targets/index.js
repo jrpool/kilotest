@@ -11,7 +11,7 @@ const {
   getObject,
   getPageDataStrings,
   getRecs,
-  getReporterString,
+  getToolNamesString,
   getTargetLogs,
   getTargetSummary,
   isRecommendable,
@@ -96,7 +96,7 @@ const populateQuery = async query => {
     if (preventedTools?.length) {
       const preventedToolSet = new Set(preventedTools);
       const toolCountString = getToolCountString(preventedToolSet.size);
-      const toolsString = getReporterString(preventedToolSet);
+      const toolsString = getToolNamesString(preventedToolSet);
       lines.tested.push(
         `${margin}    <li>Page prevented testing by ${toolCountString} (${toolsString})</li>`,
       );
@@ -104,7 +104,7 @@ const populateQuery = async query => {
     // Add facts about the test results to the lines.
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const toolCountString = getToolCountString(reporterSet.size);
-    const reporterString = getReporterString(reporterSet);
+    const reporterString = getToolNamesString(reporterSet);
     const issuesString = issueSet.size
     ? `${issueCountString} reported by ${toolCountString} (${reporterString})`
     : `${issueCountString} reported`;

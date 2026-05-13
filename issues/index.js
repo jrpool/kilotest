@@ -9,7 +9,7 @@ const {sendAlert} = require('../alerts');
 const {
   annotateReport,
   getReport,
-  getReporterString,
+  getToolNamesString,
   getTargetLogs,
   getWCAGLink,
   getWeightName,
@@ -78,7 +78,7 @@ const getIssuesSummary = async logs => {
         weight: issues[issueID].weight,
         count,
         percentage: 0,
-        reporters: getReporterString(reporters)
+        reporters: getToolNamesString(reporters)
       });
     }
     // Otherwise, i.e. if it is no longer classified:

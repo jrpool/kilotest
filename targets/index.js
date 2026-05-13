@@ -81,7 +81,7 @@ const populateQuery = async query => {
     const {jobName, url, what} = targetLog;
     const [timeStamp, jobID] = jobName.split('-');
     const summary = await getTargetSummary(timeStamp, jobID);
-    const {issueSet, preventedTools, reporterSet} = summary;
+    const {issueSet, preventedTools, reporterSet, violatorSet} = summary;
     lines.tested.push(`${margin}<details>`);
     lines.tested.push(`${margin}  <summary>${what}</summary>`);
     const daysAgo = getAgoDays(timeStamp);
@@ -94,21 +94,25 @@ const populateQuery = async query => {
     lines.tested.push(`${margin}    <li>${testInfo}</li>`);
     // If the page prevented any tool from performing its tests:
     if (preventedTools?.length) {
+      // Add this to the lines.
       const preventedToolSet = new Set(preventedTools);
       const toolCountString = getToolCountString(preventedToolSet.size);
       const toolsString = getToolNamesString(preventedToolSet);
       lines.tested.push(
-        `${margin}    <li>Page prevented testing by ${toolCountString} (${toolsString})</li>`,
+        `${margin}    <li>Testing was prevented by ${toolCountString} (${toolsString})</li>`,
       );
     }
     // Add facts about the test results to the lines.
+    const reporterCountString = getToolCountString(reporterSet.size);
+    const reporterNamesString = getToolNamesString(reporterSet);
+    const reporterString = `${reporterCountString} ${reporterNamesString}`;
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
-    const toolCountString = getToolCountString(reporterSet.size);
-    const reporterString = getToolNamesString(reporterSet);
-    const issuesString = issueSet.size
-    ? `${issueCountString} reported by ${toolCountString} (${reporterString})`
-    : `${issueCountString} reported`;
-    lines.tested.push(`${margin}    <li>${issuesString}</li>`);
+    const violatorString = violatorSet.size === 1
+    ? '1 violator was'
+    : `${violatorSet.size} violators were`;
+    lines.tested.push(`${margin}    <li>${issueCountString} reported</li>`);
+    lines.tested.push(`${margin}    <li>Issues were reported by ${reporterString}</li>`);
+    lines.tested.push(`${margin}    <li>${violatorString} reported</li>`);
     lines.tested.push(`${margin}  </ul>`);
     lines.tested.push(`${margin}<ul class="nav">`);
     // If any issues were reported:

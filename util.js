@@ -208,6 +208,7 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
   const summary = {
     issueSet: new Set(),
     reporterSet: new Set(),
+    violatorSet: new Set(),
     url: log.url
   };
   const {issueSet, reporterSet} = summary;
@@ -224,11 +225,16 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
         reporterSet.add(which);
         // For each standard instance:
         instances.forEach(instance => {
-          const {issueID} = instance;
+          const {catalogIndex, issueID} = instance;
           // If it has a non-ignorable issue ID:
           if (issueID && issueID !== 'ignorable') {
             // Ensure that the issue is in the summary.
             issueSet.add(issueID);
+          }
+          // If it has a catalog index:
+          if (catalogIndex) {
+            // Ensure that the violator is in the summary.
+            violatorSet.add(catalogIndex);
           }
         });
       }

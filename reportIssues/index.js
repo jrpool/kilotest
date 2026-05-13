@@ -104,7 +104,12 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const {what, urlLink, testInfo} = pageDataStrings;
   const issuesData = await getIssuesData(timeStamp, jobID);
   const {
-    issueCount, preventedToolCount, preventedToolsString, reporterCount, reportersString
+    issueCount,
+    preventedToolCount,
+    preventedToolsString,
+    reporterCount,
+    reportersString,
+    violatorCount
   } = issuesData;
   // Add an issue count description to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;

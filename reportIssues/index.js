@@ -159,7 +159,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
       weightLines.push(`${margin}<ul class="headed">`);
       // For each issue with the weight:
       weightData.forEach(weightIssue => {
-        const {issueID, reporterCount, reporters, violatorCount, wcag, why} = weightIssue;
+        const {issueID, reporterCount, reportersString, violatorCount, wcag, why} = weightIssue;
         // Add the start of a list item to the lines.
         weightLines.push(`${margin}  <li>`);
         // Add a heading summarizing the issue to the lines.

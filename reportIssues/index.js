@@ -92,28 +92,27 @@ const getIssuesData = async (timeStamp, jobID) => {
   objectSort(issuesData.issues, 'reportersString', 'alpha');
   // Sort the issues again in descending reporter-count order, making this the primary order.
   objectSort(issuesData.issues, 'reporterCount', 'numericDown');
-  // Return the summary.
-  return summary;
+  // Return the issues data.
+  return issuesData;
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {
   // Get fact descriptions.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  const {what, url, urlLink, testInfo} = pageDataStrings;
-  const summary = await getIssuesData(timeStamp, jobID);
-  const {preventedToolSet, reporters} = summary;
-  const issueCount = summary.issues.length;
-  const preventedToolCountString = preventedToolSet.size === 1
+  const {what, urlLink, testInfo} = pageDataStrings;
+  const issuesData = await getIssuesData(timeStamp, jobID);
+  const {
+    issueCount, preventedToolCount, preventedToolsString, reporterCount, reportersString
+  } = issuesData;
+  const preventedToolCountString = preventedToolCount === 1
   ? '1 tool'
-  : `${preventedToolSet.size} tools`;
-  const preventedToolsString = getToolNamesString(preventedToolSet);
+  : `${preventedToolCount} tools`;
   // Add a list of prevented tools, if any, to the query.
-  query.preventedTools = preventedToolSet.size
+  query.preventedTools = preventedToolCount
   ? `<li>Page prevented testing by ${preventedToolCountString} (${preventedToolsString})</li>`
   : '';
   // Add an issue count description to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
-  const reporterCount = reporters.size;
   query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
   // Add a reporter count and list to the query.
   query.reporters = getToolNamesString(reporters);
@@ -127,9 +126,9 @@ const populateQuery = async (timeStamp, jobID, query) => {
     const weightData = [];
     // Initialize the lines for the weight.
     const weightLines = [];
-    // For each summarized issue:
-    summary.issues.forEach(issueSummary => {
-      const {issueID, reporterCount, reporters} = issueSummary;
+    // For each issue:
+    issuesData.issues.forEach(issueData => {
+      const {issueID, reporterCount, reportersString, violatorCount} = issueData;
       // If it has the weight:
       if (issueSummary.weight === weight) {
         const issue = issues[issueID];
@@ -142,7 +141,8 @@ const populateQuery = async (timeStamp, jobID, query) => {
           why,
           wcag: wcagLink,
           reporterCount,
-          reporters
+          reportersString,
+          violatorCount
         });
       }
     });
@@ -155,7 +155,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
       weightLines.push(`${margin}<ul class="headed">`);
       // For each issue with the weight:
       weightData.forEach(weightIssue => {
-        const {issueID, reporterCount, reporters, wcag, why} = weightIssue;
+        const {issueID, reporterCount, reporters, violatorCount, wcag, why} = weightIssue;
         // Add the start of a list item to the lines.
         weightLines.push(`${margin}  <li>`);
         // Add a heading summarizing the issue to the lines.
@@ -169,6 +169,10 @@ const populateQuery = async (timeStamp, jobID, query) => {
         weightLines.push(
           `${margin}      <li>Reported by ${reporterCountString} (${reporters})</li>`
         );
+        const violatorCountString = violatorCount === 1
+        ? '1 violator'
+        : `${violatorCount} violators`;
+        weightLines.push(`${margin}      <li>${violatorCountString} reported</li>`);
         // Add the end of the fact list to the lines.
         weightLines.push(`${margin}    </ul>`);
         // Add the start of a link list to the lines.

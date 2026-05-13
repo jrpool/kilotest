@@ -391,10 +391,10 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns an array of the latest logs of tested targets.
-exports.getTargetLogs = async () => {
+// Returns an array of logs of the latest tests of the tested targets.
+exports.getLatestTargetLogs = async () => {
   // Initialize data on the tested targets.
-  const targetData = {};
+  const targetsData = {};
   const logFileNames = await fs.readdir(logsPath);
   // For each log:
   for (const fileName of logFileNames) {
@@ -404,10 +404,10 @@ exports.getTargetLogs = async () => {
     // Add the job name to the log.
     log.jobName = logName;
     // Add the job data to the targets data, replacing any entry for the same target URL.
-    targetData[log.url] = log;
+    targetsData[log.url] = log;
   }
   // Get an array of the target logs, sorted by description.
-  const targets = objectSort(Object.values(targetData), 'what', 'alpha');
+  const targets = objectSort(Object.values(targetsData), 'what', 'alpha');
   return targets;
 };
 // Gets the name of an issue weight.

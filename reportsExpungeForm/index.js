@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getTargetSummary, reportsPath} = require('../util');
+const {getTargetSummary, logsPath, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -16,7 +16,7 @@ exports.answer = async (_, search) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
-  // If the form has been displayed by itself:
+  // If the form has been displayed by itself after a submission and any reports are to be deleted:
   if (jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
@@ -24,6 +24,8 @@ exports.answer = async (_, search) => {
       for (const jobName of jobNames) {
         // Delete it.
         await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+        // Delete its log.
+        await fs.unlink(path.join(logsPath, `${jobName}.json`));
       }
     }
     // Otherwise, i.e. if the authorization code is invalid:

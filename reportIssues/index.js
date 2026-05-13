@@ -19,12 +19,14 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Gets summary data on the issues reported in a report.
-const getIssuesSummary = async (timeStamp, jobID) => {
+// Gets data on the issues reported in a report.
+const getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   const preventedToolSet = new Set(Object.keys(report?.jobData?.preventions ?? {}));
   const issuesData = {
+    reporters: new Set(),
+    violators: new Set(),
     preventedToolSet,
     issues: {}
   };
@@ -37,37 +39,34 @@ const getIssuesSummary = async (timeStamp, jobID) => {
       // For each of its standard instances:
       instances.forEach(instance => {
         const {issueID} = instance;
-        // If the instance has a non-ignorable issue ID:
-        if (issueID && issueID !== 'ignorable') {
-          issuesData.issues[issueID] ??= new Set();
+        // If the instance has a non-ignorable classified issue:
+        if (issueID && issues[issueID] && issueID !== 'ignorable') {
+          // Ensure that the issues data include data on the issue.
+          issuesData.issues[issueID] ??= {
+            id: issueID,
+            weight: issues[issueID].weight ?? 0,
+            reporters: new Set(),
+            violators: new Set()
+          };
           // Ensure that the tool is in the issues data.
-          issuesData.issues[issueID].add(which);
+          issuesData.reporters.add(which);
+          // Ensure that it is in the issue data.
+          issuesData.issues[issueID].reporters.add(which);
+          // If the instance has a catalog index:
+          if (instance.catalogIndex) {
+            // Ensure that the violator is in the issues data.
+            issuesData.violators.add(instance.catalogIndex);
+            // Ensure that it is in the issue data.
+            issuesData.issues[issueID].violators.add(instance.catalogIndex);
+          }
         }
       });
     }
   });
-  // Initialize the summary.
-  const summary = {
-    preventedToolSet: issuesData.preventedToolSet,
-    reporters: new Set(),
-    issues: []
-  };
-  // For each issue:
-  Object.entries(issuesData.issues).forEach(([issueID, reporters]) => {
-    // Ensure that the report reporters include the issue reporters.
-    reporters.forEach(reporter => {
-      summary.reporters.add(reporter);
-    });
-    // Add the issue data to the summary.
-    summary.issues.push({
-      issueID,
-      weight: issues[issueID].weight,
-      reporterCount: reporters.size,
-      reporters: getReporterString(reporters)
-    });
-  });
-  // Sort the issues in alphabetical order by reporter string.
-  objectSort(summary.issues, 'reporters', 'alpha');
+  // Change the issues to an array.
+  issuesData.issues = Object.values(issuesData.issues);
+  // Sort the array alphabetically by reporter string
+  objectSort(issuesData.issues, 'reporters', 'alpha');
   // Sort the issues again in descending reporter-count order, making this the primary order.
   objectSort(summary.issues, 'reporterCount', 'numericDown');
   // Return the summary.
@@ -78,7 +77,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   // Get fact descriptions.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   const {what, url, urlLink, testInfo} = pageDataStrings;
-  const summary = await getIssuesSummary(timeStamp, jobID);
+  const summary = await getIssuesData(timeStamp, jobID);
   const {preventedToolSet, reporters} = summary;
   const issueCount = summary.issues.length;
   const preventedToolCountString = preventedToolSet.size === 1

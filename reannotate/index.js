@@ -1,6 +1,6 @@
 /*
   index.js
-  Implements a reannotation order, i.e. an order to update the issue IDs of the standard instances of all reports.
+  Implements a reannotation order, i.e. an order to update the issue IDs of the standard instances of the latest reports on all tested targets.
 */
 
 // IMPORTS

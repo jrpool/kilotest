@@ -105,7 +105,7 @@ const populateQuery = async query => {
     // Add facts about the test results to the lines.
     const reporterCountString = getToolCountString(reporterSet.size);
     const reporterNamesString = getToolNamesString(reporterSet);
-    const reporterString = `${reporterCountString} ${reporterNamesString}`;
+    const reporterString = `${reporterCountString} (${reporterNamesString})`;
     const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
     const violatorString = violatorSet.size === 1
     ? '1 violator was'

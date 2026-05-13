@@ -115,7 +115,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
   query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
   // Add a reporter count and list to the query.
-  query.reporters = getToolNamesString(reporters);
+  query.reporters = reportersString;
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;

@@ -106,21 +106,23 @@ const populateQuery = async (timeStamp, jobID, query) => {
   const {
     issueCount, preventedToolCount, preventedToolsString, reporterCount, reportersString
   } = issuesData;
-  const preventedToolCountString = preventedToolCount === 1
-  ? '1 tool'
-  : `${preventedToolCount} tools`;
-  // Add a list of prevented tools, if any, to the query.
-  query.preventedTools = preventedToolCount
-  ? `<li>Page prevented testing by ${preventedToolCountString} (${preventedToolsString})</li>`
-  : '';
   // Add an issue count description to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
   query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
   // Add a reporter count and list to the query.
   query.reporters = reportersString;
+  // Add a violator count to the query.
+  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
+  // Add page data to the query.
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
+  const preventedToolCountString = preventedToolCount === 1
+  ? '1 tool'
+  : `${preventedToolCount} tools`;
+  query.preventedTools = preventedToolCount
+  ? `<li>Page prevented testing by ${preventedToolCountString} (${preventedToolsString})</li>`
+  : '';
   const margin = ' '.repeat(6);
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {

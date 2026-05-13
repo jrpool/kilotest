@@ -181,8 +181,8 @@ const populateQuery = async (timeStamp, jobID, query) => {
           `${margin}      <li>Reported by ${reporterCountString} (${reportersString})</li>`
         );
         const violatorCountString = violatorCount === 1
-        ? '1 violator'
-        : `${violatorCount} violators`;
+        ? '1 violator was'
+        : `${violatorCount} violators were`;
         weightLines.push(`${margin}      <li>${violatorCountString} reported</li>`);
         // Add the end of the fact list to the lines.
         weightLines.push(`${margin}    </ul>`);

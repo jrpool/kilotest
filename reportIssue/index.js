@@ -73,7 +73,8 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       query.reporters.add(which);
     });
     // Populate the violator count.
-    query.count = Object.keys(violators).length;
+    const violatorCount = Object.keys(violators).length;
+    query.violators = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
   });
   // For each violator:
   Object.values(violators).forEach(violatorData => {

@@ -200,54 +200,64 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
 };
 // Returns the log of a report.
 const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false) => {
-  const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
-  const log = JSON.parse(logJSON);
-  if (forceAnnotation && ! log.annotated) {
-    annotateReport(ruleIDs, timeStamp, jobID);
+  try {
+    const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
+    const log = JSON.parse(logJSON);
+    if (forceAnnotation && ! log.annotated) {
+      annotateReport(ruleIDs, timeStamp, jobID);
+    }
+    return log;
+  } catch (error) {
+    console.error(`ERROR: No report ${timeStamp}-${jobID} (${error.message})`);
+    return null;
   }
-  return log;
 };
 // Returns summary data on the results in a report.
 exports.getTargetSummary = async (timeStamp, jobID) => {
   // Annotate the report if necessary.
   const log = await getLog(timeStamp, jobID, true);
-  const summary = {
-    issueSet: new Set(),
-    reporterSet: new Set(),
-    violatorSet: new Set(),
-    url: log.url
-  };
-  const {issueSet, reporterSet, violatorSet} = summary;
-  const report = await getReport(timeStamp, jobID);
-  // For each act of the report:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // For each standard instance:
-      instances.forEach(instance => {
-        const {catalogIndex, issueID} = instance;
-        // If it has a non-ignorable classified issue ID:
-        if (issueID && issues[issueID] && issueID !== 'ignorable') {
-          // Ensure that the tool is in the summary.
-          reporterSet.add(which);
-          // Ensure that the issue is in the summary.
-          issueSet.add(issueID);
-          // If it has a catalog index:
-          if (catalogIndex) {
-            // Ensure that the violator is in the summary.
-            violatorSet.add(catalogIndex);
+  // If the report exists:
+  if (log) {
+    const summary = {
+      issueSet: new Set(),
+      reporterSet: new Set(),
+      violatorSet: new Set(),
+      url: log.url
+    };
+    const {issueSet, reporterSet, violatorSet} = summary;
+    const report = await getReport(timeStamp, jobID);
+    // For each act of the report:
+    report.acts.forEach(act => {
+      // If it is a test act:
+      if (act.type === 'test') {
+        const {result, which} = act;
+        const instances = result?.standardResult?.instances ?? [];
+        // For each standard instance:
+        instances.forEach(instance => {
+          const {catalogIndex, issueID} = instance;
+          // If it has a non-ignorable classified issue ID:
+          if (issueID && issues[issueID] && issueID !== 'ignorable') {
+            // Ensure that the tool is in the summary.
+            reporterSet.add(which);
+            // Ensure that the issue is in the summary.
+            issueSet.add(issueID);
+            // If it has a catalog index:
+            if (catalogIndex) {
+              // Ensure that the violator is in the summary.
+              violatorSet.add(catalogIndex);
+            }
           }
-        }
-      });
-    }
-  });
-  const {jobData} = report;
-  // Add the IDs of any prevented tools to the summary.
-  summary.preventedTools = Object.keys(jobData?.preventions || {});
-  // Return the summary.
-  return summary;
+        });
+      }
+    });
+    const {jobData} = report;
+    // Add the IDs of any prevented tools to the summary.
+    summary.preventedTools = Object.keys(jobData?.preventions || {});
+    // Return the summary.
+    return summary;
+  }
+  // Otherwise, i.e. if the report does not exist, return this.
+  return null;
 };
 // Adds issue IDs to the standard instances of a report.
 const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
@@ -255,56 +265,59 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
   try {
     // Get a copy of the report.
     report = await getReport(timeStamp, jobID);
-  }
-  // If it is invalid:
-  catch {
-    // Report this.
-    console.log(`ERROR: Report ${getReportPath(timeStamp, jobID)} is not JSON`);
-    // Leave the report and log unchanged.
-    return;
-  }
-  const unclassifiableRules = new Set();
-  // For each of its acts:
-  for (const act of report.acts) {
-    const {result, type, which} = act;
-    // If it is a test act:
-    if (type === 'test') {
-      // For each standard instance of the result:
-      for (const instance of result?.standardResult?.instances ?? []) {
-        const {ruleID} = instance;
-        // Classify its rule.
-        const issueID = getIssue(ruleIDs, which, ruleID);
-        // Add the issue ID to the instance.
-        instance.issueID = issueID;
-        if (! issueID) {
-          unclassifiableRules.add(`${which}:${ruleID}`);
+    const unclassifiableRules = new Set();
+    // For each of its acts:
+    for (const act of report.acts) {
+      const {result, type, which} = act;
+      // If it is a test act:
+      if (type === 'test') {
+        // For each standard instance of the result:
+        for (const instance of result?.standardResult?.instances ?? []) {
+          const {ruleID} = instance;
+          // Classify its rule.
+          const issueID = getIssue(ruleIDs, which, ruleID);
+          // Add the issue ID to the instance.
+          instance.issueID = issueID;
+          if (! issueID) {
+            unclassifiableRules.add(`${which}:${ruleID}`);
+          }
         }
       }
     }
+    // If any rules were unclassifiable:
+    if (unclassifiableRules.size) {
+      const issuelessRules = Array.from(unclassifiableRules).sort();
+      const errorsJSON = JSON.stringify(issuelessRules, null, 2);
+      // Report them.
+      console.log(
+        `ERROR: Rules belonging to no issue:\n${errorsJSON}`
+      );
+      report.jobData.issuelessRules = issuelessRules;
+      // Alert a manager about them.
+      await sendAlert(
+        'Kilotest: unclassified rule violations',
+        `Job ${timeStamp}-${jobID}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
+      );
+    }
+    // Save the annotated report.
+    await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
+    // Get a copy of the log of the report.
+    const log = await getLog(timeStamp, jobID, false);
+    if (log) {
+      // Mark the report as annotated in the log.
+      log.annotated = true;
+      // Save the revised log.
+      await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
+    }
+    else {
+      console.log(`ERROR: Log ${timeStamp}-${jobID} does not exist`);
+    }
   }
-  // If any rules were unclassifiable:
-  if (unclassifiableRules.size) {
-    const issuelessRules = Array.from(unclassifiableRules).sort();
-    const errorsJSON = JSON.stringify(issuelessRules, null, 2);
-    // Report them.
-    console.log(
-      `ERROR: Rules belonging to no issue:\n${errorsJSON}`
-    );
-    report.jobData.issuelessRules = issuelessRules;
-    // Alert a manager about them.
-    await sendAlert(
-      'Kilotest: unclassified rule violations',
-      `Job ${timeStamp}-${jobID}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
-    );
+  // If the report is invalid or does not exist:
+  catch {
+    // Report this.
+    console.log(`ERROR: Report ${getReportPath(timeStamp, jobID)} is invalid or does not exist`);
   }
-  // Save the annotated report.
-  await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-  // Get a copy of the log of the report.
-  const log = await getLog(timeStamp, jobID, false);
-  // Mark the report as annotated in the log.
-  log.annotated = true;
-  // Save the revised log.
-  await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
 };
 // Returns a time stamp from a date.
 const getTimeStamp = exports.getTimeStamp = date => {
@@ -550,15 +563,18 @@ exports.getWCAGLink = numericID => {
 const getPageData = async (timeStamp, jobID) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
-  const {url, what} = log;
-  // Get the elapsed time in days since the test.
-  const daysAgo = getAgoDays(timeStamp);
-  // Return the summary data.
-  return {
-    what,
-    url,
-    daysAgo
-  };
+  if (log) {
+    const {url, what} = log;
+    // Get the elapsed time in days since the test.
+    const daysAgo = getAgoDays(timeStamp);
+    // Return the summary data.
+    return {
+      what,
+      url,
+      daysAgo
+    };
+  }
+  return null;
 };
 // Gets HTML strings for page data from a report.
 exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {

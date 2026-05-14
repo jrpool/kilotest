@@ -78,69 +78,72 @@ const populateQuery = async query => {
   : 'a';
   // For the latest log on each tested target:
   for (const targetLog of targetLogs) {
-    const {jobName, url, what} = targetLog;
-    const [timeStamp, jobID] = jobName.split('-');
-    const summary = await getTargetSummary(timeStamp, jobID);
-    const {issueSet, preventedTools, reporterSet, violatorSet} = summary;
-    lines.tested.push(`${margin}<details>`);
-    lines.tested.push(`${margin}  <summary>${what}</summary>`);
-    const daysAgo = getAgoDays(timeStamp);
-    const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
-    const {urlLink, testInfo} = pageDataStrings;
-    lines.tested.push(`${margin}  <ul>`);
-    // Add the URL of the target to the lines.
-    lines.tested.push(`${margin}    <li>URL: ${urlLink}</li>`);
-    // Add facts about the report to the lines.
-    lines.tested.push(`${margin}    <li>${testInfo}</li>`);
-    // If the page prevented any tool from performing its tests:
-    if (preventedTools?.length) {
-      // Add this to the lines.
-      const preventedToolSet = new Set(preventedTools);
-      const toolCountString = getToolCountString(preventedToolSet.size);
-      const toolsString = getToolNamesString(preventedToolSet);
-      lines.tested.push(
-        `${margin}    <li>Testing was prevented by ${toolCountString} (${toolsString})</li>`,
-      );
+    const {jobName, url, what, hidden} = targetLog;
+    // If the report is not hidden:
+    if (! hidden) {
+      const [timeStamp, jobID] = jobName.split('-');
+      const summary = await getTargetSummary(timeStamp, jobID);
+      const {issueSet, preventedTools, reporterSet, violatorSet} = summary;
+      lines.tested.push(`${margin}<details>`);
+      lines.tested.push(`${margin}  <summary>${what}</summary>`);
+      const daysAgo = getAgoDays(timeStamp);
+      const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
+      const {urlLink, testInfo} = pageDataStrings;
+      lines.tested.push(`${margin}  <ul>`);
+      // Add the URL of the target to the lines.
+      lines.tested.push(`${margin}    <li>URL: ${urlLink}</li>`);
+      // Add facts about the report to the lines.
+      lines.tested.push(`${margin}    <li>${testInfo}</li>`);
+      // If the page prevented any tool from performing its tests:
+      if (preventedTools?.length) {
+        // Add this to the lines.
+        const preventedToolSet = new Set(preventedTools);
+        const toolCountString = getToolCountString(preventedToolSet.size);
+        const toolsString = getToolNamesString(preventedToolSet);
+        lines.tested.push(
+          `${margin}    <li>Testing was prevented by ${toolCountString} (${toolsString})</li>`,
+        );
+      }
+      // Add facts about the test results to the lines.
+      const reporterCountString = getToolCountString(reporterSet.size);
+      const reporterNamesString = getToolNamesString(reporterSet);
+      const reporterString = `${reporterCountString} (${reporterNamesString})`;
+      const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
+      const violatorString = violatorSet.size === 1
+      ? '1 violator was'
+      : `${violatorSet.size} violators were`;
+      lines.tested.push(`${margin}    <li>${issueCountString} reported</li>`);
+      lines.tested.push(`${margin}    <li>Issues were reported by ${reporterString}</li>`);
+      lines.tested.push(`${margin}    <li>${violatorString} reported</li>`);
+      lines.tested.push(`${margin}  </ul>`);
+      lines.tested.push(`${margin}<ul class="nav">`);
+      // If any issues were reported:
+      if (issueSet.size) {
+        // Add a question link about the reported issues to the lines.
+        const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
+        const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
+        const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
+        const link = `<a ${href} ${label}>What ${questionString}?</a>`;
+        lines.tested.push(`${margin}    <li>${link}</li>`);
+      }
+      // Add the status of, and if necessary a question link about, retesting to the lines.
+      const status = await isRecommendable(url);
+      let retestString;
+      if (status === 'claimed') {
+        retestString = 'Currently being retested';
+      }
+      else if (status === 'queued') {
+        retestString = 'Currently in the queue for retesting';
+      }
+      else {
+        const href = `/retestRecForm.html/${timeStamp}/${jobID}`;
+        const retestContent = 'Should Kilotest retest the page?';
+        retestString = `<a href="${href}">${retestContent}</a>`;
+      }
+      lines.tested.push(`${margin}    <li>${retestString}</li>`);
+      lines.tested.push(`${margin}  </ul>`);
+      lines.tested.push(`${margin}</details>`);
     }
-    // Add facts about the test results to the lines.
-    const reporterCountString = getToolCountString(reporterSet.size);
-    const reporterNamesString = getToolNamesString(reporterSet);
-    const reporterString = `${reporterCountString} (${reporterNamesString})`;
-    const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
-    const violatorString = violatorSet.size === 1
-    ? '1 violator was'
-    : `${violatorSet.size} violators were`;
-    lines.tested.push(`${margin}    <li>${issueCountString} reported</li>`);
-    lines.tested.push(`${margin}    <li>Issues were reported by ${reporterString}</li>`);
-    lines.tested.push(`${margin}    <li>${violatorString} reported</li>`);
-    lines.tested.push(`${margin}  </ul>`);
-    lines.tested.push(`${margin}<ul class="nav">`);
-    // If any issues were reported:
-    if (issueSet.size) {
-      // Add a question link about the reported issues to the lines.
-      const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
-      const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
-      const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
-      const link = `<a ${href} ${label}>What ${questionString}?</a>`;
-      lines.tested.push(`${margin}    <li>${link}</li>`);
-    }
-    // Add the status of, and if necessary a question link about, retesting to the lines.
-    const status = await isRecommendable(url);
-    let retestString;
-    if (status === 'claimed') {
-      retestString = 'Currently being retested';
-    }
-    else if (status === 'queued') {
-      retestString = 'Currently in the queue for retesting';
-    }
-    else {
-      const href = `/retestRecForm.html/${timeStamp}/${jobID}`;
-      const retestContent = 'Should Kilotest retest the page?';
-      retestString = `<a href="${href}">${retestContent}</a>`;
-    }
-    lines.tested.push(`${margin}    <li>${retestString}</li>`);
-    lines.tested.push(`${margin}  </ul>`);
-    lines.tested.push(`${margin}</details>`);
   }
   query.testedPages = lines.tested.join('\n');
 };

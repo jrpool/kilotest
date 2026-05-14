@@ -406,7 +406,7 @@ exports.getLatestTargetLogs = async () => {
     // Add the job data to the targets data, replacing any entry for the same target URL.
     targetsData[log.url] = log;
   }
-  // Get an array of the target logs, sorted by description.
+  // Get an array of the target logs, sorted by target name.
   const targets = objectSort(Object.values(targetsData), 'what', 'alpha');
   return targets;
 };

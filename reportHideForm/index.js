@@ -40,7 +40,7 @@ exports.answer = async (_, search) => {
   const reportSpecs = [];
   // For each report:
   for (const reportName of reportNames) {
-    const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
+    const [timeStamp, jobID] = reportName.split('-');
     // Get its log.
     const log = await getLog(timeStamp, jobID);
     const {what} = log;

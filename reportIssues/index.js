@@ -11,6 +11,7 @@ const {
   getToolNamesString,
   getWCAGLink,
   getWeightName,
+  isHidden,
   objectSort
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
@@ -21,6 +22,11 @@ const path = require('path');
 
 // Gets data on the issues reported in a report.
 const getIssuesData = async (timeStamp, jobID) => {
+  const reportIsHidden = await isHidden(timeStamp, jobID);
+  // If the report is hidden or unavailable:
+  if (reportIsHidden) {
+    return 'ERROR: No such report available';
+  }
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If the report exists:
@@ -102,10 +108,15 @@ const getIssuesData = async (timeStamp, jobID) => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {
-  // Get fact descriptions.
+  // Get fact descriptions for the report.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   const {what, urlLink, testInfo} = pageDataStrings;
   const issuesData = await getIssuesData(timeStamp, jobID);
+  // If this failed:
+  if (typeof issuesData === 'string') {
+    // Return this.
+    return issuesData;
+  }
   const {
     issueCount,
     preventedToolCount,
@@ -220,7 +231,7 @@ exports.answer = async pageArgs => {
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);
-  // If the date and time are valid:
+  // If the report facts were obtained:
   if (query.testInfo) {
     // Get the template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
@@ -234,7 +245,7 @@ exports.answer = async pageArgs => {
       answerPage
     };
   }
-  // Otherwise, report this.
+  // Otherwise, i.e. if they were not obtained, report this.
   return {
     status: 'bad',
     error: 'Error: Invalid report specification.'

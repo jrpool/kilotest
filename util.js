@@ -231,6 +231,14 @@ const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
   }
   return log;
 };
+// Returns whether a report is hidden.
+exports.isHidden = async (timeStamp, jobID) => {
+  const log = await getLog(timeStamp, jobID, false);
+  if (typeof log === 'string') {
+    return log;
+  }
+  return !! log.hidden;
+};
 // Returns summary data on the results in a report.
 exports.getTargetData = async (timeStamp, jobID) => {
   // Vasidate the report and annotate it if necessary.

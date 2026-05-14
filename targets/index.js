@@ -13,7 +13,7 @@ const {
   getRecs,
   getToolNamesString,
   getLatestLogs,
-  getTargetSummary,
+  getTargetData,
   isRecommendable,
   jobsPath
 } = require('../util');
@@ -82,7 +82,7 @@ const populateQuery = async query => {
     // If the report is not hidden:
     if (! hidden) {
       const [timeStamp, jobID] = jobName.split('-');
-      const summary = await getTargetSummary(timeStamp, jobID);
+      const summary = await getTargetData(timeStamp, jobID);
       const {issueSet, preventedTools, reporterSet, violatorSet} = summary;
       lines.tested.push(`${margin}<details>`);
       lines.tested.push(`${margin}  <summary>${what}</summary>`);

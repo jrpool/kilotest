@@ -118,7 +118,7 @@ const checkBalancesForAlerts = async report => {
         const newBalance = balanceData.balance - cost;
         if (typeof newBalance === 'number') {
           // Update the recorded balance.
-          await fs.writeFile(balancePath, `${JSON.stringify({balance: newBalance}, null, 2)}\n`);
+          await fs.writeFile(balancePath, getJSON({balance: newBalance}));
           // If it is nearing exhaustion:
           if (newBalance < AI_SERVICE0_THRESHOLD) {
             // Alert a manager.
@@ -310,9 +310,7 @@ const requestHandler = async (request, response) => {
           // Delete the rejected URL.
           delete recs[url];
           // Save the revised recommendations.
-          await fs.writeFile(
-            path.join(__dirname, 'jobs', 'recs.json'), `${JSON.stringify(recs, null, 2)}\n`
-          );
+          await fs.writeFile(path.join(__dirname, 'jobs', 'recs.json'), getJSON(recs));
           // Serve a location header for a response.
           response.setHeader('content-location', '/recActionForm.html');
           // Get the answer data.

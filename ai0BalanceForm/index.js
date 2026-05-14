@@ -7,6 +7,7 @@
 
 const fs = require('fs/promises');
 const path = require('path');
+const {getJSON} = require('../util');
 
 // CONSTANTS
 
@@ -36,7 +37,7 @@ exports.answer = async (_, search) => {
           balance: newBalance
         }
         // Record it.
-        await fs.writeFile(balancePath, `${JSON.stringify(balanceData, null, 2)}\n`);
+        await fs.writeFile(balancePath, getJSON(balanceData));
         // Make it the old balance.
         oldBalance = `$${balanceData.balance} is the`;
       }

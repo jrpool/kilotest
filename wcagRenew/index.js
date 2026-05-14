@@ -7,6 +7,7 @@
 
 const fs = require('fs/promises');
 const path = require('path');
+const {getJSON} = require('../util');
 
 // FUNCTIONS
 
@@ -35,9 +36,7 @@ exports.answer = async authCode => {
           wcagMap[entry[2]] = entry[1];
         }
         // Save the map, replacing any existing one.
-        await fs.writeFile(
-          path.join(__dirname, '..', 'wcagMap.json'), `${JSON.stringify(wcagMap, null, 2)}\n`
-        );
+        await fs.writeFile(path.join(__dirname, '..', 'wcagMap.json'), getJSON(wcagMap));
         // Get the acknowledgment page.
         const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
         // Return it.

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getTargetSummary, logsPath, reportsPath} = require('../util');
+const {getTargetData, logsPath, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -43,7 +43,7 @@ exports.answer = async (_, search) => {
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
     // Get a summary of it.
-    const reportSummary = await getTargetSummary(timeStamp, jobID);
+    const reportSummary = await getTargetData(timeStamp, jobID);
     const {issueSet, preventedTools, url} = reportSummary;
     reportSpecs.push({
       timeStamp,

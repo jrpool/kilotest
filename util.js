@@ -223,115 +223,131 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   // Otherwise, i.e. if no issue was found, return a failure result.
   return null;
 };
-// Returns the log of a report.
-const getLog = exports.getLog = async (timeStamp, jobID) => await getRecord(
-  'log', timeStamp, jobID
-);
-// Returns summary data on the results in a report.
-exports.getTargetSummary = async (timeStamp, jobID) => {
-  // Annotate the report if necessary.
-  const log = await getLog(timeStamp, jobID, true);
-  // If the report exists:
-  if (log) {
-    const summary = {
-      issueSet: new Set(),
-      reporterSet: new Set(),
-      violatorSet: new Set(),
-      url: log.url
-    };
-    const {issueSet, reporterSet, violatorSet} = summary;
-    const report = await getReport(timeStamp, jobID);
-    // For each act of the report:
-    report.acts.forEach(act => {
-      // If it is a test act:
-      if (act.type === 'test') {
-        const {result, which} = act;
-        const instances = result?.standardResult?.instances ?? [];
-        // For each standard instance:
-        instances.forEach(instance => {
-          const {catalogIndex, issueID} = instance;
-          // If it has a non-ignorable classified issue ID:
-          if (issueID && issues[issueID] && issueID !== 'ignorable') {
-            // Ensure that the tool is in the summary.
-            reporterSet.add(which);
-            // Ensure that the issue is in the summary.
-            issueSet.add(issueID);
-            // If it has a catalog index:
-            if (catalogIndex) {
-              // Ensure that the violator is in the summary.
-              violatorSet.add(catalogIndex);
-            }
-          }
-        });
-      }
-    });
-    const {jobData} = report;
-    // Add the IDs of any prevented tools to the summary.
-    summary.preventedTools = Object.keys(jobData?.preventions || {});
-    // Return the summary.
-    return summary;
+// Returns the log of a report, after annotating it if requested and necessary.
+const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
+  const log = await getRecord('log', timeStamp, jobID);
+  if (typeof log === 'object' && annotate && ! log.annotated) {
+      annotateReport(ruleIDs, timeStamp, jobID);
   }
-  // Otherwise, i.e. if the report does not exist, return this.
-  return null;
+  return log;
 };
+// Returns summary data on the results in a report.
+exports.getTargetData = async (timeStamp, jobID) => {
+  // Vasidate the report and annotate it if necessary.
+  const log = await getLog(timeStamp, jobID, true);
+  // If this failed:
+  if (typeof log === 'string') {
+    // Return this.
+    return log;
+  }
+  // Initialize the data.
+  const data = {
+    what: log.what,
+    url: log.url,
+    issueSet: new Set(),
+    reporterSet: new Set(),
+    violatorSet: new Set(),
+    preventedTools: {}
+  };
+  const {issueSet, reporterSet, violatorSet} = data;
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (typeof report === 'string') {
+    // Return this.
+    return report;
+  }
+  // For each act of the report:
+  report.acts.forEach(act => {
+    // If it is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      const instances = result?.standardResult?.instances ?? [];
+      // For each standard instance:
+      instances.forEach(instance => {
+        const {catalogIndex, issueID} = instance;
+        // If it has a non-ignorable classified issue ID:
+        if (issueID && issues[issueID] && issueID !== 'ignorable') {
+          // Ensure that the tool is in the data.
+          reporterSet.add(which);
+          // Ensure that the issue is in the data.
+          issueSet.add(issueID);
+          // If it has a catalog index:
+          if (catalogIndex) {
+            // Ensure that the violator is in the data.
+            violatorSet.add(catalogIndex);
+          }
+        }
+      });
+    }
+  });
+  // Add the IDs of any prevented tools to the data.
+  data.preventedTools = Object.keys(report.jobData?.preventions || {});
+  // Return the data.
+  return data;
+}
 // Adds issue IDs to the standard instances of a report.
 exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
-  let report;
-  try {
-    // Get a copy of the report.
-    report = await getReport(timeStamp, jobID);
-    const unclassifiableRules = new Set();
-    // For each of its acts:
-    for (const act of report.acts) {
-      const {result, type, which} = act;
-      // If it is a test act:
-      if (type === 'test') {
-        // For each standard instance of the result:
-        for (const instance of result?.standardResult?.instances ?? []) {
-          const {ruleID} = instance;
-          // Classify its rule.
-          const issueID = getIssue(ruleIDs, which, ruleID);
+  // Get a copy of the report.
+  const reportOrError = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (typeof reportOrError === 'string') {
+    // Return this.
+    return reportOrError;
+  }
+  const report = reportOrError;
+  const unclassifiableRules = new Set();
+  // For each of its acts:
+  for (const act of report.acts) {
+    const {result, type, which} = act;
+    // If it is a test act:
+    if (type === 'test') {
+      // For each standard instance of the result:
+      for (const instance of result?.standardResult?.instances ?? []) {
+        const {ruleID} = instance;
+        // Classify its rule.
+        const issueID = getIssue(ruleIDs, which, ruleID);
+        // If the rule was classifiable:
+        if (issueID) {
           // Add the issue ID to the instance.
           instance.issueID = issueID;
-          if (! issueID) {
-            unclassifiableRules.add(`${which}:${ruleID}`);
-          }
+        }
+        // Otherwise, i.e. if it was not classifiable:
+        else {
+          // Add it to the set of unclassifiable rules.
+          unclassifiableRules.add(`${which}:${ruleID}`);
         }
       }
     }
-    // If any rules were unclassifiable:
-    if (unclassifiableRules.size) {
-      const issuelessRules = Array.from(unclassifiableRules).sort();
-      const errorsJSON = JSON.stringify(issuelessRules, null, 2);
-      // Report them.
-      console.log(
-        `ERROR: Rules belonging to no issue:\n${errorsJSON}`
-      );
-      report.jobData.issuelessRules = issuelessRules;
-      // Alert a manager about them.
-      await sendAlert(
-        'Kilotest: unclassified rule violations',
-        `Job ${timeStamp}-${jobID}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
-      );
-    }
-    // Save the annotated report.
-    await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-    // Get a copy of the log of the report.
-    const log = await getLog(timeStamp, jobID, false);
-    if (log) {
-      // Mark the report as annotated in the log.
-      log.annotated = true;
-      // Save the revised log.
-      await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
-    }
-    else {
-      console.log(`ERROR: Log ${timeStamp}-${jobID} does not exist`);
-    }
   }
-  // If the report is invalid or does not exist:
-  catch {
-    // Report this.
-    console.log(`ERROR: Report ${getReportPath(timeStamp, jobID)} is invalid or does not exist`);
+  // If any rules were unclassifiable:
+  if (unclassifiableRules.size) {
+    const issuelessRules = Array.from(unclassifiableRules).sort();
+    // Add them to the report.
+    report.jobData.issuelessRules = issuelessRules;
+    // Alert a manager about them.
+    await sendAlert(
+      'Kilotest: unclassified rules violated',
+      `Job ${timeStamp}-${jobID}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
+    );
+  }
+  // Save the annotated report.
+  await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
+  // Get a copy of the log of the report.
+  const logOrError = await getLog(timeStamp, jobID, false);
+  // If this failed:
+  if (typeof logOrError === 'string') {
+    // Return this.
+    return logOrError;
+  }
+  // Otherwise, i.e. if it succeeded:
+  else {
+    const log = logOrError;
+    // Mark the report as annotated in the log.
+    log.annotated = true;
+    // Save the revised log.
+    await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
+    // Return without an error message.
   }
 };
 // Returns a time stamp from a date.
@@ -449,12 +465,25 @@ exports.getTextFragmentHref = (text, url) => {
 exports.getLatestLogs = async () => {
   // Initialize data on the tested targets.
   const targetsData = {};
-  const logFileNames = await fs.readdir(logsPath);
+  let logFileNames;
+  try {
+    logFileNames = await fs.readdir(logsPath);
+  }
+  catch(error) {
+    return `ERROR: logs directory not readable (${error.message})`;
+  }
   // For each log:
   for (const fileName of logFileNames) {
     const logName = fileName.slice(0, -5);
     const [timeStamp, jobID] = logName.split('-');
-    const log = await getLog(timeStamp, jobID);
+    // Get it.
+    const logOrError = await getLog(timeStamp, jobID);
+    // If this failed:
+    if (typeof logOrError === 'string') {
+      // Return this.
+      return logOrError;
+    }
+    const log = logOrError;
     // Add the job name to the log.
     log.jobName = logName;
     // Add the job data to the targets data, replacing any entry for the same target URL.
@@ -462,6 +491,7 @@ exports.getLatestLogs = async () => {
   }
   // Get an array of the target logs, sorted by target name.
   const targets = objectSort(Object.values(targetsData), 'what', 'alpha');
+  // Return it.
   return targets;
 };
 // Gets the name of an issue weight.

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getLog, logsPath, reportsPath} = require('../util');
+const {getJSON, getLog, logsPath, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -25,9 +25,7 @@ exports.answer = async (_, search) => {
       // Add a hiddenness property to the log.
       log.hidden = true;
       // Save the updated log.
-      await fs.writeFile(
-        path.join(logsPath, `${jobName}.json`), `${JSON.stringify(log, null, 2)}\n`
-      );
+      await fs.writeFile(path.join(logsPath, `${jobName}.json`), getJSON(log));
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {

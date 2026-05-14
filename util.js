@@ -624,22 +624,24 @@ exports.getWCAGLink = numericID => {
   // Return the link.
   return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
 };
-// Gets summary page data from a report.
+// Gets page data from a report.
 const getPageData = async (timeStamp, jobID) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
-  if (log) {
-    const {url, what} = log;
-    // Get the elapsed time in days since the test.
-    const daysAgo = getAgoDays(timeStamp);
-    // Return the summary data.
-    return {
-      what,
-      url,
-      daysAgo
-    };
+  // If this failed:
+  if (typeof log === 'string') {
+    // Return the error.
+    return log;
   }
-  return null;
+  const {url, what} = log;
+  // Get the elapsed time in days since the test.
+  const daysAgo = getAgoDays(timeStamp);
+  // Return the data.
+  return {
+    what,
+    url,
+    daysAgo
+  };
 };
 // Gets HTML strings for page data from a report.
 exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {

@@ -52,9 +52,15 @@ const getReportPath = exports.getReportPath
 = (timeStamp, jobID) => path.join(reportsPath, `${timeStamp}-${jobID}.json`);
 // Returns a report.
 const getReport = exports.getReport = async (timeStamp, jobID) => {
-  const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID));
-  const report = JSON.parse(reportJSON);
-  return report;
+  try {
+    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID));
+    const report = JSON.parse(reportJSON);
+    return report;
+  }
+  catch (error) {
+    console.log(`ERROR: Requested report ${timeStamp}-${jobID} does not exist (${error.message})`);
+    return null;
+  }
 };
 // Returns the JSON stringification of an object.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;

@@ -23,79 +23,82 @@ const path = require('path');
 const getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  const preventedTools = new Set(Object.keys(report?.jobData?.preventions ?? {}));
-  const issuesData = {
-    reporters: new Set(),
-    reporterCount: 0,
-    reportersString: '',
-    violators: new Set(),
-    violatorCount: 0,
-    preventedTools,
-    preventedToolCount: 0,
-    preventedToolsString: '',
-    issuesObject: {},
-    issueCount: 0,
-    issues: []
-  };
-  const {issuesObject, reporters, violators} = issuesData;
-  // For each act in it:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // For each of its standard instances:
-      instances.forEach(instance => {
-        const {issueID} = instance;
-        // If the instance has a non-ignorable classified issue:
-        if (issueID && issues[issueID] && issueID !== 'ignorable') {
-          // Ensure that the issues data include data on the issue.
-          issuesObject[issueID] ??= {
-            issueID,
-            weight: issues[issueID].weight ?? 0,
-            reporters: new Set(),
-            reporterCount: 0,
-            reportersString: '',
-            violators: new Set(),
-            violatorCount: 0
-          };
-          // Ensure that the tool is in the issues data.
-          reporters.add(which);
-          // Ensure that it is in the issue data.
-          issuesObject[issueID].reporters.add(which);
-          const {catalogIndex} = instance;
-          // If the instance has a catalog index:
-          if (catalogIndex) {
-            // Ensure that the violator is in the issues data.
-            violators.add(catalogIndex);
+  // If the report exists:
+  if (report) {
+    const preventedTools = new Set(Object.keys(report?.jobData?.preventions ?? {}));
+    const issuesData = {
+      reporters: new Set(),
+      reporterCount: 0,
+      reportersString: '',
+      violators: new Set(),
+      violatorCount: 0,
+      preventedTools,
+      preventedToolCount: 0,
+      preventedToolsString: '',
+      issuesObject: {},
+      issueCount: 0,
+      issues: []
+    };
+    const {issuesObject, reporters, violators} = issuesData;
+    // For each act in it:
+    report.acts.forEach(act => {
+      // If it is a test act:
+      if (act.type === 'test') {
+        const {result, which} = act;
+        const instances = result?.standardResult?.instances ?? [];
+        // For each of its standard instances:
+        instances.forEach(instance => {
+          const {issueID} = instance;
+          // If the instance has a non-ignorable classified issue:
+          if (issueID && issues[issueID] && issueID !== 'ignorable') {
+            // Ensure that the issues data include data on the issue.
+            issuesObject[issueID] ??= {
+              issueID,
+              weight: issues[issueID].weight ?? 0,
+              reporters: new Set(),
+              reporterCount: 0,
+              reportersString: '',
+              violators: new Set(),
+              violatorCount: 0
+            };
+            // Ensure that the tool is in the issues data.
+            reporters.add(which);
             // Ensure that it is in the issue data.
-            issuesObject[issueID].violators.add(catalogIndex);
+            issuesObject[issueID].reporters.add(which);
+            const {catalogIndex} = instance;
+            // If the instance has a catalog index:
+            if (catalogIndex) {
+              // Ensure that the violator is in the issues data.
+              violators.add(catalogIndex);
+              // Ensure that it is in the issue data.
+              issuesObject[issueID].violators.add(catalogIndex);
+            }
           }
-        }
-      });
-    }
-  });
-  // Populate the unpopulated subproperties of the issues data.
-  issuesData.reporterCount = issuesData.reporters.size;
-  issuesData.reportersString = getToolNamesString(issuesData.reporters);
-  issuesData.violatorCount = issuesData.violators.size;
-  issuesData.preventedToolCount = issuesData.preventedTools.size;
-  issuesData.preventedToolsString = getToolNamesString(issuesData.preventedTools);
-  issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
-  issuesData.issues = Object.values(issuesData.issuesObject);
-  // For each issue in the issues data:
-  issuesData.issues.forEach(issue => {
-    // Populate its unpopulated properties.
-    issue.reporterCount = issue.reporters.size;
-    issue.reportersString = getToolNamesString(issue.reporters);
-    issue.violatorCount = issue.violators.size;
-  });
-  // Sort the issues alphabetically by reporters string.
-  objectSort(issuesData.issues, 'reportersString', 'alpha');
-  // Sort the issues again in descending reporter-count order, making this the primary order.
-  objectSort(issuesData.issues, 'reporterCount', 'numericDown');
-  // Return the issues data.
-  return issuesData;
+        });
+      }
+    });
+    // Populate the unpopulated subproperties of the issues data.
+    issuesData.reporterCount = issuesData.reporters.size;
+    issuesData.reportersString = getToolNamesString(issuesData.reporters);
+    issuesData.violatorCount = issuesData.violators.size;
+    issuesData.preventedToolCount = issuesData.preventedTools.size;
+    issuesData.preventedToolsString = getToolNamesString(issuesData.preventedTools);
+    issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
+    issuesData.issues = Object.values(issuesData.issuesObject);
+    // For each issue in the issues data:
+    issuesData.issues.forEach(issue => {
+      // Populate its unpopulated properties.
+      issue.reporterCount = issue.reporters.size;
+      issue.reportersString = getToolNamesString(issue.reporters);
+      issue.violatorCount = issue.violators.size;
+    });
+    // Sort the issues alphabetically by reporters string.
+    objectSort(issuesData.issues, 'reportersString', 'alpha');
+    // Sort the issues again in descending reporter-count order, making this the primary order.
+    objectSort(issuesData.issues, 'reporterCount', 'numericDown');
+    // Return the issues data.
+    return issuesData;
+  }
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {

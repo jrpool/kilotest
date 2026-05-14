@@ -485,7 +485,7 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns an array of logs of the latest tests of the tested targets.
+// Returns an array of logs of the latest public reports on the tested targets.
 exports.getLatestLogs = async () => {
   // Initialize data on the tested targets.
   const targetsData = {};
@@ -508,6 +508,11 @@ exports.getLatestLogs = async () => {
       return logOrError;
     }
     const log = logOrError;
+    // If the report is hidden:
+    if (log.hidden) {
+      // Disregard it.
+      continue;
+    }
     // Add the job name to the log.
     log.jobName = logName;
     // Add the job data to the targets data, replacing any entry for the same target URL.

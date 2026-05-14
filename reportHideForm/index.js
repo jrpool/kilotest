@@ -62,13 +62,16 @@ exports.answer = async (_, search) => {
   const lines = [];
   const margin = ' '.repeat(12);
   // For each report:
-  reportSpecs.forEach((spec, index) => {
-    const {what, timeStamp, jobID} = spec;
-    const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
-    // Add a line with a radio button.
-    lines.push(
-      `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
-    );
+  reportSpecs.forEach(spec => {
+    const {hidden, what, timeStamp, jobID} = spec;
+    // If it is not already hidden:
+    if (! hidden) {
+      const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
+      // Add a line with a radio button to hide it.
+      lines.push(
+        `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
+      );
+    }
   });
   const query = {
     reports: lines.join('\n'),

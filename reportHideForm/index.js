@@ -45,11 +45,12 @@ exports.answer = async (_, search) => {
     const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
     // Get its log.
     const log = await getLog(timeStamp, jobID);
-    const {what} = log;
+    const {what, hidden} = log;
     reportSpecs.push({
       what,
       timeStamp,
-      jobID
+      jobID,
+      hidden
     });
   }
   // Sort the logs by page name and then by time stamp.

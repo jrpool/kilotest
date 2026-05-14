@@ -6,14 +6,13 @@
 // IMPORTS
 
 const {
-  getDateTimeString,
-  getLog,
   getPageDataStrings,
   getReport,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
   htmlSafe,
+  isHidden,
   tools
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
@@ -106,6 +105,14 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
 // Returns a page answering the diagnoses question.
 exports.answer = async (pageArgs, search) => {
   const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/');
+  const reportIsHidden = await isHidden(timeStamp, jobID);
+  // If the report is not available:
+  if (reportIsHidden) {
+    return {
+      status: 'error',
+      message: 'Report not available'
+    };
+  }
   const params = new URLSearchParams(search);
   const pathID = params.get('pathID');
   const query = {};
@@ -127,7 +134,7 @@ exports.answer = async (pageArgs, search) => {
   }
   // Otherwise, report this.
   return {
-    status: 'bad',
-    error: 'Error: Invalid report specification.'
+    status: 'error',
+    error: 'Invalid report specification'
   };
 };

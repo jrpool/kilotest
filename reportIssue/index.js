@@ -14,6 +14,7 @@ const {
   getWCAGLink,
   getWeightName,
   htmlSafe,
+  isHidden,
   makeBreakable,
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
@@ -27,7 +28,6 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Add facts about the issue to the query.
   query.issue = issues[issueID].summary;
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  // const log = await getLog(timeStamp, jobID, true);
   const {what, url, urlLink, testInfo} = pageDataStrings;
   query.target = what;
   query.urlLink = urlLink;
@@ -148,6 +148,14 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
 // Returns a page answering the violators question.
 exports.answer = async pageArgs => {
   const [issueID, timeStamp, jobID] = pageArgs.split('/');
+  const reportIsHidden = await isHidden(timeStamp, jobID);
+  // If the report is not available:
+  if (reportIsHidden) {
+    return {
+      status: 'error',
+      message: 'Report not available'
+    };
+  }
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, query);
@@ -167,7 +175,7 @@ exports.answer = async pageArgs => {
   }
   // Otherwise, report this.
   return {
-    status: 'bad',
-    error: 'Error: Invalid report specification.'
+    status: 'error',
+    error: 'Invalid report specification'
   };
 };

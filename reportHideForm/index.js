@@ -21,7 +21,7 @@ exports.answer = async (_, search) => {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
       // Get the log of the report.
-      const log = await getLog(... jobName.slice(0, -5).split('-'));
+      const log = await getLog(... jobName.split('-'));
       // Add a hiddenness property to the log.
       log.hidden = true;
       // Save the updated log.
@@ -36,11 +36,11 @@ exports.answer = async (_, search) => {
       }
     }
   }
-  const reportNames = await fs.readdir(reportsPath);
+  const reportFileNames = await fs.readdir(reportsPath);
   const reportSpecs = [];
   // For each report:
-  for (const reportName of reportNames) {
-    const [timeStamp, jobID] = reportName.split('-');
+  for (const reportFileName of reportFileNames) {
+    const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
     // Get its log.
     const log = await getLog(timeStamp, jobID);
     const {what} = log;

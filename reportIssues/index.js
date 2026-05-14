@@ -12,6 +12,7 @@ const {
   getWCAGLink,
   getWeightName,
   isHidden,
+  isValidReport,
   objectSort
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
@@ -22,16 +23,13 @@ const path = require('path');
 
 // Gets data on the issues reported in a report.
 const getIssuesData = async (timeStamp, jobID) => {
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report is hidden or unavailable:
-  if (reportIsHidden) {
-    return 'ERROR: No such report available';
-  }
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  // If the report exists:
-  if (report) {
-    const preventedTools = new Set(Object.keys(report?.jobData?.preventions ?? {}));
+  // If it is valid:
+  if (typeof report === 'object' && isValidReport(report)) {
+    const preventedTools = typeof report.jobData.preventions === 'object'
+    ? new Set(Object.keys(report.jobData.preventions))
+    : new Set();
     const issuesData = {
       reporters: new Set(),
       reporterCount: 0,
@@ -228,6 +226,14 @@ const populateQuery = async (timeStamp, jobID, query) => {
 // Returns a page answering the target-issues question.
 exports.answer = async pageArgs => {
   const [timeStamp, jobID] = pageArgs.split('/');
+  const reportIsHidden = await isHidden(timeStamp, jobID);
+  // If the report is not available:
+  if (reportIsHidden) {
+    return {
+      status: 'error',
+      message: 'Report not available'
+    };
+  }
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);
@@ -247,7 +253,7 @@ exports.answer = async pageArgs => {
   }
   // Otherwise, i.e. if they were not obtained, report this.
   return {
-    status: 'bad',
-    error: 'Error: Invalid report specification.'
+    status: 'error',
+    error: 'Report processing failed'
   };
 };

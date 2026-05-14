@@ -40,6 +40,20 @@ const tools = exports.tools = {
 
 // FUNCTIONS
 
+// Returns whether a report is valid.
+exports.isValidReport = report => {
+  // Return whether it has the type and properties required by Kilotest:
+  return typeof report === 'object'
+  && typeof report.target?.what === 'string'
+  && typeof report.target?.url === 'string'
+  && Array.isArray(report.acts)
+  && report.acts.every(act =>
+    typeof act === 'object'
+    && typeof act.type === 'string'
+    && act.type === 'test' ? typeof act.which === 'string' && act.which : true
+  )
+  && typeof report.jobData === 'object';
+};
 // Encodes a string for use as a URL fragment.
 const fragmentEncode = string => {
   return encodeURIComponent(string).replace(/-/g, '%2D');

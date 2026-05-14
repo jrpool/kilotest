@@ -25,7 +25,9 @@ exports.answer = async (_, search) => {
       // Add a hiddenness property to the log.
       log.hidden = true;
       // Save the updated log.
-      await fs.writeFile(path.join(logsPath, jobName), `${JSON.stringify(log, null, 2)}\n`);
+      await fs.writeFile(
+        path.join(logsPath, `${jobName}.json`), `${JSON.stringify(log, null, 2)}\n`
+      );
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {

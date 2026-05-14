@@ -112,8 +112,8 @@ const populateQuery = async query => {
       const violatorString = violatorSet.size === 1
       ? '1 violator was'
       : `${violatorSet.size} violators were`;
+      lines.tested.push(`${margin}    <li>${reporterString} reported issues</li>`);
       lines.tested.push(`${margin}    <li>${issueCountString} reported</li>`);
-      lines.tested.push(`${margin}    <li>Issues were reported by ${reporterString}</li>`);
       lines.tested.push(`${margin}    <li>${violatorString} reported</li>`);
       lines.tested.push(`${margin}  </ul>`);
       lines.tested.push(`${margin}<ul class="nav">`);

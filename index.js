@@ -45,6 +45,7 @@ const answer = {
   reportHideForm: require('./reportHideForm/index').answer,
   reportsPruneForm: require('./reportsPruneForm/index').answer,
   reportsRewindForm: require('./reportsRewindForm/index').answer,
+  reportUnhideForm: require('./reportUnhideForm/index').answer,
   retestRec: require('./retestRec/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
   rules: require('./rules/index').answer,

@@ -50,18 +50,43 @@ const getLogPath = exports.getLogPath
 // Returns the path of a report file.
 const getReportPath = exports.getReportPath
 = (timeStamp, jobID) => path.join(reportsPath, `${timeStamp}-${jobID}.json`);
-// Returns a report.
-const getReport = exports.getReport = async (timeStamp, jobID) => {
-  try {
-    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID));
-    const report = JSON.parse(reportJSON);
-    return report;
+// Returns the path of a log or report file.
+const getRecordPath = exports.getRecordPath = (recordType, timeStamp, jobID) => {
+  if (recordType === 'log') {
+    return getLogPath(timeStamp, jobID);
   }
-  catch (error) {
-    console.log(`ERROR: Requested report ${timeStamp}-${jobID} does not exist (${error.message})`);
+  else if (recordType === 'report') {
+    return getReportPath(timeStamp, jobID);
+  }
+  else {
     return null;
   }
 };
+// Returns a log or report.
+const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
+  const recordPath = getRecordPath(recordType, timeStamp, jobID);
+  if (! recordPath) {
+    return null;
+  }
+  let recordJSON, record;
+  try {
+    recordJSON = await fs.readFile(recordPath);
+  }
+  catch(error) {
+    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not readable (${error.message})`;
+  }
+  try {
+    record = JSON.parse(recordJSON);
+  }
+  catch (error) {
+    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} is not JSON (${error.message})`;
+  }
+  return record;
+};
+// Returns a report.
+const getReport = exports.getReport = async (timeStamp, jobID) => await getRecord(
+  'report', timeStamp, jobID
+);
 // Returns the JSON stringification of an object.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.
@@ -175,7 +200,7 @@ const getRuleIDs = exports.getRuleIDs = () => {
   };
 };
 // Variable and invariant rules.
-const ruleIDs = exports.ruleIDs = getRuleIDs();
+exports.ruleIDs = getRuleIDs();
 // Returns the issue that a rule belongs to, or null if none.
 const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   const {invariant, variable} = ruleIDs;
@@ -199,19 +224,9 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   return null;
 };
 // Returns the log of a report.
-const getLog = exports.getLog = async (timeStamp, jobID, forceAnnotation = false) => {
-  try {
-    const logJSON = await fs.readFile(getLogPath(timeStamp, jobID));
-    const log = JSON.parse(logJSON);
-    if (forceAnnotation && ! log.annotated) {
-      annotateReport(ruleIDs, timeStamp, jobID);
-    }
-    return log;
-  } catch (error) {
-    console.error(`ERROR: No report ${timeStamp}-${jobID} (${error.message})`);
-    return null;
-  }
-};
+const getLog = exports.getLog = async (timeStamp, jobID) => await getRecord(
+  'log', timeStamp, jobID
+);
 // Returns summary data on the results in a report.
 exports.getTargetSummary = async (timeStamp, jobID) => {
   // Annotate the report if necessary.
@@ -260,7 +275,7 @@ exports.getTargetSummary = async (timeStamp, jobID) => {
   return null;
 };
 // Adds issue IDs to the standard instances of a report.
-const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
+exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
   let report;
   try {
     // Get a copy of the report.
@@ -324,21 +339,38 @@ const getTimeStamp = exports.getTimeStamp = date => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
   return timeStamp;
 };
-// Gets the names of the job files.
+// Gets the names and categories of the job files.
 const getJobNames = exports.getJobNames = async () => {
   const jobNames = {};
+  let fileNames;
   for (const category of ['queue', 'claimed', 'failed']) {
-    const fileNames = await fs.readdir(path.join(jobsPath, category));
+    try {
+      fileNames = await fs.readdir(path.join(jobsPath, category));
+    }
+    catch(error) {
+      return `ERROR: Job directory ${category} not readable (${error.message})`;
+    }
     jobNames[category] = fileNames;
   }
   return jobNames;
 }
 // Returns an object from a JSON file.
 const getObject = exports.getObject = async filePath => {
-  const fileContent = await fs.readFile(filePath, 'utf8');
-  const object = JSON.parse(fileContent);
+  let fileContent, object;
+  try {
+    fileContent = await fs.readFile(filePath, 'utf8');
+  }
+  catch(error) {
+    return `ERROR: File ${filePath} not readable (${error.message})`;
+  }
+  try {
+    object = JSON.parse(fileContent);
+  }
+  catch(error) {
+    return `ERROR: File ${filePath} not JSON (${error.message})`;
+  }
   return object;
-}
+};
 // Returns a string describing the time in days since a time stamp.
 exports.getAgoString = timeStamp => {
   const agoDays = getAgoDays(timeStamp);
@@ -382,19 +414,22 @@ exports.getPOSTData = request => new Promise(resolve => {
     }
   });
 });
-// Returns the test and retest recommendations.
+// Returns the waiting test and retest recommendations.
 const getRecs = exports.getRecs = async () => {
   let recs = {};
+  let recsJSON;
   try {
-    // Get the waiting test and retest recommendations.
-    const recsJSON = await fs.readFile(recsPath, 'utf8');
+    recsJSON = await fs.readFile(recsPath, 'utf8');
+  }
+  catch(error) {
+    await fs.writeFile(recsPath, '{}\n');
+    return `ERROR: recommendations file not readable, so created an empty one (${error.message})`;
+  }
+  try {
     recs = JSON.parse(recsJSON);
   }
-  // If the recommendations file is missing or invalid:
   catch(error) {
-    console.log(`ERROR: recs.json file missing or invalid; creating empty file (${error.message})`);
-    // Create an empty recommendations file.
-    await fs.writeFile(recsPath, '{}\n');
+    return `ERROR: recommendations file not JSON (${error.message})`;
   }
   return recs;
 };
@@ -411,7 +446,7 @@ exports.getTextFragmentHref = (text, url) => {
   return `${url}#:~:text=${fragmentList}`;
 };
 // Returns an array of logs of the latest tests of the tested targets.
-exports.getLatestTargetLogs = async () => {
+exports.getLatestLogs = async () => {
   // Initialize data on the tested targets.
   const targetsData = {};
   const logFileNames = await fs.readdir(logsPath);

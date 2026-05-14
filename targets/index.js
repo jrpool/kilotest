@@ -12,7 +12,7 @@ const {
   getPageDataStrings,
   getRecs,
   getToolNamesString,
-  getLatestTargetLogs,
+  getLatestLogs,
   getTargetSummary,
   isRecommendable,
   jobsPath
@@ -71,7 +71,7 @@ const populateQuery = async query => {
   query.noQueued = lines.queue.length ? '' : 'No pages are queued for testing.';
   // Add a no-claimed message, if applicable, to the query.
   query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
-  const targetLogs = await getLatestTargetLogs();
+  const targetLogs = await getLatestLogs();
   query.which = targetLogs.length ? 'the following' : 'no';
   query.some = (targetLogs.length || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'

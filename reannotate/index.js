@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {annotateReport, getLatestTargetLogs, ruleIDs} = require('../util');
+const {annotateReport, getLatestLogs, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -16,7 +16,7 @@ exports.answer = async authCode => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get the logs of the latest reports per target.
-    const targetsData = await getLatestTargetLogs();
+    const targetsData = await getLatestLogs();
     // For each report:
     for (const targetData of targetsData) {
       const [timeStamp, jobID] = targetData.jobName.split('-');

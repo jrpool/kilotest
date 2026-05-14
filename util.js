@@ -316,6 +316,8 @@ exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
         else {
           // Add it to the set of unclassifiable rules.
           unclassifiableRules.add(`${which}:${ruleID}`);
+          // Remove any existing issue ID from the instance.
+          delete instance.issueID;
         }
       }
     }

@@ -146,24 +146,33 @@ const requestHandler = async (request, response) => {
   const {pathname, search} = requestURL;
   const pageName = pathname.split('/')[1];
   const pageArgs = pathname.split('/').slice(2).join('/');
-  // If the request is a GET request:
-  if (method === 'GET') {
-    // Get its URL.
-    // If it is the home page:
+  // If the request is an OPTIONS request:
+  if (method === 'OPTIONS') {
+    // Serve response headers, including one allowing requests from other applications.
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    response.statusCode = 204;
+    response.end();
+  }
+  // Otherwise, if the request is a GET request:
+  else if (method === 'GET') {
+    // If it is for the home page:
     if (['/', '/index.html'].includes(pathname)) {
       // Get the home page.
       const homePage = await fs.readFile('index.html', 'utf8');
       // Serve it.
       response.setHeader('content-type', 'text/html; charset=utf-8');
       response.setHeader('content-location', '/index.html');
+      response.setHeader('Access-Control-Allow-Origin', '*');
       response.end(homePage);
     }
-    // Otherwise, if it is an HTML page other than the home page:
+    // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
-        // Serve headers for a response.
+        // Serve response headers, including one allowing requests from other applications.
         response.setHeader('content-type', 'text/html; charset=utf-8');
         response.setHeader('content-location', `${pathname}${search}`);
         // Get the answer data.
@@ -227,9 +236,10 @@ const requestHandler = async (request, response) => {
       const [timeStamp, jobID] = pageArgs.split('/');
       // If the request is valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
-        // Serve headers for a response.
+        // Serve response headers, including one allowing requests from other applications.
         response.setHeader('content-type', 'text/html; charset=utf-8');
         response.setHeader('content-location', `${pathname}${search}`);
+        response.setHeader('Access-Control-Allow-Origin', '*');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
         .answer(pageArgs, why);

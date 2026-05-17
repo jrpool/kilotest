@@ -16,7 +16,7 @@ Connection to the host is made with `ssh linuxuser@kilotest.com`. Periodically t
 
 Kilotest is installed at `/opt/jpdev/kilotest` on the server.
 
-Testaro is installed at `/opt/jpdev/testaro` on the server.
+Any other application `xyz` can be installed at `/opt/jpdev/xyz` on the server.
 
 ## Process management
 
@@ -48,10 +48,6 @@ When the PM2 configuration or environment is changed, restart PM2 with:
 pm2 restart kilotest --time --update-env
 pm2 save
 ```
-
-Testaro is not managed with PM2. Instead, you can make it begin watching for jobs from Kilotest by executing `node call netWatch true nn true`, replacing `nn` with the number of seconds to wait between checks for new jobs. This will make Testaro poll Kilotest periodically for jobs. When Kilotest responds with a job, Testaro will perform it, send a report back to Kilotest, and then resume polling. Testaro uses `POST` requests to request jobs and to submit reports. Each such request includes a password associated with the ID of the Testaro instance (i.e. the Testaro “agent”).
-
-Testaro uses Playwright to create headless browsers. They are destroyed automatically when no longer needed, and the last ones are typically destroyed within a minute after the end of a job. Thus, neither Testaro nor Kilotest attempts to kill them when a job ends.
 
 The server configuration has been tuned for improved performance. The file edited for this purpose is `/etc/default/zramswap`:
 
@@ -147,7 +143,7 @@ kilotest.com,_acme-challenge.kilotest.com,TXT,qQdIIiUSC76PvYuku-AxPsRPY-fJV7T7i3
 
 Reliance on the default Vultr DNS resolvers has caused erratic failures. Therefore, the service has been configured to use specific DNS resolvers.
 
-These commands disabled cloud-init network management:
+These commands disabled `cloud-init` network management:
 
 ```bash
 sudo mkdir -p /etc/cloud/cloud.cfg.d
@@ -178,7 +174,8 @@ sudo netplan generate
 sudo netplan apply
 resolvectl status
 dig +short A example.com
-curl -sv https://example.com/ -o /dev/null```
+curl -sv https://example.com/ -o /dev/null
+```
 
 ## Request management
 
@@ -198,7 +195,7 @@ kilotest.com {
 }
 ```
 
-This configuration prevents the granular reporting of Testaro from being buffered, so the updates reach the browser without delay.
+This configuration prevents granular reporting by Testaro agents from being buffered, so the updates reach the browser without delay.
 
 ## Version management
 
@@ -206,6 +203,8 @@ When a new version of the `kilotest` package has been published, the service can
 
 1. Connect to the server: `ssh linuxuser@kilotest.com`
 1. Navigate to the package root: `cd /opt/jpdev/kilotest`
+1. Discard any locally altered lockfile: `git stash`
+1. Delete the record of that discard: `git stash drop`
 1. Fetch and merge the new version: `git pull`
 1. Update the dependencies: `npm update`
 1. Update the Playwright browsers: `npx playwright install`
@@ -232,9 +231,15 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 ## Security
 
+### Possible future Testaro integration
+
+Kilotest uses Testaro to run jobs. In previous versions of Kilotest, Testaro was a dependency. It is currently not a dependenc. Instead, Testaro instances are installed on one or more other hosts, and each instance polls Kilotest to ask for jobs to run.
+
+In case Testaro again becomes a dependency of Kilotest, the notes below on security issues will be useful.
+
 ### Browser privileges
 
-Kilotest uses Testaro to run jobs, and Testaro in turn uses Playwright to launch and control headless browsers, often `chromium`. Those browsers navigate to web pages that are tested by the tools that Testaro integrates. The `qualWeb` tool launches its own browser via Puppeteer as a dependency to perform its tests.
+Testaro uses Playwright to launch and control headless browsers, often `chromium`. Those browsers navigate to web pages that are tested by the tools that Testaro integrates. The `qualWeb` tool launches its own browser via Puppeteer as a dependency to perform its tests.
 
 When either Playwright or Puppeteer launches a `chromium` browser, in most environments it is [sandboxed](https://www.geeksforgeeks.org/ethical-hacking/what-is-browser-sandboxing/). Sandboxing is a security feature that prevents the browser from accessing potentially unsafe system resources. But in the Ubuntu Linux operating system that was installed on the Vultr Cloud Compute host a sandboxed browser requires an [unprivileged user namespace](https://ubuntu.com/blog/ubuntu-23-10-restricted-unprivileged-user-namespaces), and when Ubuntu was installed its configuration disallowed such namespaces. The file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.apparmor_restrict_unprivileged_userns = 1` prohibited unprivileged user namespaces and thereby made sandboxed browsers unlaunchable.
 

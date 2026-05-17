@@ -4,7 +4,7 @@ This document describes one deployment of Kilotest as a web service.
 
 ## Host
 
-The host of the service is a [Vultr](https://www.vultr.com) Cloud Compute High Frequency virtual machine named `jpdev` with the IPV4 address 149.28.208.106. The host has 1 vCPU, 2MB of RAM, and 64GB NVMe of storage.
+The host of the service is a [Vultr](https://www.vultr.com) Cloud Compute High Frequency virtual machine named `jpdev` with the IPV4 address 149.28.208.106. The host has 1 vCPU, 2GB of RAM, and 64GB NVMe of storage.
 
 The server operating system is Ubuntu LTS 22.04.
 

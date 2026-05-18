@@ -141,7 +141,7 @@ const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'})
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value.
-const objectSort = exports.objectSort = (objects, property, sortType) => objects
+exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -485,10 +485,10 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns an array of logs of the latest public reports on the tested targets.
-exports.getLatestLogs = async () => {
+// Returns an array of the logs of the public reports on the tested targets.
+exports.getLogs = async () => {
   // Initialize data on the tested targets.
-  const targetsData = {};
+  const logs = [];
   let logFileNames;
   try {
     logFileNames = await fs.readdir(logsPath);
@@ -515,13 +515,25 @@ exports.getLatestLogs = async () => {
     }
     // Add the job name to the log.
     log.jobName = logName;
-    // Add the job data to the targets data, replacing any entry for the same target URL.
-    targetsData[log.url] = log;
+    targetsData[log.url] ??= [];
+    // Add the log to the logs.
+    logs.push(log);
   }
-  // Get an array of the target logs, sorted by target name.
-  const targets = objectSort(Object.values(targetsData), 'what', 'alpha');
-  // Return it.
-  return targets;
+  // Sort the logs by target name and secondarily by test time.
+  logs.sort((a, b) => {
+    // During the sort, if the jobs tested the same target:
+    if (b.what === a.what) {
+      // Add to the earlier log the fact that its report has been superseded.
+      if (a.jobName < b.jobName) {
+        a.superseded = true;
+        return 1;
+      }
+      return -1;
+    }
+    return a.what.localeCompare(b.what, {}, {sensitivity: 'base'});
+  });
+  // Return them.
+  return logs;
 };
 // Gets the name of an issue weight.
 exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
@@ -686,6 +698,6 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     what,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Last tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
+    testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
 };

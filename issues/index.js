@@ -10,7 +10,7 @@ const {
   annotateReport,
   getReport,
   getToolNamesString,
-  getLatestLogs,
+  getLogs,
   getWCAGLink,
   getWeightName,
   objectSort,
@@ -103,7 +103,7 @@ const getIssuesSummary = async logs => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  const targetLogs = await getLatestLogs();
+  const targetLogs = (await getLogs()).filter(log => ! log.superseded);
   // Get summary data on the issues.
   const issuesSummary = await getIssuesSummary(targetLogs);
   // Initialize the lines.

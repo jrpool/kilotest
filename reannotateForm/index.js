@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssue, getReport, getLatestLogs, ruleIDs} = require('../util');
+const {getIssue, getReport, getLogs, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -13,7 +13,7 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  const targetLogs = await getLatestLogs();
+  const targetLogs = (await getLogs()).filter(log => ! log.superseded);
   const stillUnclassified = {};
   const reClassified = {};
   // For each target:

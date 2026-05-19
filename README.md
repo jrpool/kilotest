@@ -4,7 +4,7 @@ An ensemble testing service with a focus on accessibility
 
 ## Features
 
-This application uses an ensemble of 11 tools to test public web pages for standards conformity, usability, and accessibility.
+This application uses an ensemble of 10 tools to test public web pages for standards conformity, usability, and accessibility.
 
 The testing paradigm employed by Kilotest is discussed in these papers:
 

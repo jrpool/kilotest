@@ -1,9 +1,10 @@
 {
   "name": "kilotest",
-  "version": "22.0.0",
+  "version": "22.0.1",
   "description": "An ensemble testing service with a focus on accessibility",
   "main": "index.js",
   "scripts": {
+    "start": "node index",
     "lint": "npx eslint",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

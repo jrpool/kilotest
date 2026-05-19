@@ -515,7 +515,6 @@ exports.getLogs = async () => {
     }
     // Add the job name to the log.
     log.jobName = logName;
-    targetsData[log.url] ??= [];
     // Add the log to the logs.
     logs.push(log);
   }

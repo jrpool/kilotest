@@ -527,6 +527,7 @@ exports.getLogs = async () => {
         a.superseded = true;
         return 1;
       }
+      b.superseded = true;
       return -1;
     }
     return a.what.localeCompare(b.what, {}, {sensitivity: 'base'});

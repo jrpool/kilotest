@@ -137,7 +137,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     const toolName = tools[preventedToolID];
     const toolNameString = `${toolName[0]} (${toolName[1]})`;
     const causeString = htmlSafe(preventions[preventedToolID]);
-    const preventionString = `${margin}<li>Page prevented testing by ${toolNameString}: ${causeString}</li>`;
+    const preventionString = `${margin}<li>Page not testable by ${toolNameString}: ${causeString}</li>`;
     preventionStrings.push(preventionString);
   });
   query.preventions = preventionStrings.join('\n');

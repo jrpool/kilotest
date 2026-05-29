@@ -102,7 +102,7 @@ const populateQuery = async query => {
       const toolCountString = getToolCountString(preventedToolSet.size);
       const toolsString = getToolNamesString(preventedToolSet);
       lines.tested.push(
-        `${margin}    <li>Testing was prevented by ${toolCountString} (${toolsString})</li>`,
+        `${margin}    <li>Page not testable by ${toolCountString} (${toolsString})</li>`,
       );
     }
     // Add facts about the test results to the lines.

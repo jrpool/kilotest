@@ -190,7 +190,6 @@ const requestHandler = async (request, response) => {
       // If the request is syntactically valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {
         const reportHidden = await isHidden(timeStamp, jobID);
-        console.log(`XXX reportHidden is ${reportHidden}`);
         // If the report exists and is hidden:
         if (reportHidden === true) {
           // Report this.
@@ -198,7 +197,6 @@ const requestHandler = async (request, response) => {
         }
         // Otherwise, if any other error occurred:
         else if (typeof reportHidden === 'string') {
-          console.log('XXX reportHidden is a string');
           // Report it.
           await serveError({message: reportHidden}, response, true);
         }

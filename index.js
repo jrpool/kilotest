@@ -192,8 +192,13 @@ const requestHandler = async (request, response) => {
         const reportHidden = await isHidden(timeStamp, jobID);
         // If the report exists and is hidden:
         if (reportHidden === true) {
+          console.log(`ERROR: Hidden report ${timeStamp}-${jobID} requested`);
           // Report this.
-          await serveError({message: `Requested report ${timeStamp}-${jobID} not available`}, response, true);
+          await serveError(
+            {message: `ERROR: requested report ${timeStamp}-${jobID} not available`},
+            response,
+            true
+          );
         }
         // Otherwise, if any other error occurred:
         else if (typeof reportHidden === 'string') {

@@ -84,16 +84,18 @@ const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   }
   let recordJSON, record;
   try {
-    recordJSON = await fs.readFile(recordPath);
+    recordJSON = await fs.readFile(recordPath, 'utf8');
   }
   catch(error) {
-    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not readable (${error.message})`;
+    console.log(error.message);
+    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not found`;
   }
   try {
     record = JSON.parse(recordJSON);
   }
   catch (error) {
-    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not JSON (${error.message})`;
+    console.log(error.message);
+    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not JSON`;
   }
   return record;
 };
@@ -587,22 +589,6 @@ const isURL = exports.isURL = string => {
 };
 // Makes a string breakable before non-initial slashes.
 exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
-// Serves an error message.
-exports.serveError = async (error, response, isHumanUser = true) => {
-  console.log(error.message);
-  if (! response.writableEnded) {
-    response.statusCode = 400;
-    if (isHumanUser) {
-      response.setHeader('content-type', 'text/html; charset=utf-8');
-      const errorTemplate = await fs.readFile('error.html', 'utf8');
-      const errorPage = errorTemplate.replace(/__error__/, error.message);
-      response.end(errorPage);
-    } else {
-      response.setHeader('content-type', 'application/json; charset=utf-8');
-      response.end(JSON.stringify({error: error.message}));
-    }
-  }
-};
 // Converts a string to a plain-text 1-line ASCII string.
 const getPlainText = string => string.replace(/&/g, '+').replace(/[<>"'&]/g, ' ');
 // Returns a time stamp for now.

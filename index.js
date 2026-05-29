@@ -25,8 +25,7 @@ const {
   jobsPath,
   logsPath,
   reportsPath,
-  ruleIDs,
-  serveError
+  ruleIDs
 } = require('./util');
 const fs = require('fs/promises');
 const http = require('http');
@@ -76,6 +75,22 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // FUNCTIONS
 
+// Serves an error message.
+const serveError = async (error, response, isHumanUser = true) => {
+  console.log(error.message);
+  if (! response.writableEnded) {
+    response.statusCode = 400;
+    if (isHumanUser) {
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      const errorTemplate = await fs.readFile('error.html', 'utf8');
+      const errorPage = errorTemplate.replace(/__error__/, error.message);
+      response.end(errorPage);
+    } else {
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({error: error.message}));
+    }
+  }
+};
 // Checks a report for balances nearing exhaustion.
 const checkBalancesForAlerts = async report => {
   // If the variables to be monitored for alerts are defined:
@@ -175,15 +190,17 @@ const requestHandler = async (request, response) => {
       // If the request is syntactically valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {
         const reportHidden = await isHidden(timeStamp, jobID);
+        console.log(`XXX reportHidden is ${reportHidden}`);
         // If the report exists and is hidden:
         if (reportHidden === true) {
           // Report this.
-          await serveError('Report not available', response, true);
+          await serveError({message: 'Report not available'}, response, true);
         }
         // Otherwise, if any other error occurred:
         else if (typeof reportHidden === 'string') {
+          console.log('XXX reportHidden is a string');
           // Report it.
-          await serveError(reportHidden, response, true);
+          await serveError({message: reportHidden}, response, true);
         }
         // Otherwise, i.e. if the report log is valid and not hidden:
         else {
@@ -261,7 +278,7 @@ const requestHandler = async (request, response) => {
         response.end(styleSheet);
       }
       catch (error) {
-        await serveError(error, response, true);
+        await serveError({message: error.message}, response, true);
       }
     }
     // Otherwise, i.e. if it is any other GET request:

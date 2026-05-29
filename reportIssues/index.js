@@ -81,6 +81,7 @@ const getIssuesData = async (timeStamp, jobID) => {
     issuesData.reporterCount = issuesData.reporters.size;
     issuesData.reportersString = getToolNamesString(issuesData.reporters);
     issuesData.violatorCount = issuesData.violators.size;
+    issuesData.preventions = report.jobData.preventions;
     issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
     issuesData.issues = Object.values(issuesData.issuesObject);
     // For each issue in the issues data:

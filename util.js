@@ -79,9 +79,6 @@ const getRecordPath = exports.getRecordPath = (recordType, timeStamp, jobID) => 
 // Returns a log or report or an error message.
 const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   const recordPath = getRecordPath(recordType, timeStamp, jobID);
-  if (! recordPath) {
-    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not found`;
-  }
   let recordJSON, record;
   try {
     recordJSON = await fs.readFile(recordPath, 'utf8');

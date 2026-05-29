@@ -134,6 +134,8 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
+  query.timeStamp = timeStamp;
+  query.jobID = jobID;
   const preventedToolCountString = preventedToolCount === 1
   ? '1 tool'
   : `${preventedToolCount} tools`;

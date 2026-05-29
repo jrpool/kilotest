@@ -16,8 +16,10 @@ const {
   getLogPath,
   getObject,
   getPOSTData,
+  getReport,
   getRecs,
   getReportPath,
+  isHidden,
   isTimeStamp,
   isJobID,
   jobsPath,
@@ -166,6 +168,44 @@ const requestHandler = async (request, response) => {
       response.setHeader('content-location', '/index.html');
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.end(homePage);
+    }
+    // Otherwise, if it is for a full report download:
+    else if (pageName === 'fullReport.html') {
+      const [timeStamp, jobID] = pageArgs.split('/');
+      // If the request is valid:
+      if (isTimeStamp(timeStamp) && isJobID(jobID)) {
+        // Check if the report is hidden:
+        const reportIsHidden = await isHidden(timeStamp, jobID);
+        // If the report is hidden:
+        if (reportIsHidden) {
+          // Report the error.
+          await serveError({message: 'Report not available'}, response, true);
+        }
+        // Otherwise, i.e. if the report is not hidden:
+        else {
+          // Get the report.
+          const report = await getReport(timeStamp, jobID);
+          // If the report is valid:
+          if (typeof report === 'object') {
+            // Serve response headers for a JSON download.
+            response.setHeader('content-type', 'application/json; charset=utf-8');
+            response.setHeader('content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`);
+            response.setHeader('Access-Control-Allow-Origin', '*');
+            // Serve the report as JSON.
+            response.end(getJSON(report));
+          }
+          // Otherwise, i.e. if the report is not valid:
+          else {
+            // Report the error.
+            await serveError({message: 'Report not readable'}, response, true);
+          }
+        }
+      }
+      // Otherwise, i.e. if the request is invalid:
+      else {
+        // Report the error.
+        await serveError({message: 'Invalid report request'}, response, true);
+      }
     }
     // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {

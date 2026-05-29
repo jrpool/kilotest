@@ -8,7 +8,7 @@
 const {
   getPageDataStrings,
   getReport,
-  getToolName,
+  getToolNamesString,
   getWCAGLink,
   getWeightName,
   isHidden,

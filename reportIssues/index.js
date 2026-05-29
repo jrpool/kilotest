@@ -8,12 +8,13 @@
 const {
   getPageDataStrings,
   getReport,
-  getToolNamesString,
+  getToolName,
   getWCAGLink,
   getWeightName,
   isHidden,
   isValidReport,
-  objectSort
+  objectSort,
+  tools
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
@@ -27,18 +28,13 @@ const getIssuesData = async (timeStamp, jobID) => {
   const report = await getReport(timeStamp, jobID);
   // If it is valid:
   if (typeof report === 'object' && isValidReport(report)) {
-    const preventedTools = typeof report.jobData.preventions === 'object'
-    ? new Set(Object.keys(report.jobData.preventions))
-    : new Set();
     const issuesData = {
       reporters: new Set(),
       reporterCount: 0,
       reportersString: '',
       violators: new Set(),
       violatorCount: 0,
-      preventedTools,
-      preventedToolCount: 0,
-      preventedToolsString: '',
+      preventions: {},
       issuesObject: {},
       issueCount: 0,
       issues: []
@@ -85,8 +81,6 @@ const getIssuesData = async (timeStamp, jobID) => {
     issuesData.reporterCount = issuesData.reporters.size;
     issuesData.reportersString = getToolNamesString(issuesData.reporters);
     issuesData.violatorCount = issuesData.violators.size;
-    issuesData.preventedToolCount = issuesData.preventedTools.size;
-    issuesData.preventedToolsString = getToolNamesString(issuesData.preventedTools);
     issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
     issuesData.issues = Object.values(issuesData.issuesObject);
     // For each issue in the issues data:
@@ -117,8 +111,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   }
   const {
     issueCount,
-    preventedToolCount,
-    preventedToolsString,
+    preventions,
     reporterCount,
     reportersString,
     violatorCount
@@ -136,13 +129,16 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.testInfo = testInfo;
   query.timeStamp = timeStamp;
   query.jobID = jobID;
-  const preventedToolCountString = preventedToolCount === 1
-  ? '1 tool'
-  : `${preventedToolCount} tools`;
-  query.preventedTools = preventedToolCount
-  ? `<li>Page prevented testing by ${preventedToolCountString} (${preventedToolsString})</li>`
-  : '';
+  const preventionStrings = [];
   const margin = ' '.repeat(6);
+  Object.keys(preventions).forEach(preventedToolID => {
+    const toolName = tools[preventedToolID];
+    const toolNameString = `${toolName[0]} (${toolName[1]})`;
+    const causeString = preventions[preventedToolID];
+    const preventionString = `${margin}<li>Page prevented testing by ${toolNameString}: ${causeString}</li>`;
+    preventionStrings.push(preventionString);
+  });
+  query.preventions = preventionStrings.join('\n');
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     // Initialize data on issues having the weight.

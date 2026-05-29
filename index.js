@@ -172,36 +172,42 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.html') {
       const [timeStamp, jobID] = pageArgs.split('/');
-      // If the request is valid:
+      // If the request is syntactically valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {
-        // Check if the report is hidden:
-        const reportIsHidden = await isHidden(timeStamp, jobID);
-        // If the report is hidden:
-        if (reportIsHidden) {
-          // Report the error.
+        const reportHidden = await isHidden(timeStamp, jobID);
+        // If the report exists and is hidden:
+        if (reportHidden) {
+          // Report this.
           await serveError({message: 'Report not available'}, response, true);
         }
-        // Otherwise, i.e. if the report is not hidden:
+        // Otherwise, if any other error occurred:
+        else if (typeof reportHidden === 'string') {
+          // Report it.
+          await serveError({message: reportHidden}, response, true);
+        }
+        // Otherwise, i.e. if the report log is valid and not hidden:
         else {
           // Get the report.
           const report = await getReport(timeStamp, jobID);
-          // If the report is valid:
+          // If it exists and is valid:
           if (typeof report === 'object') {
             // Serve response headers for a JSON download.
             response.setHeader('content-type', 'application/json; charset=utf-8');
-            response.setHeader('content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`);
+            response.setHeader(
+              'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
+            );
             response.setHeader('Access-Control-Allow-Origin', '*');
-            // Serve the report as JSON.
+            // Download the report.
             response.end(getJSON(report));
           }
-          // Otherwise, i.e. if the report is not valid:
+          // Otherwise, i.e. if an error occurred:
           else {
-            // Report the error.
-            await serveError({message: 'Report not readable'}, response, true);
+            // Report it.
+            await serveError({message: report}, response, true);
           }
         }
       }
-      // Otherwise, i.e. if the request is invalid:
+      // Otherwise, i.e. if the request is syntactically invalid:
       else {
         // Report the error.
         await serveError({message: 'Invalid report request'}, response, true);

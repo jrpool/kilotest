@@ -76,11 +76,11 @@ const getRecordPath = exports.getRecordPath = (recordType, timeStamp, jobID) => 
     return null;
   }
 };
-// Returns a log or report.
+// Returns a log or report or an error message.
 const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   const recordPath = getRecordPath(recordType, timeStamp, jobID);
   if (! recordPath) {
-    return null;
+    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not found`;
   }
   let recordJSON, record;
   try {
@@ -93,11 +93,11 @@ const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
     record = JSON.parse(recordJSON);
   }
   catch (error) {
-    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} is not JSON (${error.message})`;
+    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not JSON (${error.message})`;
   }
   return record;
 };
-// Returns a report.
+// Returns a report or an error message.
 const getReport = exports.getReport = async (timeStamp, jobID) => await getRecord(
   'report', timeStamp, jobID
 );
@@ -237,77 +237,6 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   // Otherwise, i.e. if no issue was found, return a failure result.
   return null;
 };
-// Returns the log of a report, after annotating it if requested and necessary.
-const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
-  const log = await getRecord('log', timeStamp, jobID);
-  if (typeof log === 'object' && annotate && ! log.annotated) {
-      annotateReport(ruleIDs, timeStamp, jobID);
-  }
-  return log;
-};
-// Returns whether a report is hidden.
-exports.isHidden = async (timeStamp, jobID) => {
-  const log = await getLog(timeStamp, jobID, false);
-  if (typeof log === 'string') {
-    return log;
-  }
-  return !! log.hidden;
-};
-// Returns summary data on the results in a report.
-exports.getTargetData = async (timeStamp, jobID) => {
-  // Vasidate the report and annotate it if necessary.
-  const log = await getLog(timeStamp, jobID, true);
-  // If this failed:
-  if (typeof log === 'string') {
-    // Return this.
-    return log;
-  }
-  // Initialize the data.
-  const data = {
-    what: log.what,
-    url: log.url,
-    issueSet: new Set(),
-    reporterSet: new Set(),
-    violatorSet: new Set(),
-    preventedTools: {}
-  };
-  const {issueSet, reporterSet, violatorSet} = data;
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (typeof report === 'string') {
-    // Return this.
-    return report;
-  }
-  // For each act of the report:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // For each standard instance:
-      instances.forEach(instance => {
-        const {catalogIndex, issueID} = instance;
-        // If it has a non-ignorable classified issue ID:
-        if (issueID && issues[issueID] && issueID !== 'ignorable') {
-          // Ensure that the tool is in the data.
-          reporterSet.add(which);
-          // Ensure that the issue is in the data.
-          issueSet.add(issueID);
-          // If it has a catalog index:
-          if (catalogIndex) {
-            // Ensure that the violator is in the data.
-            violatorSet.add(catalogIndex);
-          }
-        }
-      });
-    }
-  });
-  // Add the IDs of any prevented tools to the data.
-  data.preventedTools = Object.keys(report.jobData?.preventions || {});
-  // Return the data.
-  return data;
-}
 // Adds issue IDs to the standard instances of a report.
 exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
   // Get a copy of the report.
@@ -374,6 +303,77 @@ exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
     // Return without an error message.
   }
 };
+// Returns a report log after conditionally annotating it or an error message.
+const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
+  const log = await getRecord('log', timeStamp, jobID);
+  if (typeof log === 'object' && annotate && ! log.annotated) {
+    annotateReport(ruleIDs, timeStamp, jobID);
+  }
+  return log;
+};
+// Returns whether a report is hidden or an error message.
+exports.isHidden = async (timeStamp, jobID) => {
+  const log = await getLog(timeStamp, jobID, false);
+  if (typeof log === 'string') {
+    return log;
+  }
+  return !! log.hidden;
+};
+// Returns summary data on the results in a report.
+exports.getTargetData = async (timeStamp, jobID) => {
+  // Vasidate the report and annotate it if necessary.
+  const log = await getLog(timeStamp, jobID, true);
+  // If this failed:
+  if (typeof log === 'string') {
+    // Return this.
+    return log;
+  }
+  // Initialize the data.
+  const data = {
+    what: log.what,
+    url: log.url,
+    issueSet: new Set(),
+    reporterSet: new Set(),
+    violatorSet: new Set(),
+    preventedTools: {}
+  };
+  const {issueSet, reporterSet, violatorSet} = data;
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (typeof report === 'string') {
+    // Return this.
+    return report;
+  }
+  // For each act of the report:
+  report.acts.forEach(act => {
+    // If it is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      const instances = result?.standardResult?.instances ?? [];
+      // For each standard instance:
+      instances.forEach(instance => {
+        const {catalogIndex, issueID} = instance;
+        // If it has a non-ignorable classified issue ID:
+        if (issueID && issues[issueID] && issueID !== 'ignorable') {
+          // Ensure that the tool is in the data.
+          reporterSet.add(which);
+          // Ensure that the issue is in the data.
+          issueSet.add(issueID);
+          // If it has a catalog index:
+          if (catalogIndex) {
+            // Ensure that the violator is in the data.
+            violatorSet.add(catalogIndex);
+          }
+        }
+      });
+    }
+  });
+  // Add the IDs of any prevented tools to the data.
+  data.preventedTools = Object.keys(report.jobData?.preventions || {});
+  // Return the data.
+  return data;
+}
 // Returns a time stamp from a date.
 const getTimeStamp = exports.getTimeStamp = date => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);

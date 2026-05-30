@@ -213,7 +213,7 @@ const getRuleIDs = exports.getRuleIDs = () => {
   };
 };
 // Variable and invariant rules.
-exports.ruleIDs = getRuleIDs();
+const ruleIDs = exports.ruleIDs = getRuleIDs();
 // Returns the issue that a rule belongs to, or null if none.
 const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   const {invariant, variable} = ruleIDs;
@@ -237,7 +237,7 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   return null;
 };
 // Adds issue IDs to the standard instances of a report.
-exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
+const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
   // Get a copy of the report.
   const reportOrError = await getReport(timeStamp, jobID);
   // If this failed:

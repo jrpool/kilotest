@@ -272,11 +272,11 @@ exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
       }
     }
   }
+  const issuelessRules = Array.from(unclassifiableRules).sort();
+  // Update the issueless rules in the report.
+  report.jobData.issuelessRules = issuelessRules;
   // If any rules were unclassifiable:
-  if (unclassifiableRules.size) {
-    const issuelessRules = Array.from(unclassifiableRules).sort();
-    // Add them to the report.
-    report.jobData.issuelessRules = issuelessRules;
+  if (issuelessRules.length) {
     // Alert a manager about them.
     await sendAlert(
       'Kilotest: unclassified rules violated',

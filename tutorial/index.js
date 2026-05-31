@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+const {getJSON} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -47,6 +48,6 @@ exports.saveComment = async content => {
     // File absent or unparseable; start a fresh array.
   }
   comments.push({timeStamp: new Date().toISOString(), content: sanitized});
-  await fs.writeFile(commentsPath, JSON.stringify(comments, null, 2));
+  await fs.writeFile(commentsPath, getJSON(comments));
   return {status: 'ok'};
 };

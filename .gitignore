@@ -13,6 +13,7 @@ results/
 jobs/
 reports/
 ai0Balance.json
+tutorial/comments.json
 
 # Secrets and environment-specific configurations
 .env

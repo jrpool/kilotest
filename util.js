@@ -100,7 +100,7 @@ const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
 const getReport = exports.getReport = async (timeStamp, jobID) => await getRecord(
   'report', timeStamp, jobID
 );
-// Returns the JSON stringification of an object.
+// Returns the JSON stringification of an object, with a final newline.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.
 const getDateString = exports.getDateString = timeStamp => {

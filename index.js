@@ -261,6 +261,22 @@ const requestHandler = async (request, response) => {
         await serveError({message: 'Invalid request'}, response, true);
       }
     }
+    // Otherwise, if it is for a tutorial image:
+    else if (pathname.startsWith('/tutorial/images/')) {
+      const imgFile = pathname.slice('/tutorial/images/'.length);
+      const imgPath = path.join(__dirname, 'tutorial', 'images', imgFile);
+      try {
+        const img = await fs.readFile(imgPath);
+        const ext = path.extname(imgFile).toLowerCase();
+        const mimeTypes = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml'};
+        response.setHeader('content-type', mimeTypes[ext] || 'application/octet-stream');
+        response.setHeader('cache-control', 'public, max-age=3600');
+        response.end(img);
+      }
+      catch (_) {
+        await serveError({message: 'Image not found'}, response, true);
+      }
+    }
     // Otherwise, if it is for the application icon:
     else if (pathname.includes('favicon.')) {
       // Get the site icon.

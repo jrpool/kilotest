@@ -1,5 +1,5 @@
 {
-  "name": "kilotest",
+  "name": "@jrpool/kilotest",
   "version": "24.0.4",
   "description": "An ensemble testing service with a focus on accessibility",
   "main": "index.js",

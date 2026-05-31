@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="accessibility,a11y,testing,tutorial,WCAG,autocomplete">
+    <title>Accessibility Testing Strategies | Kilotest</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
+    <style>
+      .skip-link {
+        position: absolute;
+        top: -3rem;
+        left: 0;
+        padding: 0.5rem 1rem;
+        background: #fff;
+        border: solid 2px #000;
+        z-index: 100;
+        transition: top 0.1s;
+      }
+      .skip-link:focus {
+        top: 0;
+      }
+      .tutorial-nav {
+        margin-bottom: 2rem;
+        padding: 1rem;
+        border: solid 1px #006666;
+        border-radius: 0.5rem;
+      }
+      .tutorial-nav h2 {
+        margin-top: 0;
+      }
+      section.tutorial-section {
+        border-top: solid 2px #006666;
+        padding-top: 1rem;
+        margin-top: 2rem;
+      }
+      .note {
+        padding: 0.75rem 1rem;
+        border-left: solid 4px #006666;
+        background: #f0f8f8;
+        margin: 1rem 0;
+      }
+      .finding {
+        padding: 0.75rem 1rem;
+        border-left: solid 4px #c80;
+        background: #fffbf0;
+        margin: 1rem 0;
+      }
+      .ai-output {
+        padding: 0.75rem 1rem;
+        border: solid 1px #999;
+        border-radius: 0.25rem;
+        background: #f9f9f9;
+        margin: 1rem 0;
+        font-size: 0.95rem;
+      }
+      .ai-output p:first-child {
+        margin-top: 0;
+      }
+      .ai-output p:last-child {
+        margin-bottom: 0;
+      }
+      pre.code-sample {
+        padding: 0.75rem 1rem;
+        border: solid 1px #ccc;
+        border-radius: 0.25rem;
+        background: #f5f5f5;
+        overflow-wrap: break-word;
+        white-space: pre-wrap;
+        font-size: 0.9rem;
+      }
+      dl.compare dt {
+        font-weight: 700;
+        margin-top: 1rem;
+        color: #003366;
+      }
+      dl.compare dd {
+        margin-left: 1.5rem;
+        margin-bottom: 0.25rem;
+      }
+      .time-estimate {
+        font-style: italic;
+        color: #555;
+        font-size: 0.9rem;
+      }
+      .knowledge-check {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: solid 2px #006666;
+        border-radius: 0.5rem;
+        background: #f0f8f8;
+      }
+      .knowledge-check legend {
+        font-weight: 700;
+        padding: 0 0.5rem;
+        color: #003366;
+      }
+      .knowledge-check ol {
+        margin: 0.75rem 0;
+        padding-left: 1.5rem;
+      }
+      .knowledge-check li {
+        margin-bottom: 0.5rem;
+      }
+      .knowledge-check label {
+        cursor: pointer;
+      }
+      .quiz-feedback {
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+        min-height: 1.5rem;
+      }
+      .quiz-feedback.correct {
+        background: #e6f4ea;
+        border-left: solid 4px #2d7a2d;
+        color: #1a4a1a;
+      }
+      .quiz-feedback.incorrect {
+        background: #fdecea;
+        border-left: solid 4px #c0392b;
+        color: #5a1a1a;
+      }
+      .comment-section {
+        margin-top: 1.5rem;
+      }
+      .comment-section label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+      }
+      .comment-section textarea {
+        width: 100%;
+        max-width: 40rem;
+        padding: 0.5rem;
+        font-size: 1rem;
+        font-family: inherit;
+        border: solid 1px #666;
+        border-radius: 0.25rem;
+        box-sizing: border-box;
+      }
+      .char-count {
+        font-size: 0.85rem;
+        color: #555;
+        margin: 0.25rem 0 0.75rem;
+      }
+      .char-count.low {
+        color: #c0392b;
+        font-weight: 700;
+      }
+      .comment-feedback {
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+        min-height: 1.5rem;
+      }
+      .comment-feedback.success {
+        background: #e6f4ea;
+        border-left: solid 4px #2d7a2d;
+        color: #1a4a1a;
+      }
+      .comment-feedback.error {
+        background: #fdecea;
+        border-left: solid 4px #c0392b;
+        color: #5a1a1a;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <main id="main-content">
+
+      <h1><a href="/">Kilotest</a>: Accessibility Testing Strategies</h1>
+      <p class="time-estimate">Estimated reading time: about 60 minutes.</p>
+
+      <nav class="tutorial-nav" aria-label="Tutorial sections">
+        <h2>Sections</h2>
+        <ul class="nav">
+          <li><a href="#about">About this tutorial</a></li>
+          <li><a href="#orientation">Part 1: Orientation</a>
+            <ul>
+              <li><a href="#why-matters">Why accessibility testing matters</a></li>
+              <li><a href="#three-strategies">The three testing strategies</a></li>
+              <li><a href="#choosing">Choosing among strategies</a></li>
+              <li><a href="#case-study-intro">Introducing the case study</a></li>
+            </ul>
+          </li>
+          <li><a href="#practicum">Part 2: Practicum</a>
+            <ul>
+              <li><a href="#example-page">The example page</a></li>
+              <li><a href="#human-testing">Human testing</a></li>
+              <li><a href="#rule-engine-testing">Rule-engine testing</a></li>
+              <li><a href="#ai-testing">AI-agent testing</a></li>
+              <li><a href="#comparison">Comparing the strategies</a></li>
+            </ul>
+          </li>
+          <li><a href="#conclusion">Conclusion</a></li>
+        </ul>
+      </nav>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <section id="about" class="tutorial-section">
+        <h2>About this tutorial</h2>
+        <p>This tutorial is for web developers with limited experience in web accessibility testing. It takes about 60 minutes to complete.</p>
+        <p>You will learn about three strategies for testing web accessibility:</p>
+        <ul>
+          <li><strong>Human testing</strong> — a person directly examines and uses the page</li>
+          <li><strong>Rule-engine testing</strong> — software applies codified rules to the page</li>
+          <li><strong>AI-agent testing</strong> — an AI agent analyzes the page</li>
+        </ul>
+        <p>A practicum applies all three strategies to a real example, revealing what each strategy finds, what each misses, and why.</p>
+        <p>Links to additional information are included throughout. Completing the tutorial does not require following any of those links.</p>
+        <div class="note">
+          <p><strong>Offline use:</strong> This tutorial is self-contained. You may complete it without an Internet connection, though external links will not be reachable.</p>
+        </div>
+        <div class="note">
+          <p><strong>Note on AI results:</strong> The AI testing results in Part 2 were captured in May 2026 from a specific model. As AI models and the resources available to them improve, results may change — potentially for better or worse. The captured results are preserved here as a fixed point of comparison.</p>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <section id="orientation" class="tutorial-section">
+        <h2>Part 1: Orientation</h2>
+        <p class="time-estimate">About 30 minutes.</p>
+
+        <section id="why-matters">
+          <h3>Why accessibility testing matters</h3>
+          <p class="time-estimate">About 5 minutes.</p>
+
+          <p>Accessibility is not a separate concern added to a finished product. It is an aspect of code quality, legal compliance, and basic usability — present or absent in every page you ship.</p>
+
+          <h4>Code quality</h4>
+          <p>Inaccessible code is often incorrect code. HTML specifications define semantic elements and attributes for good reasons, and violations frequently indicate structural errors that affect all users, not only users with disabilities. A missing <code>autocomplete</code> attribute, for example, is not a cosmetic gap — it tells the browser that the developer has not declared the purpose of a form field that users rely on.</p>
+          <p>Accessible code also tends to be more maintainable: clear structure, meaningful labels, and correct role assignments make code easier to understand and modify.</p>
+
+          <h4>Legal compliance</h4>
+          <p>In many jurisdictions, web accessibility is a legal requirement. The most widely referenced technical standard is the <a href="https://www.w3.org/TR/WCAG22/">Web Content Accessibility Guidelines (WCAG)</a>, published by the W3C. WCAG 2.1 and 2.2 are referenced by law in the United States (Section 508, ADA), the European Union (European Accessibility Act), the United Kingdom (Equality Act), and many other countries.</p>
+          <p>Non-compliance exposes organisations to legal action, regulatory penalties, and reputational harm. Lawsuits and settlements involving web accessibility are documented each year in all of these jurisdictions.</p>
+
+          <h4>Usability</h4>
+          <p>Approximately 15–20% of people worldwide have a disability that can affect their use of the web. These include permanent conditions (blindness, deafness, motor impairments, cognitive disabilities) as well as temporary situations (a broken arm, recovering from eye surgery) and situational constraints (a noisy environment, a phone in bright sunlight, holding an infant).</p>
+          <p>Inaccessible code excludes or burdens these users. Features that are technically accessible also tend to benefit users without disabilities: clear labels reduce errors for everyone, logical keyboard flow speeds navigation, and high contrast aids readability in suboptimal lighting.</p>
+        </section>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="three-strategies">
+          <h3>The three testing strategies</h3>
+          <p class="time-estimate">About 8 minutes.</p>
+
+          <h4>Human testing</h4>
+          <p>A person directly examines the page, using the browser and auxiliary tools to find accessibility issues. This is sometimes called <q>manual testing</q>, though the term can be misleading — modern human testing uses several tools; it is the human judgment that distinguishes this strategy.</p>
+          <p>Human testing typically involves three techniques:</p>
+          <ul>
+            <li><strong>DOM inspection.</strong> The tester uses browser developer tools to examine the HTML structure, attributes, and the accessibility tree. The accessibility tree is the browser's representation of the page as assistive technologies see it — role, name, state, and value for each element.</li>
+            <li><strong>Keyboard navigation.</strong> The tester uses only the keyboard (Tab, Shift+Tab, Enter, Space, arrow keys) to navigate and operate the page. This reveals whether all interactive elements are reachable and operable without a mouse.</li>
+            <li><strong>Screen reader testing.</strong> The tester activates a screen reader — software that vocalises page content — and navigates the page by ear. Common screen readers include NVDA and JAWS on Windows, VoiceOver on macOS and iOS, and TalkBack on Android.</li>
+          </ul>
+          <p>Effective human testing requires substantial knowledge: WCAG success criteria, ARIA authoring practices, HTML semantics, and proficiency with at least one screen reader. It also takes time — a thorough examination of a single page may take 30 minutes to several hours.</p>
+
+          <h4>Rule-engine testing</h4>
+          <p>Software applies a set of codified rules to a page and reports which rules are violated. This is sometimes called <q>automated testing</q>, though that label is also imprecise — what is automated is the rule application, not the judgment about what rules should exist.</p>
+          <p>Rule engines come in several forms:</p>
+          <ul>
+            <li><strong>Browser extensions</strong> such as the <a href="https://www.deque.com/axe/devtools/">axe DevTools extension</a> and the <a href="https://wave.webaim.org/extension/">WAVE Evaluation Tool</a> run directly in the browser and report violations interactively.</li>
+            <li><strong>Installed engines</strong> such as <a href="https://www.npmjs.com/package/pa11y">Pa11y</a> and <a href="https://www.npmjs.com/package/testaro">Testaro</a> run from the command line and can be integrated into development workflows.</li>
+            <li><strong>API services</strong> accept page URLs and return analysis results over the network.</li>
+            <li><strong>Ensemble services</strong> such as <a href="/">Kilotest</a> run multiple rule engines against a page and consolidate the results. Because different engines encode different rules, an ensemble typically finds more issues than any single engine.</li>
+          </ul>
+          <p>Rule-engine testing is fast — a full scan typically takes 1–5 minutes. It requires little accessibility knowledge from the user, since the rules encode the expertise. It can be run repeatedly, integrated into CI/CD pipelines, and applied to large numbers of pages.</p>
+
+          <h4>AI-agent testing</h4>
+          <p>An <strong>AI agent</strong>, as used in this tutorial, is a language model — software trained on large amounts of text to understand and generate language — configured with instructions to perform a specific task. The underlying <strong>model</strong> (such as Claude, GPT-4, or Gemini) is the system you access; the <strong>agent</strong> is the model combined with its instructions and the content you provide. For accessibility testing, the agent is given page content and asked to identify violations. This strategy is the newest of the three and is evolving rapidly.</p>
+          <p>The workflow involves three choices:</p>
+          <ul>
+            <li><strong>Selecting a model.</strong> Different models vary in their knowledge of accessibility standards, their ability to reason about HTML structure, and their tendency to hallucinate. As of 2026, capable models include Claude (Anthropic), GPT-4 (OpenAI), and Gemini (Google).</li>
+            <li><strong>Designing instructions.</strong> The instructions — often called a <q>prompt</q> — specify what to test, what standards to apply, and how to report findings. Prompt quality significantly affects the quality of results.</li>
+            <li><strong>Providing page content.</strong> The AI agent must receive the relevant page content. This may be the raw HTML source, the rendered DOM, screenshots, or some combination. What you provide determines what the agent can find.</li>
+          </ul>
+          <p>AI-agent testing can reason about issues that resist mechanical rules — for example, whether image alternative text is meaningful in context, or whether a form label is genuinely helpful. Its output is available within minutes and requires no specialist tools beyond access to an AI agent. However, AI agents can produce false findings and can miss real ones, and their results may change as the underlying models are updated.</p>
+        </section>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="choosing">
+          <h3>Choosing among the strategies</h3>
+          <p class="time-estimate">About 12 minutes.</p>
+
+          <p>The three strategies are not alternatives — they are complements. A mature accessibility testing practice uses all three. Understanding their differences helps you decide how to allocate effort.</p>
+
+          <h4>Time to results</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>Slowest. A thorough examination of a single page takes 30 minutes to several hours, depending on the page's complexity and the scope of testing.</dd>
+            <dt>Rule-engine testing</dt>
+            <dd>Fastest. A full-page scan typically completes in 1–5 minutes. An ensemble service such as Kilotest may take somewhat longer.</dd>
+            <dt>AI-agent testing</dt>
+            <dd>Moderate. Depending on the scope of instructions, the amount of page content provided, and the AI agent's processing speed, 2–10 minutes is typical for focused testing.</dd>
+          </dl>
+
+          <h4>Financial cost</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>The cost of a skilled tester's time. Specialist accessibility consultants are expensive. Internal developers trained in accessibility are a recurring investment.</dd>
+            <dt>Rule-engine testing</dt>
+            <dd>Many rule engines are free and open-source. Commercial tools and API services typically charge per page or per month. Kilotest is currently free. Costs are generally low relative to the number of tests run.</dd>
+            <dt>AI-agent testing</dt>
+            <dd>Most AI services charge per token (unit of text) processed. As of 2026, asking an AI agent to check a single page against one WCAG success criterion typically costs between $0.01 and $0.10 depending on the model used. Prices are falling over time.</dd>
+          </dl>
+
+          <h4>What can each strategy find?</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>The broadest potential coverage. A skilled human can find any issue that is observable through the browser, developer tools, or a screen reader. Human testing is the only strategy that can reliably assess whether content is usable — not merely technically compliant — for users with disabilities. It is also the only strategy that can catch issues that only appear during interaction (filling out a multi-step form, for instance) or that depend on context (whether an image description is accurate given the surrounding text).
+            </dd>
+            <dt>Rule-engine testing</dt>
+            <dd>Limited to issues for which explicit rules have been written. Rules can be precise and comprehensive for clearly defined requirements (for example: every <code>&lt;img&gt;</code> must have an <code>alt</code> attribute). They cannot assess subjective quality (for example: whether that <code>alt</code> text is actually helpful). Some issues are detectable in principle but not yet covered by available engines.</dd>
+            <dt>AI-agent testing</dt>
+            <dd>Broader than rule engines for issues requiring reasoning, narrower than humans for issues requiring interaction or lived experience. An AI agent can assess whether image alternative text is plausibly meaningful, whether instructions are clear, or whether form labels are adequate. It cannot click, scroll, or type into the page; it does not receive a visual or auditory rendering; and it does not receive the browser's accessibility tree — the computed structure of roles, names, states, and values that assistive technologies consume.</dd>
+          </dl>
+
+          <h4>False positives (incorrect findings)</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>Low, in the hands of a knowledgeable tester. A human who understands the standards can distinguish genuine violations from compliant edge cases. Inexperienced testers produce more false positives.</dd>
+            <dt>Rule-engine testing</dt>
+            <dd>Moderate and tool-dependent. Rules that cannot fully determine compliance from the code alone (for example: whether an image needs alternative text) may produce incorrect results. Different engines disagree about the same page, and some findings require human review to confirm.</dd>
+            <dt>AI-agent testing</dt>
+            <dd>Variable and model-dependent. Current models sometimes misidentify compliant patterns as violations, particularly when their knowledge of applicable standards is incomplete or when the HTML structure is complex. Critical review of AI output is essential.</dd>
+          </dl>
+
+          <h4>False negatives (missed defects)</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>Low for experienced testers working systematically, but not zero. Testers can overlook attributes on elements they do not specifically inspect. Issues that only manifest in edge cases or under specific conditions may be missed if those cases are not tested. Consistency across large page sets can be difficult to maintain.</dd>
+            <dt>Rule-engine testing</dt>
+            <dd>Any issue not covered by a rule will be missed. No current rule engine covers all WCAG success criteria. Engines also differ in which rules they implement: a single engine may miss issues that another engine catches. Ensemble testing reduces the false negative rate relative to any single engine.</dd>
+            <dt>AI-agent testing</dt>
+            <dd>Depends heavily on what content is provided to the AI agent. If the agent receives only the raw HTML source of a page whose forms are rendered by JavaScript, it will miss all form-related issues entirely. If the agent's knowledge of valid attribute values is incomplete, it may miss invalid values. AI-agent false negatives are less predictable than rule-engine false negatives, because they vary with the model version, the prompt, and the content provided.</dd>
+          </dl>
+
+          <h4>Expertise required</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>High. The tester needs working knowledge of WCAG, ARIA, and HTML semantics, plus proficiency with a screen reader.</dd>
+            <dt>Rule-engine testing</dt>
+            <dd>Low to moderate. Running a tool requires little accessibility knowledge. Interpreting results and determining whether flagged items are genuine violations requires more. Reviewing results across a large ensemble requires the ability to reconcile conflicting findings.</dd>
+            <dt>AI-agent testing</dt>
+            <dd>Low to moderate for basic use; moderate for reliable use. Formulating precise and effective instructions, understanding the limits of AI output, and critically reviewing findings all benefit from accessibility knowledge.</dd>
+          </dl>
+
+          <h4>Best suited for</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>Final verification before release; issues requiring judgment about context, meaning, or usability; interaction flows; screen reader experience; and any issue that requires lived experience with assistive technology.</dd>
+            <dt>Rule-engine testing</dt>
+            <dd>First-pass scanning across many pages; continuous integration checks; measuring progress over time; identifying well-defined structural violations efficiently; and providing a baseline before human testing.</dd>
+            <dt>AI-agent testing</dt>
+            <dd>Focused analysis of specific issue types when sufficient page content can be provided; assessment of issues that are too nuanced for mechanical rules but too common for full human review; and generating explanations and remediation guidance.</dd>
+          </dl>
+        </section>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="case-study-intro">
+          <h3>Introducing the case study</h3>
+          <p class="time-estimate">About 5 minutes.</p>
+
+          <p>The practicum applies all three strategies to a single type of accessibility issue on a specific web page. The issue type is: <strong>incorrect or absent <code>autocomplete</code> attribute on form inputs.</strong></p>
+
+          <h4>Why the <code>autocomplete</code> attribute matters</h4>
+          <p>The <code>autocomplete</code> attribute tells the browser what kind of personal information an input field collects. When set correctly, the browser can offer to fill in the field from stored data — a feature that particularly helps users with cognitive disabilities, motor disabilities, dyslexia, or anyone filling out forms repeatedly.</p>
+          <p>WCAG 2.1 and 2.2 Success Criterion <a href="https://www.w3.org/WAI/WCAG22/Understanding/identify-input-purpose">1.3.5 Identify Input Purpose</a> (Level AA) requires that the purpose of inputs collecting personal information can be programmatically determined. The <code>autocomplete</code> attribute is the primary mechanism for satisfying this criterion in HTML.</p>
+
+          <h4>Valid attribute values</h4>
+          <p>On <code>&lt;input&gt;</code>, <code>&lt;select&gt;</code>, and <code>&lt;textarea&gt;</code> elements, the <code>autocomplete</code> attribute must have a value from the <a href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill">defined list of autofill tokens</a>. Common values include:</p>
+          <ul>
+            <li><code>name</code>, <code>given-name</code>, <code>family-name</code></li>
+            <li><code>email</code></li>
+            <li><code>tel</code></li>
+            <li><code>street-address</code>, <code>postal-code</code>, <code>country</code></li>
+            <li><code>username</code>, <code>new-password</code>, <code>current-password</code></li>
+          </ul>
+          <p>On a <code>&lt;form&gt;</code> element, the <code>autocomplete</code> attribute is also valid — but with an important restriction: the only valid values for a <code>&lt;form&gt;</code> element are <code>on</code> and <code>off</code>. The richer set of purpose tokens is not valid on <code>&lt;form&gt;</code> elements; those tokens belong on the individual input elements within the form.</p>
+
+          <h4>Two types of violation</h4>
+          <p>This practicum focuses on two specific violations of WCAG 1.3.5:</p>
+          <ul>
+            <li><strong>Missing attribute:</strong> An input collecting personal information has no <code>autocomplete</code> attribute at all.</li>
+            <li><strong>Invalid attribute value:</strong> An element has an <code>autocomplete</code> attribute, but its value is not among those recognised by the HTML specification for that element type.</li>
+          </ul>
+          <p>Both violations prevent browsers and assistive technologies from identifying the purpose of the affected fields.</p>
+        </section>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <section id="practicum" class="tutorial-section">
+        <h2>Part 2: Practicum</h2>
+        <p class="time-estimate">About 30 minutes.</p>
+        <p>This practicum examines a single real-world web page for <code>autocomplete</code> attribute issues. The page is a public website homepage captured in May 2026. <strong>The name and URL of the site are withheld</strong> to avoid public-relations concerns unrelated to this tutorial. The page facts below are a snapshot; the live page may differ.</p>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="example-page">
+          <h3>The example page</h3>
+          <p class="time-estimate">About 3 minutes.</p>
+
+          <p>The example page is the homepage of a nonprofit organisation in the career-guidance sector. It is a publicly accessible, JavaScript-rendered WordPress site.</p>
+
+          <h4>Relevant page content</h4>
+          <p>The page contains a newsletter sign-up form. This form is not present in the raw HTML that the server delivers. It is injected into the page by a JavaScript plugin (Thrive Leads) after the browser has loaded and executed the page scripts. The form contains one visible user-facing input field:</p>
+          <pre class="code-sample"><code>&lt;input type="email" data-field="email" data-required="1"
+  data-validation="email" name="email"
+  placeholder="&gt; Enter your email"&gt;</code></pre>
+          <p>The form element wrapping this input is:</p>
+          <pre class="code-sample"><code>&lt;form action="#" method="post" novalidate="novalidate"
+  autocomplete="new-password"&gt;</code></pre>
+          <p>Both elements were captured from the rendered DOM on 2026-05-30 using a headless browser. They are the only non-hidden, non-search, non-consent form inputs on the page.</p>
+
+          <h4>The two defects</h4>
+          <p>Two <code>autocomplete</code> attribute issues are present:</p>
+          <ul>
+            <li><strong>Issue A</strong> — The <code>&lt;input type="email"&gt;</code> element has no <code>autocomplete</code> attribute. Per WCAG 1.3.5, an input that collects an email address requires <code>autocomplete="email"</code>.</li>
+            <li><strong>Issue B</strong> — The <code>&lt;form&gt;</code> element has <code>autocomplete="new-password"</code>. On a <code>&lt;form&gt;</code> element, the only valid values are <code>on</code> and <code>off</code>. <code>new-password</code> is a valid token for <code>&lt;input&gt;</code> elements, not for <code>&lt;form&gt;</code> elements. This value appears to be a misapplication of a technique sometimes used to suppress browser autofill on individual input fields.</li>
+          </ul>
+        </section>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="human-testing">
+          <h3>Human testing</h3>
+          <p class="time-estimate">About 7 minutes.</p>
+
+          <p>A human tester would approach this page using browser developer tools, keyboard navigation, and (optionally) a screen reader.</p>
+
+          <h4>What a tester would do</h4>
+          <ol>
+            <li>Open the page in a browser and let it fully load.</li>
+            <li>Identify interactive elements — in this case, the email input in the newsletter form.</li>
+            <li>Open the browser's developer tools (typically F12 or right-click → Inspect).</li>
+            <li>Select the email input in the Elements panel and examine its attributes.</li>
+            <li>Note that the <code>autocomplete</code> attribute is absent.</li>
+            <li>Select the enclosing <code>&lt;form&gt;</code> element and examine its attributes.</li>
+            <li>Note that <code>autocomplete="new-password"</code> is set on the form.</li>
+            <li>Recall (or look up) that <code>new-password</code> is not a valid value for a <code>&lt;form&gt;</code> element.</li>
+          </ol>
+
+          <h4>Findings</h4>
+          <div class="finding">
+            <p><strong>Issue A found?</strong> Yes — a tester who inspects the email input will find the missing attribute.</p>
+            <p><strong>Issue B found?</strong> Uncertain. A tester who inspects the form element will see <code>autocomplete="new-password"</code>. Whether they flag this as invalid depends on whether they know that this token is not valid on <code>&lt;form&gt;</code> elements. Many experienced developers have seen <code>new-password</code> used as an autofill-suppression technique on individual inputs and might not question its use on a form.</p>
+          </div>
+
+          <h4>Limitations observed</h4>
+          <p>The form is JavaScript-rendered and appears only after the page fully loads. A tester who views the page source (rather than the rendered DOM) would not find it at all. A tester must know to wait for JavaScript execution and to inspect the live DOM, not the source.</p>
+          <p>Keyboard navigation and screen reader testing would reveal an additional issue — the email input has no label element (Issue A causes the input to be named only by its placeholder text, which is fragile) — but that is a separate issue not in scope here. Those techniques would not directly reveal the <code>autocomplete</code> attribute issues, which are only visible in the DOM.</p>
+
+          <h4>Verdict on autocomplete issues</h4>
+          <ul>
+            <li><strong>Issue A (missing attribute on input):</strong> Found, if the tester inspects the input element.</li>
+            <li><strong>Issue B (invalid value on form):</strong> Possibly missed, unless the tester knows the valid values for <code>autocomplete</code> on <code>&lt;form&gt;</code> elements.</li>
+          </ul>
+        </section>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="rule-engine-testing">
+          <h3>Rule-engine testing</h3>
+          <p class="time-estimate">About 7 minutes.</p>
+
+          <p>Several rule engines were applied to this page. The results below compare what a single widely-used engine found against what ensemble testing found.</p>
+
+          <h4>Single-engine result: axe-core</h4>
+          <p><a href="https://github.com/dequelabs/axe-core">axe-core</a> is one of the most widely used open-source accessibility rule engines. It is the engine underlying the axe DevTools browser extension, the popular <code>jest-axe</code> testing library, and many CI/CD integrations. It was run against the fully rendered DOM of the example page in May 2026.</p>
+          <div class="finding">
+            <p><strong>axe-core result on <code>autocomplete</code> issues: 0 violations found.</strong></p>
+            <p>axe-core's <code>autocomplete-valid</code> rule checks that <code>autocomplete</code> attribute values, when present, are from the valid list. It does not flag the absence of an <code>autocomplete</code> attribute on inputs collecting personal information. Separately, the <code>autocomplete="new-password"</code> value on the <code>&lt;form&gt;</code> element was not flagged.</p>
+          </div>
+          <p>Both autocomplete issues were false negatives for axe-core.</p>
+
+          <h4>Ensemble result: Kilotest</h4>
+          <p>Kilotest applied 10 tools to the same page in May 2026. Nine of those tools reported at least one issue on the page. Two tools specifically reported autocomplete issues:</p>
+          <ul>
+            <li><strong>Testaro</strong> reported <q>autocomplete missing</q> (Issue A: the email input lacks an <code>autocomplete</code> attribute). WCAG 1.3.5.</li>
+            <li><strong>HTML CodeSniffer</strong> reported <q>autocomplete invalid</q> (Issue B: the <code>&lt;form&gt;</code> element has <code>autocomplete="new-password"</code>, which is not valid for that element type). WCAG 1.3.5.</li>
+          </ul>
+          <div class="finding">
+            <p><strong>Ensemble result: both autocomplete issues found</strong> — by different tools within the ensemble.</p>
+          </div>
+          <p>The full Kilotest report for this page is available at <a href="https://kilotest.com/reportIssues.html/260530T0032/n2u">kilotest.com (report 260530T0032/n2u)</a>. It lists 45 issues across 9 tools — the autocomplete issues are two of them.</p>
+
+          <h4>Why the single engine missed both issues</h4>
+          <p>axe-core's <code>autocomplete-valid</code> rule was designed to catch invalid values when an <code>autocomplete</code> attribute is present. It was not designed to enforce WCAG 1.3.5's requirement that inputs collecting personal information <em>must have</em> an <code>autocomplete</code> attribute. For Issue B, axe-core also did not flag the invalid value on the <code>&lt;form&gt;</code> element.</p>
+          <p>This is not a criticism of axe-core specifically. Every rule engine has coverage gaps. The practical lesson is that no single rule engine covers all WCAG success criteria. Running multiple engines — an ensemble — reduces, though does not eliminate, false negatives.</p>
+
+          <h4>Verdict on autocomplete issues</h4>
+          <ul>
+            <li><strong>Issue A (missing attribute on input):</strong> Missed by axe-core; found by Testaro in the Kilotest ensemble.</li>
+            <li><strong>Issue B (invalid value on form):</strong> Missed by axe-core; found by HTML CodeSniffer in the Kilotest ensemble.</li>
+          </ul>
+        </section>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="ai-testing">
+          <h3>AI-agent testing</h3>
+          <p class="time-estimate">About 7 minutes.</p>
+
+          <p>An AI agent was asked to find <code>autocomplete</code> attribute issues on the example page. Two scenarios were tested, illustrating how the content given to the agent affects what it can find.</p>
+
+          <h4>What the AI agent was given and asked</h4>
+          <p>In both scenarios, the instructions were the same:</p>
+          <div class="ai-output">
+            <p><strong>Instruction to the AI agent:</strong></p>
+            <p>The following content is from a web page. Identify all violations of WCAG 2.2 Success Criterion 1.3.5 (Identify Input Purpose) related to the <code>autocomplete</code> attribute. For each violation, state the element, the problem, and the correction required. Be precise about which values are valid for each element type.</p>
+          </div>
+
+          <h4>Scenario 1: AI agent given the raw HTML source</h4>
+          <p>The raw HTML delivered by the server was provided to the AI agent. This HTML does not contain the newsletter form, which is injected by JavaScript after page load.</p>
+          <div class="ai-output">
+            <p><strong>Model used:</strong> Claude claude-sonnet-4 (Anthropic), May 2026.</p>
+            <p><strong>AI response (summary):</strong></p>
+            <p>I can see a search input (<code>&lt;input type="search" name="s"&gt;</code>) in the provided HTML. This element does not have an <code>autocomplete</code> attribute. However, a search field is not among the input purposes listed under WCAG 1.3.5 — it does not collect personal information — so no violation is present. I find no violations of WCAG 1.3.5 in the provided HTML.</p>
+          </div>
+          <div class="finding">
+            <p><strong>Result: Both issues missed — 100% false negative rate.</strong></p>
+            <p>The AI agent correctly analysed what it was given, and correctly found no violations in the raw HTML. But the raw HTML does not contain the newsletter form. The AI agent could not report what it was not given. This is not a failure of the agent's reasoning — it is a failure of the data provided to it.</p>
+          </div>
+
+          <h4>Scenario 2: AI agent given the rendered DOM</h4>
+          <p>The HTML of the fully rendered DOM — captured after JavaScript execution — was provided to the AI agent. This HTML includes the newsletter form with its email input and the form element.</p>
+          <div class="ai-output">
+            <p><strong>Model used:</strong> Claude claude-sonnet-4 (Anthropic), May 2026.</p>
+            <p><strong>AI response (summary):</strong></p>
+            <p>I have identified two violations of WCAG 2.2 Success Criterion 1.3.5:</p>
+            <p><strong>Violation 1: Missing <code>autocomplete</code> attribute on email input.</strong><br>
+            Element: <code>&lt;input type="email" name="email" placeholder="&gt; Enter your email"&gt;</code><br>
+            Problem: This input collects an email address but has no <code>autocomplete</code> attribute. WCAG 1.3.5 requires that inputs collecting personal information have a programmatically determinable purpose.<br>
+            Correction: Add <code>autocomplete="email"</code>.</p>
+            <p><strong>Violation 2: Invalid <code>autocomplete</code> value on the <code>&lt;form&gt;</code> element.</strong><br>
+            Element: <code>&lt;form autocomplete="new-password"&gt;</code><br>
+            Problem: On a <code>&lt;form&gt;</code> element, the only valid values for <code>autocomplete</code> are <code>on</code> and <code>off</code>. The value <code>new-password</code> is a valid autofill detail token for <code>&lt;input&gt;</code> elements, but not for <code>&lt;form&gt;</code> elements. Its presence here does not conform to the HTML specification and will not be processed as intended by browsers.<br>
+            Correction: Replace <code>autocomplete="new-password"</code> with <code>autocomplete="off"</code> if the intent is to suppress autofill on the form. Note that <code>autocomplete="off"</code> is itself not recommended for personal data collection forms, as it degrades the experience for users who rely on autofill.</p>
+          </div>
+          <div class="finding">
+            <p><strong>Result: Both issues correctly found — when given the right input.</strong></p>
+            <p>With the rendered DOM, the AI agent identified both violations accurately and provided correct remediation advice. It also flagged that suppressing autocomplete on a personal data form is itself a usability concern for users who rely on autofill — a nuance that rule engines do not typically report.</p>
+          </div>
+
+          <h4>What this demonstrates</h4>
+          <p>The two scenarios show that the effectiveness of AI-agent testing depends critically on what the AI agent receives, not only on the capability of the underlying model. Providing the rendered DOM rather than the raw HTML source is the difference between finding both issues and finding neither.</p>
+          <p>This has a direct practical implication: when using AI agents for accessibility testing, you must understand whether the page's content is server-rendered or JavaScript-rendered. If it is JavaScript-rendered, the agent must receive the rendered DOM, not the raw source.</p>
+          <p>It also illustrates a limitation that affects all three strategies: all depend on the tester (human, rule engine, or AI agent) receiving the full relevant content. Differences in what each strategy can access — raw source, rendered DOM, accessibility tree, visual rendering — partly determine what each strategy can find.</p>
+
+          <h4>Verdict on autocomplete issues</h4>
+          <ul>
+            <li><strong>Issue A (missing attribute on input):</strong> Missed when given raw HTML; found when given rendered DOM.</li>
+            <li><strong>Issue B (invalid value on form):</strong> Missed when given raw HTML; found when given rendered DOM.</li>
+          </ul>
+        </section>
+
+        <!-- ─── ─── ─── ─── -->
+        <section id="comparison">
+          <h3>Comparing the strategies</h3>
+          <p class="time-estimate">About 6 minutes.</p>
+
+          <p>The practicum produced a clear picture of what each strategy found on the example page:</p>
+
+          <h4>What each strategy found</h4>
+          <dl class="compare">
+            <dt>Human testing</dt>
+            <dd>Found Issue A (missing attribute) on direct inspection. Issue B (invalid value on form) was possibly missed, depending on whether the tester knew that <code>new-password</code> is not a valid value for <code>&lt;form&gt;</code> elements. The form itself would have been invisible to a tester using only the page source.</dd>
+            <dt>Rule-engine testing (single engine)</dt>
+            <dd>Found neither issue. axe-core, one of the most widely used accessibility rule engines, produced zero findings on the two autocomplete issues.</dd>
+            <dt>Rule-engine testing (ensemble)</dt>
+            <dd>Found both issues, through two different tools in the ensemble: Testaro found Issue A; HTML CodeSniffer found Issue B.</dd>
+            <dt>AI-agent testing (raw HTML)</dt>
+            <dd>Found neither issue. The form is not present in the raw HTML, so the AI agent had no relevant content to analyse.</dd>
+            <dt>AI-agent testing (rendered DOM)</dt>
+            <dd>Found both issues, with accurate explanations and correct remediation advice.</dd>
+          </dl>
+
+          <h4>Lessons from the case study</h4>
+
+          <details>
+            <summary>Lesson 1: What you provide determines what gets found</summary>
+            <p>Every testing strategy operates on a representation of the page — raw source, rendered DOM, visual rendering, or accessibility tree. Each representation contains different information. A strategy given an incomplete or wrong representation will produce incomplete or wrong results, regardless of its capability.</p>
+            <p>In this case study, both rule-engine tools that found the issues used the rendered DOM (via a headless browser). The AI agent found the issues when given the rendered DOM and nothing when given the raw source. The human tester would find both using a browser's developer tools, which always shows the rendered DOM.</p>
+            <form class="knowledge-check" id="lesson1-quiz" novalidate>
+              <fieldset>
+                <legend>Knowledge check</legend>
+                <p>In this case study, an AI agent was given the raw HTML source of the example page and asked to identify <code>autocomplete</code> violations. What did it find?</p>
+                <ol>
+                  <li><label><input type="radio" name="q1" value="a"> Both issues: the missing attribute on the email input and the invalid value on the form element.</label></li>
+                  <li><label><input type="radio" name="q1" value="b"> The missing <code>autocomplete</code> attribute on the email input only.</label></li>
+                  <li><label><input type="radio" name="q1" value="c"> No violations, because the newsletter form is present only in the rendered DOM, not in the raw HTML.</label></li>
+                  <li><label><input type="radio" name="q1" value="d"> The invalid <code>autocomplete</code> value on the form element only.</label></li>
+                </ol>
+                <button type="submit">Check answer</button>
+              </fieldset>
+              <div role="status" id="lesson1-quiz-feedback" aria-live="polite" aria-atomic="true" class="quiz-feedback"></div>
+            </form>
+          </details>
+
+          <details>
+            <summary>Lesson 2: No single rule engine is complete</summary>
+            <p>axe-core is a capable, well-maintained engine used by millions of developers. It found neither autocomplete issue on this page. This is not an unusual result — studies of rule-engine agreement consistently find that no single engine covers all issues.</p>
+            <p>Ensemble testing, by combining multiple engines, found both issues. This is the practical argument for ensembles: different tools have different coverage, and their findings complement each other.</p>
+          </details>
+
+          <details>
+            <summary>Lesson 3: Some issues are harder for humans than for machines</summary>
+            <p>Issue B — the invalid <code>autocomplete</code> value on the <code>&lt;form&gt;</code> element — illustrates an important pattern. The developer who introduced this value almost certainly had a goal (suppressing browser autofill) and used a technique they had seen work on individual inputs. The fact that it is technically invalid for a <code>&lt;form&gt;</code> element is a detail that a knowledgeable human might easily overlook.</p>
+            <p>An appropriate rule engine, however, checks the value against a precise specification and reports the violation without ambiguity. This is one of the strongest arguments for rule-engine testing: it catches specification-level errors consistently, regardless of whether the reviewer finds the value plausible.</p>
+          </details>
+
+          <details>
+            <summary>Lesson 4: The AI limitation encountered during this tutorial's development</summary>
+            <p>This tutorial was developed with AI assistance. During development, an AI agent was asked to fetch the example page and identify the elements with autocomplete issues. The agent fetched the page HTML and ran automated queries — and initially found only one issue (the missing attribute on the email input). It did not find the invalid value on the <code>&lt;form&gt;</code> element.</p>
+            <p>The reason is instructive. The agent queried for <code>&lt;input&gt;</code>, <code>&lt;select&gt;</code>, and <code>&lt;textarea&gt;</code> elements, but did not initially think to query for the <code>&lt;form&gt;</code> element's <code>autocomplete</code> attribute. A human developer with DevTools open — able to visually scan the attributes panel, explore the DOM tree interactively, and notice all attributes on any element — would more naturally encounter the form element's attribute while inspecting the surrounding structure.</p>
+            <p>This experience illustrates a real limitation of current AI agents: even though an agent can rapidly process large amounts of text, it does not yet replicate the fluid, exploratory experience of a developer browsing to a page and inspecting its DOM. That exploratory capacity remains a strength of human testing.</p>
+          </details>
+        </section>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════ -->
+      <section id="conclusion" class="tutorial-section">
+        <h2>Conclusion</h2>
+        <p class="time-estimate">About 5 minutes.</p>
+
+        <p>You have seen all three accessibility testing strategies applied to the same page and the same issue type. Each strategy has genuine strengths and genuine limitations. The key points to take away:</p>
+
+        <ul>
+          <li><strong>Use all three.</strong> The strategies are complements, not alternatives. Rule engines provide fast, consistent first-pass coverage. AI agents can reason about nuance and explain issues. Human testing catches what the others miss and is the ultimate measure of real-world usability.</li>
+          <li><strong>Understand what each strategy sees.</strong> A strategy can only report on what it receives. For JavaScript-rendered content, ensure your tools — rule engines, AI agents, or human testers — are working with the rendered DOM, not the raw HTML source.</li>
+          <li><strong>Prefer ensembles over single tools.</strong> No rule engine covers all WCAG success criteria. Running multiple engines together significantly reduces the false negative rate relative to any single engine.</li>
+          <li><strong>Verify AI output.</strong> AI agents can produce both false positives and false negatives. Their output is a useful starting point, not a final verdict. Critical review against the relevant standards is essential.</li>
+          <li><strong>Test early and often.</strong> The cheapest time to fix an accessibility issue is before the page is shipped. Rule-engine testing integrated into a development workflow catches issues while the code is fresh and the fix is small.</li>
+        </ul>
+
+        <h3>Further reading</h3>
+        <ul>
+          <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/">Understanding WCAG 2.2</a> — W3C explanations of each success criterion</li>
+          <li><a href="https://www.w3.org/WAI/test-evaluate/tools/list/">Web Accessibility Evaluation Tools List</a> — W3C registry of rule-engine tools</li>
+          <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/identify-input-purpose">Understanding SC 1.3.5: Identify Input Purpose</a> — detailed guidance on <code>autocomplete</code> requirements</li>
+          <li><a href="https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#autofill">HTML Living Standard: Autofill</a> — the definitive list of valid <code>autocomplete</code> tokens</li>
+          <li><a href="https://arxiv.org/abs/2304.07591">Accessibility Metatesting: Comparing Nine Testing Tools</a> — research on rule-engine coverage variation</li>
+          <li><a href="https://arxiv.org/abs/2309.10167">Testaro: Efficient Ensemble Testing for Web Accessibility</a> — the rationale for ensemble testing</li>
+        </ul>
+
+        <p>Return to the <a href="/">Kilotest home page</a>.</p>
+
+        <div class="comment-section" id="feedback-section">
+          <h3>Suggest an improvement</h3>
+          <p>Have a suggestion for improving this tutorial? Submit it below. Your suggestion will be saved for the tutorial authors to review.</p>
+          <form id="comment-form" novalidate>
+            <label for="comment-text">Your suggestion (up to 500 characters):</label>
+            <textarea
+              id="comment-text"
+              name="content"
+              maxlength="500"
+              rows="5"
+              autocomplete="off"
+              aria-describedby="char-count-msg"
+            ></textarea>
+            <p class="char-count" id="char-count-msg"><span id="char-remaining">500</span> characters remaining</p>
+            <button type="submit" id="comment-submit">Submit suggestion</button>
+          </form>
+          <div role="status" id="comment-feedback" aria-live="polite" aria-atomic="true" class="comment-feedback"></div>
+        </div>
+      </section>
+
+    </main>
+    <script>
+      // ── Knowledge check (Lesson 1) ──────────────────────────────
+      document.getElementById('lesson1-quiz').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const selected = this.querySelector('input[name="q1"]:checked');
+        const feedback = document.getElementById('lesson1-quiz-feedback');
+        if (!selected) {
+          feedback.className = 'quiz-feedback incorrect';
+          feedback.textContent = 'Please select an answer before checking.';
+          return;
+        }
+        if (selected.value === 'c') {
+          feedback.className = 'quiz-feedback correct';
+          feedback.textContent =
+            'Correct. The raw HTML does not contain the newsletter form — it is injected by JavaScript after page load. Without the form in its input, the AI agent had no violations to find.';
+        } else {
+          feedback.className = 'quiz-feedback incorrect';
+          feedback.textContent =
+            'Not quite. The newsletter form is injected by JavaScript and is absent from the raw HTML source. The AI agent could not find what was not in the content it received.';
+        }
+      });
+
+      // ── Comment form ─────────────────────────────────────────────
+      const commentText = document.getElementById('comment-text');
+      const charRemaining = document.getElementById('char-remaining');
+      const charCountMsg = document.getElementById('char-count-msg');
+      const commentFeedback = document.getElementById('comment-feedback');
+      const commentSubmit = document.getElementById('comment-submit');
+
+      commentText.addEventListener('input', function () {
+        const remaining = 500 - this.value.length;
+        charRemaining.textContent = remaining;
+        charCountMsg.className = remaining <= 50 ? 'char-count low' : 'char-count';
+      });
+
+      document.getElementById('comment-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const content = commentText.value.trim();
+        commentFeedback.className = 'comment-feedback';
+        commentFeedback.textContent = '';
+        if (!content) {
+          commentFeedback.className = 'comment-feedback error';
+          commentFeedback.textContent = 'Please enter a suggestion before submitting.';
+          return;
+        }
+        commentSubmit.disabled = true;
+        try {
+          const response = await fetch('/tutorialComment.html', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({content})
+          });
+          const data = await response.json();
+          if (data.status === 'ok') {
+            commentFeedback.className = 'comment-feedback success';
+            commentFeedback.textContent =
+              'Thank you! Your suggestion has been saved and will be reviewed by the tutorial authors.';
+            this.reset();
+            charRemaining.textContent = '500';
+            charCountMsg.className = 'char-count';
+          } else {
+            commentFeedback.className = 'comment-feedback error';
+            commentFeedback.textContent =
+              'Your suggestion could not be saved. Please try again later.';
+            commentSubmit.disabled = false;
+          }
+        } catch (_) {
+          commentFeedback.className = 'comment-feedback error';
+          commentFeedback.textContent =
+            'A connection error occurred. Please check your connection and try again.';
+          commentSubmit.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

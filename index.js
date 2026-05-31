@@ -54,6 +54,7 @@ const answer = {
   testOrder: require('./testOrder/index').answer,
   testRec: require('./testRec/index').answer,
   testRecForm: require('./testRecForm/index').answer,
+  tutorial: require('./tutorial/index').answer,
   wcagRenew: require('./wcagRenew/index').answer,
   wcagRenewForm: require('./wcagRenewForm/index').answer
 };
@@ -556,6 +557,20 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the agent is not authorized:
       else {
         await serveError({message: 'ERROR: Invalid Testaro agent'}, response, false);
+      }
+    }
+    // Otherwise, if it is a tutorial comment:
+    else if (pageName === 'tutorialComment.html') {
+      const {content} = postData;
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      const answerData = await require(path.join(__dirname, 'tutorial', 'index')).saveComment(content);
+      if (answerData.status === 'ok') {
+        response.end(JSON.stringify({status: 'ok'}));
+      }
+      else {
+        response.statusCode = 400;
+        response.end(JSON.stringify({status: 'error', message: answerData.error}));
       }
     }
     // Otherwise, i.e. if it is any other POST request:

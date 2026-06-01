@@ -6,23 +6,10 @@
     <meta name="publisher" content="Jonathan Robert Pool">
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="accessibility,a11y,testing,tutorial,WCAG,autocomplete">
-    <title>Accessibility Testing Strategies | Kilotest</title>
+    <title>Tutorial: Accessibility Testing Strategies | Kilotest</title>
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
     <style>
-      .skip-link {
-        position: absolute;
-        top: -3rem;
-        left: 0;
-        padding: 0.5rem 1rem;
-        background: #fff;
-        border: solid 2px #000;
-        z-index: 100;
-        transition: top 0.1s;
-      }
-      .skip-link:focus {
-        top: 0;
-      }
       .tutorial-nav {
         margin-bottom: 2rem;
         padding: 1rem;
@@ -31,11 +18,6 @@
       }
       .tutorial-nav h2 {
         margin-top: 0;
-      }
-      section.tutorial-section {
-        border-top: solid 2px #006666;
-        padding-top: 1rem;
-        margin-top: 2rem;
       }
       .note {
         padding: 0.75rem 1rem;
@@ -141,7 +123,6 @@
       }
       .comment-section textarea {
         width: 100%;
-        max-width: 40rem;
         padding: 0.5rem;
         font-size: 1rem;
         font-family: inherit;
@@ -213,14 +194,11 @@
     </style>
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <main id="main-content">
-
-      <h1><a href="/">Kilotest</a>: Accessibility Testing Strategies</h1>
-      <p class="time-estimate">Estimated reading time: about 60 minutes.</p>
-
-      <nav class="tutorial-nav" aria-label="Tutorial sections">
-        <h2>Sections</h2>
+    <main>
+      <h1><a href="/">Kilotest</a> tutorial: Accessibility Testing Strategies</h1>
+      <p class="time-estimate">Estimated completion time: 60 minutes.</p>
+      <nav class="tutorial-nav" aria-label="Tutorial table of contents">
+        <h2>Table of contents</h2>
         <ul class="nav">
           <li><a href="#about">About this tutorial</a></li>
           <li><a href="#orientation">Part 1: Orientation</a>
@@ -241,13 +219,14 @@
             </ul>
           </li>
           <li><a href="#conclusion">Conclusion</a></li>
+          <li><a href="#further-reading">Further reading</a></li>
+          <li><a href="#suggest-improvement">Suggest improvements</a></li>
         </ul>
       </nav>
-
-      <!-- ═══════════════════════════════════════════════════════ -->
-      <section id="about" class="tutorial-section">
+      <section id="about" class="main">
+        <h2>Notice</h2>
+        <p>This is a rough draft created in partnership with an artificial intelligence agent using Claude Sonnet 4.6 Thinking. Revisions are in progress.</p>
         <h2>About this tutorial</h2>
-        <p><strong>Notice</strong>: This is a rough draft created in partnership with Claude Sonnet 4.6 Thinking. Revisions are in progress.</p>
         <p>This tutorial is for web developers with limited experience in web accessibility testing. It takes about 60 minutes to complete.</p>
         <p>You will learn about three strategies for testing web accessibility:</p>
         <ul>
@@ -264,9 +243,7 @@
           <p><strong>Note on AI results:</strong> The AI testing results in Part 2 were captured in May 2026 from a specific model. As AI models and the resources available to them improve, results may change — potentially for better or worse. The captured results are preserved here as a fixed point of comparison.</p>
         </div>
       </section>
-
-      <!-- ═══════════════════════════════════════════════════════ -->
-      <section id="orientation" class="tutorial-section">
+      <section id="orientation" class="main">
         <h2>Part 1: Orientation</h2>
         <p class="time-estimate">About 30 minutes.</p>
 
@@ -438,7 +415,7 @@
       </section>
 
       <!-- ═══════════════════════════════════════════════════════ -->
-      <section id="practicum" class="tutorial-section">
+      <section id="practicum" class="main">
         <h2>Part 2: Practicum</h2>
         <p class="time-estimate">About 30 minutes.</p>
         <p>This practicum examines a single real-world web page for <code>autocomplete</code> attribute issues. The page is a public website homepage captured in May 2026. <strong>The name and URL of the site are withheld</strong> to avoid public-relations concerns unrelated to this tutorial. The page facts below are a snapshot; the live page may differ.</p>
@@ -669,14 +646,10 @@
           </details>
         </section>
       </section>
-
-      <!-- ═══════════════════════════════════════════════════════ -->
-      <section id="conclusion" class="tutorial-section">
+      <section id="conclusion" class="main">
         <h2>Conclusion</h2>
         <p class="time-estimate">About 5 minutes.</p>
-
         <p>You have seen all three accessibility testing strategies applied to the same page and the same issue type. Each strategy has genuine strengths and genuine limitations. The key points to take away:</p>
-
         <ul>
           <li><strong>Use all three.</strong> The strategies are complements, not alternatives. Rule engines provide fast, consistent first-pass coverage. AI agents can reason about nuance and explain issues. Human testing catches what the others miss and is the ultimate measure of real-world usability.</li>
           <li><strong>Understand what each strategy sees.</strong> A strategy can only report on what it receives. For JavaScript-rendered content, ensure your tools — rule engines, AI agents, or human testers — are working with the rendered DOM, not the raw HTML source.</li>
@@ -684,8 +657,9 @@
           <li><strong>Verify AI output.</strong> AI agents can produce both false positives and false negatives. Their output is a useful starting point, not a final verdict. Critical review against the relevant standards is essential.</li>
           <li><strong>Test early and often.</strong> The cheapest time to fix an accessibility issue is before the page is shipped. Rule-engine testing integrated into a development workflow catches issues while the code is fresh and the fix is small.</li>
         </ul>
-
-        <h3>Further reading</h3>
+      </section>
+      <section id="further-reading" class="main">
+        <h2>Further reading</h2>
         <ul>
           <li><a href="https://www.w3.org/WAI/WCAG22/Understanding/">Understanding WCAG 2.2</a> — W3C explanations of each success criterion</li>
           <li><a href="https://www.w3.org/WAI/test-evaluate/tools/list/">Web Accessibility Evaluation Tools List</a> — W3C registry of rule-engine tools</li>
@@ -694,29 +668,28 @@
           <li><a href="https://arxiv.org/abs/2304.07591">Accessibility Metatesting: Comparing Nine Testing Tools</a> — research on rule-engine coverage variation</li>
           <li><a href="https://arxiv.org/abs/2309.10167">Testaro: Efficient Ensemble Testing for Web Accessibility</a> — the rationale for ensemble testing</li>
         </ul>
-
-        <p>Return to the <a href="/">Kilotest home page</a>.</p>
-
-        <div class="comment-section" id="feedback-section">
-          <h3>Suggest an improvement</h3>
-          <p>Have a suggestion for improving this tutorial? Submit it below. Your suggestion will be saved for the tutorial authors to review.</p>
-          <form id="comment-form" novalidate>
-            <label for="comment-text">Your suggestion (up to 500 characters):</label>
-            <textarea
-              id="comment-text"
-              name="content"
-              maxlength="500"
-              rows="5"
-              autocomplete="off"
-              aria-describedby="char-count-msg"
-            ></textarea>
-            <p class="char-count" id="char-count-msg"><span id="char-remaining">500</span> characters remaining</p>
-            <button type="submit" id="comment-submit">Submit suggestion</button>
-          </form>
-          <div role="status" id="comment-feedback" aria-live="polite" aria-atomic="true" class="comment-feedback"></div>
-        </div>
       </section>
-
+      <section id="suggest-improvement" class="main">
+        <!--<div class="comment-section" id="feedback-section">-->
+        <h2>Suggest improvements</h2>
+        <p>Please submit suggestions for improving this tutorial below. The Kilotest managers will review them.</p>
+        <form id="comment-form" novalidate>
+          <p id="comment-label">Your suggestions (up to 500 characters):</p>
+          <textarea
+            id="comment-text"
+            name="content"
+            maxlength="500"
+            rows="5"
+            autocomplete="off"
+            aria-labelledby="comment-label"
+            aria-describedby="char-count-msg"
+          ></textarea>
+          <p class="char-count" id="char-count-msg"><span id="char-remaining">500</span> characters remaining</p>
+          <button type="submit" id="comment-submit">Submit suggestions</button>
+        </form>
+        <div role="status" id="comment-feedback" aria-live="polite" aria-atomic="true" class="comment-feedback"></div>
+        <!--</div>-->
+      </section>
     </main>
     <script>
       // ── Knowledge check (Lesson 1) ──────────────────────────────

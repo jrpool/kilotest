@@ -47,6 +47,15 @@ code {
 code.thin {
   font-weight: 400;
 }
+.contents-table {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border: solid 1px #006666;
+  border-radius: 0.5rem;
+}
+.contents-table h2 {
+  margin-top: 0;
+}
 details {
   padding: rem;
   border: solid #000 1px;

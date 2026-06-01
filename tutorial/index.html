@@ -10,15 +10,6 @@
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
     <style>
-      .tutorial-nav {
-        margin-bottom: 2rem;
-        padding: 1rem;
-        border: solid 1px #006666;
-        border-radius: 0.5rem;
-      }
-      .tutorial-nav h2 {
-        margin-top: 0;
-      }
       .note {
         padding: 0.75rem 1rem;
         border-left: solid 4px #006666;
@@ -196,8 +187,7 @@
   <body>
     <main>
       <h1><a href="/">Kilotest</a> tutorial: Accessibility Testing Strategies</h1>
-      <p class="time-estimate">Estimated completion time: 60 minutes.</p>
-      <nav class="tutorial-nav" aria-label="Tutorial table of contents">
+      <nav class="contents-table">
         <h2>Table of contents</h2>
         <ul class="nav">
           <li><a href="#about">About this tutorial</a></li>
@@ -227,21 +217,15 @@
         <h2>Notice</h2>
         <p>This is a rough draft created in partnership with an artificial intelligence agent using Claude Sonnet 4.6 Thinking. Revisions are in progress.</p>
         <h2>About this tutorial</h2>
-        <p>This tutorial is for web developers with limited experience in web accessibility testing. It takes about 60 minutes to complete.</p>
-        <p>You will learn about three strategies for testing web accessibility:</p>
+        <p>If you are familiar with web technology (HTML, CSS, JavaScript), but you have limited knowledge of digital accessibility testing, this tutorial is designed for you.</p>
+        <p>Estimated completion time: 1 hour.</p>
+        <p>The tutorial has two parts:</p>
         <ul>
-          <li><strong>Human testing</strong> — a person directly examines and uses the page</li>
-          <li><strong>Rule-engine testing</strong> — software applies codified rules to the page</li>
-          <li><strong>AI-agent testing</strong> — an AI agent analyzes the page</li>
+          <li><strong>Orientation</strong>. What digital accessibility is, why it is valuable, and how websites can be tested for it.</li>
+          <li><strong>Practicum</strong>. Examining a specific example.</li>
         </ul>
-        <p>A practicum applies all three strategies to a real example, revealing what each strategy finds, what each misses, and why.</p>
-        <p>Links to additional information are included throughout. Completing the tutorial does not require following any of those links.</p>
-        <div class="note">
-          <p><strong>Offline use:</strong> This tutorial is self-contained. You may complete it without an Internet connection, though external links will not be reachable.</p>
-        </div>
-        <div class="note">
-          <p><strong>Note on AI results:</strong> The AI testing results in Part 2 were captured in May 2026 from a specific model. As AI models and the resources available to them improve, results may change — potentially for better or worse. The captured results are preserved here as a fixed point of comparison.</p>
-        </div>
+        <p>If the tutorial makes you want to learn more, there are links to additional information at the end.</p>
+        <p>Improvements in this tutorial are certainly possible. You can help by submitting your suggestions at the end.</p>
       </section>
       <section id="orientation" class="main">
         <h2>Part 1: Orientation</h2>
@@ -413,14 +397,9 @@
           <p>Both violations prevent browsers and assistive technologies from identifying the purpose of the affected fields.</p>
         </section>
       </section>
-
-      <!-- ═══════════════════════════════════════════════════════ -->
       <section id="practicum" class="main">
         <h2>Part 2: Practicum</h2>
-        <p class="time-estimate">About 30 minutes.</p>
         <p>This practicum examines a single real-world web page for <code>autocomplete</code> attribute issues. The page is a public website homepage captured in May 2026. <strong>The name and URL of the site are withheld</strong> to avoid public-relations concerns unrelated to this tutorial. The page facts below are a snapshot; the live page may differ.</p>
-
-        <!-- ─── ─── ─── ─── -->
         <section id="example-page">
           <h3>The example page</h3>
           <p class="time-estimate">About 3 minutes.</p>
@@ -443,7 +422,6 @@
           <pre class="code-sample"><code>&lt;form action="#" method="post" novalidate="novalidate"
   autocomplete="new-password"&gt;</code></pre>
           <p>Both elements were captured from the rendered DOM on 2026-05-30 using a headless browser. They are the only non-hidden, non-search, non-consent form inputs on the page.</p>
-
           <h4>The two defects</h4>
           <p>Two <code>autocomplete</code> attribute issues are present:</p>
           <ul>
@@ -451,8 +429,6 @@
             <li><strong>Issue B</strong> — The <code>&lt;form&gt;</code> element has <code>autocomplete="new-password"</code>. On a <code>&lt;form&gt;</code> element, the only valid values are <code>on</code> and <code>off</code>. <code>new-password</code> is a valid token for <code>&lt;input&gt;</code> elements, not for <code>&lt;form&gt;</code> elements. This value appears to be a misapplication of a technique sometimes used to suppress browser autofill on individual input fields.</li>
           </ul>
         </section>
-
-        <!-- ─── ─── ─── ─── -->
         <section id="human-testing">
           <h3>Human testing</h3>
           <p class="time-estimate">About 7 minutes.</p>
@@ -487,8 +463,6 @@
             <li><strong>Issue B (invalid value on form):</strong> Possibly missed, unless the tester knows the valid values for <code>autocomplete</code> on <code>&lt;form&gt;</code> elements.</li>
           </ul>
         </section>
-
-        <!-- ─── ─── ─── ─── -->
         <section id="rule-engine-testing">
           <h3>Rule-engine testing</h3>
           <p class="time-estimate">About 7 minutes.</p>
@@ -524,21 +498,15 @@
             <li><strong>Issue B (invalid value on form):</strong> Missed by axe-core; found by HTML CodeSniffer in the Kilotest ensemble.</li>
           </ul>
         </section>
-
-        <!-- ─── ─── ─── ─── -->
         <section id="ai-testing">
           <h3>AI-agent testing</h3>
-          <p class="time-estimate">About 7 minutes.</p>
-
           <p>An AI agent was asked to find <code>autocomplete</code> attribute issues on the example page. Two scenarios were tested, illustrating how the content given to the agent affects what it can find.</p>
-
           <h4>What the AI agent was given and asked</h4>
           <p>In both scenarios, the instructions were the same:</p>
           <div class="ai-output">
             <p><strong>Instruction to the AI agent:</strong></p>
             <p>The following content is from a web page. Identify all violations of WCAG 2.2 Success Criterion 1.3.5 (Identify Input Purpose) related to the <code>autocomplete</code> attribute. For each violation, state the element, the problem, and the correction required. Be precise about which values are valid for each element type.</p>
           </div>
-
           <h4>Scenario 1: AI agent given the raw HTML source</h4>
           <p>The raw HTML delivered by the server was provided to the AI agent. This HTML does not contain the newsletter form, which is injected by JavaScript after page load.</p>
           <div class="ai-output">
@@ -550,7 +518,6 @@
             <p><strong>Result: Both issues missed — 100% false negative rate.</strong></p>
             <p>The AI agent correctly analysed what it was given, and correctly found no violations in the raw HTML. But the raw HTML does not contain the newsletter form. The AI agent could not report what it was not given. This is not a failure of the agent's reasoning — it is a failure of the data provided to it.</p>
           </div>
-
           <h4>Scenario 2: AI agent given the rendered DOM</h4>
           <p>The HTML of the fully rendered DOM — captured after JavaScript execution — was provided to the AI agent. This HTML includes the newsletter form with its email input and the form element.</p>
           <div class="ai-output">
@@ -570,20 +537,17 @@
             <p><strong>Result: Both issues correctly found — when given the right input.</strong></p>
             <p>With the rendered DOM, the AI agent identified both violations accurately and provided correct remediation advice. It also flagged that suppressing autocomplete on a personal data form is itself a usability concern for users who rely on autofill — a nuance that rule engines do not typically report.</p>
           </div>
-
           <h4>What this demonstrates</h4>
           <p>The two scenarios show that the effectiveness of AI-agent testing depends critically on what the AI agent receives, not only on the capability of the underlying model. Providing the rendered DOM rather than the raw HTML source is the difference between finding both issues and finding neither.</p>
           <p>This has a direct practical implication: when using AI agents for accessibility testing, you must understand whether the page's content is server-rendered or JavaScript-rendered. If it is JavaScript-rendered, the agent must receive the rendered DOM, not the raw source.</p>
           <p>It also illustrates a limitation that affects all three strategies: all depend on the tester (human, rule engine, or AI agent) receiving the full relevant content. Differences in what each strategy can access — raw source, rendered DOM, accessibility tree, visual rendering — partly determine what each strategy can find.</p>
-
           <h4>Verdict on autocomplete issues</h4>
           <ul>
             <li><strong>Issue A (missing attribute on input):</strong> Missed when given raw HTML; found when given rendered DOM.</li>
             <li><strong>Issue B (invalid value on form):</strong> Missed when given raw HTML; found when given rendered DOM.</li>
           </ul>
+          <p><strong>Note on AI results:</strong> The AI testing results were captured in May 2026 from a specific model. As AI models and the resources available to them improve, results may change — potentially for better or worse. The captured results are preserved here as a fixed point of comparison.</p>
         </section>
-
-        <!-- ─── ─── ─── ─── -->
         <section id="comparison">
           <h3>Comparing the strategies</h3>
           <p class="time-estimate">About 6 minutes.</p>

@@ -50,7 +50,7 @@ code.thin {
 .contents-table {
   margin-bottom: 2rem;
   padding: 1rem;
-  border: solid 1px #006666;
+  border: solid 0.2rem #006666;
   border-radius: 0.5rem;
 }
 .contents-table h2 {
@@ -183,10 +183,10 @@ ul.pseudoTopLevel {
 ul.nav {
   padding-inline-start: 0.25rem;
 }
-ul.nav > li, ul.headed > li {
+ul.nav li, ul.headed li {
   list-style: none;
 }
-ul.nav > li > a {
+ul.nav li > a {
   display: block;
   box-sizing: border-box;
   min-height: 44px;

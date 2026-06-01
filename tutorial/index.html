@@ -213,9 +213,9 @@
           <li><a href="#suggest-improvement">Suggest improvements</a></li>
         </ul>
       </nav>
+      <h2>Notice</h2>
+      <p>This is a rough draft created in partnership with an artificial intelligence agent using Claude Sonnet 4.6 Thinking. Revisions are in progress.</p>
       <section id="about" class="main">
-        <h2>Notice</h2>
-        <p>This is a rough draft created in partnership with an artificial intelligence agent using Claude Sonnet 4.6 Thinking. Revisions are in progress.</p>
         <h2>About this tutorial</h2>
         <p>If you are familiar with web technology (HTML, CSS, JavaScript), but you have limited knowledge of digital accessibility testing, this tutorial is designed for you.</p>
         <p>Estimated completion time: 1 hour.</p>
@@ -229,44 +229,32 @@
       </section>
       <section id="orientation" class="main">
         <h2>Part 1: Orientation</h2>
-        <p class="time-estimate">About 30 minutes.</p>
-
         <section id="why-matters">
-          <h3>Why accessibility testing matters</h3>
-          <p class="time-estimate">About 5 minutes.</p>
-
-          <p>Accessibility is not a separate concern added to a finished product. It is an aspect of code quality, legal compliance, and basic usability — present or absent in every page you ship.</p>
-
-          <h4>Code quality</h4>
-          <p>Inaccessible code is often incorrect code. HTML specifications define semantic elements and attributes for good reasons, and violations frequently indicate structural errors that affect all users, not only users with disabilities. A missing <code>autocomplete</code> attribute, for example, is not a cosmetic gap — it tells the browser that the developer has not declared the purpose of a form field that users rely on.</p>
-          <p>Accessible code also tends to be more maintainable: clear structure, meaningful labels, and correct role assignments make code easier to understand and modify.</p>
-
-          <h4>Legal compliance</h4>
-          <p>In many jurisdictions, web accessibility is a legal requirement. The most widely referenced technical standard is the <a href="https://www.w3.org/TR/WCAG22/">Web Content Accessibility Guidelines (WCAG)</a>, published by the W3C. WCAG 2.1 and 2.2 are referenced by law in the United States (Section 508, ADA), the European Union (European Accessibility Act), the United Kingdom (Equality Act), and many other countries.</p>
-          <p>Non-compliance exposes organisations to legal action, regulatory penalties, and reputational harm. Lawsuits and settlements involving web accessibility are documented each year in all of these jurisdictions.</p>
-
-          <h4>Usability</h4>
-          <p>Approximately 15–20% of people worldwide have a disability that can affect their use of the web. These include permanent conditions (blindness, deafness, motor impairments, cognitive disabilities) as well as temporary situations (a broken arm, recovering from eye surgery) and situational constraints (a noisy environment, a phone in bright sunlight, holding an infant).</p>
-          <p>Inaccessible code excludes or burdens these users. Features that are technically accessible also tend to benefit users without disabilities: clear labels reduce errors for everyone, logical keyboard flow speeds navigation, and high contrast aids readability in suboptimal lighting.</p>
-        </section>
-
-        <!-- ─── ─── ─── ─── -->
-        <section id="three-strategies">
-          <h3>The three testing strategies</h3>
-          <p class="time-estimate">About 8 minutes.</p>
-
-          <h4>Human testing</h4>
-          <p>A person directly examines the page, using the browser and auxiliary tools to find accessibility issues. This is sometimes called <q>manual testing</q>, though the term can be misleading — modern human testing uses several tools; it is the human judgment that distinguishes this strategy.</p>
-          <p>Human testing typically involves three techniques:</p>
+          <h3>Accessibility in a nutshell</h3>
+          <p><q>Accessibility</q> has several meanings. Here it refers to universal usability: usability for the widest practical range of people. It began with a focus on people with specific physical, sensory, and cognitive disabilities (an estimated 20% of the world population), but now it often refers to design and construction <em>standards</em> that elevate usability for everybody.</p>
+          <p>Accessibility standards exist for buildings, vehicles, devices, and software. Standards are defined by professional associations, governments, and individual experts. The latter are often called <q>best practices</q>.</p>
+          <p>Kilotest deals with <strong>web</strong> accessibility, so that is the focus of this tutorial.</p>
+          <p>Not everybody agrees with every standard, but some standards are widely accepted and have even been made legally mandatory. The web accessibility standards gaining the greatest legitimacy are those defined by the the World Wide Web Consortium (W3C). They include:</p>
           <ul>
-            <li><strong>DOM inspection.</strong> The tester uses browser developer tools to examine the HTML structure, attributes, and the accessibility tree. The accessibility tree is the browser's representation of the page as assistive technologies see it — role, name, state, and value for each element.</li>
-            <li><strong>Keyboard navigation.</strong> The tester uses only the keyboard (Tab, Shift+Tab, Enter, Space, arrow keys) to navigate and operate the page. This reveals whether all interactive elements are reachable and operable without a mouse.</li>
-            <li><strong>Screen reader testing.</strong> The tester activates a screen reader — software that vocalises page content — and navigates the page by ear. Common screen readers include NVDA and JAWS on Windows, VoiceOver on macOS and iOS, and TalkBack on Android.</li>
+            <li>Web Content Accessibility Guidelines (WCAG): for websites</li>
+            <li>Authoring Tool Accessibility Guidelines (ATAG): for web authoring tools</li>
+            <li>Accessible Rich Internet Applications (ARIA): for scripted web applications</li>
           </ul>
-          <p>Effective human testing requires substantial knowledge: WCAG success criteria, ARIA authoring practices, HTML semantics, and proficiency with at least one screen reader. It also takes time — a thorough examination of a single page may take 30 minutes to several hours.</p>
-
-          <h4>Rule-engine testing</h4>
-          <p>Software applies a set of codified rules to a page and reports which rules are violated. This is sometimes called <q>automated testing</q>, though that label is also imprecise — what is automated is the rule application, not the judgment about what rules should exist.</p>
+          <h3>The stakes</h3>
+          <p>It is obvious that making a website that is insecure or leaks private or confidential data is risky. Similarly, making a website that is inaccessible is risky. It exposes the site owner to prosecution, civil litigation, and negative publicity. It also makes websites harder to use, deterring what you want users to do, such as understanding your mission or making purchases.</p>
+          <p>Many users interact with the web using <em>assistive technologies</em> (ATs): hardware and software tools that mediate between websites and users. Some are designed to serve users with disabilities, such as <em>screen readers</em> that explain structure and content orally, voice input software, eye trackers, breath-based navigators. ATs typically presume that a site conforms to accessibility standards.</p>
+          <p>Increasingly, almost all web use is being mediated by artificial-intelligence agents. They all make mistakes, but the error rate is likely to jump when a website violates accessibility standards.</p>
+          <p>The accessibility standards go beyond HTML, CSS, and JavaScript standards, so accessibility gets conformity to those standards as a side effect. This makes your code more maintainable and debugging easier as team members change.</p>
+        </section>
+        <section id="three-strategies">
+          <h3>Testing</h3>
+          <p>Accessibility <em>testing</em> is the process of verifying conformity to accessibility standards. There are three main strategies of web accessibility testing.</p>
+          <h4>Strategy 1. Human testing</h4>
+          <p>A person directly examines a website, using browsers, developer tools, I/O devices, and assistive technologies to find accessibility problems. This is sometimes called <q>manual testing</q>, but it really is <em>human</em> testing: testing by a person who investigates the site by inspecting and using it.</p>
+          <p>One subtype of human testing is testing by experts in the use of assistive technologies and atypical I/O methods. These are usually people who have gained their expertise through long-term use arising from disabilities.</p>
+          <p>Human testing gives you insight into accessibility problems that the other strategies are likely to miss. But it is also the slowest and most expensive strategy. So an efficient approach is usually to start with the other strategies, solve any problems they discover, and then do human testing on the improved site.</p>
+          <h4>Strategy 2. Rule-engine testing</h4>
+          <p>Software applies a set of codified rules to a page and reports on any violations of the rules. This is sometimes called <q>automated testing</q>, but it is humans who have defined the rules and designed the tests (sometimes with AI assistance).</p>
           <p>Rule engines come in several forms:</p>
           <ul>
             <li><strong>Browser extensions</strong> such as the <a href="https://www.deque.com/axe/devtools/">axe DevTools extension</a> and the <a href="https://wave.webaim.org/extension/">WAVE Evaluation Tool</a> run directly in the browser and report violations interactively.</li>

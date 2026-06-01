@@ -155,6 +155,9 @@ tbody th {
 td, th {
   padding: 0 0.5rem;
 }
+textarea {
+  width: 100%;
+}
 thead th {
   padding-bottom: 1rem;
 }

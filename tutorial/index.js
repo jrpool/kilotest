@@ -45,7 +45,7 @@ exports.saveComment = async content => {
     comments = JSON.parse(existing);
   }
   catch (_) {
-    // File absent or unparseable; start a fresh array.
+    // File absent or unparsable; start a fresh array.
   }
   comments.push({timeStamp: new Date().toISOString(), content: sanitized});
   await fs.writeFile(commentsPath, getJSON(comments));

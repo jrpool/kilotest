@@ -186,21 +186,22 @@
   </head>
   <body>
     <main>
-      <h1><a href="/">Kilotest</a> tutorial: Accessibility Testing Strategies</h1>
+      <h1><a href="/">Kilotest</a> tutorial: Accessibility testing strategies</h1>
       <nav class="contents-table">
         <h2>Table of contents</h2>
         <ul class="nav">
           <li><a href="#about">About this tutorial</a></li>
           <li><a href="#orientation">Part 1: Orientation</a>
             <ul>
-              <li><a href="#why-matters">Why accessibility testing matters</a></li>
-              <li><a href="#three-strategies">The three testing strategies</a></li>
-              <li><a href="#choosing">Choosing among strategies</a></li>
-              <li><a href="#case-study-intro">Introducing the case study</a></li>
+              <li><a href="#basics">Accessibility basics</a></li>
+              <li><a href="#impacts">Impacts</a></li>
+              <li><a href="#testing">Testing</a></li>
+              <li><a href="#orchestrating">Orchestrating testing strategies</a></li>
             </ul>
           </li>
           <li><a href="#practicum">Part 2: Practicum</a>
             <ul>
+              <li><a href="#case-study-intro">A case study</a></li>
               <li><a href="#example-page">The example page</a></li>
               <li><a href="#human-testing">Human testing</a></li>
               <li><a href="#rule-engine-testing">Rule-engine testing</a></li>
@@ -214,25 +215,25 @@
         </ul>
       </nav>
       <h2>Notice</h2>
-      <p>This is a rough draft created in partnership with an artificial intelligence agent using Claude Sonnet 4.6 Thinking. Revisions are in progress.</p>
+      <p>This is a draft created in partnership with an artificial intelligence agent using Claude Sonnet 4.6 Thinking. Revisions are in progress.</p>
       <section id="about" class="main">
         <h2>About this tutorial</h2>
-        <p>If you are familiar with web technology (HTML, CSS, JavaScript), but you have limited knowledge of digital accessibility testing, this tutorial is designed for you.</p>
+        <p>If you are familiar with front-end web technology (HTML, CSS, JavaScript), but you have limited knowledge of digital accessibility testing, this tutorial is designed for you.</p>
         <p>Estimated completion time: 1 hour.</p>
         <p>The tutorial has two parts:</p>
         <ul>
           <li><strong>Orientation</strong>. What digital accessibility is, why it is valuable, and how websites can be tested for it.</li>
           <li><strong>Practicum</strong>. Examining a specific example.</li>
         </ul>
-        <p>If the tutorial makes you want to learn more, there are links to additional information at the end.</p>
-        <p>Improvements in this tutorial are certainly possible. You can help by submitting your suggestions at the end.</p>
+        <p>There are links to additional information at the end.</p>
+        <p>You can help improve this tutorial by submitting your suggestions at the end.</p>
       </section>
       <section id="orientation" class="main">
         <h2>Part 1: Orientation</h2>
-        <section id="why-matters">
-          <h3>Accessibility in a nutshell</h3>
-          <p><q>Accessibility</q> has several meanings. Here it refers to universal usability: usability for the widest practical range of people. It began with a focus on people with specific physical, sensory, and cognitive disabilities (an estimated 20% of the world population), but now it often refers to design and construction <em>standards</em> that elevate usability for everybody.</p>
-          <p>Accessibility standards exist for buildings, vehicles, devices, and software. Standards are defined by professional associations, governments, and individual experts. The latter are often called <q>best practices</q>.</p>
+        <section id="basics">
+          <h3>Accessibility basics</h3>
+          <p><q>Accessibility</q> has several meanings. Here it refers to universal usability: usability for the widest practical range of people. It often aims to serve people with specific physical, sensory, and cognitive disabilities (an estimated 20% of the world population), but accessibility typically elevates usability for everybody.</p>
+          <p>Accessibility standards exist for streets, buildings, vehicles, devices, and software. Standards are defined by professional associations, governments, and individual experts. The latter standards are often called <q>best practices</q>.</p>
           <p>Kilotest deals with <strong>web</strong> accessibility, so that is the focus of this tutorial.</p>
           <p>Not everybody agrees with every standard, but some standards are widely accepted and have even been made legally mandatory. The web accessibility standards gaining the greatest legitimacy are those defined by the the World Wide Web Consortium (W3C). They include:</p>
           <ul>
@@ -240,125 +241,63 @@
             <li>Authoring Tool Accessibility Guidelines (ATAG): for web authoring tools</li>
             <li>Accessible Rich Internet Applications (ARIA): for scripted web applications</li>
           </ul>
-          <h3>The stakes</h3>
-          <p>It is obvious that making a website that is insecure or leaks private or confidential data is risky. Similarly, making a website that is inaccessible is risky. It exposes the site owner to prosecution, civil litigation, and negative publicity. It also makes websites harder to use, deterring what you want users to do, such as understanding your mission or making purchases.</p>
-          <p>Many users interact with the web using <em>assistive technologies</em> (ATs): hardware and software tools that mediate between websites and users. Some are designed to serve users with disabilities, such as <em>screen readers</em> that explain structure and content orally, voice input software, eye trackers, breath-based navigators. ATs typically presume that a site conforms to accessibility standards.</p>
-          <p>Increasingly, almost all web use is being mediated by artificial-intelligence agents. They all make mistakes, but the error rate is likely to jump when a website violates accessibility standards.</p>
-          <p>The accessibility standards go beyond HTML, CSS, and JavaScript standards, so accessibility gets conformity to those standards as a side effect. This makes your code more maintainable and debugging easier as team members change.</p>
         </section>
-        <section id="three-strategies">
+        <section id="impacts">
+          <h3>Impacts</h3>
+          <p>Obviously, websites that are insecure or leak private or confidential data are risky. Similarly, inaccessible websites are risky. They expose site owners to prosecution, civil litigation, and negative publicity. Inaccessible websites are also harder to use, deterring what you want users to do, such as understanding your mission or making purchases.</p>
+          <p>Many users interact with the web using <dfn>assistive technologies</dfn> (<abbr title="assistive technologies">ATs</abbr>): hardware and software tools that mediate between websites and users. Some are designed to serve users with disabilities, such as <em>screen readers</em> that explain structure and content aurally, voice input software, eye trackers, and breath-based navigators. ATs typically rely on website accessibility, so AT users may be unable to navigate or operate inaccessible sites. Do you want to see an example of this? Then pause for a minute and view a <a href="https://www.youtube.com/watch?v=Hp8dAkHQ9O0">video about browsing while blind</a>.</p>
+          <p>Increasingly, web use is being mediated by artificial-intelligence agents. They all make mistakes, but the error rate is likely to jump when a website violates accessibility standards.</p>
+          <p>Accessibility standards include but exceed HTML, CSS, and JavaScript standards, so if you achieve accessibility you get conformity to those standards as a side effect. This makes your code more maintainable and debugging easier as team members change.</p>
+        </section>
+        <section id="testing">
           <h3>Testing</h3>
           <p>Accessibility <em>testing</em> is the process of verifying conformity to accessibility standards. There are three main strategies of web accessibility testing.</p>
-          <h4>Strategy 1. Human testing</h4>
+          <h4>Strategy 1. Testing by humans</h4>
           <p>A person directly examines a website, using browsers, developer tools, I/O devices, and assistive technologies to find accessibility problems. This is sometimes called <q>manual testing</q>, but it really is <em>human</em> testing: testing by a person who investigates the site by inspecting and using it.</p>
           <p>One subtype of human testing is testing by experts in the use of assistive technologies and atypical I/O methods. These are usually people who have gained their expertise through long-term use arising from disabilities.</p>
-          <p>Human testing gives you insight into accessibility problems that the other strategies are likely to miss. But it is also the slowest and most expensive strategy. So an efficient approach is usually to start with the other strategies, solve any problems they discover, and then do human testing on the improved site.</p>
-          <h4>Strategy 2. Rule-engine testing</h4>
-          <p>Software applies a set of codified rules to a page and reports on any violations of the rules. This is sometimes called <q>automated testing</q>, but it is humans who have defined the rules and designed the tests (sometimes with AI assistance).</p>
+          <p>Human testing gives you insight into accessibility problems that other strategies are likely to miss. It is also the slowest and most expensive strategy, typically requiring hours per page.</p>
+          <h4>Strategy 2. Testing by rule engines</h4>
+          <p>Software applies a set of codified rules and reports on any violations of the rules. This is sometimes called <q>automated testing</q>, but it is humans who have defined the rules and designed the tests (sometimes with AI assistance).</p>
           <p>Rule engines come in several forms:</p>
           <ul>
-            <li><strong>Browser extensions</strong> such as the <a href="https://www.deque.com/axe/devtools/">axe DevTools extension</a> and the <a href="https://wave.webaim.org/extension/">WAVE Evaluation Tool</a> run directly in the browser and report violations interactively.</li>
-            <li><strong>Installed engines</strong> such as <a href="https://www.npmjs.com/package/pa11y">Pa11y</a> and <a href="https://www.npmjs.com/package/testaro">Testaro</a> run from the command line and can be integrated into development workflows.</li>
-            <li><strong>API services</strong> accept page URLs and return analysis results over the network.</li>
-            <li><strong>Ensemble services</strong> such as <a href="/">Kilotest</a> run multiple rule engines against a page and consolidate the results. Because different engines encode different rules, an ensemble typically finds more issues than any single engine.</li>
+            <li><strong>Browser extensions</strong> run directly in the browser and report violations interactively.</li>
+            <li><strong>Installed engines</strong> run from the command line and can be integrated into development workflows.</li>
+            <li><strong>API services</strong> accept page URLs or HTML content and return analysis results over the network.</li>
+            <li><strong>Ensemble services</strong> run multiple rule engines against a page and consolidate the results.</li>
           </ul>
-          <p>Rule-engine testing is fast — a full scan typically takes 1–5 minutes. It requires little accessibility knowledge from the user, since the rules encode the expertise. It can be run repeatedly, integrated into CI/CD pipelines, and applied to large numbers of pages.</p>
-
-          <h4>AI-agent testing</h4>
-          <p>An <strong>AI agent</strong>, as used in this tutorial, is a language model — software trained on large amounts of text to understand and generate language — configured with instructions to perform a specific task. The underlying <strong>model</strong> (such as Claude, GPT-4, or Gemini) is the system you access; the <strong>agent</strong> is the model combined with its instructions and the content you provide. For accessibility testing, the agent is given page content and asked to identify violations. This strategy is the newest of the three and is evolving rapidly.</p>
-          <p>The workflow involves three choices:</p>
+          <p>Rule-engine testing is fast and often cheap. Testing one web page typically takes no more than five minutes. It requires little accessibility knowledge from the user, since the rules encode the expertise. It can be run repeatedly, integrated into CI/CD pipelines, and applied to many pages.</p>
+          <h4>Strategy 3. Testing by AI agents</h4>
+          <p>General-purpose and specialized AI agents are given web content, accessibility standards, other data, and instructions as input and produce judgments about the accessibility of the content as output. Agents use data, models, skills, and tools to do their work.</p>
+          <p>AI agents can reason about issues that resist deterministic rules. Several accessibility standards require content and behavior to be appropriate, helpful or understandable. You cannot write an effective rule for that, but an AI agent can opine about it. The wait time and cost are usually greater than with rule-engine testing, but substantially less than with human testing.</p>
+          <h4>Hybrid strategies</h4>
+          <p>In reality, none of the above three strategies is pure.</p>
           <ul>
-            <li><strong>Selecting a model.</strong> Different models vary in their knowledge of accessibility standards, their ability to reason about HTML structure, and their tendency to hallucinate. As of 2026, capable models include Claude (Anthropic), GPT-4 (OpenAI), and Gemini (Google).</li>
-            <li><strong>Designing instructions.</strong> The instructions — often called a <q>prompt</q> — specify what to test, what standards to apply, and how to report findings. Prompt quality significantly affects the quality of results.</li>
-            <li><strong>Providing page content.</strong> The AI agent must receive the relevant page content. This may be the raw HTML source, the rendered DOM, screenshots, or some combination. What you provide determines what the agent can find.</li>
+            <li>Human testers use automation, including browser extensions, bookmarklets, and assistive technologies.</li>
+            <li>Rule engines can present dubious cases to humans for decisions and can get AI agent help to test for complex standards.</li>
+            <li>AI agents use rule-based tools and depend on humans to provide effective instructions and data.</li>
           </ul>
-          <p>AI-agent testing can reason about issues that resist mechanical rules — for example, whether image alternative text is meaningful in context, or whether a form label is genuinely helpful. Its output is available within minutes and requires no specialist tools beyond access to an AI agent. However, AI agents can produce false findings and can miss real ones, and their results may change as the underlying models are updated.</p>
         </section>
-
-        <!-- ─── ─── ─── ─── -->
-        <section id="choosing">
-          <h3>Choosing among the strategies</h3>
-          <p class="time-estimate">About 12 minutes.</p>
-
-          <p>The three strategies are not alternatives — they are complements. A mature accessibility testing practice uses all three. Understanding their differences helps you decide how to allocate effort.</p>
-
-          <h4>Time to results</h4>
-          <dl class="compare">
-            <dt>Human testing</dt>
-            <dd>Slowest. A thorough examination of a single page takes 30 minutes to several hours, depending on the page's complexity and the scope of testing.</dd>
-            <dt>Rule-engine testing</dt>
-            <dd>Fastest. A full-page scan typically completes in 1–5 minutes. An ensemble service such as Kilotest may take somewhat longer.</dd>
-            <dt>AI-agent testing</dt>
-            <dd>Moderate. Depending on the scope of instructions, the amount of page content provided, and the AI agent's processing speed, 2–10 minutes is typical for focused testing.</dd>
-          </dl>
-
-          <h4>Financial cost</h4>
-          <dl class="compare">
-            <dt>Human testing</dt>
-            <dd>The cost of a skilled tester's time. Specialist accessibility consultants are expensive. Internal developers trained in accessibility are a recurring investment.</dd>
-            <dt>Rule-engine testing</dt>
-            <dd>Many rule engines are free and open-source. Commercial tools and API services typically charge per page or per month. Kilotest is currently free. Costs are generally low relative to the number of tests run.</dd>
-            <dt>AI-agent testing</dt>
-            <dd>Most AI services charge per token (unit of text) processed. As of 2026, asking an AI agent to check a single page against one WCAG success criterion typically costs between $0.01 and $0.10 depending on the model used. Prices are falling over time.</dd>
-          </dl>
-
-          <h4>What can each strategy find?</h4>
-          <dl class="compare">
-            <dt>Human testing</dt>
-            <dd>The broadest potential coverage. A skilled human can find any issue that is observable through the browser, developer tools, or a screen reader. Human testing is the only strategy that can reliably assess whether content is usable — not merely technically compliant — for users with disabilities. It is also the only strategy that can catch issues that only appear during interaction (filling out a multi-step form, for instance) or that depend on context (whether an image description is accurate given the surrounding text).
-            </dd>
-            <dt>Rule-engine testing</dt>
-            <dd>Limited to issues for which explicit rules have been written. Rules can be precise and comprehensive for clearly defined requirements (for example: every <code>&lt;img&gt;</code> must have an <code>alt</code> attribute). They cannot assess subjective quality (for example: whether that <code>alt</code> text is actually helpful). Some issues are detectable in principle but not yet covered by available engines.</dd>
-            <dt>AI-agent testing</dt>
-            <dd>Broader than rule engines for issues requiring reasoning, narrower than humans for issues requiring interaction or lived experience. An AI agent can assess whether image alternative text is plausibly meaningful, whether instructions are clear, or whether form labels are adequate. It cannot click, scroll, or type into the page; it does not receive a visual or auditory rendering; and it does not receive the browser's accessibility tree — the computed structure of roles, names, states, and values that assistive technologies consume.</dd>
-          </dl>
-
-          <h4>False positives (incorrect findings)</h4>
-          <dl class="compare">
-            <dt>Human testing</dt>
-            <dd>Low, in the hands of a knowledgeable tester. A human who understands the standards can distinguish genuine violations from compliant edge cases. Inexperienced testers produce more false positives.</dd>
-            <dt>Rule-engine testing</dt>
-            <dd>Moderate and tool-dependent. Rules that cannot fully determine compliance from the code alone (for example: whether an image needs alternative text) may produce incorrect results. Different engines disagree about the same page, and some findings require human review to confirm.</dd>
-            <dt>AI-agent testing</dt>
-            <dd>Variable and model-dependent. Current models sometimes misidentify compliant patterns as violations, particularly when their knowledge of applicable standards is incomplete or when the HTML structure is complex. Critical review of AI output is essential.</dd>
-          </dl>
-
-          <h4>False negatives (missed defects)</h4>
-          <dl class="compare">
-            <dt>Human testing</dt>
-            <dd>Low for experienced testers working systematically, but not zero. Testers can overlook attributes on elements they do not specifically inspect. Issues that only manifest in edge cases or under specific conditions may be missed if those cases are not tested. Consistency across large page sets can be difficult to maintain.</dd>
-            <dt>Rule-engine testing</dt>
-            <dd>Any issue not covered by a rule will be missed. No current rule engine covers all WCAG success criteria. Engines also differ in which rules they implement: a single engine may miss issues that another engine catches. Ensemble testing reduces the false negative rate relative to any single engine.</dd>
-            <dt>AI-agent testing</dt>
-            <dd>Depends heavily on what content is provided to the AI agent. If the agent receives only the raw HTML source of a page whose forms are rendered by JavaScript, it will miss all form-related issues entirely. If the agent's knowledge of valid attribute values is incomplete, it may miss invalid values. AI-agent false negatives are less predictable than rule-engine false negatives, because they vary with the model version, the prompt, and the content provided.</dd>
-          </dl>
-
-          <h4>Expertise required</h4>
-          <dl class="compare">
-            <dt>Human testing</dt>
-            <dd>High. The tester needs working knowledge of WCAG, ARIA, and HTML semantics, plus proficiency with a screen reader.</dd>
-            <dt>Rule-engine testing</dt>
-            <dd>Low to moderate. Running a tool requires little accessibility knowledge. Interpreting results and determining whether flagged items are genuine violations requires more. Reviewing results across a large ensemble requires the ability to reconcile conflicting findings.</dd>
-            <dt>AI-agent testing</dt>
-            <dd>Low to moderate for basic use; moderate for reliable use. Formulating precise and effective instructions, understanding the limits of AI output, and critically reviewing findings all benefit from accessibility knowledge.</dd>
-          </dl>
-
-          <h4>Best suited for</h4>
-          <dl class="compare">
-            <dt>Human testing</dt>
-            <dd>Final verification before release; issues requiring judgment about context, meaning, or usability; interaction flows; screen reader experience; and any issue that requires lived experience with assistive technology.</dd>
-            <dt>Rule-engine testing</dt>
-            <dd>First-pass scanning across many pages; continuous integration checks; measuring progress over time; identifying well-defined structural violations efficiently; and providing a baseline before human testing.</dd>
-            <dt>AI-agent testing</dt>
-            <dd>Focused analysis of specific issue types when sufficient page content can be provided; assessment of issues that are too nuanced for mechanical rules but too common for full human review; and generating explanations and remediation guidance.</dd>
-          </dl>
+        <section id="orchestrating">
+          <h3>Orchestrating testing strategies</h3>
+          <h4>Sequence</h4>
+          <p>The most mature accessibility testing practice would use all three strategies. Given their capabilities, wait times, and costs, a practical approach likely starts testing with <strong>rule engines</strong> and repairs the defects that they discover; then tests with <strong>AI agents</strong> and tests any newly discovered defects; and finally leverages <strong>human testers</strong>. That gives human testers a largely (but not entirely) clean, consistent, and compliant product, saving them time and saving money. They can focus on discovering tricky issues they might otherwise have overlooked. Your website becomes even better.</p>
+          <h4>Quality control</h4>
+          <p>Accessibility testing is a type of quality control, but software tests, including accessibility tests, need quality control, too. Human testers make mistakes. Rule engines make mistakes. AI agents make mistakes. Moreover, accessibility is partly judgmental, so whether a tester made a <q>mistake</q> may be debatable.</p>
+          <p>Competitive testing can provide some internal quality control. Ensemble testing with multiple rule engines and testing by a combination of rule engines, AI agents, and humans let you identify inter-tester disagreements and investigate those. Your findings can help you improve not only websites but also the testing process.</p>
         </section>
-
-        <!-- ─── ─── ─── ─── -->
+      </section>
+      <section id="practicum" class="main">
+        <h2>Part 2: Practicum</h2>
+        <section id="issue">
+          <h3>The issue</h3>
+          <p>Let&rsquo;s get concrete now. Out of dozens of accessibility standards, we examine one, input purpose identification.</p>
+          <p>Here is the problem. If you are active on the web, you probably fill out forms often, and you may be annoyed at how often you need to enter the same information about yourself, such as username, name, date of birth, telephone number, email address, postal address, password, and health history. The input purpose identification standard says that a web form asking for some of this information must cooperate with your browser to help get the inputs completed automatically. This helps all users, and especially those who have trouble remembering and typing.</p>
+          <p>Input purpose identification is one of the standards codified by the Web Content Accessibility Guidelines (WCAG), where it is called <a href="https://www.w3.org/WAI/WCAG22/Understanding/identify-input-purpose">Success Criterion 1.3.5</a>. There is a <a href="https://www.w3.org/TR/WCAG22/#input-purposes">list of input purposes subject to the standard</a>. Any <code>input</code> element with one of those purposes must have an <code>autocomplete</code> attribute with the corresponding value. For example, if it is a username input, the <code>input</code> element must have an <code>autocomplete="username"</code> attribute.</p>
+          <p>A <code>form</code> element may have an <code>autocomplete</code> attribute with an <code>"on"</code> or <code>"off"</code> value to permit or prohibit automated browser completion of its inputs, but that attribute has no effect on any <code>input</code> elements that have their own <code>autocomplete</code> attributes.</p>
+          <p>This practicum examines a single real-world web page for <code>autocomplete</code> attribute issues. The page is a public website homepage captured in May 2026. <strong>The name and URL of the site are withheld</strong> to avoid public-relations concerns unrelated to this tutorial. The page facts below are a snapshot; the live page may differ.</p>
+        </section>
         <section id="case-study-intro">
           <h3>Introducing the case study</h3>
-          <p class="time-estimate">About 5 minutes.</p>
-
           <p>The practicum applies all three strategies to a single type of accessibility issue on a specific web page. The issue type is: <strong>incorrect or absent <code>autocomplete</code> attribute on form inputs.</strong></p>
 
           <h4>Why the <code>autocomplete</code> attribute matters</h4>
@@ -384,14 +323,8 @@
           </ul>
           <p>Both violations prevent browsers and assistive technologies from identifying the purpose of the affected fields.</p>
         </section>
-      </section>
-      <section id="practicum" class="main">
-        <h2>Part 2: Practicum</h2>
-        <p>This practicum examines a single real-world web page for <code>autocomplete</code> attribute issues. The page is a public website homepage captured in May 2026. <strong>The name and URL of the site are withheld</strong> to avoid public-relations concerns unrelated to this tutorial. The page facts below are a snapshot; the live page may differ.</p>
         <section id="example-page">
           <h3>The example page</h3>
-          <p class="time-estimate">About 3 minutes.</p>
-
           <p>The example page is the homepage of a nonprofit organisation in the career-guidance sector. It is a publicly accessible, JavaScript-rendered WordPress site.</p>
 
           <h4>Relevant page content</h4>

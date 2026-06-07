@@ -3,6 +3,7 @@
   "what": "Kilotest job",
   "strict": false,
   "standard": "only",
+  "imageColor": 0,
   "observe": false,
   "device": {
     "id": "default",

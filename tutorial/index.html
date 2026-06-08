@@ -250,7 +250,7 @@
           <p>One subtype of human testing is testing by experts in the use of assistive technologies and atypical I/O methods. These are usually people who have gained their expertise through long-term use arising from disabilities.</p>
           <p>Human testing gives you insight into accessibility problems that other strategies are likely to miss. It is also the slowest and most expensive strategy, typically requiring hours per page.</p>
           <h4>Strategy 2. Testing by rule engines</h4>
-          <p>Software applies a set of codified rules and reports on any violations of the rules. This is sometimes called <q>automated testing</q>, but it is humans who have defined the rules and designed the tests (sometimes with AI assistance).</p>
+          <p>Software applies a set of codified rules and reports on any violations of the rules. This is sometimes called <q>automated testing</q>.</p>
           <p>Rule engines come in several forms:</p>
           <ul>
             <li><strong>Browser extensions</strong> run directly in the browser and report violations interactively.</li>
@@ -260,8 +260,24 @@
           </ul>
           <p>Rule-engine testing is fast and often cheap. Testing one web page typically takes no more than five minutes. It requires little accessibility knowledge from the user, since the rules encode the expertise. It can be run repeatedly, integrated into CI/CD pipelines, and applied to many pages.</p>
           <h4>Strategy 3. Testing by AI agents</h4>
-          <p>General-purpose and specialized AI agents are given web content, accessibility standards, other data, and instructions as input and produce judgments about the accessibility of the content as output. Agents use data, models, skills, and tools to do their work.</p>
-          <p>AI agents can reason about issues that resist deterministic rules. Several accessibility standards require content and behavior to be appropriate, helpful or understandable. You cannot write an effective rule for that, but an AI agent can opine about it. The wait time and cost are usually greater than with rule-engine testing, but substantially less than with human testing.</p>
+          <p>Artificial intelligence (<abbr title="Artificial Intelligence">AI</abbr>) has been developing since the mid-1950s and by now has produced systems that can mimic human expert behavior. So it does not seem preposterous that you could give the URL of a web page to an AI agent and say, <q>Find accessibility defects on that page and report them to me.</q> What happens if you try that?</p>
+          <p>If you ask a mainstream AI agent today to look for defects relevant to this practicum, beware of the response. It may look right, but:</p>
+          <ul>
+            <li>It may be incomplete. For example, it may find one of the defects but not the other.</li>
+            <li>It may be incorrect. For example, it may say that there are no defects.</li>
+            <li>Most likely of all, it may be totally fabricated. It may report a defect that is not there or, by chance, report a defect that is there but provide fictional data to support the finding.</li>
+          </ul>
+          <p>This result, total fabrication, occurred in June 2026 when an AI agent powered by a frontier model was given this task. The agent worked for about 3 minutes and then reported a missing <code>autocomplete="email"</code> attribute in the newsletter subscription form. But the page has no newsletter subscription form! It has a form to request a guide, not to subscribe to anything. Moreover, the agent provided code to support its conclusion, and the code differed pervasively from the actual code on the page.</p>
+          <p>When the agent was confronted with its fabrication, it confessed and explained that it had been unable to access the complete code of the page because of security restrictions, so it just imagined what a typical page would contain and based its answer on that.</p>
+          <p>When an AI agent does this, it is called a <q>hallucination</q>. When a human does it, it is called <q>fraud</q> and can lead to the human being fired, sued, or prosecuted.</p>
+          <p>A similar AI agent returned correct diagnoses when it was fed the page as an HTML document. That worked because the two defects relevant to this practicum are discoverable from the HTML of the rendered page. But in general doing this has disadvantages:</p>
+          <ul>
+            <li>It requires you to do more work.</li>
+            <li>It risks overloading the AI agent with more data than it can efficiently process.</li>
+            <li>It does not give the <dfn>accessibility tree</dfn> (an accessibility-related simplification of the code) to the AI agent.</li>
+            <li>It does not give the AI agent access to the live page, so defects that become detectable only during interactions with the page cannot be found.</li>
+          </ul>
+          <p>The AI industry is making progress in making general-purpose AI agents delegate tasks that are impossible for them to competent tools and specialized AI agents. At present, however, you cannot expect AI agents powered by the mainstream foundation models to reliably navigate to a web page and diagnose accessibility defects on it.</p>
           <h4>Hybrid strategies</h4>
           <p>In reality, none of the above three strategies is pure.</p>
           <ul>
@@ -322,19 +338,20 @@
           <p>What do rule engines find about this issue when they test this page? For a quick answer, Kilotest subjected the page to testing by all 10 rule engines in its ensemble. Two of the rule engines reported rule violations belonging to this issue:</p>
           <ul>
             <li>The Testaro rule engine reported, <q>input has no autocomplete="email" attribute</q>. In other words, Testaro recognized this input as asking for the user&rsquo;s email address and therefore as requiring an <code>autocomplete="email"</code> attribute, but not having one.</li>
-            <li>The HTML CodeSniffer rule engine, referencing this <code>form</code> element, reported, <q>Invalid autocomplete value: new-password. Element does not belong to Password control group.</q>. In other words, HTML CodeSniffer recognized that this form is not a password input (a form is not an input at all!) and therefore is not elegible for an <code>autocomplete="new-password"</code> attribute, but has one.</li>
+            <li>The HTML CodeSniffer rule engine, referencing this <code>form</code> element, reported, <q>Invalid autocomplete value: new-password. Element does not belong to Password control group.</q>. In other words, HTML CodeSniffer recognized that this form is not a password input (a form is not an input at all!) and therefore is not eligible for an <code>autocomplete="new-password"</code> attribute, but has one.</li>
           </ul>
           <p>Both of these findings are correct.</p>
           <ul>
             <li>The input asks for the user&rsquo;s email address and therefore requires an <code>autocomplete="email"</code> attribute but has none; Testaro discovered and reported this.</li>
             <li>The form is permitted to have an <code>autocomplete</code> attribute, but its value must be only <code>"on"</code> or <code>"off"</code>, so the actual value of <code>"new-password"</code> is invalid; HTML CodeSniffer discovered and reported this.</li>
           </ul>
-          <p>You might think that this shows rule engines were effective in revealing the defects related to this issue, but this is not a success story. Yes, two rule engines found related defects, but the other eight rule engines did not. Inspection of those eight rule engines reveals that six of them include rules enforcing this standard in some way. So, did these six rule engines report false negatives? Did they fail to enforce their applicable rules here? Perhaps, but perhaps not. Suppose a rule engine has a rule that requires the value of any <code>autocomplete</code> attribute to be in the list of allowed values. Well, <code>new-password</code> is in the list. So that rule engine would, properly, not report any defect.</p>
+          <p>You might think that this shows rule engines were effective in revealing the defects related to this issue, but this is not a success story. Yes, two rule engines found related defects, but the other eight rule engines did not. Inspection of those eight rule engines reveals that six of them include rules enforcing this standard in some way. So, did these six rule engines report false negatives? Did they fail to enforce their applicable rules here? Perhaps, but perhaps not. Suppose a rule engine has a rule that requires the value of any <code>autocomplete</code> attribute to be in the list of allowed values. Well, <code>new-password</code> is in the list. So that rule engine would, properly, not report a violation of that rule.</p>
           <p>We can clearly see from this example that no rule engine will find all accessibility defects, not even all defects that <strong>can</strong> be detected by rule engines. That is why Kilotest uses an <strong>ensemble</strong> of rule engines.</p>
-          <p>Of course, running ten rule engines also creates a risk of false positives reported by ten rule engines. In this particular case, there were none. For example, no rule engine claimed to find a defect related to this issue someplace else on the page. Kilotest, like any active platform that integrates multiple rule engines, combats false positives by investigating user complaints and deprecating rules whose tests are found faulty.</p>
+          <p>Of course, running ten rule engines also creates a risk of false positives reported by ten rule engines. In this particular case, there were none. For example, no rule engine claimed to find a defect related to this issue someplace else on the page. Kilotest, like any platform that integrates multiple rule engines, faces greater risks of false positives than a single rule engine would. It combats false positives by investigating user complaints and deprecating rules whose tests are found faulty.</p>
         </section>
         <section id="ai-testing">
           <h3>By AI agents</h3>
+          <p></p>
           <p>An AI agent was asked to find defects related to <code>autocomplete</code> attributes on this page. Two scenarios were tested, illustrating how the content given to the agent affects what it can find.</p>
           <h4>What the AI agent was given and asked</h4>
           <p>In both scenarios, the instructions were the same:</p>

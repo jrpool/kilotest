@@ -359,7 +359,7 @@
         </section>
       </section>
       <section id="knowledge-check" class="main">
-        <h3>Knowledge check</h3>
+        <h2>Knowledge check</h2>
         <details>
           <summary>Accessibility testing by AI agents</summary>
           <form class="knowledge-check" id="lesson1-quiz" novalidate>
@@ -510,7 +510,7 @@
         else if (selected.value === 'b') {
           diagnosis.className = 'quiz-diagnosis incorrect';
           diagnosis.textContent =
-            'Actually, it recommends correcting the defects found by rule engines and AI agents first, and only then to start testing by humans.';
+            'Actually, it recommends correcting the defects found by rule engines and AI agents first, and only then beginning the human testing.';
         }
         else if (selected.value === 'c') {
           diagnosis.className = 'quiz-diagnosis incorrect';
@@ -572,7 +572,7 @@
         else if (selected.value === 'a') {
           diagnosis.className = 'quiz-diagnosis incorrect';
           diagnosis.textContent =
-            'Actually, none of the rule engines discovered both defects.';
+            'Actually, four of the rule engines did not even have rules about autocomplete attributes.';
         }
         else if (selected.value === 'b') {
           diagnosis.className = 'quiz-diagnosis incorrect';

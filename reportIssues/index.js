@@ -103,6 +103,7 @@ const getIssuesData = async (timeStamp, jobID) => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {
+  // Get data on the page and its issues according to the report.
   const data = await getData(timeStamp, jobID);
   // If the page data are invalid:
   if (typeof data.page === 'string') {
@@ -117,6 +118,10 @@ const populateQuery = async (timeStamp, jobID, query) => {
   // Otherwise, get fact descriptions for the page.
   const pageInfo = await getPageDataStrings(timeStamp, jobID, data.page);
   const {what, urlLink, testInfo} = pageInfo;
+  // Add page data to the query.
+  query.target = what;
+  query.urlLink = urlLink;
+  query.testInfo = testInfo;
   const {
     reporters,
     reporterList,
@@ -126,19 +131,6 @@ const populateQuery = async (timeStamp, jobID, query) => {
     preventions,
     issues
   } = data.issues;
-  // Add an issue count description to the query.
-  query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
-  query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
-  // Add a reporter count and list to the query.
-  query.reporters = reportersString;
-  // Add a violator count to the query.
-  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
-  // Add page data to the query.
-  query.target = what;
-  query.urlLink = urlLink;
-  query.testInfo = testInfo;
-  query.timeStamp = timeStamp;
-  query.jobID = jobID;
   const preventionStrings = [];
   const margin = ' '.repeat(6);
   Object.keys(preventions).forEach(preventedToolID => {
@@ -148,7 +140,28 @@ const populateQuery = async (timeStamp, jobID, query) => {
     const preventionString = `${margin}<li>Page not testable by ${toolNameString}: ${causeString}</li>`;
     preventionStrings.push(preventionString);
   });
+  // Add prevention notices to the query.
   query.preventions = preventionStrings.join('\n');
+  // Add report data to the query.
+  query.timeStamp = timeStamp;
+  query.jobID = jobID;
+  // Add reporter information to the query.
+  query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
+  query.reporters = reporterList;
+  // Add a summary of the issues to the query.
+  query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
+  query.highestCount = data.issues[4].length;
+  query.highCount = data.issues[3].length;
+  query.lowCount = data.issues[2].length;
+  query.lowestCount = data.issues[1].length;
+  // Add a violator count to the query.
+  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
+  const detailsNames = {
+    4: 'highest',
+    3: 'high',
+    2: 'low',
+    1: 'lowest'
+  };
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     // Initialize data on issues having the weight.
@@ -156,7 +169,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     // Initialize the lines for the weight.
     const weightLines = [];
     // For each issue:
-    issuesData.issues.forEach(issueData => {
+    data.issues[weight].forEach(issueData => {
       const {
         issueID, reporterCount, reportersString, violatorCount, weight: issueWeight
       } = issueData;

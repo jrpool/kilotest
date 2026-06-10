@@ -48,10 +48,10 @@ const getIssuesData = async (timeStamp, jobID) => {
       violatorCount: 0,
       preventions: report.jobData.preventions,
       issues: {
-        "4": [],
-        "3": [],
-        "2": [],
-        "1": []
+        4: [],
+        3: [],
+        2: [],
+        1: []
       },
       issueCount: 0
     };

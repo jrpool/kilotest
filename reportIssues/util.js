@@ -23,37 +23,33 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Returns data on the issues reported in a report.
+// Returns data on the issues reported by a report.
 exports.getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If it is valid:
-  if (typeof report === 'object' && isValidReport(report)) {
-    const reporters = {
-      all: new Set(),
-      issues: {}
+  if (isValidReport(report)) {
+    // Initialize the temporary data.
+    const temp = {
+      issues: {},
+      reporters: new Set(),
+      violators: new Set()
     };
-    const violators = {
-      all: new Set(),
-      issues: {}
-    };
-    // Initialize the data.
-    const issuesData = {
+    // Initialize the final data.
+    const final = {
       reporters: [],
       reporterCount: 0,
       violatorCount: 0,
       preventions: report.jobData.preventions,
-      issues: {},
-      issueCount: 0,
-      sortedIssueIDs: [
+      issues: [
         "4", [],
         "3", [],
         "2", [],
         "1", []
-      ]
+      ],
+      issueCount: 0
     };
-    const {issues, sortedIssueIDs} = issuesData;
-    // For each act in it:
+    // For each act in the report:
     report.acts.forEach(act => {
       // If it is a test act:
       if (act.type === 'test') {
@@ -62,53 +58,58 @@ exports.getIssuesData = async (timeStamp, jobID) => {
         // For each of its standard instances:
         instances.forEach(instance => {
           const {catalogIndex, issueID} = instance;
-          const issueClassification = issuesClassification[issueID];
-          const {summary, wcag, weight, why} = issueClassification;
-          // If the instance has a non-ignorable classified issue:
-          if (issueID && issueClassification && issueID !== 'ignorable') {
-            // Ensure that the issues data include data on the issue.
-            reporters.issues[issueID] ??= new Set();
-            violators.issues[issueID] ??= new Set();
-            issues[issueID] ??= {
-              issueID,
-              summary,
-              wcag,
-              why,
-              weight: weight ?? 0,
-              reporters: [],
-              reporterCount: 0,
-              violatorCount: 0
-            };
-            const issue = issues[issueID];
-            // Ensure that the tool is in the issues data.
-            reporters.all.add(which);
-            // Ensure that it is in the issue data.
-            reporters.issues[issueID].add(which);
-            // If the instance has a catalog index:
-            if (catalogIndex) {
-              // Ensure that the violator is in the issues data.
-              violators.all.add(catalogIndex);
-              // Ensure that it is in the issue data.
-              violators.issues[issueID].add(catalogIndex);
+          // If the instance identifies its rule as belonging to a non-ignorable issue:
+          if (issueID && issueID !== 'ignorable') {
+            const issueClassification = issuesClassification[issueID];
+            // If the issue currently exists in the classification:
+            if (issueClassification) {
+              const {summary, wcag, weight, why} = issueClassification;
+              // Initialize the temporary data on the issue if necessary.
+              temp.issues[issueID] ??= {
+                issueID,
+                summary,
+                wcag,
+                why,
+                weight: weight ?? 0,
+                reporters: new Set(),
+                violators: new Set()
+              };
+              // Ensure the tool is in the temporary data.
+              temp.issues[issueID].reporters.add(which);
+              temp.reporters.add(which);
+              // If the instance has a catalog index:
+              if (catalogIndex) {
+                // Ensure the violator is in the temporary data.
+                temp.issues[issueID].violators.add(catalogIndex);
+                temp.violators.add(catalogIndex);
+              }
             }
           }
         });
       }
     });
-    // Populate the unpopulated properties of the issues data.
-    issuesData.reporterCount = issuesData.reporters.size;
-    issuesData.violatorCount = issuesData.violators.size;
-    issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
-    issuesData.issues = Object.values(issuesData.issuesObject);
+    // Finish populating the final data.
+    final.reporters = Array.from(temp.reporters).map(tool => {
+      const toolData = tools[tool];
+      return {
+        toolID: toolData[0],
+        toolName: toolData[1]
+      }
+    });
+    final.reporterCount = final.reporters.size;
+    final.violators = Array.from(temp.violators).map(catalogIndex => ({catalogIndex}));
+    final.violatorCount = final.violators.size;
+    final.issueCount = Object.keys(final.issuesObject).length;
+    final.issues = Object.values(final.issuesObject);
     // For each issue in the issues data:
-    issuesData.issues.forEach(issue => {
+    final.issues.forEach(issue => {
       // Populate its unpopulated properties.
       issue.summary = issues[issue.issueID].summary;
       issue.reporterCount = issue.reporters.size;
       issue.violatorCount = issue.violators.size;
     });
     // Return the issues data.
-    return issuesData;
+    return final;
   }
 };
 // Adds parameters to a query for the answer page.
@@ -116,11 +117,11 @@ const populateQuery = async (timeStamp, jobID, query) => {
   // Get fact descriptions for the report.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   const {what, urlLink, testInfo} = pageDataStrings;
-  const issuesData = await getIssuesData(timeStamp, jobID);
+  const final = await getIssuesData(timeStamp, jobID);
   // If this failed:
-  if (typeof issuesData === 'string') {
+  if (typeof final === 'string') {
     // Return this.
-    return issuesData;
+    return final;
   }
   const {
     issueCount,
@@ -128,7 +129,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     reporterCount,
     reportersString,
     violatorCount
-  } = issuesData;
+  } = final;
   // Add an issue count description to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
   query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
@@ -159,7 +160,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     // Initialize the lines for the weight.
     const weightLines = [];
     // For each issue:
-    issuesData.issues.forEach(issueData => {
+    final.issues.forEach(issueData => {
       const {
         issueID, reporterCount, reportersString, violatorCount, weight: issueWeight
       } = issueData;

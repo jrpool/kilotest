@@ -649,7 +649,7 @@ exports.getWCAGLink = numericID => {
   return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
 };
 // Gets page data from a report.
-const getPageData = async (timeStamp, jobID) => {
+const getPageData = exports.getPageData = async (timeStamp, jobID) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
   // If this failed:

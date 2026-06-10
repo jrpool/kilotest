@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+const {getData} = require('./util');
 const {
   getPageDataStrings,
   getReport,
@@ -102,22 +103,29 @@ const getIssuesData = async (timeStamp, jobID) => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {
-  // Get fact descriptions for the report.
-  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  const {what, urlLink, testInfo} = pageDataStrings;
-  const issuesData = await getIssuesData(timeStamp, jobID);
-  // If this failed:
-  if (typeof issuesData === 'string') {
+  const data = await getData(timeStamp, jobID);
+  // If the page data are invalid:
+  if (typeof data.page === 'string') {
     // Return this.
-    return issuesData;
+    return data.page;
   }
+  // Otherwise, if the issues data are invalid:
+  if (typeof data.issues === 'string') {
+    // Return this.
+    return data.issues;
+  }
+  // Otherwise, get fact descriptions for the page.
+  const pageInfo = await getPageDataStrings(timeStamp, jobID, data.page);
+  const {what, urlLink, testInfo} = pageInfo;
   const {
+    reporters,
+    reporterList,
+    reporterCount,
+    violatorCount,
     issueCount,
     preventions,
-    reporterCount,
-    reportersString,
-    violatorCount
-  } = issuesData;
+    issues
+  } = data.issues;
   // Add an issue count description to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
   query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;

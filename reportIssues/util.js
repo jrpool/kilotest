@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReport, isValidReport, objectSort, tools} = require('../util');
+const {getPageData, getReport, isValidReport, objectSort, tools} = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // FUNCTIONS
@@ -29,7 +29,7 @@ const getToolList = toolIDs => toolIDs
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');
 // Returns data on the issues reported by a report.
-exports.getIssuesData = async (timeStamp, jobID) => {
+const getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If it is valid:
@@ -119,11 +119,17 @@ exports.getIssuesData = async (timeStamp, jobID) => {
     // For each weight:
     ["4", "3", "2", "1"].forEach(weight => {
       // Sort its issues in the final data alphabetically by reporter names.
-      objectSort(issuesData.issues[weight], 'reporterList', 'alpha');
+      objectSort(final.issues[weight], 'reporterList', 'alpha');
       // Sort the issues again in descending reporter-count order, making this the primary order.
-      objectSort(issuesData.issues[weight], 'reporterCount', 'numericDown');
+      objectSort(final.issues[weight], 'reporterCount', 'numericDown');
     });
-    // Return the issues data.
+    // Return the data.
     return final;
   }
+  // Otherwise, i.e. if it is invalid, return this.
+  return 'ERROR: Report missing or invalid.';
 };
+exports.getData = async (timeStamp, jobID) => ({
+  page: await getPageData(timeStamp, jobID),
+  issues: await getIssuesData(timeStamp, jobID)
+});

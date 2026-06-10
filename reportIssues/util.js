@@ -23,29 +23,36 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Gets data on the issues reported in a report.
-const getIssuesData = async (timeStamp, jobID) => {
+// Returns data on the issues reported in a report.
+exports.getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If it is valid:
   if (typeof report === 'object' && isValidReport(report)) {
+    const reporters = {
+      all: new Set(),
+      issues: {}
+    };
+    const violators = {
+      all: new Set(),
+      issues: {}
+    };
+    // Initialize the data.
     const issuesData = {
-      reporters: new Set(),
+      reporters: [],
       reporterCount: 0,
-      reportersString: '',
-      violators: new Set(),
       violatorCount: 0,
-      preventions: {},
+      preventions: report.jobData.preventions,
       issues: {},
       issueCount: 0,
-      issueSorter: [
+      sortedIssueIDs: [
         "4", [],
         "3", [],
         "2", [],
         "1", []
       ]
     };
-    const {issues, issueSorter, reporters, violators} = issuesData;
+    const {issues, sortedIssueIDs} = issuesData;
     // For each act in it:
     report.acts.forEach(act => {
       // If it is a test act:
@@ -60,37 +67,37 @@ const getIssuesData = async (timeStamp, jobID) => {
           // If the instance has a non-ignorable classified issue:
           if (issueID && issueClassification && issueID !== 'ignorable') {
             // Ensure that the issues data include data on the issue.
+            reporters.issues[issueID] ??= new Set();
+            violators.issues[issueID] ??= new Set();
             issues[issueID] ??= {
               issueID,
               summary,
               wcag,
               why,
               weight: weight ?? 0,
-              reporters: new Set(),
+              reporters: [],
               reporterCount: 0,
-              violators: new Set(),
               violatorCount: 0
             };
             const issue = issues[issueID];
             // Ensure that the tool is in the issues data.
-            reporters.add(which);
+            reporters.all.add(which);
             // Ensure that it is in the issue data.
-            issue.reporters.add(which);
+            reporters.issues[issueID].add(which);
             // If the instance has a catalog index:
             if (catalogIndex) {
               // Ensure that the violator is in the issues data.
-              violators.add(catalogIndex);
+              violators.all.add(catalogIndex);
               // Ensure that it is in the issue data.
-              issue.violators.add(catalogIndex);
+              violators.issues[issueID].add(catalogIndex);
             }
           }
         });
       }
     });
-    // Populate the unpopulated subproperties of the issues data.
+    // Populate the unpopulated properties of the issues data.
     issuesData.reporterCount = issuesData.reporters.size;
     issuesData.violatorCount = issuesData.violators.size;
-    issuesData.preventions = report.jobData.preventions;
     issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
     issuesData.issues = Object.values(issuesData.issuesObject);
     // For each issue in the issues data:

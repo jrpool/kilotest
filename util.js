@@ -136,7 +136,7 @@ const getTimeString = timeStamp => {
   return '';
 };
 // Compares strings alphabetically and case-insensitively.
-const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'accent'});
+const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value.

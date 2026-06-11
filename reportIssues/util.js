@@ -47,6 +47,12 @@ const getIssuesData = async (timeStamp, jobID) => {
       reporterCount: 0,
       violatorCount: 0,
       preventions: report.jobData.preventions,
+      priorityNames: {
+        4: 'highest',
+        3: 'high',
+        2: 'low',
+        1: 'lowest'
+      },
       issues: {
         4: [],
         3: [],

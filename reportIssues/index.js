@@ -24,83 +24,6 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Gets data on the issues reported in a report.
-const getIssuesData = async (timeStamp, jobID) => {
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If it is valid:
-  if (typeof report === 'object' && isValidReport(report)) {
-    const issuesData = {
-      reporters: new Set(),
-      reporterCount: 0,
-      reportersString: '',
-      violators: new Set(),
-      violatorCount: 0,
-      preventions: {},
-      issuesObject: {},
-      issueCount: 0,
-      issues: []
-    };
-    const {issuesObject, reporters, violators} = issuesData;
-    // For each act in it:
-    report.acts.forEach(act => {
-      // If it is a test act:
-      if (act.type === 'test') {
-        const {result, which} = act;
-        const instances = result?.standardResult?.instances ?? [];
-        // For each of its standard instances:
-        instances.forEach(instance => {
-          const {issueID} = instance;
-          // If the instance has a non-ignorable classified issue:
-          if (issueID && issues[issueID] && issueID !== 'ignorable') {
-            // Ensure that the issues data include data on the issue.
-            issuesObject[issueID] ??= {
-              issueID,
-              weight: issues[issueID].weight ?? 0,
-              reporters: new Set(),
-              reporterCount: 0,
-              reportersString: '',
-              violators: new Set(),
-              violatorCount: 0
-            };
-            // Ensure that the tool is in the issues data.
-            reporters.add(which);
-            // Ensure that it is in the issue data.
-            issuesObject[issueID].reporters.add(which);
-            const {catalogIndex} = instance;
-            // If the instance has a catalog index:
-            if (catalogIndex) {
-              // Ensure that the violator is in the issues data.
-              violators.add(catalogIndex);
-              // Ensure that it is in the issue data.
-              issuesObject[issueID].violators.add(catalogIndex);
-            }
-          }
-        });
-      }
-    });
-    // Populate the unpopulated subproperties of the issues data.
-    issuesData.reporterCount = issuesData.reporters.size;
-    issuesData.reportersString = getToolNamesString(issuesData.reporters);
-    issuesData.violatorCount = issuesData.violators.size;
-    issuesData.preventions = report.jobData.preventions;
-    issuesData.issueCount = Object.keys(issuesData.issuesObject).length;
-    issuesData.issues = Object.values(issuesData.issuesObject);
-    // For each issue in the issues data:
-    issuesData.issues.forEach(issue => {
-      // Populate its unpopulated properties.
-      issue.reporterCount = issue.reporters.size;
-      issue.reportersString = getToolNamesString(issue.reporters);
-      issue.violatorCount = issue.violators.size;
-    });
-    // Sort the issues alphabetically by reporters string.
-    objectSort(issuesData.issues, 'reportersString', 'alpha');
-    // Sort the issues again in descending reporter-count order, making this the primary order.
-    objectSort(issuesData.issues, 'reporterCount', 'numericDown');
-    // Return the issues data.
-    return issuesData;
-  }
-};
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {
   // Get data on the page and its issues according to the report.
@@ -156,92 +79,70 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.lowestCount = data.issues[1].length;
   // Add a violator count to the query.
   query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
-  const detailsNames = {
-    4: 'highest',
-    3: 'high',
-    2: 'low',
-    1: 'lowest'
-  };
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
-    // Initialize data on issues having the weight.
-    const weightData = [];
-    // Initialize the lines for the weight.
-    const weightLines = [];
-    // For each issue:
-    data.issues[weight].forEach(issueData => {
-      const {
-        issueID, reporterCount, reportersString, violatorCount, weight: issueWeight
-      } = issueData;
-      // If it has the weight:
-      if (issueWeight === weight) {
-        const issue = issues[issueID];
-        const {wcag, why} = issue;
-        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
-        // Add data on it to the weight data.
-        weightData.push({
-          issueID,
-          summary: issue.summary,
-          why,
-          wcag: wcagLink,
-          reporterCount,
-          reportersString,
-          violatorCount
-        });
-      }
-    });
     const weightName = getWeightName(weight);
-    // Add the issue count to the query.
-    query[`${weightName}Count`] = weightData.length;
-    // If any reported issues have the weight:
-    if (weightData.length) {
-      // Add the start of a list of the issues with the weight to the lines.
-      weightLines.push(`${margin}<ul class="headed">`);
-      // For each issue with the weight:
-      weightData.forEach(weightIssue => {
-        const {issueID, reporterCount, reportersString, violatorCount, wcag, why} = weightIssue;
+    const weightIssues = data.issues[weight];
+    // For each issue with the weight:
+    weightIssues.forEach(issueData => {
+      const weightIssueCount = weightIssues.length;
+      // Add the issue count to the query.
+      query[`${weightName}Count`] = weightIssueCount;
+      // If any reported issues have the weight:
+      if (weightIssueCount) {
+        const {
+          issueID,
+          reporterCount,
+          reporterList,
+          reporters,
+          summary,
+          violatorCount,
+          wcag,
+          why
+        } = issueData;
+        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+        // Initialize lines for the weight details query.
+        const queryLines = [];
         // Add the start of a list item to the lines.
-        weightLines.push(`${margin}  <li>`);
+        queryLines.push(`${margin}  <li>`);
         // Add a heading summarizing the issue to the lines.
-        weightLines.push(`${margin}    <h5>${weightIssue.summary}</h5>`);
-        // Add the start of alist of facts about the issue to the lines.
-        weightLines.push(`${margin}    <ul class="pseudoTopLevel">`);
+        queryLines.push(`${margin}    <h5>${summary}</h5>`);
+        // Add the start of a fact list about the issue to the lines.
+        queryLines.push(`${margin}    <ul class="pseudoTopLevel">`);
         // Add the issue facts to the lines.
-        weightLines.push(`${margin}      <li>Why it matters: ${why}`);
-        weightLines.push(`${margin}      <li>Related WCAG standard: ${wcag}`);
+        queryLines.push(`${margin}      <li>Why it matters: ${why}`);
+        queryLines.push(`${margin}      <li>Related WCAG standard: ${wcagLink}`);
         const reporterCountString = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
-        weightLines.push(
-          `${margin}      <li>Reported by ${reporterCountString} (${reportersString})</li>`
+        queryLines.push(
+          `${margin}      <li>Reported by ${reporterCountString} (${reporterList})</li>`
         );
         const violatorCountString = violatorCount === 1
         ? '1 violator was'
         : `${violatorCount} violators were`;
-        weightLines.push(`${margin}      <li>${violatorCountString} reported</li>`);
+        queryLines.push(`${margin}      <li>${violatorCountString} reported</li>`);
         // Add the end of the fact list to the lines.
-        weightLines.push(`${margin}    </ul>`);
+        queryLines.push(`${margin}    </ul>`);
         // Add the start of a link list to the lines.
-        weightLines.push(`${margin}    <ul class="nav">`);
+        queryLines.push(`${margin}    <ul class="nav">`);
         const whereQuestionString = 'Where was the issue found?';
-        const labelString = `Where was the ${weightIssue.summary} issue found on the ${what} page?`;
+        const labelString = `Where was the ${summary} issue found on the ${what} page?`;
         const href = `href="/reportIssue.html/${issueID}/${timeStamp}/${jobID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
         // Add a violations link to the lines.
-        weightLines.push(`${margin}      <li>${whereLink}</li>`);
+        queryLines.push(`${margin}      <li>${whereLink}</li>`);
         // Add the end of the link list to the lines.
-        weightLines.push(`${margin}    </ul>`);
+        queryLines.push(`${margin}    </ul>`);
         // Add the end of the list item to the lines.
-        weightLines.push(`${margin}  </li>`);
-      });
-      // Add the end of the list of issues with the weight to the lines.
-      weightLines.push(`${margin}</ul>`);
-      // Add the lines documenting the issues with the weight to the query.
-      query[`${weightName}Details`] = weightLines.join('\n');
-    }
-    // Otherwise, i.e. if no reported issues have the weight:
-    else {
-      query[`${weightName}Details`] = `${margin}  <p>None</p>`;
-    }
+        queryLines.push(`${margin}  </li>`);
+        // Add the weight details lines to the query.
+        query[`${weightName}Details`] = queryLines.join('\n');
+      }
+      // Otherwise, i.e. if no reported issues have the weight:
+      else {
+        query[`${weightName}Details`] = `${margin}  <li>None</li>`;
+      }
+    });
   });
 };
 // Returns a page answering the target-issues question.

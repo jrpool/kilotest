@@ -46,7 +46,6 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.urlLink = urlLink;
   query.testInfo = testInfo;
   const {
-    reporters,
     reporterList,
     reporterCount,
     violatorCount,
@@ -73,16 +72,16 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.reporters = reporterList;
   // Add a summary of the issues to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
-  query.highestCount = data.issues[4].length;
-  query.highCount = data.issues[3].length;
-  query.lowCount = data.issues[2].length;
-  query.lowestCount = data.issues[1].length;
+  query.highestCount = issues[4].length;
+  query.highCount = issues[3].length;
+  query.lowCount = issues[2].length;
+  query.lowestCount = issues[1].length;
   // Add a violator count to the query.
   query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     const weightName = getWeightName(weight);
-    const weightIssues = data.issues[weight];
+    const weightIssues = issues[weight];
     // For each issue with the weight:
     weightIssues.forEach(issueData => {
       const weightIssueCount = weightIssues.length;
@@ -94,7 +93,6 @@ const populateQuery = async (timeStamp, jobID, query) => {
           issueID,
           reporterCount,
           reporterList,
-          reporters,
           summary,
           violatorCount,
           wcag,

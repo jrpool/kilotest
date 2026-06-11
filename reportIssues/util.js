@@ -123,7 +123,7 @@ const getIssuesData = async (timeStamp, jobID) => {
     });
     final.issueCount = Object.keys(temp.issues).length;
     // For each weight:
-    ["4", "3", "2", "1"].forEach(weight => {
+    [4, 3, 2, 1].forEach(weight => {
       // Sort its issues in the final data alphabetically by reporter names.
       objectSort(final.issues[weight], 'reporterList', 'alpha');
       // Sort the issues again in descending reporter-count order, making this the primary order.
@@ -136,6 +136,6 @@ const getIssuesData = async (timeStamp, jobID) => {
   return 'ERROR: Report missing or invalid.';
 };
 exports.getData = async (timeStamp, jobID) => ({
-  page: await getPageData(timeStamp, jobID),
-  issues: await getIssuesData(timeStamp, jobID)
+  pageData: await getPageData(timeStamp, jobID),
+  issuesData: await getIssuesData(timeStamp, jobID)
 });

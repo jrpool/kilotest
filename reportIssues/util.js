@@ -12,7 +12,7 @@ const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // Converts tool IDs to tool data sorted by tool name.
 const getToolData = toolIDs => objectSort(
-  toolIDs.map(toolID => {
+  Array.from(toolIDs).map(toolID => {
     const toolData = tools[toolID];
     return {
       toolID,
@@ -24,7 +24,7 @@ const getToolData = toolIDs => objectSort(
   'alpha'
 );
 // Returns a +-delimited list of sorted tool names.
-const getToolList = toolIDs => toolIDs
+const getToolList = toolIDs => Array.from(toolIDs)
 .map(toolID => tools[toolID][0])
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');

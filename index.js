@@ -459,10 +459,10 @@ const requestHandler = async (request, response) => {
         await serveError({message: answerData.error}, response, true);
       }
     }
-    // Otherwise, if it is a request from a Testaro agent:
+    // Otherwise, if it is a request from an agent:
     else if (pageName === 'api') {
-      const [agentID, service] = pageArgs.split('/');
-      // If the agent is authorized:
+      const [agentID, service, ... specs] = pageArgs.split('/');
+      // If the agent is the authorized Testaro instance:
       if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
         // If the service is job assignment:
         if (service === 'job') {
@@ -570,9 +570,41 @@ const requestHandler = async (request, response) => {
           );
         }
       }
+      // Otherwise, if the agent is the authorized research agent:
+      else if (agentID === researchAgent && postData.agentPW === researchAgentPW) {
+        // If the service is data on issues in a report:
+        if (service === 'reportIssues') {
+          const [timeStamp, jobID] = specs;
+          const reportSpecsBad = isHidden(timeStamp, jobID);
+          // If the report is nonexistent or hidden:
+          if (reportSpecsBad) {
+            response.end(JSON.stringify({
+              status: 'error',
+              message: reportSpecsBad === true ? 'Report is hidden' : reportSpecsBad
+            }));
+            return;
+          }
+          // Otherwise, get the response data, potentially error data.
+          const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
+          .response(specs);
+          // Send them.
+          response.end(JSON.stringify(responseData));
+        }
+        // Otherwise, if the service is not valid:
+        else {
+          // Send this.
+          response.end(JSON.stringify({
+            status: 'error',
+            message: 'ERROR: Invalid service request'
+          }));
+        }
+      }
       // Otherwise, i.e. if the agent is not authorized:
       else {
-        await serveError({message: 'ERROR: Invalid Testaro agent'}, response, false);
+        response.end(JSON.stringify({
+          status: 'error',
+          message: 'ERROR: Invalid Testaro agent'
+        }));
       }
     }
     // Otherwise, if it is a tutorial comment:

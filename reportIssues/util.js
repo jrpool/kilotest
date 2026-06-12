@@ -11,7 +11,7 @@ const issuesClassification = require('testilo/procs/score/tic').issues;
 // FUNCTIONS
 
 // Converts tool IDs to tool data sorted by tool name.
-const getToolData = toolIDs => objectSort(
+const getToolData = exports.getToolData = toolIDs => objectSort(
   Array.from(toolIDs).map(toolID => {
     const toolData = tools[toolID];
     return {

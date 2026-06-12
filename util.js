@@ -40,6 +40,10 @@ const tools = exports.tools = {
 
 // FUNCTIONS
 
+// Returns a random string.
+exports.getRandomString = length => {
+  return Math.random().toString(36).slice(2, length + 2);
+};
 // Returns whether a report is valid.
 exports.isValidReport = report => {
   // Return whether it has the type and properties required by Kilotest:
@@ -114,7 +118,7 @@ const getDateString = exports.getDateString = timeStamp => {
   return '';
 };
 // Returns the date and time represented by a time stamp.
-const getDateTime = timeStamp => {
+const getDateTime = exports.getDateTime = timeStamp => {
   const dateString
   = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(7,9)}:${timeStamp.slice(9,11)}Z`;
   const dateTime = new Date(dateString);

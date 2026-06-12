@@ -14,7 +14,6 @@ const {
   isHidden,
   tools
 } = require('../util');
-const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -22,7 +21,7 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp, jobID, query) => {
-  // Get data on the page and its issues according to the report.
+  // Get data on the target and its issues according to the report.
   const data = await getData(timeStamp, jobID);
   const {pageData, issuesData} = data;
   // If the page data are invalid:
@@ -35,10 +34,10 @@ const populateQuery = async (timeStamp, jobID, query) => {
     // Return this.
     return issuesData;
   }
-  // Otherwise, get fact descriptions for the page.
+  // Otherwise, get fact descriptions for the target.
   const pageInfo = await getPageDataStrings(timeStamp, jobID, pageData);
   const {what, urlLink, testInfo} = pageInfo;
-  // Add page data to the query.
+  // Add target data to the query.
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;

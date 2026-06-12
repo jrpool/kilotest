@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getNowStamp, getRecs, isURL} = require('../util');
+const {getJSON, getNowStamp, getRandomString, getRecs, isURL} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -20,7 +20,7 @@ exports.answer = async (url, what, authCode) => {
     const job = JSON.parse(jobTemplateJSON);
     const nowStamp = getNowStamp();
     // Populate the template with job properties.
-    const jobIDSuffix = Date.now().toString(36).slice(5);
+    const jobIDSuffix = getRandomString(3);
     const jobName = `${nowStamp}-${jobIDSuffix}`;
     job.id = jobName;
     job.creationTimeStamp = nowStamp;

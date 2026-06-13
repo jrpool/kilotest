@@ -32,14 +32,15 @@ const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
 const services = ['reportIssues'];
 // Randomly chosen service.
 const service = services[Math.floor(services.length * Math.random())];
+const logs = await getLogs();
+// Randomly chosen log.
+const log = logs[Math.floor(logs.length * Math.random())];
+const pathname = `${service}/${log.jobName.split('-').join('/')}`;
 
 // FUNCTIONS
 
 // Submits a random research request to a random Kilotest host.
 const requestService = async () => {
-  const logs = await getLogs();
-  // Get a randomly chosen log.
-  const log = logs[Math.floor(logs.length * Math.random())];
   const client = kilotestHost.startsWith('https') ? httpsClient : httpClient;
   const clientType = client === httpsClient ? 'HTTPS' : 'HTTP';
   // Use its job name in the request path.
@@ -48,11 +49,10 @@ const requestService = async () => {
     headers: {
       host,
       port,
-      pathname: `${service}/${log.jobName.split('-').join('/')}`,
+      pathname,
       'content-type': 'application/json; charset=utf-8'
     }
   };
-  const {pathname} = requestOptions.headers;
   console.log(`About to submit ${clientType} request on port ${port} to ${host}/${pathname}`);
   // Submit a request.
   client.request(requestOptions, response => {

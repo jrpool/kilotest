@@ -5,12 +5,11 @@
 
 // IMPORTS
 
-const {getData} = require('./util');
+const {getData, getToolData} = require('./util');
 const {
   getDateTime,
   getNowStamp,
   getRandomString,
-  getToolData,
   getToolNamesString,
   isHidden,
   tools

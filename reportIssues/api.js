@@ -60,7 +60,7 @@ exports.response = async args => {
   const data = await getData(timeStamp, jobID);
   const {pageData, issuesData} = data;
   const {what, url, daysAgo} = pageData;
-  const {issueCount, issues, preventions, reporters, violatorCount} = issuesData;
+  const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
   const preventedTools = getToolFacts(Object.keys(preventions));
   preventedTools.forEach(preventedTool => {
     preventedTool['reason for failure'] = preventions[preventedTool.identifier];
@@ -90,10 +90,21 @@ exports.response = async args => {
       description: what,
       URL: url
     },
-    'tools that tried to test the page': getToolNamesString(Object.keys(tools)),
+    'names of tools that tried to test the page': getToolNamesString(Object.keys(tools)),
     'tools that were unable to test the page': preventedTools,
-    'tools that reported issues': getToolFacts(reporters.map(tool => tool.toolID)),
-    'number of issues reported': issueCount,
+    'tools that reported issues': {
+      'number of tools': reporterCount,
+      'facts about the tools': getToolFacts(reporters.map(tool => tool.toolID))
+    },
+    'number of issues reported': {
+      'total': issueCount,
+      'by priority': {
+        'highest priority': issues[4].length,
+        'high priority': issues[3].length,
+        'low priority': issues[2].length,
+        'lowest priority': issues[1].length
+      }
+    },
     'number of HTML elements reported as exhibiting issues': violatorCount,
     'issues reported': {
       'highest priority': issues[4].map(issue => getIssueFacts(issue)),

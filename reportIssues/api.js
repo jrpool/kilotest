@@ -35,7 +35,7 @@ const getIssueFacts = issue => {
   return {
     identifier: issueID,
     summary,
-    'related WCAG standard': wcag,
+    'related WCAG principle (n.n) or success criterion (n.n.n)': wcag,
     'impact on a user': why,
     'tools reporting violations of rules belonging to the issue': {
       'number of the tools': reporterCount,

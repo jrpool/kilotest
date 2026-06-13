@@ -40,15 +40,14 @@ const requestService = async () => {
   const requestOptions = {
     method: 'POST',
     headers: {
-      host: kilotestHost.split(':')[1].slice(2),
+      host: kilotestHost.split('://')[1],
       pathname: `${service}/${log.jobName.split('-').join('/')}`,
       'content-type': 'application/json; charset=utf-8'
     }
   };
+  const {host, pathname} = requestOptions.headers;
   const clientType = client === httpsClient ? 'HTTPS' : 'HTTP';
-  console.log(
-    `About to submit ${clientType} request to ${kilotestHost}/${requestOptions.headers.pathname}`
-  );
+  console.log(`About to submit ${clientType} request to ${host}/${pathname}`);
   // Submit a request.
   client.request(requestOptions, response => {
     // Initialize a collection of data from the response.

@@ -66,5 +66,5 @@ client.request(requestOptions, response => {
 })
 // Finish sending the job request.
 .end(JSON.stringify({
-agentPW
+  agentPW
 }));

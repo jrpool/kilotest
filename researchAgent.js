@@ -25,7 +25,7 @@ const agentPW = process.env.RESEARCH_AGENT_PW;
 const kilotestHosts = [process.env.LOCAL_KILOTEST_HOST, process.env.DEPLOYED_KILOTEST_HOST];
 // Randomly chosen Kilotest host.
 const kilotestHost = kilotestHosts[Math.random() < 0.5 ? 0 : 1];
-const hostParts = kilotestHost.split(':/*');
+const hostParts = kilotestHost.split(/:\/*/);
 const scheme = hostParts[0];
 const host = hostParts[1];
 const port = hostParts[2] || (scheme === 'https' ? 443 : 80);

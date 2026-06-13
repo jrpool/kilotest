@@ -42,19 +42,19 @@ const requestService = async () => {
   // Randomly chosen log.
   const log = logs[Math.floor(logs.length * Math.random())];
   const specs = log.jobName.split('-').join('/');
-  const pathname = `api/${agent}/${service}/${specs}`;
+  const path = `api/${agent}/${service}/${specs}`;
   const client = scheme === 'https' ? httpsClient : httpClient;
   // Use its job name in the request path.
   const requestOptions = {
     method: 'POST',
+    host,
+    port,
+    path,
     headers: {
-      host,
-      port,
-      pathname,
       'content-type': 'application/json; charset=utf-8'
     }
   };
-  console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}/${pathname}`);
+  console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}/${path}`);
   // Submit a request.
   client.request(requestOptions, response => {
     // Initialize a collection of data from the response.

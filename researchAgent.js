@@ -79,7 +79,7 @@ const requestService = async () => {
       }
       catch (error) {
         console.log(error.message);
-        console.log(content || 'No content');
+        console.log(`Response content: ${content || 'No content'}`);
       }
     });
   })

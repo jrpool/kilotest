@@ -74,7 +74,13 @@ const requestService = async () => {
     .on('end', async () => {
       const content = chunks.join('');
       // Output it.
-      console.log(JSON.stringify(JSON.parse(content), null, 2));
+      try {
+        console.log(JSON.stringify(JSON.parse(content), null, 2));
+      }
+      catch (error) {
+        console.log(error.message);
+        console.log(content || 'No content');
+      }
     });
   })
   // Finish sending the job request.

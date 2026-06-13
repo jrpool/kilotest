@@ -28,43 +28,52 @@ const services = ['reportIssues'];
 // Randomly chosen service.
 const service = services[Math.floor(services.length * Math.random())];
 
+// FUNCTIONS
+
+// Submits a random research request to a random Kilotest host.
+const requestService = async () => {
+  const logs = await getLogs();
+  // Get a randomly chosen log.
+  const log = logs[Math.floor(logs.length * Math.random())];
+  const client = kilotestHost.startsWith('https') ? httpsClient : httpClient;
+  // Use its job name in the request path.
+  const requestOptions = {
+    method: 'POST',
+    headers: {
+      host: kilotestHost,
+      pathname: `/${service}/${log.jobName.split('-').join('/')}`,
+      'content-type': 'application/json; charset=utf-8'
+    }
+  };
+  // Submit a request.
+  client.request(requestOptions, response => {
+    // Initialize a collection of data from the response.
+    const chunks = [];
+    response
+    // If the response throws an error:
+    .on('error', async error => {
+      // Report it.
+      console.log(error.message);
+    })
+    // If the response delivers data:
+    .on('data', chunk => {
+      // Add them to the collection.
+      chunks.push(chunk);
+    })
+    // When the response is completed:
+    .on('end', async () => {
+      const content = chunks.join('');
+      // Output it.
+      console.log(JSON.stringify(JSON.parse(content), null, 2));
+    });
+  })
+  // Finish sending the job request.
+  .end(JSON.stringify({
+    agentPW
+  }));
+};
+
 // EXECUTION
 
-const logs = await getLogs();
-// Get a randomly chosen log.
-const log = logs[Math.floor(logs.length * Math.random())];
-const client = kilotestHost.startsWith('https') ? httpsClient : httpClient;
-const requestOptions = {
-  method: 'POST',
-  headers: {
-    host: kilotestHost,
-    pathname: `/${service}/${log.jobName.split('-').join('/')}`,
-    'content-type': 'application/json; charset=utf-8'
-  }
-};
-// Submit a research request.
-client.request(requestOptions, response => {
-  // Initialize a collection of data from the response.
-  const chunks = [];
-  response
-  // If the response throws an error:
-  .on('error', async error => {
-    // Report it.
-    console.log(error.message);
-  })
-  // If the response delivers data:
-  .on('data', chunk => {
-    // Add them to the collection.
-    chunks.push(chunk);
-  })
-  // When the response is completed:
-  .on('end', async () => {
-    const content = chunks.join('');
-    // Output it.
-    console.log(JSON.stringify(JSON.parse(content), null, 2));
-  });
-})
-// Finish sending the job request.
-.end(JSON.stringify({
-  agentPW
-}));
+// Execute the research agent.
+requestService();

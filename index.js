@@ -67,6 +67,8 @@ const claimedPath = path.join(jobsPath, 'claimed');
 const failedPath = path.join(jobsPath, 'failed');
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
+const researchAgent = process.env.RESEARCH_AGENT;
+const researchAgentPW = process.env.RESEARCH_AGENT_PW;
 // Values that may require alerts.
 const balancePath = path.join(__dirname, 'aiService0Balance.json');
 const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
@@ -78,17 +80,22 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // Serves an error message.
 const serveError = async (error, response, isHumanUser = true) => {
-  console.log(error.message);
+  console.log(error.message || 'ERROR');
   if (! response.writableEnded) {
     response.statusCode = 400;
+    // If the request is from a human user:
     if (isHumanUser) {
+      // Serve an HTML page containing the message property of the error.
       response.setHeader('content-type', 'text/html; charset=utf-8');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
-      const errorPage = errorTemplate.replace(/__error__/, error.message);
+      const errorPage = errorTemplate.replace(/__error__/, error.message || 'ERROR');
       response.end(errorPage);
-    } else {
+    }
+    // Otherwise, i.e. if it is from an agent:
+    else {
+      // Send a JSON response containing the entire error.
       response.setHeader('content-type', 'application/json; charset=utf-8');
-      response.end(JSON.stringify({error: error.message}));
+      response.end(JSON.stringify({error}));
     }
   }
 };
@@ -107,7 +114,6 @@ const checkBalancesForAlerts = async report => {
         `Only ${creditsRemaining} WAVE credits remain (3 used per job)`
       );
     }
-    // AI service 0.
     const testaroAct = report.acts.find(act => act.type === 'test' && act.which === 'testaro');
     // Get the AI model token usage for the testaro allCaps test.
     const usage = testaroAct?.data?.ruleData?.allCaps?.aiModelUsage;
@@ -570,7 +576,7 @@ const requestHandler = async (request, response) => {
           );
         }
       }
-      // Otherwise, if the agent is the authorized research agent:
+      // Otherwise, if the agent is an authorized research agent:
       else if (agentID === researchAgent && postData.agentPW === researchAgentPW) {
         // If the service is data on issues in a report:
         if (service === 'reportIssues') {

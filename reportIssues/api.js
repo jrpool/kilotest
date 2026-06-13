@@ -68,6 +68,7 @@ exports.response = async args => {
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
+    summary: `This document fulfills a request made by an agent to Kilotest. The agent requested data from a report produced by Kilotest. The report contains results of tests performed on a web page by an ensemble of tools. The tools use a combination of rule-based and machine-learning-based methods to identify accessibility, usability, and standard-conformity issues. More detailed information about Kilotest is available from its deployed instance, ${process.env.DEPLOYED_KILOTEST_HOST}. which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
       'name of requesting agent': agentName,

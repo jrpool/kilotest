@@ -23,7 +23,12 @@ const httpsClient = require('https');
 
 const agentPW = process.env.RESEARCH_AGENT_PW;
 const kilotestHosts = [process.env.LOCAL_KILOTEST_HOST, process.env.DEPLOYED_KILOTEST_HOST];
+// Randomly chosen Kilotest host.
 const kilotestHost = kilotestHosts[Math.random() < 0.5 ? 0 : 1];
+const hostParts = kilotestHost.split(':/*');
+const scheme = hostParts[0];
+const host = hostParts[1];
+const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
 const services = ['reportIssues'];
 // Randomly chosen service.
 const service = services[Math.floor(services.length * Math.random())];
@@ -36,18 +41,19 @@ const requestService = async () => {
   // Get a randomly chosen log.
   const log = logs[Math.floor(logs.length * Math.random())];
   const client = kilotestHost.startsWith('https') ? httpsClient : httpClient;
+  const clientType = client === httpsClient ? 'HTTPS' : 'HTTP';
   // Use its job name in the request path.
   const requestOptions = {
     method: 'POST',
     headers: {
-      host: kilotestHost.split('://')[1],
+      host,
+      port,
       pathname: `${service}/${log.jobName.split('-').join('/')}`,
       'content-type': 'application/json; charset=utf-8'
     }
   };
-  const {host, pathname} = requestOptions.headers;
-  const clientType = client === httpsClient ? 'HTTPS' : 'HTTP';
-  console.log(`About to submit ${clientType} request to ${host}/${pathname}`);
+  const {pathname} = requestOptions.headers;
+  console.log(`About to submit ${clientType} request on port ${port} to ${host}/${pathname}`);
   // Submit a request.
   client.request(requestOptions, response => {
     // Initialize a collection of data from the response.

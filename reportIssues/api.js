@@ -60,17 +60,18 @@ exports.response = async args => {
   const data = await getData(timeStamp, jobID);
   const {pageData, issuesData} = data;
   const {what, url, daysAgo} = pageData;
-  const {issueCount, issues, preventions, priorityNames, reporters, violatorCount} = issuesData;
+  const {issueCount, issues, preventions, reporters, violatorCount} = issuesData;
   const preventedTools = getToolFacts(Object.keys(preventions));
   preventedTools.forEach(preventedTool => {
     preventedTool['reason for failure'] = preventions[preventedTool.identifier];
   });
+  const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
     'tool name': 'Kilotest',
     request: {
       'name of requesting agent': agentName,
-      type: {
+      'type of request': {
         identifier: 'reportIssues',
         description: 'What issues did Kilotest report in the specified report?'
       }
@@ -83,7 +84,7 @@ exports.response = async args => {
       identifier: `${timeStamp}-${jobID}`,
       'creation date': getDateTime(timeStamp),
       'days since the creation date': daysAgo,
-      'URL for human inspection': `https://kilotest.com/reportIssues.html/${timeStamp}/${jobID}`
+      'URL for human inspection': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     'tested web page': {
       description: what,

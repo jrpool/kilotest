@@ -655,6 +655,9 @@ const serve = async (protocolModule, options) => {
     console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
   });
 };
+
+// EXECUTION
+
 if (protocol === 'http') {
   console.log('Starting HTTP server');
   serve(http, {});

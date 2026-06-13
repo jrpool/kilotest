@@ -488,7 +488,7 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns an array of the logs of the public reports on the tested targets.
+// Returns an array of the logs, with job names added, of the non-hidden reports.
 exports.getLogs = async () => {
   // Initialize data on the tested targets.
   const logs = [];

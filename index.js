@@ -78,7 +78,7 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // FUNCTIONS
 
-// Serves an error message.
+// Serves or sends an error message.
 const serveError = async (error, response, isHumanUser = true) => {
   console.log(error.message || 'ERROR');
   if (! response.writableEnded) {
@@ -97,6 +97,9 @@ const serveError = async (error, response, isHumanUser = true) => {
       response.setHeader('content-type', 'application/json; charset=utf-8');
       response.end(JSON.stringify({error}));
     }
+  }
+  else {
+    console.log('Cannot send error response because the response has ended.');
   }
 };
 // Checks a report for balances nearing exhaustion.
@@ -237,7 +240,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is syntactically invalid:
       else {
         // Report the error.
-        await serveError({message: 'Invalid report request'}, response, true);
+        await serveError({message: 'ERROR: Invalid report request'}, response, true);
       }
     }
     // Otherwise, if it is for an HTML page other than the home page:
@@ -264,7 +267,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the answer cannot be generated:
       else {
         // Report the error.
-        await serveError({message: 'Invalid request'}, response, true);
+        await serveError({message: 'ERROR: Invalid request'}, response, true);
       }
     }
     // Otherwise, if it is for a tutorial image:
@@ -280,7 +283,7 @@ const requestHandler = async (request, response) => {
         response.end(img);
       }
       catch (_) {
-        await serveError({message: 'Image not found'}, response, true);
+        await serveError({message: 'ERROR: Image not found'}, response, true);
       }
     }
     // Otherwise, if it is for the application icon:
@@ -346,7 +349,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        await serveError({message: 'Invalid retest recommendation'}, response, true);
+        await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
       }
     }
     // Otherwise, if it is a test recommendation:
@@ -374,7 +377,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        await serveError({message: 'Invalid test recommendation'}, response, true);
+        await serveError({message: 'ERROR: Invalid test recommendation'}, response, true);
       }
     }
     // Otherwise, if it is an action on a test or retest recommendation:
@@ -422,7 +425,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the request is invalid:
       else {
         // Report the error.
-        await serveError({message: 'Invalid test order'}, response, true);
+        await serveError({message: 'ERROR: Invalid test order'}, response, true);
       }
     }
     // Otherwise, if it is a reannotation order:
@@ -467,8 +470,9 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is a request from an agent:
     else if (pageName === 'api') {
+      // Get the agent ID, the service, and any service specifications from the path.
       const [agentID, service, ... specs] = pageArgs.split('/');
-      // If the agent is the authorized Testaro instance:
+      // If the agent is the authorized Testaro instance and it is authenticated:
       if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
         // If the service is job assignment:
         if (service === 'job') {
@@ -576,41 +580,41 @@ const requestHandler = async (request, response) => {
           );
         }
       }
-      // Otherwise, if the agent is an authorized research agent:
+      // Otherwise, if the agent is the authorized research agent and it is authenticated:
       else if (agentID === researchAgent && postData.agentPW === researchAgentPW) {
-        // If the service is data on issues in a report:
+        // If the service is provision of facts about issues in a report:
         if (service === 'reportIssues') {
+          // Get the report identifiers from the path.
           const [timeStamp, jobID] = specs;
           const reportSpecsBad = isHidden(timeStamp, jobID);
           // If the report is nonexistent or hidden:
           if (reportSpecsBad) {
-            response.end(JSON.stringify({
-              status: 'error',
-              message: reportSpecsBad === true ? 'Report is hidden' : reportSpecsBad
-            }));
-            return;
+            // Report this.
+            await serveError(
+              {message: reportSpecsBad === true ? 'Report nonexistent or hidden' : reportSpecsBad},
+              response,
+              false
+            );
           }
-          // Otherwise, get the response data, potentially error data.
-          const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
-          .response(specs);
-          // Send them.
-          response.end(JSON.stringify(responseData));
+          // Otherwise, i.e. if the report is available:
+          else {
+            // Get the response (potentially error) data.
+            const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
+            .response(specs);
+            // Send them.
+            response.end(JSON.stringify(responseData));
+          }
         }
-        // Otherwise, if the service is not valid:
+        // Otherwise, i.e. if the service is invalid:
         else {
-          // Send this.
-          response.end(JSON.stringify({
-            status: 'error',
-            message: 'ERROR: Invalid service request'
-          }));
+          // Report this.
+          await serveError({message: 'ERROR: Invalid service request'}, response, false);
         }
       }
-      // Otherwise, i.e. if the agent is not authorized:
+      // Otherwise, i.e. if the agent is not authorized or not authenticated:
       else {
-        response.end(JSON.stringify({
-          status: 'error',
-          message: 'ERROR: Invalid Testaro agent'
-        }));
+        // Report this.
+        await serveError({message: 'ERROR: Invalid agent'}, response, false);
       }
     }
     // Otherwise, if it is a tutorial comment:

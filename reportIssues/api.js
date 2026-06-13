@@ -29,17 +29,19 @@ const getToolFacts = toolIDs => {
     };
   });
 };
-// Gets facts about issues.
+// Gets facts about an issue.
 const getIssueFacts = issue => {
-  const {issueID, reporters, summary, violatorCount, wcag, why} = issue;
+  const {issueID, reporterCount, reporterList, reporters, summary, violatorCount, wcag, why} = issue;
   return {
     identifier: issueID,
     summary,
     'related WCAG standard': wcag,
     'impact on a user': why,
-    'tools reporting violations of rules belonging to the issue': getToolFacts(
-      reporters.map(tool => tool.toolID)
-    ),
+    'tools reporting violations of rules belonging to the issue': {
+      'number of the tools': reporterCount,
+      'alphabetized list of names of the tools': reporterList,
+      'facts about the tools alphabetized by name': getToolFacts(reporters.map(tool => tool.toolID))
+    },
     'number of HTML elements reported as exhibiting the issue': violatorCount
   };
 };
@@ -84,7 +86,7 @@ exports.response = async pageArgs => {
     report: {
       identifier: `${timeStamp}-${jobID}`,
       'creation date': getDateTime(timeStamp),
-      'days since creation date': daysAgo,
+      'days since the creation date': daysAgo,
       'URL for human inspection': `https://kilotest.com/reportIssues.html/${timeStamp}/${jobID}`
     },
     'tested web page': {

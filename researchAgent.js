@@ -21,6 +21,7 @@ const httpsClient = require('https');
 
 // CONSTANTS
 
+const agent = process.env.RESEARCH_AGENT;
 const agentPW = process.env.RESEARCH_AGENT_PW;
 const kilotestHosts = [process.env.LOCAL_KILOTEST_HOST, process.env.DEPLOYED_KILOTEST_HOST];
 // Randomly chosen Kilotest host.
@@ -40,9 +41,9 @@ const requestService = async () => {
   const logs = await getLogs();
   // Randomly chosen log.
   const log = logs[Math.floor(logs.length * Math.random())];
-  const pathname = `${service}/${log.jobName.split('-').join('/')}`;
-  const client = kilotestHost.startsWith('https') ? httpsClient : httpClient;
-  const clientType = client === httpsClient ? 'HTTPS' : 'HTTP';
+  const specs = log.jobName.split('-').join('/');
+  const pathname = `api/${agent}/${service}/${specs}`;
+  const client = scheme === 'https' ? httpsClient : httpClient;
   // Use its job name in the request path.
   const requestOptions = {
     method: 'POST',
@@ -53,7 +54,7 @@ const requestService = async () => {
       'content-type': 'application/json; charset=utf-8'
     }
   };
-  console.log(`About to submit ${clientType} request on port ${port} to ${host}/${pathname}`);
+  console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}/${pathname}`);
   // Submit a request.
   client.request(requestOptions, response => {
     // Initialize a collection of data from the response.

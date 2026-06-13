@@ -11,6 +11,7 @@ const {
   getNowStamp,
   getRandomString,
   getToolData,
+  getToolNamesString,
   isHidden,
   tools
 } = require('../util');
@@ -47,7 +48,7 @@ const getIssueFacts = issue => {
 };
 // Returns a response to a target-issues request.
 exports.response = async pageArgs => {
-  const [timeStamp, jobID] = pageArgs.split('/');
+  const [timeStamp, jobID] = pageArgs;
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
   if (reportIsHidden) {
@@ -93,7 +94,7 @@ exports.response = async pageArgs => {
       description: what,
       URL: url
     },
-    'tools that tried to test the page': getTools(Object.keys(tools)),
+    'tools that tried to test the page': getToolNamesString(Object.keys(tools)),
     'tools that were unable to test the page': preventedTools,
     'tools that reported issues': getToolFacts(reporters.map(tool => tool.toolID)),
     'number of issues reported': issueCount,

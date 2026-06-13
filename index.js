@@ -586,7 +586,7 @@ const requestHandler = async (request, response) => {
         if (service === 'reportIssues') {
           // Get the report identifiers from the path.
           const [timeStamp, jobID] = specs;
-          const reportSpecsBad = isHidden(timeStamp, jobID);
+          const reportSpecsBad = await isHidden(timeStamp, jobID);
           // If the report is nonexistent or hidden:
           if (reportSpecsBad) {
             // Report this.

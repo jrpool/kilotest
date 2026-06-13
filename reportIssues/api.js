@@ -46,8 +46,8 @@ const getIssueFacts = issue => {
   };
 };
 // Returns a response to a target-issues request.
-exports.response = async pageArgs => {
-  const [timeStamp, jobID] = pageArgs;
+exports.response = async args => {
+  const [agentName, timeStamp, jobID] = args;
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
   if (reportIsHidden) {
@@ -69,11 +69,7 @@ exports.response = async pageArgs => {
   const response = {
     'tool name': 'Kilotest',
     request: {
-      requester: {
-        identifier: 'placeholder for requester identifier',
-        name: 'placeholder for requester name'
-      },
-      'date and time': 'placeholder for request date and time',
+      'name of requesting agent': agentName,
       type: {
         identifier: 'reportIssues',
         description: 'What issues did Kilotest report in the specified report?'

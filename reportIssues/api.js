@@ -84,13 +84,13 @@ exports.response = async args => {
         description: 'What issues does the specified report describe?'
       },
       'closest ancestor request': {
-        'information that it requests': 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
+        description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
         'URL for you': `${thisHost}/api/${agentID}/targets.html`,
         'URL for humans': `${thisHost}/targets.html`
       }
     },
     'response metadata': {
-      'identifier': `${getNowStamp()}-${getRandomString(3)}`,
+      identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString(),
       'URL of the human-oriented equivalent of this response': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
@@ -106,11 +106,11 @@ exports.response = async args => {
     'tools that tried to test the page': getToolFacts(Object.keys(tools)),
     'tools that were unable to test the page': preventedTools,
     'tools that reported issues': {
-      'number': reporterCount,
-      'names': reporters.map(tool => tool.toolName)
+      number: reporterCount,
+      names: reporters.map(tool => tool.toolName)
     },
     'number of issues reported': {
-      'total': issueCount,
+      total: issueCount,
       'by priority': {
         'highest priority': issues[4].length,
         'high priority': issues[3].length,

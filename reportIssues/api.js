@@ -29,7 +29,7 @@ const getToolFacts = toolIDs => {
   });
 };
 // Gets facts about an issue.
-const getIssueFacts = issue => {
+const getIssueFacts = (thisHost, agentName, timeStamp, jobID, issue) => {
   const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
   return {
     identifier: issueID,
@@ -116,10 +116,14 @@ exports.response = async args => {
     },
     'number of HTML elements reported as exhibiting issues': violatorCount,
     'issues reported': {
-      'highest priority': issues[4].map(issue => getIssueFacts(issue)),
-      'high priority': issues[3].map(issue => getIssueFacts(issue)),
-      'low priority': issues[2].map(issue => getIssueFacts(issue)),
-      'lowest priority': issues[1].map(issue => getIssueFacts(issue))
+      'highest priority': issues[4]
+      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue)),
+      'high priority': issues[3]
+      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue)),
+      'low priority': issues[2]
+      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue)),
+      'lowest priority': issues[1]
+      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue))
     }
   };
   return response;

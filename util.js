@@ -146,7 +146,7 @@ const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value.
-exports.objectSort = (objects, property, sortType) => objects
+const objectSort = exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -490,7 +490,7 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns an array of the logs, with job names added, of the non-hidden reports.
+// Returns a sorted array of the logs, with job names added, of the non-hidden reports.
 exports.getLogs = async () => {
   // Initialize data on the tested targets.
   const logs = [];
@@ -689,4 +689,34 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     urlLink: `<a href="${url}">${url}</a>`,
     testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
+};
+// Returns tool data sorted by tool name.
+const getToolsData = exports.getToolsData = toolIDs => objectSort(
+  Array.from(toolIDs).map(toolID => {
+    const toolData = tools[toolID];
+    return {
+      toolID,
+      toolName: toolData[0],
+      toolMaker: toolData[1]
+    }
+  }),
+  'toolName',
+  'alpha'
+);
+// Returns a +-delimited list of sorted tool names.
+exports.getToolList = toolIDs => Array.from(toolIDs)
+.map(toolID => tools[toolID][0])
+.sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
+.join(' + ');
+// Returns facts about tools.
+exports.getToolsFacts = toolIDs => {
+  const crypticData = getToolsData(toolIDs);
+  return crypticData.map(tool => {
+    const {toolID, toolName, toolMaker} = tool;
+    return {
+      identifier: toolID,
+      name: toolName,
+      sponsor: toolMaker
+    };
+  });
 };

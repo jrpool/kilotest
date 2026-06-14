@@ -1,6 +1,6 @@
 /*
   api.js
-  Responds to the report-issues request.
+  Responds to the targets request.
 */
 
 // IMPORTS
@@ -11,6 +11,7 @@ const {
   getNowStamp,
   getRandomString,
   getToolsFacts,
+  getToolsData,
   isHidden,
   researchAgents,
   tools
@@ -18,41 +19,10 @@ const {
 
 // FUNCTIONS
 
-// Gets facts about an issue.
-const getIssueFacts = (thisHost, agentID, timeStamp, jobID, issue) => {
-  const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
-  const wcagType = wcag.length === 3 ? 'principle' : 'success criterion';
-  return {
-    identifier: issueID,
-    summary,
-    [`related WCAG ${wcagType}`]: wcag,
-    'impact on a user': why,
-    'tools reporting the issue': {
-      'number': reporterCount,
-      'names': reporters.map(tool => tool.toolName)
-    },
-    'number of HTML elements reported as exhibiting the issue': violatorCount,
-    'URLs for details about the issue on the page': {
-      'for you': `${thisHost}/api/${agentID}/reportIssue/${timeStamp}/${jobID}/${issueID}`,
-      'for humans': `${thisHost}/reportIssue/${timeStamp}/${jobID}/${issueID}`
-    }
-  };
-};
-// Returns a response to a target-issues request.
-exports.response = async args => {
-  const [agentID, timeStamp, jobID] = args;
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report is not available:
-  if (reportIsHidden) {
-    return {
-      status: 'error',
-      message: 'Report not available'
-    };
-  }
-  // Otherwise, i.e. if the report is available, get data on the target and issues.
-  const data = await getData(timeStamp, jobID);
-  const {pageData, issuesData} = data;
-  const {what, url, daysAgo} = pageData;
+// Returns a response to a targets request.
+exports.response = async agentID => {
+  // Get data on the targets.
+  const data = await getData();
   const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
   const preventedTools = Object.entries(preventions).map(prevention => ({
     name: tools[prevention[0]][0],
@@ -92,7 +62,7 @@ exports.response = async args => {
       description: what,
       URL: url
     },
-    'tools that tried to test the page': getToolsFacts(Object.keys(tools)),
+    'tools that tried to test the page': getToolFacts(Object.keys(tools)),
     'tools that were unable to test the page': preventedTools,
     'tools that reported issues': {
       number: reporterCount,

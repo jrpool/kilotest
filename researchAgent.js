@@ -30,22 +30,13 @@ const hostParts = kilotestHost.split(/:\/*/);
 const scheme = hostParts[0];
 const host = hostParts[1];
 const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
-const services = ['reportIssues'];
-// Randomly chosen service.
-const service = services[Math.floor(services.length * Math.random())];
 
 // FUNCTIONS
 
-// Submits a random research request to a random Kilotest host.
+// Submits a targets request to a random Kilotest host.
 const requestService = async () => {
-  const logs = await getLogs();
-  // Randomly chosen log.
-  const log = logs[Math.floor(logs.length * Math.random())];
-  const specs = log.jobName.split('-').join('/');
-  const path = `/api/${agent}/${service}/${specs}`;
   const client = scheme === 'https' ? httpsClient : httpClient;
-  // Use its job name in the request path.
-  const requestOptions = {
+  const getRequestOptions = path => ({
     method: 'POST',
     host,
     port,
@@ -53,10 +44,10 @@ const requestService = async () => {
     headers: {
       'content-type': 'application/json; charset=utf-8'
     }
-  };
+  });
   console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
-  // Submit a request.
-  client.request(requestOptions, response => {
+  // Submit the request.
+  client.request(getRequestOptions(`/api/${agent}/targets.html`), response => {
     // Initialize a collection of data from the response.
     const chunks = [];
     response
@@ -73,13 +64,52 @@ const requestService = async () => {
     // When the response is completed:
     .on('end', async () => {
       const content = chunks.join('');
-      // Output it.
       try {
-        console.log(JSON.stringify(JSON.parse(content), null, 2));
+        // Output it.
+        const contentObj = JSON.parse(content);
+        console.log('======================');
+        console.log(JSON.stringify(contentObj, null, 2));
+        // Get the IDs of the available reports.
+        const reportIDs = contentObj['available reports'].map(report => report.identifier);
+        // Choose one at random.
+        const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
+        .split('-');
+        console.log('======================');
+        const requestOptions = getRequestOptions(`/api/${agent}/issues.html/${timeStamp}/${jobID}`);
+        // Submit a request for data on its issues.
+        client.request(requestOptions, response => {
+          // Initialize a collection of data from the response.
+          const chunks = [];
+          response
+          // If the response throws an error:
+          .on('error', async error => {
+            // Report it.
+            console.log(error.message);
+          })
+          // If the response delivers data:
+          .on('data', chunk => {
+            // Add them to the collection.
+            chunks.push(chunk);
+          })
+          // When the response is completed:
+          .on('end', async () => {
+            const content = chunks.join('');
+            try {
+              // Output it.
+              const contentObj = JSON.parse(content);
+              console.log(JSON.stringify(contentObj, null, 2));
+              console.log('======================');
+            }
+            catch (error) {
+              console.log(error.message);
+              console.log(`Issues response content: ${content || 'No content'}`);
+            }
+          });
+        })
       }
       catch (error) {
         console.log(error.message);
-        console.log(`Response content: ${content || 'No content'}`);
+        console.log(`Targets response content: ${content || 'No content'}`);
       }
     });
   })

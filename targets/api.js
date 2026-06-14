@@ -6,16 +6,10 @@
 // IMPORTS
 
 const {
-  getDateTime,
   getNowStamp,
-  getPageData,
   getRandomString,
   getReportData,
-  getToolsFacts,
-  getToolsData,
-  isHidden,
-  researchAgents,
-  tools
+  researchAgents
 } = require('../util');
 
 // FUNCTIONS
@@ -44,38 +38,30 @@ exports.response = async agentID => {
       preventedToolCount
     } = data;
     availableReports.push({
-      identifier: `${timeStamp}-${jobID}`,
+      identifier: jobName,
       'creation date': creationDate,
       'days since the creation date': daysAgo,
       'tested web page': {
         description: what,
         URL: url
       },
-      'number of issues reported': {
-        total: issueCount,
-        'by priority': {
-          'highest priority': issues[4].length,
-          'high priority': issues[3].length,
-          'low priority': issues[2].length,
-          'lowest priority': issues[1].length
-        }
+      'number of issues reported': issueCount,
+      'number of HTML elements reported as exhibiting issues': violatorCount,
+      'tools that tried to test the page': reporterNames,
+      'tools that were unable to test the page': {
+        number: preventedToolCount,
+        names: preventedToolNames
       },
-      'tools that tried to test the page': getToolFacts(Object.keys(tools)),
-      'tools that were unable to test the page': preventedTools,
       'tools that reported issues': {
         number: reporterCount,
-        names: reporters.map(tool => tool.toolName)
-      },
-      'tools that did not report issues': {
-        number: violatorCount,
-        names: violators.map(tool => tool.toolName)
+        names: reporterNames
       }
     });
   }
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
-    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and statistics for each page on the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
       'requesting agent': {
@@ -92,42 +78,7 @@ exports.response = async agentID => {
       'date and time': new Date().toISOString(),
       'URL of the human-oriented equivalent of this response': `${thisHost}/targets.html`
     },
-    'available reports': [],
-    report: {
-      identifier: `${timeStamp}-${jobID}`,
-      'creation date': getDateTime(timeStamp),
-      'days since the creation date': daysAgo
-    },
-    'tested web page': {
-      description: what,
-      URL: url
-    },
-    'tools that tried to test the page': getToolFacts(Object.keys(tools)),
-    'tools that were unable to test the page': preventedTools,
-    'tools that reported issues': {
-      number: reporterCount,
-      names: reporters.map(tool => tool.toolName)
-    },
-    'number of issues reported': {
-      total: issueCount,
-      'by priority': {
-        'highest priority': issues[4].length,
-        'high priority': issues[3].length,
-        'low priority': issues[2].length,
-        'lowest priority': issues[1].length
-      }
-    },
-    'number of HTML elements reported as exhibiting issues': violatorCount,
-    'issues reported': {
-      'highest priority': issues[4]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
-      'high priority': issues[3]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
-      'low priority': issues[2]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
-      'lowest priority': issues[1]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue))
-    }
+    'available reports': availableReports
   };
   return response;
 };

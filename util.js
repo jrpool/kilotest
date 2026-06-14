@@ -36,6 +36,9 @@ const tools = exports.tools = {
   testaro: ['Testaro', 'CVS Health'],
   wave: ['WAVE', 'Utah State University'],
 };
+exports.researchAgents = {
+  'research-agent': 'Internal Research Agent'
+}
 
 // FUNCTIONS
 

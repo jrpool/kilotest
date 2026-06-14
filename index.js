@@ -75,9 +75,6 @@ const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
 const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
 const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
 const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
-const researchAgents = {
-  'research-agent': 'Internal Research Agent'
-}
 
 // FUNCTIONS
 
@@ -589,8 +586,7 @@ const requestHandler = async (request, response) => {
         if (service === 'reportIssues') {
           // Get the report identifiers from the path.
           const [timeStamp, jobID] = specs;
-          const agentName = researchAgents[agentID];
-          const args = [agentName, timeStamp, jobID];
+          const args = [agentID, timeStamp, jobID];
           const reportSpecsBad = await isHidden(timeStamp, jobID);
           // If the report is nonexistent or hidden:
           if (reportSpecsBad) {

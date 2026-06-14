@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getData, getToolData} = require('./util');
+const {getData, getToolData, researchAgents} = require('./util');
 const {
   getDateTime,
   getNowStamp,
@@ -29,7 +29,7 @@ const getToolFacts = toolIDs => {
   });
 };
 // Gets facts about an issue.
-const getIssueFacts = (thisHost, agentName, timeStamp, jobID, issue) => {
+const getIssueFacts = (thisHost, agentID, timeStamp, jobID, issue) => {
   const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
   return {
     identifier: issueID,
@@ -42,14 +42,14 @@ const getIssueFacts = (thisHost, agentName, timeStamp, jobID, issue) => {
     },
     'number of HTML elements reported as exhibiting the issue': violatorCount,
     'URLs for details about the issue on the page': {
-      'for agents': `${thisHost}/api/${agentName}/reportIssue/${timeStamp}/${jobID}/${issueID}`,
+      'for you': `${thisHost}/api/${agentID}/reportIssue/${timeStamp}/${jobID}/${issueID}`,
       'for humans': `${thisHost}/reportIssue/${timeStamp}/${jobID}/${issueID}`
     }
   };
 };
 // Returns a response to a target-issues request.
 exports.response = async args => {
-  const [agentName, timeStamp, jobID] = args;
+  const [agentID, timeStamp, jobID] = args;
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
   if (reportIsHidden) {
@@ -76,22 +76,22 @@ exports.response = async args => {
     request: {
       'requesting agent': {
         identifier: agentID,
-        name: agentName
+        name: researchAgents[agentID]
       },
       'type of request': {
         identifier: 'reportIssues',
         description: 'What issues does the specified report describe?'
       },
       'closest ancestor request': {
-        'information that it requests': 'Which web pages are reports available about and, briefly, what was found about them?',
-        'URL for agents': `${thisHost}/api/${agentName}/targets.html`,
+        'information that it requests': 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
+        'URL for you': `${thisHost}/api/${agentID}/targets.html`,
         'URL for humans': `${thisHost}/targets.html`
       }
     },
     'response metadata': {
       'date and time': new Date().toISOString(),
       'identifier': `${getNowStamp()}-${getRandomString(3)}`,
-      'URL of the human-oriented equivalent': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'URL of the human-oriented equivalent of this response': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     report: {
       identifier: `${timeStamp}-${jobID}`,
@@ -120,13 +120,13 @@ exports.response = async args => {
     'number of HTML elements reported as exhibiting issues': violatorCount,
     'issues reported': {
       'highest priority': issues[4]
-      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue)),
+      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
       'high priority': issues[3]
-      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue)),
+      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
       'low priority': issues[2]
-      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue)),
+      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
       'lowest priority': issues[1]
-      .map(issue => getIssueFacts(thisHost, agentName, timeStamp, jobID, issue))
+      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue))
     }
   };
   return response;

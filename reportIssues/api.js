@@ -11,6 +11,7 @@ const {
   getNowStamp,
   getRandomString,
   isHidden,
+  researchAgents,
   tools
 } = require('../util');
 

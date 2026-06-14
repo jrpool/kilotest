@@ -7,13 +7,14 @@
 
 const {
   getAgoDays,
+  getCountString,
   getJobNames,
   getObject,
   getPageDataStrings,
   getRecs,
   getToolNamesString,
   getLogs,
-  getTargetData,
+  getReportData,
   isRecommendable,
   jobsPath
 } = require('../util');
@@ -22,8 +23,6 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Returns a description of a tool count.
-const getToolCountString = toolCount => toolCount === 1 ? '1 tool' : `${toolCount} tools`;
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   const margin = ' '.repeat(8);
@@ -71,19 +70,26 @@ const populateQuery = async query => {
   query.noQueued = lines.queue.length ? '' : 'No pages are queued for testing.';
   // Add a no-claimed message, if applicable, to the query.
   query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
-  // Get the logs of the reports.
-  const targetLogs = (await getLogs()).filter(log => ! log.hidden);
+  // Get the logs of the non-hidden reports.
+  const targetLogs = await getLogs();
   query.which = targetLogs.length ? 'the following' : 'no';
   query.some = (targetLogs.length || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'
   : 'a';
   const multiReportTargets = new Set(targetLogs.filter(log => log.superseded).map(log => log.what));
-  // For each log that is not hidden:
+  // For each log:
   for (const targetLog of targetLogs) {
     const {jobName, url, what} = targetLog;
     const [timeStamp, jobID] = jobName.split('-');
-    const reportData = await getTargetData(timeStamp, jobID);
-    const {issueSet, preventedTools, reporterSet, violatorSet} = reportData;
+    const reportData = await getReportData(timeStamp, jobID);
+    const {
+      issueIDSet,
+      preventedToolCount,
+      preventedToolNames,
+      reporterNames,
+      reporterCount,
+      violatorCount
+    } = reportData;
     lines.tested.push(`${margin}<details>`);
     const daysAgo = getAgoDays(timeStamp);
     const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
@@ -96,38 +102,32 @@ const populateQuery = async query => {
     // Add facts about the report to the lines.
     lines.tested.push(`${margin}    <li>${testInfo}</li>`);
     // If the page prevented any tool from performing its tests:
-    if (preventedTools?.length) {
+    if (preventedToolCount) {
       // Add this to the lines.
-      const preventedToolSet = new Set(preventedTools);
-      const toolCountString = getToolCountString(preventedToolSet.size);
-      const toolsString = getToolNamesString(preventedToolSet);
+      const toolCountString = getCountString(preventedToolCount, 'tool', 'tools');
       lines.tested.push(
-        `${margin}    <li>Page not testable by ${toolCountString} (${toolsString})</li>`,
+        `${margin}    <li>Page not testable by ${toolCountString} (${preventedToolNames.join(' + ')})</li>`,
       );
     }
     // Add facts about the test results to the lines.
-    const reporterCount = reporterSet.size;
-    const reporterCountString = getToolCountString(reporterCount);
-    let reporterString = reporterCountString;
+     let reporterString = getCountString(reporterCount, 'tool', 'tools');
     if (reporterCount) {
-      const reporterNamesString = getToolNamesString(reporterSet);
-      reporterString = `${reporterCountString} (${reporterNamesString})`;
+      const reporterNamesString = reporterNames.join(' + ');
+      reporterString = `${reporterString} (${reporterNamesString})`;
     }
-    const issueCountString = issueSet.size === 1 ? '1 issue was' : `${issueSet.size} issues were`;
-    const violatorString = violatorSet.size === 1
-    ? '1 violator was'
-    : `${violatorSet.size} violators were`;
+    const issueCountString = getCountString(issueCount, 'issue was', 'issues were');
+    const violatorString = getCountString(violatorCount, 'violator was', 'violators were');
     lines.tested.push(`${margin}    <li>${reporterString} reported issues</li>`);
     lines.tested.push(`${margin}    <li>${issueCountString} reported</li>`);
     lines.tested.push(`${margin}    <li>${violatorString} reported</li>`);
     lines.tested.push(`${margin}  </ul>`);
     lines.tested.push(`${margin}<ul class="nav">`);
     // If any issues were reported:
-    if (issueSet.size) {
+    if (issueIDSet.size) {
       // Add a question link about the reported issues to the lines.
       const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
       const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
-      const questionString = issueSet.size === 1 ? 'was the issue' : 'were the issues';
+      const questionString = issueCount === 1 ? 'was the issue' : 'were the issues';
       const link = `<a ${href} ${label}>What ${questionString}?</a>`;
       lines.tested.push(`${margin}    <li>${link}</li>`);
     }

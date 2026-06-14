@@ -5,11 +5,12 @@
 
 // IMPORTS
 
-const {getData} = require('./util');
 const {
   getDateTime,
   getNowStamp,
+  getPageData,
   getRandomString,
+  getReportData,
   getToolsFacts,
   getToolsData,
   isHidden,
@@ -21,17 +22,60 @@ const {
 
 // Returns a response to a targets request.
 exports.response = async agentID => {
-  // Get data on the targets.
-  const data = await getData();
-  const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
-  const preventedTools = Object.entries(preventions).map(prevention => ({
-    name: tools[prevention[0]][0],
-    'reason for failure': prevention[1]
-  }));
+  const availableReports = [];
+  // Get the non-hidden logs.
+  const targetLogs = await getLogs();
+  // For each log:
+  for (const targetLog of targetLogs) {
+    const {timeStamp, jobID} = targetLog;
+    // Get data about its report.
+    const data = await getReportData(timeStamp, jobID);
+    const {
+      what,
+      url,
+      jobName,
+      creationDate,
+      daysAgo,
+      issueCount,
+      reporterNames,
+      reporterCount,
+      violatorCount,
+      preventedToolNames,
+      preventedToolCount
+    } = data;
+    availableReports.push({
+      identifier: `${timeStamp}-${jobID}`,
+      'creation date': creationDate,
+      'days since the creation date': daysAgo,
+      'tested web page': {
+        description: what,
+        URL: url
+      },
+      'number of issues reported': {
+        total: issueCount,
+        'by priority': {
+          'highest priority': issues[4].length,
+          'high priority': issues[3].length,
+          'low priority': issues[2].length,
+          'lowest priority': issues[1].length
+        }
+      },
+      'tools that tried to test the page': getToolFacts(Object.keys(tools)),
+      'tools that were unable to test the page': preventedTools,
+      'tools that reported issues': {
+        number: reporterCount,
+        names: reporters.map(tool => tool.toolName)
+      },
+      'tools that did not report issues': {
+        number: violatorCount,
+        names: violators.map(tool => tool.toolName)
+      }
+    });
+  }
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
-    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data from a Kilotest report about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
       'requesting agent': {
@@ -39,20 +83,16 @@ exports.response = async agentID => {
         name: researchAgents[agentID]
       },
       'type of request': {
-        identifier: 'reportIssues',
-        description: 'What issues does the specified report describe?'
+        identifier: 'targets',
+        description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?'
       },
-      'closest ancestor request': {
-        description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
-        'URL for you': `${thisHost}/api/${agentID}/targets.html`,
-        'URL for humans': `${thisHost}/targets.html`
-      }
     },
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString(),
-      'URL of the human-oriented equivalent of this response': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'URL of the human-oriented equivalent of this response': `${thisHost}/targets.html`
     },
+    'available reports': [],
     report: {
       identifier: `${timeStamp}-${jobID}`,
       'creation date': getDateTime(timeStamp),

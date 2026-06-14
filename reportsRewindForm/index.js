@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getTargetData, logsPath, reportsPath} = require('../util');
+const {getReportData, logsPath, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -43,13 +43,13 @@ exports.answer = async (_, search) => {
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
     // Get a summary of it.
-    const reportSummary = await getTargetData(timeStamp, jobID);
-    const {issueSet, preventedTools, url} = reportSummary;
+    const reportSummary = await getReportData(timeStamp, jobID);
+    const {issueCount, preventedToolCount, url} = reportSummary;
     reportSpecs.push({
       timeStamp,
       jobID,
-      issueCount: issueSet.size,
-      preventionCount: preventedTools?.length ?? 0,
+      issueCount,
+      preventedToolCount,
       url
     });
   }
@@ -65,9 +65,9 @@ exports.answer = async (_, search) => {
   let anyDeletable = false;
   // For each summary:
   reportSpecs.forEach((spec, index) => {
-    const {timeStamp, jobID, issueCount, preventionCount, url} = spec;
+    const {timeStamp, jobID, issueCount, preventedToolCount, url} = spec;
     const jobName = `${timeStamp}-${jobID}`;
-    const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventionCount}, issues ${issueCount}`;
+    const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventedToolCount}, issues ${issueCount}`;
     // If its report is the latest report on a target with at least 2 reports:
     if (reportSpecs[index - 1]?.url === url && reportSpecs[index + 1]?.url !== url) {
       // Add a line with a deletion checkbox.

@@ -37,10 +37,9 @@ const getIssueFacts = issue => {
     summary,
     'related WCAG principle (n.n) or success criterion (n.n.n)': wcag,
     'impact on a user': why,
-    'tools reporting violations of rules belonging to the issue': {
-      'number of the tools': reporterCount,
-      'alphabetized list of names of the tools': reporterList,
-      'facts about the tools alphabetized by name': getToolFacts(reporters.map(tool => tool.toolID))
+    'tools reporting the issue': {
+      'number': reporterCount,
+      'names': reporters.map(tool => tool.toolName)
     },
     'number of HTML elements reported as exhibiting the issue': violatorCount
   };
@@ -68,24 +67,29 @@ exports.response = async args => {
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
-    summary: `This document fulfills a request made by an agent to Kilotest. The agent requested data from a report produced by Kilotest. The report contains results of tests performed on a web page by an ensemble of tools. The tools use a combination of rule-based and machine-learning-based methods to identify accessibility, usability, and standard-conformity issues. More detailed information about Kilotest is available from its deployed instance, ${process.env.DEPLOYED_KILOTEST_HOST}. which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by an agent to Kilotest. The agent requested data about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, had performed tests on that web page, using a combination of rule- and machine-learning-based methods, and produced a report. Several API endpoints for agents and several web UI URLs for humans provide information from the report. More detailed information about the software behind the report is available from the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
-      'name of requesting agent': agentName,
+      'name of the requesting agent': agentName,
       'type of request': {
         identifier: 'reportIssues',
-        description: 'What issues did Kilotest report in the specified report?'
+        description: 'What issues does the specified report describe?'
+      },
+      'closest ancestor request': {
+        'information that it requests': 'Which web pages are reports available about and, briefly, what was found about them?',
+        'URL for agents': `${thisHost}/api/targets.html`,
+        'URL for humans': `${thisHost}/targets.html`
       }
     },
     'response metadata': {
       'date and time': new Date().toISOString(),
-      'identifier': `${getNowStamp()}-${getRandomString(3)}`
+      'identifier': `${getNowStamp()}-${getRandomString(3)}`,
+      'URL of the human-oriented equivalent': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     report: {
       identifier: `${timeStamp}-${jobID}`,
       'creation date': getDateTime(timeStamp),
-      'days since the creation date': daysAgo,
-      'URL for human inspection': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'days since the creation date': daysAgo
     },
     'tested web page': {
       description: what,

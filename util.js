@@ -35,6 +35,7 @@ const tools = exports.tools = {
   qualWeb: ['QualWeb', 'University of Lisbon'],
   testaro: ['Testaro', 'CVS Health'],
   wave: ['WAVE', 'Utah State University'],
+  wax: ['WallyAX', 'Wally']
 };
 exports.researchAgents = {
   'research-agent': 'Internal Research Agent'
@@ -480,7 +481,7 @@ const getRecs = exports.getRecs = async () => {
 };
 // Returns a string of tool names.
 exports.getToolNamesString = toolIDSet =>
-  alphaSort(Array.from(toolIDSet).map(toolID => tools[toolID][0])).join(' + ');
+  alphaSort(Array.from(toolIDSet).map(toolID => tools[toolID]?.[0] || toolID)).join(' + ');
 // Converts a catalog item text to a text-fragment link destination.
 exports.getTextFragmentHref = (text, url) => {
   const fragmentList = text

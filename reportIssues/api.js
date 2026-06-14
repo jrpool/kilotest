@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getData, getToolData, researchAgents} = require('./util');
+const {getData, getToolData} = require('./util');
 const {
   getDateTime,
   getNowStamp,

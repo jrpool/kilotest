@@ -34,7 +34,6 @@ const tools = exports.tools = {
   nuVnu: ['Html Checker', 'World Wide Web Consortium'],
   qualWeb: ['QualWeb', 'University of Lisbon'],
   testaro: ['Testaro', 'CVS Health'],
-  wax: ['WallyAX', 'Wally'],
   wave: ['WAVE', 'Utah State University'],
 };
 

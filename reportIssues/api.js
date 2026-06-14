@@ -30,7 +30,7 @@ const getToolFacts = toolIDs => {
 };
 // Gets facts about an issue.
 const getIssueFacts = issue => {
-  const {issueID, reporterCount, reporterList, reporters, summary, violatorCount, wcag, why} = issue;
+  const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
   return {
     identifier: issueID,
     summary,
@@ -40,7 +40,11 @@ const getIssueFacts = issue => {
       'number': reporterCount,
       'names': reporters.map(tool => tool.toolName)
     },
-    'number of HTML elements reported as exhibiting the issue': violatorCount
+    'number of HTML elements reported as exhibiting the issue': violatorCount,
+    'URLs for details about the issue on the page': {
+      'for agents': `${thisHost}/api/reportIssue/${agentName}/${timeStamp}/${jobID}/${issueID}`,
+      'for humans': `${thisHost}/reportIssue/${timeStamp}/${jobID}/${issueID}`
+    }
   };
 };
 // Returns a response to a target-issues request.
@@ -67,7 +71,7 @@ exports.response = async args => {
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
-    summary: `This document fulfills a request made by an agent to Kilotest. The agent requested data about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, had performed tests on that web page, using a combination of rule- and machine-learning-based methods, and produced a report. Several API endpoints for agents and several web UI URLs for humans provide information from the report. More detailed information about the software behind the report is available from the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by an agent to Kilotest. The agent requested data about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, had performed tests on that web page, using a combination of rule- and machine-learning-based methods, and produced a report. Several API endpoints for agents and several web UI URLs for humans provide information from the report. More detailed information about the advangages of testing with an ensemble of tools, and about the software behind the report, is available from the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
       'name of the requesting agent': agentName,

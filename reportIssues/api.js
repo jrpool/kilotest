@@ -10,7 +10,6 @@ const {
   getDateTime,
   getNowStamp,
   getRandomString,
-  getToolNamesString,
   isHidden,
   tools
 } = require('../util');
@@ -60,10 +59,11 @@ exports.response = async args => {
   const {pageData, issuesData} = data;
   const {what, url, daysAgo} = pageData;
   const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
-  const preventedTools = getToolFacts(Object.keys(preventions));
-  preventedTools.forEach(preventedTool => {
-    preventedTool['reason for failure'] = preventions[preventedTool.identifier];
-  });
+  const preventedTools = Object.entries(preventions).map(prevention => ({
+    identifier: prevention[0],
+    name: tools[prevention[0]][0],
+    'reason for failure': prevention[1]
+  }));
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
@@ -95,11 +95,11 @@ exports.response = async args => {
       description: what,
       URL: url
     },
-    'names of tools that tried to test the page': getToolNamesString(Object.keys(tools)),
+    'names of tools that tried to test the page': getToolFacts(Object.keys(tools)),
     'tools that were unable to test the page': preventedTools,
     'tools that reported issues': {
-      'number of tools': reporterCount,
-      'facts about the tools': getToolFacts(reporters.map(tool => tool.toolID))
+      'number': reporterCount,
+      'names': reporters.map(tool => tool.toolName)
     },
     'number of issues reported': {
       'total': issueCount,

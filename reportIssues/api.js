@@ -32,10 +32,11 @@ const getToolFacts = toolIDs => {
 // Gets facts about an issue.
 const getIssueFacts = (thisHost, agentID, timeStamp, jobID, issue) => {
   const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
+  const wcagType = wcag.length === 3 ? 'principle' : 'success criterion';
   return {
     identifier: issueID,
     summary,
-    'related WCAG principle (n.n) or success criterion (n.n.n)': wcag,
+    [`related WCAG ${wcagType}`]: wcag,
     'impact on a user': why,
     'tools reporting the issue': {
       'number': reporterCount,

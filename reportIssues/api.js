@@ -65,7 +65,6 @@ exports.response = async args => {
   const {what, url, daysAgo} = pageData;
   const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
   const preventedTools = Object.entries(preventions).map(prevention => ({
-    identifier: prevention[0],
     name: tools[prevention[0]][0],
     'reason for failure': prevention[1]
   }));
@@ -90,8 +89,8 @@ exports.response = async args => {
       }
     },
     'response metadata': {
-      'date and time': new Date().toISOString(),
       'identifier': `${getNowStamp()}-${getRandomString(3)}`,
+      'date and time': new Date().toISOString(),
       'URL of the human-oriented equivalent of this response': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     report: {
@@ -103,7 +102,7 @@ exports.response = async args => {
       description: what,
       URL: url
     },
-    'names of tools that tried to test the page': getToolFacts(Object.keys(tools)),
+    'tools that tried to test the page': getToolFacts(Object.keys(tools)),
     'tools that were unable to test the page': preventedTools,
     'tools that reported issues': {
       'number': reporterCount,

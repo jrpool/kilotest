@@ -42,7 +42,7 @@ const getIssueFacts = (thisHost, agentName, timeStamp, jobID, issue) => {
     },
     'number of HTML elements reported as exhibiting the issue': violatorCount,
     'URLs for details about the issue on the page': {
-      'for agents': `${thisHost}/api/reportIssue/${agentName}/${timeStamp}/${jobID}/${issueID}`,
+      'for agents': `${thisHost}/api/${agentName}/reportIssue/${timeStamp}/${jobID}/${issueID}`,
       'for humans': `${thisHost}/reportIssue/${timeStamp}/${jobID}/${issueID}`
     }
   };
@@ -74,14 +74,17 @@ exports.response = async args => {
     summary: `This document fulfills a request made by an agent to Kilotest. The agent requested data about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, had performed tests on that web page, using a combination of rule- and machine-learning-based methods, and produced a report. Several API endpoints for agents and several web UI URLs for humans provide information from the report. More detailed information about the advangages of testing with an ensemble of tools, and about the software behind the report, is available from the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
-      'name of the requesting agent': agentName,
+      'requesting agent': {
+        identifier: agentID,
+        name: agentName
+      },
       'type of request': {
         identifier: 'reportIssues',
         description: 'What issues does the specified report describe?'
       },
       'closest ancestor request': {
         'information that it requests': 'Which web pages are reports available about and, briefly, what was found about them?',
-        'URL for agents': `${thisHost}/api/targets.html`,
+        'URL for agents': `${thisHost}/api/${agentName}/targets.html`,
         'URL for humans': `${thisHost}/targets.html`
       }
     },

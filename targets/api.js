@@ -67,7 +67,7 @@ exports.response = async agentID => {
         names: reporterNames
       },
       'URLs for getting data on the reported issues': {
-        'for agents': `${thisHost}/api/${agentID}/reportIssues/${timeStamp}/${jobID}`,
+        'for you': `${thisHost}/api/${agentID}/reportIssues/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues/${timeStamp}/${jobID}`
       },
       'URL for getting the full technical report as JSON': `${thisHost}/fullReport.html/${timeStamp}/${jobID}`

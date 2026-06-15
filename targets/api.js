@@ -35,6 +35,8 @@ exports.response = async agentID => {
       creationDate,
       daysAgo,
       issueCount,
+      toolNames,
+      toolCount,
       reporterNames,
       reporterCount,
       violatorCount,
@@ -52,7 +54,10 @@ exports.response = async agentID => {
       'whether a later report about the same page exists': !! superseded,
       'number of issues reported': issueCount,
       'number of HTML elements reported as exhibiting issues': violatorCount,
-      'tools that tried to test the page': reporterNames,
+      'tools that tried to test the page': {
+        number: toolCount,
+        names: toolNames
+      },
       'tools that were unable to test the page': {
         number: preventedToolCount,
         names: preventedToolNames

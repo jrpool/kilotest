@@ -342,6 +342,8 @@ exports.getReportData = async (timeStamp, jobID) => {
     creationDate: getDateTime(timeStamp),
     daysAgo: getAgoDays(timeStamp),
     issueCount: 0,
+    toolNames: [],
+    toolCount: 0,
     reporterNames: [],
     reporterCount: 0,
     violatorCount: 0,
@@ -349,6 +351,7 @@ exports.getReportData = async (timeStamp, jobID) => {
     preventedToolCount: 0
   };
   const issueIDSet = new Set();
+  const toolNameSet = new Set();
   const reporterIDSet = new Set();
   const violatorIndexSet = new Set();
   // Get the report.
@@ -363,6 +366,8 @@ exports.getReportData = async (timeStamp, jobID) => {
     // If it is a test act:
     if (act.type === 'test') {
       const {result, which} = act;
+      // Ensure that the tool is in the temporary data.
+      toolNameSet.add(which);
       const instances = result?.standardResult?.instances ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {
@@ -384,6 +389,10 @@ exports.getReportData = async (timeStamp, jobID) => {
   });
   // Populate the data with the act data.
   data.issueCount = issueIDSet.size;
+  data.toolNames = Array
+  .from(toolNameSet)
+  .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
+  data.toolCount = toolNameSet.size;
   data.reporterNames = Array
   .from(reporterIDSet)
   .map(id => tools[id][0])

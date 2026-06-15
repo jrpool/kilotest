@@ -83,7 +83,7 @@ const populateQuery = async query => {
     const [timeStamp, jobID] = jobName.split('-');
     const reportData = await getReportData(timeStamp, jobID);
     const {
-      issueIDSet,
+      issueCount,
       preventedToolCount,
       preventedToolNames,
       reporterNames,

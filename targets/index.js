@@ -110,14 +110,14 @@ const populateQuery = async query => {
       );
     }
     // Add facts about the test results to the lines.
-     let reporterString = getCountString(reporterCount, 'tool', 'tools');
+     let reporterString = `${getCountString(reporterCount, 'tool', 'tools')} reported issues`;
     if (reporterCount) {
       const reporterNamesString = reporterNames.join(' + ');
       reporterString = `${reporterString} (${reporterNamesString})`;
     }
     const issueCountString = getCountString(issueCount, 'issue was', 'issues were');
     const violatorString = getCountString(violatorCount, 'violator was', 'violators were');
-    lines.tested.push(`${margin}    <li>${reporterString} reported issues</li>`);
+    lines.tested.push(`${margin}    <li>${reporterString}</li>`);
     lines.tested.push(`${margin}    <li>${issueCountString} reported</li>`);
     lines.tested.push(`${margin}    <li>${violatorString} reported</li>`);
     lines.tested.push(`${margin}  </ul>`);

@@ -9,12 +9,11 @@
 
 /*
   researchAgent.js
-  Module for simulating a research agent.
+  Simulates a research agent.
 */
 
 // IMPORTS
 
-const {getLogs} = require('./util');
 require('dotenv').config();
 const httpClient = require('http');
 const httpsClient = require('https');
@@ -33,7 +32,7 @@ const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
 
 // FUNCTIONS
 
-// Submits a targets request to a random Kilotest host.
+// Submits two request to a random Kilotest host.
 const requestService = async () => {
   const client = scheme === 'https' ? httpsClient : httpClient;
   const getRequestOptions = path => ({
@@ -45,9 +44,10 @@ const requestService = async () => {
       'content-type': 'application/json; charset=utf-8'
     }
   });
+  const path = `/api/${agent}/targets.html`;
   console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
-  // Submit the request.
-  client.request(getRequestOptions(`/api/${agent}/targets.html`), response => {
+  // Submit a targets request.
+  client.request(getRequestOptions(path), response => {
     // Initialize a collection of data from the response.
     const chunks = [];
     response
@@ -75,8 +75,10 @@ const requestService = async () => {
         const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
         .split('-');
         console.log('======================');
-        const requestOptions = getRequestOptions(`/api/${agent}/issues.html/${timeStamp}/${jobID}`);
-        // Submit a request for data on its issues.
+        const path = `/api/${agent}/issues.html/${timeStamp}/${jobID}`;
+        console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
+        const requestOptions = getRequestOptions(path);
+        // Submit an issues request for it.
         client.request(requestOptions, response => {
           // Initialize a collection of data from the response.
           const chunks = [];
@@ -106,6 +108,10 @@ const requestService = async () => {
             }
           });
         })
+        // Finish sending the issues request.
+        .end(JSON.stringify({
+          agentPW
+        }));
       }
       catch (error) {
         console.log(error.message);
@@ -113,7 +119,7 @@ const requestService = async () => {
       }
     });
   })
-  // Finish sending the job request.
+  // Finish sending the targets request.
   .end(JSON.stringify({
     agentPW
   }));

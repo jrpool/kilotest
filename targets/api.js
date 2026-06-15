@@ -70,7 +70,7 @@ exports.response = async agentID => {
   }
   // Get a response.
   const response = {
-    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and statistics for each page on the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints for agents and web UI URLs for humans to recommend web pages for testing and obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and statistics for each page on the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints for agents and web UI URLs for humans to recommend web pages for testing and obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
     'tool name': 'Kilotest',
     request: {
       'requesting agent': {
@@ -81,11 +81,12 @@ exports.response = async agentID => {
         identifier: 'targets',
         description: 'Give me summary data about each available report.'
       },
+      URL: `${thisHost}/api/${agentID}/targets`,
+      'equivalent URL for humans': `${thisHost}/targets.html`
     },
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString(),
-      'URL of the human-oriented equivalent of this response': `${thisHost}/targets.html`
     },
     'available reports': availableReports
   };

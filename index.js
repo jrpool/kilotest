@@ -197,7 +197,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for the the OpenAPI specification:
     else if (pageName === 'openapi.yaml') {
       const openapi = await fs.readFile('openapi.yaml', 'utf8');
-      response.setHeader('content-type', 'application/yaml; charset=utf-8');
+      response.setHeader('content-type', 'text/yaml; charset=utf-8');
       response.setHeader('content-location', '/openapi.yaml');
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.end(openapi);

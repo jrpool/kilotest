@@ -382,6 +382,14 @@ exports.getReportData = async (timeStamp, jobID) => {
       });
     }
   });
+  // Populate the data with the act data.
+  data.issueCount = issueIDSet.size;
+  data.reporterNames = Array
+  .from(reporterIDSet)
+  .map(id => tools[id][0])
+  .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
+  data.reporterCount = data.reporterNames.length;
+  data.violatorCount = violatorIndexSet.size;
   // Add the names of any prevented tools to the data.
   data.preventedToolNames = Object.keys(report.jobData?.preventions || {})
   .map(toolID => tools[toolID][0])

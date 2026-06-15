@@ -584,6 +584,8 @@ const requestHandler = async (request, response) => {
       else if (agentID === researchAgent && postData.agentPW === researchAgentPW) {
         // If the service is provision of facts about the available reports:
         if (service === 'targets') {
+          // Get the agent ID from the path.
+          const args = [agentID];
           // Get the response (potentially error) data.
           const responseData = await require(path.join(__dirname, 'targets', 'api')).response(args);
           // Send them.
@@ -591,7 +593,7 @@ const requestHandler = async (request, response) => {
         }
         // Otherwise, if the service is provision of facts about issues in a report:
         else if (service === 'reportIssues') {
-          // Get the report identifiers from the path.
+          // Get the agent ID and report identifiers from the path.
           const [timeStamp, jobID] = specs;
           const args = [agentID, timeStamp, jobID];
           const reportSpecsBad = await isHidden(timeStamp, jobID);
@@ -616,7 +618,7 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if the service is invalid:
         else {
           // Report this.
-          await serveError({message: 'ERROR: Invalid service request'}, response, false);
+          await serveError({message: 'ERROR: Invalid service request from research agent'}, response, false);
         }
       }
       // Otherwise, i.e. if the agent is not authorized or not authenticated:

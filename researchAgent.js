@@ -44,7 +44,7 @@ const requestService = async () => {
       'content-type': 'application/json; charset=utf-8'
     }
   });
-  const path = `/api/${agent}/targets.html`;
+  const path = `/api/${agent}/targets`;
   console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
   // Submit a targets request.
   client.request(getRequestOptions(path), response => {
@@ -75,7 +75,7 @@ const requestService = async () => {
         const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
         .split('-');
         console.log('======================');
-        const path = `/api/${agent}/issues.html/${timeStamp}/${jobID}`;
+        const path = `/api/${agent}/reportIssues/${timeStamp}/${jobID}`;
         console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
         const requestOptions = getRequestOptions(path);
         // Submit an issues request for it.

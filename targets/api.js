@@ -6,6 +6,7 @@
 // IMPORTS
 
 const {
+  getLogs,
   getNowStamp,
   getRandomString,
   getReportData,

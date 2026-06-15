@@ -385,7 +385,7 @@ exports.getReportData = async (timeStamp, jobID) => {
   // Add the names of any prevented tools to the data.
   data.preventedToolNames = Object.keys(report.jobData?.preventions || {})
   .map(toolID => tools[toolID][0])
-  .sort({localeCompare: 'en', sensitivity: 'base'});
+  .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.preventedToolCount = data.preventedToolNames.length;
   // Return the data.
   return data;

@@ -367,7 +367,7 @@ exports.getReportData = async (timeStamp, jobID) => {
     if (act.type === 'test') {
       const {result, which} = act;
       // Ensure that the tool is in the temporary data.
-      toolNameSet.add(which);
+      toolNameSet.add(tools[which][0]);
       const instances = result?.standardResult?.instances ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {

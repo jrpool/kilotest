@@ -20,7 +20,8 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 // FUNCTIONS
 
 // Returns a response to a targets request.
-exports.response = async agentID => {
+exports.response = async args => {
+  const [agentID] = args;
   const availableReports = [];
   // Get the non-hidden logs.
   const targetLogs = await getLogs();
@@ -70,7 +71,7 @@ exports.response = async agentID => {
         'for you': `${thisHost}/api/${agentID}/reportIssues/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues/${timeStamp}/${jobID}`
       },
-      'URL for getting the full technical report as JSON': `${thisHost}/fullReport.html/${timeStamp}/${jobID}`
+      'URL for getting the full technical report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
     });
   }
   // Get a response.

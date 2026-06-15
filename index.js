@@ -195,7 +195,7 @@ const requestHandler = async (request, response) => {
       response.end(homePage);
     }
     // Otherwise, if it is for a full report download:
-    else if (pageName === 'fullReport.html') {
+    else if (pageName === 'fullReport.json') {
       const [timeStamp, jobID] = pageArgs.split('/');
       // If the request is syntactically valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {

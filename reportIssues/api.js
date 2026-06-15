@@ -74,8 +74,10 @@ exports.response = async args => {
       },
       'closest ancestor request': {
         description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
-        'URL for you': `${thisHost}/api/${agentID}/targets.html`,
-        'URL for humans': `${thisHost}/targets.html`
+        URLs: {
+          'for you': `${thisHost}/api/${agentID}/targets.html`,
+          'for humans': `${thisHost}/targets.html`
+        }
       }
     },
     'response metadata': {

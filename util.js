@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {sendAlert} = require('./alerts');
-const {issues} = require('testilo/procs/score/tic');
+const issuesClassification = require('testilo/procs/score/tic').issues;
 const fs = require('fs/promises');
 const path = require('path');
 const querystring = require('querystring');
@@ -35,7 +35,11 @@ const tools = exports.tools = {
   qualWeb: ['QualWeb', 'University of Lisbon'],
   testaro: ['Testaro', 'CVS Health'],
   wave: ['WAVE', 'Utah State University'],
+<<<<<<< HEAD
   wax: ['WallyAX', 'Wally']
+=======
+  wax: ['WAX', 'Wally']
+>>>>>>> api3
 };
 exports.researchAgents = {
   'research-agent': 'Internal Research Agent'
@@ -147,7 +151,7 @@ const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value.
-exports.objectSort = (objects, property, sortType) => objects
+const objectSort = exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -175,8 +179,8 @@ const getRuleIDs = exports.getRuleIDs = () => {
   // Initialize a validity checker.
   const validityChecker = {};
   // For each classified issue:
-  Object.keys(issues).forEach(issueID => {
-    const {tools, weight} = issues[issueID];
+  Object.keys(issuesClassification).forEach(issueID => {
+    const {tools, weight} = issuesClassification[issueID];
     // If the weight is invalid:
     if (weight < 1 || weight > 4) {
       // Report this.
@@ -325,9 +329,9 @@ exports.isHidden = async (timeStamp, jobID) => {
   }
   return !! log.hidden;
 };
-// Returns summary data on the results in a report.
-exports.getTargetData = async (timeStamp, jobID) => {
-  // Vasidate the report and annotate it if necessary.
+// Returns summary data on a report.
+exports.getReportData = async (timeStamp, jobID) => {
+  // Validate the report and annotate it if necessary.
   const log = await getLog(timeStamp, jobID, true);
   // If this failed:
   if (typeof log === 'string') {
@@ -338,12 +342,22 @@ exports.getTargetData = async (timeStamp, jobID) => {
   const data = {
     what: log.what,
     url: log.url,
-    issueSet: new Set(),
-    reporterSet: new Set(),
-    violatorSet: new Set(),
-    preventedTools: {}
+    jobName: `${timeStamp}-${jobID}`,
+    creationDate: getDateTime(timeStamp),
+    daysAgo: getAgoDays(timeStamp),
+    issueCount: 0,
+    toolNames: [],
+    toolCount: 0,
+    reporterNames: [],
+    reporterCount: 0,
+    violatorCount: 0,
+    preventedToolNames: [],
+    preventedToolCount: 0
   };
-  const {issueSet, reporterSet, violatorSet} = data;
+  const issueIDSet = new Set();
+  const toolNameSet = new Set();
+  const reporterIDSet = new Set();
+  const violatorIndexSet = new Set();
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -356,27 +370,44 @@ exports.getTargetData = async (timeStamp, jobID) => {
     // If it is a test act:
     if (act.type === 'test') {
       const {result, which} = act;
+      // Ensure that the tool is in the temporary data.
+      toolNameSet.add(which);
       const instances = result?.standardResult?.instances ?? [];
-      // For each standard instance:
+      // For each standard instance of the act:
       instances.forEach(instance => {
         const {catalogIndex, issueID} = instance;
         // If it has a non-ignorable classified issue ID:
-        if (issueID && issues[issueID] && issueID !== 'ignorable') {
-          // Ensure that the tool is in the data.
-          reporterSet.add(which);
-          // Ensure that the issue is in the data.
-          issueSet.add(issueID);
-          // If it has a catalog index:
+        if (issueID && issuesClassification[issueID] && issueID !== 'ignorable') {
+          // Ensure that the tool is in the temporary data.
+          reporterIDSet.add(which);
+          // Ensure that the issue is in the temporary data.
+          issueIDSet.add(issueID);
+          // If the violator has a catalog index:
           if (catalogIndex) {
-            // Ensure that the violator is in the data.
-            violatorSet.add(catalogIndex);
+            // Ensure that the violator is in the temporary data.
+            violatorIndexSet.add(catalogIndex);
           }
         }
       });
     }
   });
-  // Add the IDs of any prevented tools to the data.
-  data.preventedTools = Object.keys(report.jobData?.preventions || {});
+  // Populate the data with the act data.
+  data.issueCount = issueIDSet.size;
+  data.toolNames = Array
+  .from(toolNameSet)
+  .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
+  data.toolCount = toolNameSet.size;
+  data.reporterNames = Array
+  .from(reporterIDSet)
+  .map(id => tools[id][0])
+  .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
+  data.reporterCount = data.reporterNames.length;
+  data.violatorCount = violatorIndexSet.size;
+  // Add the names of any prevented tools to the data.
+  data.preventedToolNames = Object.keys(report.jobData?.preventions || {})
+  .map(toolID => tools[toolID][0])
+  .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
+  data.preventedToolCount = data.preventedToolNames.length;
   // Return the data.
   return data;
 }
@@ -491,7 +522,7 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns an array of the logs, with job names added, of the non-hidden reports.
+// Returns a sorted array of the logs, with job names added, of the non-hidden reports.
 exports.getLogs = async () => {
   // Initialize data on the tested targets.
   const logs = [];
@@ -655,7 +686,7 @@ exports.getWCAGLink = numericID => {
   // Return the link.
   return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
 };
-// Gets page data from a report.
+// Returns page data from a report.
 const getPageData = exports.getPageData = async (timeStamp, jobID) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
@@ -676,7 +707,7 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
 };
 // Gets HTML strings for page data from a report.
 exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
-  // If the paga data were not specified:
+  // If the page data were not specified:
   if (! pageData) {
     // Get them.
     pageData = await getPageData(timeStamp, jobID);
@@ -691,3 +722,35 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
 };
+// Returns tool data sorted by tool name.
+const getToolsData = exports.getToolsData = toolIDs => objectSort(
+  Array.from(toolIDs).map(toolID => {
+    const toolData = tools[toolID];
+    return {
+      toolID,
+      toolName: toolData[0],
+      toolMaker: toolData[1]
+    }
+  }),
+  'toolName',
+  'alpha'
+);
+// Returns a +-delimited list of sorted tool names.
+exports.getToolList = toolIDs => Array.from(toolIDs)
+.map(toolID => tools[toolID][0])
+.sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
+.join(' + ');
+// Returns facts about tools.
+exports.getToolsFacts = toolIDs => {
+  const crypticData = getToolsData(toolIDs);
+  return crypticData.map(tool => {
+    const {toolID, toolName, toolMaker} = tool;
+    return {
+      identifier: toolID,
+      name: toolName,
+      sponsor: toolMaker
+    };
+  });
+};
+// Returns a string describing a count.
+exports.getCountString = (count, singular, plural) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;

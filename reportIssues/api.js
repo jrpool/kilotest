@@ -5,11 +5,12 @@
 
 // IMPORTS
 
-const {getData, getToolData} = require('./util');
+const {getData} = require('./util');
 const {
   getDateTime,
   getNowStamp,
   getRandomString,
+  getToolsFacts,
   isHidden,
   researchAgents,
   tools
@@ -17,18 +18,6 @@ const {
 
 // FUNCTIONS
 
-// Gets facts about tools.
-const getToolFacts = toolIDs => {
-  const crypticData = getToolData(toolIDs);
-  return crypticData.map(tool => {
-    const {toolID, toolName, toolMaker} = tool;
-    return {
-      identifier: toolID,
-      name: toolName,
-      sponsor: toolMaker
-    };
-  });
-};
 // Gets facts about an issue.
 const getIssueFacts = (thisHost, agentID, timeStamp, jobID, issue) => {
   const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
@@ -103,7 +92,7 @@ exports.response = async args => {
       description: what,
       URL: url
     },
-    'tools that tried to test the page': getToolFacts(Object.keys(tools)),
+    'tools that tried to test the page': getToolsFacts(Object.keys(tools)),
     'tools that were unable to test the page': preventedTools,
     'tools that reported issues': {
       number: reporterCount,

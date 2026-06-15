@@ -5,29 +5,13 @@
 
 // IMPORTS
 
-const {getPageData, getReport, isValidReport, objectSort, tools} = require('../util');
+const {
+  getPageData, getReport, getToolsData, getToolList, isValidReport, objectSort
+} = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // FUNCTIONS
 
-// Converts tool IDs to tool data sorted by tool name.
-const getToolData = exports.getToolData = toolIDs => objectSort(
-  Array.from(toolIDs).map(toolID => {
-    const toolData = tools[toolID];
-    return {
-      toolID,
-      toolName: toolData[0],
-      toolMaker: toolData[1]
-    }
-  }),
-  'toolName',
-  'alpha'
-);
-// Returns a +-delimited list of sorted tool names.
-const getToolList = toolIDs => Array.from(toolIDs)
-.map(toolID => tools[toolID][0])
-.sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
-.join(' + ');
 // Returns data on the issues reported by a report.
 const getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
@@ -96,7 +80,7 @@ const getIssuesData = async (timeStamp, jobID) => {
       }
     });
     // Finish populating the final data.
-    final.reporters = getToolData(temp.reporters);
+    final.reporters = getToolsData(temp.reporters);
     final.reporterList = getToolList(temp.reporters);
     final.reporterCount = final.reporters.length;
     final.violatorCount = temp.violators.size;
@@ -109,7 +93,7 @@ const getIssuesData = async (timeStamp, jobID) => {
         why,
         weight
       };
-      finalIssue.reporters = getToolData(issue.reporters);
+      finalIssue.reporters = getToolsData(issue.reporters);
       finalIssue.reporterList = getToolList(issue.reporters);
       finalIssue.reporterCount = finalIssue.reporters.length;
       finalIssue.violatorCount = issue.violators.size;

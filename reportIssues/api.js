@@ -75,6 +75,10 @@ exports.response = async args => {
         identifier: 'reportIssues',
         description: 'What issues does the specified report describe?'
       },
+      URLs: {
+        'URL of your request': `${thisHost}/api/${agentID}/reportIssues/${timeStamp}/${jobID}`,
+        'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      },
       'closest ancestor request': {
         description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
         URLs: {
@@ -85,8 +89,7 @@ exports.response = async args => {
     },
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
-      'date and time': new Date().toISOString(),
-      'URL of the human-oriented equivalent of this response': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'date and time': new Date().toISOString()
     },
     report: {
       identifier: `${timeStamp}-${jobID}`,

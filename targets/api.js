@@ -88,7 +88,7 @@ exports.response = async args => {
         description: 'Give me summary data about each available report.'
       },
       URLs: {
-        'URL of this request': `${thisHost}/api/${agentID}/targets`,
+        'URL of your request': `${thisHost}/api/${agentID}/targets`,
         'equivalent URL for humans': `${thisHost}/targets.html`
       }
     },

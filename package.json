@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "26.0.1",
+  "version": "27.0.0",
   "description": "An ensemble testing service with a focus on accessibility",
   "main": "index.js",
   "scripts": {

@@ -194,6 +194,14 @@ const requestHandler = async (request, response) => {
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.end(homePage);
     }
+    // Otherwise, if it is for the the OpenAPI specification:
+    else if (pageName === 'openapi.yaml') {
+      const openapi = await fs.readFile('openapi.yaml', 'utf8');
+      response.setHeader('content-type', 'application/yaml; charset=utf-8');
+      response.setHeader('content-location', '/openapi.yaml');
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.end(openapi);
+    }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
       const [timeStamp, jobID] = pageArgs.split('/');

@@ -56,13 +56,18 @@ exports.response = async agentID => {
       'tools that reported issues': {
         number: reporterCount,
         names: reporterNames
-      }
+      },
+      'URLs for getting data on the reported issues': {
+        'for agents': `${thisHost}/api/${agentID}/reportIssues/${timeStamp}/${jobID}`,
+        'for humans': `${thisHost}/reportIssues/${timeStamp}/${jobID}`
+      },
+      'URL for getting the full technical report as JSON': `${thisHost}/fullReport.html/${timeStamp}/${jobID}`
     });
   }
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const response = {
-    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and statistics for each page on the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and statistics for each page on the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints for agents and web UI URLs for humans to recommend web pages for testing and obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
       'requesting agent': {
@@ -71,7 +76,7 @@ exports.response = async agentID => {
       },
       'type of request': {
         identifier: 'targets',
-        description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?'
+        description: 'Give me summary data about each available report.'
       },
     },
     'response metadata': {

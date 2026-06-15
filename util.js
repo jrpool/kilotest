@@ -35,11 +35,7 @@ const tools = exports.tools = {
   qualWeb: ['QualWeb', 'University of Lisbon'],
   testaro: ['Testaro', 'CVS Health'],
   wave: ['WAVE', 'Utah State University'],
-<<<<<<< HEAD
   wax: ['WallyAX', 'Wally']
-=======
-  wax: ['WAX', 'Wally']
->>>>>>> api3
 };
 exports.researchAgents = {
   'research-agent': 'Internal Research Agent'

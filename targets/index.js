@@ -123,7 +123,7 @@ const populateQuery = async query => {
     lines.tested.push(`${margin}  </ul>`);
     lines.tested.push(`${margin}<ul class="nav">`);
     // If any issues were reported:
-    if (issueIDSet.size) {
+    if (issueCount) {
       // Add a question link about the reported issues to the lines.
       const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
       const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;

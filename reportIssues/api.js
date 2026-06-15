@@ -36,8 +36,8 @@ const getIssueFacts = (thisHost, agentID, timeStamp, jobID, issue) => {
     },
     'number of HTML elements reported as exhibiting the issue': violatorCount,
     'URLs for details about the issue on the page': {
-      'for you': `${thisHost}/api/${agentID}/reportIssue/${timeStamp}/${jobID}/${issueID}`,
-      'for humans': `${thisHost}/reportIssue/${timeStamp}/${jobID}/${issueID}`
+      'for you': `${thisHost}/api/${agentID}/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+      'for humans': `${thisHost}/reportIssue/${issueID}/${timeStamp}/${jobID}`
     }
   };
 };

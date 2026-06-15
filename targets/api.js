@@ -81,8 +81,10 @@ exports.response = async agentID => {
         identifier: 'targets',
         description: 'Give me summary data about each available report.'
       },
-      URL: `${thisHost}/api/${agentID}/targets`,
-      'equivalent URL for humans': `${thisHost}/targets.html`
+      URLs: {
+        'URL of this request': `${thisHost}/api/${agentID}/targets`,
+        'equivalent URL for humans': `${thisHost}/targets.html`
+      }
     },
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,

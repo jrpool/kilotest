@@ -22,13 +22,12 @@ exports.response = async agentID => {
   const targetLogs = await getLogs();
   // For each log:
   for (const targetLog of targetLogs) {
-    const {timeStamp, jobID} = targetLog;
+    const {jobName} = targetLog;
+    const [timeStamp, jobID] = jobName.split('-');
+    const {superseded, url, what} = targetLog;
     // Get data about its report.
     const data = await getReportData(timeStamp, jobID);
     const {
-      what,
-      url,
-      jobName,
       creationDate,
       daysAgo,
       issueCount,
@@ -46,6 +45,7 @@ exports.response = async agentID => {
         description: what,
         URL: url
       },
+      'whether a later report about the same page exists': !! superseded,
       'number of issues reported': issueCount,
       'number of HTML elements reported as exhibiting issues': violatorCount,
       'tools that tried to test the page': reporterNames,

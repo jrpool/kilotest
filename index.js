@@ -582,8 +582,15 @@ const requestHandler = async (request, response) => {
       }
       // Otherwise, if the agent is the authorized research agent and it is authenticated:
       else if (agentID === researchAgent && postData.agentPW === researchAgentPW) {
-        // If the service is provision of facts about issues in a report:
-        if (service === 'reportIssues') {
+        // If the service is provision of facts about the available reports:
+        if (service === 'targets') {
+          // Get the response (potentially error) data.
+          const responseData = await require(path.join(__dirname, 'targets', 'api')).response(args);
+          // Send them.
+          response.end(JSON.stringify(responseData));
+        }
+        // Otherwise, if the service is provision of facts about issues in a report:
+        else if (service === 'reportIssues') {
           // Get the report identifiers from the path.
           const [timeStamp, jobID] = specs;
           const args = [agentID, timeStamp, jobID];

@@ -194,13 +194,32 @@ const requestHandler = async (request, response) => {
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.end(homePage);
     }
+    // Otherwise, if it is for the the crawler specification:
+    else if (pageName === 'robots.txt') {
+      const robots = await fs.readFile('robots.txt', 'utf8');
+      response.setHeader('content-type', 'text/plain; charset=utf-8');
+      response.setHeader('content-location', '/robots.txt');
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Cache-Control', 'public, max-age=86400');
+      response.end(robots);
+    }
     // Otherwise, if it is for the the OpenAPI specification:
     else if (pageName === 'openapi.yaml') {
       const openapi = await fs.readFile('openapi.yaml', 'utf8');
       response.setHeader('content-type', 'text/yaml; charset=utf-8');
       response.setHeader('content-location', '/openapi.yaml');
       response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Cache-Control', 'public, max-age=86400');
       response.end(openapi);
+    }
+    // Otherwise, if it is for the the large-language-model specification:
+    else if (pageName === 'llms.txt') {
+      const llms = await fs.readFile('llms.txt', 'utf8');
+      response.setHeader('content-type', 'text/plain; charset=utf-8');
+      response.setHeader('content-location', '/llms.txt');
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Cache-Control', 'public, max-age=86400');
+      response.end(llms);
     }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
@@ -235,6 +254,7 @@ const requestHandler = async (request, response) => {
               'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
             );
             response.setHeader('Access-Control-Allow-Origin', '*');
+            response.setHeader('Cache-Control', 'public, max-age=86400');
             // Download the report.
             response.end(getJSON(report));
           }

@@ -1,5 +1,5 @@
 # Kilotest
-Ensemble testing of web pages for accessibility, usability, and standard conformance. Kilotest performs a job by running ten rule engines on one web page and producing an integrated report of results. Kilotest exposes an API and a web UI for retrieving statistics and/or element-level detail from reports as needed.
+Kilotest helps AI agents give accurate and truthful answers when users ask how accessible, usable, or standard conformant web pages are. Kilotest integrates ten independent rule engines to provide comprehensive multipage, single-page, and element-level statistics and details via its API and web UI.
 
 ## API
 - GET /api/targets: summarize test results for all tested pages

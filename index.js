@@ -192,7 +192,7 @@ const requestHandler = async (request, response) => {
   const requestURL = new URL(url, 'https://localhost:3000');
   const {pathname, search} = requestURL;
   const pageName = pathname.split('/')[1];
-  const pageArgs = pathname.split('/').slice(2).join('/');
+  const pathTail = pathname.split('/').slice(2).join('/');
   // If the request is an OPTIONS request:
   if (method === 'OPTIONS') {
     // Serve response headers, including one allowing requests from other applications.
@@ -215,24 +215,24 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for the the crawler specification:
     else if (pageName === 'robots.txt') {
       const robots = await fs.readFile('robots.txt', 'utf8');
-      setHeaders('text/plain', '/robots.txt', 'high');
+      setHeaders('text/plain', '/robots.txt', 'low');
       response.end(robots);
     }
     // Otherwise, if it is for the the OpenAPI specification:
     else if (pageName === 'openapi.yaml') {
       const openapi = await fs.readFile('openapi.yaml', 'utf8');
-      setHeaders('text/yaml', '/openapi.yaml', 'low');
+      setHeaders('text/yaml', '/openapi.yaml', 'high');
       response.end(openapi);
     }
     // Otherwise, if it is for the the large-language-model specification:
     else if (pageName === 'llms.txt') {
       const llms = await fs.readFile('llms.txt', 'utf8');
-      setHeaders('text/plain', '/llms.txt', 'medium');
+      setHeaders('text/plain', '/llms.txt', 'high');
       response.end(llms);
     }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
-      const [timeStamp, jobID] = pageArgs.split('/');
+      const [timeStamp, jobID] = pathTail.split('/');
       // If the request is syntactically valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {
         const reportHidden = await isHidden(timeStamp, jobID);
@@ -258,7 +258,7 @@ const requestHandler = async (request, response) => {
           // If it exists and is valid:
           if (typeof report === 'object') {
             // Serve response headers for a JSON download.
-            setHeaders('application/json', null, 'medium');
+            setHeaders('application/json', null, 'low');
             response.setHeader(
               'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
             );
@@ -285,7 +285,7 @@ const requestHandler = async (request, response) => {
       if (answer[topic]) {
         setHeaders('text/html', `${pathname}${search}`, 'medium');
         // Get the answer data.
-        const answerData = await answer[topic](pageArgs, search);
+        const answerData = await answer[topic](pathTail, search);
         // If they are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.
@@ -303,6 +303,47 @@ const requestHandler = async (request, response) => {
         await serveError({message: 'ERROR: Invalid request'}, response, true);
       }
     }
+    // Otherwise, if it is for an API service:
+    else if (pageName === 'api') {
+      const [service,  ... specs] = pathTail.split('/');
+      // If the service is provision of facts about the available reports:
+      if (service === 'targets') {
+        // Get the response (potentially error) data.
+        const responseData = await require(path.join(__dirname, 'targets', 'api')).response(args);
+        // Send them.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseData));
+      }
+      // Otherwise, if the service is provision of issue statistics for a report:
+      else if (service === 'reportIssues') {
+        // Get the report identifiers from the path.
+        const [timeStamp, jobID] = specs;
+        const reportSpecsBad = await isHidden(timeStamp, jobID);
+        // If the report is nonexistent or hidden:
+        if (reportSpecsBad) {
+          // Report this.
+          await serveError(
+            {message: reportSpecsBad === true ? 'Report nonexistent or hidden' : reportSpecsBad},
+            response,
+            false
+          );
+        }
+        // Otherwise, i.e. if the report is available:
+        else {
+          // Get the response (potentially error) data.
+          const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
+          .response(specs);
+          // Send them.
+          setHeaders('application/json', null, 'high');
+          response.end(JSON.stringify(responseData));
+        }
+      }
+      // Otherwise, i.e. if the service is invalid:
+      else {
+        // Report this.
+        await serveError({message: 'ERROR: Invalid service request'}, response, false);
+      }
+    }
     // Otherwise, if it is for a tutorial image:
     else if (pathname.startsWith('/tutorial/images/')) {
       const imgFile = pathname.slice('/tutorial/images/'.length);
@@ -318,7 +359,7 @@ const requestHandler = async (request, response) => {
           '.webp': 'image/webp',
           '.svg': 'image/svg+xml'
         };
-        setHeaders(mimeTypes[ext] || 'application/octet-stream', null, 'high');
+        setHeaders(mimeTypes[ext] || 'application/octet-stream', null, 'low');
         response.end(img);
       }
       catch (_) {
@@ -330,7 +371,7 @@ const requestHandler = async (request, response) => {
       // Get the site icon.
       const icon = await fs.readFile(path.join(__dirname, 'favicon.ico'));
       // Serve it.
-      setHeaders('image/x-icon', null, 'high');
+      setHeaders('image/x-icon', null, 'low');
       response.write(icon, 'binary');
       response.end('');
     }
@@ -339,7 +380,7 @@ const requestHandler = async (request, response) => {
       try {
         // Serve it.
         const styleSheet = await fs.readFile('style.css', 'utf8');
-        setHeaders('text/css', null, 'high');
+        setHeaders('text/css', null, 'low');
         response.end(styleSheet);
       }
       catch (error) {
@@ -361,14 +402,14 @@ const requestHandler = async (request, response) => {
     // If the request is a retest recommendation:
     if (pageName === 'retestRec.html') {
       const {why} = postData;
-      const [timeStamp, jobID] = pageArgs.split('/');
+      const [timeStamp, jobID] = pathTail.split('/');
       // If the request is valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
         // Serve response headers.
-        setHeaders('text/html', `${pathname}${search}`, 'medium');
+        setHeaders('text/html', `${pathname}${search}`, 'high');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
-        .answer(pageArgs, why);
+        .answer(pathTail, why);
         // If they are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.
@@ -392,7 +433,7 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (what && url.startsWith('https://') && why) {
         // Serve headers for a response.
-        setHeaders('text/html', `${pathname}${search}`, 'medium');
+        setHeaders('text/html', `${pathname}${search}`, 'high');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'testRec', 'index'))
         .answer(what, url, why);
@@ -420,7 +461,7 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
         // Set the non-location headers for a response.
-        setHeaders('text/html', null, 'medium');
+        setHeaders('text/html', null, 'high');
         // If the request is an approval:
         if (what) {
           // Set a location header for a response.
@@ -465,7 +506,7 @@ const requestHandler = async (request, response) => {
     else if (pageName === 'reannotate.html') {
       const {authCode} = postData;
       // Set headers for a response.
-      setHeaders('text/html', `${pathname}${search}`, 'medium');
+      setHeaders('text/html', `${pathname}${search}`, 'high');
       // Get the answer data.
       const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
       .answer(authCode);
@@ -484,7 +525,7 @@ const requestHandler = async (request, response) => {
     else if (pageName === 'wcagRenew.html') {
       const {authCode} = postData;
       // Set headers for a response.
-      setHeaders('text/html', `${pathname}${search}`, 'medium');
+      setHeaders('text/html', `${pathname}${search}`, 'low');
       // Get the answer data.
       const answerData = await require(path.join(__dirname, 'wcagRenew', 'index'))
       .answer(authCode);
@@ -502,7 +543,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is a request from an agent:
     else if (pageName === 'api') {
       // Get the agent ID, the service, and any service specifications from the path.
-      const [agentID, service, ... specs] = pageArgs.split('/');
+      const [agentID, service, ... specs] = pathTail.split('/');
       // If the agent is the authorized Testaro instance and it is authenticated:
       if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
         // If the service is job assignment:
@@ -611,57 +652,11 @@ const requestHandler = async (request, response) => {
           );
         }
       }
-      // Otherwise, if the agent is the authorized research agent and it is authenticated:
-      else if (agentID === researchAgent && postData.agentPW === researchAgentPW) {
-        // If the service is provision of facts about the available reports:
-        if (service === 'targets') {
-          // Get the agent ID from the path.
-          const args = [agentID];
-          // Get the response (potentially error) data.
-          const responseData = await require(path.join(__dirname, 'targets', 'api')).response(args);
-          // Send them.
-          response.end(JSON.stringify(responseData));
-        }
-        // Otherwise, if the service is provision of facts about issues in a report:
-        else if (service === 'reportIssues') {
-          // Get the agent ID and report identifiers from the path.
-          const [timeStamp, jobID] = specs;
-          const args = [agentID, timeStamp, jobID];
-          const reportSpecsBad = await isHidden(timeStamp, jobID);
-          // If the report is nonexistent or hidden:
-          if (reportSpecsBad) {
-            // Report this.
-            await serveError(
-              {message: reportSpecsBad === true ? 'Report nonexistent or hidden' : reportSpecsBad},
-              response,
-              false
-            );
-          }
-          // Otherwise, i.e. if the report is available:
-          else {
-            // Get the response (potentially error) data.
-            const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
-            .response(args);
-            // Send them.
-            response.end(JSON.stringify(responseData));
-          }
-        }
-        // Otherwise, i.e. if the service is invalid:
-        else {
-          // Report this.
-          await serveError({message: 'ERROR: Invalid service request from research agent'}, response, false);
-        }
-      }
-      // Otherwise, i.e. if the agent is not authorized or not authenticated:
-      else {
-        // Report this.
-        await serveError({message: 'ERROR: Invalid agent'}, response, false);
-      }
     }
     // Otherwise, if it is a tutorial comment:
     else if (pageName === 'tutorialComment.html') {
       const {content} = postData;
-      setHeaders('application/json', null, 'high');
+      setHeaders('application/json', null, 'low');
       const answerData = await require(path.join(__dirname, 'tutorial', 'index')).saveComment(content);
       if (answerData.status === 'ok') {
         response.end(JSON.stringify({status: 'ok'}));

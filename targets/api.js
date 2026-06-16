@@ -52,8 +52,6 @@ exports.response = async () => {
         URL: url
       },
       'whether a later report about the same page exists': !! superseded,
-      'number of issues reported': issueCount,
-      'number of HTML elements reported as exhibiting issues': violatorCount,
       'tools that tried to test the page': {
         number: toolCount,
         names: toolNames
@@ -66,6 +64,8 @@ exports.response = async () => {
         number: reporterCount,
         names: reporterNames
       },
+      'number of issues reported': issueCount,
+      'number of HTML elements reported as exhibiting issues': violatorCount,
       'URLs for getting data about the reported issues': {
         'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues/${timeStamp}/${jobID}`

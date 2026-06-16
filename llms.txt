@@ -1,5 +1,5 @@
 # Kilotest
-Ensemble testing of web pages for accessibility, usability, and standard conformance. Performs a job by running ten rule engines on one page and producing an integrated reports of results. Exposes APIs and a web UI for retrieving summary statistics and/or element-level detail as needed.
+Ensemble testing of web pages for accessibility, usability, and standard conformance. Kilotest performs a job by running ten rule engines on one web page and producing an integrated report of results. Kilotest exposes an API and a web UI for retrieving statistics and/or element-level detail from reports as needed.
 
 ## API
 - GET /api/targets: summarize test results for all tested pages
@@ -13,4 +13,4 @@ Ensemble testing of web pages for accessibility, usability, and standard conform
 - https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}: details on issues reported in a job
 - https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}: details on issues reported in a job
 - https://kilotest.com/issues.html: statistics on frequently reported issues across all tested pages
-- https://kilotest.com/tutorial.html: usage guide
+- https://kilotest.com/tutorial.html: tutorial, “Accessibility testing strategies”

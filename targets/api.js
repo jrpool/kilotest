@@ -66,7 +66,7 @@ exports.response = async () => {
         number: reporterCount,
         names: reporterNames
       },
-      'URLs for getting data on the reported issues': {
+      'URLs for getting data about the reported issues': {
         'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues/${timeStamp}/${jobID}`
       },
@@ -74,7 +74,7 @@ exports.response = async () => {
     });
   }
   // Get a response.
-  const response = {
+  const content = {
     summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and, for each page, statistics about the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints for agents and web UI URLs for humans to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
     'tool name': 'Kilotest',
     request: {
@@ -93,5 +93,5 @@ exports.response = async () => {
     },
     'available reports': availableReports
   };
-  return response;
+  return content;
 };

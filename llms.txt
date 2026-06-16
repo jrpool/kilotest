@@ -1,0 +1,16 @@
+# Kilotest
+Ensemble testing of web pages for accessibility, usability, and standard conformance. Performs a job by running ten rule engines on one page and producing an integrated reports of results. Exposes APIs and a web UI for retrieving summary statistics and/or element-level detail as needed.
+
+## API
+- GET /api/targets: summarize test results for all tested pages
+- GET /api/reportIssues/{timeStamp}/{jobID}: statistics on issues reported in a job
+- GET /api/reportIssue/{issueID}/{timeStamp}/{jobID}: details on issues reported in a job
+- GET /api/issues: statistics on frequently reported issues across all tested pages
+- OpenAPI spec: https://kilotest.com/openapi.yaml
+
+## Web UI
+- https://kilotest.com/targets.html: summarize test results for all tested pages
+- https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}: details on issues reported in a job
+- https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}: details on issues reported in a job
+- https://kilotest.com/issues.html: statistics on frequently reported issues across all tested pages
+- https://kilotest.com/tutorial.html: usage guide

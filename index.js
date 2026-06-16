@@ -87,6 +87,9 @@ const serveError = async (error, response, isHumanUser = true) => {
     if (isHumanUser) {
       // Serve an HTML page containing the message property of the error.
       response.setHeader('content-type', 'text/html; charset=utf-8');
+      response.setHeader('content-location', '/error.html');
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3000');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
       const errorPage = errorTemplate.replace(/__error__/, error.message || 'ERROR');
       response.end(errorPage);
@@ -168,6 +171,23 @@ const checkBalancesForAlerts = async report => {
 };
 // Handles a request.
 const requestHandler = async (request, response) => {
+  // Sets response headers.
+  const setHeaders = (contentType, location, volatility = 'high') => {
+    response.setHeader('content-type', `${contentType}; charset=utf-8`);
+    if (location) {
+      response.setHeader('content-location', location);
+    }
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    const lives = {
+      high: [300, 3000],
+      medium: [1000, 10000],
+      low: [5000, 50000]
+    };
+    response.setHeader(
+      'Cache-Control',
+      `public, max-age=${lives[volatility][0]}, stale-while-revalidate=${lives[volatility][1]}`
+    );
+  };
   const {method, url} = request;
   const requestURL = new URL(url, 'https://localhost:3000');
   const {pathname, search} = requestURL;
@@ -189,36 +209,25 @@ const requestHandler = async (request, response) => {
       // Get the home page.
       const homePage = await fs.readFile('index.html', 'utf8');
       // Serve it.
-      response.setHeader('content-type', 'text/html; charset=utf-8');
-      response.setHeader('content-location', '/index.html');
-      response.setHeader('Access-Control-Allow-Origin', '*');
+      setHeaders('text/html', '/index.html', 'medium');
       response.end(homePage);
     }
     // Otherwise, if it is for the the crawler specification:
     else if (pageName === 'robots.txt') {
       const robots = await fs.readFile('robots.txt', 'utf8');
-      response.setHeader('content-type', 'text/plain; charset=utf-8');
-      response.setHeader('content-location', '/robots.txt');
-      response.setHeader('Access-Control-Allow-Origin', '*');
-      response.setHeader('Cache-Control', 'public, max-age=86400');
+      setHeaders('text/plain', '/robots.txt', 'high');
       response.end(robots);
     }
     // Otherwise, if it is for the the OpenAPI specification:
     else if (pageName === 'openapi.yaml') {
       const openapi = await fs.readFile('openapi.yaml', 'utf8');
-      response.setHeader('content-type', 'text/yaml; charset=utf-8');
-      response.setHeader('content-location', '/openapi.yaml');
-      response.setHeader('Access-Control-Allow-Origin', '*');
-      response.setHeader('Cache-Control', 'public, max-age=86400');
+      setHeaders('text/yaml', '/openapi.yaml', 'low');
       response.end(openapi);
     }
     // Otherwise, if it is for the the large-language-model specification:
     else if (pageName === 'llms.txt') {
       const llms = await fs.readFile('llms.txt', 'utf8');
-      response.setHeader('content-type', 'text/plain; charset=utf-8');
-      response.setHeader('content-location', '/llms.txt');
-      response.setHeader('Access-Control-Allow-Origin', '*');
-      response.setHeader('Cache-Control', 'public, max-age=86400');
+      setHeaders('text/plain', '/llms.txt', 'medium');
       response.end(llms);
     }
     // Otherwise, if it is for a full report download:
@@ -249,12 +258,10 @@ const requestHandler = async (request, response) => {
           // If it exists and is valid:
           if (typeof report === 'object') {
             // Serve response headers for a JSON download.
-            response.setHeader('content-type', 'application/json; charset=utf-8');
+            setHeaders('application/json', null, 'medium');
             response.setHeader(
               'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
             );
-            response.setHeader('Access-Control-Allow-Origin', '*');
-            response.setHeader('Cache-Control', 'public, max-age=86400');
             // Download the report.
             response.end(getJSON(report));
           }
@@ -276,9 +283,7 @@ const requestHandler = async (request, response) => {
       const topic = pageName.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
-        // Serve response headers, including one allowing requests from other applications.
-        response.setHeader('content-type', 'text/html; charset=utf-8');
-        response.setHeader('content-location', `${pathname}${search}`);
+        setHeaders('text/html', `${pathname}${search}`, 'medium');
         // Get the answer data.
         const answerData = await answer[topic](pageArgs, search);
         // If they are valid:
@@ -305,9 +310,15 @@ const requestHandler = async (request, response) => {
       try {
         const img = await fs.readFile(imgPath);
         const ext = path.extname(imgFile).toLowerCase();
-        const mimeTypes = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml'};
-        response.setHeader('content-type', mimeTypes[ext] || 'application/octet-stream');
-        response.setHeader('cache-control', 'public, max-age=3600');
+        const mimeTypes = {
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp',
+          '.svg': 'image/svg+xml'
+        };
+        setHeaders(mimeTypes[ext] || 'application/octet-stream', null, 'high');
         response.end(img);
       }
       catch (_) {
@@ -319,7 +330,7 @@ const requestHandler = async (request, response) => {
       // Get the site icon.
       const icon = await fs.readFile(path.join(__dirname, 'favicon.ico'));
       // Serve it.
-      response.setHeader('content-type', 'image/x-icon');
+      setHeaders('image/x-icon', null, 'high');
       response.write(icon, 'binary');
       response.end('');
     }
@@ -328,10 +339,7 @@ const requestHandler = async (request, response) => {
       try {
         // Serve it.
         const styleSheet = await fs.readFile('style.css', 'utf8');
-        response.writeHead(200, {
-          'content-type': 'text/css; charset=utf-8',
-          'cache-control': 'public, max-age=600'
-        });
+        setHeaders('text/css', null, 'high');
         response.end(styleSheet);
       }
       catch (error) {
@@ -356,10 +364,8 @@ const requestHandler = async (request, response) => {
       const [timeStamp, jobID] = pageArgs.split('/');
       // If the request is valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
-        // Serve response headers, including one allowing requests from other applications.
-        response.setHeader('content-type', 'text/html; charset=utf-8');
-        response.setHeader('content-location', `${pathname}${search}`);
-        response.setHeader('Access-Control-Allow-Origin', '*');
+        // Serve response headers.
+        setHeaders('text/html', `${pathname}${search}`, 'medium');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
         .answer(pageArgs, why);
@@ -386,8 +392,7 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (what && url.startsWith('https://') && why) {
         // Serve headers for a response.
-        response.setHeader('content-type', 'text/html; charset=utf-8');
-        response.setHeader('content-location', `${pathname}${search}`);
+        setHeaders('text/html', `${pathname}${search}`, 'medium');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'testRec', 'index'))
         .answer(what, url, why);
@@ -414,11 +419,11 @@ const requestHandler = async (request, response) => {
       const [url, what] = target.split('\t');
       // If the request is valid:
       if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
-        // Serve a content-type header for a response.
-        response.setHeader('content-type', 'text/html; charset=utf-8');
+        // Set the non-location headers for a response.
+        setHeaders('text/html', null, 'medium');
         // If the request is an approval:
         if (what) {
-          // Serve a location header for a response.
+          // Set a location header for a response.
           response.setHeader('content-location', `${pathname}${search}`);
           // Get the answer data.
           const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
@@ -442,7 +447,7 @@ const requestHandler = async (request, response) => {
           delete recs[url];
           // Save the revised recommendations.
           await fs.writeFile(path.join(__dirname, 'jobs', 'recs.json'), getJSON(recs));
-          // Serve a location header for a response.
+          // Set a location header for a response.
           response.setHeader('content-location', '/recActionForm.html');
           // Get the answer data.
           const answerData = await require(path.join(__dirname, 'recActionForm', 'index')).answer();
@@ -459,9 +464,8 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is a reannotation order:
     else if (pageName === 'reannotate.html') {
       const {authCode} = postData;
-      // Serve headers for a response.
-      response.setHeader('content-type', 'text/html; charset=utf-8');
-      response.setHeader('content-location', `${pathname}${search}`);
+      // Set headers for a response.
+      setHeaders('text/html', `${pathname}${search}`, 'medium');
       // Get the answer data.
       const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
       .answer(authCode);
@@ -479,9 +483,8 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is a WCAG map renewal:
     else if (pageName === 'wcagRenew.html') {
       const {authCode} = postData;
-      // Serve headers for a response.
-      response.setHeader('content-type', 'text/html; charset=utf-8');
-      response.setHeader('content-location', `${pathname}${search}`);
+      // Set headers for a response.
+      setHeaders('text/html', `${pathname}${search}`, 'medium');
       // Get the answer data.
       const answerData = await require(path.join(__dirname, 'wcagRenew', 'index'))
       .answer(authCode);
@@ -658,8 +661,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is a tutorial comment:
     else if (pageName === 'tutorialComment.html') {
       const {content} = postData;
-      response.setHeader('content-type', 'application/json; charset=utf-8');
-      response.setHeader('Access-Control-Allow-Origin', '*');
+      setHeaders('application/json', null, 'high');
       const answerData = await require(path.join(__dirname, 'tutorial', 'index')).saveComment(content);
       if (answerData.status === 'ok') {
         response.end(JSON.stringify({status: 'ok'}));

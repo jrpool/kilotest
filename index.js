@@ -309,7 +309,7 @@ const requestHandler = async (request, response) => {
       // If the service is provision of facts about the available reports:
       if (service === 'targets') {
         // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'targets', 'api')).response(args);
+        const responseData = await require(path.join(__dirname, 'targets', 'api')).response(specs);
         // Send them.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseData));

@@ -12,14 +12,13 @@ const {
   getRandomString,
   getToolsFacts,
   isHidden,
-  researchAgents,
   tools
 } = require('../util');
 
 // FUNCTIONS
 
 // Gets facts about an issue.
-const getIssueFacts = (thisHost, agentID, timeStamp, jobID, issue) => {
+const getIssueFacts = (thisHost, timeStamp, jobID, issue) => {
   const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
   const wcagType = wcag.length === 3 ? 'guideline' : 'success criterion';
   return {
@@ -36,14 +35,14 @@ const getIssueFacts = (thisHost, agentID, timeStamp, jobID, issue) => {
     },
     'number of HTML elements reported as exhibiting the issue': violatorCount,
     'URLs for details about the issue on the page': {
-      'for you': `${thisHost}/api/${agentID}/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+      'for you': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
       'for humans': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
     }
   };
 };
 // Returns a response to a target-issues request.
 exports.response = async args => {
-  const [agentID, timeStamp, jobID] = args;
+  const [timeStamp, jobID] = args;
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
   if (reportIsHidden) {
@@ -67,22 +66,18 @@ exports.response = async args => {
     summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data from a Kilotest report about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
-      'requesting agent': {
-        identifier: agentID,
-        name: researchAgents[agentID]
-      },
       'type of request': {
         identifier: 'reportIssues',
         description: 'What issues does the specified report describe?'
       },
       URLs: {
-        'URL of your request': `${thisHost}/api/${agentID}/reportIssues/${timeStamp}/${jobID}`,
+        'URL of your request': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
         'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
         description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
         URLs: {
-          'for you': `${thisHost}/api/${agentID}/targets.html`,
+          'for you': `${thisHost}/api/targets.html`,
           'for humans': `${thisHost}/targets.html`
         }
       }
@@ -118,13 +113,13 @@ exports.response = async args => {
     'number of HTML elements reported as exhibiting issues': violatorCount,
     'issues reported': {
       'highest priority': issues[4]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
+      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue)),
       'high priority': issues[3]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
+      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue)),
       'low priority': issues[2]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue)),
+      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue)),
       'lowest priority': issues[1]
-      .map(issue => getIssueFacts(thisHost, agentID, timeStamp, jobID, issue))
+      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue))
     }
   };
   return response;

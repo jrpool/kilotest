@@ -542,10 +542,13 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is a request from an agent:
     else if (pageName === 'api') {
-      // Get the agent ID, the service, and any service specifications from the path.
-      const [agentID, service, ... specs] = pathTail.split('/');
-      // If the agent is the authorized Testaro instance and it is authenticated:
-      if (agentID === testaroAgent && postData.agentPW === testaroAgentPW) {
+      // Get the segments of the path after api.
+      const segments = pathTail.split('/');
+      // If the first segment is the ID of the Testaro agent and the agent is authenticated:
+      if (specs[0] === testaroAgent && postData.agentPW === testaroAgentPW) {
+        const agentID = specs[0];
+        // Get the requested service from the path.
+        const service = specs[1];
         // If the service is job assignment:
         if (service === 'job') {
           let clean = true;

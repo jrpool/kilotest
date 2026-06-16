@@ -20,8 +20,6 @@ const httpsClient = require('https');
 
 // CONSTANTS
 
-const agent = process.env.RESEARCH_AGENT;
-const agentPW = process.env.RESEARCH_AGENT_PW;
 const kilotestHosts = [process.env.LOCAL_KILOTEST_HOST, process.env.DEPLOYED_KILOTEST_HOST];
 // Randomly chosen Kilotest host.
 const kilotestHost = kilotestHosts[Math.random() < 0.5 ? 0 : 1];
@@ -36,7 +34,7 @@ const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
 const requestService = async () => {
   const client = scheme === 'https' ? httpsClient : httpClient;
   const getRequestOptions = path => ({
-    method: 'POST',
+    method: 'GET',
     host,
     port,
     path,
@@ -44,7 +42,7 @@ const requestService = async () => {
       'content-type': 'application/json; charset=utf-8'
     }
   });
-  const path = `/api/${agent}/targets`;
+  const path = `/api/targets`;
   console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
   // Submit a targets request.
   client.request(getRequestOptions(path), response => {
@@ -75,7 +73,7 @@ const requestService = async () => {
         const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
         .split('-');
         console.log('======================');
-        const path = `/api/${agent}/reportIssues/${timeStamp}/${jobID}`;
+        const path = `/api/reportIssues/${timeStamp}/${jobID}`;
         console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
         const requestOptions = getRequestOptions(path);
         // Submit an issues request for it.
@@ -109,9 +107,7 @@ const requestService = async () => {
           });
         })
         // Finish sending the issues request.
-        .end(JSON.stringify({
-          agentPW
-        }));
+        .end();
       }
       catch (error) {
         console.log(error.message);
@@ -120,9 +116,7 @@ const requestService = async () => {
     });
   })
   // Finish sending the targets request.
-  .end(JSON.stringify({
-    agentPW
-  }));
+  .end();
 };
 
 // EXECUTION

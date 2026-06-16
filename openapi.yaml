@@ -1,14 +1,7 @@
 openapi: 3.1.0
 info:
   title: Kilotest Agent API
-  description: >-
-    Kilotest tests web pages for accessibility, usability, and standard
-    conformity using an ensemble of ten independent tools that employ
-    rule-based and machine-learning-based methods. This API enables AI
-    agents to recommend web pages for testing, discover available test
-    reports, and retrieve data from reports at multiple levels of detail.
-    For background on Kilotest and the advantages of ensemble testing,
-    visit https://kilotest.com.
+  description: Kilotest tests web pages for accessibility, usability, and standard conformity using an ensemble of ten independent tools that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing (not yet implemented), discover available test reports, and retrieve data from reports at multiple levels of detail. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
   version: 1.0.0
   contact:
     url: https://kilotest.com
@@ -16,52 +9,33 @@ info:
     repository: https://github.com/jrpool/kilotest
 
 servers:
-  - url: https://kilotest.com/api/{agentId}
+  - url: https://kilotest.com/api
     description: Kilotest production server
-    variables:
-      agentId:
-        description: >-
-          Identifier assigned to the requesting agent by the Kilotest
-          operator. Contact the operator via info@kilotest.com to
-          obtain an identifier and a password.
-        default: research-agent
 
 paths:
-  /targets:
+  /api/targets:
     post:
       operationId: getReportSummaries
       summary: Summarize all available reports
-      description: >-
-        Returns summary data about every non-hidden report available from
-        Kilotest, including the name and URL of the tested web page, when
-        the testing was performed, how many issues were reported, and URLs
-        for retrieving more detailed data from the report.
+      description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many issues were reported, and URLs for retrieving more detailed data from the report.
       responses:
         '200':
           description: Summaries of available reports
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TargetsResponse'
+                $ref: '#/components/schemas/ReportSummariesResponse'
 
-  /reportIssues/{timeStamp}/{jobID}:
+  /api/reportIssues/{timeStamp}/{jobID}:
     post:
       operationId: getReportIssues
       summary: Get data on issues from a specific report
-      description: >-
-        Returns data about the issues reported in a specific Kilotest
-        report, grouped by priority. The data on each issue include the
-        tools that reported it, the number of HTML elements exhibiting
-        it, and URLs for retrieving element-level detail. The timeStamp
-        and jobID components identify the report and are available in
-        the getReportSummaries response.
+      description: Returns data about the issues reported in a specific Kilotest report, grouped by priority. The data on each issue include the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID components identify the report and are available in the getReportSummaries response.
       parameters:
         - name: timeStamp
           in: path
           required: true
-          description: >-
-            timeStamp component of the report identifier, in the format
-            YYMMDDTHHMM (e.g., 260503T0432).
+          description: timeStamp component of the report identifier, in the format YYMMDDTHHMM (e.g., 260503T0432).
           schema:
             type: string
             pattern: '^\d{6}T\d{4}$'
@@ -69,8 +43,7 @@ paths:
         - name: jobID
           in: path
           required: true
-          description: >-
-            Job identifier component of the report identifier (e.g., xx0).
+          description: Job identifier component of the report identifier (e.g., xx0).
           schema:
             type: string
             example: 'xx0'
@@ -82,28 +55,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReportIssuesResponse'
         '404':
-          description: >-
-            No report with the specified identifier is available
+          description: No report with the specified identifier is available
 
-  /reportIssue/{issueID}/{timeStamp}/{jobID}:
+  /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
     post:
       operationId: getReportIssue
-      summary: >-
-        Get element-level detail for a specific issue in a specific report
-      description: >-
-        Returns element-level detail for a single issue within a specific
-        report, including which HTML elements exhibit the issue and
-        diagnostic information from each tool that reported it. This is
-        the level at which tool-provided remediation guidance becomes
-        available. The issueID is available in the getReportIssues response.
+      summary: Get details about a specific issue in a specific report
+      description: Returns details about a single issue within a specific report, including which HTML elements exhibit the issue and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element.
       parameters:
         - name: issueID
           in: path
           required: true
-          description: >-
-            Issue identifier (e.g., imageNoText). Available under
-            "issues reported" > priority level > "identifier" in the
-            getReportIssues response.
+          description: Issue identifier (e.g., imageNoText). Available under "issues reported" > priority level > "identifier" in the getReportIssues response.
           schema:
             type: string
             example: 'imageNoText'
@@ -119,7 +82,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Element-level detail for the specified issue
+          description: Details about the specified issue in the specified report
           content:
             application/json:
               schema:
@@ -135,10 +98,7 @@ components:
       properties:
         summary:
           type: string
-          description: >-
-            Natural-language description of this response and of Kilotest.
-            Provides context for an agent encountering Kilotest for the
-            first time.
+          description: Natural-language description of this response and of Kilotest. Provides context for an agent encountering Kilotest for the first time.
         tool name:
           type: string
           example: Kilotest
@@ -245,9 +205,7 @@ components:
               format: uri
         whether a later report about the same page exists:
           type: boolean
-          description: >-
-            If true, a more recent report about this page is available.
-            If you want the latest results, use that report instead.
+          description: If true, a more recent report about this page is available. If you want the latest results, use that report instead.
         number of issues reported:
           type: integer
         number of HTML elements reported as exhibiting issues:
@@ -264,27 +222,20 @@ components:
           type: string
           format: uri
 
-    TargetsResponse:
+    ReportSummariesResponse:
       allOf:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
           properties:
             available reports:
               type: array
-              description: >-
-                One entry per available Kilotest report, in alphabetical
-                order by page description and, in case of multiple reports
-                per page, in order of creation date and time. Reports are
-                matched by page description, not page URL, so, if only the
-                URL of a page has changed between reports, the reports are
-                treated as reports about the same page.
+              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
               items:
                 $ref: '#/components/schemas/ReportSummaryItem'
 
     IssueEntry:
       type: object
-      description: >-
-        Details about a specific accessibility issue found on a page.
+      description: Details about a specific accessibility issue found on a page.
       properties:
         identifier:
           type: string
@@ -295,9 +246,7 @@ components:
           example: image not named
         related WCAG 2.2 standard:
           type: object
-          description: >-
-            The WCAG 2.2 success criterion or guideline most closely
-            related to this issue.
+          description: The WCAG 2.2 success criterion or guideline most closely related to this issue.
           properties:
             layer:
               type: string
@@ -308,8 +257,7 @@ components:
               example: '1.1.1'
         impact on a user:
           type: string
-          description: >-
-            How this issue is likely to affect users.
+          description: How this issue is likely to affect users.
         tools reporting the issue:
           $ref: '#/components/schemas/ToolsSummary'
         number of HTML elements reported as exhibiting the issue:
@@ -395,6 +343,4 @@ components:
       allOf:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
-          description: >-
-            Element-level detail for a specific issue. Schema to be
-            completed once the tier-3 service is implemented.
+          description: Element-level detail for a specific issue. Schema to be completed once the tier-3 service is implemented.

@@ -4,19 +4,19 @@ Kilotest helps AI agents give thorough, accurate and truthful answers when users
 
 In the API section below, all endpoints require `GET` requests.
 
+There is a [detailed explanation of Kilotest and its capabilities for AI agents](https://kilotest.com/llms-full.txt).
+
 ## API
 
-- [Detailed explanation of Kilotest and its capabilities](/llms-full.txt)
 - [Summarize test results for all tested pages](/api/targets)
-- [Provide statistics about issues reported in one job](/api/reportIssues/{timeStamp}/{jobID})
-- [Provide details about one issue reported in one job](/api/reportIssue/{issueID}/{timeStamp}/{jobID})
-- [Provide statistics about frequently reported issues across all pages](/api/issues)
+- Provide statistics about issues reported in one job: `/api/reportIssues/{timeStamp}/{jobID}`
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
 
 ## Web UI
 
 - [Summarize test results for all tested pages](https://kilotest.com/targets.html)
-- [Provide statistics about issues reported in one job](https://kilotest.com/reportIssues.html/{timeStamp}/{jobID})
-- [Provide details about one issue reported in one job](https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID})
+- Provide statistics about issues reported in one job: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
+- Provide details about one issue reported in one job: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
+- Provide diagnoses about one issue exhibited by one HTML element in one job: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
 - [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)

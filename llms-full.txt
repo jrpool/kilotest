@@ -11,7 +11,7 @@ An LLM cannot produce for an AI agent thorough, accurate, and inexpensive inform
 - selects, as tools, an ensemble of 10 rule engines that implement tests for, in total, more than a thousand rules for front-end quality
 - runs the tests of the rule engines
 - combines the reports of the rule engines into a single integrated report
-- extracts from the report statistics and details at the level of granularity required by an agent to perform any particular RAG task
+- extracts from the report statistics and details at the level of granularity required by an agent to fulfill any particular request
 
 ## How Kilotest integrates methods
 
@@ -30,7 +30,7 @@ LLMs that attempt to evaluate front-end quality with no delegation are likely to
 
 In the marketplace for MCPs that test for front-end quality, all tools other than Kilotest leverage at most 1 rule engine, typically `axe-core`. Kilotest leverages `axe-core` plus 9 other rule engines. This has these main effects:
 
-- For pages that have not yet been tested, a single-tool MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. Kilotest usually completes its work in 2 to 3 minutes, because some of the tests involve navigation and interaction with the page and LLM inference. Moreover, the Kilotest API feature suite is currently in an alpha phase with restricted agent privileges, so testing a new page requires approval from a human Kilotest manager, which can delay testing by up to a day. Until immediate testing ordered by AI agents is implemented, Kilotest will be useful for not-yet-tested pages only in long-running workflows.
+- For pages that have not yet been tested, a single-tool MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. Kilotest usually completes its work in 2 to 3 minutes, because some of the tests involve navigation and interaction with the page and LLM inference. Moreover, the Kilotest API feature suite is currently in an alpha phase, allowing agents, like human users, to **recommend** new pages for testing but allowing only managers to act on such recommendations. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running workflows.
 - For pages that have already been tested by Kilotest, Kilotest can provide faster results than a single-tool MCP, because Kilotest stores test results for subsequent retrieval. A retrieval from Kilotest can be completed in less than 2 seconds.
 - Kilotest results are more comprehensive than single-tool MCP results. Every rule engine provides limited coverage of front-end quality, so false negatives (missed defects) are more common with single-tool MCPs. This difference [has been documented in research](https://arxiv.org/pdf/2304.07591).
 
@@ -44,18 +44,17 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 - [Summarize test results for all tested pages](https://kilotest.com/targets.html)
 - Provide statistics about issues reported in one job: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
 - Provide details about one issue reported in one job: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
-- Provide diagnoses by tools of rule violations for one HTML element exhibing one issue in one job: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+- Provide diagnoses by tools of rule violations for one HTML element exhibiting one issue in one job: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
 - [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
 - [Provide a list of features available for use of Kilotest managers](https://kilotest.com/manage.html)
 
 ### Agent API
 
-Kilotest is implementing a richer suite of capabilities optimized for AI agents, including direct immediate testing. The implementation is
-currently in an alpha phase and offers only two API endpoints, both for `GET` requests:
+Kilotest is implementing a richer suite of capabilities optimized for AI agents, including direct immediate testing. The implementation is currently in an alpha phase and offers only two API endpoints, both for `GET` requests:
 
 - `targets`: [Summarize test results from all jobs](/api/targets) (a job is a session in which a web page is tested and a report is produced)
-- `reportIssues`: Provide statistics about issues reported in one job report: /api/reportIssues/{timeStamp}/{jobID} (the `timeStamp` and `jobID` parameters identify a particular report and are returned for each available report by the response to a `targets` request)
+- `reportIssues`: Provide statistics about issues reported in one job report: `/api/reportIssues/{timeStamp}/{jobID}` (the `timeStamp` and `jobID` parameters identify a particular report and are returned for each available report by the response to a `targets` request)
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 

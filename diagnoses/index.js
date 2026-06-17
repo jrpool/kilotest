@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the report-issues question.
+  Answers the diagnoses question.
 */
 
 // IMPORTS

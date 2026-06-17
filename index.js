@@ -212,33 +212,44 @@ const requestHandler = async (request, response) => {
       setHeaders('text/html', '/index.html', 'medium');
       response.end(homePage);
     }
-    // Otherwise, if it is for the the AI plugin specification:
+    // Otherwise, if it is for the AI plugin specification:
     else if (pathname === '/.well-known/ai-plugin.json') {
       const aiPlugin = await fs.readFile('.well-known/ai-plugin.json', 'utf8');
+      // Serve it.
       setHeaders('application/json', '/.well-known/ai-plugin.json', 'low');
       response.end(aiPlugin);
     }
-    // Otherwise, if it is for the the crawler specification:
+    // Otherwise, if it is for the crawler specification:
     else if (pageName === 'robots.txt') {
       const robots = await fs.readFile('robots.txt', 'utf8');
+      // Serve it.
       setHeaders('text/plain', '/robots.txt', 'low');
       response.end(robots);
     }
-    // Otherwise, if it is for the the OpenAPI specification:
+    // Otherwise, if it is for the OpenAPI specification:
     else if (pageName === 'openapi.yaml') {
       const openapi = await fs.readFile('openapi.yaml', 'utf8');
+      // Serve it.
       setHeaders('text/yaml', '/openapi.yaml', 'high');
       response.end(openapi);
     }
-    // Otherwise, if it is for the the large-language-model summary guide:
+    // Otherwise, if it is for the OpenAPI specification where it is not:
+    else if (['openapi.json', 'swagger.yaml', 'swagger.json', 'api-docs'].includes(pageName)) {
+      // Redirect the client permanently to where the specification is.
+      response.writeHead(301, {Location: '/openapi.yaml'});
+      response.end();
+    }
+    // Otherwise, if it is for the large-language-model summary guide:
     else if (pageName === 'llms.txt') {
       const llms = await fs.readFile('llms.txt', 'utf8');
+      // Serve it.
       setHeaders('text/plain', '/llms.txt', 'high');
       response.end(llms);
     }
-    // Otherwise, if it is for the the large-language-model detailed guide:
+    // Otherwise, if it is for the large-language-model detailed guide:
     else if (pageName === 'llms-full.txt') {
       const llmsfull = await fs.readFile('llms-full.txt', 'utf8');
+      // Serve it.
       setHeaders('text/plain', '/llms-full.txt', 'high');
       response.end(llmsfull);
     }

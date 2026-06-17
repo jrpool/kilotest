@@ -6,6 +6,8 @@ Kilotest is an application that performs ensemble testing of web pages for acces
 
 ## What Kilotest does for AI agents
 
+Kilotest is deployed as a service with a public URL. Kilotest can test only web pages that can be accessed from the public Internet and that are not protected by authentication or other access controls. Kilotest has not implemented any mechanism for testing private, internal, password-protected, or otherwise restricted pages.
+
 An LLM cannot produce for an AI agent thorough, accurate, and inexpensive information about the front-end quality of a web page. To get such information, the agent needs to select and use specialized tools. However, such selection and use, too, require specialized skills that LLMs lack. Kilotest assumes responsibility for these functions. Kilotest:
 
 - selects, as tools, an ensemble of 10 rule engines that implement tests for, in total, more than a thousand rules for front-end quality

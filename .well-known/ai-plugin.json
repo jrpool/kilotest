@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Kilotest",
+  "name_for_model": "kilotest",
+  "description_for_human": "Ensemble testing of web pages for accessibility, usability, and standard conformance.",
+  "description_for_model": "Use Kilotest to retrieve test results about the accessibility, usability, and standard conformance of any web page that has been tested by Kilotest at selectable levels of granularity.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://kilotest.com/openapi.yaml",
+    "is_user_authenticated": false
+  },
+  "logo_url": "https://kilotest.com/favicon.ico",
+  "contact_email": "info@kilotest.com",
+  "legal_info_url": "https://github.com/jrpool/kilotest/blob/main/LICENSE"
+}

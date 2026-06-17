@@ -212,6 +212,12 @@ const requestHandler = async (request, response) => {
       setHeaders('text/html', '/index.html', 'medium');
       response.end(homePage);
     }
+    // Otherwise, if it is for the the AI plugin specification:
+    else if (pathname === '/.well-known/ai-plugin.json') {
+      const aiPlugin = await fs.readFile('.well-known/ai-plugin.json', 'utf8');
+      setHeaders('application/json', '/.well-known/ai-plugin.json', 'low');
+      response.end(aiPlugin);
+    }
     // Otherwise, if it is for the the crawler specification:
     else if (pageName === 'robots.txt') {
       const robots = await fs.readFile('robots.txt', 'utf8');

@@ -9,7 +9,7 @@ info:
     repository: https://github.com/jrpool/kilotest
 
 servers:
-  - url: https://kilotest.com/api
+  - url: https://kilotest.com
     description: Kilotest production server
 
 paths:
@@ -60,8 +60,8 @@ paths:
   /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
     post:
       operationId: getReportIssue
-      summary: Get details about a specific issue in a specific report
-      description: Returns details about a single issue within a specific report, including which HTML elements exhibit the issue and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element.
+      summary: Get details about a specific issue in a specific report (NOT YET IMPLEMENTED)
+      description: Returns details about a single issue within a specific report, including which HTML elements exhibit the issue and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element. NOT YET IMPLEMENTED.
       parameters:
         - name: issueID
           in: path

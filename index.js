@@ -224,11 +224,17 @@ const requestHandler = async (request, response) => {
       setHeaders('text/yaml', '/openapi.yaml', 'high');
       response.end(openapi);
     }
-    // Otherwise, if it is for the the large-language-model specification:
+    // Otherwise, if it is for the the large-language-model summary guide:
     else if (pageName === 'llms.txt') {
       const llms = await fs.readFile('llms.txt', 'utf8');
       setHeaders('text/plain', '/llms.txt', 'high');
       response.end(llms);
+    }
+    // Otherwise, if it is for the the large-language-model detailed guide:
+    else if (pageName === 'llms-full.txt') {
+      const llmsfull = await fs.readFile('llms-full.txt', 'utf8');
+      setHeaders('text/plain', '/llms-full.txt', 'high');
+      response.end(llmsfull);
     }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {

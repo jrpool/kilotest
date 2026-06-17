@@ -1,0 +1,43 @@
+# Kilotest
+
+## What it is
+
+Kilotest helps AI agents give thorough, accurate, and inexpensive answers when users ask how accessible, usable, or standard conformant web pages are.
+
+## Why it helps
+
+Effective evaluation of digital products for these qualities requires a mixture of methods: mostly rule-based but partly inferential. Kilotest serves LLMs as a tool for rule-based testing and reporting.
+
+Using Kilotest rather than using no tool is likely to get results that are:
+
+- faster (seconds versus minutes)
+- cheaper (inference costs only for interpretation, not for testing)
+- more accurate (no hallucination, no guessing)
+
+Using Kilotest rather than a single-engine tool is likely to get results that are:
+
+- more thorough: Other MCP servers in the same domain run tests from no more than one rule engine, while Kilotest runs more than a thousand tests from ten rule engines. This makes Kilotest results more comprehensive and false negatives (missed defects) less likely.
+- slower if you want results about a web page that Kilotest has not yet tested. In this case, approval may take up to 12 hours, so Kilotest is useful only in a long-running workflow. If you want results for a page that Kilotest has already tested, Kilotest typically provides the results within 2 seconds.
+
+## How it works
+
+When you use Kilotest, you give your users the results of ensemble testing: testing with multiple tools. The Kilotest ensemble consists of these rule engines:
+
+
+  report results with multipage, single-page, and element-level statistics and details.
+
+In the API section below, all endpoints require `GET` requests.
+
+## API
+- [Summarize test results for all tested pages](/api/targets)
+- [Provide statistics about issues reported in one job](/api/reportIssues/{timeStamp}/{jobID})
+- [Provide details about one issue reported in one job](/api/reportIssue/{issueID}/{timeStamp}/{jobID})
+- [Provide statistics about frequently reported issues across all pages](/api/issues)
+- [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
+
+## Web UI
+- [Summarize test results for all tested pages](https://kilotest.com/targets.html)
+- [Provide statistics about issues reported in one job](https://kilotest.com/reportIssues.html/{timeStamp}/{jobID})
+- [Provide details about one issue reported in one job](https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID})
+- [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
+- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)

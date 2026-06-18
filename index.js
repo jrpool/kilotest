@@ -699,7 +699,7 @@ const requestHandler = async (request, response) => {
           }
           // Otherwise, i.e. if no report on the page is available:
           else {
-            // Get the response data.
+            // Process the recommendation and get the response data.
             const responseData = await require(path.join(__dirname, 'testRecForm', 'api'))
             .response(what, url, why);
             // Send them.

@@ -169,6 +169,19 @@ components:
               type: string
               format: date-time
 
+    TestRecForm:
+      type: object
+      properties:
+        what:
+          type: string
+          description: Description of the web page to be tested.
+        url:
+          type: string
+          description: URL of the web page to be tested.
+        why:
+          type: string
+          description: Reason for testing the page.
+
     TestRecFormResponse:
       allOf:
         - $ref: '#/components/schemas/CommonResponseFields'

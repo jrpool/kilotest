@@ -30,11 +30,11 @@ const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
 
 // FUNCTIONS
 
-// Submits two request to a random Kilotest host.
+// Submits three request to a random Kilotest host.
 const requestService = async () => {
   const client = scheme === 'https' ? httpsClient : httpClient;
-  const getRequestOptions = path => ({
-    method: 'GET',
+  const getRequestOptions = (path, method = 'GET') => ({
+    method,
     host,
     port,
     path,
@@ -98,6 +98,48 @@ const requestService = async () => {
               // Output it.
               const contentObj = JSON.parse(content);
               console.log(JSON.stringify(contentObj, null, 2));
+              console.log('======================');
+              const testRecPath = `/api/testRec`;
+              console.log(
+                `About to submit ${scheme} POST request as JSON on port ${port} to ${host}${testRecPath}`
+              );
+              const testRecOptions = getRequestOptions(testRecPath, 'POST');
+              // Submit a test recommendation.
+              client.request(testRecOptions, response => {
+                // Initialize a collection of data from the response.
+                const chunks = [];
+                response
+                // If the response throws an error:
+                .on('error', async error => {
+                  // Report it.
+                  console.log(error.message);
+                })
+                // If the response delivers data:
+                .on('data', chunk => {
+                  // Add them to the collection.
+                  chunks.push(chunk);
+                })
+                // When the response is completed:
+                .on('end', async () => {
+                  const content = chunks.join('');
+                  try {
+                    // Output it.
+                    const contentObj = JSON.parse(content);
+                    console.log(JSON.stringify(contentObj, null, 2));
+                    console.log('======================');
+                  }
+                  catch (error) {
+                    console.log(error.message);
+                    console.log(`Test recommendation response content: ${content || 'No content'}`);
+                  }
+                });
+              })
+              // Finish sending the test recommendation request.
+              .end(JSON.stringify({
+                what: 'Page Not Already Tested',
+                url: 'https://pagenotalreadytested.info',
+                why: 'This is only a test'
+              }));
               console.log('======================');
             }
             catch (error) {

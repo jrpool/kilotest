@@ -43,6 +43,7 @@ const requestService = async () => {
     }
   });
   const path = `/api/targets`;
+  console.log('======================');
   console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
   // Submit a targets request.
   client.request(getRequestOptions(path), response => {
@@ -65,15 +66,14 @@ const requestService = async () => {
       try {
         // Output it.
         const contentObj = JSON.parse(content);
-        console.log('======================');
         console.log(JSON.stringify(contentObj, null, 2));
         // Get the IDs of the available reports.
         const reportIDs = contentObj['available reports'].map(report => report.identifier);
         // Choose one at random.
         const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
         .split('-');
-        console.log('======================');
         const path = `/api/reportIssues/${timeStamp}/${jobID}`;
+  console.log('======================');
         console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
         const requestOptions = getRequestOptions(path);
         // Submit an issues request for it.
@@ -98,8 +98,8 @@ const requestService = async () => {
               // Output it.
               const contentObj = JSON.parse(content);
               console.log(JSON.stringify(contentObj, null, 2));
+              const testRecPath = `/api/testRecForm`;
               console.log('======================');
-              const testRecPath = `/api/testRec`;
               console.log(
                 `About to submit ${scheme} POST request as JSON on port ${port} to ${host}${testRecPath}`
               );
@@ -126,7 +126,6 @@ const requestService = async () => {
                     // Output it.
                     const contentObj = JSON.parse(content);
                     console.log(JSON.stringify(contentObj, null, 2));
-                    console.log('======================');
                   }
                   catch (error) {
                     console.log(error.message);
@@ -140,7 +139,6 @@ const requestService = async () => {
                 url: 'https://pagenotalreadytested.info',
                 why: 'This is only a test'
               }));
-              console.log('======================');
             }
             catch (error) {
               console.log(error.message);

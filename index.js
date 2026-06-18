@@ -708,7 +708,7 @@ const requestHandler = async (request, response) => {
           }
         }
       }
-      // Otherwise, i.e. if the request is not from the authenticated Testaro agent:
+      // Otherwise, i.e. if the request is invalid:
       else {
         // Report this.
         await serveError(

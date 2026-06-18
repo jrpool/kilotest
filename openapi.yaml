@@ -4,9 +4,9 @@ info:
   description: Kilotest tests web pages for accessibility, usability, and standard conformity using an ensemble of ten independent tools that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing, discover available test reports, and retrieve data from reports. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
   version: 1.0.0
   contact:
+    name: Kilotest
     url: https://kilotest.com
     email: info@kilotest.com
-    repository: https://github.com/jrpool/kilotest
 
 servers:
   - url: https://kilotest.com
@@ -59,14 +59,16 @@ paths:
           schema:
             type: string
             pattern: '^\d{6}T\d{4}$'
-            example: '260503T0432'
+            examples:
+              - 260503T0432
         - name: jobID
           in: path
           required: true
           description: Job identifier component of the report identifier (e.g., xx0).
           schema:
             type: string
-            example: 'xx0'
+            examples:
+              - xx0
       responses:
         '200':
           description: Data on issues from the specified report
@@ -89,7 +91,8 @@ paths:
           description: Issue identifier (e.g., imageNoText). Available under "issues reported" > priority level > "identifier" in the getReportIssues response.
           schema:
             type: string
-            example: 'imageNoText'
+            examples:
+              - imageNoText
         - name: timeStamp
           in: path
           required: true
@@ -121,7 +124,8 @@ components:
           description: Natural-language description of this response and of Kilotest. Provides context for an agent encountering Kilotest for the first time.
         tool name:
           type: string
-          example: Kilotest
+          examples:
+            - Kilotest
         request:
           type: object
           properties:
@@ -148,17 +152,19 @@ components:
                 'equivalent URL for humans':
                   type: string
             closest ancestor request:
-              type: [object, 'null']
-              properties:
-                description:
-                  type: string
-                URLs:
-                  type: object
+              oneOf:
+                - type: 'null'
+                - type: object
                   properties:
-                    'for you':
+                    description:
                       type: string
-                    'for humans':
-                      type: string
+                    URLs:
+                      type: object
+                      properties:
+                        'for you':
+                          type: string
+                        'for humans':
+                          type: string
         response metadata:
           type: object
           properties:
@@ -183,15 +189,7 @@ components:
           description: Reason for testing the page.
 
     TestRecFormResponse:
-      allOf:
-        - $ref: '#/components/schemas/CommonResponseFields'
-        - type: object
-          properties:
-            available reports:
-              type: array
-              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
-              items:
-                $ref: '#/components/schemas/TargetsItem'
+      $ref: '#/components/schemas/CommonResponseFields'
 
     ToolInfo:
       type: object
@@ -200,15 +198,18 @@ components:
         identifier:
           type: string
           description: Short programmatic identifier for the tool.
-          example: alfa
+          examples:
+            - alfa
         name:
           type: string
           description: Display name of the tool.
-          example: Alfa
+          examples:
+            - Alfa
         sponsor:
           type: string
           description: Organization that created, initially sponsored, or now sponsors the tool.
-          example: Siteimprove
+          examples:
+            - Siteimprove
 
     ToolFailure:
       type: object
@@ -216,10 +217,12 @@ components:
       properties:
         name:
           type: string
-          example: WAVE
+          examples:
+            - WAVE
         reason for failure:
           type: string
-          example: Not enough credits.
+          examples:
+            - Not enough credits.
 
     ToolsSummary:
       type: object
@@ -245,13 +248,14 @@ components:
           format: uri
           description: URL for a human to view the next tier of detail.
 
-    targetsItem:
+    TargetsItem:
       type: object
       description: Summary data about a single available report.
       properties:
         identifier:
           type: string
-          example: 260504T1659-029
+          examples:
+            - 260504T1659-029
         creation date:
           type: string
           format: date-time
@@ -301,11 +305,13 @@ components:
       properties:
         identifier:
           type: string
-          example: imageNoText
+          examples:
+            - imageNoText
         summary:
           type: string
           description: Brief natural-language label for the issue.
-          example: image not named
+          examples:
+            - image not named
         related WCAG 2.2 standard:
           type: object
           description: The WCAG 2.2 success criterion or guideline most closely related to this issue.
@@ -318,7 +324,8 @@ components:
             'numeric identifier':
               type: string
               pattern: '^\d\.\d(\.\d+)?$'
-              example: '1.1.1'
+              examples:
+                - 1.1.1
         impact on a user:
           type: string
           description: How this issue is likely to affect users.

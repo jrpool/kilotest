@@ -51,6 +51,7 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 - [Receive a recommendation to test a not-yet-tested page](`https://kilotest.com/testRecForm.html`)
 - Receive a recommendation to retest a previously tested page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
 - [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
+- [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
 - [Provide a list of features available for use of Kilotest managers](https://kilotest.com/manage.html)
 

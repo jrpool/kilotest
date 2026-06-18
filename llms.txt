@@ -20,4 +20,6 @@ There is a [detailed explanation of Kilotest and its capabilities for AI agents]
 - Provide details about one issue reported in one job: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
 - Provide diagnoses about one issue exhibited by one HTML element in one job: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
 - [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
+- [Recommend testing of a web page](https://kilotest.com/testRecForm.html)
+- [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)

@@ -70,6 +70,7 @@ exports.response = async args => {
         identifier: 'reportIssues',
         description: 'What issues does the specified report describe?'
       },
+      method: 'GET',
       URLs: {
         'URL of your request': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
         'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`

@@ -132,6 +132,14 @@ components:
                   type: string
                 description:
                   type: string
+            method:
+              type: string
+              enum:
+                - GET
+                - POST
+            payload:
+              type: object
+              description: Present only for POST requests. The request payload.
             URLs:
               type: object
               properties:
@@ -139,6 +147,18 @@ components:
                   type: string
                 'equivalent URL for humans':
                   type: string
+            closest ancestor request:
+              type: [object, 'null']
+              properties:
+                description:
+                  type: string
+                URLs:
+                  type: object
+                  properties:
+                    'for you':
+                      type: string
+                    'for humans':
+                      type: string
         response metadata:
           type: object
           properties:
@@ -279,7 +299,9 @@ components:
           properties:
             layer:
               type: string
-              enum: [guideline, success criterion]
+              enum:
+                - guideline
+                - success criterion
             'numeric identifier':
               type: string
               pattern: '^\d\.\d(\.\d+)?$'

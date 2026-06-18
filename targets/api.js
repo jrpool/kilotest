@@ -82,10 +82,12 @@ exports.response = async () => {
         identifier: 'targets',
         description: 'Give me summary data about each available report.'
       },
+      method: 'GET',
       URLs: {
         'URL of your request': `${thisHost}/api/targets`,
         'equivalent URL for humans': `${thisHost}/targets.html`
-      }
+      },
+      'closest ancestor request': null
     },
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,

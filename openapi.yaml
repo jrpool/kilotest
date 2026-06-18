@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Kilotest Agent API
-  description: Kilotest tests web pages for accessibility, usability, and standard conformity using an ensemble of ten independent tools that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing (not yet implemented), discover available test reports, and retrieve data from reports at multiple levels of detail. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
+  description: Kilotest tests web pages for accessibility, usability, and standard conformity using an ensemble of ten independent tools that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing, discover available test reports, and retrieve data from reports. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
   version: 1.0.0
   contact:
     url: https://kilotest.com
@@ -13,10 +13,30 @@ servers:
     description: Kilotest production server
 
 paths:
-  /api/targets:
+  /api/testRecForm:
     post:
-      operationId: getReportSummaries
-      summary: Summarize all available reports
+      operationId: testRecForm
+      summary: Receives a testing recommendation
+      description: Receives a recommendation for Kilotest to test a particular web page.
+      requestBody:
+        description: Test recommendation specifications
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestRecForm'
+      responses:
+        '200':
+          description: Acknowledgement of test recommendation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestRecFormResponse'
+
+  /api/targets:
+    get:
+      operationId: targets
+      summary: Summarizes all available reports
       description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many issues were reported, and URLs for retrieving more detailed data from the report.
       responses:
         '200':
@@ -24,13 +44,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportSummariesResponse'
+                $ref: '#/components/schemas/TargetsResponse'
 
   /api/reportIssues/{timeStamp}/{jobID}:
-    post:
+    get:
       operationId: getReportIssues
-      summary: Get data on issues from a specific report
-      description: Returns data about the issues reported in a specific Kilotest report, grouped by priority. The data on each issue include the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID components identify the report and are available in the getReportSummaries response.
+      summary: Gets data on issues from a specific report
+      description: Returns data about the issues reported in a specific Kilotest report, grouped by priority. The data on each issue include the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID components identify the report and are available in the targets response.
       parameters:
         - name: timeStamp
           in: path
@@ -58,9 +78,9 @@ paths:
           description: No report with the specified identifier is available
 
   /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
-    post:
+    get:
       operationId: getReportIssue
-      summary: Get details about a specific issue in a specific report (NOT YET IMPLEMENTED)
+      summary: Gets details about a specific issue in a specific report (NOT YET IMPLEMENTED)
       description: Returns details about a single issue within a specific report, including which HTML elements exhibit the issue and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element. NOT YET IMPLEMENTED.
       parameters:
         - name: issueID
@@ -105,21 +125,19 @@ components:
         request:
           type: object
           properties:
-            requesting agent:
-              type: object
-              properties:
-                identifier:
-                  type: string
-                  example: research-agent
-                name:
-                  type: string
-                  example: Internal Research Agent
             type of request:
               type: object
               properties:
                 identifier:
                   type: string
                 description:
+                  type: string
+            URLs:
+              type: object
+              properties:
+                'URL of your request':
+                  type: string
+                'equivalent URL for humans':
                   type: string
         response metadata:
           type: object
@@ -130,6 +148,17 @@ components:
             date and time:
               type: string
               format: date-time
+
+    TestRecFormResponse:
+      allOf:
+        - $ref: '#/components/schemas/CommonResponseFields'
+        - type: object
+          properties:
+            available reports:
+              type: array
+              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
+              items:
+                $ref: '#/components/schemas/TargetsItem'
 
     ToolInfo:
       type: object
@@ -145,7 +174,7 @@ components:
           example: Alfa
         sponsor:
           type: string
-          description: Organization that created or sponsors the tool.
+          description: Organization that created, initially sponsored, or now sponsors the tool.
           example: Siteimprove
 
     ToolFailure:
@@ -183,7 +212,7 @@ components:
           format: uri
           description: URL for a human to view the next tier of detail.
 
-    ReportSummaryItem:
+    targetsItem:
       type: object
       description: Summary data about a single available report.
       properties:
@@ -222,7 +251,7 @@ components:
           type: string
           format: uri
 
-    ReportSummariesResponse:
+    TargetsResponse:
       allOf:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
@@ -231,7 +260,7 @@ components:
               type: array
               description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
               items:
-                $ref: '#/components/schemas/ReportSummaryItem'
+                $ref: '#/components/schemas/TargetsItem'
 
     IssueEntry:
       type: object

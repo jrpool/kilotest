@@ -62,7 +62,7 @@ exports.response = async args => {
   }));
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
-  const response = {
+  const content = {
     summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data from a Kilotest report about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool name': 'Kilotest',
     request: {
@@ -122,5 +122,5 @@ exports.response = async args => {
       .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue))
     }
   };
-  return response;
+  return content;
 };

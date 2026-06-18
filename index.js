@@ -14,6 +14,7 @@ const {
   getJobNames,
   getJSON,
   getLogPath,
+  getLogs,
   getObject,
   getPOSTData,
   getReport,
@@ -22,6 +23,7 @@ const {
   isHidden,
   isTimeStamp,
   isJobID,
+  isURL,
   jobsPath,
   logsPath,
   reportsPath,
@@ -568,10 +570,10 @@ const requestHandler = async (request, response) => {
       // Get the segments of the path after api.
       const segments = pathTail.split('/');
       // If the first segment is the ID of the Testaro agent and the agent is authenticated:
-      if (specs[0] === testaroAgent && postData.agentPW === testaroAgentPW) {
-        const agentID = specs[0];
+      if (segments[0] === testaroAgent && postData.agentPW === testaroAgentPW) {
+        const agentID = segments[0];
         // Get the requested service from the path.
-        const service = specs[1];
+        const service = segments[1];
         // If the service is job assignment:
         if (service === 'job') {
           let clean = true;
@@ -677,6 +679,41 @@ const requestHandler = async (request, response) => {
             {message: 'ERROR: Invalid service request from Testaro agent'}, response, false
           );
         }
+      }
+      // Otherwise, if the first segment is the test recommendation service:
+      else if (segments[0] === 'testRecForm') {
+        const {what, url, why} = postData;
+        const logs = await getLogs();
+        const whats = logs.map(log => log.what);
+        const urls = logs.map(log => log.url);
+        // If the payload is a valid test recommendation:
+        if (what && isURL(url) && why) {
+          // If an available report has the same URL or the same page description:
+          if (whats.includes(what) || urls.includes(url)) {
+            // Report this.
+            await serveError(
+              'ERROR: A report with the same page description or URL is already available',
+              response,
+              false
+            );
+          }
+          // Otherwise, i.e. if no report on the page is available:
+          else {
+            // Get the response data.
+            const responseData = await require(path.join(__dirname, 'testRecForm', 'api'))
+            .response(what, url, why);
+            // Send them.
+            setHeaders('application/json', null, 'high');
+            response.end(JSON.stringify(responseData));
+          }
+        }
+      }
+      // Otherwise, i.e. if the request is not from the authenticated Testaro agent:
+      else {
+        // Report this.
+        await serveError(
+          {message: 'ERROR: Invalid API request'}, response, false
+        );
       }
     }
     // Otherwise, if it is a tutorial comment:

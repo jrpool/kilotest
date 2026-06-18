@@ -626,6 +626,20 @@ const getPlainText = string => string.replace(/&/g, '+').replace(/[<>"'&]/g, ' '
 const getNowStamp = exports.getNowStamp = () => {
   return getTimeStamp(new Date());
 };
+// Updates the test recommendations.
+const updateRecs = exports.updateRecs = async (what, url, why) => {
+  // Get the data on waiting recommendations.
+  const recs = await getRecs();
+  recs[url] ??= [];
+  // Add the recommendation to those for the target.
+  recs[url].push({
+    timeStamp: getNowStamp(),
+    what,
+    why
+  });
+  // Save the revised recommendations.
+  await fs.writeFile(recsPath, getJSON(recs));
+};
 // Processes a test or retest recommendation.
 exports.processRec = async (testType, dirName, what, url, why) => {
   // If the recommendation is valid:
@@ -638,17 +652,8 @@ exports.processRec = async (testType, dirName, what, url, why) => {
   ) {
     // Make the reason display-safe.
     const plainWhy = getPlainText(why);
-    // Get the data on waiting recommendations.
-    const recs = await getRecs();
-    recs[url] ??= [];
-    // Add the recommendation to those for the target.
-    recs[url].push({
-      timeStamp: getNowStamp(),
-      what,
-      why: plainWhy
-    });
-    // Save the revised recommendations.
-    await fs.writeFile(recsPath, getJSON(recs));
+    // Update the waiting recommendations.
+    await updateRecs(what, url, plainWhy);
     // Log the recommendation.
     console.log(`Test recommendation received for ${what}: ${plainWhy}`);
     // Alert a manager about it.

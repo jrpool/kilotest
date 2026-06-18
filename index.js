@@ -198,7 +198,7 @@ const requestHandler = async (request, response) => {
     // Serve response headers, including one allowing requests from other applications.
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     response.statusCode = 204;
     response.end();
   }

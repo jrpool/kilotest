@@ -27,7 +27,7 @@ The rule engines in the Kilotest ensemble take responsibility for determining wh
 
 ## Kilotest versus pure inference
 
-LLMs that attempt to evaluate front-end quality with no delegation are likely to be unable to load and operate pages of web applications with browser automation, as Kilotest does. As a result, LLMs typically create hallucinated evaluations based on statistical frequency, with no mention of issues that are rarely tested for, instead of providing the truthful and comprehensive assessments that users require.
+LLM platforms asked to evaluate front-end quality with no delegation are not all able to load pages of web applications for inspection. When they can do so, they typically cannot operate on the pages with browser automation, as Kilotest does. As a result, LLMs typically give less comprehensive answers than they would if they called Kilotest as a tool. When even browsing to a page is impossible, an LLM is likely to give speculative evaluations with hallucinated examples, based on statistical frequency, with no mention of issues that are rarely tested for, instead of providing the truthful and comprehensive assessments that users require.
 
 ## Kilotest versus other tools
 

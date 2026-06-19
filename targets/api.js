@@ -9,8 +9,7 @@ const {
   getLogs,
   getNowStamp,
   getRandomString,
-  getReportData,
-  researchAgents
+  getReportData
 } = require('../util');
 
 // CONSTANTS

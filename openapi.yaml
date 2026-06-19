@@ -13,11 +13,24 @@ servers:
     description: Kilotest production server
 
 paths:
+  /api/targets:
+    get:
+      operationId: summarizeAccessibilityOfAllTestedWebPages
+      summary: Summarizes all available reports
+      description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many accessibility, usability, and standard-conformity issues were reported, and URLs for retrieving more detailed data from the report. This is a good first endpoint to call if you want data about a particular web page. The result will tell you whether a report on that page already exists. If you, you can retrieve data from it. If not, you can use the submitWebAccessibilityTestRequest endpoint to recommend the page for testing.
+      responses:
+        '200':
+          description: Summaries of available reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TargetsResponse'
+
   /api/testRecForm:
     post:
       operationId: submitWebAccessibilityTestRequest
       summary: Receives a testing recommendation
-      description: Receives a recommendation for Kilotest to test a particular web page.
+      description: Receives a recommendation for Kilotest to test a particular web page for accessibility, usability, and standard conformity. Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the summarizeAccessibilityOfAllTestedWebPages operation.
       requestBody:
         description: Test recommendation specifications
         required: true
@@ -33,24 +46,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/TestRecFormResponse'
 
-  /api/targets:
-    get:
-      operationId: summarizeAccessibilityOfAllTestedWebPages
-      summary: Summarizes all available reports
-      description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many issues were reported, and URLs for retrieving more detailed data from the report.
-      responses:
-        '200':
-          description: Summaries of available reports
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TargetsResponse'
-
   /api/reportIssues/{timeStamp}/{jobID}:
     get:
       operationId: listAccessibilityIssuesOnOneWebPage
       summary: Gets data on issues from a specific report
-      description: Returns data about the issues reported in a specific Kilotest report, grouped by priority. The data on each issue include the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID components identify the report and are available in the targets response.
+      description: Returns data about the issues reported in a specific Kilotest report, grouped by priority. The data on each issue include the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID components identify the report and are available in the response from the summarizeAccessibilityOfAllTestedWebPages operation.
       parameters:
         - name: timeStamp
           in: path

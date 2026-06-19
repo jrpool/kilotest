@@ -15,7 +15,7 @@ servers:
 paths:
   /api/testRecForm:
     post:
-      operationId: testRecForm
+      operationId: submitWebAccessibilityTestRequest
       summary: Receives a testing recommendation
       description: Receives a recommendation for Kilotest to test a particular web page.
       requestBody:
@@ -35,7 +35,7 @@ paths:
 
   /api/targets:
     get:
-      operationId: targets
+      operationId: summarizeAccessibilityOfAllTestedWebPages
       summary: Summarizes all available reports
       description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many issues were reported, and URLs for retrieving more detailed data from the report.
       responses:
@@ -48,7 +48,7 @@ paths:
 
   /api/reportIssues/{timeStamp}/{jobID}:
     get:
-      operationId: getReportIssues
+      operationId: listAccessibilityIssuesOnOneWebPage
       summary: Gets data on issues from a specific report
       description: Returns data about the issues reported in a specific Kilotest report, grouped by priority. The data on each issue include the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID components identify the report and are available in the targets response.
       parameters:
@@ -81,7 +81,7 @@ paths:
 
   /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
     get:
-      operationId: getReportIssue
+      operationId: listHTMLElementsHavingOneAccessibilityIssue
       summary: Gets details about a specific issue in a specific report (NOT YET IMPLEMENTED)
       description: Returns details about a single issue within a specific report, including which HTML elements exhibit the issue and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element. NOT YET IMPLEMENTED.
       parameters:

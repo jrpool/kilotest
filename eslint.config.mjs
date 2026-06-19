@@ -8,7 +8,7 @@ import { defineConfig } from "eslint/config";
 export default defineConfig([
   {
     ignores: [
-      "DEVELOPMENT.md",
+      "IDEAS.md",
       "package-lock.json"
     ]
   },

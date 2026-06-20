@@ -102,7 +102,7 @@ const requestService = async () => {
               const testRecGoodPath = `/api/testRecForm`;
               console.log('======================');
               console.log(
-                `About to submit ${scheme} POST request as JSON on port ${port} to ${host}${testRecGoodPath}`
+                `About to submit good ${scheme} POST request as JSON on port ${port} to ${host}${testRecGoodPath}`
               );
               const testRecOptions = getRequestOptions(testRecGoodPath, 'POST');
               // Submit a good test recommendation.
@@ -130,7 +130,7 @@ const requestService = async () => {
                     const testRecBadPath = `/api/testRecForm`;
                     console.log('======================');
                     console.log(
-                      `About to submit ${scheme} POST request as JSON on port ${port} to ${host}${testRecBadPath}`
+                      `About to submit bad ${scheme} POST request as JSON on port ${port} to ${host}${testRecBadPath}`
                     );
                     const testRecOptions = getRequestOptions(testRecBadPath, 'POST');
                     // Submit a bad test recommendation.
@@ -162,7 +162,7 @@ const requestService = async () => {
                             `Test recommendation response content: ${content || 'No content'}`
                           );
                         }
-                      });
+                      })
                     })
                     .end(JSON.stringify({
                       what: 'Page Wrongly Recommended',
@@ -175,8 +175,8 @@ const requestService = async () => {
                     console.log(`Test recommendation response content: ${content || 'No content'}`);
                   }
                 })
+                // Finish sending the test recommendation request.
               })
-              // Finish sending the test recommendation request.
               .end(JSON.stringify({
                 what: 'Page Not Already Tested',
                 url: 'https://pagenotalreadytested.info',

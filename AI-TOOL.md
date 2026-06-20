@@ -33,6 +33,7 @@ The external actions that have been taken to support the use of Kilotest as an A
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
 - [Configuration of Claude Desktop](https://github.com/ivo-toby/mcp-openapi-server#option-1-using-with-claude-desktop-stdio-transport) on the local development host to let Claude models find Kilotest.
+- [Deployment of an MCP server in HTTP mode](https://github.com/ivo-toby/mcp-openapi-server#option-2-using-with-http-clients-http-transport) on port 3001 of the Kilotest service host.
 
 ## Use cases
 
@@ -47,7 +48,7 @@ Some common anticipated use cases for this role are:
 1. A person who depends on web accessibility because of disabilities asks an AI platform to provide documentary support for a complaint to the owner of a website about accessibility defects.
 1. A disability-rights advocate or attorney concerned with inaccessibility in a particular industry asks an AI platform to perform a front-end-quality comparison of some websites in that industry.
 
-Among these use cases, case 3 would make it feasible for the user to tell an AI platform explicitly and formally that Kilotest is an available tool relevant to the task and where to find Kilotest. All 5 of the other use casas would not make that feasible. In those 5 use cases, the user has a question but relies on the AI platform to know or discover which relevant tools exist, to select appropriate tools, to know or learn how to use those tools, and to use them.
+Among these use cases, case 3 would make it feasible for the user to tell an AI platform explicitly and formally that Kilotest is an available tool relevant to the task and where to find Kilotest. All 5 of the other use cases would not make that feasible. In those 5 use cases, the user has a question but relies on the AI platform to know or discover which relevant tools exist, to select appropriate tools, to know or learn how to use those tools, and to use them.
 
 Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI platform capability. The commonality is: “I have a question; answer it.” If Kilotest can be employed as an expert for AI platforms in relevant cases, platforms will be more successful in satisfying that demand. At present this is a difficult problem because of platform limitations and a lack of standardization.
 
@@ -65,7 +66,9 @@ Another benefit is that subsequent increments can be defined incrementally rathe
 
 #### Increment 1
 
-In the first increment, the objective was to make Anthropic Claude models use Kilotest to help them answer questions from developers using the Claude Desktop application for use case 3, where the code in question is already deployed as a public web page. As mentioned above, Claude Desktop was installed on the local development host and then configured for Kilotest. That configuration consisted of the addition of a property to the Claude Desktop configuration file, located at `~/Library/Application Support/Claude/claude_desktop_config.json`. The added property is:
+In the first increment, the objective was to make Anthropic Claude models use Kilotest to help them answer questions from developers using the Claude Desktop application for use case 3, where the code in question is already deployed as a public web page.
+
+As mentioned above, Claude Desktop was installed on the local development host and then configured for Kilotest. That configuration consisted of the addition of a property to the Claude Desktop configuration file, located at `~/Library/Application Support/Claude/claude_desktop_config.json`. The added property is:
 
 ```json
 "mcpServers": {
@@ -89,4 +92,24 @@ Experimentation revealed that Claude Sonnet 4.6 with Medium effort chose to use 
 
 ### Increment 2
 
-Increment 2 somewhat lightens the burden on the user by shifting the environment from an installed application to a web browser. The platform is the `claude.ai` web application instead of Claude Desktop. Instead of editing a JSON file, the user tells the platform about Kilotest with a setting.
+Increment 2 somewhat lightens the burden on the user by shifting the user environment from an installed application to a web browser. The platform is the `claude.ai` web application instead of Claude Desktop. Instead of editing a JSON file, the user tells the platform about Kilotest with a setting.
+
+#### Setup
+
+As mentioned in the list of external actions, an MCP server was deployed on port 3001 of the Kilotest service host(described in the `SERVICE.md` file).
+
+First, the `openapi-mcp-server` package was installed globally with `sudo npm install -g @ivotoby/openapi-mcp-server`.
+
+Next, the `pm2` process manager was reconfigured to manage the MCP server process, with this addition to the `apps` property:
+
+```javascript
+{
+  name: 'kilotest-mcp',
+  script: 'mcp-openapi-server',
+  interpreter: 'none',
+  args: '--transport http --port 3001 --api-base-url https://kilotest.com --openapi-spec https://kilotest.com/openapi.yaml',
+  instances: 1,
+  autorestart: true,
+  watch: false
+}
+```

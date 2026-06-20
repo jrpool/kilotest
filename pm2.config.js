@@ -1,15 +1,26 @@
 module.exports = {
-  apps: [{
-    name: 'kilotest',
-    script: 'index.js',
-    instances: 1,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '500M',
-    env: {
-      NODE_ENV: 'production',
-      BASE_PATH: '/',
-      DEMO_SSE_DELAY_MS: '100'
+  apps: [
+    {
+      name: 'kilotest',
+      script: 'index.js',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      env: {
+        NODE_ENV: 'production',
+        BASE_PATH: '/',
+        DEMO_SSE_DELAY_MS: '100'
+      }
+    },
+    {
+      name: 'kilotest-mcp',
+      script: 'mcp-openapi-server',
+      interpreter: 'none',
+      args: '--transport http --port 3001 --api-base-url https://kilotest.com --openapi-spec https://kilotest.com/openapi.yaml',
+      instances: 1,
+      autorestart: true,
+      watch: false
     }
-  }]
+  ]
 };

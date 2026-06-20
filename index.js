@@ -192,6 +192,7 @@ const requestHandler = async (request, response) => {
     }
     response.setHeader('Access-Control-Allow-Origin', '*');
     const lives = {
+      ultra: [3, 30],
       high: [300, 3000],
       medium: [1000, 10000],
       low: [5000, 50000]
@@ -236,7 +237,7 @@ const requestHandler = async (request, response) => {
     else if (pageName === 'openapi.yaml') {
       const openapi = await fs.readFile('openapi.yaml', 'utf8');
       // Serve it.
-      setHeaders('text/yaml', '/openapi.yaml', 'high');
+      setHeaders('text/yaml', '/openapi.yaml', 'medium');
       response.end(openapi);
     }
     // Otherwise, if it is for the OpenAPI specification where it is not:
@@ -249,14 +250,14 @@ const requestHandler = async (request, response) => {
     else if (pageName === 'llms.txt') {
       const llms = await fs.readFile('llms.txt', 'utf8');
       // Serve it.
-      setHeaders('text/plain', '/llms.txt', 'high');
+      setHeaders('text/plain', '/llms.txt', 'medium');
       response.end(llms);
     }
     // Otherwise, if it is for the large-language-model detailed guide:
     else if (pageName === 'llms-full.txt') {
       const llmsfull = await fs.readFile('llms-full.txt', 'utf8');
       // Serve it.
-      setHeaders('text/plain', '/llms-full.txt', 'high');
+      setHeaders('text/plain', '/llms-full.txt', 'medium');
       response.end(llmsfull);
     }
     // Otherwise, if it is for a full report download:
@@ -340,7 +341,7 @@ const requestHandler = async (request, response) => {
         // Get the response (potentially error) data.
         const responseData = await require(path.join(__dirname, 'targets', 'api')).response(specs);
         // Send them.
-        setHeaders('application/json', null, 'high');
+        setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseData));
       }
       // Otherwise, if the service is provision of issue statistics for a report:
@@ -435,7 +436,7 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
         // Serve response headers.
-        setHeaders('text/html', `${pathname}${search}`, 'high');
+        setHeaders('text/html', `${pathname}${search}`, 'ultra');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
         .answer(pathTail, why);
@@ -469,7 +470,7 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if no report on the page is available:
         else {
           // Serve headers for a response.
-          setHeaders('text/html', `${pathname}${search}`, 'high');
+          setHeaders('text/html', `${pathname}${search}`, 'ultra');
           // Get the answer data.
           const answerData = await require(path.join(__dirname, 'testRec', 'index'))
           .answer(what, url, why);
@@ -498,7 +499,7 @@ const requestHandler = async (request, response) => {
       // If the request is valid:
       if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
         // Set the non-location headers for a response.
-        setHeaders('text/html', null, 'high');
+        setHeaders('text/html', null, 'ultra');
         // If the request is an approval:
         if (what) {
           // Set a location header for a response.
@@ -543,7 +544,7 @@ const requestHandler = async (request, response) => {
     else if (pageName === 'reannotate.html') {
       const {authCode} = postData;
       // Set headers for a response.
-      setHeaders('text/html', `${pathname}${search}`, 'high');
+      setHeaders('text/html', `${pathname}${search}`, 'ultra');
       // Get the answer data.
       const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
       .answer(authCode);
@@ -708,7 +709,7 @@ const requestHandler = async (request, response) => {
             const responseData = await require(path.join(__dirname, 'testRecForm', 'api'))
             .response(what, url, why);
             // Send them.
-            setHeaders('application/json', null, 'high');
+            setHeaders('application/json', null, 'ultra');
             response.end(JSON.stringify(responseData));
           }
         }

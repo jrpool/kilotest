@@ -313,7 +313,7 @@ const requestHandler = async (request, response) => {
       const topic = pageName.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
-        setHeaders('text/html', `${pathname}${search}`, 'medium');
+        setHeaders('text/html', `${pathname}${search}`, 'ultra');
         // Get the answer data.
         const answerData = await answer[topic](pathTail, search);
         // If they are valid:

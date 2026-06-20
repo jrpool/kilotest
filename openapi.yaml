@@ -17,7 +17,7 @@ paths:
     get:
       operationId: summarizeAccessibilityOfAllTestedWebPages
       summary: Summarizes all available reports
-      description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many accessibility, usability, and standard-conformity issues were reported, and URLs for retrieving more detailed data from the report. This is a good first endpoint to call if you want data about a particular web page. The result will tell you whether a report on that page already exists. If you, you can retrieve data from it. If not, you can use the submitWebAccessibilityTestRequest endpoint to recommend the page for testing.
+      description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many accessibility, usability, and standard-conformity issues were reported, and URLs for retrieving more detailed data from the report. This is the first endpoint to call if you want data about a particular web page. The result will tell you whether a report on that page already exists. If so, you can retrieve data from it. If not, you can use the submitWebAccessibilityTestRequest endpoint to recommend the page for testing.
       responses:
         '200':
           description: Summaries of available reports
@@ -29,8 +29,8 @@ paths:
   /api/testRecForm:
     post:
       operationId: submitWebAccessibilityTestRequest
-      summary: Receives a testing recommendation
-      description: Receives a recommendation for Kilotest to test a particular web page for accessibility, usability, and standard conformity. Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the summarizeAccessibilityOfAllTestedWebPages operation.
+      summary: Receives a new testing recommendation
+      description: Receives a recommendation for Kilotest to test, for the first time, a particular web page for accessibility, usability, and standard conformity. Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the summarizeAccessibilityOfAllTestedWebPages operation. Before submitting a recommendation, use the summarizeAccessibilityOfAllTestedWebPages operation to ensure that the page has not yet been tested, and also to see the stylistic rules for the naming of pages. An attempt to recommend an already tested page for testing will fail.
       requestBody:
         description: Test recommendation specifications
         required: true
@@ -88,7 +88,7 @@ paths:
         - name: issueID
           in: path
           required: true
-          description: Issue identifier (e.g., imageNoText). Available under "issues reported" > priority level > "identifier" in the getReportIssues response.
+          description: Issue identifier (e.g., imageNoText). Available under "issues reported" > priority level > "identifier" in the listAccessibilityIssuesOnOneWebPage response.
           schema:
             type: string
             examples:

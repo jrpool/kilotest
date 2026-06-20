@@ -171,6 +171,17 @@ const checkBalancesForAlerts = async report => {
     }
   }
 };
+// Minifies a URL.
+const minifyURL = url => url.replace(/www\.|\/$/g, '');
+// Returns whether a report on a page is available.
+const isReportAvailable = async (what, url) => {
+  const logs = await getLogs();
+  const whats = logs.map(log => log.what);
+  const urls = logs.map(log => log.url);
+  const miniURLs = urls.map(url => minifyURL(url));
+  const miniURL = minifyURL(url);
+  return whats.includes(what) || miniURLs.includes(miniURL);
+};
 // Handles a request.
 const requestHandler = async (request, response) => {
   // Sets response headers.
@@ -450,20 +461,28 @@ const requestHandler = async (request, response) => {
       const {what, url, why} = postData;
       // If the request is valid:
       if (what && url.startsWith('https://') && why) {
-        // Serve headers for a response.
-        setHeaders('text/html', `${pathname}${search}`, 'high');
-        // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'testRec', 'index'))
-        .answer(what, url, why);
-        // If they are valid:
-        if (answerData.status === 'ok') {
-          // Serve the answer page.
-          response.end(answerData.answerPage);
-        }
-        // Otherwise, i.e. if they are invalid:
-        else {
+        // If a report on the page is already available:
+        if (await isReportAvailable(what, url)) {
           // Report the error.
-          await serveError({message: answerData.error}, response, true);
+          await serveError({message: 'ERROR: Page has already been tested'}, response, true);
+        }
+        // Otherwise, i.e. if no report on the page is available:
+        else {
+          // Serve headers for a response.
+          setHeaders('text/html', `${pathname}${search}`, 'high');
+          // Get the answer data.
+          const answerData = await require(path.join(__dirname, 'testRec', 'index'))
+          .answer(what, url, why);
+          // If they are valid:
+          if (answerData.status === 'ok') {
+            // Serve the answer page.
+            response.end(answerData.answerPage);
+          }
+          // Otherwise, i.e. if they are invalid:
+          else {
+            // Report the error.
+            await serveError({message: answerData.error}, response, true);
+          }
         }
       }
       // Otherwise, i.e. if the request is invalid:
@@ -676,19 +695,12 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the first segment is the test recommendation service:
       else if (segments[0] === 'testRecForm') {
         const {what, url, why} = postData;
-        const logs = await getLogs();
-        const whats = logs.map(log => log.what);
-        const urls = logs.map(log => log.url);
         // If the payload is a valid test recommendation:
         if (what && isURL(url) && why) {
-          // If an available report has the same URL or the same page description:
-          if (whats.includes(what) || urls.includes(url)) {
+          // If a report on the page is already available:
+          if (await isReportAvailable(what, url)) {
             // Report this.
-            await serveError(
-              'ERROR: A report with the same page description or URL is already available',
-              response,
-              false
-            );
+            await serveError('ERROR: A report on the page is already available', response, false);
           }
           // Otherwise, i.e. if no report on the page is available:
           else {

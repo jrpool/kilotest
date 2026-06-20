@@ -49,9 +49,11 @@ Some common anticipated use cases for this role are:
 
 Among these use cases, case 3 would make it feasible for the user to tell an AI platform explicitly and formally that Kilotest is an available tool relevant to the task and where to find Kilotest. All 5 of the other use casas would not make that feasible. In those 5 use cases, the user has a question but relies on the AI platform to know or discover which relevant tools exist, to select appropriate tools, to know or learn how to use those tools, and to use them.
 
-Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI platform capability. The commonality is: “I have a question; answer it.” If Kilotest can act as an expert for AI platforms in relevant cases, platforms will be more successful in satisfying that demand.
+Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI platform capability. The commonality is: “I have a question; answer it.” If Kilotest can be employed as an expert for AI platforms in relevant cases, platforms will be more successful in satisfying that demand. At present this is a difficult problem because of platform limitations and a lack of standardization.
 
 ## Strategy
+
+The Kilotest project is attempting to solve the just-described problem. That attempt follows the following strategy.
 
 ### Increments
 

@@ -6,7 +6,7 @@ Until 2026 Kilotest was intended, and implemented, as a web application for huma
 
 Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could also act as a tool for use by language models. Language models are asked for help in all domains, including the domain of software quality. When asked about the front-end quality (accessibility, usability, and standard conformity) of specific web pages, models gave answers without the use of tools, and the answers were inferior: simplistic, speculative, and fabricated. If a model were to use Kilotest as a tool, the model could give comprehensive, authoritative, grounded, and factual answers. Every reported defect could be documented and ascribed to one or more specific tools in the Kilotest ensemble.
 
-Given the potential of Kilotest as an AI tool and the expected continued growth in the share of questions that are directed to language models, a decision was made to make Kilotest discoverable and usable as a tool for language models.
+Given the potential of Kilotest as an AI tool and the expected continued growth in the share of questions that are directed to language models, a decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a tool for language models**.
 
 ## Internal additions
 
@@ -40,27 +40,51 @@ The rationale for Kilotest as a tool for language models is set forth in the `ll
 
 Some common anticipated use cases for this role are:
 
-- A user of a web-builder platform with responsibility for a website asks an AI platform for help in creating or improving the website.
-- A prospective customer of a web development service asks an AI platform to evaluate the quality of websites in the portfolios of candidate vendors.
-- A professional web developer within an organization asks an AI platform for a code review.
-- A risk-management professional within an organization asks an AI platform to report on any web accessibility defects that could expose the organization to prosecution or civil litigation.
-- An person who depends on web accessibility because of disabilities asks an AI platform to provide documentary support for a complaint to the owner of a website about accessibility defects.
-- A disability-rights advocate or attorney concerned with inaccessibility in a particular industry asks an AI platform to perform a front-end-quality comparison of some websites in that industry.
+1. A user of a web-builder platform with responsibility for a website asks an AI platform for help in creating or improving the website.
+1. A prospective customer of a web development service asks an AI platform to evaluate the quality of websites in the portfolios of candidate vendors.
+1. A professional web developer within an organization asks an AI platform for a code review.
+1. A risk-management professional within an organization asks an AI platform to report on any web accessibility defects that could expose the organization to prosecution or civil litigation for disability discrimination.
+1. A person who depends on web accessibility because of disabilities asks an AI platform to provide documentary support for a complaint to the owner of a website about accessibility defects.
+1. A disability-rights advocate or attorney concerned with inaccessibility in a particular industry asks an AI platform to perform a front-end-quality comparison of some websites in that industry.
+
+Among these use cases, case 3 would make it feasible for the user to tell an AI platform explicitly and formally that Kilotest is an available tool relevant to the task and where to find Kilotest. All 5 of the other use casas would not make that feasible. In those 5 use cases, the user has a question but relies on the AI platform to know or discover which relevant tools exist, to select appropriate tools, to know or learn how to use those tools, and to use them.
+
+Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI platform capability. The commonality is: “I have a question; answer it.” If Kilotest can act as an expert for AI platforms in relevant cases, platforms will be more successful in satisfying that demand.
 
 ## Strategy
 
-### Ease of use
-
-Any use of Kilotest as a tool of language models will fail for some of the anticipated users if they are obligated to be aware of Kilotest and to translate that awareness into instructions or documentation. Therefore, for success in all the use cases, users should be able to tell models what is wanted and rely on models to figure out whether they need tools and, if so, which ones and how to use them.
-
 ### Increments
 
-The standardization of tool discovery and utilization by and for language models and AI platforms is partial. Major differences in protocols exist among model and platform families. Therefore, small testable increments of improvement in the tool functionality of Kilotest can best be defined by model and platform family. For example, working on discoverability first and then on usability would not be effective, because both are complex and testability would be postponed until both were complete. Instead, a coherent model and platform family should be identified and any and all improvements to make use cases successful within that family should be made and tested, before development proceeds to the next family.
+The standardization of tool discovery and utilization by and for language models and AI platforms is partial. Major differences in protocols exist among model and platform families. Therefore, small testable increments of improvement in the tool functionality of Kilotest can best be defined by model and platform family and by use-case characteristics.
 
-One benefit of this type of incrementalism is that, after the first increment succeeds, it becomes possible to make and test external changes publicizing the fact that a particular platform-model combination delivers unprecedentedly comprehensive, truthful, and low-cost answers to questions about front-end web quality.
+One benefit of this type of incrementalism is that, after the first increment succeeds, it becomes possible to make and test external changes publicizing the fact that a particular platform-model combination delivers unprecedentedly comprehensive, truthful, and low-cost answers in a particular class of use cases to questions about front-end web quality.
 
 Another benefit is that subsequent increments can be defined incrementally rather than in advance. Lessons learned from the work on each increment can inform the choice of what to work on next.
 
 #### Increment 1
 
-In the first increment, the objective is to make Kilotest automatically discovered and used by Anthropic Claude models when used within the Claude Desktop application. That investigation is under way. Results will be summarized here.
+In the first increment, the objective was to make Anthropic Claude models use Kilotest to help them answer questions from developers using the Claude Desktop application for use case 3, where the code in question is already deployed as a public web page. As mentioned above, Claude Desktop was installed on the local development host and then configured for Kilotest. That configuration consisted of the addition of a property to the Claude Desktop configuration file, located at `~/Library/Application Support/Claude/claude_desktop_config.json`. The added property is:
+
+```json
+"mcpServers": {
+  "kilotest": {
+    "command": "npx",
+    "args": [
+      "-y",
+      "@ivotoby/openapi-mcp-server"
+    ],
+    "env": {
+      "API_BASE_URL": "https://kilotest.com",
+      "OPENAPI_SPEC_PATH": "https://kilotest.com/openapi.yaml"
+    }
+  }
+},
+```
+
+That configuration notifies models that Kilotest is available as a tool, but does not explain what it is useful for and does not require them to use it.
+
+Experimentation revealed that Claude Sonnet 4.6 with Medium effort chose to use Kilotest when answering questions about the accessibility and usability of particular public web pages. Low effort did not result in the use of Kilotest. The less capable Claude Haiku model did not use Kilotest.
+
+### Increment 2
+
+Increment 2 somewhat lightens the burden on the user by shifting the environment from an installed application to a web browser. The platform is the `claude.ai` web application instead of Claude Desktop. Instead of editing a JSON file, the user tells the platform about Kilotest with a setting.

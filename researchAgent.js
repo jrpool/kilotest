@@ -67,9 +67,9 @@ const requestService = async () => {
         // Output it.
         const targetsObj = JSON.parse(content);
         console.log(JSON.stringify(targetsObj, null, 2));
-        const targets = targetsObj['available reports'];
+        const reports = targetsObj['available reports'];
         // Get the IDs of the available reports.
-        const reportIDs = targets.map(report => report.identifier);
+        const reportIDs = reports.map(report => report.identifier);
         // Choose one at random.
         const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
         .split('-');
@@ -164,9 +164,12 @@ const requestService = async () => {
                         }
                       })
                     })
+                    // Finish sending the bad test recommendation request.
                     .end(JSON.stringify({
                       what: 'Page Wrongly Recommended',
-                      url: targets[Math.floor(Math.random() * targets.length)].url,
+                      url: reports[Math.floor(Math.random() * reports.length)]
+                      ['tested web page']
+                      .URL,
                       why: 'This URL has already been tested'
                     }));
                   }
@@ -175,8 +178,8 @@ const requestService = async () => {
                     console.log(`Test recommendation response content: ${content || 'No content'}`);
                   }
                 })
-                // Finish sending the test recommendation request.
               })
+              // Finish sending the good test recommendation request.
               .end(JSON.stringify({
                 what: 'Page Not Already Tested',
                 url: 'https://pagenotalreadytested.info',

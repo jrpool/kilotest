@@ -700,7 +700,7 @@ const requestHandler = async (request, response) => {
           // If a report on the page is already available:
           if (await isReportAvailable(what, url)) {
             // Report this.
-            await serveError('ERROR: A report on the page is already available', response, false);
+            await serveError({message: 'ERROR: A report on the page is already available'}, response, false);
           }
           // Otherwise, i.e. if no report on the page is available:
           else {
@@ -711,6 +711,11 @@ const requestHandler = async (request, response) => {
             setHeaders('application/json', null, 'high');
             response.end(JSON.stringify(responseData));
           }
+        }
+        // Otherwise, i.e. if it is not a valid test recommendation:
+        else {
+          // Report this.
+          await serveError({message: 'ERROR: Invalid test recommendation'}, response, false);
         }
       }
       // Otherwise, i.e. if the request is invalid:

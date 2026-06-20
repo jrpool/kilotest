@@ -65,15 +65,16 @@ const requestService = async () => {
       const content = chunks.join('');
       try {
         // Output it.
-        const contentObj = JSON.parse(content);
-        console.log(JSON.stringify(contentObj, null, 2));
+        const targetsObj = JSON.parse(content);
+        console.log(JSON.stringify(targetsObj, null, 2));
+        const targets = targetsObj['available reports'];
         // Get the IDs of the available reports.
-        const reportIDs = contentObj['available reports'].map(report => report.identifier);
+        const reportIDs = targets.map(report => report.identifier);
         // Choose one at random.
         const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
         .split('-');
         const path = `/api/reportIssues/${timeStamp}/${jobID}`;
-  console.log('======================');
+        console.log('======================');
         console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
         const requestOptions = getRequestOptions(path);
         // Submit an issues request for it.
@@ -98,13 +99,13 @@ const requestService = async () => {
               // Output it.
               const contentObj = JSON.parse(content);
               console.log(JSON.stringify(contentObj, null, 2));
-              const testRecPath = `/api/testRecForm`;
+              const testRecGoodPath = `/api/testRecForm`;
               console.log('======================');
               console.log(
-                `About to submit ${scheme} POST request as JSON on port ${port} to ${host}${testRecPath}`
+                `About to submit ${scheme} POST request as JSON on port ${port} to ${host}${testRecGoodPath}`
               );
-              const testRecOptions = getRequestOptions(testRecPath, 'POST');
-              // Submit a test recommendation.
+              const testRecOptions = getRequestOptions(testRecGoodPath, 'POST');
+              // Submit a good test recommendation.
               client.request(testRecOptions, response => {
                 // Initialize a collection of data from the response.
                 const chunks = [];
@@ -126,12 +127,54 @@ const requestService = async () => {
                     // Output it.
                     const contentObj = JSON.parse(content);
                     console.log(JSON.stringify(contentObj, null, 2));
+                    const testRecBadPath = `/api/testRecForm`;
+                    console.log('======================');
+                    console.log(
+                      `About to submit ${scheme} POST request as JSON on port ${port} to ${host}${testRecBadPath}`
+                    );
+                    const testRecOptions = getRequestOptions(testRecBadPath, 'POST');
+                    // Submit a bad test recommendation.
+                    client.request(testRecOptions, response => {
+                      // Initialize a collection of data from the response.
+                      const chunks = [];
+                      response
+                      // If the response throws an error:
+                      .on('error', async error => {
+                        // Report it.
+                        console.log(error.message);
+                      })
+                      // If the response delivers data:
+                      .on('data', chunk => {
+                        // Add them to the collection.
+                        chunks.push(chunk);
+                      })
+                      // When the response is completed:
+                      .on('end', async () => {
+                        const content = chunks.join('');
+                        try {
+                          // Output it.
+                          const contentObj = JSON.parse(content);
+                          console.log(JSON.stringify(contentObj, null, 2));
+                        }
+                        catch (error) {
+                          console.log(error.message);
+                          console.log(
+                            `Test recommendation response content: ${content || 'No content'}`
+                          );
+                        }
+                      });
+                    })
+                    .end(JSON.stringify({
+                      what: 'Page Wrongly Recommended',
+                      url: targets[Math.floor(Math.random() * targets.length)].url,
+                      why: 'This URL has already been tested'
+                    }));
                   }
                   catch (error) {
                     console.log(error.message);
                     console.log(`Test recommendation response content: ${content || 'No content'}`);
                   }
-                });
+                })
               })
               // Finish sending the test recommendation request.
               .end(JSON.stringify({

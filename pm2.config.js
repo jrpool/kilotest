@@ -12,15 +12,6 @@ module.exports = {
         BASE_PATH: '/',
         DEMO_SSE_DELAY_MS: '100'
       }
-    },
-    {
-      name: 'kilotest-mcp',
-      script: 'openapi-mcp-server',
-      interpreter: 'none',
-      args: '--transport http --port 3001 --api-base-url https://kilotest.com --openapi-spec https://kilotest.com/openapi.yaml',
-      instances: 1,
-      autorestart: true,
-      watch: false
     }
   ]
 };

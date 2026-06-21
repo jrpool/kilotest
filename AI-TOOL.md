@@ -137,4 +137,24 @@ Finally, the `pm2` process manager was reconfigured to manage the MCP server pro
 }
 ```
 
+Then the `pm2 start pm2.config.js` command was entered on the server in the Kilotest directory to restart Kilotest and start the `kilotest-mcp` process.
+
 #### Investigation
+
+The investigation began with the addition of Kilotest as a _connector_ to the `claude.ai` web application. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
+
+- Name: Kilotest
+- Remote MCP server URL: `https://kilotest.com/mcp`
+
+When the connector configuration with 4 endpoints appeared, the user changed the tool permissions for all 4 endpoints from `Needs approval` to `Always allow`.
+
+Then the user asked the platform, “Summarize the accessibility and usability of the home page of the website of Salesforce.”
+
+The results with various models were:
+
+- Claude Haiku 4.5 not extended: Summarized accessibility programs of Salesforce, instead of saying anything about its home page.
+- Claude Haiku 4.5 extended: Announced this thought process: “Deliberated between direct inspection and specialized accessibility testing tools”; then announced that it was using Kilotest, specifically the `summarize-accessibility-of-all-tested-web-pages` path; then stated: “Great! I've loaded the Kilotest tools. Now let me first check if Salesforce has already been tested by calling the summarize function. If not, I'll submit it for testing.”
+
+These results show that on the `claude.ai` platform, when configured with Kilotest as a connector, even Claude Haiku, in its Extended mode, can decide to use Kilotest when appropriate and can check for existing data before deciding to recommend that Kilotest test a page. This correct sequencing may be a result of the revised path descriptions in the `openapi.yaml` file recommending that sequencing.
+
+In the first run, Claude Haiku paused for about 5 minutes and then reported: “The Kilotest service seems to have timed out. Let me try a different approach - I'll fetch the Salesforce home page directly and evaluate it myself for accessibility and usability issues.”

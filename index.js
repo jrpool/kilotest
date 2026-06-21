@@ -14,13 +14,13 @@ const {
   getJobNames,
   getJSON,
   getLogPath,
-  getLogs,
   getObject,
   getPOSTData,
   getReport,
   getRecs,
   getReportPath,
   isHidden,
+  isReportAvailable,
   isTimeStamp,
   isJobID,
   isURL,
@@ -170,17 +170,6 @@ const checkBalancesForAlerts = async report => {
       }
     }
   }
-};
-// Minifies a URL.
-const minifyURL = url => url.replace(/www\.|\/$/g, '');
-// Returns whether a report on a page is available.
-const isReportAvailable = async (what, url) => {
-  const logs = await getLogs();
-  const whats = logs.map(log => log.what);
-  const urls = logs.map(log => log.url);
-  const miniURLs = urls.map(url => minifyURL(url));
-  const miniURL = minifyURL(url);
-  return whats.includes(what) || miniURLs.includes(miniURL);
 };
 // Handles a request.
 const requestHandler = async (request, response) => {

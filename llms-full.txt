@@ -2,19 +2,34 @@
 
 ## What Kilotest is
 
-Kilotest is an application that performs ensemble testing of web pages for accessibility, usability, and standard conformance and reports the test results. For brevity, hereafter in this document those three attributes are referred to as “front-end quality”.
+Kilotest is an application that performs ensemble testing of web pages for front-end quality (i.e. accessibility, usability, and standard conformance) and reports the test results.
 
-## What Kilotest does for AI agents
+## What Kilotest does for language models
 
-Kilotest is deployed as a service with a public URL. Kilotest can test only web pages that can be accessed from the public Internet and that are not protected by authentication or other access controls. Kilotest has not implemented any mechanism for testing private, internal, password-protected, or otherwise restricted pages.
+Kilotest is deployed on the public Internet as a service at `kilotest.com`. Kilotest can test only web pages that can be accessed from the public Internet and that are not protected by authentication or other access controls. Kilotest has not implemented any mechanism for testing private, internal, password-protected, or otherwise restricted pages.
 
-An LLM cannot produce for an AI agent thorough, accurate, and inexpensive information about the front-end quality of a web page. To get such information, the agent needs to select and use specialized tools. However, such selection and use, too, require specialized skills that LLMs lack. Kilotest assumes responsibility for these functions. Kilotest:
+An LLM can, under some conditions, load web pages and use its knowledge to assess successes and failures of front-end quality. But such an assessment is almost always:
 
-- selects, as tools, an ensemble of 10 rule engines that implement tests for, in total, more than a thousand rules for front-end quality
+- expensive, substituting inference for deterministic rule application
+- fragmentary, because of capability limitations, such as inability to run browsers and interact with web pages
+- inaccurate, because of the tendency to replace missing information with hallucinations
+
+To provide a more inexpensive, thorough, and accurate assessment, the agent could ask an ensemble of specialized rule engines to test the page. However, selecting and running such rule engines and consolidating their results is itself expensive and difficult. Kilotest assumes responsibility for these functions. Kilotest:
+
+- defines a tool that tests web pages for front-end quality
+- defines tools that report the test results
+- defines connectors to those tools, compatible with major AI platforms
+
+The tool that tests web pages for front-end quality has attributes that no other such tool has. It:
+
+- selects an ensemble of 10 rule engines that implement tests for, in total, more than a thousand rules for front-end quality
 - runs the tests of the rule engines
 - combines the reports of the rule engines into a single integrated report
 - consolidates the 1000+ rules having 10 different naming systems into 300+ “issues” with a uniform naming system
-- extracts from the report statistics and details at the level of granularity required by an agent to fulfill any particular request
+
+The tools that report test results extract from reports statistics and details at various levels of granularity, as required by an agent to fulfill particular requests.
+
+You can infer from this description that the Kilotest tools are (currently) best suited for help in answering comprehensive audit-type requests (e.g., “How can I improve this page?”) and, in the case of web pages for which reports are already available, more specific questions (e.g., “Is the heading structure of this page OK?”), but, if no report is available for a page, recommending that Kilotest test the page is overkill when the purpose is to answer a specific one-issue question.
 
 ## How Kilotest integrates methods
 
@@ -25,17 +40,13 @@ Testing for front-end quality requires a mixture of deterministic and inferentia
 
 The rule engines in the Kilotest ensemble take responsibility for determining whether each rule requires inferential testing and, if so, obtaining inference from an appropriate model.
 
-## Kilotest versus pure inference
+## Kilotest versus other MCP servers
 
-LLM platforms asked to evaluate front-end quality with no delegation are not all able to load pages of web applications for inspection. When they can do so, they typically cannot operate on the pages with browser automation, as Kilotest does. As a result, LLMs typically give less comprehensive answers than they would if they called Kilotest as a tool. When even browsing to a page is impossible, an LLM is likely to give speculative evaluations with hallucinated examples, based on statistical frequency, with no mention of issues that are rarely tested for, instead of providing the truthful and comprehensive assessments that users require.
+In the marketplace for MCP servers that test for front-end quality, all servers other than that of Kilotest leverage at most 1 rule engine, most often `axe-core`. The Kilotest testing tool leverages `axe-core` plus 9 other rule engines. This has these main effects:
 
-## Kilotest versus other tools
-
-In the marketplace for MCP servers that test for front-end quality, all tools other than Kilotest leverage at most 1 rule engine, most often `axe-core`. Kilotest leverages `axe-core` plus 9 other rule engines. This has these main effects:
-
-- For pages that have not yet been tested, a single-tool MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. Kilotest usually completes its work in 2 to 3 minutes, because some of the tests involve navigation and interaction with the page and LLM inference. Moreover, the Kilotest API feature suite is currently in an alpha phase, allowing agents, like human users, to **recommend** new pages for testing but allowing only managers to act on such recommendations. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running workflows.
-- For pages that have already been tested by Kilotest, Kilotest can provide faster results than a single-tool MCP server, because Kilotest stores test results for subsequent retrieval. A retrieval from Kilotest can be completed in less than 2 seconds.
-- Kilotest results are more comprehensive than single-tool MCP server results. Every rule engine provides limited coverage of front-end quality, so false negatives (missed defects) are more common with single-tool MCP servers. This difference [has been documented in research](https://arxiv.org/pdf/2304.07591).
+- For web pages that have not yet been tested, a single-rule-engine MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. The testing tool of Kilotest usually completes its work in 2 to 3 minutes, because all 10 rule engines are run, and some of the tests involve navigation and interaction with the page and LLM inference. Moreover, in its current alpha phase, the Kilotest testing tool allows users (both humans and models) to **recommend** new pages for testing but authorizes only Kilotest managers to make the tool proceed with the testing. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running workflows.
+- For web pages about which reports are already available, Kilotest can provide faster results than a single-rule-engine MCP server, because Kilotest stores test results for subsequent retrieval. A retrieval from a Kilotest reporting tool can be completed in less than 2 seconds.
+- Kilotest results are more comprehensive than single-rule-engine MCP server results. Every rule engine provides limited coverage of front-end quality, so false negatives (missed defects) are more common with single-rule-engine MCP servers. This difference [has been documented in research](https://arxiv.org/pdf/2304.07591).
 
 ## How to use Kilotest
 
@@ -45,9 +56,9 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 - [Home page](https://kilotest.com/)
 - [Summarize test results for all tested pages](https://kilotest.com/targets.html)
-- Provide statistics about issues reported in one job: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
-- Provide details about one issue reported in one job: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
-- Provide diagnoses by tools of rule violations for one HTML element exhibiting one issue in one job: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+- Provide statistics about issues reported in one report: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
+- Provide details about one issue reported in one report: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
+- Provide diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
 - [Receive a recommendation to test a not-yet-tested page](`https://kilotest.com/testRecForm.html`)
 - Receive a recommendation to retest a previously tested page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
 - [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
@@ -57,33 +68,31 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 ### Agent API
 
-Kilotest is implementing a richer suite of capabilities optimized for AI agents, including direct immediate testing. The implementation is currently in an alpha phase and offers 3 API endpoints:
+Kilotest is implementing a richer suite of capabilities optimized for AI agents, including direct immediate testing. The implementation is currently in an alpha phase and offers 3 tools:
 
-- `targets`
+- `summarizeQualityOfAllTestedWebPages`
   - method: `GET`
-  - purpose: summarize test results from all jobs (a job is a session in which a web page is tested and a report is produced)
+  - purpose: summarize front-end quality test results from all reports (a report contains the records of one session in which a web page is tested)
   - path: `/api/targets`
-- `reportIssues`
+- `describeQualityOfOneWebPage`
   - method: `GET`
-  - purpose: provide statistics about issues reported in one job report
+  - purpose: provide statistics about front-end quality issues reported in one report
   - path: `/api/reportIssues/{timeStamp}/{jobID}`
   - parameters
-    - `timeStamp`: initial segment of job identifier
-    - `jobID`: final segment of job identifier
+    - `timeStamp`: initial segment of report identifier
+    - `jobID`: final segment of report identifier
   - source of parameters: response to a `targets` request
-- `testRecForm`
+- `recommendQualityTestingOfOneWebPage`
   - method: `POST`
-  - purpose: receive a recommendation to test a not-yet-tested page
+  - purpose: recommend quality testing of one web page
   - path: `/api/testRecForm`
   - payload properties
     - `what`: description of the page to be tested
     - `url`: URL of the page to be tested
     - `why`: reason for testing the page
-  - how to verify disposition of the recommendation: submit a `targets` request and inspect the response to determine whether a report on the page is now available
+  - how to verify disposition of the recommendation: submit a `summarizeQualityOfAllTestedWebPages` request and inspect the response to determine whether a report on the page is now available
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
-
-Until direct immediate testing is available, an agent can recommend testing of a web page with a `testRecForm` request.
 
 ### More information
 

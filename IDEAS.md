@@ -1,4 +1,4 @@
-# development
+# ideas
 
 Notes about the further development of this project.
 

@@ -15,7 +15,7 @@ module.exports = {
     },
     {
       name: 'kilotest-mcp',
-      script: 'mcp-openapi-server',
+      script: 'openapi-mcp-server',
       interpreter: 'none',
       args: '--transport http --port 3001 --api-base-url https://kilotest.com --openapi-spec https://kilotest.com/openapi.yaml',
       instances: 1,

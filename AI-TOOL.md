@@ -90,7 +90,8 @@ As mentioned above, Claude Desktop was installed on the local development host a
     "args": [
       "-y",
       "@ivotoby/openapi-mcp-server",
-      "--disable-abbreviation true"
+      "--disable-abbreviation",
+      "true"
     ],
     "env": {
       "API_BASE_URL": "https://kilotest.com",
@@ -108,28 +109,6 @@ Experimentation revealed that Claude Sonnet 4.6 with Medium effort chose to use 
 
 Increment 2 somewhat lightens the burden on the user by shifting the user environment from an installed application to a web browser, and by providing an easier interface for users to tell the platform about Kilotest. The platform is the `claude.ai` web application instead of Claude Desktop. Instead of editing a JSON file, the user tells the platform about Kilotest with a setting.
 
-#### Setup
-
-As mentioned in the list of external actions, an MCP server was deployed.
-
-Finally, the `pm2` process manager was reconfigured to manage the MCP server process, with this additional item added to the `apps` array in the `pm2.config.js` file in this application:
-
-```javascript
-{
-  name: 'kilotest-mcp',
-  script: 'openapi-mcp-server',
-  interpreter: 'none',
-  args: '--transport http --port 3001 --api-base-url https://kilotest.com --openapi-spec https://kilotest.com/openapi.yaml',
-  instances: 1,
-  autorestart: true,
-  watch: false
-}
-```
-
-Then the `pm2 start pm2.config.js` command was entered on the server in the Kilotest directory to restart Kilotest and start the `kilotest-mcp` process.
-
-#### Investigation
-
 The investigation began with the addition of Kilotest as a _connector_ to the `claude.ai` web application. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
 
 - Name: Kilotest
@@ -139,7 +118,7 @@ When the connector configuration with 4 endpoints appeared, the user changed the
 
 Then the user asked the platform, “Summarize the accessibility and usability of the home page of the website of Salesforce.”
 
-The results with various models were:
+The results with the least powerful model were:
 
 - Claude Haiku 4.5 not extended: Summarized accessibility programs of Salesforce, instead of saying anything about its home page.
 - Claude Haiku 4.5 extended: Announced this thought process: “Deliberated between direct inspection and specialized accessibility testing tools”; then announced that it was using Kilotest, specifically the `summarize-accessibility-of-all-tested-web-pages` path; then stated: “Great! I've loaded the Kilotest tools. Now let me first check if Salesforce has already been tested by calling the summarize function. If not, I'll submit it for testing.”

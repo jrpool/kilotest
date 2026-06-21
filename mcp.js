@@ -1,6 +1,6 @@
 /*
   mcp.js
-  Handles MCP (Model Context Protocol) requests for the Kilotest service.
+  Handles MCP (Model Context Protocol) requests for Kilotest tools.
 */
 
 // IMPORTS

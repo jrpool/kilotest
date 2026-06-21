@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Kilotest Agent API
-  description: Kilotest tests web pages for accessibility, usability, and standard conformity using an ensemble of ten independent tools that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing, discover available test reports, and retrieve data from reports. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
+  description: Kilotest tests web pages for front-end quality (i.e. accessibility, usability, and standard conformity) using an ensemble of ten independent rule engines that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing, discover available test reports, and retrieve data from reports. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
   version: 1.0.0
   contact:
     name: Kilotest
@@ -50,7 +50,7 @@ paths:
     get:
       operationId: describeQualityOfOneWebPage
       summary: Describe quality of one web page
-      description: Get data about the quality of a specified Kilotest report. The data about each issue include its priority, the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID parameters identify the report and are available in the response from the summarizeQualityOfAllTestedWebPages operation.
+      description: Get data about the quality of a specified Kilotest report. The data about each issue include its priority, the rule engines that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID parameters identify the report and are available in the response from the summarizeQualityOfAllTestedWebPages operation.
       parameters:
         - name: timeStamp
           in: path
@@ -83,7 +83,7 @@ paths:
     get:
       operationId: describeHTMLElementsHavingOneQualityIssue
       summary: Describe HTML elements having one quality issue (NOT YET IMPLEMENTED)
-      description: Get issue-specific data from a specified report about the front-end quality (i.e. accessibility, usability, and standard conformity) of a web page. The data describe the issue, all of the HTML elements of the page that have the issue, and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element. NOT YET IMPLEMENTED.
+      description: Get issue-specific data from a specified report about the front-end quality (i.e. accessibility, usability, and standard conformity) of a web page. The data describe the issue, all of the HTML elements of the page that have the issue, and, for each such element, URLs for retrieving diagnoses by rule engines of the issue on the element. NOT YET IMPLEMENTED.
       parameters:
         - name: issueID
           in: path
@@ -191,29 +191,29 @@ components:
     TestRecFormResponse:
       $ref: '#/components/schemas/CommonResponseFields'
 
-    ToolInfo:
+    RuleEngineInfo:
       type: object
-      description: A testing tool in the Kilotest ensemble.
+      description: A rule engine in the Kilotest ensemble.
       properties:
         identifier:
           type: string
-          description: Short programmatic identifier for the tool.
+          description: Short programmatic identifier for the rule engine.
           examples:
             - alfa
         name:
           type: string
-          description: Display name of the tool.
+          description: Display name of the rule engine.
           examples:
             - Alfa
         sponsor:
           type: string
-          description: Organization that created, initially sponsored, or now sponsors the tool.
+          description: Organization that created, initially sponsored, or now sponsors the rule engine.
           examples:
             - Siteimprove
 
-    ToolFailure:
+    RuleEngineFailure:
       type: object
-      description: A tool that was unable to complete testing of the page.
+      description: A rule engine that was unable to complete testing of the page.
       properties:
         name:
           type: string
@@ -224,9 +224,9 @@ components:
           examples:
             - Not enough credits.
 
-    ToolsSummary:
+    RuleEnginesSummary:
       type: object
-      description: Count and names of a set of tools.
+      description: Count and names of a set of rule engines.
       properties:
         number:
           type: integer
@@ -276,12 +276,12 @@ components:
           type: integer
         number of HTML elements reported as exhibiting issues:
           type: integer
-        tools that tried to test the page:
-          $ref: '#/components/schemas/ToolsSummary'
-        tools that were unable to test the page:
-          $ref: '#/components/schemas/ToolsSummary'
-        tools that reported issues:
-          $ref: '#/components/schemas/ToolsSummary'
+        rule engines that tried to test the page:
+          $ref: '#/components/schemas/RuleEnginesSummary'
+        rule engines that were unable to test the page:
+          $ref: '#/components/schemas/RuleEnginesSummary'
+        rule engines that reported issues:
+          $ref: '#/components/schemas/RuleEnginesSummary'
         URLs for getting data on the reported issues:
           $ref: '#/components/schemas/NextTierURLs'
         URL for getting the full technical report as JSON:
@@ -329,8 +329,8 @@ components:
         impact on a user:
           type: string
           description: How this issue is likely to affect users.
-        tools reporting the issue:
-          $ref: '#/components/schemas/ToolsSummary'
+        rule engines reporting the issue:
+          $ref: '#/components/schemas/RuleEnginesSummary'
         number of HTML elements reported as exhibiting the issue:
           type: integer
         URLs for details about the issue on the page:
@@ -379,16 +379,16 @@ components:
                 URL:
                   type: string
                   format: uri
-            tools that tried to test the page:
+            rule engines that tried to test the page:
               type: array
               items:
-                $ref: '#/components/schemas/ToolInfo'
-            tools that were unable to test the page:
+                $ref: '#/components/schemas/RuleEngineInfo'
+            rule engines that were unable to test the page:
               type: array
               items:
-                $ref: '#/components/schemas/ToolFailure'
-            tools that reported issues:
-              $ref: '#/components/schemas/ToolsSummary'
+                $ref: '#/components/schemas/RuleEngineFailure'
+            rule engines that reported issues:
+              $ref: '#/components/schemas/RuleEnginesSummary'
             number of issues reported:
               type: object
               properties:

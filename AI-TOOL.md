@@ -27,6 +27,7 @@ The internal changes that have been made in the Kilotest codebase to support the
   - Within directories providing API functionality:
     - `api.js` modules.
     - `util.js` modules, if needed, containing resources shared by the `index.js` and `api.js` modules in those directories.
+- A [`JSON-LD`](https://json-ld.org/) script in the `index.html` file, providing structured data about the Kilotest API.
 - Additions to the `env.example` file.
 - An `llms.txt` file and an `llms-full.txt` file, documenting the use of Kilotest by language models, conforming to the [llms-txt](https://llmstxt.org/) specification.
 - An `openapi.yaml` file, documenting the Kilotest API, conforming to the [OpenAPI specification](https://spec.openapis.org/oas/v3.1.0).

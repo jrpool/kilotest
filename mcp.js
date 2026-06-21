@@ -45,7 +45,7 @@ const createMCPServer = () => {
         jobID: z.string().describe('Job identifier, e.g. x9z')
       },
       annotations: {
-        title: 'Describe quality of one web page',
+        title: 'Describe the quality of one web page',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,

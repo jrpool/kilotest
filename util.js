@@ -22,7 +22,7 @@ const logsPath = exports.logsPath = path.join(__dirname, 'logs');
 const recsPath = exports.recsPath = path.join(__dirname, 'jobs', 'recs.json');
 // Path of the reports directory.
 const reportsPath = exports.reportsPath = path.join(__dirname, 'reports');
-// IDs, names, and sponsors of Testaro tools.
+// IDs, names, and sponsors of Testaro rule engines.
 const tools = exports.tools = {
   alfa: ['Alfa', 'Siteimprove'],
   aslint: ['ASLint', 'eSSENTIAL Accessibility'],
@@ -399,7 +399,7 @@ exports.getReportData = async (timeStamp, jobID) => {
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.reporterCount = data.reporterNames.length;
   data.violatorCount = violatorIndexSet.size;
-  // Add the names of any prevented tools to the data.
+  // Add the names of any prevented rule engines to the data.
   data.preventedToolNames = Object.keys(report.jobData?.preventions || {})
   .map(toolID => tools[toolID][0])
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
@@ -506,7 +506,7 @@ const getRecs = exports.getRecs = async () => {
   }
   return recs;
 };
-// Returns a string of tool names.
+// Returns a string of names of rule engines.
 exports.getToolNamesString = toolIDSet =>
   alphaSort(Array.from(toolIDSet).map(toolID => tools[toolID]?.[0] || toolID)).join(' + ');
 // Converts a catalog item text to a text-fragment link destination.
@@ -723,7 +723,7 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
 };
-// Returns tool data sorted by tool name.
+// Returns data about rule engines sorted by their names.
 const getToolsData = exports.getToolsData = toolIDs => objectSort(
   Array.from(toolIDs).map(toolID => {
     const toolData = tools[toolID];
@@ -736,12 +736,12 @@ const getToolsData = exports.getToolsData = toolIDs => objectSort(
   'toolName',
   'alpha'
 );
-// Returns a +-delimited list of sorted tool names.
+// Returns a +-delimited list of sorted names of rule engines.
 exports.getToolList = toolIDs => Array.from(toolIDs)
 .map(toolID => tools[toolID][0])
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');
-// Returns facts about tools.
+// Returns facts about rule engines.
 exports.getToolsFacts = toolIDs => {
   const crypticData = getToolsData(toolIDs);
   return crypticData.map(tool => {

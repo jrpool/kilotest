@@ -29,7 +29,7 @@ const getIssueFacts = (thisHost, timeStamp, jobID, issue) => {
       'numeric identifier': wcag
     },
     'impact on a user': why,
-    'tools reporting the issue': {
+    'rule engines reporting the issue': {
       'number': reporterCount,
       'names': reporters.map(tool => tool.toolName)
     },
@@ -40,7 +40,7 @@ const getIssueFacts = (thisHost, timeStamp, jobID, issue) => {
     }
   };
 };
-// Returns a response to a target-issues request.
+// Returns a response to a report-issues request.
 exports.response = async args => {
   const [timeStamp, jobID] = args;
   const reportIsHidden = await isHidden(timeStamp, jobID);
@@ -63,12 +63,13 @@ exports.response = async args => {
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const content = {
-    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data from a Kilotest report about the accessibility, usability, and standard-conformity of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
-    'tool name': 'Kilotest',
+    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model requested data from a Kilotest report about the front-end quality (i.e. accessibility, usability, and standard-conformity) of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    'tool collection name': 'Kilotest',
+    'tool name': 'describeQualityOfOneWebPage',
     request: {
       'type of request': {
         identifier: 'reportIssues',
-        description: 'What issues does the specified report describe?'
+        description: 'Describe the quality of one web page.'
       },
       method: 'GET',
       URLs: {
@@ -76,9 +77,10 @@ exports.response = async args => {
         'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
-        description: 'Which web pages are reports available about, and what are the statistics about the issues reported for each page?',
+        identifier: 'summarizeQualityOfAllTestedWebPages',
+        description: 'Summarize the quality of all tested web pages.',
         URLs: {
-          'for you': `${thisHost}/api/targets.html`,
+          'for you': `${thisHost}/api/targets`,
           'for humans': `${thisHost}/targets.html`
         }
       }
@@ -96,9 +98,9 @@ exports.response = async args => {
       description: what,
       URL: url
     },
-    'tools that tried to test the page': getToolsFacts(Object.keys(tools)),
-    'tools that were unable to test the page': preventedTools,
-    'tools that reported issues': {
+    'rule engines that tried to test the page': getToolsFacts(Object.keys(tools)),
+    'rule engines that were unable to test the page': preventedTools,
+    'rule engines that reported issues': {
       number: reporterCount,
       names: reporters.map(tool => tool.toolName)
     },

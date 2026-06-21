@@ -51,15 +51,15 @@ exports.response = async () => {
         URL: url
       },
       'whether a later report about the same page exists': !! superseded,
-      'tools that tried to test the page': {
+      'rule engines that tried to test the page': {
         number: toolCount,
         names: toolNames
       },
-      'tools that were unable to test the page': {
+      'rule engines that were unable to test the page': {
         number: preventedToolCount,
         names: preventedToolNames
       },
-      'tools that reported issues': {
+      'rule engines that reported issues': {
         number: reporterCount,
         names: reporterNames
       },
@@ -74,12 +74,13 @@ exports.response = async () => {
   }
   // Get a response.
   const content = {
-    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and, for each page, statistics about the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten testing tools, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints for agents and web UI URLs for humans to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
-    'tool name': 'Kilotest',
+    summary: `This document fulfills a request made by an agent to the Kilotest service. The agent requested data about the web pages that Kilotest had tested for accessibility, usability, and standard-conformity and, for each page, statistics about the results of the tests. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints for agents and web UI URLs for humans to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
+    'tool collection name': 'Kilotest',
+    'tool name': 'summarizeQualityOfAllTestedWebPages',
     request: {
       'type of request': {
         identifier: 'targets',
-        description: 'Give me summary data about each available report.'
+        description: 'Summarize the quality of all tested web pages.'
       },
       method: 'GET',
       URLs: {

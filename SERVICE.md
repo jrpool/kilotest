@@ -239,7 +239,7 @@ In case Testaro again becomes a dependency of Kilotest, the notes below on secur
 
 ### Browser privileges
 
-Testaro uses Playwright to launch and control headless browsers, often `chromium`. Those browsers navigate to web pages that are tested by the tools that Testaro integrates. The `qualWeb` tool launches its own browser via Puppeteer as a dependency to perform its tests.
+Testaro uses Playwright to launch and control headless browsers, often `chromium`. Those browsers navigate to web pages that are tested by the rule engines that Testaro integrates. The `qualWeb` tool launches its own browser via Puppeteer as a dependency to perform its tests.
 
 When either Playwright or Puppeteer launches a `chromium` browser, in most environments it is [sandboxed](https://www.geeksforgeeks.org/ethical-hacking/what-is-browser-sandboxing/). Sandboxing is a security feature that prevents the browser from accessing potentially unsafe system resources. But in the Ubuntu Linux operating system that was installed on the Vultr Cloud Compute host a sandboxed browser requires an [unprivileged user namespace](https://ubuntu.com/blog/ubuntu-23-10-restricted-unprivileged-user-namespaces), and when Ubuntu was installed its configuration disallowed such namespaces. The file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.apparmor_restrict_unprivileged_userns = 1` prohibited unprivileged user namespaces and thereby made sandboxed browsers unlaunchable.
 

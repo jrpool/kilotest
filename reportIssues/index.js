@@ -65,7 +65,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   query.timeStamp = timeStamp;
   query.jobID = jobID;
   // Add reporter information to the query.
-  query.reporterCount = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
+  query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
   query.reporters = reporterList;
   // Add a summary of the issues to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
@@ -107,7 +107,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
         // Add the issue facts to the lines.
         detailsLines.push(`${margin}      <li>Why it matters: ${why}`);
         detailsLines.push(`${margin}      <li>Related WCAG standard: ${wcagLink}`);
-        const reporterCountString = reporterCount === 1 ? '1 tool' : `${reporterCount} tools`;
+        const reporterCountString = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
         detailsLines.push(
           `${margin}      <li>Reported by ${reporterCountString} (${reporterList})</li>`
         );

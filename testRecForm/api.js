@@ -20,12 +20,13 @@ exports.response = async (what, url, why) => {
   await updateRecs(what, url, why);
   // Get a response.
   const content = {
-    summary: `This response acknowledges a request made by an agent to the Kilotest service. The agent recommended that Kilotest test, for the first time, the ${what} web page at ${url} for accessibility, usability, and standard-conformity. A Kilotest manager usually approves a recommendation within a day. When the recommendation is approved, the testing will be performed and results will become available. You can check for the availability of the results at ${thisHost}/api/targets. Kilotest performs its testing with the help of Testaro, Testilo, and an ensemble of ten testing tools, using a combination of rule- and machine-learning-based methods. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of tools, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
-    'tool name': 'Kilotest',
+    summary: `This response acknowledges a request made by an agent to the Kilotest service. The agent recommended that Kilotest test, for the first time, the ${what} web page at ${url} for accessibility, usability, and standard-conformity. A Kilotest manager usually approves a recommendation within a day. When the recommendation is approved, the testing will be performed and results will become available. You can check for the availability of the results at ${thisHost}/api/targets. Kilotest performs its testing with the help of Testaro, Testilo, and an ensemble of ten rule engines, using a combination of rule- and machine-learning-based methods. Kilotest exposes several API endpoints for agents and several web UI URLs for humans to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    'tool collection name': 'Kilotest',
+    'tool name': 'recommendQualityTestingOfOneWebPage',
     request: {
       'type of request': {
         identifier: 'testRecForm',
-        description: 'I recommend that Kilotest test a particular web page.'
+        description: 'Recommend quality testing of one web page.'
       },
       method: 'POST',
       payload: {

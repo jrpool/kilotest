@@ -100,7 +100,30 @@ As mentioned in the list of external actions, an MCP server was deployed on port
 
 First, the `openapi-mcp-server` package was installed globally with `sudo npm install -g @ivotoby/openapi-mcp-server`.
 
-Next, the `pm2` process manager was reconfigured to manage the MCP server process, with this addition to the `apps` property:
+Next, the Caddy reverse proxy on the server was configured to forward requests to the MCP server on port 3001. The `/etc/caddy/Caddyfile` file had this content after that:
+
+```text
+# Configuration of the Caddy web server.
+# Docs: https://caddyserver.com/docs/caddyfile.
+
+kilotest.com {
+  # Enable Zstandard and Gzip compression of responses.
+  encode zstd gzip
+  # Reverse proxy all MCP server requests to port 3001.
+  handle /mcp* {
+    reverse_proxy localhost:3001 {
+      flush_interval -1
+    }
+  }
+  # Reverse proxy all other requests to localhost:3000.
+  reverse_proxy localhost:3000 {
+    # Improve SSE latency.
+    flush_interval -1
+  }
+}
+```
+
+Finally, the `pm2` process manager was reconfigured to manage the MCP server process, with this additional item added to the `apps` array in the `pm2.config.js` file in this application:
 
 ```javascript
 {
@@ -113,3 +136,5 @@ Next, the `pm2` process manager was reconfigured to manage the MCP server proces
   watch: false
 }
 ```
+
+#### Investigation

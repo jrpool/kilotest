@@ -519,7 +519,7 @@ exports.getTextFragmentHref = (text, url) => {
   return `${url}#:~:text=${fragmentList}`;
 };
 // Returns a sorted array of the logs, with job names added, of the non-hidden reports.
-exports.getLogs = async () => {
+const getLogs = exports.getLogs = async () => {
   // Initialize data on the tested targets.
   const logs = [];
   let logFileNames;
@@ -755,3 +755,12 @@ exports.getToolsFacts = toolIDs => {
 };
 // Returns a string describing a count.
 exports.getCountString = (count, singular, plural) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
+// Minifies a URL for duplicate detection.
+const minifyURL = exports.minifyURL = url => url.replace(/www\.|\/$/g, '');
+// Returns whether a report about the specified page is already available.
+exports.isReportAvailable = async (what, url) => {
+  const logs = await getLogs();
+  const whats = logs.map(log => log.what);
+  const miniURLs = logs.map(log => minifyURL(log.url));
+  return whats.includes(what) || miniURLs.includes(minifyURL(url));
+};

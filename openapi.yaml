@@ -15,9 +15,9 @@ servers:
 paths:
   /api/targets:
     get:
-      operationId: summarizeAccessibilityOfAllTestedWebPages
-      summary: Summarizes all available reports
-      description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many accessibility, usability, and standard-conformity issues were reported, and URLs for retrieving more detailed data from the report. This is the first endpoint to call if you want data about a particular web page. The result will tell you whether a report on that page already exists. If so, you can retrieve data from it. If not, you can use the submitWebAccessibilityTestRequest endpoint to recommend the page for testing.
+      operationId: summarizeQualityOfAllTestedWebPages
+      summary: Summarize quality of all tested web pages
+      description: Returns summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standard-conformity) issues were reported, and URLs for retrieving more detailed data from the report. This is the first endpoint to call if you want data about a particular web page. The result will tell you whether a report on that page already exists. If so, you can retrieve data from it. If not, you can use the submitWebAccessibilityTestRequest endpoint to recommend the page for testing.
       responses:
         '200':
           description: Summaries of available reports
@@ -28,9 +28,9 @@ paths:
 
   /api/testRecForm:
     post:
-      operationId: submitWebAccessibilityTestRequest
-      summary: Receives a new testing recommendation
-      description: Receives a recommendation for Kilotest to test, for the first time, a particular web page for accessibility, usability, and standard conformity. Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the summarizeAccessibilityOfAllTestedWebPages operation. Before submitting a recommendation, use the summarizeAccessibilityOfAllTestedWebPages operation to ensure that the page has not yet been tested, and also to see the stylistic rules for the naming of pages. An attempt to recommend an already tested page for testing will fail.
+      operationId: recommendQualityTestingOfOneWebPage
+      summary: Recommend quality testing of one web page
+      description: Submit a recommendation for Kilotest to test, for the first time, a particular web page for front-end quality (i.e. accessibility, usability, and standard conformity). Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the summarizeQualityOfAllTestedWebPages operation. Before submitting a recommendation, use the summarizeQualityOfAllTestedWebPages operation to ensure that no report about the page is available, and also to see the stylistic rules for the naming of pages. An attempt to recommend a page for testing will fail if a report about the page is already available.
       requestBody:
         description: Test recommendation specifications
         required: true
@@ -48,9 +48,9 @@ paths:
 
   /api/reportIssues/{timeStamp}/{jobID}:
     get:
-      operationId: listAccessibilityIssuesOnOneWebPage
-      summary: Gets data on issues from a specific report
-      description: Returns data about the issues reported in a specific Kilotest report, grouped by priority. The data on each issue include the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID components identify the report and are available in the response from the summarizeAccessibilityOfAllTestedWebPages operation.
+      operationId: describeQualityOfOneWebPage
+      summary: Describe quality of one web page
+      description: Get data about the quality of a specified Kilotest report. The data about each issue include its priority, the tools that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID parameters identify the report and are available in the response from the summarizeQualityOfAllTestedWebPages operation.
       parameters:
         - name: timeStamp
           in: path
@@ -81,14 +81,14 @@ paths:
 
   /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
     get:
-      operationId: listHTMLElementsHavingOneAccessibilityIssue
-      summary: Gets details about a specific issue in a specific report (NOT YET IMPLEMENTED)
-      description: Returns details about a single issue within a specific report, including which HTML elements exhibit the issue and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element. NOT YET IMPLEMENTED.
+      operationId: describeHTMLElementsHavingOneQualityIssue
+      summary: Describe HTML elements having one quality issue (NOT YET IMPLEMENTED)
+      description: Get issue-specific data from a specified report about the front-end quality (i.e. accessibility, usability, and standard conformity) of a web page. The data describe the issue, all of the HTML elements of the page that have the issue, and, for each such element, URLs for retrieving tool-by-tool diagnoses of the issue on the element. NOT YET IMPLEMENTED.
       parameters:
         - name: issueID
           in: path
           required: true
-          description: Issue identifier (e.g., imageNoText). Available under "issues reported" > priority level > "identifier" in the listAccessibilityIssuesOnOneWebPage response.
+          description: Issue identifier (e.g., imageNoText). Available under "issues reported" > priority level > "identifier" in the describeQualityOfOneWebPage response.
           schema:
             type: string
             examples:
@@ -193,7 +193,7 @@ components:
 
     ToolInfo:
       type: object
-      description: An accessibility testing tool in the Kilotest ensemble.
+      description: A testing tool in the Kilotest ensemble.
       properties:
         identifier:
           type: string
@@ -301,7 +301,7 @@ components:
 
     IssueEntry:
       type: object
-      description: Details about a specific accessibility issue found on a page.
+      description: Details about a specific front-end quality issue found on a page.
       properties:
         identifier:
           type: string

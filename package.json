@@ -24,8 +24,10 @@
   },
   "homepage": "https://github.com/jrpool/kilotest",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "*",
     "dotenv": "*",
-    "testilo": "*"
+    "testilo": "*",
+    "zod": "*"
   },
   "devDependencies": {
     "@eslint/css": "^1.0.0",

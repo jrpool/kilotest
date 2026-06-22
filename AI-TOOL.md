@@ -45,8 +45,11 @@ The external actions that have been taken to support the use of Kilotest as an A
 - A [request](https://rapidapi.com/studio/api_91f2ce07-2572-48bd-a34d-ff01ed6cd039/publish/general) to add Kilotest to the Rapid API Hub.
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
-- [Configuration of Claude Desktop](https://github.com/ivo-toby/mcp-openapi-server#option-1-using-with-claude-desktop-stdio-transport) on the local development host to connect Claude Desktop models to Kilotest tools.
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.
+- Configuration of Claude Desktop on the local development host and the `claude.ai` web application to connect Claude Desktop models to the Kilotest MCP server. The configuration was performed in the UI of each platform with the addition of Kilotest as a _connector_. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
+
+  - Name: Kilotest
+  - Remote MCP server URL: `https://kilotest.com/mcp`
 
 ## Use cases
 
@@ -81,190 +84,78 @@ Another benefit is that subsequent increments can be defined incrementally rathe
 
 In the first increment, the objective was to make Anthropic Claude models use Kilotest to help them answer questions from developers using the Claude Desktop application for use case 3, where the code in question is already deployed as a public web page.
 
-As mentioned above, Claude Desktop was installed on the local development host and then configured for Kilotest. That configuration consisted of the addition of a property to the Claude Desktop configuration file, located at `~/Library/Application Support/Claude/claude_desktop_config.json`. The added property is:
+A locally installed MCP server, `@ivotoby/openapi-mcp-server`, was used. It turned out to be incompatible with Claude Desktop, so even though connections to Kilotest were made and calls to its tools were submitted the responses did not arrive.
 
-```json
-"mcpServers": {
-  "kilotest": {
-    "command": "npx",
-    "args": [
-      "-y",
-      "@ivotoby/openapi-mcp-server",
-      "--disable-abbreviation",
-      "true"
-    ],
-    "env": {
-      "API_BASE_URL": "https://kilotest.com",
-      "OPENAPI_SPEC_PATH": "https://kilotest.com/openapi.yaml"
-    }
-  }
-},
+The model behavior motivated an architectural change in the MCP server and improvements in the naming and description of the Kilotest tools before the next increment.
+
+#### Increment 2
+
+Increment 2 repeated the exercise of increment 1 with the `claude.ai` web application instead of Claude Desktop, and with the improvements indicated by increment 1 made.
+
+With Kilotest added as a custom connector, the user asked the platform, “I want to know whether the home page of the nonprofit organization named ‘Open Secrets’ has quality defects, such as with accissibility [_sic_] and usability.”
+
+It was discovered that Claude Haiku 4.5 with Extended capability used Kilotest tools, but Claude Haiku 4.5 without Extended capability did not.
+
+When Kilotest was used, it was used appropriately for the task, but the planning was suboptimal, because the model initially stated an intention to recommend the web page for testing instead of first checking for an existing available report on it.
+
+The output to the user was a mixture of Kilotest results with knowledge and judgments of the model. Kilotest results were presented with some selective pruning, interpretation, and advice on what to do.
+
+The trial in increment 2 suggested some opportunities for further improvements:
+
+- Clearer instructions about the sequencing of tool calls
+- Addition of instructions to attribute the interpretive additions by the model to the model or its other sources rather than to Kilotest.
+
+#### Increment 3
+
+After the above-described improvements were made, a similar exercise, with the home page of a company named “CMT Services”, was performed again in Claude Desktop. In this case Claude Haiku 4.5 succeeded in recognizing the relevance of Kilotest and used its tools, though imperfectly. Instead of using Kilotest to check for an existing report on the page, the model searched for it in a cached file with:
+
+```bash
+Bash
+jq '.[] | .tested_web_page.description' /Users/pool/.claude/projects/-Users-pool-Documents/18b3821c-b60d-4f63-bf3f-542830ed3bc4/tool-results/toolu_012qMKW66d88vWjp8JKj5qNn.json 2>/dev/null | grep -i "cmt" || echo "CMT Services not found in tested pages"
 ```
 
-That configuration notifies models that Kilotest is available as an MCP server, but does not explain what tools it provides, what they are useful for, or how to use them.
-
-Experimentation revealed that Claude Sonnet 4.6 with Medium effort chose to use Kilotest when answering questions about the accessibility and usability of particular public web pages. Low effort did not result in the use of Kilotest. The less capable Claude Haiku model did not use Kilotest.
-
-### Increment 2
-
-Increment 2 somewhat lightens the burden on the user by shifting the user environment from an installed application to a web browser, and by providing an easier interface for users to tell the platform about Kilotest. The platform is the `claude.ai` web application instead of Claude Desktop. Instead of editing a JSON file, the user tells the platform about Kilotest with a setting.
-
-The investigation began with the addition of Kilotest as a _connector_ to the `claude.ai` web application. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
-
-- Name: Kilotest
-- Remote MCP server URL: `https://kilotest.com/mcp`
-
-When the connector configuration with tools appeared, the user changed the all tool permissions from `Needs approval` to `Always allow`.
-
-Then the user asked the platform, “I want to know whether the home page of the nonprofit organization named ‘Open Secrets’ has quality defects, such as with accissibility [_sic_] and usability.”
-
-An earlier trial had revealed that the least powerful model, Claude Haiku 4.5 without the Extended capability, did not consider using any tools.
-
-For this trial, then, the user selected Claude Haiku 4.5 with Extended capability.
-
-The record of thinking began with:
+Claude Haiku then incorrectly concluded: `CMT Services hasn't been tested yet. Let me search for their website so I can recommend it for quality testing.` The model asked the user for the URL and said:
 
 ```text
-The user is asking about the quality of the home page for a nonprofit organization called "Open Secrets," specifically regarding accessibility and usability defects.
-This is asking for a quality assessment of a web page. Looking at my available tools, I have access to Kilotest, which has tools for analyzing web page quality:
+Once you provide the URL, I'll:
 
-Kilotest:describeQualityOfOneWebPage — Returns data from a specified Kilotest report about issues of front-end quality
-Kilotest:recommendQualityTestingOfOneWebPage — Recommends a web page for Kilotest to test for front-end quality
-Kilotest:summarizeQualityOfAllTestedWebPages — Returns summary data from every available Kilotest report
-
-I should first use the recommendQualityTestingOfOneWebPage tool to see if I can get Kilotest to test the Open Secrets home page for quality issues including accessibility and usability.
-First, I need to find the correct URL for Open Secrets. Open Secrets is a well-known nonprofit that tracks money in politics. Their homepage should be at opensecrets.org. Let me use the Kilotest tool to request that they test this page for quality issues.
+Recommend their home page for quality testing with Kilotest
+Retrieve the quality report showing accessibility and usability defects
+Provide you with a detailed analysis of any issues found
 ```
 
-As shown, the discovery was immediate, but the utilization strategy was confused. The sequencing instructions failed to shape the model’s utilization planning at first.
+The user provided the URL, and Claude Haiku then submitted a recommendation to Kilotest to test the page. The submission was successful and, as expected, yielded an error message: `{"error":"A report about the page is already available"}`.
 
-The model then output:
+The model drew the correct conclusion from this and (contradicting itself) announced: `Great news—there's already a quality report for CMT Services! Let me retrieve it for you.` The model did so and gave the user an appropriate rendition of the results, modulo attribution. The results were introduced with `The Kilotest analysis found 51 quality defects on the CMT Services home page, affecting 163 HTML elements. Here's a breakdown:`. Some mildly interpretive additions, such as calling “high-priority” issues “critical”, were made without attribution, making it easy for a user to infer that they were made by Kilotest tools rather than the model.
 
-`I can help you assess the quality of the Open Secrets home page using Kilotest, which specializes in finding accessibility and usability defects. Let me recommend their home page for testing.`
+The same trial was repeated, with a different website, using Claude Sonnet 4.6 with Low effort. This model immediately checked for and found an already available report and used it in the production of output to the user. The output was somewhat less interpretive than that of Claude Haiku.
 
-After contemplating this errant plan, the model then corrected its thinking and resumed with `Good! I now have access to the Kilotest tools. Let me first check if there's already a report on the Open Secrets home page by calling summarizeQualityOfAllTestedWebPages.`.
+Increment 3 showed that, after the naming, instructions, and connector configuration were improved, the relatively inexpensive Claude models use Kilotest where appropriate.
 
-The thinking record continues with the Kilotest logo and `Summarize quality of all tested web pages`, the `annotations.title` property of the appropriate tool, followed by the complete output of that tool, and then:
+The misbehavior of Claude Haiku suggested that further improvements in the instructions may improve the utilization of Kilotest, namely:
 
-```text
-Great! I found the Open Secrets website has already been tested by Kilotest. Here's the information:
-Identifier: 260519T1437-79l
-Creation date: 2026-05-19T14:37:00.000Z (33 days ago from June 21)
-URL: https://www.opensecrets.org/
-Number of issues reported: 80
-Number of HTML elements reported as exhibiting issues: 1631
-Rule engines that reported issues: 9 (Accessibility Checker, Alfa, ASLint, Axe, Editoria11y, Html Checker API, HTML CodeSniffer, QualWeb, Testaro)
+- a warning not to use cached lists of available reports
+- stronger advice to avoid implicitly attributing interpretations, judgments, and advice to Kilotest.
 
-Now I should call the describeQualityOfOneWebPage tool to get the detailed information about these quality defects.
-```
+#### Increment 4
 
-The model then output: `Great news! I found that Open Secrets' home page has already been tested by Kilotest. Let me get the detailed quality report for you.`
+The first trial in which the user asked about a page **without** an available report repeated the conditions of Increment 3, except for the web page in question and the model. The model here was Claude Haiku in Extended mode, an option available with `claude.ai` but not Claude Desktop.
 
-The thinking record continued with `Synthesized accessibility audit findings to assess website quality defects`, the Kilotest logo, the title of the next tool (`Describe the quality of one web page`), and the complete result of that tool call.
+The user asked: “I want to know whether the home page of Milgard Windows and Doors, at `www.milgard.com`, has quality defects, such as with accessibility and usability.”
 
-The final segment of the thinking record contained:
+The model immediately:
 
-```text
-Perfect! Now I have a detailed report about the Open Secrets home page. Let me synthesize this information to provide a comprehensive answer to the user. The report shows:
+- found Kilotest
+- checked for an available report about the page
+- found no report
+- submitted a recommendation to test the page
 
-Total issues: 80
-18 highest priority issues
-23 high priority issues
-10 low priority issues
-29 lowest priority issues
-1,631 HTML elements with issues
+The recommendation was successfully received by the Kilotest service.
 
-Key defects include:
+During the workflow the model kept the user informed. After the last step, the model summarized the type of report that the user could expect and advised the user to check directly with the Kilotest UI at `https://kilotest.com/targets` in 24 to 48 hours for the results.
 
-Images without text (12 elements) - major accessibility issue
-Links without names (4 elements) - critical for accessibility
-Duplicate IDs (689 elements!) - this is a huge problem
-Elements that are focusable but hidden (14 elements)
-Buttons without text (8 elements)
-Poor contrast (60 elements)
-Visible labels not in accessible names (39 elements)
-Invalid roles (28 elements)
-Various usability issues like poor focus indication, small targets, etc.
+The behavior of Claude Haiku in Extended mode was nearly perfect. The naming of the page in the recommendation was “Milgard Windows and Doors home page”, whereas “Milgard Windows and Doors” would have followed the existing naming pattern. This deviation suggests adding a specific instruction to name home pages without anything more than the name of the organization.
 
-The most critical issues are those marked as "highest priority" which relate to WCAG 2.2 success criteria.
-```
+The most notable fact was that Claude Haiku converted a long workflow to a short one by ending the output with a recommendation to the user to get the test results by self-service. The instructions to models presumed that the user and the model would jointly decide to maintain their relationship until the testing is completed and the model would then interpret the results for the user. Instead, Claude Haiku had enough imagination to suggest a viable workflow not even hinted at by the instructions.
 
-This record shows the model adding its own knowledge and judgment to the Kilotest results.
-
-The final output to the user was:
-
-```markdown
-## Open Secrets Home Page Quality Assessment
-
-Based on Kilotest's comprehensive testing of **https://www.opensecrets.org/**, the home page has **significant accessibility and usability defects**. Here's what was found:
-
-### Overall Quality Summary
-
-- **Total Issues Reported:** 80
-- **HTML Elements with Issues:** 1,631
-- **Priority Breakdown:**
-  - 18 highest priority issues
-  - 23 high priority issues
-  - 10 low priority issues
-  - 29 lowest priority issues
-
-### Critical Accessibility Issues (Highest Priority)
-
-1. **Missing Image Text** (12 elements)
-   - Users cannot understand what images depict
-   - Violates WCAG 2.2 criterion 1.1.1
-
-2. **Links Without Names** (4 elements)
-   - Users can't tell where links lead
-   - Impacts navigation understanding
-
-3. **Duplicate HTML IDs** (689 elements!) ⚠️ **Most Severe**
-   - This is the most widespread issue
-   - Users may be pointed to wrong page sections
-   - Violates WCAG 2.2 criterion 4.1.1
-
-4. **Focusable Elements That Are Hidden** (14 elements)
-   - Keyboard-only users cannot navigate properly
-   - Disrupts keyboard accessibility
-
-5. **Buttons Without Names** (8 elements)
-   - Users cannot understand button purposes
-
-6. **Form Controls Without Labels** (12 elements)
-   - Users can't understand how to use forms
-
-7. **Poor Text Contrast** (60 elements)
-   - Content is difficult to read
-   - Impacts users with low vision
-
-### Significant Usability Issues (High Priority)
-
-- **Visible Labels Not in Accessible Names** (39 elements) — users struggle to find controls
-- **Invalid Roles** (28 elements) — assistive technologies misdescribe content
-- **Missing Submit Buttons** on forms (6 elements)
-- **Nested Controls** (17 elements) — users cannot reliably click intended items
-
-### Additional Readability Issues
-
-- **Poor Focus Indication** (63 elements) — keyboard users can't see where they are
-- **Small/Close Targets** (7 elements) — difficult to click on mobile or for users with motor disabilities
-- **Low Line Height** (269 elements) — text is cramped and hard to read
-- **Small Font Size** (2 elements)
-- **Absolute Box Sizes** (121 elements) — prevents text enlargement for readability
-
-### Test Coverage
-
-Nine different accessibility testing engines detected issues, including Accessibility Checker (IBM), Axe (Deque), WAVE (Utah State University), and others. The WAVE tool timed out at 25 seconds, suggesting possible performance issues.
-
-### Recommendations
-The **duplicate ID problem** (689 instances) should be addressed first, as it's both widespread and critical to document structure. After that, focus on naming images, links, and form controls, which are foundational accessibility requirements.
-```
-
-The model had decided which data from Kilotest to provide with its own elaborations and interpretations, which to provide as-is, and which to summarize.
-
-The results of this increment can be considered a success, including the fact that the model interpreted the misspelled word "accissibility" as "accessibility".
-
-However, some further improvements merit consideration:
-
-- The instructions can be further improved to more reliably deter models from planning to recommend testing a page before learning whether a report about the page is already available. They sufficed in this trial to avoid an unnecessary tool call, but, given the stochastic behavior of models, the initially deviant thinking suggests that might not always be the case.
-- The possibility of incorrect attribution to Kilotest of the interpretive content provided by the model can be mitigated with disclaimers, such as “Kilotest makes no recommendations about methods or sequences of issue remediation”, or with advice to models to describe their interpretations as theirs.
+This result suggested that the instructions should be revised to describe, as a valid option, a short workflow ending with a recommendation to the user to get the test results by self-service after the model submits a testing recommendation.

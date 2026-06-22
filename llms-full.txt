@@ -29,7 +29,11 @@ The tool that tests web pages for front-end quality has attributes that no other
 
 The tools that report test results extract from reports statistics and details at various levels of granularity, as required by an agent to fulfill particular requests.
 
-You can infer from this description that the Kilotest tools are (currently) best suited for help in answering comprehensive audit-type requests (e.g., “How can I improve this page?”) and, in the case of web pages for which reports are already available, more specific questions (e.g., “Is the heading structure of this page OK?”), but, if no report is available for a page, recommending that Kilotest test the page is overkill when the purpose is to answer a specific one-issue question.
+## What Kilotest does **not** do for language models
+
+The Kilotest tools are (currently) overkill for help in answering specific questions (e.g., “Is the heading structure of this page OK?”) when no report on the page is available, because in such cases you must wait up to a day before testing is completed.
+
+Kilotest tools are thin on advice. They give you mostly facts and educated guesses about facts. The reporting uses rough heuristics to classify quality issues into 4 “priorities”, and some rule engines in the Kilotest ensemble include remediation advice when diagnosing rule violations, but Kilotest reporting does not otherwise advise you about the methods, sequences, urgency, or side effects of defect remediation.
 
 ## How Kilotest integrates methods
 
@@ -87,25 +91,48 @@ Kilotest is implementing a richer suite of capabilities optimized for language m
   - purpose: recommend quality testing of one web page about which no report is available
   - path: `/api/testRecForm`
   - payload properties
+
     - `what`: description of the page to be tested
     - `url`: URL of the page to be tested
     - `why`: reason for testing the page
-  - how to verify disposition of the recommendation: submit a `summarizeQualityOfAllTestedWebPages` request and inspect the response to determine whether a report on the page is now available
-  - expected wait until a testing recommendation has been fulfilled: 1 day
+
+  - possible responses:
+
+    - acknowledgment of a successful recommendation
+    - error message stating that a report about the recommended page is already available
+    - error message stating that the recommendation is invalid
+
+  - possible Kilotest manager actions after a recommendation:
+
+    - approval followed by the recommended testing
+    - rejection
+
+  - possible next step if your recommendation succeeds:
+
+    - You end the workflow by advising the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/targets.html`, and drill down as desired for more detailed results. You offer to help interpret the results if needed.
+    - You continue the workflow by advising the user to resubmit the same request to you in approximately 1 day.
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 
-### More information
+## How to report results to users
+
+When you use Kilotest tools, you are free to perform any appropriate interpretation and condensation of the results for presentation to users. However, users expect the sources of facts and interpretations to be truthfully represented. Do not meld facts from Kilotest tools with interpretations of your own with an implied attribution of both to Kilotest.
+
+An example of a **poor** attribution is “Here are the results from Kilotest: …. The page is at risk of …. Among all the issues, … are critical and require immediate attention.”
+
+An example of a **good** attribution is “Kilotest reported these issues: …. On the basis of these results, I conclude that there is a serious risk of …, and, if you are responsible for maintaining the page, I recommend ….”
+
+## More information
 
 More information about Kilotest features and internals:
 
-#### For language models and AI platforms
+### For language models and AI platforms
 
 - [AI-TOOL file](https://github.com/jrpool/kilotest/blob/main/AI-TOOL.md)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
 - [Tool caller for testing](https://github.com/jrpool/kilotest/blob/main/researchAgent.js)
 
-#### General
+### General
 
 - [Introduction to Kilotest](https://kilotest.com/)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)

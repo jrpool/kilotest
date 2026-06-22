@@ -1,10 +1,10 @@
 # Kilotest
 
-Kilotest helps AI agents give thorough, accurate and truthful answers when users ask how accessible, usable, or standard conformant web pages are. Kilotest integrates ten independent rule engines to test web pages and report results with multipage, single-page, and element-level statistics and details.
+Kilotest helps language models and AI platforms to give thorough, accurate and truthful answers when users ask about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. Kilotest integrates ten independent rule engines to test web pages and report results with multipage, single-page, and element-level statistics and details.
 
 In the API section below, all endpoints require `GET` requests except as noted.
 
-There is a [detailed explanation of Kilotest and its capabilities for AI agents](https://kilotest.com/llms-full.txt).
+There is a [detailed explanation of Kilotest and its capabilities for LLMs](https://kilotest.com/llms-full.txt).
 
 ## API
 

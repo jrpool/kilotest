@@ -59,16 +59,15 @@ In the marketplace for MCP servers that test for front-end quality, all servers 
 Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 - [Home page](https://kilotest.com/)
-- [Summarize test results for all tested pages](https://kilotest.com/targets.html)
-- Provide statistics about issues reported in one report: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
-- Provide details about one issue reported in one report: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
-- Provide diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
-- [Receive a recommendation to test a not-yet-tested page](`https://kilotest.com/testRecForm.html`)
-- Receive a recommendation to retest a previously tested page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
-- [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
-- [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
+- [Get summary test results for all tested pages](https://kilotest.com/targets.html)
+- Get statistics about issues reported in one report: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
+- Get details about one issue reported in one report: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
+- Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+- [Recommend the testing of a not-yet-tested page](`https://kilotest.com/testRecForm.html`)
+- Recommend the retesting of a previously tested page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
+- [Get statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
+- [Get a list of the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
-- [Provide a list of features available for use of Kilotest managers](https://kilotest.com/manage.html)
 
 ### API
 
@@ -78,6 +77,7 @@ Kilotest is implementing a richer suite of capabilities optimized for language m
   - method: `GET`
   - purpose: summarize front-end quality test results from all reports (a report contains the records of one session in which a web page is tested)
   - path: `/api/targets`
+  - caveat: Cached results are likely to be stale and should not be used
 - `describeQualityOfOneWebPage`
   - method: `GET`
   - purpose: provide statistics about front-end quality issues reported in one report

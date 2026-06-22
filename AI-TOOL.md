@@ -4,7 +4,7 @@
 
 Until 2026 Kilotest was intended, and implemented, as a web application performing a service for human users.
 
-Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could also act as a connector to tools for use by language models. Language models are asked for help in all domains, including the domain of software quality. When asked about the front-end quality (accessibility, usability, and standard conformity) of specific web pages, models gave answers without the use of tools. The answers were at best fragmentary but often speculative and fabricated. If Kilotest offered to connect language models to its functionalities as tools, models could give more inexpensive, comprehensive, factual, authoritative, and grounded answers. Every reported defect could be documented and ascribed to one or more specific rule engines in the Kilotest ensemble.
+Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could also act as a connector to tools for use by language models. Language models are asked for help in all domains, including the domain of software quality. When asked about the front-end quality (accessibility, usability, and standards conformity) of specific web pages, models gave answers without the use of tools. The answers were at best fragmentary but often speculative and fabricated. If Kilotest offered to connect language models to its functionalities as tools, models could give more inexpensive, comprehensive, factual, authoritative, and grounded answers. Every reported defect could be documented and ascribed to one or more specific rule engines in the Kilotest ensemble.
 
 Given the potential of Kilotest to serve language models and the expected continued growth in the share of questions that are directed to AI platforms that use language models, a decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a connector to, and creator of, tools for language models**.
 
@@ -114,15 +114,157 @@ The investigation began with the addition of Kilotest as a _connector_ to the `c
 - Name: Kilotest
 - Remote MCP server URL: `https://kilotest.com/mcp`
 
-When the connector configuration with 4 endpoints appeared, the user changed the tool permissions for all 4 endpoints from `Needs approval` to `Always allow`.
+When the connector configuration with tools appeared, the user changed the all tool permissions from `Needs approval` to `Always allow`.
 
-Then the user asked the platform, “Summarize the accessibility and usability of the home page of the website of Salesforce.”
+Then the user asked the platform, “I want to know whether the home page of the nonprofit organization named ‘Open Secrets’ has quality defects, such as with accissibility [_sic_] and usability.”
 
-The results with the least powerful model were:
+An earlier trial had revealed that the least powerful model, Claude Haiku 4.5 without the Extended capability, did not consider using any tools.
 
-- Claude Haiku 4.5 not extended: Summarized accessibility programs of Salesforce, instead of saying anything about its home page.
-- Claude Haiku 4.5 extended: Announced this thought process: “Deliberated between direct inspection and specialized accessibility testing tools”; then announced that it was using Kilotest, specifically the `summarize-accessibility-of-all-tested-web-pages` path; then stated: “Great! I've loaded the Kilotest tools. Now let me first check if Salesforce has already been tested by calling the summarize function. If not, I'll submit it for testing.”
+For this trial, then, the user selected Claude Haiku 4.5 with Extended capability.
 
-These results show that on the `claude.ai` platform, when configured with Kilotest as a connector, even Claude Haiku, in its Extended mode, can decide to use Kilotest when appropriate and can check for existing data before deciding to recommend that Kilotest test a page. This correct sequencing may be a result of the revised path descriptions in the `openapi.yaml` file recommending that sequencing.
+The record of thinking began with:
 
-In the first run, Claude Haiku paused for about 5 minutes and then reported: “The Kilotest service seems to have timed out. Let me try a different approach - I'll fetch the Salesforce home page directly and evaluate it myself for accessibility and usability issues.”
+```text
+The user is asking about the quality of the home page for a nonprofit organization called "Open Secrets," specifically regarding accessibility and usability defects.
+This is asking for a quality assessment of a web page. Looking at my available tools, I have access to Kilotest, which has tools for analyzing web page quality:
+
+Kilotest:describeQualityOfOneWebPage — Returns data from a specified Kilotest report about issues of front-end quality
+Kilotest:recommendQualityTestingOfOneWebPage — Recommends a web page for Kilotest to test for front-end quality
+Kilotest:summarizeQualityOfAllTestedWebPages — Returns summary data from every available Kilotest report
+
+I should first use the recommendQualityTestingOfOneWebPage tool to see if I can get Kilotest to test the Open Secrets home page for quality issues including accessibility and usability.
+First, I need to find the correct URL for Open Secrets. Open Secrets is a well-known nonprofit that tracks money in politics. Their homepage should be at opensecrets.org. Let me use the Kilotest tool to request that they test this page for quality issues.
+```
+
+As shown, the discovery was immediate, but the utilization strategy was confused. The sequencing instructions failed to shape the model’s utilization planning at first.
+
+The model then output:
+
+`I can help you assess the quality of the Open Secrets home page using Kilotest, which specializes in finding accessibility and usability defects. Let me recommend their home page for testing.`
+
+After contemplating this errant plan, the model then corrected its thinking and resumed with `Good! I now have access to the Kilotest tools. Let me first check if there's already a report on the Open Secrets home page by calling summarizeQualityOfAllTestedWebPages.`.
+
+The thinking record continues with the Kilotest logo and `Summarize quality of all tested web pages`, the `annotations.title` property of the appropriate tool, followed by the complete output of that tool, and then:
+
+```text
+Great! I found the Open Secrets website has already been tested by Kilotest. Here's the information:
+Identifier: 260519T1437-79l
+Creation date: 2026-05-19T14:37:00.000Z (33 days ago from June 21)
+URL: https://www.opensecrets.org/
+Number of issues reported: 80
+Number of HTML elements reported as exhibiting issues: 1631
+Rule engines that reported issues: 9 (Accessibility Checker, Alfa, ASLint, Axe, Editoria11y, Html Checker API, HTML CodeSniffer, QualWeb, Testaro)
+
+Now I should call the describeQualityOfOneWebPage tool to get the detailed information about these quality defects.
+```
+
+The model then output: `Great news! I found that Open Secrets' home page has already been tested by Kilotest. Let me get the detailed quality report for you.`
+
+The thinking record continued with `Synthesized accessibility audit findings to assess website quality defects`, the Kilotest logo, the title of the next tool (`Describe the quality of one web page`), and the complete result of that tool call.
+
+The final segment of the thinking record contained:
+
+```text
+Perfect! Now I have a detailed report about the Open Secrets home page. Let me synthesize this information to provide a comprehensive answer to the user. The report shows:
+
+Total issues: 80
+18 highest priority issues
+23 high priority issues
+10 low priority issues
+29 lowest priority issues
+1,631 HTML elements with issues
+
+Key defects include:
+
+Images without text (12 elements) - major accessibility issue
+Links without names (4 elements) - critical for accessibility
+Duplicate IDs (689 elements!) - this is a huge problem
+Elements that are focusable but hidden (14 elements)
+Buttons without text (8 elements)
+Poor contrast (60 elements)
+Visible labels not in accessible names (39 elements)
+Invalid roles (28 elements)
+Various usability issues like poor focus indication, small targets, etc.
+
+The most critical issues are those marked as "highest priority" which relate to WCAG 2.2 success criteria.
+```
+
+This record shows the model adding its own knowledge and judgment to the Kilotest results.
+
+The final output to the user was:
+
+```markdown
+## Open Secrets Home Page Quality Assessment
+
+Based on Kilotest's comprehensive testing of **https://www.opensecrets.org/**, the home page has **significant accessibility and usability defects**. Here's what was found:
+
+### Overall Quality Summary
+
+- **Total Issues Reported:** 80
+- **HTML Elements with Issues:** 1,631
+- **Priority Breakdown:**
+  - 18 highest priority issues
+  - 23 high priority issues
+  - 10 low priority issues
+  - 29 lowest priority issues
+
+### Critical Accessibility Issues (Highest Priority)
+
+1. **Missing Image Text** (12 elements)
+   - Users cannot understand what images depict
+   - Violates WCAG 2.2 criterion 1.1.1
+
+2. **Links Without Names** (4 elements)
+   - Users can't tell where links lead
+   - Impacts navigation understanding
+
+3. **Duplicate HTML IDs** (689 elements!) ⚠️ **Most Severe**
+   - This is the most widespread issue
+   - Users may be pointed to wrong page sections
+   - Violates WCAG 2.2 criterion 4.1.1
+
+4. **Focusable Elements That Are Hidden** (14 elements)
+   - Keyboard-only users cannot navigate properly
+   - Disrupts keyboard accessibility
+
+5. **Buttons Without Names** (8 elements)
+   - Users cannot understand button purposes
+
+6. **Form Controls Without Labels** (12 elements)
+   - Users can't understand how to use forms
+
+7. **Poor Text Contrast** (60 elements)
+   - Content is difficult to read
+   - Impacts users with low vision
+
+### Significant Usability Issues (High Priority)
+
+- **Visible Labels Not in Accessible Names** (39 elements) — users struggle to find controls
+- **Invalid Roles** (28 elements) — assistive technologies misdescribe content
+- **Missing Submit Buttons** on forms (6 elements)
+- **Nested Controls** (17 elements) — users cannot reliably click intended items
+
+### Additional Readability Issues
+
+- **Poor Focus Indication** (63 elements) — keyboard users can't see where they are
+- **Small/Close Targets** (7 elements) — difficult to click on mobile or for users with motor disabilities
+- **Low Line Height** (269 elements) — text is cramped and hard to read
+- **Small Font Size** (2 elements)
+- **Absolute Box Sizes** (121 elements) — prevents text enlargement for readability
+
+### Test Coverage
+
+Nine different accessibility testing engines detected issues, including Accessibility Checker (IBM), Axe (Deque), WAVE (Utah State University), and others. The WAVE tool timed out at 25 seconds, suggesting possible performance issues.
+
+### Recommendations
+The **duplicate ID problem** (689 instances) should be addressed first, as it's both widespread and critical to document structure. After that, focus on naming images, links, and form controls, which are foundational accessibility requirements.
+```
+
+The model had decided which data from Kilotest to provide with its own elaborations and interpretations, which to provide as-is, and which to summarize.
+
+The results of this increment can be considered a success, including the fact that the model interpreted the misspelled word "accissibility" as "accessibility".
+
+However, some further improvements merit consideration:
+
+- The instructions can be further improved to more reliably deter models from planning to recommend testing a page before learning whether a report about the page is already available. They sufficed in this trial to avoid an unnecessary tool call, but, given the stochastic behavior of models, the initially deviant thinking suggests that might not always be the case.
+- The possibility of incorrect attribution to Kilotest of the interpretive content provided by the model can be mitigated with disclaimers, such as “Kilotest makes no recommendations about methods or sequences of issue remediation”, or with advice to models to describe their interpretations as theirs.

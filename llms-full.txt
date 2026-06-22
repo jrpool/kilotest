@@ -66,9 +66,9 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
 - [Provide a list of features available for use of Kilotest managers](https://kilotest.com/manage.html)
 
-### Agent API
+### API
 
-Kilotest is implementing a richer suite of capabilities optimized for AI agents, including direct immediate testing. The implementation is currently in an alpha phase and offers 3 tools:
+Kilotest is implementing a richer suite of capabilities optimized for language models, including direct immediate testing. The implementation is currently in an alpha phase and offers 3 tools:
 
 - `summarizeQualityOfAllTestedWebPages`
   - method: `GET`
@@ -81,22 +81,31 @@ Kilotest is implementing a richer suite of capabilities optimized for AI agents,
   - parameters
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier
-  - source of parameters: response to a `targets` request
+  - source of parameters: response to a `summarizeQualityOfAllTestedWebPages` request
 - `recommendQualityTestingOfOneWebPage`
   - method: `POST`
-  - purpose: recommend quality testing of one web page
+  - purpose: recommend quality testing of one web page about which no report is available
   - path: `/api/testRecForm`
   - payload properties
     - `what`: description of the page to be tested
     - `url`: URL of the page to be tested
     - `why`: reason for testing the page
   - how to verify disposition of the recommendation: submit a `summarizeQualityOfAllTestedWebPages` request and inspect the response to determine whether a report on the page is now available
+  - expected wait until a testing recommendation has been fulfilled: 1 day
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 
 ### More information
 
 More information about Kilotest features and internals:
+
+#### For language models and AI platforms
+
+- [AI-TOOL file](https://github.com/jrpool/kilotest/blob/main/AI-TOOL.md)
+- [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
+- [Tool caller for testing](https://github.com/jrpool/kilotest/blob/main/researchAgent.js)
+
+#### General
 
 - [Introduction to Kilotest](https://kilotest.com/)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)

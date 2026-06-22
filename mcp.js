@@ -21,10 +21,10 @@ const createMCPServer = () => {
   server.registerTool(
     'summarizeQualityOfAllTestedWebPages',
     {
-      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standard conformity) of a web page. Before calling describeQualityIssuesOfOneWebPage, call this tool to check whether a report about the page is available.',
+      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. Before calling recommendQualityTestingOfOneWebPage and waiting for testing to occur, call this tool to check whether a report about the page is available for immediate use.',
       inputSchema: {},
       annotations: {
-        title: 'Summarize quality of all tested web pages',
+        title: 'Summarize the quality of all tested web pages',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -39,7 +39,7 @@ const createMCPServer = () => {
   server.registerTool(
     'describeQualityOfOneWebPage',
     {
-      description: 'Returns data from a specified Kilotest report about issues of front-end quality (i.e. accessibility, usability, and standard conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a summarizeQualityOfAllTestedWebPages response.',
+      description: 'Returns data from a specified Kilotest report about issues of front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a summarizeQualityOfAllTestedWebPages response.',
       inputSchema: {
         timeStamp: z.string().describe('Report timestamp in YYMMDDTHHMM format, e.g. 260503T0432'),
         jobID: z.string().describe('Job identifier, e.g. x9z')
@@ -60,7 +60,7 @@ const createMCPServer = () => {
   server.registerTool(
     'recommendQualityTestingOfOneWebPage',
     {
-      description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standard conformity). Do not call this tool unless summarizeQualityOfAllTestedWebPages discloses that no report about the page or a related page that satisfies your requirements is available.',
+      description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standards conformity). Do not call this tool until after you call summarizeQualityOfAllTestedWebPages to check whether a report about the page, or a related page that satisfies your requirements, is available.',
       inputSchema: {
         what: z.string().describe('Short description of the page, following the naming conventions visible in the summarizeQualityOfAllTestedWebPages response'),
         url: z.string().describe('Full HTTPS URL of the page to test'),

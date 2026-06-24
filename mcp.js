@@ -9,6 +9,7 @@ const {McpServer} = require('@modelcontextprotocol/sdk/server/mcp.js');
 const {StreamableHTTPServerTransport} = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const {z} = require('zod');
 const {isReportAvailable, isURL} = require('./util');
+const targetAPI = require('./target/api');
 const targetsAPI = require('./targets/api');
 const reportIssuesAPI = require('./reportIssues/api');
 const testRecFormAPI = require('./testRecForm/api');
@@ -19,9 +20,30 @@ const testRecFormAPI = require('./testRecForm/api');
 const createMCPServer = () => {
   const server = new McpServer({name: 'Kilotest', version: '1.0.0'});
   server.registerTool(
+    'summarizeQualityOfMatchingWebPages',
+    {
+      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages that match the description or hostname fragment of a web page that you have provided. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragmant. Before calling recommendQualityTestingOfOneWebPage and waiting for testing to occur, call this tool to check whether a report about the page is available now.',
+      inputSchema: {
+        what: z.string().describe('All or part of a description of the web page.'),
+        url: z.string().describe('All or part of the hostname of the URL of the web page.')
+      },
+      annotations: {
+        title: 'Summarize the quality of matching web pages',
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({what, url}) => {
+      const result = await targetAPI.response([what, url]);
+      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+    }
+  );
+  server.registerTool(
     'summarizeQualityOfAllTestedWebPages',
     {
-      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. Before calling recommendQualityTestingOfOneWebPage and waiting for testing to occur, call this tool to check whether a report about the page is available for immediate use.',
+      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page.',
       inputSchema: {},
       annotations: {
         title: 'Summarize the quality of all tested web pages',

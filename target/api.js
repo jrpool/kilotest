@@ -34,8 +34,13 @@ exports.response = async args => {
     const {superseded, url: reportURL, what: reportWhat} = targetLog;
     const reportHost = new URL(minifyURL(reportURL)).hostname;
     const reportWhatLC = reportWhat.toLowerCase();
-    // If its description or hostname matches the requested page:
-    if (reportHost === host || reportWhatLC.includes(whatLC) || whatLC.includes(reportWhatLC)) {
+    // If its description or hostname fragment matches the requested page:
+    if (
+      reportHost.includes(host)
+      || host.includes(reportHost)
+      || reportWhatLC.includes(whatLC)
+      || whatLC.includes(reportWhatLC)
+    ) {
       // Get data about its report.
       const data = await getReportData(timeStamp, jobID);
       const {
@@ -83,18 +88,22 @@ exports.response = async args => {
   }
   // Get a response.
   const content = {
-    summary: `This document fulfills a request made by a language model to the Kilotest API. The model asked whether Kilotest had tested a specified web page for front-end quality (i.e. accessibility, usability, and standard-conformity) and made a report of the test results available. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
+    summary: `This document fulfills a request made by a language model to the Kilotest API. The model asked whether Kilotest had tested a specified web page for front-end quality (i.e. accessibility, usability, and standards conformity) and had made a report of the test results available. The response provides summary information about all and only the available reports of pages that match at least one of the provided fragments, where matching means either including or being included by the provided fragment, case-insensitively. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
     'tool collection name': 'Kilotest',
-    'tool name': 'summarizeQualityOfAllTestedWebPages',
+    'tool name': 'identifyReportsAboutMatchingWebPages',
     request: {
       'type of request': {
         identifier: 'targets',
-        description: 'Summarize the quality of all tested web pages.'
+        description: 'Identify reports about matching web pages.'
       },
-      method: 'GET',
+      method: 'POST',
+      payload: {
+        'all or part of a description of the web page': what,
+        'all or part of the hostname of the URL of the web page': url
+      },
       URLs: {
-        'URL of your request': `${thisHost}/api/targets`,
-        'equivalent URL for humans': `${thisHost}/targets.html`
+        'URL of your request': `${thisHost}/api/target`,
+        'equivalent URL for humans': 'none'
       },
       'closest ancestor request': null
     },
@@ -102,7 +111,7 @@ exports.response = async args => {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString(),
     },
-    'matching reports': matchingReports
+    'reports, if any, that may match your page specifications': matchingReports
   };
   return content;
 };

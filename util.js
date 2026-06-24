@@ -756,7 +756,7 @@ exports.getToolsFacts = toolIDs => {
 // Returns a string describing a count.
 exports.getCountString = (count, singular, plural) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 // Minifies a URL for duplicate detection.
-const minifyURL = exports.minifyURL = url => url.replace(/www\.|\/$/g, '');
+const minifyURL = exports.minifyURL = url => url.replace(/www\.|\/$/g, '').toLowerCase();
 // Returns whether a report about the specified page is already available.
 exports.isReportAvailable = async (what, url) => {
   const logs = await getLogs();

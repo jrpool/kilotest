@@ -8,6 +8,7 @@ There is a [detailed explanation of Kilotest and its capabilities for LLMs](http
 
 ## API
 
+- [Identify reports about matching web pages](/api/identifyReportsAboutMatchingWebPages)
 - [Summarize test results for all tested pages](/api/targets)
 - Provide statistics about issues reported in one job: `/api/reportIssues/{timeStamp}/{jobID}`
 - Recommend testing of a web page: `/api/testRecForm` (requires `POST` request)

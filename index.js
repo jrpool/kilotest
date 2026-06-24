@@ -692,6 +692,24 @@ const requestHandler = async (request, response) => {
             );
           }
         }
+        // Otherwise, if the first segment is the report finding service:
+        else if (segments[0] === 'target') {
+          const {what, url} = postData;
+          // If the payload contains a description fragment or URL fragment:
+          if (what || url) {
+            // Process the request and get the response data.
+            const responseData = await require(path.join(__dirname, 'target', 'api'))
+            .response(what, url);
+            // Send them.
+            setHeaders('application/json', null, 'ultra');
+            response.end(JSON.stringify(responseData));
+          }
+          // Otherwise, i.e. if it is not a valid test recommendation:
+          else {
+            // Report this.
+            await serveError({message: 'ERROR: Request has neither a description fragment nor a URL fragment'}, response, false);
+          }
+        }
         // Otherwise, if the first segment is the test recommendation service:
         else if (segments[0] === 'testRecForm') {
           const {what, url, why} = postData;

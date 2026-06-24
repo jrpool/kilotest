@@ -71,11 +71,20 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 ### API
 
-Kilotest is implementing a richer suite of capabilities optimized for language models, including direct immediate testing. The implementation is currently in an alpha phase and offers 3 tools:
+Kilotest is implementing a richer suite of capabilities optimized for language models. In the specifications below, the term `report` refers to the records of one session in which a web page is tested.
 
+The implementation is currently in an alpha phase and offers 4 tools:
+
+- `summarizeQualityOfMatchingWebPages`
+  - method: `POST`
+  - purpose: summarize front-end quality test results from available reports about web pages whose descriptions or hostnames match those that you specify
+  - path: `/api/target`
+  - payload properties
+    - `what`: all or part of a description of the page
+    - `url`: all or part of the hostname of the URL of the page
 - `summarizeQualityOfAllTestedWebPages`
   - method: `GET`
-  - purpose: summarize front-end quality test results from all reports (a report contains the records of one session in which a web page is tested)
+  - purpose: summarize front-end quality test results from all available reports
   - path: `/api/targets`
   - caveat: Cached results are likely to be stale and should not be used
 - `describeQualityOfOneWebPage`

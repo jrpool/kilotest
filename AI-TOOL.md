@@ -180,3 +180,9 @@ The results were similar, with one exception: The answer from Sonar 2 included a
 For both models, the same exercise was also attempted with the second configuration omitted, i.e. ••without** Kilotest being a named connector in the input section of the chat interface. In both cases, the models created their own unaided assessments and failed to mention or use the Kilotest tools.
 
 The [Perplexity documentation](https://www.perplexity.ai/help-center/en/articles/13915507-adding-custom-remote-connectors) states that as of now the installed Perplexity application for macOS does not support remote connectors.
+
+#### Increment 6
+
+Once the compatibility of Kilotest as a connector with AI platforms of two different vendors had been confirmed, the focus of work returned to completion of the missing endpoints of the API. The first was an endpoint that would let a model efficiently search for an available report about a particular web page.
+
+The new `identifyReportsAboutMatchingWebPages` tool provides inputs for fragments of a description and of a URL hostname of a web page and responds with summary data about all and only the available reports of pages that match at least one of those fragments, where matching means either including or being included by the provided fragment, case-insensitively.

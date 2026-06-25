@@ -161,7 +161,7 @@ const requestService = async () => {
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     'description of the web page': 'aoseeou',
-    'URL of the web page': 'oseantuhaosunth.aoenu',
+    'URL of the web page': 'https://oaaestuh.osneth',
     'reason for testing the web page': 'Just testing'
   });
   if (content.error) {
@@ -174,10 +174,7 @@ const requestService = async () => {
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'
   });
-  if (content.error) {
-    return;
-  }
-  console.log(`Results: ${results}`);
+  console.log(`======================\nResults: ${results}`);
 };
 
 // EXECUTION

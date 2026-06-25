@@ -712,23 +712,30 @@ const requestHandler = async (request, response) => {
         }
         // Otherwise, if the first segment is the test recommendation service:
         else if (segments[0] === 'testRecForm') {
-          const {what, url, why} = postData;
+          const {
+            'description of the web page': what,
+            'URL of the web page': url,
+            'reason for testing the web page': why
+          } = postData;
           // If the payload is a valid test recommendation:
           if (what && isURL(url) && why) {
+            let responseData;
             // If a report on the page is already available:
             if (await isReportAvailable(what, url)) {
               // Report this.
-              await serveError({message: 'ERROR: A report on the page is already available'}, response, false);
+              responseData = {
+                warning: 'A report on the page is already available'
+              }
             }
             // Otherwise, i.e. if no report on the page is available:
             else {
               // Process the recommendation and get the response data.
-              const responseData = await require(path.join(__dirname, 'testRecForm', 'api'))
+              responseData = await require(path.join(__dirname, 'testRecForm', 'api'))
               .response(what, url, why);
-              // Send them.
-              setHeaders('application/json', null, 'ultra');
-              response.end(JSON.stringify(responseData));
             }
+            // Send the response data.
+            setHeaders('application/json', null, 'ultra');
+            response.end(JSON.stringify(responseData));
           }
           // Otherwise, i.e. if it is not a valid test recommendation:
           else {

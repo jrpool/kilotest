@@ -25,187 +25,173 @@ const kilotestHosts = [process.env.LOCAL_KILOTEST_HOST, process.env.DEPLOYED_KIL
 const kilotestHost = kilotestHosts[Math.random() < 0.5 ? 0 : 1];
 const hostParts = kilotestHost.split(/:\/*/);
 const scheme = hostParts[0];
+const client = scheme === 'https' ? httpsClient : httpClient;
 const host = hostParts[1];
 const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
+const results = [];
 
 // FUNCTIONS
 
-// Submits three request to a random Kilotest host.
-const requestService = async () => {
-  const client = scheme === 'https' ? httpsClient : httpClient;
-  const getRequestOptions = (path, method = 'GET') => ({
-    method,
-    host,
-    port,
-    path,
-    headers: {
-      'content-type': 'application/json; charset=utf-8'
-    }
-  });
-  const path = `/api/targets`;
-  console.log('======================');
-  console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
-  // Submit a targets request.
-  client.request(getRequestOptions(path), response => {
-    // Initialize a collection of data from the response.
+// Gets and outputs the content or error message from a response.
+const getContent = async response => {
+  const content = await new Promise((resolve, reject) => {
+    // Initialize an array of data from the response.
     const chunks = [];
     response
     // If the response throws an error:
-    .on('error', async error => {
-      // Report it.
-      console.log(error.message);
+    .on('error', error => {
+      const {message} = error;
+      // Report and return the error message.
+      console.log(message);
+      reject({error: message});
     })
-    // If the response delivers data:
+    // Whenever the response delivers data:
     .on('data', chunk => {
-      // Add them to the collection.
+      // Add them to the array.
       chunks.push(chunk);
     })
     // When the response is completed:
-    .on('end', async () => {
-      const content = chunks.join('');
+    .on('end', () => {
+      const contentString = chunks.join('');
       try {
-        // Output it.
-        const targetsObj = JSON.parse(content);
-        console.log(JSON.stringify(targetsObj, null, 2));
-        const reports = targetsObj['available reports'];
-        // Get the IDs of the available reports.
-        const reportIDs = reports.map(report => report.identifier);
-        // Choose one at random.
-        const [timeStamp, jobID] = reportIDs[Math.floor(Math.random() * reportIDs.length)]
-        .split('-');
-        const path = `/api/reportIssues/${timeStamp}/${jobID}`;
-        console.log('======================');
-        console.log(`About to submit ${scheme} request as JSON on port ${port} to ${host}${path}`);
-        const requestOptions = getRequestOptions(path);
-        // Submit an issues request for it.
-        client.request(requestOptions, response => {
-          // Initialize a collection of data from the response.
-          const chunks = [];
-          response
-          // If the response throws an error:
-          .on('error', async error => {
-            // Report it.
-            console.log(error.message);
-          })
-          // If the response delivers data:
-          .on('data', chunk => {
-            // Add them to the collection.
-            chunks.push(chunk);
-          })
-          // When the response is completed:
-          .on('end', async () => {
-            const content = chunks.join('');
-            try {
-              // Output it.
-              const contentObj = JSON.parse(content);
-              console.log(JSON.stringify(contentObj, null, 2));
-              const testRecGoodPath = `/api/testRecForm`;
-              console.log('======================');
-              console.log(
-                `About to submit good ${scheme} POST request as JSON on port ${port} to ${host}${testRecGoodPath}`
-              );
-              const testRecOptions = getRequestOptions(testRecGoodPath, 'POST');
-              // Submit a good test recommendation.
-              client.request(testRecOptions, response => {
-                // Initialize a collection of data from the response.
-                const chunks = [];
-                response
-                // If the response throws an error:
-                .on('error', async error => {
-                  // Report it.
-                  console.log(error.message);
-                })
-                // If the response delivers data:
-                .on('data', chunk => {
-                  // Add them to the collection.
-                  chunks.push(chunk);
-                })
-                // When the response is completed:
-                .on('end', async () => {
-                  const content = chunks.join('');
-                  try {
-                    // Output it.
-                    const contentObj = JSON.parse(content);
-                    console.log(JSON.stringify(contentObj, null, 2));
-                    const testRecBadPath = `/api/testRecForm`;
-                    console.log('======================');
-                    console.log(
-                      `About to submit bad ${scheme} POST request as JSON on port ${port} to ${host}${testRecBadPath}`
-                    );
-                    const testRecOptions = getRequestOptions(testRecBadPath, 'POST');
-                    // Submit a bad test recommendation.
-                    client.request(testRecOptions, response => {
-                      // Initialize a collection of data from the response.
-                      const chunks = [];
-                      response
-                      // If the response throws an error:
-                      .on('error', async error => {
-                        // Report it.
-                        console.log(error.message);
-                      })
-                      // If the response delivers data:
-                      .on('data', chunk => {
-                        // Add them to the collection.
-                        chunks.push(chunk);
-                      })
-                      // When the response is completed:
-                      .on('end', async () => {
-                        const content = chunks.join('');
-                        try {
-                          // Output it.
-                          const contentObj = JSON.parse(content);
-                          console.log(JSON.stringify(contentObj, null, 2));
-                        }
-                        catch (error) {
-                          console.log(error.message);
-                          console.log(
-                            `Test recommendation response content: ${content || 'No content'}`
-                          );
-                        }
-                      })
-                    })
-                    // Finish sending the bad test recommendation request.
-                    .end(JSON.stringify({
-                      what: 'Page Wrongly Recommended',
-                      url: reports[Math.floor(Math.random() * reports.length)]
-                      ['tested web page']
-                      .URL,
-                      why: 'This URL has already been tested'
-                    }));
-                  }
-                  catch (error) {
-                    console.log(error.message);
-                    console.log(`Test recommendation response content: ${content || 'No content'}`);
-                  }
-                })
-              })
-              // Finish sending the good test recommendation request.
-              .end(JSON.stringify({
-                what: 'Page Not Already Tested',
-                url: 'https://pagenotalreadytested.info',
-                why: 'This is only a test'
-              }));
-            }
-            catch (error) {
-              console.log(error.message);
-              console.log(`Issues response content: ${content || 'No content'}`);
-            }
-          });
-        })
-        // Finish sending the issues request.
-        .end();
+        const content = JSON.parse(contentString);
+        // Return the response content as an object.
+        resolve(content);
       }
+      // If it is not JSON:
       catch (error) {
-        console.log(error.message);
-        console.log(`Targets response content: ${content || 'No content'}`);
+        // Return this.
+        reject({error: `Response content not JSON (${contentString})`});
       }
     });
+  });
+  console.log(JSON.stringify(content, null, 2));
+  return content;
+};
+const getRequestOptions = (path, method = 'GET') => ({
+  method,
+  host,
+  port,
+  path,
+  headers: {
+    'content-type': 'application/json; charset=utf-8'
+  }
+});
+// Submits requests to a random Kilotest host.
+const requestService = async () => {
+  let method;
+  let path;
+  let content;
+  let reports;
+  let report;
+  let identifier;
+  let timeStamp;
+  let jobID;
+  console.log('======================\nRequest 1: Summarize nonexistent reports');
+  method = 'POST';
+  path = '/api/target';
+  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
+  client.request(getRequestOptions(path, method), async response => {
+    content = await getContent(response);
   })
-  // Finish sending the targets request.
+  .end({
+    what: 'oesntuhaesouht',
+    url: 'osentuhaoesuht'
+  });
+  results.push(content.error ? 'bad' : 'good');
+  if (content.error) {
+    return;
+  }
+  console.log('======================\nRequest 2: Summarize all available reports');
+  method = 'GET';
+  path = '/api/targets';
+  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
+  client.request(getRequestOptions(path, method), async response => {
+    // Get an array of summaries of all available reports.
+    content = await getContent(response);
+  })
   .end();
+  results.push(content.error ? 'bad' : 'good');
+  if (content.error) {
+    return;
+  }
+  console.log('======================\nRequest 3: Summarize matching reports');
+  reports = content['available reports'];
+  // Choose one available report at random.
+  report = content[Math.floor(Math.random() * content.length)];
+  [description, URL] = report['tested web page'];
+  method = 'POST';
+  path = '/api/target';
+  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
+  client.request(getRequestOptions(path, method), async response => {
+    content = await getContent(response);
+  })
+  .end({
+    what: description,
+    url: URL
+  });
+  results.push(content.error ? 'bad' : 'good');
+  if (content.error) {
+    return;
+  }
+  console.log(
+    '======================\nRequest 4: Summarize the issues in a report'
+  );
+  ({identifier, 'tested web page': {description, URL}} = report);
+  [timeStamp, jobID] = identifier.split('-');
+  method = 'GET';
+  path = `/api/reportIssues/${timeStamp}/${jobID}`;
+  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
+  client.request(getRequestOptions(path, method), async response => {
+    content = await getContent(response);
+  })
+  .end();
+  results.push(content.error ? 'bad' : 'good');
+  if (content.error) {
+    return;
+  }
+  console.log('======================\nRequest 5: Make a permitted test recommendation');
+  method = 'POST';
+  path = '/api/testRecForm';
+  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
+  client.request(getRequestOptions(path, method), async response => {
+    content = await getContent(response);
+  })
+  .end({
+    what: description,
+    url: URL
+  })
+  .end({
+    'description of the web page': 'aoseeou',
+    'URL of the web page': 'oseantuhaosunth.aoenu',
+    'reason for testing the web page': 'Just testing'
+  });
+  results.push(content.error ? 'bad' : 'good');
+  if (content.error) {
+    return;
+  }
+  console.log('======================\nRequest 6: Make an illicit test recommendation');
+  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
+  client.request(getRequestOptions(path, method), async response => {
+    content = await getContent(response);
+  })
+  .end({
+    what: description,
+    url: URL
+  })
+  .end({
+    'description of the web page': description,
+    'URL of the web page': URL,
+    'reason for testing the web page': 'Just testing'
+  });
+  results.push(content.error ? 'bad' : 'good');
+  if (content.error) {
+    return;
+  }
 };
 
 // EXECUTION
 
 // Execute the research agent.
 requestService();
+console.log(`Results: ${results}`);

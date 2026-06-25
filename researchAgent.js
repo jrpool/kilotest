@@ -77,6 +77,15 @@ const getRequestOptions = (path, method = 'GET') => ({
     'content-type': 'application/json; charset=utf-8'
   }
 });
+// Submits a request, awaits the response, and returns the response content.
+const submitRequest = async (path, method = 'GET', body = null) => new Promise(resolve => {
+  client.request(getRequestOptions(path, method), async response => {
+    const responseContent = await getContent(response);
+    results.push(responseContent.error ? 'bad' : 'good');
+    resolve(responseContent);
+  })
+  .end(body ? JSON.stringify(body) : undefined);
+});
 // Submits requests to a random Kilotest host.
 const requestService = async () => {
   let method;
@@ -87,18 +96,16 @@ const requestService = async () => {
   let identifier;
   let timeStamp;
   let jobID;
+  let description;
+  let URL;
   console.log('======================\nRequest 1: Summarize nonexistent reports');
   method = 'POST';
   path = '/api/target';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  client.request(getRequestOptions(path, method), async response => {
-    content = await getContent(response);
-  })
-  .end({
+  content = await submitRequest(path, method, {
     what: 'oesntuhaesouht',
     url: 'osentuhaoesuht'
   });
-  results.push(content.error ? 'bad' : 'good');
   if (content.error) {
     return;
   }
@@ -106,12 +113,7 @@ const requestService = async () => {
   method = 'GET';
   path = '/api/targets';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  client.request(getRequestOptions(path, method), async response => {
-    // Get an array of summaries of all available reports.
-    content = await getContent(response);
-  })
-  .end();
-  results.push(content.error ? 'bad' : 'good');
+  content = await submitRequest(path, method);
   if (content.error) {
     return;
   }
@@ -123,14 +125,10 @@ const requestService = async () => {
   method = 'POST';
   path = '/api/target';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  client.request(getRequestOptions(path, method), async response => {
-    content = await getContent(response);
-  })
-  .end({
+  content = await submitRequest(path, method, {
     what: description,
     url: URL
   });
-  results.push(content.error ? 'bad' : 'good');
   if (content.error) {
     return;
   }
@@ -142,11 +140,7 @@ const requestService = async () => {
   method = 'GET';
   path = `/api/reportIssues/${timeStamp}/${jobID}`;
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  client.request(getRequestOptions(path, method), async response => {
-    content = await getContent(response);
-  })
-  .end();
-  results.push(content.error ? 'bad' : 'good');
+  content = await submitRequest(path, method);
   if (content.error) {
     return;
   }
@@ -154,44 +148,28 @@ const requestService = async () => {
   method = 'POST';
   path = '/api/testRecForm';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  client.request(getRequestOptions(path, method), async response => {
-    content = await getContent(response);
-  })
-  .end({
-    what: description,
-    url: URL
-  })
-  .end({
+  content = await submitRequest(path, method, {
     'description of the web page': 'aoseeou',
     'URL of the web page': 'oseantuhaosunth.aoenu',
     'reason for testing the web page': 'Just testing'
   });
-  results.push(content.error ? 'bad' : 'good');
   if (content.error) {
     return;
   }
   console.log('======================\nRequest 6: Make an illicit test recommendation');
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  client.request(getRequestOptions(path, method), async response => {
-    content = await getContent(response);
-  })
-  .end({
-    what: description,
-    url: URL
-  })
-  .end({
+  client.request(getRequestOptions(path, method, {
     'description of the web page': description,
     'URL of the web page': URL,
     'reason for testing the web page': 'Just testing'
-  });
-  results.push(content.error ? 'bad' : 'good');
+  }));
   if (content.error) {
     return;
   }
+  console.log(`Results: ${results}`);
 };
 
 // EXECUTION
 
 // Execute the research agent.
 requestService();
-console.log(`Results: ${results}`);

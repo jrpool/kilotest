@@ -34,7 +34,7 @@ const results = [];
 
 // Gets and outputs the content or error message from a response.
 const getContent = async response => {
-  const content = await new Promise((resolve, reject) => {
+  const content = await new Promise(resolve => {
     // Initialize an array of data from the response.
     const chunks = [];
     response
@@ -43,7 +43,7 @@ const getContent = async response => {
       const {message} = error;
       // Report and return the error message.
       console.log(message);
-      reject({error: message});
+      resolve({error: message});
     })
     // Whenever the response delivers data:
     .on('data', chunk => {
@@ -61,7 +61,7 @@ const getContent = async response => {
       // If it is not JSON:
       catch (error) {
         // Return this.
-        reject({error: `Response content not JSON (${contentString})`});
+        resolve({error: `Response content not JSON (${contentString})`});
       }
     });
   });
@@ -114,14 +114,17 @@ const requestService = async () => {
   path = '/api/targets';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(path, method);
-  if (content.error) {
+  reports = content?.['available reports'] ?? [];
+  if (content.error || ! Array.isArray(reports) || ! reports.length) {
     return;
   }
   console.log('======================\nRequest 3: Summarize matching reports');
-  reports = content['available reports'];
   // Choose one available report at random.
-  report = content[Math.floor(Math.random() * content.length)];
-  [description, URL] = report['tested web page'];
+  report = reports[Math.floor(Math.random() * reports.length)];
+  ({description, URL} = report?.['tested web page'] ?? ['', '']);
+  if (! (description && URL)) {
+    return;
+  }
   method = 'POST';
   path = '/api/target';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
@@ -137,6 +140,9 @@ const requestService = async () => {
   );
   ({identifier, 'tested web page': {description, URL}} = report);
   [timeStamp, jobID] = identifier.split('-');
+  if (! (timeStamp && jobID)) {
+    return;
+  }
   method = 'GET';
   path = `/api/reportIssues/${timeStamp}/${jobID}`;
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
@@ -158,11 +164,11 @@ const requestService = async () => {
   }
   console.log('======================\nRequest 6: Make an illicit test recommendation');
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  client.request(getRequestOptions(path, method, {
+  content = await submitRequest(path, method, {
     'description of the web page': description,
     'URL of the web page': URL,
     'reason for testing the web page': 'Just testing'
-  }));
+  });
   if (content.error) {
     return;
   }
@@ -172,4 +178,4 @@ const requestService = async () => {
 // EXECUTION
 
 // Execute the research agent.
-requestService();
+await requestService();

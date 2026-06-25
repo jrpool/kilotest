@@ -24,14 +24,13 @@ const kilotestHosts = [
   process.env.LOCAL_KILOTEST_HOST || 'http://localhost:3000',
   process.env.DEPLOYED_KILOTEST_HOST || 'https://kilotest.com'
 ];
-// Randomly chosen Kilotest host.
-const kilotestHost = kilotestHosts[Math.random() < 0.5 ? 0 : 1];
+// Kilotest host specified by the argument.
+const kilotestHost = kilotestHosts[process.argv[2] === 'pub' ? 1 : 0];
 const hostParts = kilotestHost.split(/:\/*/);
-const scheme = hostParts[0];
+const scheme = hostParts[0] === 'https' ? 'https' : 'http';
 const client = scheme === 'https' ? httpsClient : httpClient;
-const host = hostParts[1];
+const host = hostParts[1] || 'localhost';
 const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
-const results = [];
 
 // FUNCTIONS
 
@@ -80,14 +79,14 @@ const getRequestOptions = (path, method = 'GET') => ({
     'content-type': 'application/json; charset=utf-8'
   }
 });
-// Submits a request, awaits the response, and returns the response content.
-const submitRequest = async (path, method = 'GET', body = null) => new Promise(resolve => {
+// Submits a request, returns the response content, and increments the results.
+const submitRequest = async (results, path, method, body = null) => new Promise(resolve => {
   client.request(getRequestOptions(path, method), async response => {
     const responseContent = await getContent(response);
     results.push(responseContent.error ? 'bad' : 'good');
     resolve(responseContent);
   })
-  .end(body ? JSON.stringify(body) : undefined);
+  .end(body ? JSON.stringify(body) : '');
 });
 // Submits requests to a random Kilotest host.
 const requestService = async () => {
@@ -96,16 +95,16 @@ const requestService = async () => {
   let content;
   let reports;
   let report;
-  let identifier;
   let timeStamp;
   let jobID;
   let description;
   let URL;
+  const results = [];
   console.log('======================\nRequest 1: Summarize nonexistent reports');
   method = 'POST';
   path = '/api/target';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  content = await submitRequest(path, method, {
+  content = await submitRequest(results, path, method, {
     what: 'oesntuhaesouht',
     url: 'osentuhaoesuht'
   });
@@ -116,7 +115,7 @@ const requestService = async () => {
   method = 'GET';
   path = '/api/targets';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  content = await submitRequest(path, method);
+  content = await submitRequest(results, path, method);
   reports = content?.['available reports'] ?? [];
   if (content.error || ! Array.isArray(reports) || ! reports.length) {
     return;
@@ -131,7 +130,7 @@ const requestService = async () => {
   method = 'POST';
   path = '/api/target';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  content = await submitRequest(path, method, {
+  content = await submitRequest(results, path, method, {
     what: description,
     url: URL
   });
@@ -148,7 +147,7 @@ const requestService = async () => {
   method = 'GET';
   path = `/api/reportIssues/${timeStamp}/${jobID}`;
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  content = await submitRequest(path, method);
+  content = await submitRequest(results, path, method);
   if (content.error) {
     return;
   }
@@ -156,7 +155,7 @@ const requestService = async () => {
   method = 'POST';
   path = '/api/testRecForm';
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  content = await submitRequest(path, method, {
+  content = await submitRequest(results, path, method, {
     'description of the web page': 'aoseeou',
     'URL of the web page': 'oseantuhaosunth.aoenu',
     'reason for testing the web page': 'Just testing'
@@ -166,7 +165,7 @@ const requestService = async () => {
   }
   console.log('======================\nRequest 6: Make an illicit test recommendation');
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
-  content = await submitRequest(path, method, {
+  content = await submitRequest(results, path, method, {
     'description of the web page': description,
     'URL of the web page': URL,
     'reason for testing the web page': 'Just testing'

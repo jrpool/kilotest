@@ -17,7 +17,7 @@ paths:
     post:
       operationId: summarizeQualityOfMatchingWebPages
       summary: Summarize the quality of matching web pages
-      description: Get summary data from the available non-hidden reports about web pages whose descriptions or URL hostnames match your specifications. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragmant. The data include the name and URL of each tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standards conformity) issues were reported, and URLs for retrieving more detailed data from the report. Before calling recommendQualityTestingOfOneWebPage and waiting for testing to occur, call this tool to check whether a report about the page is available now. If so, you can retrieve data from it. If not, you can use the submitWebAccessibilityTestRequest tool to recommend the page for testing.
+      description: Get summary data from the available reports about web pages whose descriptions or hostnames match your specifications. Matching is case-insensitive and succeeds at least 1 specification is included by or includes the corresponding property of a tested page. The data include the name and URL of each tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standards conformity) issues were reported, and URLs for retrieving more detailed data from the report. Before calling the recommendQualityTestingOfOneWebPage tool and waiting for testing to occur, call this tool to check whether a report about the page is available now. If so, you can retrieve data from it. If not, you can use the recommendQualityTestingOfOneWebPage tool to recommend the page for testing.
       requestBody:
         description: Page specifications
         required: true
@@ -314,9 +314,9 @@ components:
         what:
           type: string
           description: All or part of a description of the web page. If the page is the home page of an organization, the description is the name of the organization (e.g., “Earthjustice”). Otherwise, the description appends minimal differentiating words to the name of the organization (e.g., “Earthjustice Donate”), without the word “page”.
-        url:
+        hostname:
           type: string
-          description: All or part of the hostname of the URL of the web page (e.g., “earthjustice.org” if the full URL is https://earthjustice.org/news).
+          description: All or part of the hostname of the web page. The hostname omits the scheme and the path.
 
     TargetsResponse:
       allOf:

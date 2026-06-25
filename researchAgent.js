@@ -102,7 +102,7 @@ const requestService = async () => {
   let timeStamp;
   let jobID;
   let description;
-  let URL;
+  let url;
   const results = [];
   console.log('======================\nRequest 1: Summarize nonexistent reports');
   method = 'POST';
@@ -110,7 +110,7 @@ const requestService = async () => {
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     what: 'oesntuhaesouht',
-    url: 'osentuhaoesuht'
+    hostname: 'osentuhaoesuht.aoesntuh'
   });
   if (content.error) {
     return;
@@ -127,8 +127,8 @@ const requestService = async () => {
   console.log('======================\nRequest 3: Summarize matching reports');
   // Choose one available report at random.
   report = reports[Math.floor(Math.random() * reports.length)];
-  ({description, URL} = report?.['tested web page'] ?? ['', '']);
-  if (! (description && URL)) {
+  ({description, URL: url} = report?.['tested web page'] ?? ['', '']);
+  if (! (description && url)) {
     return;
   }
   method = 'POST';
@@ -136,7 +136,7 @@ const requestService = async () => {
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     what: description,
-    url: URL
+    hostname: new URL(url).hostname ?? ''
   });
   if (content.error) {
     return;
@@ -171,7 +171,7 @@ const requestService = async () => {
   console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     'description of the web page': description,
-    'URL of the web page': URL,
+    'URL of the web page': url,
     'reason for testing the web page': 'Just testing'
   });
   if (content.error) {

@@ -81,7 +81,7 @@ The implementation is currently in an alpha phase and offers 4 tools:
   - path: `/api/target`
   - payload properties
     - `what`: all or part of a description of the page
-    - `url`: all or part of the hostname of the URL of the page
+    - `hostname`: all or part of the hostname of the page
 - `summarizeQualityOfAllTestedWebPages`
   - method: `GET`
   - purpose: summarize front-end quality test results from all available reports

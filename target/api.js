@@ -21,8 +21,8 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // Returns a response to a target request.
 exports.response = async args => {
-  const [what, url] = args;
-  const host = new URL(minifyURL(url)).hostname;
+  const [what, hostname] = args;
+  const hostLC = hostname.toLowerCase();
   const whatLC = what.toLowerCase();
   const matchingReports = [];
   // Get the non-hidden logs.
@@ -36,8 +36,8 @@ exports.response = async args => {
     const reportWhatLC = reportWhat.toLowerCase();
     // If its description or hostname fragment matches the requested page:
     if (
-      reportHost.includes(host)
-      || host.includes(reportHost)
+      reportHost.includes(hostLC)
+      || hostLC.includes(reportHost)
       || reportWhatLC.includes(whatLC)
       || whatLC.includes(reportWhatLC)
     ) {
@@ -99,7 +99,7 @@ exports.response = async args => {
       method: 'POST',
       payload: {
         'all or part of a description of the web page': what,
-        'all or part of the hostname of the URL of the web page': url
+        'all or part of the hostname of the URL of the web page': hostname
       },
       URLs: {
         'URL of your request': `${thisHost}/api/target`,

@@ -20,7 +20,10 @@ const httpsClient = require('https');
 
 // CONSTANTS
 
-const kilotestHosts = [process.env.LOCAL_KILOTEST_HOST, process.env.DEPLOYED_KILOTEST_HOST];
+const kilotestHosts = [
+  process.env.LOCAL_KILOTEST_HOST || 'http://localhost:3000',
+  process.env.DEPLOYED_KILOTEST_HOST || 'https://kilotest.com'
+];
 // Randomly chosen Kilotest host.
 const kilotestHost = kilotestHosts[Math.random() < 0.5 ? 0 : 1];
 const hostParts = kilotestHost.split(/:\/*/);
@@ -138,8 +141,7 @@ const requestService = async () => {
   console.log(
     '======================\nRequest 4: Summarize the issues in a report'
   );
-  ({identifier, 'tested web page': {description, URL}} = report);
-  [timeStamp, jobID] = identifier.split('-');
+  [timeStamp, jobID] = report.identifier?.split('-') ?? ['', ''];
   if (! (timeStamp && jobID)) {
     return;
   }
@@ -178,4 +180,6 @@ const requestService = async () => {
 // EXECUTION
 
 // Execute the research agent.
-await requestService();
+(async () => {
+  await requestService();
+})();

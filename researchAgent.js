@@ -87,8 +87,8 @@ const submitRequest = async (results, path, method, body = null) => new Promise(
     resolve(responseContent);
   })
   .on('error', error => {
-    console.log(error);
-    resolve({error: error.message});
+    console.log(`ERROR submitting request (${JSON.stringify(error, null, 2)})`);
+    resolve({error});
   })
   .end(body ? JSON.stringify(body) : '');
 });

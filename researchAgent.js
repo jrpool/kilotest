@@ -86,6 +86,10 @@ const submitRequest = async (results, path, method, body = null) => new Promise(
     results.push(responseContent.error ? 'bad' : 'good');
     resolve(responseContent);
   })
+  .on('error', error => {
+    console.log(error);
+    resolve({error: error.message});
+  })
   .end(body ? JSON.stringify(body) : '');
 });
 // Submits requests to a random Kilotest host.

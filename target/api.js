@@ -21,7 +21,7 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // Returns a response to a target request.
 exports.response = async args => {
-  const [what, hostname] = args;
+  const [what = '', hostname = ''] = args;
   const hostLC = hostname.toLowerCase();
   const whatLC = what.toLowerCase();
   const matchingReports = [];
@@ -36,10 +36,8 @@ exports.response = async args => {
     const reportWhatLC = reportWhat.toLowerCase();
     // If its description or hostname fragment matches the requested page:
     if (
-      reportHost.includes(hostLC)
-      || hostLC.includes(reportHost)
-      || reportWhatLC.includes(whatLC)
-      || whatLC.includes(reportWhatLC)
+      hostLC && (reportHost.includes(hostLC) || hostLC.includes(reportHost))
+      || whatLC && (reportWhatLC.includes(whatLC) || whatLC.includes(reportWhatLC))
     ) {
       // Get data about its report.
       const data = await getReportData(timeStamp, jobID);

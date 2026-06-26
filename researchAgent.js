@@ -81,6 +81,7 @@ const getRequestOptions = (path, method = 'GET') => ({
 });
 // Submits a request, returns the response content, and increments the results.
 const submitRequest = async (results, path, method, body = null) => new Promise(resolve => {
+  console.log(`Making ${scheme} ${method} request on port ${port} to ${host}${path}`);
   client.request(getRequestOptions(path, method), async response => {
     const responseContent = await getContent(response);
     results.push(responseContent.error ? 'bad' : 'good');
@@ -107,7 +108,6 @@ const requestService = async () => {
   console.log('======================\nRequest 1: Summarize nonexistent reports');
   method = 'POST';
   path = '/api/target';
-  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     what: 'oesntuhaesouht',
     hostname: 'osentuhaoesuht.aoesntuh'
@@ -118,7 +118,6 @@ const requestService = async () => {
   console.log('======================\nRequest 2: Summarize all available reports');
   method = 'GET';
   path = '/api/targets';
-  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method);
   reports = content?.['available reports'] ?? [];
   if (content.error || ! Array.isArray(reports) || ! reports.length) {
@@ -133,7 +132,6 @@ const requestService = async () => {
   }
   method = 'POST';
   path = '/api/target';
-  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     what: description,
     hostname: new URL(url).hostname ?? ''
@@ -150,7 +148,6 @@ const requestService = async () => {
   }
   method = 'GET';
   path = `/api/reportIssues/${timeStamp}/${jobID}`;
-  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method);
   if (content.error) {
     return;
@@ -158,7 +155,6 @@ const requestService = async () => {
   console.log('======================\nRequest 5: Make a permitted test recommendation');
   method = 'POST';
   path = '/api/testRecForm';
-  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     'description of the web page': 'aoseeou',
     'URL of the web page': 'https://oaaestuh.osneth',
@@ -168,13 +164,12 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest 6: Make an illicit test recommendation');
-  console.log(`${scheme} ${method} request on port ${port} to ${host}${path}`);
   content = await submitRequest(results, path, method, {
     'description of the web page': description,
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'
   });
-  console.log(`======================\nResults: ${results}`);
+  console.log(`======================\nResults: ${results}\n`);
 };
 
 // EXECUTION

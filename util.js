@@ -640,7 +640,7 @@ const updateRecs = exports.updateRecs = async (what, url, why) => {
   // Save the revised recommendations.
   await fs.writeFile(recsPath, getJSON(recs));
 };
-// Processes a test or retest recommendation.
+// Processes a test or retest recommendation in the UI.
 exports.processRec = async (testType, dirName, what, url, why) => {
   // If the recommendation is valid:
   if (

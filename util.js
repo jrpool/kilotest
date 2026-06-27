@@ -683,7 +683,7 @@ exports.processRec = async (testType, dirName, what, url, why) => {
   };
 };
 // Gets the WCAG Understanding link for a numeric WCAG standard identifier.
-exports.getWCAGLink = numericID => {
+exports.getWCAGURL = numericID => {
   // Return the link.
   return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
 };

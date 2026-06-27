@@ -8,7 +8,7 @@
 const {getData} = require('./util');
 const {
   getPageDataStrings,
-  getWCAGLink,
+  getWCAGURL,
   getWeightName,
   htmlSafe,
   isHidden,
@@ -97,7 +97,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
           wcag,
           why
         } = issueData;
-        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+        const wcagLink = `<a href="${getWCAGURL(wcag)}">${wcag}</a>`;
         // Add the start of a list item to the lines.
         detailsLines.push(`${margin}  <li>`);
         // Add a heading summarizing the issue to the lines.

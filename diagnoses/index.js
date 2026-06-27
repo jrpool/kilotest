@@ -9,7 +9,7 @@ const {
   getPageDataStrings,
   getReport,
   getTextFragmentHref,
-  getWCAGLink,
+  getWCAGURL,
   getWeightName,
   htmlSafe,
   isHidden,
@@ -50,7 +50,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
-  query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+  query.wcag = `<a href="${getWCAGURL(wcag)}">${wcag}</a>`;
   query.tagName = tagName || 'HTML';
   if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
     const textString = text.split('\n').join(' … ');

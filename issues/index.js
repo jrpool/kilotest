@@ -11,7 +11,7 @@ const {
   getReport,
   getToolNamesString,
   getLogs,
-  getWCAGLink,
+  getWCAGURL,
   getWeightName,
   objectSort,
   ruleIDs
@@ -126,7 +126,7 @@ const populateQuery = async query => {
         // Get the data on it from the issue classification.
         const issue = issues[issueID];
         const {summary, wcag, why} = issue;
-        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+        const wcagLink = `<a href="${getWCAGURL(wcag)}">${wcag}</a>`;
         // Add a description of it to the lines.
         lines.push(`${margin}  <li>${summary}`);
         lines.push(`${margin}    <ul>`);

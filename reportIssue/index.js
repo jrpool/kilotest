@@ -11,7 +11,7 @@ const {
   getReport,
   getToolNamesString,
   getTextFragmentHref,
-  getWCAGLink,
+  getWCAGURL,
   getWeightName,
   htmlSafe,
   isHidden,
@@ -36,7 +36,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
-  query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+  query.wcag = `<a href="${getWCAGURL(wcag)}">${wcag}</a>`;
   // Initialize those whose values depend on instance inspection.
   query.count = 0;
   query.reporters = new Set();

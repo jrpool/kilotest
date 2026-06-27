@@ -26,9 +26,9 @@ const getIssuesData = async (timeStamp, jobID) => {
     };
     // Initialize the final data.
     const final = {
+      reporterCount: 0,
       reporters: [],
       reporterList: '',
-      reporterCount: 0,
       violatorCount: 0,
       preventions: report.jobData.preventions,
       issues: {

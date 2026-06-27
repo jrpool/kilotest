@@ -21,7 +21,7 @@ exports.response = async (what, url, why) => {
   await updateRecs(what, url, why);
   // Alert a manager about it.
   await sendAlert(
-    `Kilotest: new ${testType} recommendation in the API`,
+    `Kilotest: new test recommendation in the API`,
     `Target: ${what}\nURL: ${url}\nReason: ${why}`
   );
   // Get a response.

@@ -658,7 +658,7 @@ exports.processRec = async (testType, dirName, what, url, why) => {
     console.log(`Test recommendation received for ${what}: ${plainWhy}`);
     // Alert a manager about it.
     await sendAlert(
-      `Kilotest: new ${testType} recommendation`,
+      `Kilotest: new ${testType} recommendation in the UI`,
       `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
     );
     // Get the template.

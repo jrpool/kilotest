@@ -37,6 +37,9 @@ exports.getData = async (issueID, timeStamp, jobID) => {
       error: 'Report is invalid or not available'
     };
   }
+  // Get global data from the report.
+  const {acts, catalog, jobData} = report;
+  const {preventions} = jobData;
   // Get data about the target.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   const {what, url, urlLink, testInfo} = pageDataStrings;
@@ -58,18 +61,24 @@ exports.getData = async (issueID, timeStamp, jobID) => {
       priority: getWeightName(weight),
       wcagURL: getWCAGURL(wcag)
     },
+    ruleEngineCount: 0,
+    ruleEngineIDs: new Set(),
+    ruleEngineList: '',
+    preventions,
     reporterCount: 0,
     reporterIDs: new Set(),
     reporterList: '',
     violatorCount: 0,
     violators: {}
   };
-  const {reporterIDs, violators} = data;
-  const {acts, catalog} = report;
+  const {reporterIDs, ruleEngineIDs, violators} = data;
   const testActs = acts.filter(act => act.type === 'test');
   // For each test act in the report:
   testActs.forEach(act => {
     const {result, which} = act;
+    // Ensure that its rule engine is in the set of rule engines.
+    ruleEngineIDs.add(which);
+    // Get the instances of the issue.
     const issueInstances = result?.standardResult?.instances?.filter(
       instance => instance.issueID === issueID
     ) ?? [];
@@ -101,6 +110,8 @@ exports.getData = async (issueID, timeStamp, jobID) => {
     });
   });
   // Add the aggregate data to the data.
+  data.ruleEngineCount = ruleEngineIDs.size;
+  data.ruleEngineList = getToolNamesString(ruleEngineIDs);
   data.reporterCount = reporterIDs.size;
   data.reporterList = getToolNamesString(reporterIDs);
   data.violatorCount = Object.keys(violators).length;
@@ -120,6 +131,7 @@ exports.getData = async (issueID, timeStamp, jobID) => {
   // Sort the violators in XPath order.
   data.violators.sort((a, b) => a.pathID.localeCompare(b.pathID));
   // Delete unneeded data.
+  delete data.ruleEngineIDs;
   delete data.reporterIDs;
   // Return the data.
   return data;

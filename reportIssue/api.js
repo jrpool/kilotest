@@ -11,7 +11,6 @@ const {
   getNowStamp,
   getRandomString,
   getToolsFacts,
-  isHidden,
   tools
 } = require('../util');
 
@@ -52,7 +51,7 @@ exports.response = async args => {
       message: data.error
     };
   }
-  const {target, issue, reporterCount, reporterList, violatorCount, violators} = data;
+  const {target, issue, reporterCount, reporterList, ruleEngineCount, ruleEngines, violatorCount, violators} = data;
   const {what, url, urlLink, testInfo} = target;
   const {summary, why, wcag, weight, priority, wcagURL} = issue;
   const preventedTools = Object.entries(preventions).map(prevention => ({

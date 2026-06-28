@@ -39,9 +39,10 @@ const getIssueFacts = (thisHost, timeStamp, jobID, issue) => {
     }
   };
 };
-// Returns a response to a report-issues request.
+// Returns a response to a report-issue request.
 exports.response = async args => {
   const [issueID, timeStamp, jobID] = args;
+  // Get data about the issue in the report.
   const data = await getData(issueID, timeStamp, jobID);
   // If the request was invalid:
   if (data.error) {
@@ -51,35 +52,46 @@ exports.response = async args => {
       message: data.error
     };
   }
-  const {target, issue, reporterCount, reporterList, ruleEngineCount, ruleEngines, violatorCount, violators} = data;
-  const {what, url, urlLink, testInfo} = target;
-  const {summary, why, wcag, weight, priority, wcagURL} = issue;
-  const preventedTools = Object.entries(preventions).map(prevention => ({
+  // Otherwise, get data about the issue in the report.
+  const {
+    issue,
+    preventions,
+    reporterCount,
+    reporterNames,
+    ruleEngineCount,
+    ruleEngines,
+    target,
+    violatorCount,
+    violators
+  } = data;
+  const {daysAgo, url, what} = target;
+  const {priority, summary, wcag, wcagURL, weight, why} = issue;
+  const preventedRuleEngines = Object.entries(preventions).map(prevention => ({
     name: tools[prevention[0]][0],
     'reason for failure': prevention[1]
   }));
   const thisHost = process.env.THIS_KILOTEST_HOST;
-  // Get a response.
+  // Get content for a response.
   const content = {
-    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model requested data from a Kilotest report about the front-end quality (i.e. accessibility, usability, and standard-conformity) of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model requested data from a Kilotest report about the front-end quality (i.e. accessibility, usability, and standard-conformity) of a web page. The requested data describe one of the reported issues, including the HTML elements exhibiting the issue. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool collection name': 'Kilotest',
-    'tool name': 'describeQualityOfOneWebPage',
+    'tool name': 'describeOneIssueOfOneWebPage',
     request: {
       'type of request': {
-        identifier: 'reportIssues',
-        description: 'Describe the quality of one web page.'
+        identifier: 'describeOneIssueOfOneWebPage',
+        description: 'Describe one reported issue of one web page.'
       },
       method: 'GET',
       URLs: {
-        'URL of your request': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
-        'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+        'URL of your request': `${thisHost}/api/reportIssue/${issueID}${timeStamp}/${jobID}`,
+        'equivalent URL for humans': `${thisHost}/reportIssue.html/${issueID}${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
-        identifier: 'summarizeQualityOfAllTestedWebPages',
-        description: 'Summarize the quality of all tested web pages.',
+        identifier: 'describeQualityOfOneWebPage',
+        description: 'Describe the quality of one web page.',
         URLs: {
-          'for you': `${thisHost}/api/targets`,
-          'for humans': `${thisHost}/targets.html`
+          'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
+          'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
         }
       }
     },
@@ -96,11 +108,14 @@ exports.response = async args => {
       description: what,
       URL: url
     },
-    'rule engines that tried to test the page': getToolsFacts(Object.keys(tools)),
-    'rule engines that were unable to test the page': preventedTools,
+    'rule engines that tried to test the page': {
+      number: ruleEngineCount,
+      facts: ruleEngines
+    },
+    'rule engines that were unable to test the page': preventedRuleEngines,
     'rule engines that reported issues': {
       number: reporterCount,
-      names: reporters.map(tool => tool.toolName)
+      names: reporterNames
     },
     'number of issues reported': {
       total: issueCount,

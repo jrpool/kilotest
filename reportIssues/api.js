@@ -68,7 +68,7 @@ exports.response = async args => {
     'tool name': 'describeQualityOfOneWebPage',
     request: {
       'type of request': {
-        identifier: 'reportIssues',
+        identifier: 'describeQualityOfOneWebPage',
         description: 'Describe the quality of one web page.'
       },
       method: 'GET',

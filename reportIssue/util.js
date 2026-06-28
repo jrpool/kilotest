@@ -6,13 +6,15 @@
 // IMPORTS
 
 const {
-  getPageDataStrings,
+  getAgoDays,
   getPathID,
   getReport,
-  getToolNamesString,
+  getRuleEngineNames,
+  getToolsFacts,
   getWCAGURL,
   getWeightName,
-  isValidReport
+  isValidReport,
+  objectSort
 } = require('../util');
 const {issuesClassification} = require('testilo/procs/score/tic');
 
@@ -20,9 +22,9 @@ const {issuesClassification} = require('testilo/procs/score/tic');
 
 // Gets data about an issue in a report.
 exports.getData = async (issueID, timeStamp, jobID) => {
-  const issue = issuesClassification[issueID];
+  const classifiedIssue = issuesClassification[issueID];
   // If the issue ID is deprecated or unclassified:
-  if (issueID === 'ignorable' || ! issue) {
+  if (issueID === 'ignorable' || ! classifiedIssue) {
     // Return this.
     return {
       error: 'Issue ID is deprecated or unclassified'
@@ -38,36 +40,35 @@ exports.getData = async (issueID, timeStamp, jobID) => {
     };
   }
   // Get global data from the report.
-  const {acts, catalog, jobData} = report;
+  const {acts, catalog, jobData, target} = report;
   const {preventions} = jobData;
+  const daysAgo = getAgoDays(timeStamp);
   // Get data about the target.
-  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  const {what, url, urlLink, testInfo} = pageDataStrings;
-  const classifiedIssue = issuesClassification[issueID];
+  const {what, url} = target;
+  // Get data about the classified issue.
   const {summary, wcag, weight, why} = classifiedIssue;
   // Initialize the data.
   const data = {
     target: {
       what,
       url,
-      urlLink,
-      testInfo
+      daysAgo
     },
     issue: {
       summary,
       why,
       wcag,
+      wcagURL: getWCAGURL(wcag),
       weight,
-      priority: getWeightName(weight),
-      wcagURL: getWCAGURL(wcag)
+      priority: getWeightName(weight)
     },
     ruleEngineCount: 0,
     ruleEngineIDs: new Set(),
-    ruleEngineList: '',
+    ruleEngines: [],
     preventions,
     reporterCount: 0,
     reporterIDs: new Set(),
-    reporterList: '',
+    reporterNames: [],
     violatorCount: 0,
     violators: {}
   };
@@ -78,11 +79,11 @@ exports.getData = async (issueID, timeStamp, jobID) => {
     const {result, which} = act;
     // Ensure that its rule engine is in the set of rule engines.
     ruleEngineIDs.add(which);
-    // Get the instances of the issue.
+    // Get the standard instances of the issue.
     const issueInstances = result?.standardResult?.instances?.filter(
       instance => instance.issueID === issueID
     ) ?? [];
-    // For each standard instance whose rule belongs to the issue:
+    // For each of them:
     issueInstances.forEach(instance => {
       // Ensure that the rule engine of the act is in the set of issue reporters.
       reporterIDs.add(which);
@@ -98,28 +99,28 @@ exports.getData = async (issueID, timeStamp, jobID) => {
         text: catalog[catalogIndex]?.text ?? '',
         reporterCount: 0,
         reporterIDs: new Set(),
-        reporterList: ''
+        reporterNames: []
       };
       // Ensure that the rule engine is in the set of reporters of the violator.
       violators[catalogIndex].reporterIDs.add(which);
-      // If the instance has an XPath but the violator does not yet have one:
+      // If the instance has a path ID but the violator does not yet have one:
       if (instance.pathID && ! violators[catalogIndex].pathID) {
-        // Make the instance XPath the path ID of the violator.
+        // Make the instance path ID the path ID of the violator.
         violators[catalogIndex].pathID = instance.pathID;
       }
     });
   });
   // Add the aggregate data to the data.
   data.ruleEngineCount = ruleEngineIDs.size;
-  data.ruleEngineList = getToolNamesString(ruleEngineIDs);
+  data.ruleEngines = getToolsFacts(ruleEngineIDs);
   data.reporterCount = reporterIDs.size;
-  data.reporterList = getToolNamesString(reporterIDs);
+  data.reporterNames = getRuleEngineNames(reporterIDs);
   data.violatorCount = Object.keys(violators).length;
   // For each violator:
   Object.values(violators).forEach(violatorData => {
     // Add the aggregate data to its data.
     violatorData.reporterCount = violatorData.reporterIDs.size;
-    violatorData.reporterList = getToolNamesString(violatorData.reporterIDs);
+    violatorData.reporterNames = getRuleEngineNames(violatorData.reporterIDs);
     // Delete unneeded data.
     delete violatorData.reporterIDs;
   });
@@ -129,7 +130,7 @@ exports.getData = async (issueID, timeStamp, jobID) => {
     ... entry[1]
   }));
   // Sort the violators in XPath order.
-  data.violators.sort((a, b) => a.pathID.localeCompare(b.pathID));
+  objectSort(data.violators, 'pathID', 'alpha');
   // Delete unneeded data.
   delete data.ruleEngineIDs;
   delete data.reporterIDs;

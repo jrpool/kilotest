@@ -12,7 +12,7 @@ const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // FUNCTIONS
 
-// Returns data on the issues reported by a report.
+// Returns data on the issues in a report.
 const getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);

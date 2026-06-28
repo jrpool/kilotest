@@ -506,6 +506,9 @@ const getRecs = exports.getRecs = async () => {
   }
   return recs;
 };
+// Returns an array of names of rule engines.
+exports.getRuleEngineNames = ruleEngineIDSet => alphaSort(Array.from(ruleEngineIDSet)
+.map(id => tools[id]?.[0] || id));
 // Returns a string of names of rule engines.
 exports.getToolNamesString = toolIDSet =>
   alphaSort(Array.from(toolIDSet).map(toolID => tools[toolID]?.[0] || toolID)).join(' + ');
@@ -723,7 +726,7 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
 };
-// Returns data about rule engines sorted by their names.
+// Returns data about rule engines from a set of their IDs,sorted by their names.
 const getToolsData = exports.getToolsData = toolIDs => objectSort(
   Array.from(toolIDs).map(toolID => {
     const toolData = tools[toolID];

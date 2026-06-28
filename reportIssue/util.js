@@ -9,6 +9,7 @@ const {
   getAgoDays,
   getPathID,
   getReport,
+  getReportData,
   getRuleEngineNames,
   getToolsFacts,
   getWCAGURL,
@@ -21,7 +22,7 @@ const {issuesClassification} = require('testilo/procs/score/tic');
 // FUNCTIONS
 
 // Gets data about an issue in a report.
-exports.getData = async (issueID, timeStamp, jobID) => {
+exports.getIssueData = async (issueID, timeStamp, jobID) => {
   const classifiedIssue = issuesClassification[issueID];
   // If the issue ID is deprecated or unclassified:
   if (issueID === 'ignorable' || ! classifiedIssue) {
@@ -137,3 +138,8 @@ exports.getData = async (issueID, timeStamp, jobID) => {
   // Return the data.
   return data;
 };
+// Get data for a response.
+exports.getData = async (issueID, timeStamp, jobID) => ({
+  reportData: await getReportData(timeStamp, jobID),
+  issueData: await getIssueData(issueID, timeStamp, jobID)
+});

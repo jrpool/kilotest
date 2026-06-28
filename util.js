@@ -347,6 +347,7 @@ exports.getReportData = async (timeStamp, jobID) => {
     reporterNames: [],
     reporterCount: 0,
     violatorCount: 0,
+    preventions: [],
     preventedToolNames: [],
     preventedToolCount: 0
   };
@@ -399,7 +400,13 @@ exports.getReportData = async (timeStamp, jobID) => {
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.reporterCount = data.reporterNames.length;
   data.violatorCount = violatorIndexSet.size;
-  // Add the names of any prevented rule engines to the data.
+  // Add the rule engine names and causes of any preventions to the data.
+  data.preventions = Object
+  .entries(report.jobData?.preventions || {})
+  .map(([ruleEngineID, cause]) => ({ruleEngine: tools[ruleEngineID][0], cause}));
+  // Sort them by rule engine name.
+  objectSort(data.preventions, 'ruleEngine', 'alpha');
+  // Add the names of any prevented rule engines to the data. (Legacy property, to be retired.)
   data.preventedToolNames = Object.keys(report.jobData?.preventions || {})
   .map(toolID => tools[toolID][0])
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));

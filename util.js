@@ -18,10 +18,16 @@ const wcagMap = require('./wcagMap.json');
 const jobsPath = exports.jobsPath = path.join(__dirname, 'jobs');
 // Path of the logs directory.
 const logsPath = exports.logsPath = path.join(__dirname, 'logs');
+// Priorities.
+const priorities = exports.priorities = ['highest', 'high', 'low', 'lowest'];
 // Path of the recommendations file.
 const recsPath = exports.recsPath = path.join(__dirname, 'jobs', 'recs.json');
 // Path of the reports directory.
 const reportsPath = exports.reportsPath = path.join(__dirname, 'reports');
+// Research agents for API validation.
+exports.researchAgents = {
+  'research-agent': 'Internal Research Agent'
+}
 // IDs, names, and sponsors of Testaro rule engines.
 const tools = exports.tools = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -37,9 +43,6 @@ const tools = exports.tools = {
   wave: ['WAVE', 'Utah State University'],
   wax: ['WallyAX', 'Wally']
 };
-exports.researchAgents = {
-  'research-agent': 'Internal Research Agent'
-}
 
 // FUNCTIONS
 
@@ -334,88 +337,6 @@ exports.isHidden = async (timeStamp, jobID) => {
     return log;
   }
   return !! log.hidden;
-};
-// Returns a summary of an available report.
-exports.getReportSummary = async (timeStamp, jobID) => {
-  const isUnavailable = await isHidden(timeStamp, jobID);
-  // If the report does not exist:
-  if (typeof isUnavailable === 'string') {
-    // Return this.
-    return {
-      error: 'Report does not exist'
-    };
-  }
-  // Otherwise, if the report is hidden:
-  if (isUnavailable) {
-    // Return this.
-    return {
-      error: 'Report is not available'
-    };
-  }
-  // Otherwise, i.e. if the report is available, get it.
-  const reportJSON = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (typeof reportJSON === 'string') {
-    // Return this.
-    return {
-      error: reportJSON.replace(/^ERROR: /, '')
-    };
-  }
-  // Otherwise, i.e. if the report was retrieved, parse it.
-  try {
-    const report = JSON.parse(reportJSON);
-  }
-  // If it was not parsable:
-  catch (error) {
-    // Return this.
-    return {
-      error: report.replace(/^ERROR: /, '')
-    };
-  }
-  // Otherwise, i.e. if the report was parsable, if it is invalid:
-  if (! isValidReport(report)) {
-    // Return this.
-    return {
-      error: 'Report is invalid'
-    };
-  }
-  // Otherwise, i.e. if the report was parsable and valid, initialize a summary of its facts.
-  const facts = {
-    report: {
-      identifier: `${timeStamp}-${jobID}`,
-      'creation date and time': getDateTime(report.creationTimeStamp),
-      'days elapsed since creation': getAgoDays(report.creationTimeStamp)
-    },
-    'tested page': {
-      title: repert.target.what,
-      URL: report.target.url
-    },
-    'number of issues reported': 0,
-    'rule engines that tried to test the page': {
-      number: 0,
-      details: []
-    },
-    'rule engines that were unable to test the page': [],
-    'rule engines that reported violations': {
-      number: 0,
-      names: []
-    },
-    violations: 0,
-    preventions: [],
-    preventedToolNames: [],
-    preventedToolCount: 0
-  };
-  const reportData = await getReportData(timeStamp, jobID);
-  // If this failed:
-  if (typeof reportData === 'string') {
-    // Return this.
-    return reportData;
-  }
-  // Otherwise, i.e. if it succeeded:
-  else {
-    // Return the report data.
-    return reportData;
-  }
 };
 // Returns summary data on a report.
 exports.getReportData = async (timeStamp, jobID) => {
@@ -854,6 +775,157 @@ exports.getToolsFacts = toolIDs => {
       sponsor: toolMaker
     };
   });
+};
+// Returns facts about an available report.
+exports.getReportFacts = async (timeStamp, jobID) => {
+  const isUnavailable = await isHidden(timeStamp, jobID);
+  // If the report does not exist:
+  if (typeof isUnavailable === 'string') {
+    // Return this.
+    return {
+      error: 'Report does not exist'
+    };
+  }
+  // Otherwise, if the report is hidden:
+  if (isUnavailable) {
+    // Return this.
+    return {
+      error: 'Report is not available'
+    };
+  }
+  // Otherwise, i.e. if the report is available, get it.
+  const reportJSON = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (typeof reportJSON === 'string') {
+    // Return this.
+    return {
+      error: reportJSON.replace(/^ERROR: /, '')
+    };
+  }
+  let report = {};
+  // Otherwise, i.e. if the report was retrieved, parse it.
+  try {
+    report = JSON.parse(reportJSON);
+  }
+  // If it was not parsable:
+  catch (error) {
+    // Return this.
+    return {
+      error: report.replace(/^ERROR: /, '')
+    };
+  }
+  // Otherwise, i.e. if the report was parsable, if it is invalid:
+  if (! isValidReport(report)) {
+    // Return this.
+    return {
+      error: 'Report is invalid'
+    };
+  }
+  // Otherwise, i.e. if the report was parsable and valid, get its prevention facts.
+  const preventionFacts = Object
+  .entries(report.jobData?.preventions || {})
+  .map(([ruleEngineID, cause]) => ({
+    'name of rule engine': tools[ruleEngineID][0],
+    'error message': cause
+  }));
+  // Sort them by rule engine name.
+  objectSort(preventionFacts, 'name of rule engine', 'alpha');
+  // Initialize the report facts.
+  const facts = {
+    report: {
+      identifier: `${timeStamp}-${jobID}`,
+      'creation date and time': getDateTime(report.creationTimeStamp),
+      'days elapsed since creation': getAgoDays(report.creationTimeStamp)
+    },
+    'tested page': {
+      title: repert.target.what,
+      URL: report.target.url
+    },
+    'rule engines that tried to test the page': {
+      number: 0,
+      details: []
+    },
+    'rule engines that were unable to test the page': {
+      number: preventionFacts.length,
+      details: preventionFacts
+    },
+    'number of rule violations reported': 0,
+    'number of issues that the violated rules belong to': {
+      'in all': 0,
+      'by priority': {
+        'highest priority': 0,
+        'high priority': 0,
+        'low priority': 0,
+        'lowest priority': 0
+      }
+    },
+    'number of HTML elements that violated rules': 0,
+    'rule engines that reported violations': {
+      number: 0,
+      names: []
+    },
+  };
+  // Initialize sets that will feed some of them.
+  const prefacts = {
+    allRuleEngineIDs: new Set(),
+    reporterIDs: new Set(),
+    violatorIndexes: new Set(),
+    issueIDs: {
+      all: new Set(),
+      weights: [4, 3, 2, 1].map(weight => new Set())
+    }
+  };
+  const {allRuleEngineIDs, issueIDs, reporterIDs, violatorIndexes} = prefacts;
+  // For each act of the report:
+  report.acts.forEach(act => {
+    // If it is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      // Ensure that its rule engine is among those that tried to test the page.
+      allRuleEngineIDs.add(which);
+      const instances = result?.standardResult?.instances ?? [];
+      // For each standard instance of the act:
+      instances.forEach(instance => {
+        const {catalogIndex, issueID} = instance;
+        // If it has a non-ignorable classified issue ID:
+        if (issueID && issuesClassification[issueID] && issueID !== 'ignorable') {
+          // Ensure that the rule engine is among those reporting violations.
+          reporterIDs.add(which);
+          // Ensure that the issue the rule belongs to is among the issues.
+          issueIDs.all.add(issueID);
+          const {weight} = issuesClassification[issueID];
+          // Ensure that the issue is also among the issues with its weight.
+          issueIDs.weights[weight - 1].add(issueID);
+          // If the violator has a catalog index:
+          if (catalogIndex) {
+            // Ensure that the violator is among the violators.
+            violatorIndexes.add(catalogIndex);
+            // Increment the number of rule violations reported.
+            facts['number of rule violations reported']++;
+          }
+        }
+      });
+    }
+  });
+  // Feed the remaining facts from the sets.
+  facts['rule engines that tried to test the page'].number = allRuleEngineIDs.size;
+  const ruleEnginesData = getToolsData(allRuleEngineIDs);
+  const ruleEnginesFacts = ruleEnginesData.map(data => ({
+    identifier: data.toolID,
+    name: data.toolName,
+    sponsor: data.toolMaker
+  }));
+  facts['rule engines that tried to test the page'].details = ruleEnginesFacts;
+  facts['number of issues the violated rules belong to']['in all'] = issueIDs.all.size;
+  issueIDs.weights.forEach((weightSet, index) => {
+    facts['number of issues the violated rules belong to']['by priority'][priorities[index]] = weightSet.size;
+  });
+  facts['number of HTML elements that violated rules'] = violatorIndexes.size;
+  facts['rule engines that reported violations'].number = reporterIDs.size;
+  facts['rule engines that reported violations'].names = getToolsData(reporterIDs)
+  .map(data => data.toolName);
+  // Return the facts.
+  return facts;
 };
 // Returns a string describing a count.
 exports.getCountString = (count, singular, plural) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;

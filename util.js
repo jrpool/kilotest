@@ -53,7 +53,9 @@ const isValidReport = exports.isValidReport = report => {
   return typeof report === 'object'
   && getDateTime(report.creationTimeStamp) !== null
   && typeof report.target?.what === 'string'
+  && report.target.what.length
   && typeof report.target?.url === 'string'
+  && isURL(report.target.url)
   && Array.isArray(report.acts)
   && report.acts.every(act =>
     typeof act === 'object'
@@ -385,16 +387,20 @@ exports.getReportSummary = async (timeStamp, jobID) => {
       'days elapsed since creation': getAgoDays(report.creationTimeStamp)
     },
     'tested page': {
-      title:
-    }
-    what: log.what,
-    url: log.url,
-    issueCount: 0,
-    toolNames: [],
-    toolCount: 0,
-    reporterNames: [],
-    reporterCount: 0,
-    violatorCount: 0,
+      title: repert.target.what,
+      URL: report.target.url
+    },
+    'number of issues reported': 0,
+    'rule engines that tried to test the page': {
+      number: 0,
+      details: []
+    },
+    'rule engines that were unable to test the page': [],
+    'rule engines that reported violations': {
+      number: 0,
+      names: []
+    },
+    violations: 0,
     preventions: [],
     preventedToolNames: [],
     preventedToolCount: 0

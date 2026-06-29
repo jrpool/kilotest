@@ -48,9 +48,10 @@ exports.getRandomString = length => {
   return Math.random().toString(36).slice(2, length + 2);
 };
 // Returns whether a report is valid.
-exports.isValidReport = report => {
+const isValidReport = exports.isValidReport = report => {
   // Return whether it has the type and properties required by Kilotest:
   return typeof report === 'object'
+  && getDateTime(report.creationTimeStamp) !== null
   && typeof report.target?.what === 'string'
   && typeof report.target?.url === 'string'
   && Array.isArray(report.acts)
@@ -124,7 +125,14 @@ const getDateString = exports.getDateString = timeStamp => {
 const getDateTime = exports.getDateTime = timeStamp => {
   const dateString
   = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(7,9)}:${timeStamp.slice(9,11)}Z`;
+  // Get a Date object from the time stamp.
   const dateTime = new Date(dateString);
+  // If the time stamp is invalid:
+  if (isNaN(dateTime.valueOf())) {
+    // Return this.
+    return null;
+  }
+  // Otherwise, i.e. if it is valid, return the Date object.
   return dateTime;
 };
 // Returns the time in days since a time stamp.
@@ -324,6 +332,84 @@ exports.isHidden = async (timeStamp, jobID) => {
     return log;
   }
   return !! log.hidden;
+};
+// Returns a summary of an available report.
+exports.getReportSummary = async (timeStamp, jobID) => {
+  const isUnavailable = await isHidden(timeStamp, jobID);
+  // If the report does not exist:
+  if (typeof isUnavailable === 'string') {
+    // Return this.
+    return {
+      error: 'Report does not exist'
+    };
+  }
+  // Otherwise, if the report is hidden:
+  if (isUnavailable) {
+    // Return this.
+    return {
+      error: 'Report is not available'
+    };
+  }
+  // Otherwise, i.e. if the report is available, get it.
+  const reportJSON = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (typeof reportJSON === 'string') {
+    // Return this.
+    return {
+      error: reportJSON.replace(/^ERROR: /, '')
+    };
+  }
+  // Otherwise, i.e. if the report was retrieved, parse it.
+  try {
+    const report = JSON.parse(reportJSON);
+  }
+  // If it was not parsable:
+  catch (error) {
+    // Return this.
+    return {
+      error: report.replace(/^ERROR: /, '')
+    };
+  }
+  // Otherwise, i.e. if the report was parsable, if it is invalid:
+  if (! isValidReport(report)) {
+    // Return this.
+    return {
+      error: 'Report is invalid'
+    };
+  }
+  // Otherwise, i.e. if the report was parsable and valid, initialize a summary of its facts.
+  const facts = {
+    report: {
+      identifier: `${timeStamp}-${jobID}`,
+      'creation date and time': getDateTime(report.creationTimeStamp),
+      'days elapsed since creation': getAgoDays(report.creationTimeStamp)
+    },
+    'tested page': {
+      title:
+    }
+    what: log.what,
+    url: log.url,
+    issueCount: 0,
+    toolNames: [],
+    toolCount: 0,
+    reporterNames: [],
+    reporterCount: 0,
+    violatorCount: 0,
+    preventions: [],
+    preventedToolNames: [],
+    preventedToolCount: 0
+  };
+  const reportData = await getReportData(timeStamp, jobID);
+  // If this failed:
+  if (typeof reportData === 'string') {
+    // Return this.
+    return reportData;
+  }
+  // Otherwise, i.e. if it succeeded:
+  else {
+    // Return the report data.
+    return reportData;
+  }
 };
 // Returns summary data on a report.
 exports.getReportData = async (timeStamp, jobID) => {

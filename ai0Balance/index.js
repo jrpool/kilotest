@@ -19,7 +19,7 @@ const balancePath = path.join(__dirname, '../ai0Balance.json');
 // Displays the last recorded and records a new AI service 0 balance.
 exports.answer = async (newBalance, authCode) => {
   const query = {
-    balance,
+    balance: balance.toFixed(2),
     action: 'No new balance has been recorded.'
   };
   // If the authorization code is valid:

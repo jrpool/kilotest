@@ -49,6 +49,8 @@ const answer = {
   reportsPruneForm: require('./reportsPruneForm/index').answer,
   reportsRewindForm: require('./reportsRewindForm/index').answer,
   reportUnhideForm: require('./reportUnhideForm/index').answer,
+  resummarize: require('./resummarize/index').answer,
+  resummarizeForm: require('./resummarizeForm/index').answer,
   retestRec: require('./retestRec/index').answer,
   retestRecForm: require('./retestRecForm/index').answer,
   rules: require('./rules/index').answer,

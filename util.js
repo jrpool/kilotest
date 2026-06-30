@@ -18,6 +18,13 @@ const wcagMap = require('./wcagMap.json');
 const jobsPath = exports.jobsPath = path.join(__dirname, 'jobs');
 // Path of the logs directory.
 const logsPath = exports.logsPath = path.join(__dirname, 'logs');
+// Weight priorities.
+const weightPriorities = {
+  4: 'highest priority',
+  3: 'high priority',
+  2: 'low priority',
+  1: 'lowest priority'
+};
 // Priorities.
 const priorities = exports.priorities = ['highest', 'high', 'low', 'lowest'];
 // Path of the recommendations file.
@@ -28,6 +35,8 @@ const reportsPath = exports.reportsPath = path.join(__dirname, 'reports');
 exports.researchAgents = {
   'research-agent': 'Internal Research Agent'
 }
+// Path of the summaries directory.
+const summariesPath = exports.summariesPath = path.join(__dirname, 'summaries');
 // IDs, names, and sponsors of Testaro rule engines.
 const tools = exports.tools = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -82,6 +91,9 @@ const getRecordPath = exports.getRecordPath = (recordType, timeStamp, jobID) => 
   if (recordType === 'log') {
     return getLogPath(timeStamp, jobID);
   }
+  else if (recordType === 'summary') {
+    return getReportPath(timeStamp, jobID);
+  }
   else if (recordType === 'report') {
     return getReportPath(timeStamp, jobID);
   }
@@ -89,7 +101,7 @@ const getRecordPath = exports.getRecordPath = (recordType, timeStamp, jobID) => 
     return null;
   }
 };
-// Returns a log or report or an error message.
+// Returns a log, summary, or report or an error message.
 const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   const recordPath = getRecordPath(recordType, timeStamp, jobID);
   let recordJSON, record;
@@ -776,24 +788,9 @@ exports.getToolsFacts = toolIDs => {
     };
   });
 };
-// Returns facts about an available report.
-exports.getReportFacts = async (timeStamp, jobID) => {
-  const isUnavailable = await isHidden(timeStamp, jobID);
-  // If the report does not exist:
-  if (typeof isUnavailable === 'string') {
-    // Return this.
-    return {
-      error: 'Report does not exist'
-    };
-  }
-  // Otherwise, if the report is hidden:
-  if (isUnavailable) {
-    // Return this.
-    return {
-      error: 'Report is not available'
-    };
-  }
-  // Otherwise, i.e. if the report is available, get it.
+// Returns a report summary.
+exports.summarizeReport = async (timeStamp, jobID) => {
+  // Get the report.
   const reportJSON = await getReport(timeStamp, jobID);
   // If this failed:
   if (typeof reportJSON === 'string') {
@@ -838,7 +835,7 @@ exports.getReportFacts = async (timeStamp, jobID) => {
       'days elapsed since creation': getAgoDays(report.creationTimeStamp)
     },
     'tested page': {
-      title: repert.target.what,
+      title: report.target.what,
       URL: report.target.url
     },
     'rule engines that tried to test the page': {
@@ -850,13 +847,25 @@ exports.getReportFacts = async (timeStamp, jobID) => {
       details: preventionFacts
     },
     'number of rule violations reported': 0,
-    'number of issues that the violated rules belong to': {
+    'issues that the violated rules belong to': {
       'in all': 0,
       'by priority': {
-        'highest priority': 0,
-        'high priority': 0,
-        'low priority': 0,
-        'lowest priority': 0
+        'highest priority': {
+          number: 0,
+          names: []
+        },
+        'high priority': {
+          number: 0,
+          names: []
+        },
+        'low priority': {
+          number: 0,
+          names: []
+        },
+        'lowest priority': {
+          number: 0,
+          names: []
+        }
       }
     },
     'number of HTML elements that violated rules': 0,
@@ -872,7 +881,12 @@ exports.getReportFacts = async (timeStamp, jobID) => {
     violatorIndexes: new Set(),
     issueIDs: {
       all: new Set(),
-      weights: [4, 3, 2, 1].map(weight => new Set())
+      weights: {
+        4: new Set(),
+        3: new Set(),
+        2: new Set(),
+        1: new Set()
+      }
     }
   };
   const {allRuleEngineIDs, issueIDs, reporterIDs, violatorIndexes} = prefacts;
@@ -895,13 +909,13 @@ exports.getReportFacts = async (timeStamp, jobID) => {
           issueIDs.all.add(issueID);
           const {weight} = issuesClassification[issueID];
           // Ensure that the issue is also among the issues with its weight.
-          issueIDs.weights[weight - 1].add(issueID);
+          issueIDs.weights[weight].add(issueID);
           // If the violator has a catalog index:
           if (catalogIndex) {
             // Ensure that the violator is among the violators.
             violatorIndexes.add(catalogIndex);
             // Increment the number of rule violations reported.
-            facts['number of rule violations reported']++;
+            facts['number of rule violations reported'] += instance.count ?? 1;
           }
         }
       });
@@ -917,8 +931,14 @@ exports.getReportFacts = async (timeStamp, jobID) => {
   }));
   facts['rule engines that tried to test the page'].details = ruleEnginesFacts;
   facts['number of issues the violated rules belong to']['in all'] = issueIDs.all.size;
-  issueIDs.weights.forEach((weightSet, index) => {
-    facts['number of issues the violated rules belong to']['by priority'][priorities[index]] = weightSet.size;
+  Object.keys(priorityWeights).forEach(priority => {
+    facts['number of issues the violated rules belong to']['by priority'][priority]
+    .number = issueIDs.weights[priorityWeights[priority]].size;
+    facts['number of issues the violated rules belong to']['by priority'][priority]
+    .names = Array
+    .from(issueIDs.weights[priorityWeights[priority]])
+    .map(issueID => issuesClassification[issueID].summary)
+    .sort('en', { sensitivity: 'base' });
   });
   facts['number of HTML elements that violated rules'] = violatorIndexes.size;
   facts['rule engines that reported violations'].number = reporterIDs.size;

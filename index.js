@@ -598,12 +598,12 @@ const requestHandler = async (request, response) => {
         }
       }
       // Otherwise, if it is a display and recording of the AI service 0 balance:
-      else if (pageName === 'aiBalance0.html') {
+      else if (pageName === 'ai0Balance.html') {
         const {newBalance, authCode} = postData;
         // Set headers for a response.
         setHeaders('text/html', `${pathname}${search}`, 'high');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'aiBalancee0', 'index'))
+        const answerData = await require(path.join(__dirname, 'ai0Balancee', 'index'))
         .answer(newBalance, authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {

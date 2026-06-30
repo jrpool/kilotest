@@ -603,7 +603,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', `${pathname}${search}`, 'high');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'ai0Balancee', 'index'))
+        const answerData = await require(path.join(__dirname, 'ai0Balance', 'index'))
         .answer(newBalance, authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {

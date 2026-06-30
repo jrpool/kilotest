@@ -8,7 +8,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const {getJSON} = require('../util');
-const {oldBalance} = require('../ai0Balance.json');
+const {balance} = require('../ai0Balance.json');
 
 // CONSTANTS
 
@@ -19,7 +19,7 @@ const balancePath = path.join(__dirname, '../ai0Balance.json');
 // Displays the last recorded and records a new AI service 0 balance.
 exports.answer = async (newBalance, authCode) => {
   const query = {
-    oldBalance,
+    balance,
     action: 'No new balance has been recorded.'
   };
   // If the authorization code is valid:

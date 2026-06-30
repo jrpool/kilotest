@@ -601,7 +601,7 @@ const requestHandler = async (request, response) => {
       else if (pageName === 'ai0Balance.html') {
         const {newBalance, authCode} = postData;
         // Set headers for a response.
-        setHeaders('text/html', `${pathname}${search}`, 'high');
+        setHeaders('text/html', `${pathname}${search}`, 'ultra');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'ai0Balance', 'index'))
         .answer(newBalance, authCode);

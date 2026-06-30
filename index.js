@@ -71,8 +71,6 @@ const claimedPath = path.join(jobsPath, 'claimed');
 const failedPath = path.join(jobsPath, 'failed');
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
-const researchAgent = process.env.RESEARCH_AGENT;
-const researchAgentPW = process.env.RESEARCH_AGENT_PW;
 // Values that may require alerts.
 const balancePath = path.join(__dirname, 'aiService0Balance.json');
 const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);

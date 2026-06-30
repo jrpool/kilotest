@@ -6,19 +6,19 @@
     <meta name="publisher" content="Jonathan Robert Pool">
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="report,accessibility,a11y">
-    <title>Record AI service 0 balance | Kilotest</title>
+    <title>AI service 0 balance | Kilotest</title>
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <main>
-      <h1><a href="/">Kilotest</a>: Record AI service 0 balance</h1>
-      <p>__oldBalance__ recorded AI service 0 balance.</p>
+      <h1><a href="/">Kilotest</a>: AI service 0 balance</h1>
+      <p>Submission displays the last recorded AI service 0 balance and, if you enter a new balance, records it.</p>
       <p>The current AI service 0 balance is available on the <a href="https://platform.claude.com/settings/billing">Claude Platform Billing page</a>.</p>
-      <form action="/ai0BalanceForm.html">
+      <form action="/ai0Balance.html" method="post">
         <p><label>
-          Balance (in $):
-          <input type="number" size="5" min="0" max="99.99" step="0.01" name="newBalance" required>
+          New balance (in $; optional):
+          <input type="number" size="5" min="0" max="99.99" step="0.01" name="newBalance">
         </label></p>
         <p><label>
           Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required>

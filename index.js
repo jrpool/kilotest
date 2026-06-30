@@ -35,6 +35,7 @@ const https = require('https');
 const path = require('path');
 const {sendAlert} = require('./alerts');
 const answer = {
+  ai0Balance: require('./ai0Balance/index').answer,
   ai0BalanceForm: require('./ai0BalanceForm/index').answer,
   diagnoses: require('./diagnoses/index').answer,
   issues: require('./issues/index').answer,
@@ -585,6 +586,25 @@ const requestHandler = async (request, response) => {
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'resummarize', 'index'))
         .answer(authCode);
+        // If the answer data are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          await serveError({message: answerData.error}, response, true);
+        }
+      }
+      // Otherwise, if it is a display and recording of the AI service 0 balance:
+      else if (pageName === 'aiBalance0.html') {
+        const {newBalance, authCode} = postData;
+        // Set headers for a response.
+        setHeaders('text/html', `${pathname}${search}`, 'high');
+        // Get the answer data.
+        const answerData = await require(path.join(__dirname, 'aiBalancee0', 'index'))
+        .answer(newBalance, authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.

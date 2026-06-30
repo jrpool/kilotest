@@ -41,7 +41,7 @@ exports.answer = async (newBalance, authCode) => {
         // Record it.
         await fs.writeFile(balancePath, getJSON(balanceData));
         // Report this.
-        query.action = `The new balance of $${newBalance} has been recorded.`;
+        query.action = `The new balance of $${newBalance.toFixed(2)} has been recorded.`;
       }
       // Otherwise, i.e. if it is invalid:
       else {

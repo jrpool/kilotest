@@ -1,53 +1,64 @@
-import js from "@eslint/js";
-import globals from "globals";
-import json from "@eslint/json";
-import markdown from "@eslint/markdown";
-import css from "@eslint/css";
-import { defineConfig } from "eslint/config";
+import js from '@eslint/js';
+import globals from 'globals';
+import json from '@eslint/json';
+import markdown from '@eslint/markdown';
+import css from '@eslint/css';
+import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
   {
     ignores: [
-      "IDEAS.md",
-      "package-lock.json"
+      'IDEAS.md',
+      'package-lock.json'
     ]
   },
   {
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ['**/*.{js,mjs,cjs}'],
     plugins: { js },
-    extends: ["js/recommended"],
+    extends: ['js/recommended'],
     languageOptions: {
-      globals: globals.node
+      globals: {... globals.browser, ... globals.node}
     }
   },
   {
-    files: ["**/*.js"],
+    files: ['**/*.js'],
     languageOptions: {
-      sourceType: "commonjs"
+      sourceType: 'commonjs'
     }
   },
   {
-    files: ["**/*.json"],
+    files: ['**/*.json'],
     plugins: {
       json
     },
-    language: "json/json",
-    extends: ["json/recommended"]
+    language: 'json/json',
+    extends: ['json/recommended']
   },
   {
-    files: ["**/*.md"],
+    files: ['**/*.md'],
     plugins: {
       markdown
     },
-    language: "markdown/gfm",
-    extends: ["markdown/recommended"]
+    language: 'markdown/gfm',
+    extends: ['markdown/recommended']
   },
   {
-    files: ["**/*.css"],
+    files: ['**/*.css'],
     plugins: {
       css
     },
-    language: "css/css",
-    extends: ["css/recommended"]
-  }
-]);
+    language: 'css/css',
+    extends: ['css/recommended']
+  },
+  {
+    files: ['**/*.{js,mjs,cjs}'],
+    rules: {
+      'brace-style': ['error', 'stroustrup'],
+      'indent': ['error', 2, {'MemberExpression': 0}],
+      'linebreak-style': ['error', 'unix'],
+      'no-control-regex': 'off',
+      'no-use-before-define': ['error'],
+      'quotes': ['error', 'single'],
+      'semi': ['error', 'always']
+    }
+  }]);

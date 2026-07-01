@@ -12,7 +12,6 @@ const {
   getObject,
   getPageDataStrings,
   getRecs,
-  getToolNamesString,
   getLogs,
   getReportData,
   isRecommendable,
@@ -50,8 +49,8 @@ const populateQuery = async query => {
   query.recs = lines.recs.join('\n');
   // Add a no-recommendations message, if applicable, to the query.
   query.noRecs = lines.recs.length
-  ? 'Kilotest managers can <a href="recActionForm.html">approve or reject a recommendation</a>.'
-  : 'No recommendations await approval now.';
+    ? 'Kilotest managers can <a href="recActionForm.html">approve or reject a recommendation</a>.'
+    : 'No recommendations await approval now.';
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
   // For each job category:
@@ -74,8 +73,8 @@ const populateQuery = async query => {
   const targetLogs = await getLogs();
   query.which = targetLogs.length ? 'the following' : 'no';
   query.some = (targetLogs.length || jobFileNames.queue.length || jobFileNames.claimed.length)
-  ? 'another'
-  : 'a';
+    ? 'another'
+    : 'a';
   const multiReportTargets = new Set(targetLogs.filter(log => log.superseded).map(log => log.what));
   // For each log:
   for (const targetLog of targetLogs) {
@@ -110,7 +109,7 @@ const populateQuery = async query => {
       );
     }
     // Add facts about the test results to the lines.
-     let reporterString = `${getCountString(reporterCount, 'tool', 'tools')} reported issues`;
+    let reporterString = `${getCountString(reporterCount, 'tool', 'tools')} reported issues`;
     if (reporterCount) {
       const reporterNamesString = reporterNames.join(' + ');
       reporterString = `${reporterString} (${reporterNamesString})`;

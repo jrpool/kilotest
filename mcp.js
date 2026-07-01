@@ -5,10 +5,10 @@
 
 // IMPORTS
 
-const {McpServer} = require('@modelcontextprotocol/sdk/server/mcp.js');
-const {StreamableHTTPServerTransport} = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
-const {z} = require('zod');
-const {isReportAvailable, isURL} = require('./util');
+const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
+const { z } = require('zod');
+const { isReportAvailable, isURL } = require('./util');
 const targetAPI = require('./target/api');
 const targetsAPI = require('./targets/api');
 const reportIssuesAPI = require('./reportIssues/api');
@@ -18,7 +18,7 @@ const testRecFormAPI = require('./testRecForm/api');
 
 // Creates and returns an McpServer with Kilotest tools registered.
 const createMCPServer = () => {
-  const server = new McpServer({name: 'Kilotest', version: '1.0.0'});
+  const server = new McpServer({ name: 'Kilotest', version: '1.0.0' });
   server.registerTool(
     'summarizeQualityOfMatchingWebPages',
     {
@@ -35,9 +35,9 @@ const createMCPServer = () => {
         openWorldHint: false
       }
     },
-    async ({what, url}) => {
+    async ({ what, url }) => {
       const result = await targetAPI.response([what, url]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     }
   );
   server.registerTool(
@@ -55,7 +55,7 @@ const createMCPServer = () => {
     },
     async () => {
       const result = await targetsAPI.response();
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     }
   );
   server.registerTool(
@@ -74,9 +74,9 @@ const createMCPServer = () => {
         openWorldHint: false
       }
     },
-    async ({timeStamp, jobID}) => {
+    async ({ timeStamp, jobID }) => {
       const result = await reportIssuesAPI.response([timeStamp, jobID]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     }
   );
   server.registerTool(
@@ -96,22 +96,22 @@ const createMCPServer = () => {
         openWorldHint: false
       }
     },
-    async ({what, url, why}) => {
+    async ({ what, url, why }) => {
       if (!isURL(url)) {
-        return {content: [{type: 'text', text: JSON.stringify({error: 'Invalid URL'})}], isError: true};
+        return { content: [{ type: 'text', text: JSON.stringify({ error: 'Invalid URL' }) }], isError: true };
       }
       if (await isReportAvailable(what, url)) {
-        return {content: [{type: 'text', text: JSON.stringify({error: 'A report about the page is already available'})}], isError: true};
+        return { content: [{ type: 'text', text: JSON.stringify({ error: 'A report about the page is already available' }) }], isError: true };
       }
       const result = await testRecFormAPI.response(what, url, why);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return { content: [{ type: 'text', text: JSON.stringify(result) }] };
     }
   );
   return server;
 };
 // Handles an MCP request.
 exports.handleMCP = async (request, response) => {
-  const transport = new StreamableHTTPServerTransport({sessionIdGenerator: undefined});
+  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
   const server = createMCPServer();
   await server.connect(transport);
   await transport.handleRequest(request, response);

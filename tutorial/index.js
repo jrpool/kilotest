@@ -17,10 +17,10 @@ const commentsPath = path.join(__dirname, 'comments.json');
 
 // Strips HTML tags and control characters, trims, and limits to 500 characters.
 const sanitize = str => str
-  .replace(/<[^>]*>/g, '')
-  .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-  .trim()
-  .slice(0, 500);
+.replace(/<[^>]*>/g, '')
+.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+.trim()
+.slice(0, 500);
 
 // Returns the tutorial page.
 exports.answer = async () => {
@@ -32,7 +32,7 @@ exports.answer = async () => {
 };
 // Sanitizes and saves a tutorial comment to comments.json.
 exports.saveComment = async content => {
-  if (!content || typeof content !== 'string') {
+  if (! content || typeof content !== 'string') {
     return {status: 'error', error: 'No content provided'};
   }
   const sanitized = sanitize(content);
@@ -44,8 +44,8 @@ exports.saveComment = async content => {
     const existing = await fs.readFile(commentsPath, 'utf8');
     comments = JSON.parse(existing);
   }
-  catch (_) {
-    // File absent or unparsable; start a fresh array.
+  catch (error) {
+    console.log(`Error reading comments file: ${error.message}`);
   }
   comments.push({timeStamp: new Date().toISOString(), content: sanitized});
   await fs.writeFile(commentsPath, getJSON(comments));

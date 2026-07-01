@@ -33,7 +33,7 @@ exports.answer = async (_, search) => {
       return {
         status: 'error',
         error: 'Invalid authorization code'
-      }
+      };
     }
   }
   const reportFileNames = await fs.readdir(reportsPath);

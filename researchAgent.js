@@ -63,7 +63,7 @@ const getContent = async response => {
       // If it is not JSON:
       catch (error) {
         // Return this.
-        resolve({error: `Response content not JSON (${contentString})`});
+        resolve({error: `Response content ${contentString} not JSON (${error.message})`});
       }
     });
   });
@@ -164,7 +164,7 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest 6: Make an illicit test recommendation');
-  content = await submitRequest(results, path, method, {
+  await submitRequest(results, path, method, {
     'description of the web page': description,
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'

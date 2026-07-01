@@ -34,7 +34,7 @@ exports.answer = async (_, search) => {
       return {
         status: 'error',
         error: 'Invalid authorization code'
-      }
+      };
     }
   }
   const reportNames = await fs.readdir(reportsPath);
@@ -83,8 +83,8 @@ exports.answer = async (_, search) => {
     }
   });
   const intro = anyDeletable
-  ? 'Choose the latest superseding reports to delete.'
-  : 'Each target has only 1 report, so there are no reports to delete.';
+    ? 'Choose the latest superseding reports to delete.'
+    : 'Each target has only 1 report, so there are no reports to delete.';
   const disabled = anyDeletable ? '' : ' disabled';
   const query = {
     reports: lines.join('\n'),

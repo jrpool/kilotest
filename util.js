@@ -34,7 +34,7 @@ const reportsPath = exports.reportsPath = path.join(__dirname, 'reports');
 // Research agents for API validation.
 exports.researchAgents = {
   'research-agent': 'Internal Research Agent'
-}
+};
 // Path of the summaries directory.
 const summariesPath = exports.summariesPath = path.join(__dirname, 'summaries');
 // IDs, names, and sponsors of Testaro rule engines.
@@ -438,7 +438,7 @@ exports.getReportData = async (timeStamp, jobID) => {
   data.preventedToolCount = data.preventedToolNames.length;
   // Return the data.
   return data;
-}
+};
 // Returns a time stamp from a date.
 const getTimeStamp = exports.getTimeStamp = date => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
@@ -458,7 +458,7 @@ const getJobNames = exports.getJobNames = async () => {
     jobNames[category] = fileNames;
   }
   return jobNames;
-}
+};
 // Returns an object from a JSON file.
 const getObject = exports.getObject = async filePath => {
   let fileContent, object;
@@ -487,7 +487,7 @@ const getDateTimeString = exports.getDateTimeString = timeStamp => {
   const timeString = getTimeString(timeStamp);
   const dateTimeString = `${dateString} at ${timeString}`;
   return dateTimeString;
-}
+};
 // Returns the path ID of the element of a standard instance.
 exports.getPathID = (catalog, catalogIndex, pathID) => {
   if (catalogIndex) {
@@ -612,7 +612,7 @@ exports.htmlSafe = string => string ? string
 .replace(/>/g, '&gt;')
 .replace(/"/g, '&quot;')
 .replace(/'/g, '&apos;')
-: '';
+  : '';
 // Returns whether a string is a job ID.
 exports.isJobID = string => {
   return /^[a-z0-9]{3}$/.test(string);
@@ -649,7 +649,8 @@ exports.isTimeStamp = string => {
 const isURL = exports.isURL = string => {
   try {
     return string.startsWith('https://') && new URL(string);
-  } catch {
+  }
+  catch {
     return false;
   }
 };
@@ -766,7 +767,7 @@ const getToolsData = exports.getToolsData = toolIDs => objectSort(
       toolID,
       toolName: toolData[0],
       toolMaker: toolData[1]
-    }
+    };
   }),
   'toolName',
   'alpha'

@@ -132,7 +132,7 @@ const checkBalancesForAlerts = async report => {
       balanceJSON = await fs.readFile(balancePath, 'utf8');
     }
     catch (error) {
-      console.error('ERROR: AI service 0 balance file missing');
+      console.error(`ERROR: AI service 0 balance file missing (${error.message})`);
     }
     // If the variables required for an AI service 0 balance alert are defined:
     if (usage && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE && balanceJSON) {
@@ -386,8 +386,8 @@ const requestHandler = async (request, response) => {
         setHeaders(mimeTypes[ext] || 'application/octet-stream', null, 'low');
         response.end(img);
       }
-      catch (_) {
-        await serveError({message: 'ERROR: Image not found'}, response, true);
+      catch (error) {
+        await serveError({message: `Image not found (${error.message})`}, response, true);
       }
     }
     // Otherwise, if it is for the application icon:
@@ -764,7 +764,7 @@ const requestHandler = async (request, response) => {
               // Report this.
               responseData = {
                 warning: 'A report on the page is already available'
-              }
+              };
             }
             // Otherwise, i.e. if no report on the page is available:
             else {

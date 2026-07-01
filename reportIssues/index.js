@@ -112,8 +112,8 @@ const populateQuery = async (timeStamp, jobID, query) => {
           `${margin}      <li>Reported by ${reporterCountString} (${reporterList})</li>`
         );
         const violatorCountString = violatorCount === 1
-        ? '1 violator was'
-        : `${violatorCount} violators were`;
+          ? '1 violator was'
+          : `${violatorCount} violators were`;
         detailsLines.push(`${margin}      <li>${violatorCountString} reported</li>`);
         // Add the end of the fact list to the lines.
         detailsLines.push(`${margin}    </ul>`);

@@ -37,7 +37,7 @@ exports.answer = async (newBalance, authCode) => {
       ) {
         const balanceData = {
           balance: newBalance
-        }
+        };
         // Record it.
         await fs.writeFile(balancePath, getJSON(balanceData));
         // Report this.
@@ -67,6 +67,6 @@ exports.answer = async (newBalance, authCode) => {
     return {
       status: 'error',
       error: 'Invalid authorization code'
-    }
+    };
   }
 };

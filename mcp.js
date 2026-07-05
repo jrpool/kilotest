@@ -12,6 +12,7 @@ const {isReportAvailable, isURL} = require('./util');
 const targetAPI = require('./target/api');
 const targetsAPI = require('./targets/api');
 const reportIssuesAPI = require('./reportIssues/api');
+const reportIssueAPI = require('./reportIssue/api');
 const testRecFormAPI = require('./testRecForm/api');
 
 // FUNCTIONS
@@ -61,7 +62,7 @@ const createMCPServer = () => {
   server.registerTool(
     'describeQualityOfOneWebPage',
     {
-      description: 'Returns data from a specified Kilotest report about issues of front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a summarizeQualityOfAllTestedWebPages response.',
+      description: 'Returns data from a specified Kilotest report about issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a summarizeQualityOfAllTestedWebPages response.',
       inputSchema: {
         timeStamp: z.string().describe('Report timestamp in YYMMDDTHHMM format, e.g. 260503T0432'),
         jobID: z.string().describe('Job identifier, e.g. x9z')
@@ -76,6 +77,28 @@ const createMCPServer = () => {
     },
     async ({timeStamp, jobID}) => {
       const result = await reportIssuesAPI.response([timeStamp, jobID]);
+      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+    }
+  );
+  server.registerTool(
+    'describeOneIssueForQualityOfOneWebPage',
+    {
+      description: 'Returns data from a specified Kilotest report about one of the issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required issueID, timeStamp, and jobID parameters identify the issue and the report and are obtained from a describeQualityOfOneWebPage response.',
+      inputSchema: {
+        issueID: z.string().describe('Issue identifier, e.g. contrastPoor'),
+        timeStamp: z.string().describe('Report timestamp in YYMMDDTHHMM format, e.g. 260503T0432'),
+        jobID: z.string().describe('Job identifier, e.g. x9z')
+      },
+      annotations: {
+        title: 'Describe one of the issues for the quality of one web page',
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({issueID, timeStamp, jobID}) => {
+      const result = await reportIssueAPI.response([issueID, timeStamp, jobID]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );

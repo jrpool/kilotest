@@ -197,22 +197,26 @@ exports.response = async args => {
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
   if (reportIsHidden) {
+    // Return this.
     return {
       status: 'error',
       message: 'Report not available'
     };
   }
-  // Otherwise, i.e. if the report is available, get data on the target and issues.
+  // Otherwise, i.e. if the report is available, get data on the report and its issues.
   const data = await getData(timeStamp, jobID);
   const {pageData, issuesData} = data;
   const {what, url, daysAgo} = pageData;
   const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
   let issue;
+  // Get the level of and the data on the issue.
   const issueLevel = [4, 3, 2, 1].find(level => {
     issue = issues[level].find(issue => issue.issueID === issueID);
     return issue;
   });
+  // If the issue was not one of those in the report:
   if (! issue) {
+    // Return this.
     return {
       status: 'error',
       message: 'Issue not found in the report'
@@ -225,7 +229,7 @@ exports.response = async args => {
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const content = {
-    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model requested data from a Kilotest report about one of the issues for the front-end quality (i.e. accessibility, usability, and standard-conformity) of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
+    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model requested data, drawn from a Kilotest report, about one of the issues for the front-end quality (i.e. accessibility, usability, and standard-conformity) of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool collection name': 'Kilotest',
     'tool name': 'describeOneIssueForQualityOfOneWebPage',
     request: {
@@ -275,18 +279,9 @@ exports.response = async args => {
         'lowest priority': issues[1].length
       }
     },
-    "issue to be described": issueID,
     'number of HTML elements reported as exhibiting issues': violatorCount,
-    'issues reported': {
-      'highest priority': issues[4]
-      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue)),
-      'high priority': issues[3]
-      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue)),
-      'low priority': issues[2]
-      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue)),
-      'lowest priority': issues[1]
-      .map(issue => getIssueFacts(thisHost, timeStamp, jobID, issue))
-    }
+    'level of the issue': issueLevel,
+    'facts about the issue': issue
   };
   return content;
 };

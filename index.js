@@ -69,8 +69,6 @@ const claimedPath = path.join(jobsPath, 'claimed');
 const failedPath = path.join(jobsPath, 'failed');
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
-const researchAgent = process.env.RESEARCH_AGENT;
-const researchAgentPW = process.env.RESEARCH_AGENT_PW;
 // Values that may require alerts.
 const balancePath = path.join(__dirname, 'aiService0Balance.json');
 const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
@@ -339,27 +337,21 @@ const requestHandler = async (request, response) => {
       }
       // Otherwise, if the service is provision of issue statistics for a report:
       else if (service === 'reportIssues') {
-        // Get the report identifiers from the path.
-        const [timeStamp, jobID] = specs;
-        const reportSpecsBad = await isHidden(timeStamp, jobID);
-        // If the report is nonexistent or hidden:
-        if (reportSpecsBad) {
-          // Report this.
-          await serveError(
-            {message: reportSpecsBad === true ? 'Report nonexistent or hidden' : reportSpecsBad},
-            response,
-            false
-          );
-        }
-        // Otherwise, i.e. if the report is available:
-        else {
-          // Get the response (potentially error) data.
-          const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
-          .response(specs);
-          // Send them.
-          setHeaders('application/json', null, 'high');
-          response.end(JSON.stringify(responseData));
-        }
+        // Get the response (potentially error) data.
+        const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
+        .response(specs);
+        // Send them.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseData));
+      }
+      // Otherwise, if the service is the description of an issue from a report:
+      else if (service === 'reportIssue') {
+        // Get the response (potentially error) data.
+        const responseData = await require(path.join(__dirname, 'reportIssue', 'api'))
+        .response(specs);
+        // Send them.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseData));
       }
       // Otherwise, i.e. if the service is invalid:
       else {

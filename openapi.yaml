@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Kilotest Agent API
-  description: Kilotest tests web pages for front-end quality (i.e. accessibility, usability, and standards conformity) using an ensemble of ten independent rule engines that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing, discover available test reports, and retrieve data from reports. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
+  description: Kilotest tests web pages for front-end quality (i.e. accessibility, usability, and standards conformity) using an ensemble of ten independent rule engines that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing, discover available test reports, and retrieve data from reports. Each report describes results of one job that tested one web page. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
   version: 1.0.0
   contact:
     name: Kilotest
@@ -101,9 +101,9 @@ paths:
 
   /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
     get:
-      operationId: describeHTMLElementsHavingOneQualityIssue
-      summary: Describe HTML elements having one quality issue (NOT YET IMPLEMENTED)
-      description: Get issue-specific data from a specified report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The data describe the issue, all of the HTML elements of the page that have the issue, and, for each such element, URLs for retrieving diagnoses by rule engines of the issue on the element. NOT YET IMPLEMENTED.
+      operationId: describeOneIssueFromOneReport
+      summary: Describe one issue from one report
+      description: Get issue-specific data from a specified report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The data describe the issue, all of the HTML elements of the page that have the issue, and, for each such element, URLs for retrieving diagnoses by rule engines of the issue on the element.
       parameters:
         - name: issueID
           in: path
@@ -118,14 +118,18 @@ paths:
           required: true
           schema:
             type: string
+            examples:
+              - 20271124T1647
         - name: jobID
           in: path
           required: true
           schema:
             type: string
+            examples:
+              - x58
       responses:
         '200':
-          description: Details about the specified issue in the specified report
+          description: Details about the specified issue from the specified report
           content:
             application/json:
               schema:

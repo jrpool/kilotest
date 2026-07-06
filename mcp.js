@@ -81,7 +81,7 @@ const createMCPServer = () => {
     }
   );
   server.registerTool(
-    'describeOneIssueForQualityOfOneWebPage',
+    'describeOneIssueFromOneReport',
     {
       description: 'Returns data from a specified Kilotest report about one of the issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required issueID, timeStamp, and jobID parameters identify the issue and the report and are obtained from a describeQualityOfOneWebPage response.',
       inputSchema: {
@@ -90,7 +90,7 @@ const createMCPServer = () => {
         jobID: z.string().describe('Job identifier, e.g. x9z')
       },
       annotations: {
-        title: 'Describe one of the issues for the quality of one web page',
+        title: 'Describe one issue from one report',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,

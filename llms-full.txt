@@ -95,6 +95,25 @@ The implementation is currently in an alpha phase and offers 4 tools:
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier
   - source of parameters: response to a `summarizeQualityOfAllTestedWebPages` request
+- `describeOneIssueFromOneReport`
+  - method: `GET`
+  - purpose: provide details about one issue from one report
+  - path: `/api/reportIssue/{issueID}/{timeStamp}/{jobID}`
+  - parameters
+    - `issueID`: identifier of the issue
+    - `timeStamp`: initial segment of report identifier
+    - `jobID`: final segment of report identifier
+  - source of parameters: response to a `describeQualityOfOneWebPage` request
+- `describeOneViolatorOfOneIssueFromOneReport`
+  - method: `GET`
+  - purpose: provide diagnoses about one issue exhibited by one HTML element in one report [NOT YET IMPLEMENTED]
+  - path: `/api/diagnoses/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+  - parameters
+    - `issueID`: identifier of the issue
+    - `timeStamp`: initial segment of report identifier
+    - `jobID`: final segment of report identifier
+    - `catalogIndex`: index of the catalog entry
+  - source of parameters: response to a `describeOneIssueFromOneReport` request
 - `recommendQualityTestingOfOneWebPage`
   - method: `POST`
   - purpose: recommend quality testing of one web page about which no report is available
@@ -125,9 +144,9 @@ An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is av
 
 ## How to report results to users
 
-When you use Kilotest tools, you are free to perform any appropriate interpretation and condensation of the results for presentation to users. However, users expect the sources of facts and interpretations to be truthfully represented. Do not meld facts from Kilotest tools with interpretations of your own with an implied attribution of both to Kilotest.
+When you use Kilotest tools, you are free to perform any appropriate interpretation and condensation of the results for presentation to users. However, users expect the sources of facts and interpretations to be truthfully represented. Do not meld facts from Kilotest tools with interpretations of your own in a manner that implies attribution of both to Kilotest.
 
-An example of a **poor** attribution is “Here are the results from Kilotest: …. The page is at risk of …. Among all the issues, … are critical and require immediate attention.”
+An example of a **poor** attribution is “Here are the results from Kilotest: …. The page is at risk of …. Among all the issues, … are critical and require immediate attention.” This attribution is poor because it incorrectly implies interpretetations and advice to Kilotest.
 
 An example of a **good** attribution is “Kilotest reported these issues: …. On the basis of these results, I conclude that there is a serious risk of …, and, if you are responsible for maintaining the page, I recommend ….”
 

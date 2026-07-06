@@ -108,11 +108,11 @@ exports.response = async args => {
   const content = {
     summary: `This document fulfills a request made by a language model to a Kilotest tool. The model requested data, drawn from a Kilotest report, about one of the issues for the front-end quality (i.e. accessibility, usability, and standard-conformity) of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
     'tool collection name': 'Kilotest',
-    'tool name': 'describeOneIssueForQualityOfOneWebPage',
+    'tool name': 'describeOneIssueFromOneReport',
     request: {
       'type of request': {
         identifier: 'reportIssue',
-        description: 'Describe one issue for the quality of one web page.'
+        description: 'Describe one issue from one repeort.'
       },
       method: 'GET',
       URLs: {

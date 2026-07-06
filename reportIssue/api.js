@@ -18,129 +18,6 @@ const {
 
 // FUNCTIONS
 
-// Temporary function to get issue facts for the UI.
-// Adds parameters to a query for the answer page.
-const getIssueFactsForAPI = async (issueID, timeStamp, jobID, query) => {
-  // Add facts about the issue to the query.
-  query.issue = issues[issueID].summary;
-  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  const {what, url, urlLink, testInfo} = pageDataStrings;
-  query.target = what;
-  query.urlLink = urlLink;
-  query.testInfo = testInfo;
-  const issue = issues[issueID];
-  const {wcag, weight, why} = issue;
-  query.why = why;
-  query.priority = getWeightName(weight);
-  query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
-  // Initialize those whose values depend on instance inspection.
-  query.count = 0;
-  query.reporters = new Set();
-  let violators = {};
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  const {acts, catalog} = report;
-  const testActs = acts.filter(act => act.type === 'test');
-  // For each test act:
-  testActs.forEach(act => {
-    const {result, which} = act;
-    const issueInstances = result?.standardResult?.instances?.filter(
-      instance => instance.issueID === issueID
-    ) ?? [];
-    // If the rule of any of its standard instances belongs to the issue:
-    if (issueInstances.length) {
-      query.reporters.add(which);
-    }
-    // For each standard instance whose rule belongs to the issue:
-    issueInstances.forEach(instance => {
-      const pathID = instance.pathID || '/html';
-      const catalogIndex = instance.catalogIndex || '0';
-      const tagName = catalog[catalogIndex]?.tagName
-      ?? pathID?.split('/').pop().replace(/\[.+$/, '').toUpperCase()
-      ?? 'HTML';
-      violators[catalogIndex] ??= {
-        pathID: getPathID(catalog, catalogIndex, pathID),
-        tagName,
-        text: catalog[catalogIndex]?.text ?? '',
-        reporters: new Set()
-      };
-      // Ensure that the tool is in the sets of reporters of the violator and the issue.
-      violators[catalogIndex].reporters.add(which);
-      query.reporters.add(which);
-    });
-    // Populate the violator count.
-    const violatorCount = Object.keys(violators).length;
-    query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
-  });
-  // For each violator:
-  Object.values(violators).forEach(violatorData => {
-    // Convert the set of its reporters to a string.
-    violatorData.reporters = getToolNamesString(violatorData.reporters);
-  });
-  const reporterCount = query.reporters.size;
-  query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
-  // Convert the set of issue reporters to a string.
-  query.reporters = getToolNamesString(query.reporters);
-  // Convert the violator data to an array.
-  violators = Object.entries(violators).map(entry => ({
-    catalogIndex: entry[0],
-    ... entry[1]
-  }));
-  // Sort the violators in XPath order.
-  violators.sort((a, b) => a.pathID.localeCompare(b.pathID));
-  // Initialize the lines.
-  const lines = [];
-  const margin = ' '.repeat(6);
-  let takeMeAdviceNeeded = false;
-  // For each violator:
-  violators.forEach((violator, index) => {
-    const {catalogIndex, pathID, reporters, tagName, text} = violator;
-    // Add a heading to the lines.
-    lines.push(`${margin}<li><h3>Element ${catalogIndex}</h3>`);
-    lines.push(`${margin}  <ul class="pseudoTopLevel">`);
-    // Add properties of the violator to the lines.
-    if (pathID) {
-      lines.push(`${margin}    <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
-    }
-    if (tagName) {
-      lines.push(`${margin}    <li>Tag name: <code>${tagName}</code></li>`);
-    }
-    if (text && ! ['HTML', 'HEAD', 'BODY', 'MAIN', 'NOSCRIPT'].includes(tagName)) {
-      const textString = text.split('\n').join(' … ');
-      lines.push(`${margin}    <li>Text: <q>${htmlSafe(textString)}</q></li>`);
-    }
-    lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
-    lines.push(`${margin}  </ul>`);
-    lines.push(`${margin}  <ul class="nav">`);
-    if (catalogIndex) {
-      const catalogItem = catalog[catalogIndex] || {};
-      if (catalogItem.textLinkable) {
-        takeMeAdviceNeeded = true;
-        const href = getTextFragmentHref(catalogItem.text, url);
-        const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
-        const takeMeLink = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
-        lines.push(`${margin}    <li>${takeMeLink}</li>`);
-      }
-    }
-    const href
-    = `/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}?pathID=${pathID}`;
-    const questionString = 'What diagnoses were reported';
-    const labelString = `${questionString} for violator ${index + 1}?`;
-    lines.push(
-      `${margin}    <li><a href="${href}" aria-label="${labelString}">${questionString}?</a></li>`
-    );
-    lines.push(`${margin}  </ul>`);
-    lines.push(`${margin}</li>`);
-  });
-  // Add the lines to the query.
-  query.violators = lines.join('\n');
-  query.takeMeThere = '';
-  // If any lines contain text-fragment links:
-  if (takeMeAdviceNeeded) {
-    // Include advice about them in the answer.
-    query.takeMeThere = '<p><q>Take me there</q> links will open the page in a new tab and try to scroll to the element and highlight it. This does not always succeed. You can return here by closing the new tab.</p>';
-  }
-};
 // Gets facts about an issue.
 const getIssueFacts = async (timeStamp, jobID, issue) => {
   const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
@@ -281,7 +158,7 @@ exports.response = async args => {
     },
     'number of HTML elements reported as exhibiting issues': violatorCount,
     'level of the issue': issueLevel,
-    'facts about the issue': issue
+    'facts about the issue': await getIssueFacts(timeStamp, jobID, issue)
   };
   return content;
 };

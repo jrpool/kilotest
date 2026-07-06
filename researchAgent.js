@@ -61,7 +61,7 @@ const getContent = async response => {
         resolve(content);
       }
       // If it is not JSON:
-      catch (error) {
+      catch {
         // Return this.
         resolve({error: `Response content not JSON (${contentString})`});
       }
@@ -139,9 +139,7 @@ const requestService = async () => {
   if (content.error) {
     return;
   }
-  console.log(
-    '======================\nRequest 4: Summarize the issues in a report'
-  );
+  console.log('======================\nRequest 4: Summarize the issues in a report');
   [timeStamp, jobID] = report.identifier?.split('-') ?? ['', ''];
   if (! (timeStamp && jobID)) {
     return;
@@ -152,7 +150,26 @@ const requestService = async () => {
   if (content.error) {
     return;
   }
-  console.log('======================\nRequest 5: Make a permitted test recommendation');
+  console.log('======================\nRequest 5: Describe one issue from one report');
+  if (content['number of HTML elements reported as exhibiting issues'] === 0) {
+    console.log('reportIssue request cannot be submitted, because no issues were reported');
+  }
+  else {
+    // Get the issue IDs.
+    const issueIDs = Object
+    .values(content['issues reported'])
+    .map(levelIssues => levelIssues.map(issue => issue.identifier))
+    .flat();
+    // Choose one at random.
+    const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];
+    method = 'GET';
+    path = `/api/reportIssue/${issueID}/${timeStamp}/${jobID}`;
+    content = await submitRequest(results, path, method);
+    if (content.error) {
+      return;
+    }
+  }
+  console.log('======================\nRequest 6: Make a permitted test recommendation');
   method = 'POST';
   path = '/api/testRecForm';
   content = await submitRequest(results, path, method, {
@@ -163,8 +180,8 @@ const requestService = async () => {
   if (content.error) {
     return;
   }
-  console.log('======================\nRequest 6: Make an illicit test recommendation');
-  content = await submitRequest(results, path, method, {
+  console.log('======================\nRequest 7: Make an illicit test recommendation');
+  await submitRequest(results, path, method, {
     'description of the web page': description,
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'

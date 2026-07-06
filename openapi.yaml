@@ -444,8 +444,139 @@ components:
             issues reported:
               $ref: '#/components/schemas/IssuesByPriority'
 
+    HTMLElementDetail:
+      type: object
+      description: Details about an HTML element reported as exhibiting an issue.
+      properties:
+        identifier:
+          type: string
+          description: Unique identifier of the element in the catalog of the report.
+        tag name:
+          type: string
+          examples:
+            - IMG
+        id attribute:
+          type: string
+          description: Value of the element's id attribute, if any.
+        start tag:
+          type: string
+          description: The opening tag of the element, including attributes.
+        inner text:
+          type: string
+          description: First and last lines of the inner text, if any, of the element.
+        inner text usable as a text fragment for linking:
+          type: boolean
+          description: Whether the inner text can be used as a text fragment for URL linking.
+        x, y, width, height in pixels:
+          type: array
+          items:
+            type: string
+          description: Bounding box coordinates and dimensions of the element.
+        XPath:
+          type: string
+          description: XPath of the element in the document.
+
     ReportIssueResponse:
       allOf:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
-          description: Element-level detail for a specific issue. Schema to be completed once the tier-3 service is implemented.
+          properties:
+            report:
+              type: object
+              properties:
+                identifier:
+                  type: string
+                  examples:
+                    - 20280216T1353-4r9
+                creation date:
+                  type: string
+                  format: date-time
+                days since the creation date:
+                  type: integer
+            tested web page:
+              type: object
+              properties:
+                description:
+                  type: string
+                  examples:
+                    - ARQ Space Exploration Corporation
+                    - Edlir Velaj PF
+                URL:
+                  type: string
+                  format: uri
+                  examples:
+                    - https://tiendalibros.com/
+            rule engines that tried to test the page:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleEngineInfo'
+            rule engines that were unable to test the page:
+              type: array
+              items:
+                $ref: '#/components/schemas/RuleEngineFailure'
+            rule engines that reported issues:
+              $ref: '#/components/schemas/RuleEnginesSummary'
+            number of issues reported:
+              type: object
+              properties:
+                total:
+                  type: integer
+                by priority:
+                  type: object
+                  properties:
+                    highest priority:
+                      type: integer
+                    high priority:
+                      type: integer
+                    low priority:
+                      type: integer
+                    lowest priority:
+                      type: integer
+            number of HTML elements reported as exhibiting issues:
+              type: integer
+            level of the issue:
+              type: integer
+              enum:
+                - 1
+                - 2
+                - 3
+                - 4
+              description: Priority level of the issue (4 = highest, 1 = lowest).
+            facts about the issue:
+              type: object
+              description: Details about the specified issue and the HTML elements exhibiting it.
+              properties:
+                identifier:
+                  type: string
+                  examples:
+                    - imageNoText
+                summary:
+                  type: string
+                  description: Brief natural-language label for the issue.
+                  examples:
+                    - image not named
+                related WCAG 2.2 standard:
+                  type: object
+                  description: The WCAG 2.2 success criterion or guideline most closely related to the issue.
+                  properties:
+                    layer:
+                      type: string
+                      enum:
+                        - guideline
+                        - success criterion
+                    'numeric identifier':
+                      type: string
+                      pattern: '^\d\.\d(\.\d+)?$'
+                      examples:
+                        - 1.1.1
+                impact on a user:
+                  type: string
+                  description: How this issue is likely to affect users.
+                rule engines reporting the issue:
+                  $ref: '#/components/schemas/RuleEnginesSummary'
+                number of HTML elements reported as exhibiting the issue:
+                  type: integer
+                HTML elements reported as exhibiting the issue:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/HTMLElementDetail'

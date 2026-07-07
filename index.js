@@ -330,14 +330,14 @@ const requestHandler = async (request, response) => {
         }
         // Otherwise, i.e. if they are invalid:
         else {
-          // Report the error.
-          await serveError({message: answerData.message}, response, true);
+          // Report the error as suspected abuse.
+          await serveError(getAbuseError(request, answerData.message), response, true);
         }
       }
       // Otherwise, i.e. if the answer cannot be generated:
       else {
-        // Report the error.
-        await serveError({message: 'ERROR: Invalid request'}, response, true);
+        // Report the error as suspected abuse.
+        await serveError(getAbuseError(request, 'Request for nonexistent page'), response, true);
       }
     }
     // Otherwise, if it is for an API service:

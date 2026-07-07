@@ -33,11 +33,11 @@ exports.answer = async () => {
 // Sanitizes and saves a tutorial comment to comments.json.
 exports.saveComment = async content => {
   if (!content || typeof content !== 'string') {
-    return {status: 'error', error: 'No content provided'};
+    return {status: 'error', message: 'No content provided'};
   }
   const sanitized = sanitize(content);
   if (!sanitized) {
-    return {status: 'error', error: 'Comment is empty after sanitization'};
+    return {status: 'error', message: 'Comment is empty after sanitization'};
   }
   let comments = [];
   try {

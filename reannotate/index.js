@@ -34,6 +34,6 @@ exports.answer = async authCode => {
   // Otherwise, i.e. if the authorization code is invalid, return an error page.
   return {
     status: 'error',
-    error: 'Invalid authorization code'
+    message: 'Invalid authorization code'
   };
 };

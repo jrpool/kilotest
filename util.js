@@ -679,7 +679,7 @@ exports.processRec = async (testType, dirName, what, url, why) => {
   }
   return {
     status: 'error',
-    error: 'Invalid recommendation'
+    message: 'Invalid recommendation'
   };
 };
 // Gets the WCAG Understanding link for a numeric WCAG standard identifier.

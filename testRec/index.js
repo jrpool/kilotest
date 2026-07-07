@@ -17,7 +17,7 @@ exports.answer = async (what, url, why) => {
     // Return an answer reporting this.
     return {
       status: 'error',
-      error: `Page is already ${status}`
+      message: `Page is already ${status}`
     };
   }
   // Otherwise, i.e. if it is recommendable, process the recommendation.

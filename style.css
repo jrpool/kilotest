@@ -57,7 +57,7 @@ code.thin {
   margin-top: 0;
 }
 details {
-  padding: rem;
+  padding: 0.5rem;
   border: solid #000 1px;
 }
 .error {

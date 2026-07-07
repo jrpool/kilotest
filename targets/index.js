@@ -12,7 +12,6 @@ const {
   getObject,
   getPageDataStrings,
   getRecs,
-  getToolNamesString,
   getLogs,
   getReportData,
   isRecommendable,

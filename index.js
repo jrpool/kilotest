@@ -80,7 +80,8 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // Serves or sends an error message.
 const serveError = async (error, response, isHumanUser = true) => {
-  console.log(error.message || 'ERROR');
+  const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
+  console.log(errorLines.join('\n') || 'ERROR');
   if (! response.writableEnded) {
     response.statusCode = 400;
     // If the request is from a human user:
@@ -128,7 +129,7 @@ const checkBalancesForAlerts = async report => {
       // Get the recorded AI service 0 balance.
       balanceJSON = await fs.readFile(balancePath, 'utf8');
     }
-    catch (error) {
+    catch {
       console.error('ERROR: AI service 0 balance file missing');
     }
     // If the variables required for an AI service 0 balance alert are defined:
@@ -168,6 +169,21 @@ const checkBalancesForAlerts = async report => {
       }
     }
   }
+};
+// Creates an error object about a suspicious request.
+const getAbuseError = (request, reason) => {
+  const {method, url, headers} = request;
+  const ip = headers['x-forwarded-for'] || request.socket.remoteAddress || 'unknown';
+  return {
+    message: 'Invalid request',
+    reason,
+    'IP address': ip,
+    method,
+    URL: url,
+    'user agent': headers['user-agent'] || 'none',
+    referer: headers.referer || 'none',
+    time: new Date().toISOString()
+  };
 };
 // Handles a request.
 const requestHandler = async (request, response) => {
@@ -260,17 +276,17 @@ const requestHandler = async (request, response) => {
         // If the report exists and is hidden:
         if (reportHidden === true) {
           console.log(`ERROR: Hidden report ${timeStamp}-${jobID} requested`);
-          // Report this.
+          // Report this as suspected abuse.
           await serveError(
-            {message: `ERROR: requested report ${timeStamp}-${jobID} not available`},
+            getAbuseError(request, `Requested report ${timeStamp}-${jobID} not available`),
             response,
             true
           );
         }
-        // Otherwise, if any other error occurred:
+        // Otherwise, if the report does not exist or another error occurred:
         else if (typeof reportHidden === 'string') {
-          // Report it.
-          await serveError({message: reportHidden}, response, true);
+          // Report this as suspected abuse.
+          await serveError(getAbuseError(request, reportHidden), response, true);
         }
         // Otherwise, i.e. if the report log is valid and not hidden:
         else {
@@ -315,7 +331,7 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          await serveError({message: answerData.error}, response, true);
+          await serveError({message: answerData.message}, response, true);
         }
       }
       // Otherwise, i.e. if the answer cannot be generated:
@@ -377,7 +393,7 @@ const requestHandler = async (request, response) => {
         setHeaders(mimeTypes[ext] || 'application/octet-stream', null, 'low');
         response.end(img);
       }
-      catch (_) {
+      catch {
         await serveError({message: 'ERROR: Image not found'}, response, true);
       }
     }
@@ -439,7 +455,7 @@ const requestHandler = async (request, response) => {
           // Otherwise, i.e. if they are invalid:
           else {
             // Report the error.
-            await serveError({message: answerData.error}, response, true);
+            await serveError({message: answerData.message}, response, true);
           }
         }
         // Otherwise, i.e. if the request is invalid:
@@ -473,7 +489,7 @@ const requestHandler = async (request, response) => {
             // Otherwise, i.e. if they are invalid:
             else {
               // Report the error.
-              await serveError({message: answerData.error}, response, true);
+              await serveError({message: answerData.message}, response, true);
             }
           }
         }
@@ -506,7 +522,7 @@ const requestHandler = async (request, response) => {
             // Otherwise, i.e. if they are invalid:
             else {
               // Report the error.
-              await serveError({message: answerData.error}, response, true);
+              await serveError({message: answerData.message}, response, true);
             }
           }
           // Otherwise, i.e. if it is a rejection:
@@ -547,7 +563,7 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          await serveError({message: answerData.error}, response, true);
+          await serveError({message: answerData.message}, response, true);
         }
       }
       // Otherwise, if it is a WCAG map renewal:
@@ -566,7 +582,7 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if they are invalid:
         else {
           // Report the error.
-          await serveError({message: answerData.error}, response, true);
+          await serveError({message: answerData.message}, response, true);
         }
       }
       // Otherwise, if it is a request from an agent:
@@ -753,7 +769,7 @@ const requestHandler = async (request, response) => {
         }
         else {
           response.statusCode = 400;
-          response.end(JSON.stringify({status: 'error', message: answerData.error}));
+          response.end(JSON.stringify({status: 'error', message: answerData.message}));
         }
       }
       // Otherwise, i.e. if it is any other POST request:

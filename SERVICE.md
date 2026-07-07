@@ -20,6 +20,8 @@ Any other application `xyz` can be installed at `/opt/jpdev/xyz` on the server.
 
 ## Process management
 
+### Process manager
+
 Kilotest is managed with [PM2](https://pm2.keymetrics.io) on the server (not on the local development host). The PM2 configuration is specified in the repository as `pm2.config.js`:
 
 ```javascript
@@ -48,6 +50,10 @@ When the PM2 configuration or environment is changed, restart PM2 with:
 pm2 restart kilotest --time --update-env
 pm2 save
 ```
+
+The management of the PM2 logs is [documented by PM2](https://pm2.keymetrics.io/docs/usage/log-management/).
+
+### Process tuning
 
 The server configuration has been tuned for improved performance. The file edited for this purpose is `/etc/default/zramswap`:
 

@@ -50,21 +50,21 @@ exports.answer = async authCode => {
         // Report this.
         return {
           status: 'error',
-          error: 'No entries found in WCAG map source'
+          message: 'No entries found in WCAG map source'
         };
       }
     }
     else {
       return {
         status: 'error',
-        error: 'WCAG map source not retrieved'
+        message: 'WCAG map source not retrieved'
       };
     }
   }
   else {
     return {
       status: 'error',
-      error: 'Authorization code invalid'
+      message: 'Authorization code invalid'
     };
   }
 };

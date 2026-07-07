@@ -171,6 +171,6 @@ exports.answer = async pageArgs => {
   // Otherwise, i.e. if they were not obtained, report this.
   return {
     status: 'error',
-    error: 'Report processing failed'
+    message: 'Report processing failed'
   };
 };

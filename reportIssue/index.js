@@ -176,6 +176,6 @@ exports.answer = async pageArgs => {
   // Otherwise, report this.
   return {
     status: 'error',
-    error: 'Invalid report specification'
+    message: 'Invalid report specification'
   };
 };

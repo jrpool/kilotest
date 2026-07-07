@@ -47,7 +47,7 @@ exports.answer = async (_, search) => {
       // Report the error.
       return {
         status: 'error',
-        error: 'Invalid authorization code'
+        message: 'Invalid authorization code'
       }
     }
   }
@@ -60,7 +60,7 @@ exports.answer = async (_, search) => {
       oldBalance = `$${balanceData.balance} is the`;
     }
     // If the balance file does not exist or is invalid:
-    catch (error) {
+    catch {
       oldBalance = 'There is no';
     }
   }

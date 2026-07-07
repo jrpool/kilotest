@@ -63,7 +63,7 @@ const getContent = async response => {
       // If it is not JSON:
       catch {
         // Return this.
-        resolve({error: `Response content not JSON (${contentString})`});
+        resolve({message: `Response content not JSON (${contentString})`});
       }
     });
   });

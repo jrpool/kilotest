@@ -181,13 +181,23 @@ curl -sv https://example.com/ -o /dev/null
 
 Requests to `https://kilotest.com` are received on port 443 and processed by [Caddy](https://caddyserver.com/), which forwards them via HTTP to the application at `localhost:3000`. Caddy manages, provisions, and renews a TLS certificate via Let’s Encrypt. Any request to `http://kilotest.com` is received on port 80, and Caddy redirects it to an `https` request. Caddy forwards `https` requests to the [local server](http://localhost:3000), where it is processed by the Kilotest service.
 
-The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`:
+The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`. Leading 2 spaces below represent 1 Tab character. The `handle_path` block is used for the QAI application, which is accessed at `https://kilotest.com/qai` and listens on port 3001.
 
-```javascript
+```caddyfile
+# Configuration of the Caddy web server.
+# Docs: https://caddyserver.com/docs/caddyfile.
+
 kilotest.com {
   # Enable Zstandard and Gzip compression of responses.
   encode zstd gzip
-  # Reverse proxy all requests to localhost:3000.
+
+  # Truncate the initial /qai from the forwarded path.
+  handle_path /qai* {
+    # Forward any matching request to port 3001.
+    reverse_proxy localhost:3001
+  }
+
+  # Forward any other request to port 3000.
   reverse_proxy localhost:3000 {
     # Improve SSE latency.
     flush_interval -1

@@ -7,6 +7,7 @@ module.exports = {
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
+      time: true,
       env: {
         NODE_ENV: 'production',
         BASE_PATH: '/',

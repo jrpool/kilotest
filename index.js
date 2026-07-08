@@ -210,17 +210,8 @@ const requestHandler = async (request, response) => {
   const {pathname, search} = requestURL;
   const pageName = pathname.split('/')[1];
   const pathTail = pathname.split('/').slice(2).join('/');
-  // If the request is an OPTIONS request:
-  if (method === 'OPTIONS') {
-    // Serve response headers, including one allowing requests from other applications.
-    response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    response.statusCode = 204;
-    response.end();
-  }
-  // Otherwise, if the request is a GET request:
-  else if (method === 'GET') {
+  // If the request is a GET request:
+  if (method === 'GET') {
     // If it is for the model context protocol server:
     if (pathname === mcpPath) {
       // Handle the MCP request.
@@ -789,7 +780,7 @@ const requestHandler = async (request, response) => {
   }
   // Otherwise, i.e. if it is neither a GET nor a POST request:
   else {
-    // Report its invalidity.
+    // Report its invalidity. (Caddy handles OPTIONS requests.)
     await serveError({message: 'ERROR: Invalid request method'}, response, true);
   }
 };

@@ -199,7 +199,7 @@ kilotest.com {
   # Specify the only paths of forwardable requests.
   @allowedGET {
     method GET
-    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /*.html* /api/* /tutorial/images/* /favicon.* /style.css /sitemap.xml
+    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt *.html* /fullReport.json/* /api/* /tutorial/images/* /favicon.* /style.css /sitemap.xml
   }
   @allowedPOST {
     method POST
@@ -207,6 +207,11 @@ kilotest.com {
   }
   @allowedOPTIONS method OPTIONS
   handle @allowedOPTIONS {
+    header {
+      Access-Control-Allow-Origin *
+      Access-Control-Allow-Methods GET,POST,OPTIONS
+      Access-Control-Allow-Headers Content-Type,Authorization
+    }
     respond 204
   }
   # Truncate any initial /qai from the forwarded path.

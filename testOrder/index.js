@@ -11,7 +11,7 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Implements a test order and returns an acknowledgement page.
+// Implements a test order and returns a revised recommendations page.
 exports.answer = async (url, what, authCode) => {
   // If the arguments are valid:
   if (isURL(url) && what && authCode === process.env.AUTH_CODE) {

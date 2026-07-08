@@ -28,7 +28,7 @@ const {
   reportsPath,
   ruleIDs
 } = require('./util');
-const {handleMCP} = require('./mcp');
+const {handleMCP, mcpPath} = require('./mcp');
 const fs = require('fs/promises');
 const http = require('http');
 const https = require('https');
@@ -222,7 +222,8 @@ const requestHandler = async (request, response) => {
   // Otherwise, if the request is a GET request:
   else if (method === 'GET') {
     // If it is for the model context protocol server:
-    if (pathname === '/mcp') {
+    if (pathname === mcpPath) {
+      // Handle the MCP request.
       await handleMCP(request, response);
     }
     // Otherwise, if it is for the home page:
@@ -266,6 +267,13 @@ const requestHandler = async (request, response) => {
       // Serve it.
       setHeaders('text/plain', '/llms-full.txt', 'medium');
       response.end(llmsfull);
+    }
+    // Otherwise, if it is for the XML sitemap:
+    else if (pageName === 'sitemap.xml') {
+      const sitemap = await fs.readFile('sitemap.xml', 'utf8');
+      // Serve it.
+      setHeaders('application/xml', '/sitemap.xml', 'medium');
+      response.end(sitemap);
     }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
@@ -511,12 +519,12 @@ const requestHandler = async (request, response) => {
           if (what) {
             // Set a location header for a response.
             response.setHeader('content-location', `${pathname}${search}`);
-            // Get the answer data.
+            // Get the answer data about the remaining recommendations.
             const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
             .answer(url, what, authCode);
             // If the answer data are valid:
             if (answerData.status === 'ok') {
-              // Serve the answer page.
+              // Serve the test-order page with the remaining recommendations.
               response.end(answerData.answerPage);
             }
             // Otherwise, i.e. if they are invalid:
@@ -537,7 +545,7 @@ const requestHandler = async (request, response) => {
             response.setHeader('content-location', '/recActionForm.html');
             // Get the answer data.
             const answerData = await require(path.join(__dirname, 'recActionForm', 'index')).answer();
-            // Serve the test-order form.
+            // Serve the test-order form with the remaining recommendations.
             response.end(answerData.answerPage);
           }
         }

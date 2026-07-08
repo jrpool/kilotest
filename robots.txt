@@ -1,4 +1,16 @@
 # robots.txt
 User-agent: *
 Allow: /
+Disallow: /ai0BalanceForm.html
+Disallow: /recActionForm.html
+Disallow: /recAction.html
+Disallow: /reannotateForm.html
+Disallow: /reannotate.html
+Disallow: /reportHideForm.html
+Disallow: /reportUnhideForm.html
+Disallow: /reportsPruneForm.html
+Disallow: /reportsRewindForm.html
+Disallow: /reportsExpungeForm.html
+Disallow: /wcagRenewForm.html
+Disallow: /wcagRenew.html
 Sitemap: https://kilotest.com/sitemap.xml

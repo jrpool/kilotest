@@ -15,6 +15,10 @@ const reportIssuesAPI = require('./reportIssues/api');
 const reportIssueAPI = require('./reportIssue/api');
 const testRecFormAPI = require('./testRecForm/api');
 
+// CONSTANTS
+
+exports.mcpPath = '/mcp';
+
 // FUNCTIONS
 
 // Creates and returns an McpServer with Kilotest tools registered.

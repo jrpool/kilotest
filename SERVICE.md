@@ -196,22 +196,47 @@ The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`. Lea
 kilotest.com {
   # Enable Zstandard and Gzip compression of responses.
   encode zstd gzip
-
-  # Truncate the initial /qai from the forwarded path.
+  # Specify the only paths of forwardable requests.
+  @allowedGET {
+    method GET
+    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /*.html* /api/* /tutorial/images/* /favicon.* /style.css /sitemap.xml
+  }
+  @allowedPOST {
+    method POST
+    path /mcp /retestRec.html/* /testRec.html/* /recAction.html /reannotate.html /wcagRenew.html /api/* /tutorialComment.html
+  }
+  @allowedOPTIONS method OPTIONS
+  handle @allowedOPTIONS {
+    respond 204
+  }
+  # Truncate any initial /qai from the forwarded path.
   handle_path /qai* {
-    # Forward any matching request to port 3001.
+    # Forward any QAI request to port 3001.
     reverse_proxy localhost:3001
   }
-
-  # Forward any other request to port 3000.
-  reverse_proxy localhost:3000 {
-    # Improve SSE latency.
-    flush_interval -1
+  # Forward any other GET, POST, or OPTIONS request, if allowed, to port 3000.
+  handle @allowedGET {
+    reverse_proxy localhost:3000 {
+      # Improve SSE latency.
+      flush_interval -1
+    }
+  }
+  handle @allowedPOST {
+    reverse_proxy localhost:3000 {
+      # Improve SSE latency.
+      flush_interval -1
+    }
+  }
+  # Return not-found for any other request.
+  handle {
+    respond 404
   }
 }
 ```
 
-This configuration prevents granular reporting by Testaro agents from being buffered, so the updates reach the browser without delay.
+This configuration can be futher tightened if experience warrants.
+
+The `flush_interval` setting prevents granular reporting by Testaro agents from being buffered, so the updates reach the browser without delay.
 
 ## Version management
 

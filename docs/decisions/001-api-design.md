@@ -20,7 +20,7 @@ A violator is a particular element (HTML, SVG, etc.) on the page that some rule 
 
 This hierarchical design is based on a realistic assumption about how human users interact with Kilotest. They visit its home page and begin what to them is a session. Although requests to Kilotest are stateless, the response at each level includes links that contain all the specifications required for a request at the next level. For example, the response to a request at level 3 includes, for each violator, a link that makes a request at level 4 and includes identifiers of the page, the issue and the violator.
 
-The responses to requests in the UI at any level include a summary of the some of the information about the previous levels. For example, a response at level 3 includes a summary of information about the report and about the issues in that report. The prior-level summarized information is based on assumptions about what a typical human user would value. For example, at level 3, the prior-level information does not summarize all the available reports, but does include a list of the rule engines that succeeded and failed in testing the page and the counts of issues reported.
+The responses to requests in the UI at any level include a summary of some of the information about the previous levels. For example, a response at level 3 includes a summary of information about the report and about the issues in that report. The prior-level summarized information is based on assumptions about what a typical human user would value. For example, at level 3, the prior-level information does not summarize all the available reports, but does include a list of the rule engines that succeeded and failed in testing the page and the counts of issues reported.
 
 These assumptions for human UI users may or may not be valid for how LLMs interact with the Kilotest API. Those interactions may vary depending on the tasks that they are performing. Consider three scenarios:
 
@@ -34,7 +34,7 @@ Scenario 2 seems to justify an API that offers enough information about all the 
 
 Scenario 3 seems to justify an API that mimics the UI in structure, but perhaps not in the prior-levels information provided at each level.
 
-Even these apparently justified API designs depend on the assumption that users mean what they say, partcularly in scenario 1. A user who asks for **all** available information about the front-end quality of a particular web page may do so because of ignorance about how voluminous that information is, and the real wish may be more conditional: all the information if there is not much, but otherwise a summary so I can select what I want to learn more about.
+Even these apparently justified API designs depend on the assumption that users mean what they say, particularly in scenario 1. A user who asks for **all** available information about the front-end quality of a particular web page may do so because of ignorance about how voluminous that information is, and the real wish may be more conditional: all the information if there is not much, but otherwise a summary so I can select what I want to learn more about.
 
 Uncertainty about how LLMs will interact with the API creates a design problem. How should the API be further developed?
 
@@ -64,11 +64,11 @@ For scenario 3, current LLM tool-use patterns do not require the model to restar
 
 ### Usage and suggestion metrics
 
-There is also empirical support for modesty in any estimate of the adequacy of the current or any other single API design. As found by [Zhu et al. (2025)](https://arxiv.org/html/2508.01213v2), “users do not transfer existing conversational norms to LLM interactions, but instead develop new registers with distinct pragmatic features.” Metrics will help to inform the contributors to the API about how LLMs are actually using it and how they want it to be improved.
+There is also empirical support for modesty in any estimate of the adequacy of the current or any other single API design. As found by Zhu et al. (2025), “users do not transfer existing conversational norms to LLM interactions, but instead develop new registers with distinct pragmatic features.” Metrics will help to inform the contributors to the API about how LLMs are actually using it and how they want it to be improved.
 
 ## Cost and context-window constraints
 
-A user-friendly rendering of an entire Kilotest report is estimated at about 5 MB of text, or roughly 1.25 million tokens. This exceeds the 200,000-token context window of Claude 3.5 Sonnet, so the model cannot consume the whole report in one prompt. Passing it once costs roughly $3.75 in input tokens at current pricing, and every follow-up question requires re-sending the report. By contrast, a four-level drill-down through report → issue → violator → diagnosis costs roughly $0.07 for a typical path. The break-even point is therefore around 50 full drill-downs. An intuitive guess is that a typical conversation would involve 1 report, 2 issues, and 3 violators, costing about $0.??. Even if a user initially wanted a comprehensive report and then wanted an LLM to help interpret it, the impact of that strategy on cost would likely motivate the user to switch to an incremental strategy.
+A user-friendly rendering of an entire Kilotest report is estimated at about 5 MB of text, or roughly 1.25 million tokens. This exceeds the 200,000-token context window of Claude 3.5 Sonnet, so the model cannot consume the whole report in one prompt. If it could be passed whole, each pass would cost roughly $3.75 in input tokens at current pricing, and every subsequent question about it would require re-sending it. By contrast, a four-level drill-down through report → issue → violator → diagnosis costs roughly $0.07 for a typical path. An intuitive guess is that a typical conversation would involve 1 report, 2 issues, and 3 violators per issue. Delivering such results with the full-report method would require 2 issue passes and 6 violator passes beyond the initial pass, for a total of about $33.75. Doing so incrementally would cost about $0.26, which is only **1/130th** of the cost of the same result with the full-report strategy. Even if a user initially wanted a comprehensive report and then wanted an LLM to find and interpret facts in it, the impact of that strategy on cost would likely motivate the user to switch to an incremental strategy.
 
 ## Sub-decision: ancestor information in level responses
 
@@ -104,7 +104,7 @@ The sub-decision was **identifiers plus labels** (option 2). This decision was b
 
 - Jian, J., et al. (2024). [Understanding User Prompting Behavior in Generative AI](https://dl.acm.org/doi/abs/10.1002/pra2.1318).
 - Mysore, S., et al. (2025). [Prototypical Human-AI Collaboration Behaviors from LLM-Assisted Writing in the Wild](https://aclanthology.org/2025.emnlp-main.852/).
-- Zhu, Y., et al. (2025). "Show or Tell? Modeling the evolution of request-making in human-LLM conversations."
+- Zhu, S., et al. (2025). [Show or Tell? Modeling the evolution of request-making in human-LLM conversations](https://arxiv.org/html/2508.01213v2).
 - Anthropic. [Tutorial: Build a tool-using agent](https://platform.claude.com/docs/en/agents-and-tools/tool-use/build-a-tool-using-agent).
 - Cohere. [Multi-step Tool Use](https://docs.cohere.com/v1/docs/multi-step-tool-use).
 - [Model Context Protocol specification](https://modelcontextprotocol.io/specification/2025-06-18/server/tools).

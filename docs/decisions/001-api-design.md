@@ -68,7 +68,7 @@ There is also empirical support for modesty in any estimate of the adequacy of t
 
 ## Cost and context-window constraints
 
-A user-friendly rendering of an entire Kilotest report is estimated at about 5 MB of text, or roughly 1.25 million tokens. This exceeds the 200,000-token context window of Claude 3.5 Sonnet, so the model cannot consume the whole report in one prompt. If it could be passed whole, each pass would cost roughly $3.75 in input tokens at current pricing, and every subsequent question about it would require re-sending it. By contrast, a four-level drill-down through report → issue → violator → diagnosis costs roughly $0.07 for a typical path. An intuitive guess is that a typical conversation would involve 1 report, 2 issues, and 3 violators per issue. Delivering such results with the full-report method would require 2 issue passes and 6 violator passes beyond the initial pass, for a total of about $33.75. Doing so incrementally would cost about $0.26, which is only **1/130th** of the cost of the same result with the full-report strategy. Even if a user initially wanted a comprehensive report and then wanted an LLM to find and interpret facts in it, the impact of that strategy on cost would likely motivate the user to switch to an incremental strategy.
+A user-friendly rendering of an entire Kilotest report is estimated at about 5 MB of text, or roughly 1.25 million tokens. This exceeds the 200,000-token context window of Claude 3.5 Sonnet, so the model cannot consume the whole report in one prompt. If it could be passed whole, each pass would cost roughly $3.75 in input tokens at current pricing, and every subsequent question about it would require re-sending it. By contrast, a four-level drill-down through report → issue → violator → diagnosis costs roughly $0.07 for a typical path. An intuitive guess is that a typical conversation would involve 1 report, 2 issues, and 3 violators per issue. Delivering such results with the full-report method would require 2 issue passes and 6 violator passes beyond the initial pass, for a total of about $33.75. Doing so incrementally would cost about $0.26, which is only **1/130th** of the cost of the same result with the full-report strategy. Even if a user initially wanted a comprehensive report and then wanted an LLM to find and interpret it, the impact of that strategy on cost would likely motivate the user to switch to an incremental strategy.
 
 ## Sub-decision: ancestor information in level responses
 
@@ -80,7 +80,7 @@ Given this decision, a secondary decision to make is what information from prior
 
 The sub-decision was **identifiers plus labels** (option 2). This decision was based on cost and reliability, as follows.
 
-- **Cost:** Option 3 would make a four-level drill-down roughly 4 times as expensive as option 2, because of the large response volume.
+- **Cost:** Option 3 would probably make a four-level drill-down several times as expensive as option 2, because of the large response volumes.
 - **Reliability:** Option 1 would entail a greater risk of information loss and hallucination than option 2, because the LLM could be unable to retrieve the needed information using identifiers if its history were truncated, if a tool were invoked in isolation, or if the model were asked later to summarize findings in natural language.
 
 ## Implementation plan

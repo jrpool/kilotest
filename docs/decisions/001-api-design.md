@@ -39,7 +39,7 @@ As of the date of this decision, a partial initial API version already exists: a
 ## Considered options
 
 - Add a tool that implements level 4, then add a tool that asks LLMs to comment on how the API design could better satisfy their needs, then add metrics to make API usage and submitted LLM comments available to Kilotest managers.
-- Pause further API development while doing fundamental research to predict LLM needs, then resume API development, including redesign if the research results warrant.
+- Pause further API development while doing fundamental research to predict LLM needs, then resume API and metrics development, including API redesign if the research results warrant.
 
 ## Decision
 

@@ -6,10 +6,11 @@
 // IMPORTS
 
 const {
+  getAgoDays,
+  getDateTime,
   getLogs,
   getNowStamp,
-  getRandomString,
-  getReportData
+  getRandomString
 } = require('../util');
 
 // CONSTANTS
@@ -18,34 +19,20 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
-// Returns a response to a targets request.
+// Returns a response to an API request for reports.
 exports.response = async () => {
-  const availableReports = [];
-  // Get the non-hidden logs.
-  const targetLogs = await getLogs();
-  // For each log:
-  for (const targetLog of targetLogs) {
-    const {jobName} = targetLog;
+  const reportsFacts = [];
+  // Get the available logs, with added job names.
+  const availableLogs = await getLogs();
+  // For each of them:
+  for (const availableLog of availableLogs) {
+    const {jobName} = availableLog;
     const [timeStamp, jobID] = jobName.split('-');
-    const {superseded, url, what} = targetLog;
-    // Get data about its report.
-    const data = await getReportData(timeStamp, jobID);
-    const {
-      creationDate,
-      daysAgo,
-      issueCount,
-      toolNames,
-      toolCount,
-      reporterNames,
-      reporterCount,
-      violatorCount,
-      preventedToolNames,
-      preventedToolCount
-    } = data;
-    availableReports.push({
+    const {superseded, url, what} = availableLog;
+    reportsFacts.push({
       identifier: jobName,
-      'creation date': creationDate,
-      'days since the creation date': daysAgo,
+      'creation date and time': getDateTime(timeStamp),
+      'days since the creation date': getAgoDays(timeStamp),
       'tested web page': {
         description: what,
         URL: url

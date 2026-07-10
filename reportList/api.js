@@ -56,7 +56,7 @@ exports.response = async () => {
     request: {
       'type of request': {
         identifier: 'reportList',
-        description: 'Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standard-conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.'
+        description: 'Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standards conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.'
       },
       method: 'GET',
       URLs: {

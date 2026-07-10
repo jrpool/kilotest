@@ -109,7 +109,7 @@ exports.response = async args => {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString(),
     },
-    'reports, if any, that may match your page specifications': matchingReports
+    'matching reports': matchingReports
   };
   return content;
 };

@@ -17,7 +17,7 @@ paths:
     post:
       operationId: summarizeQualityOfMatchingWebPages
       summary: Summarize the quality of matching web pages
-      description: Get summary data from the available reports about web pages whose descriptions or hostnames match your specifications. Matching is case-insensitive and succeeds at least 1 specification is included by or includes the corresponding property of a tested page. The data include the name and URL of each tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standards conformity) issues were reported, and URLs for retrieving more detailed data from the report. Before calling the recommendQualityTestingOfOneWebPage tool and waiting for testing to occur, call this tool to check whether a report about the page is available now. If so, you can retrieve data from it. If not, you can use the recommendQualityTestingOfOneWebPage tool to recommend the page for testing.
+      description: Get summary data from the available reports about web pages whose descriptions or hostnames match your specifications. Matching is case-insensitive and succeeds at least 1 specification is included by or includes the corresponding property of a tested page. The data include the name and URL of each tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standards conformity) issues were reported, and URLs for retrieving more detailed data from the report.
       requestBody:
         description: Page specifications
         required: true
@@ -37,7 +37,7 @@ paths:
     get:
       operationId: getListOfAllAvailableReports
       summary: Get a list of all available reports
-      description: Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standard-conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
+      description: Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standards conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
       responses:
         '200':
           description: List of all available reports
@@ -313,7 +313,7 @@ components:
           $ref: '#/components/schemas/RuleEnginesSummary'
         rule engines that reported issues:
           $ref: '#/components/schemas/RuleEnginesSummary'
-        URLs for getting data on the reported issues:
+        URLs for getting data about the reported issues:
           $ref: '#/components/schemas/NextTierURLs'
         URL for getting the full technical report as JSON:
           type: string
@@ -377,9 +377,9 @@ components:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
           properties:
-            available reports:
+            matching reports:
               type: array
-              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
+              description: One entry per available matching Kilotest report. A report is matching if its page description or URL contains a specified description or URL fragment, respectively.
               items:
                 $ref: '#/components/schemas/TargetsItem'
 

@@ -27,10 +27,10 @@ const createMCPServer = () => {
   server.registerTool(
     'summarizeQualityOfMatchingWebPages',
     {
-      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages that match the description or hostname fragment of a web page that you have provided. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragment. Before calling recommendQualityTestingOfOneWebPage and waiting for testing to occur, call this tool to check whether a report about the page is available now.',
+      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages that match the description or hostname fragment of a web page that you have provided. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragment.',
       inputSchema: {
         what: z.string().describe('All or part of a description of the web page.'),
-        url: z.string().describe('All or part of the hostname of the URL of the web page.')
+        hostname: z.string().describe('All or part of the hostname of the URL of the web page.')
       },
       annotations: {
         title: 'Summarize the quality of matching web pages',
@@ -40,8 +40,8 @@ const createMCPServer = () => {
         openWorldHint: false
       }
     },
-    async ({what, url}) => {
-      const result = await targetAPI.response([what, url]);
+    async ({what, hostname}) => {
+      const result = await targetAPI.response([what, hostname]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );
@@ -109,7 +109,7 @@ const createMCPServer = () => {
   server.registerTool(
     'recommendQualityTestingOfOneWebPage',
     {
-      description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standards conformity). Do not call this tool until after you call summarizeQualityOfMatchingWebPages to check whether a report about the page, or a related page that satisfies your requirements, is available.',
+      description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standards conformity). Do not call this tool until after you call getListOfAllAvailableReports to check whether a report about the page, or a related page that satisfies your requirements, is available and to understand the naming conventions for pages.',
       inputSchema: {
         what: z.string().describe('Short description of the page, following the naming conventions visible in the getListOfAllAvailableReports response'),
         url: z.string().describe('Full HTTPS URL of the page to test'),

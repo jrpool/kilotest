@@ -19,7 +19,7 @@ const ALERT_FROM = process.env.ALERT_FROM;
 // FUNCTIONS
 
 // Sends an email alert to a manager.
-exports.sendAlert = (subject, body) => new Promise((resolve, reject) => {
+exports.sendAlert = (subject, body) => new Promise(resolve => {
   // If the alert configuration is complete:
   if (MANAGER_EMAIL && ALERT_API_HOST && ALERT_API_PATH && ALERT_API_KEY && ALERT_FROM) {
     const payload = JSON.stringify({

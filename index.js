@@ -30,6 +30,7 @@ const {
 } = require('./util');
 const {handleMCP, mcpPath} = require('./mcp');
 const fs = require('fs/promises');
+const {handleComment} = require('./tutorial/index');
 const http = require('http');
 const https = require('https');
 const path = require('path');
@@ -762,7 +763,7 @@ const requestHandler = async (request, response) => {
       else if (pageName === 'tutorialComment.html') {
         const {content} = postData;
         setHeaders('application/json', null, 'low');
-        const answerData = await require(path.join(__dirname, 'tutorial', 'index')).saveComment(content);
+        const answerData = await handleComment(content);
         if (answerData.status === 'ok') {
           response.end(JSON.stringify({status: 'ok'}));
         }

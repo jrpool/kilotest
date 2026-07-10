@@ -32,7 +32,7 @@ exports.answer = async () => {
   };
 };
 // Sanitizes and saves a tutorial comment to comments.json.
-exports.saveComment = async content => {
+exports.handleComment = async content => {
   if (!content || typeof content !== 'string') {
     return {status: 'error', message: 'No content provided'};
   }
@@ -58,6 +58,6 @@ exports.saveComment = async content => {
   // Save the revised comments.
   await fs.writeFile(commentsPath, getJSON(comments));
   // Send an alert to the manager.
-  await sendAlert('New tutorial comment received');
+  await sendAlert('New tutorial comment received', 'A new tutorial comment has been received.');
   return {status: 'ok'};
 };

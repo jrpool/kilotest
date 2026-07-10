@@ -17,7 +17,7 @@ paths:
     post:
       operationId: summarizeQualityOfMatchingWebPages
       summary: Summarize the quality of matching web pages
-      description: Get summary data from the available reports about web pages whose descriptions or hostnames match your specifications. Matching is case-insensitive and succeeds at least 1 specification is included by or includes the corresponding property of a tested page. The data include the name and URL of each tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standards conformity) issues were reported, and URLs for retrieving more detailed data from the report.
+      description: Get summary data from the available reports about web pages whose descriptions or hostnames match your specifications. Matching is case-insensitive and succeeds if at least 1 specification is included by or includes the corresponding property of a tested page. The data include the name and URL of each tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standards conformity) issues were reported, and URLs for retrieving more detailed data from the report.
       requestBody:
         description: Page specifications
         required: true
@@ -379,7 +379,7 @@ components:
           properties:
             matching reports:
               type: array
-              description: One entry per available matching Kilotest report. A report is matching if its page description or URL contains a specified description or URL fragment, respectively.
+              description: One entry per available matching Kilotest report. A report is matching if its page description or hostname contains or is contained by a specified description or hostname fragment, respectively.
               items:
                 $ref: '#/components/schemas/TargetsItem'
 

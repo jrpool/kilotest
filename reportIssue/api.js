@@ -112,7 +112,7 @@ exports.response = async args => {
     request: {
       'type of request': {
         identifier: 'reportIssue',
-        description: 'Describe one issue from one repeort.'
+        description: 'Describe one issue from one report.'
       },
       method: 'GET',
       URLs: {
@@ -123,8 +123,8 @@ exports.response = async args => {
         identifier: 'describeQualityOfOneWebPage',
         description: 'Describe the quality of one web page.',
         URLs: {
-          'for you': `${thisHost}/api/reportIssues`,
-          'for humans': `${thisHost}/reportIssues.html`
+          'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
+          'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
         }
       }
     },

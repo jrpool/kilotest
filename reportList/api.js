@@ -52,11 +52,11 @@ exports.response = async () => {
   const content = {
     summary: `This document fulfills a request made by a language model to a Kilotest tool. The model asked which reports about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages are available from Kilotest. Each report describes the results of a job that tested one web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs more than a thousand tests on a public web page, using a combination of rule- and machine-learning-based methods. Kilotest exposes API endpoints and web UI URLs to recommend web pages for testing and to obtain information from Kilotest reports. You and your users can learn more about Kilotest and the advangages of testing with an ensemble of rule engines at the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}).`,
     'tool collection name': 'Kilotest',
-    'tool name': 'listAllWebPageQualityReports',
+    'tool name': 'getListOfAllAvailableReports',
     request: {
       'type of request': {
         identifier: 'reportList',
-        description: 'List all the available reports about the front-end quality of web pages, including which pages were tested and when.'
+        description: 'Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standard-conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.'
       },
       method: 'GET',
       URLs: {

@@ -10,7 +10,7 @@ const {StreamableHTTPServerTransport} = require('@modelcontextprotocol/sdk/serve
 const {z} = require('zod');
 const {isReportAvailable, isURL} = require('./util');
 const targetAPI = require('./target/api');
-const targetsAPI = require('./targets/api');
+const reportListAPI = require('./reportList/api');
 const reportIssuesAPI = require('./reportIssues/api');
 const reportIssueAPI = require('./reportIssue/api');
 const testRecFormAPI = require('./testRecForm/api');
@@ -46,12 +46,12 @@ const createMCPServer = () => {
     }
   );
   server.registerTool(
-    'summarizeQualityOfAllTestedWebPages',
+    'getListOfAllAvailableReports',
     {
-      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page.',
+      description: 'Returns a list of all available Kilotest reports; each report describes the results of a job that tested one web page for front-end quality (i.e. accessibility, usability, and standards conformity).',
       inputSchema: {},
       annotations: {
-        title: 'Summarize the quality of all tested web pages',
+        title: 'Get a list of all available reports',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -59,7 +59,7 @@ const createMCPServer = () => {
       }
     },
     async () => {
-      const result = await targetsAPI.response();
+      const result = await reportListAPI.response();
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );

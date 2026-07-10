@@ -342,10 +342,10 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for an API service:
     else if (pageName === 'api') {
       const [service,  ... specs] = pathTail.split('/');
-      // If the service is provision of facts about the available reports:
-      if (service === 'targets') {
+      // If the service is provision of a list of all available reports:
+      if (service === 'reportList') {
         // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'targets', 'api')).response(specs);
+        const responseData = await require(path.join(__dirname, 'reportList', 'api')).response(specs);
         // Send them.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseData));

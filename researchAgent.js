@@ -115,9 +115,9 @@ const requestService = async () => {
   if (content.error) {
     return;
   }
-  console.log('======================\nRequest 2: Summarize all available reports');
+  console.log('======================\nRequest 2: List all available reports');
   method = 'GET';
-  path = '/api/targets';
+  path = '/api/reportList';
   content = await submitRequest(results, path, method);
   reports = content?.['available reports'] ?? [];
   if (content.error || ! Array.isArray(reports) || ! reports.length) {

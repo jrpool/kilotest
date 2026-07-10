@@ -33,18 +33,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/TargetsResponse'
 
-  /api/targets:
+  /api/reportList:
     get:
-      operationId: summarizeQualityOfAllTestedWebPages
-      summary: Summarize the quality of all tested web pages
-      description: Get summary data about every non-hidden report available from Kilotest, including the name and URL of the tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standard-conformity) issues were reported, and URLs for retrieving more detailed data from the report.
+      operationId: getListOfAllAvailableReports
+      summary: Get a list of all available reports
+      description: Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standard-conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
       responses:
         '200':
-          description: Summaries of available reports
+          description: List of all available reports
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TargetsResponse'
+                $ref: '#/components/schemas/ReportListResponse'
 
   /api/testRecForm:
     post:
@@ -146,10 +146,14 @@ components:
         summary:
           type: string
           description: Natural-language description of this response and of Kilotest. Provides context for an agent encountering Kilotest for the first time.
-        tool name:
+        tool collection name:
           type: string
           examples:
             - Kilotest
+        tool name:
+          type: string
+          examples:
+            - getListOfAllAvailableReports
         request:
           type: object
           properties:
@@ -158,6 +162,8 @@ components:
               properties:
                 identifier:
                   type: string
+                  examples:
+                    - reportList
                 description:
                   type: string
             method:
@@ -167,7 +173,7 @@ components:
                 - POST
             payload:
               type: object
-              description: Present only for POST requests. The request payload.
+              description: The request payload, if method type is POST, or otherwise omitted.
             URLs:
               type: object
               properties:
@@ -197,6 +203,7 @@ components:
               description: Unique identifier for this response instance.
             date and time:
               type: string
+              description: UTC date and time when the response was generated, in ISO 8601 format.
               format: date-time
 
     TestRecForm:
@@ -322,7 +329,7 @@ components:
           type: string
           description: All or part of the hostname of the web page. The hostname omits the scheme and the path.
 
-    TargetsResponse:
+    ReportListResponse:
       allOf:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object

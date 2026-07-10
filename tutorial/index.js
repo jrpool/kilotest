@@ -5,7 +5,8 @@
 
 // IMPORTS
 
-const {getJSON} = require('../util');
+const {sendAlert} = require('../alerts');
+const {getJSON, getNowStamp} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -41,13 +42,22 @@ exports.saveComment = async content => {
   }
   let comments = [];
   try {
+    // Get the existing comments.
     const existing = await fs.readFile(commentsPath, 'utf8');
     comments = JSON.parse(existing);
   }
-  catch (_) {
-    // File absent or unparsable; start a fresh array.
+  // If there are none:
+  catch {
+    // Initialize a comments array.
   }
-  comments.push({timeStamp: new Date().toISOString(), content: sanitized});
+  // Add the comment to the existing ones.
+  comments.push({
+    timeStamp: getNowStamp(),
+    content: sanitized
+  });
+  // Save the revised comments.
   await fs.writeFile(commentsPath, getJSON(comments));
+  // Send an alert to the manager.
+  await sendAlert('New tutorial comment received');
   return {status: 'ok'};
 };

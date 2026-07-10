@@ -3,7 +3,7 @@ import globals from "globals";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
 import css from "@eslint/css";
-import { defineConfig } from "eslint/config";
+import {defineConfig} from "eslint/config";
 
 export default defineConfig([
   {
@@ -18,6 +18,9 @@ export default defineConfig([
     extends: ["js/recommended"],
     languageOptions: {
       globals: globals.node
+    },
+    rules: {
+      "no-control-regex": "off"
     }
   },
   {

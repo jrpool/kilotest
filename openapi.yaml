@@ -31,7 +31,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TargetsItem'
+                $ref: '#/components/schemas/TargetsResponse'
 
   /api/reportList:
     get:
@@ -371,6 +371,17 @@ components:
               description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
               items:
                 $ref: '#/components/schemas/ReportListItem'
+
+    TargetsResponse:
+      allOf:
+        - $ref: '#/components/schemas/CommonResponseFields'
+        - type: object
+          properties:
+            available reports:
+              type: array
+              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
+              items:
+                $ref: '#/components/schemas/TargetsItem'
 
     IssueEntry:
       type: object

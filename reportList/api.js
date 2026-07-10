@@ -42,7 +42,7 @@ exports.response = async () => {
       'whether a later report about the same page exists': !! superseded,
       'URLs for incrementally getting facts from the report': {
         'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
-        'for humans': `${thisHost}/reportIssues/${timeStamp}/${jobID}`
+        'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'size of the report in bytes': reportSize,
       'URL to get the entire report as machine-oriented JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`

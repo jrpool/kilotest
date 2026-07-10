@@ -27,7 +27,7 @@ const createMCPServer = () => {
   server.registerTool(
     'summarizeQualityOfMatchingWebPages',
     {
-      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages that match the description or hostname fragment of a web page that you have provided. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragmant. Before calling recommendQualityTestingOfOneWebPage and waiting for testing to occur, call this tool to check whether a report about the page is available now.',
+      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages that match the description or hostname fragment of a web page that you have provided. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragment. Before calling recommendQualityTestingOfOneWebPage and waiting for testing to occur, call this tool to check whether a report about the page is available now.',
       inputSchema: {
         what: z.string().describe('All or part of a description of the web page.'),
         url: z.string().describe('All or part of the hostname of the URL of the web page.')

@@ -1,0 +1,75 @@
+/*
+  api.js
+  Responds to the targets request.
+*/
+
+// IMPORTS
+
+const {
+  getAgoDays,
+  getDateTime,
+  getLogs,
+  getNowStamp,
+  getRandomString,
+  getReportSize
+} = require('../util');
+
+// CONSTANTS
+
+const thisHost = process.env.THIS_KILOTEST_HOST;
+
+// FUNCTIONS
+
+// Returns a response to an API request for reports.
+exports.response = async () => {
+  const reportsFacts = [];
+  // Get the available logs, with added job names.
+  const availableLogs = await getLogs();
+  // For each of them:
+  for (const availableLog of availableLogs) {
+    const reportSize = await getReportSize(timeStamp, jobID);
+    const {jobName} = availableLog;
+    const [timeStamp, jobID] = jobName.split('-');
+    const {superseded, url, what} = availableLog;
+    reportsFacts.push({
+      identifier: jobName,
+      'creation date and time': getDateTime(timeStamp),
+      'days since the creation date': getAgoDays(timeStamp),
+      'tested web page': {
+        description: what,
+        URL: url
+      },
+      'whether a later report about the same page exists': !! superseded,
+      'URLs for incrementally getting facts from the report': {
+        'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
+        'for humans': `${thisHost}/reportIssues/${timeStamp}/${jobID}`
+      },
+      'size of the report in bytes': reportSize,
+      'URL to get the entire report as machine-oriented JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
+    });
+  }
+  // Get a response.
+  const content = {
+    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model asked which reports about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages are available from Kilotest. Each report describes the results of a job that tested one web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs more than a thousand tests on a public web page, using a combination of rule- and machine-learning-based methods. Kilotest exposes API endpoints and web UI URLs to recommend web pages for testing and to obtain information from Kilotest reports. You and your users can learn more about Kilotest and the advangages of testing with an ensemble of rule engines at the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}).`,
+    'tool collection name': 'Kilotest',
+    'tool name': 'listAllWebPageQualityReports',
+    request: {
+      'type of request': {
+        identifier: 'reportList',
+        description: 'List all the available reports about the front-end quality of web pages, including which pages were tested and when.'
+      },
+      method: 'GET',
+      URLs: {
+        'URL of your request': `${thisHost}/api/reportList`,
+        'equivalent URL for humans': `${thisHost}/targets.html`
+      },
+      'closest ancestor request': null
+    },
+    'response metadata': {
+      identifier: `${getNowStamp()}-${getRandomString(3)}`,
+      'date and time': new Date().toISOString(),
+    },
+    'available reports': reportsFacts
+  };
+  return content;
+};

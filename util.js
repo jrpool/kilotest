@@ -489,7 +489,7 @@ exports.getPOSTData = request => new Promise(resolve => {
 });
 // Returns the waiting test and retest recommendations.
 const getRecs = exports.getRecs = async () => {
-  let recs = {};
+  let recs;
   let recsJSON;
   try {
     recsJSON = await fs.readFile(recsPath, 'utf8');
@@ -763,4 +763,10 @@ exports.isReportAvailable = async (what, url) => {
   const whats = logs.map(log => log.what);
   const miniURLs = logs.map(log => minifyURL(log.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
+};
+// Returns the size of a report.
+exports.getReportSize = async (timeStamp, jobID) => {
+  const reportStat = await fs.stat(path.join(reportsPath, `${timeStamp}-${jobID}.json`));
+  const reportSize = reportStat.blocks * reportStat.blksize;
+  return reportSize;
 };

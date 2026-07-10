@@ -1,6 +1,6 @@
 /*
   api.js
-  Responds to the targets request.
+  Responds to the reportList API request.
 */
 
 // IMPORTS
@@ -27,9 +27,9 @@ exports.response = async () => {
   const availableLogs = await getLogs();
   // For each of them:
   for (const availableLog of availableLogs) {
-    const reportSize = await getReportSize(timeStamp, jobID);
     const {jobName} = availableLog;
     const [timeStamp, jobID] = jobName.split('-');
+    const reportSize = await getReportSize(timeStamp, jobID);
     const {superseded, url, what} = availableLog;
     reportsFacts.push({
       identifier: jobName,
@@ -50,7 +50,7 @@ exports.response = async () => {
   }
   // Get a response.
   const content = {
-    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model asked which reports about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages are available from Kilotest. Each report describes the results of a job that tested one web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs more than a thousand tests on a public web page, using a combination of rule- and machine-learning-based methods. Kilotest exposes API endpoints and web UI URLs to recommend web pages for testing and to obtain information from Kilotest reports. You and your users can learn more about Kilotest and the advangages of testing with an ensemble of rule engines at the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}).`,
+    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model asked which reports about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages are available from Kilotest. Each report describes the results of a job that tested one web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs more than a thousand tests on a public web page, using a combination of rule- and machine-learning-based methods. Kilotest exposes API endpoints and web UI URLs to recommend web pages for testing and to obtain information from Kilotest reports. You and your users can learn more about Kilotest and the advantages of testing with an ensemble of rule engines at the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}).`,
     'tool collection name': 'Kilotest',
     'tool name': 'getListOfAllAvailableReports',
     request: {

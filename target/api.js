@@ -86,12 +86,12 @@ exports.response = async args => {
   }
   // Get a response.
   const content = {
-    summary: `This document fulfills a request made by a language model to the Kilotest API. The model asked whether Kilotest had tested a specified web page for front-end quality (i.e. accessibility, usability, and standards conformity) and had made a report of the test results available. The response provides summary information about all and only the available reports of pages that match at least one of the provided fragments, where matching means either including or being included by the provided fragment, case-insensitively. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advangages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
+    summary: `This document fulfills a request made by a language model to the Kilotest API. The model asked whether Kilotest had tested a specified web page for front-end quality (i.e. accessibility, usability, and standards conformity) and had made a report of the test results available. The response provides summary information about all and only the available reports of pages that match at least one of the provided fragments, where matching means either including or being included by the provided fragment, case-insensitively. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advantages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), whose home page contains an introduction and a link to a tutorial.`,
     'tool collection name': 'Kilotest',
     'tool name': 'identifyReportsAboutMatchingWebPages',
     request: {
       'type of request': {
-        identifier: 'targets',
+        identifier: 'target',
         description: 'Identify reports about matching web pages.'
       },
       method: 'POST',

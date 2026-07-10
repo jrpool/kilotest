@@ -66,7 +66,7 @@ const createMCPServer = () => {
   server.registerTool(
     'describeQualityOfOneWebPage',
     {
-      description: 'Returns data from a specified Kilotest report about issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a summarizeQualityOfAllTestedWebPages response.',
+      description: 'Returns data from a specified Kilotest report about issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a getListOfAllAvailableReports response.',
       inputSchema: {
         timeStamp: z.string().describe('Report timestamp in YYMMDDTHHMM format, e.g. 260503T0432'),
         jobID: z.string().describe('Job identifier, e.g. x9z')
@@ -109,9 +109,9 @@ const createMCPServer = () => {
   server.registerTool(
     'recommendQualityTestingOfOneWebPage',
     {
-      description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standards conformity). Do not call this tool until after you call summarizeQualityOfAllTestedWebPages to check whether a report about the page, or a related page that satisfies your requirements, is available.',
+      description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standards conformity). Do not call this tool until after you call summarizeQualityOfMatchingWebPages to check whether a report about the page, or a related page that satisfies your requirements, is available.',
       inputSchema: {
-        what: z.string().describe('Short description of the page, following the naming conventions visible in the summarizeQualityOfAllTestedWebPages response'),
+        what: z.string().describe('Short description of the page, following the naming conventions visible in the getListOfAllAvailableReports response'),
         url: z.string().describe('Full HTTPS URL of the page to test'),
         why: z.string().describe('Reason for recommending this page for testing')
       },

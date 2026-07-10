@@ -767,6 +767,6 @@ exports.isReportAvailable = async (what, url) => {
 // Returns the size of a report.
 exports.getReportSize = async (timeStamp, jobID) => {
   const reportStat = await fs.stat(path.join(reportsPath, `${timeStamp}-${jobID}.json`));
-  const reportSize = reportStat.blocks * reportStat.blksize;
+  const reportSize = reportStat.size;
   return reportSize;
 };

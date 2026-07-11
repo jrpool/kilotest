@@ -119,7 +119,7 @@ const requestService = async () => {
   method = 'GET';
   path = '/api/reportList';
   content = await submitRequest(results, path, method);
-  reports = content?.['available reports'] ?? [];
+  reports = content?.['requested information'] ?? [];
   if (content.error || ! Array.isArray(reports) || ! reports.length) {
     return;
   }

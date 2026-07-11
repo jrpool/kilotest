@@ -351,10 +351,10 @@ const requestHandler = async (request, response) => {
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseData));
       }
-      // Otherwise, if the service is provision of issue statistics for a report:
-      else if (service === 'reportIssues') {
+      // Otherwise, if the service is provision of a report summary:
+      else if (service === 'reportSummary') {
         // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'reportIssues', 'api'))
+        const responseData = await require(path.join(__dirname, 'reportSummary', 'api'))
         .response(specs);
         // Send them.
         setHeaders('application/json', null, 'high');

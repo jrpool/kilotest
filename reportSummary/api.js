@@ -104,7 +104,8 @@ const getIssueFacts = issueID => {
   };
 };
 // Returns a response to an API request for a summary of one report.
-exports.response = async (timeStamp, jobID) => {
+exports.response = async (args) => {
+  const [timeStamp, jobID] = args;
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report does not exist:
   if (typeof reportIsHidden === 'string') {

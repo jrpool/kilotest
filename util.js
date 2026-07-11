@@ -37,6 +37,7 @@ const tools = exports.tools = {
   wave: ['WAVE', 'Utah State University'],
   wax: ['WallyAX', 'Wally']
 };
+exports.ruleEngines = tools;
 exports.researchAgents = {
   'research-agent': 'Internal Research Agent'
 }

@@ -105,7 +105,7 @@ const requestService = async () => {
   let description;
   let url;
   const results = [];
-  console.log('======================\nRequest 1: Summarize nonexistent reports');
+  console.log('======================\nRequest: Summarize nonexistent reports');
   method = 'POST';
   path = '/api/target';
   content = await submitRequest(results, path, method, {
@@ -115,7 +115,7 @@ const requestService = async () => {
   if (content.error) {
     return;
   }
-  console.log('======================\nRequest 2: List all available reports');
+  console.log('======================\nRequest: List all available reports');
   method = 'GET';
   path = '/api/reportList';
   content = await submitRequest(results, path, method);
@@ -123,7 +123,7 @@ const requestService = async () => {
   if (content.error || ! Array.isArray(reports) || ! reports.length) {
     return;
   }
-  console.log('======================\nRequest 3: Summarize matching reports');
+  console.log('======================\nRequest: Summarize matching reports');
   // Choose one available report at random.
   report = reports[Math.floor(Math.random() * reports.length)];
   ({description, URL: url} = report?.['tested web page'] ?? ['', '']);
@@ -139,18 +139,26 @@ const requestService = async () => {
   if (content.error) {
     return;
   }
-  console.log('======================\nRequest 4: Summarize the issues in a report');
+  console.log('======================\nRequest: Summarize one nonexistent report');
+  [timeStamp, jobID] = ['111111T1111', 'abc'];
+  method = 'GET';
+  path = `/api/reportSummary/${timeStamp}/${jobID}`;
+  content = await submitRequest(results, path, method);
+  if (! content.error) {
+    return;
+  }
+  console.log('======================\nRequest: Summarize one report');
   [timeStamp, jobID] = report.identifier?.split('-') ?? ['', ''];
   if (! (timeStamp && jobID)) {
     return;
   }
   method = 'GET';
-  path = `/api/reportIssues/${timeStamp}/${jobID}`;
+  path = `/api/reportSummary/${timeStamp}/${jobID}`;
   content = await submitRequest(results, path, method);
-  if (content.error) {
+  if (content.error || ! content.summary) {
     return;
   }
-  console.log('======================\nRequest 5: Describe one issue from one report');
+  console.log('======================\nRequest: Describe one issue from one report');
   if (content['number of HTML elements reported as exhibiting issues'] === 0) {
     console.log('reportIssue request cannot be submitted, because no issues were reported');
   }
@@ -169,7 +177,7 @@ const requestService = async () => {
       return;
     }
   }
-  console.log('======================\nRequest 6: Make a permitted test recommendation');
+  console.log('======================\nRequest: Make a permitted test recommendation');
   method = 'POST';
   path = '/api/testRecForm';
   content = await submitRequest(results, path, method, {
@@ -180,7 +188,7 @@ const requestService = async () => {
   if (content.error) {
     return;
   }
-  console.log('======================\nRequest 7: Make an illicit test recommendation');
+  console.log('======================\nRequest: Make an illicit test recommendation');
   await submitRequest(results, path, method, {
     'description of the web page': description,
     'URL of the web page': url,

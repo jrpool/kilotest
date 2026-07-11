@@ -6,17 +6,10 @@
 // IMPORTS
 
 const {
-  getAgoDays,
-  getDateTime,
-  getLogs,
   getNowStamp,
   getRandomString,
-  getReportSize,
-  isHidden,
-  getJob,
-  isValidJob,
   getReport,
-  isValidReport,
+  isHidden,
   ruleEngines
 } = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
@@ -88,7 +81,7 @@ const getPreventionFacts = report => {
     'reason for failure to test': reason
   }));
 };
-// Sort issue IDs by priority and summary.
+// Returns issue IDs sorted by priority and summary.
 const getSortedIssueIDs = issueIDSet => {
   return Array.from(issueIDSet).sort((a, b) => {
     const aData = issuesClassification[a];

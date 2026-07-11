@@ -165,9 +165,8 @@ const requestService = async () => {
   else {
     // Get the issue IDs.
     const issueIDs = Object
-    .values(content['issues reported'])
-    .map(levelIssues => levelIssues.map(issue => issue.identifier))
-    .flat();
+    .values(content['requested information']['issues revealed by the reported rule violations'])
+    .map(issue => issue.identifier);
     // Choose one at random.
     const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];
     method = 'GET';

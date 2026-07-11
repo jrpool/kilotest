@@ -186,11 +186,16 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest: Make an illicit test recommendation');
-  await submitRequest(path, method, {
+  content = await submitRequest(path, method, {
     'description of the web page': description,
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'
   });
+  if (! content.warning) {
+    return;
+  }
+  console.log('======================\nRequest: Results');
+  console.log('All tests succeeded');
 };
 
 // EXECUTION

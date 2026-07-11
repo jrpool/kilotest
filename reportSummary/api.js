@@ -101,14 +101,18 @@ const getSortedIssueIDs = issueIDSet => {
   });
 };
 // Get facts about an issue.
-const getIssueFacts = issueID => {
+const getIssueFacts = (issueID, timeStamp, jobID) => {
   const issueData = issuesClassification[issueID];
   const {summary, weight, why} = issueData;
   return {
     identifier: issueID,
     summary,
     'impact on a user': why,
-    'priority': ['lowest', 'low', 'high', 'highest'][weight - 1]
+    'priority': ['lowest', 'low', 'high', 'highest'][weight - 1],
+    'URLs for more details': {
+      'For you': `https://kilotest.com/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+      'For humans': `https://kilotest.com/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+    }
   };
 };
 // Returns a response to an API request for a summary of one report.

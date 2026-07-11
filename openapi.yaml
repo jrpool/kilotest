@@ -91,11 +91,11 @@ paths:
               - xx0
       responses:
         '200':
-          description: Data on issues from the specified report
+          description: Summary of the specified report
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportIssuesResponse'
+                $ref: '#/components/schemas/ReportSummaryResponse'
         '404':
           description: No report with the specified identifier is available
 
@@ -273,7 +273,7 @@ components:
         for you:
           type: string
           format: uri
-          description: URL for an agent to request the next tier of detail.
+          description: URL for an LLM to request the next tier of detail.
         for humans:
           type: string
           format: uri
@@ -343,7 +343,7 @@ components:
         whether a later report about the same page exists:
           type: boolean
           description: If true, a more recent report about this page is available. If you want the latest results, use that report instead.
-        URLs for incrementally getting facts from the report:
+        URLs for more details:
           $ref: '#/components/schemas/NextTierURLs'
         size of the report in bytes:
           type: integer
@@ -440,59 +440,44 @@ components:
           items:
             $ref: '#/components/schemas/IssueEntry'
 
-    ReportIssuesResponse:
+    IssueSummary:
+      type: object
+      properties:
+        identifier:
+          type: string
+        summary:
+          type: string
+        impact on a user:
+          type: string
+        URLs for more details:
+          $ref: '#/components/schemas/NextTierURLs'
+
+    ReportSummaryResponse:
       allOf:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
           properties:
-            report:
+            requested information:
               type: object
               properties:
-                identifier:
-                  type: string
-                creation date:
-                  type: string
-                  format: date-time
-                days since the creation date:
+                rule engines that tried to test the page:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/RuleEngineInfo'
+                rule engines that could not test the page:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/PreventionInfo'
+                names of rule engines that reported rule violations:
+                  type: array
+                  items:
+                    type: string
+                number of elements reported as violators:
                   type: integer
-            tested web page:
-              type: object
-              properties:
-                description:
-                  type: string
-                URL:
-                  type: string
-                  format: uri
-            rule engines that tried to test the page:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleEngineInfo'
-            rule engines that were unable to test the page:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleEngineFailure'
-            rule engines that reported issues:
-              $ref: '#/components/schemas/RuleEnginesSummary'
-            number of issues reported:
-              type: object
-              properties:
-                total:
-                  type: integer
-                by priority:
-                  type: object
-                  properties:
-                    highest priority:
-                      type: integer
-                    high priority:
-                      type: integer
-                    low priority:
-                      type: integer
-                    lowest priority:
-                      type: integer
-            number of HTML elements reported as exhibiting issues:
-              type: integer
-            issues reported:
-              $ref: '#/components/schemas/IssuesByPriority'
+                issues revealed by the reported rule violations:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/IssueSummary'
 
     HTMLElementDetail:
       type: object

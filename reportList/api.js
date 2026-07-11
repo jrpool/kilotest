@@ -42,7 +42,7 @@ exports.response = async () => {
         URL: url
       },
       'whether a later report about the same page exists': !! superseded,
-      'URLs for incrementally getting facts from the report': {
+      'URLs for more details': {
         'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },

@@ -35,7 +35,7 @@ paths:
 
   /api/reportList:
     get:
-      operationId: getListOfAllAvailableReports
+      operationId: listAllAvailableReports
       summary: Get a list of all available reports
       description: Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standards conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
       responses:
@@ -50,7 +50,7 @@ paths:
     post:
       operationId: recommendQualityTestingOfOneWebPage
       summary: Recommend quality testing of one web page
-      description: Submit a recommendation for Kilotest to test, for the first time, a particular web page for front-end quality (i.e. accessibility, usability, and standards conformity). Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the getListOfAllAvailableReports operation. Before submitting a recommendation, use the getListOfAllAvailableReports operation to ensure that no report about the page is available, and also to see the stylistic rules for the naming of pages. An attempt to recommend a page for testing will fail if a report about the page is already available.
+      description: Submit a recommendation for Kilotest to test, for the first time, a particular web page for front-end quality (i.e. accessibility, usability, and standards conformity). Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the listAllAvailableReports operation. Before submitting a recommendation, use the listAllAvailableReports operation to ensure that no report about the page is available, and also to see the stylistic rules for the naming of pages. An attempt to recommend a page for testing will fail if a report about the page is already available.
       requestBody:
         description: Test recommendation specifications
         required: true
@@ -66,11 +66,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/TestRecFormResponse'
 
-  /api/reportIssues/{timeStamp}/{jobID}:
+  /api/reportSummary/{timeStamp}/{jobID}:
     get:
-      operationId: describeQualityOfOneWebPage
-      summary: Describe quality of one web page
-      description: Get data about the quality of a specified Kilotest report. The data about each issue include its priority, the rule engines that reported it, the number of HTML elements exhibiting it, and URLs for retrieving element-level detail. The timeStamp and jobID parameters identify the report and are available in the response from the getListOfAllAvailableReports operation.
+      operationId: summarizeOneReport
+      summary: Summarize one report
+      description: Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting details about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.
       parameters:
         - name: timeStamp
           in: path
@@ -153,7 +153,7 @@ components:
         tool name:
           type: string
           examples:
-            - getListOfAllAvailableReports
+            - listAllAvailableReports
         request:
           type: object
           properties:

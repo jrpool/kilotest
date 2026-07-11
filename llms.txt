@@ -10,7 +10,7 @@ There is a [detailed explanation of Kilotest and its capabilities for LLMs](http
 
 - [Get summaries of reports about a specified web page](/api/target)
 - [Get a list of all available reports](/api/reportList)
-- Get summarized test results from one report: `/api/reportIssues/{timeStamp}/{jobID}`
+- Summarize one report: `/api/reportIssues/{timeStamp}/{jobID}`
 - Get details about one issue from one report: `/api/reportIssue/{issueID}/{timeStamp}/{jobID}`
 - Recommend testing of a web page: `/api/testRecForm` (requires `POST` request)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)

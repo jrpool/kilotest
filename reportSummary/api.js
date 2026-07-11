@@ -141,7 +141,7 @@ exports.response = async (args) => {
     request: {
       'type of request': {
         identifier: 'reportSummary',
-        description: 'Get a summary of one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations.'
+        description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting details about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.'
       },
       method: 'GET',
       URLs: {
@@ -155,7 +155,7 @@ exports.response = async (args) => {
         },
         method: 'GET',
         URLs: {
-          'URL of your request': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
+          'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
           'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
         }
       }

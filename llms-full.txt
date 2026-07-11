@@ -82,19 +82,19 @@ The implementation is currently in an alpha phase and offers 4 tools:
   - payload properties
     - `what`: all or part of a description of the page
     - `hostname`: all or part of the hostname of the page
-- `getListOfAllAvailableReports`
+- `listAllAvailableReports`
   - method: `GET`
   - purpose: get a list of all available reports
   - path: `/api/reportList`
   - caveat: Cached results are likely to be stale and should not be used
-- `describeQualityOfOneWebPage`
+- `summarizeOneReport`
   - method: `GET`
-  - purpose: provide statistics about front-end quality issues reported in one report
-  - path: `/api/reportIssues/{timeStamp}/{jobID}`
+  - purpose: summarize one report
+  - path: `/api/reportSummary/{timeStamp}/{jobID}`
   - parameters
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier
-  - source of parameters: response to a `getListOfAllAvailableReports` request
+  - source of parameters: response to a `listAllAvailableReports` request
 - `describeOneIssueFromOneReport`
   - method: `GET`
   - purpose: provide details about one issue from one report
@@ -103,7 +103,7 @@ The implementation is currently in an alpha phase and offers 4 tools:
     - `issueID`: identifier of the issue
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier
-  - source of parameters: response to a `describeQualityOfOneWebPage` request
+  - source of parameters: response to a `summarizeOneReport` request
 - `describeOneViolatorOfOneIssueFromOneReport`
   - method: `GET`
   - purpose: provide diagnoses about one issue exhibited by one HTML element in one report [NOT YET IMPLEMENTED]

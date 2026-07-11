@@ -77,7 +77,7 @@ exports.response = async args => {
         'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
-        identifier: 'getListOfAllAvailableReports',
+        identifier: 'listAllAvailableReports',
         description: 'Get a list of all available reports.',
         URLs: {
           'for you': `${thisHost}/api/reportList`,

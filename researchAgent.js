@@ -85,6 +85,12 @@ const submitRequest = async (results, path, method, body = null) => new Promise(
   client.request(getRequestOptions(path, method), async response => {
     const responseContent = await getContent(response);
     results.push(responseContent.error ? 'bad' : 'good');
+    // XXX
+    if (responseContent.error) {
+      console.log(
+        `Response content has error property and is:\n${JSON.stringify(responseContent, null, 2)}`
+      );
+    }
     resolve(responseContent);
   })
   .on('error', error => {

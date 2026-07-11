@@ -56,7 +56,10 @@ const getIssueFacts = async (timeStamp, jobID, issue) => {
       'names': reporters.map(tool => tool.toolName)
     },
     'number of HTML elements reported as exhibiting the issue': violatorCount,
-    'HTML elements reported as exhibiting the issue': Array.from(violatorIndexSet).map(index => ({
+    'HTML elements reported as exhibiting the issue': Array
+    .from(violatorIndexSet)
+    .filter(index => catalog[index])
+    .map(index => ({
       identifier: String(index),
       'tag name': catalog[index].tagName,
       'id attribute': catalog[index].id,

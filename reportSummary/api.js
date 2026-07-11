@@ -171,7 +171,7 @@ exports.response = async (args) => {
       'names of rule engines that reported rule violations': Array
       .from(reportFacts.reporterIDs)
       .map(id => getRuleEngineFacts(id).name)
-      .sort('en', { sensitivity: 'base' }),
+      .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
       'number of elements reported as violators': reportFacts.violators.size,
       'issues revealed by the reported rule violations': getSortedIssueIDs(reportFacts.issueIDs)
       .map(id => getIssueFacts(id))

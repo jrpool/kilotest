@@ -80,17 +80,10 @@ const getRequestOptions = (path, method = 'GET') => ({
   }
 });
 // Submits a request, returns the response content, and increments the results.
-const submitRequest = async (results, path, method, body = null) => new Promise(resolve => {
+const submitRequest = async (path, method, body = null) => new Promise(resolve => {
   console.log(`Making ${scheme} ${method} request on port ${port} to ${host}${path}`);
   client.request(getRequestOptions(path, method), async response => {
     const responseContent = await getContent(response);
-    results.push(responseContent.error ? 'bad' : 'good');
-    // XXX
-    if (responseContent.error) {
-      console.log(
-        `Response content has error property and is:\n${JSON.stringify(responseContent, null, 2)}`
-      );
-    }
     resolve(responseContent);
   })
   .on('error', error => {
@@ -110,11 +103,10 @@ const requestService = async () => {
   let jobID;
   let description;
   let url;
-  const results = [];
   console.log('======================\nRequest: Summarize nonexistent reports');
   method = 'POST';
   path = '/api/target';
-  content = await submitRequest(results, path, method, {
+  content = await submitRequest(path, method, {
     what: 'oesntuhaesouht',
     hostname: 'osentuhaoesuht.aoesntuh'
   });
@@ -124,7 +116,7 @@ const requestService = async () => {
   console.log('======================\nRequest: List all available reports');
   method = 'GET';
   path = '/api/reportList';
-  content = await submitRequest(results, path, method);
+  content = await submitRequest(path, method);
   reports = content?.['requested information'] ?? [];
   if (content.error || ! Array.isArray(reports) || ! reports.length) {
     return;
@@ -138,7 +130,7 @@ const requestService = async () => {
   }
   method = 'POST';
   path = '/api/target';
-  content = await submitRequest(results, path, method, {
+  content = await submitRequest(path, method, {
     what: description,
     hostname: new URL(url).hostname ?? ''
   });
@@ -149,7 +141,7 @@ const requestService = async () => {
   [timeStamp, jobID] = ['111111T1111', 'abc'];
   method = 'GET';
   path = `/api/reportSummary/${timeStamp}/${jobID}`;
-  content = await submitRequest(results, path, method);
+  content = await submitRequest(path, method);
   if (! content.error) {
     return;
   }
@@ -160,7 +152,7 @@ const requestService = async () => {
   }
   method = 'GET';
   path = `/api/reportSummary/${timeStamp}/${jobID}`;
-  content = await submitRequest(results, path, method);
+  content = await submitRequest(path, method);
   if (content.error || ! content.summary) {
     return;
   }
@@ -177,7 +169,7 @@ const requestService = async () => {
     const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];
     method = 'GET';
     path = `/api/reportIssue/${issueID}/${timeStamp}/${jobID}`;
-    content = await submitRequest(results, path, method);
+    content = await submitRequest(path, method);
     if (content.error) {
       return;
     }
@@ -185,7 +177,7 @@ const requestService = async () => {
   console.log('======================\nRequest: Make a permitted test recommendation');
   method = 'POST';
   path = '/api/testRecForm';
-  content = await submitRequest(results, path, method, {
+  content = await submitRequest(path, method, {
     'description of the web page': 'aoseeou',
     'URL of the web page': 'https://oaaestuh.osneth',
     'reason for testing the web page': 'Just testing'
@@ -194,12 +186,11 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest: Make an illicit test recommendation');
-  await submitRequest(results, path, method, {
+  await submitRequest(path, method, {
     'description of the web page': description,
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'
   });
-  console.log(`======================\nResults: ${results}\n`);
 };
 
 // EXECUTION

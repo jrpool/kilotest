@@ -84,8 +84,8 @@ const getPreventionFacts = report => {
 // Returns rule engine IDs sorted by name.
 const getSortedRuleEngineIDs = ruleEngineIDSet => {
   return Array.from(ruleEngineIDSet).sort((a, b) => {
-    const aData = ruleEngines[a].name;
-    const bData = ruleEngines[b].name;
+    const aData = ruleEngines[a][0];
+    const bData = ruleEngines[b][0];
     return aData.localeCompare(bData, 'en', {sensitivity: 'base'});
   });
 };

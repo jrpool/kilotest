@@ -81,6 +81,14 @@ const getPreventionFacts = report => {
     'reason for failure to test': reason
   }));
 };
+// Returns rule engine IDs sorted by name.
+const getSortedRuleEngineIDs = ruleEngineIDSet => {
+  return Array.from(ruleEngineIDSet).sort((a, b) => {
+    const aData = ruleEngines[a].name;
+    const bData = ruleEngines[b].name;
+    return aData.localeCompare(bData, 'en', {sensitivity: 'base'});
+  });
+};
 // Returns issue IDs sorted by priority and summary.
 const getSortedIssueIDs = issueIDSet => {
   return Array.from(issueIDSet).sort((a, b) => {
@@ -89,7 +97,7 @@ const getSortedIssueIDs = issueIDSet => {
     if (aData.weight !== bData.weight) {
       return bData.weight - aData.weight;
     }
-    return aData.summary.localeCompare(bData.summary, 'en', { sensitivity: 'base' });
+    return aData.summary.localeCompare(bData.summary, 'en', {sensitivity: 'base'});
   });
 };
 // Get facts about an issue.
@@ -157,13 +165,13 @@ exports.response = async (args) => {
       'date and time': new Date().toISOString(),
     },
     'requested information': {
-      'rule engines that tried to test the page': reportFacts
-      .ruleEngineIDs
+      'rule engines that tried to test the page': getSortedRuleEngineIDs(reportFacts.ruleEngineIDs)
       .map(id => getRuleEngineFacts(id)),
       'rule engines that could not test the page': getPreventionFacts(report),
-      'names of rule engines that reported rule violations': reportFacts
-      .reporterIDs
-      .map(id => getRuleEngineFacts(id).name),
+      'names of rule engines that reported rule violations': Array
+      .from(reportFacts.reporterIDs)
+      .map(id => getRuleEngineFacts(id).name)
+      .sort('en', { sensitivity: 'base' }),
       'number of elements reported as violators': reportFacts.violators.size,
       'issues revealed by the reported rule violations': getSortedIssueIDs(reportFacts.issueIDs)
       .map(id => getIssueFacts(id))

@@ -58,7 +58,7 @@ exports.response = async () => {
     request: {
       'type of request': {
         identifier: 'reportList',
-        description: 'Get a list of all available reports. Each report describes the results of a job that tested a web page. For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results from the report.'
+        description: 'Get a list of all available reports. For each report, the list should identify which page was tested and when and provide URLs to begin incremental retrieval of the test results from the report.'
       },
       method: 'GET',
       URLs: {
@@ -71,7 +71,7 @@ exports.response = async () => {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString(),
     },
-    'available reports': reportsFacts
+    'requested information': reportsFacts
   };
   // Return it.
   return content;

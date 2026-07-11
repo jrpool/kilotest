@@ -88,6 +88,28 @@ const getPreventionFacts = report => {
     'reason for failure to test': reason
   }));
 };
+// Sort issue IDs by priority and summary.
+const getSortedIssueIDs = issueIDSet => {
+  return Array.from(issueIDSet).sort((a, b) => {
+    const aData = issuesClassification[a];
+    const bData = issuesClassification[b];
+    if (aData.weight !== bData.weight) {
+      return bData.weight - aData.weight;
+    }
+    return aData.summary.localeCompare(bData.summary, 'en', { sensitivity: 'base' });
+  });
+};
+// Get facts about an issue.
+const getIssueFacts = issueID => {
+  const issueData = issuesClassification[issueID];
+  const {summary, weight, why} = issueData;
+  return {
+    identifier: issueID,
+    summary,
+    'impact on a user': why,
+    'priority': ['lowest', 'low', 'high', 'highest'][weight - 1]
+  };
+};
 // Returns a response to an API request for a summary of one report.
 exports.response = async (timeStamp, jobID) => {
   const reportIsHidden = await isHidden(timeStamp, jobID);
@@ -117,7 +139,7 @@ exports.response = async (timeStamp, jobID) => {
     request: {
       'type of request': {
         identifier: 'reportSummary',
-        description: 'Get a summary of one report. The summary describes the rule engines that tested the page and the issues that were revealed by the reported rule violations.'
+        description: 'Get a summary of one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations.'
       },
       method: 'GET',
       URLs: {
@@ -140,16 +162,17 @@ exports.response = async (timeStamp, jobID) => {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString(),
     },
-    'summary of the report': {
+    'requested information': {
       'rule engines that tried to test the page': reportFacts
       .ruleEngineIDs
       .map(id => getRuleEngineFacts(id)),
       'rule engines that could not test the page': getPreventionFacts(report),
-      'rule engines that reported rule violations': reportFacts
+      'names of rule engines that reported rule violations': reportFacts
       .reporterIDs
       .map(id => getRuleEngineFacts(id).name),
       'number of elements reported as violators': reportFacts.violators.size,
-      'issues revealed by the reported rule violations': reportFacts.issueIDs.
+      'issues revealed by the reported rule violations': getSortedIssueIDs(reportFacts.issueIDs)
+      .map(id => getIssueFacts(id))
     }
   };
   // Return it.

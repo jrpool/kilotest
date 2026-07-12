@@ -313,7 +313,7 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
 const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
   const log = await getRecord('log', timeStamp, jobID);
   if (annotate && ! (log.error || log.annotated)) {
-    annotateReport(ruleIDs, timeStamp, jobID);
+    await annotateReport(ruleIDs, timeStamp, jobID);
   }
   return log;
 };

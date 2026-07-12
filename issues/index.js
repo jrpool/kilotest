@@ -24,6 +24,8 @@ const path = require('path');
 
 // Gets summary data on the issues reported in a set of reports.
 const getIssuesSummary = async logs => {
+  // Initialize the summary.
+  const summary = {};
   // Initialize data for a summary.
   const issuesData = {};
   // For each log of a report to be inspected:
@@ -40,8 +42,8 @@ const getIssuesSummary = async logs => {
     const {acts = [], error} = report;
     // If this failed:
     if (error) {
-      // Report why.
-      console.error(error);
+      // Populate the summary with the reason.
+      summary.error = error;
     }
     // For each act in it (none if the report retrieval failed):
     acts.forEach(act => {
@@ -66,11 +68,9 @@ const getIssuesSummary = async logs => {
       }
     });
   }
-  // Initialize the summary.
-  const summary = {
-    totalCount: 0,
-    issues: []
-  };
+  // Initialize the summary properties.
+  summary.totalCount = 0;
+  summary.issues = [];
   // For each issue:
   Object.entries(issuesData).forEach(([issueID, data]) => {
     const {count, reporters} = data;
@@ -113,7 +113,14 @@ const populateQuery = async query => {
   const targetLogs = (await getLogs()).filter(log => ! log.superseded);
   // Get summary data on the issues.
   const issuesSummary = await getIssuesSummary(targetLogs);
-  // Initialize the lines.
+  // If this failed:
+  if (issuesSummary.error) {
+    // Populate the query with the reason.
+    query.error = issuesSummary.error;
+    // Stop populating the query.
+    return;
+  }
+  // Otherwise, i.e. if it succeeded, initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
   // For each weight:
@@ -165,7 +172,15 @@ exports.answer = async () => {
   const query = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
-  // Get the template.
+  // If the query reports an error:
+  if (query.error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: query.error
+    };
+  }
+  // Otherwise, i.e. if the query does not report an error, gt the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {

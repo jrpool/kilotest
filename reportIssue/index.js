@@ -25,11 +25,8 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, query) => {
-  // Add the issue summary to the query.
-  query.issue = issues[issueID].summary;
   // Get descriptions of the page facts.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  const {testInfo, url, urlLink, what} = pageDataStrings;
   // If this failed:
   if (pageDataStrings.error) {
     // Populate the query with the reason.
@@ -37,6 +34,17 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     // Stop populating the query.
     return;
   }
+  // Otherwise, i.e. if it succeeded, add the issue summary to the query.
+  query.issue = issues[issueID]?.summary;
+  // If adding the issue summary failed:
+  if (! query.issue) {
+    // Populate the query with the reason.
+    query.error = 'Issue not found';
+    // Stop populating the query.
+    return;
+  }
+  const {testInfo, url, urlLink, what} = pageDataStrings;
+  // Add page facts to the query.
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;

@@ -113,9 +113,9 @@ const createMCPServer = () => {
     {
       description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standards conformity). Do not call this tool until after you call listAllAvailableReports to check whether a report about the page, or a related page that satisfies your requirements, is available and to understand the naming conventions for pages.',
       inputSchema: {
-        what: z.string().describe('Short description of the page, following the naming conventions visible in the listAllAvailableReports response'),
-        url: z.string().describe('Full HTTPS URL of the page to test'),
-        why: z.string().describe('Reason for recommending this page for testing')
+        'description of the web page': z.string().describe('Short description of the page, following the naming conventions visible in the listAllAvailableReports response'),
+        'URL of the web page': z.string().describe('Full HTTPS URL of the page to test'),
+        'reason for testing the web page': z.string().describe('Reason for recommending this page for testing')
       },
       annotations: {
         title: 'Recommend quality testing of one web page',

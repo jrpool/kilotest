@@ -62,7 +62,15 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
-  query.issue = issues[issueID].summary;
+  query.issue = issues[issueID]?.summary;
+  // If adding the issue summary failed:
+  if (! query.issue) {
+    // Populate the query with the reason.
+    query.error = 'Issue not found';
+    // Stop populating the query.
+    return;
+  }
+  // Otherwise, i.e. if it succeeded, get the issue details.
   const issue = issues[issueID];
   const {wcag, weight, why} = issue;
   query.why = why;

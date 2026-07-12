@@ -80,8 +80,8 @@ The implementation is currently in an alpha phase and offers these tools:
   - purpose: summarize front-end quality test results from available reports about web pages whose descriptions or hostnames match those that you specify
   - path: `/api/target`
   - payload properties
-    - `what`: all or part of a description of the page
-    - `hostname`: all or part of the hostname of the page
+    - `description of the web page`: all or part of a description of the page
+    - `hostname of the web page`: all or part of the hostname of the page
 - `listAllAvailableReports`
   - method: `GET`
   - purpose: list all available reports
@@ -120,9 +120,9 @@ The implementation is currently in an alpha phase and offers these tools:
   - path: `/api/testRecForm`
   - payload properties
 
-    - `what`: description of the page to be tested
-    - `url`: URL of the page to be tested
-    - `why`: reason for testing the page
+    - `description of the web page`: description of the page to be tested
+    - `hostname of the web page`: URL of the page to be tested
+    - `reason for testing the web page`: reason for testing the page
 
   - possible responses:
 

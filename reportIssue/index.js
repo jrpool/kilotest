@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the diagnoses question.
+  Answers the reportIssue question.
 */
 
 // IMPORTS
@@ -25,10 +25,18 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, query) => {
-  // Add facts about the issue to the query.
+  // Add the issue summary to the query.
   query.issue = issues[issueID].summary;
+  // Get descriptions of the page facts.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  const {what, url, urlLink, testInfo} = pageDataStrings;
+  const {testInfo, url, urlLink, what} = pageDataStrings;
+  // If this failed:
+  if (pageDataStrings.error) {
+    // Populate the query with the reason.
+    query.error = pageDataStrings.error;
+    // Stop populating the query.
+    return;
+  }
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
@@ -43,14 +51,13 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   let violators = {};
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  const {acts, catalog, error} = report;
+  const {acts, catalog} = report;
   // If this failed:
-  if (error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: error
-    };
+  if (report.error) {
+    // Populate the query with the reason.
+    query.error = report.error;
+    // Stop populating the query.
+    return;
   }
   // Otherwise, i.e. if it succeeded, get the test acts of the report.
   const testActs = acts.filter(act => act.type === 'test');
@@ -168,7 +175,15 @@ exports.answer = async pageArgs => {
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, query);
-  // If the test specifications are valid:
+  // If this failed:
+  if (query.error) {
+    // Return the error.
+    return {
+      status: 'error',
+      message: query.error
+    };
+  }
+  // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
     // Get the template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
@@ -182,9 +197,9 @@ exports.answer = async pageArgs => {
       answerPage
     };
   }
-  // Otherwise, report this.
+  // Otherwise, i.e. if the report facts were not obtained, report this.
   return {
     status: 'error',
-    message: 'Invalid report specification'
+    message: 'Report facts not obtained'
   };
 };

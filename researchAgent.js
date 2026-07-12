@@ -107,7 +107,7 @@ const requestService = async () => {
   method = 'POST';
   path = '/api/target';
   content = await submitRequest(path, method, {
-    what: 'oesntuhaesouht',
+    description: 'oesntuhaesouht',
     hostname: 'osentuhaoesuht.aoesntuh'
   });
   if (content.error) {
@@ -131,7 +131,7 @@ const requestService = async () => {
   method = 'POST';
   path = '/api/target';
   content = await submitRequest(path, method, {
-    what: description,
+    description,
     hostname: new URL(url).hostname ?? ''
   });
   if (content.error) {

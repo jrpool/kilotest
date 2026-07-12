@@ -701,12 +701,12 @@ const requestHandler = async (request, response) => {
         }
         // Otherwise, if the first segment is the report finding service:
         else if (segments[0] === 'target') {
-          const {what = '', hostname = ''} = postData;
-          // If the payload contains a description fragment or hostname fragment:
-          if (what || hostname) {
+          const {description = '', hostname = ''} = postData;
+          // If the payload contains a description or hostname:
+          if (description || hostname) {
             // Process the request and get the response data.
             const responseData = await require(path.join(__dirname, 'target', 'api'))
-            .response([what, hostname]);
+            .response([description, hostname]);
             // Send them.
             setHeaders('application/json', null, 'ultra');
             response.end(JSON.stringify(responseData));

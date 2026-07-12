@@ -135,8 +135,8 @@ exports.response = async args => {
       },
       method: 'GET',
       URLs: {
-        'URL of your request': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
-        'equivalent URL for humans': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+        'for you': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+        'for humans': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
         identifier: 'summarizeOneReport',

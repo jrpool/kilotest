@@ -24,20 +24,24 @@ const populateQuery = async (timeStamp, jobID, query) => {
   // Get data on the target and its issues according to the report.
   const data = await getData(timeStamp, jobID);
   const {pageData, issuesData} = data;
-  // If the page data are invalid:
-  if (typeof pageData === 'string') {
-    // Return this.
-    return pageData;
+  // If this failed:
+  if (data.error) {
+    // Populate the query with the reason.
+    query.error = data.error;
+    // Stop populating the query.
+    return;
   }
-  // Otherwise, if the issues data are invalid:
-  if (typeof issuesData === 'string') {
-    // Return this.
-    return issuesData;
-  }
-  // Otherwise, get fact descriptions for the target.
+  // Otherwise, i.e. if it succeeded, get fact descriptions for the target.
   const pageInfo = await getPageDataStrings(timeStamp, jobID, pageData);
-  const {what, urlLink, testInfo} = pageInfo;
-  // Add target data to the query.
+  const {testInfo, urlLink, what} = pageInfo;
+  // If this failed:
+  if (pageInfo.error) {
+    // Populate the query with the reason.
+    query.error = pageInfo.error;
+    // Stop populating the query.
+    return;
+  }
+  // Otherwise, i.e. if it succeeded, add target data to the query.
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
@@ -154,7 +158,15 @@ exports.answer = async pageArgs => {
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);
-  // If the report facts were obtained:
+  // If this failed:
+  if (query.error) {
+    // Return the error.
+    return {
+      status: 'error',
+      message: query.error
+    };
+  }
+  // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
     // Get the template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
@@ -171,6 +183,6 @@ exports.answer = async pageArgs => {
   // Otherwise, i.e. if they were not obtained, report this.
   return {
     status: 'error',
-    message: 'Report processing failed'
+    message: 'Report facts not obtained'
   };
 };

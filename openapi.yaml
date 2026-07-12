@@ -177,9 +177,9 @@ components:
             URLs:
               type: object
               properties:
-                'URL of your request':
+                'for you':
                   type: string
-                'equivalent URL for humans':
+                'for humans':
                   type: string
             closest ancestor request:
               oneOf:
@@ -272,13 +272,13 @@ components:
     TestRecForm:
       type: object
       properties:
-        what:
+        description of the web page:
           type: string
           description: Description of the web page to be tested.
-        url:
+        URL of the web page:
           type: string
           description: URL of the web page to be tested.
-        why:
+        reason for testing the web page:
           type: string
           description: Reason for testing the page.
 
@@ -417,7 +417,7 @@ components:
     Target:
       type: object
       properties:
-        what:
+        description:
           type: string
           description: All or part of a description of the web page. If the page is the home page of an organization, the description is the name of the organization (e.g., “Earthjustice”). Otherwise, the description appends minimal differentiating words to the name of the organization (e.g., “Earthjustice Donate”), without the word “page”.
         hostname:

@@ -31,7 +31,7 @@ const createMCPServer = () => {
     {
       description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages that match the description or hostname fragment of a web page that you have provided. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragment.',
       inputSchema: {
-        what: z.string().describe('All or part of a description of the web page.'),
+        description: z.string().describe('All or part of a description of the web page.'),
         hostname: z.string().describe('All or part of the hostname of the URL of the web page.')
       },
       annotations: {
@@ -42,8 +42,8 @@ const createMCPServer = () => {
         openWorldHint: false
       }
     },
-    async ({what, hostname}) => {
-      const result = await targetAPI.response([what, hostname]);
+    async ({description, hostname}) => {
+      const result = await targetAPI.response([description, hostname]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );

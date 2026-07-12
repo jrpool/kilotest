@@ -721,6 +721,7 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
       error
     };
   }
+  // Otherwise, i.e. if they are valid, get a description of the timestamp.
   const when = getDateTimeString(timeStamp);
   // Return the HTML strings.
   return {

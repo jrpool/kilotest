@@ -21,9 +21,9 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // Returns a response to a target request.
 exports.response = async args => {
-  const [what = '', hostname = ''] = args;
+  const [description = '', hostname = ''] = args;
   const hostLC = hostname.toLowerCase();
-  const whatLC = what.toLowerCase();
+  const whatLC = description.toLowerCase();
   // Initialize an array of summaries of matching reports.
   const matchingReports = [];
   // Get the non-hidden logs.
@@ -107,12 +107,12 @@ exports.response = async args => {
       },
       method: 'POST',
       payload: {
-        'all or part of a description of the web page': what,
-        'all or part of the hostname of the URL of the web page': hostname
+        description,
+        hostname
       },
       URLs: {
-        'URL of your request': `${thisHost}/api/target`,
-        'equivalent URL for humans': 'none'
+        'for you': `${thisHost}/api/target`,
+        'for humans': 'none'
       },
       'closest ancestor request': null
     },

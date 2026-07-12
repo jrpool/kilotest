@@ -23,18 +23,25 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, query) => {
+  // Get descriptions of the page facts.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  const {what, url, urlLink, testInfo} = pageDataStrings;
-  // Get the   report.
-  const report = await getReport(timeStamp, jobID);
-  const {acts, catalog, error} = report;
   // If this failed:
-  if (error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: error
-    };
+  if (pageDataStrings.error) {
+    // Populate the query with the reason.
+    query.error = pageDataStrings.error;
+    // Stop populating the query.
+    return;
+  }
+  const {testInfo, url, urlLink, what} = pageDataStrings;
+  // Otherwise, i.e. if it succeeded, get the report.
+  const report = await getReport(timeStamp, jobID);
+  const {acts, catalog} = report;
+  // If this failed:
+  if (report.error) {
+    // Populate the query with the reason.
+    query.error = report.error;
+    // Stop populating the query.
+    return;
   }
   // Otherwise, i.e. if it succeeded, get the catalog item of the specified violator.
   const catalogItem = catalog[catalogIndex] ?? {};
@@ -128,7 +135,15 @@ exports.answer = async (pageArgs, search) => {
   const query = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, catalogIndex, pathID, query);
-  // If the test specifications are valid:
+  // If this failed:
+  if (query.error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: query.error
+    };
+  }
+  // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
     // Get the template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
@@ -142,9 +157,10 @@ exports.answer = async (pageArgs, search) => {
       answerPage
     };
   }
-  // Otherwise, report this.
+  // Otherwise, i.e. if the report facts were not obtained:
+  // Report this.
   return {
     status: 'error',
-    message: 'Invalid report specification'
+    message: 'Report facts not obtained'
   };
 };

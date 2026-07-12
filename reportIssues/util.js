@@ -124,7 +124,7 @@ exports.getData = async (timeStamp, jobID) => {
   const issuesData = await getIssuesData(timeStamp, jobID);
   const pageError = pageData.error || '';
   const issuesError = issuesData.error || '';
-  const errors = [pageError, issuesError].join('; ');
+  const errors = [pageError, issuesError].filter(Boolean).join('; ');
   // If the data of either type are missing or invalid:
   if (errors) {
     // Return this.

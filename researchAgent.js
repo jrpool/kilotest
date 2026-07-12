@@ -117,7 +117,7 @@ const requestService = async () => {
   method = 'GET';
   path = '/api/reportList';
   content = await submitRequest(path, method);
-  reports = content?.['requested information'] ?? [];
+  reports = content?.['response content'] ?? [];
   if (content.error || ! Array.isArray(reports) || ! reports.length) {
     return;
   }
@@ -157,13 +157,13 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest: Describe one issue from one report');
-  if (content['number of HTML elements reported as exhibiting issues'] === 0) {
+  if (content['response content']['number of elements reported as violators'] === 0) {
     console.log('reportIssue request cannot be submitted, because no issues were reported');
   }
   else {
     // Get the issue IDs.
     const issueIDs = Object
-    .values(content['requested information']['issues revealed'])
+    .values(content['response content']['issues revealed'])
     .map(issue => issue.identifier);
     // Choose one at random.
     const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];

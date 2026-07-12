@@ -80,8 +80,10 @@ const populateQuery = async query => {
   for (const targetLog of targetLogs) {
     const {jobName, url, what} = targetLog;
     const [timeStamp, jobID] = jobName.split('-');
+    // Get data about its report.
     const reportData = await getReportData(timeStamp, jobID);
     const {
+      error,
       issueCount,
       preventedToolCount,
       preventedToolNames,
@@ -89,6 +91,15 @@ const populateQuery = async query => {
       reporterCount,
       violatorCount
     } = reportData;
+    // If this failed:
+    if (error) {
+      console.error(error);
+      // Populate the query with the reason.
+      query.error = error;
+      // Stop populating the query.
+      return;
+    }
+    // Otherwise, i.e. if it succeeded, add lines about the report.
     lines.tested.push(`${margin}<details>`);
     const daysAgo = getAgoDays(timeStamp);
     const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
@@ -155,7 +166,15 @@ exports.answer = async () => {
   const query = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
-  // Get the template.
+  // If the query reports an error:
+  if (query.error) {
+    // Return it.
+    return {
+      status: 'error',
+      message: query.error
+    };
+  }
+  // Otherwise, i.e. if it does not report an error, get the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {

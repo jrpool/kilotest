@@ -31,24 +31,32 @@ exports.response = async () => {
     const {jobName} = availableLog;
     const [timeStamp, jobID] = jobName.split('-');
     const reportSize = await getReportSize(timeStamp, jobID);
-    const {superseded, url, what} = availableLog;
-    // Add facts about its report to the array.
-    reportsFacts.push({
-      identifier: jobName,
-      'creation date and time': getDateTime(timeStamp),
-      'days since the creation date': getAgoDays(timeStamp),
-      'tested web page': {
-        description: what,
-        URL: url
-      },
-      'whether a later report about the same page exists': !! superseded,
-      'URLs for more details': {
-        'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
-        'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-      },
-      'size of the report in bytes': reportSize,
-      'URL to get the entire report as machine-oriented JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
-    });
+    // If its report exists:
+    if (reportSize) {
+      const {superseded, url, what} = availableLog;
+      // Add facts about the report to the array.
+      reportsFacts.push({
+        identifier: jobName,
+        'creation date and time': getDateTime(timeStamp),
+        'days since the creation date': getAgoDays(timeStamp),
+        'tested web page': {
+          description: what,
+          URL: url
+        },
+        'whether a later report about the same page exists': !! superseded,
+        'URLs for more details': {
+          'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
+          'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+        },
+        'size of the report in bytes': reportSize,
+        'URL to get the entire report as machine-oriented JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
+      });
+    }
+    // Otherwise, i.e. if the report does not exist:
+    else {
+      // Report this.
+      console.error(`Log ${jobName} exists but its report does not.`);
+    }
   }
   // Create a response body.
   const content = {

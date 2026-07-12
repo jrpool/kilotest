@@ -17,9 +17,12 @@ exports.answer = async (pageArgs, why) => {
   const {error, url, what} = log;
   // If this failed:
   if (error) {
-    // Report why.
-    console.error(error);
+    // Return why.
+    return {
+      status: 'error',
+      message: error
+    };
   }
-  // Process the recommendation, pretending it succeeded even if not.
+  // Otherwise, i.e. if it succeeded, process the recommendation.
   return await processRec('retest', __dirname, what, url, why);
 };

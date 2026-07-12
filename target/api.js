@@ -24,6 +24,7 @@ exports.response = async args => {
   const [what = '', hostname = ''] = args;
   const hostLC = hostname.toLowerCase();
   const whatLC = what.toLowerCase();
+  // Initialize an array of summaries of matching reports.
   const matchingReports = [];
   // Get the non-hidden logs.
   const targetLogs = await getLogs();
@@ -42,6 +43,7 @@ exports.response = async args => {
       // Get data about its report.
       const data = await getReportData(timeStamp, jobID);
       const {
+        error,
         creationDate,
         daysAgo,
         issueCount,
@@ -53,35 +55,44 @@ exports.response = async args => {
         preventedToolNames,
         preventedToolCount
       } = data;
-      matchingReports.push({
-        identifier: jobName,
-        'creation date': creationDate,
-        'days since the creation date': daysAgo,
-        'tested web page': {
-          description: reportWhat,
-          URL: reportURL
-        },
-        'whether a later report about the same page exists': !! superseded,
-        'rule engines that tried to test the page': {
-          number: toolCount,
-          names: toolNames
-        },
-        'rule engines that were unable to test the page': {
-          number: preventedToolCount,
-          names: preventedToolNames
-        },
-        'rule engines that reported issues': {
-          number: reporterCount,
-          names: reporterNames
-        },
-        'number of issues reported': issueCount,
-        'number of HTML elements reported as exhibiting issues': violatorCount,
-        'URLs for getting data about the reported issues': {
-          'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
-          'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-        },
-        'URL for getting the full technical report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
-      });
+      // If this failed:
+      if (error) {
+        // Report why.
+        console.error(error);
+      }
+      // Otherwise, i.e. if it succeeded:
+      else {
+        // Add a report summary to the array.
+        matchingReports.push({
+          identifier: jobName,
+          'creation date': creationDate,
+          'days since the creation date': daysAgo,
+          'tested web page': {
+            description: reportWhat,
+            URL: reportURL
+          },
+          'whether a later report about the same page exists': !! superseded,
+          'rule engines that tried to test the page': {
+            number: toolCount,
+            names: toolNames
+          },
+          'rule engines that were unable to test the page': {
+            number: preventedToolCount,
+            names: preventedToolNames
+          },
+          'rule engines that reported issues': {
+            number: reporterCount,
+            names: reporterNames
+          },
+          'number of issues reported': issueCount,
+          'number of HTML elements reported as exhibiting issues': violatorCount,
+          'URLs for getting data about the reported issues': {
+            'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
+            'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+          },
+          'URL for getting the full technical report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
+        });
+      }
     }
   }
   // Get a response.

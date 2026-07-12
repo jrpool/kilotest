@@ -21,11 +21,13 @@ const populateQuery = async query => {
     const {jobName = '-'} = targetLog;
     // Get the latest report on it.
     const report = await getReport(... jobName.split('-'));
-    const {acts, error} = report;
+    const {acts = [], error} = report;
     // If this failed:
     if (error) {
-      // Report why.
-      console.error(error);
+      // Populate the query with the reason.
+      query.error = error;
+      // Stop populating the query.
+      return;
     }
     // Otherwise, i.e. if it succeeded, for each act in the report:
     acts.forEach(act => {
@@ -105,7 +107,15 @@ exports.answer = async () => {
   const query = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
-  // Get the template.
+  // If the query reports an error:
+  if (query.error) {
+    // Return the error.
+    return {
+      status: 'error',
+      error: query.error
+    };
+  }
+  // Otherwise, i.e. if the query does not report an error, get the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {

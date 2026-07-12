@@ -104,7 +104,7 @@ const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   }
   return record;
 };
-// Returns a report or an error message.
+// Returns a report.
 const getReport = exports.getReport = async (timeStamp, jobID) => await getRecord(
   'report', timeStamp, jobID
 );
@@ -330,8 +330,8 @@ exports.getReportData = async (timeStamp, jobID) => {
   const log = await getLog(timeStamp, jobID, true);
   // If this failed:
   if (log.error) {
-    // Return this.
-    return log.error;
+    // Return why.
+    return {error: log.error};
   }
   // Initialize the data.
   const data = {
@@ -358,7 +358,7 @@ exports.getReportData = async (timeStamp, jobID) => {
   // If this failed:
   if (report.error) {
     // Return why.
-    return report.error;
+    return {error: report.error};
   }
   // For each act of the report:
   report.acts.forEach(act => {
@@ -694,7 +694,7 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
   // If this failed:
   if (log.error) {
     // Return why.
-    return log.error;
+    return log;
   }
   const {url, what} = log;
   // Otherwise, i.e. if it succeeded, get the elapsed time in days since the test.
@@ -713,7 +713,14 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     // Get them.
     pageData = await getPageData(timeStamp, jobID);
   }
-  const {what, url, daysAgo} = pageData;
+  const {daysAgo, error, url, what} = pageData;
+  // If the page data are invalid:
+  if (error) {
+    // Return why.
+    return {
+      error
+    };
+  }
   const when = getDateTimeString(timeStamp);
   // Return the HTML strings.
   return {

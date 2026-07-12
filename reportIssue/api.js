@@ -93,11 +93,19 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if the report is available, get data on the report and its issues.
   const data = await getData(timeStamp, jobID);
-  const {pageData, issuesData} = data;
+  const {error, issuesData, pageData} = data;
+  // If this failed:
+  if (error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: error
+    };
+  }
   const {what, url, daysAgo} = pageData;
   const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
   let issue;
-  // Get the level of and the data on the issue.
+  // Otherwise, i.e. if it succeeded, get the level of and the data on the issue.
   const issueLevel = [4, 3, 2, 1].find(level => {
     issue = issues[level].find(issue => issue.issueID === issueID);
     return issue;

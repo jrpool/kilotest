@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {
-  getPageData, getReport, getToolsData, getToolList, isValidReport, objectSort
+  getPageData, getReport, getToolsData, getToolList, isHidden, isValidReport, objectSort
 } = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
@@ -16,7 +16,12 @@ const issuesClassification = require('testilo/procs/score/tic').issues;
 const getIssuesData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  // If it is valid:
+  const reportIsHidden = await isHidden(timeStamp, jobID);
+  // If it exists and is hidden:
+  if (reportIsHidden) {
+    return {error: 'Report is not available'}
+  }
+  // Otherwise, if it exists and is valid:
   if (isValidReport(report)) {
     // Initialize the temporary data.
     const temp = {
@@ -110,10 +115,24 @@ const getIssuesData = async (timeStamp, jobID) => {
     // Return the data.
     return final;
   }
-  // Otherwise, i.e. if it is invalid, return this.
-  return 'ERROR: Report missing or invalid.';
+  // Otherwise, i.e. if it is invalid or does not exist, return this.
+  return {error: 'Report missing or invalid.'};
 };
-exports.getData = async (timeStamp, jobID) => ({
-  pageData: await getPageData(timeStamp, jobID),
-  issuesData: await getIssuesData(timeStamp, jobID)
-});
+// Get page and issues data from a report.
+exports.getData = async (timeStamp, jobID) => {
+  const pageData = await getPageData(timeStamp, jobID);
+  const issuesData = await getIssuesData(timeStamp, jobID);
+  const pageError = pageData.error || '';
+  const issuesError = issuesData.error || '';
+  const errors = [pageError, issuesError].join('; ');
+  // If the data of either type are missing or invalid:
+  if (errors) {
+    // Return this.
+    return {error: errors};
+  }
+  // Otherwise, return the data.
+  return {
+    pageData,
+    issuesData
+  };
+};

@@ -38,13 +38,23 @@ exports.answer = async (_, search) => {
     }
   }
   const reportNames = await fs.readdir(reportsPath);
+  // Initialize an array of report summaries.
   const reportSpecs = [];
   // For each report:
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
     // Get a summary of it.
     const reportSummary = await getReportData(timeStamp, jobID);
-    const {issueCount, preventedToolCount, url} = reportSummary;
+    const {error, issueCount, preventedToolCount, url} = reportSummary;
+    // If this failed:
+    if (error) {
+      // Return why.
+      return {
+        status: 'error',
+        message: error
+      }
+    }
+    // Otherwise, i.e. if it succeeded, add the summary to the array.
     reportSpecs.push({
       timeStamp,
       jobID,

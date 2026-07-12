@@ -44,7 +44,15 @@ exports.answer = async (_, search) => {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
     // Get a summary of it.
     const reportSummary = await getReportData(timeStamp, jobID);
-    const {issueCount, preventedToolCount, url} = reportSummary;
+    const {error, issueCount, preventedToolCount, url} = reportSummary;
+    // If this failed:
+    if (error) {
+      // Return why.
+      return {
+        status: 'error',
+        message: error
+      }
+    }
     reportSpecs.push({
       timeStamp,
       jobID,

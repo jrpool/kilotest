@@ -117,21 +117,15 @@ const getIssueFacts = (issueID, timeStamp, jobID) => {
 exports.response = async (args) => {
   const [timeStamp, jobID] = args;
   const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report does not exist:
-  if (typeof reportIsHidden === 'string') {
-    // Return this.
-    return {
-      error: 'Report not found',
-    };
-  }
-  // Otherwise, if the report is hidden:
+  // If the report exists and is hidden:
   if (reportIsHidden) {
     // Return this.
     return {
-      error: 'Report not available',
+      status: 'error',
+      message: 'Report not available',
     };
   }
-  // Otherwise, i.e. if the report is available, get it.
+  // Otherwise, i.e. if the report is not hidden, get it.
   const report = await getReport(timeStamp, jobID);
   const {error} = report;
   // If this failed:
@@ -142,7 +136,7 @@ exports.response = async (args) => {
       message: error
     };
   }
-  // Get facts about it.
+  // Otherwise, i.e. if it succeeded, get facts about it.
   const reportFacts = await getReportFacts(report);
   // Create a response body.
   const content = {

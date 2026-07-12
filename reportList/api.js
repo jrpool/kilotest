@@ -56,22 +56,19 @@ exports.response = async () => {
     'tool collection name': 'Kilotest',
     'tool name': 'listAllAvailableReports',
     request: {
-      'type of request': {
-        identifier: 'reportList',
-        description: 'List all available reports. For each report, the list should identify which page was tested and when and provide URLs to begin incremental retrieval of the test results from the report.'
-      },
+      description: 'List all available reports. For each report, the list should identify which page was tested and when and provide URLs to begin incremental retrieval of the test results from the report.',
       method: 'GET',
       URLs: {
-        'URL of your request': `${thisHost}/api/reportList`,
-        'equivalent URL for humans': `${thisHost}/targets.html`
-      },
-      'closest ancestor request': null
+        'for you': `${thisHost}/api/reportList`,
+        'for humans': `${thisHost}/targets.html`
+      }
     },
+    'closest ancestor request': null,
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
-      'date and time': new Date().toISOString(),
+      'date and time': new Date().toISOString()
     },
-    'requested information': reportsFacts
+    'response content': reportsFacts
   };
   // Return it.
   return content;

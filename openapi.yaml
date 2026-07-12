@@ -208,6 +208,67 @@ components:
               description: UTC date and time when the response was generated, in ISO 8601 format.
               format: date-time
 
+    SharedFacts:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: Natural-language facts about the request, the response, and Kilotest.
+        tool collection name:
+          type: string
+          examples:
+            - Kilotest
+        tool name:
+          type: string
+          examples:
+            - listAllAvailableReports
+        request:
+          type: object
+          properties:
+            description:
+              type: string
+            method:
+              type: string
+              enum:
+                - GET
+                - POST
+            payload:
+              type: object
+              description: The request payload, if method is POST, or otherwise omitted.
+            URLs:
+              type: object
+              properties:
+                'for you':
+                  type: string
+                'for humans':
+                  type: string
+            closest ancestor request:
+              oneOf:
+                - type: 'null'
+                - type: object
+                  properties:
+                    'tool name':
+                      type: string
+                    description:
+                      type: string
+                    URLs:
+                      type: object
+                      properties:
+                        'for you':
+                          type: string
+                        'for humans':
+                          type: string
+        response metadata:
+          type: object
+          properties:
+            identifier:
+              type: string
+              description: Unique identifier for this response instance.
+            date and time:
+              type: string
+              description: UTC date and time when the response was generated, in ISO 8601 format.
+              format: date-time
+
     TestRecForm:
       type: object
       properties:
@@ -368,7 +429,7 @@ components:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
           properties:
-            requested information:
+            response content:
               type: array
               description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
               items:
@@ -466,7 +527,7 @@ components:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
           properties:
-            requested information:
+            response content:
               type: object
               properties:
                 rule engines that tried to test the page:

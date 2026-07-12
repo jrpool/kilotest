@@ -140,29 +140,26 @@ exports.response = async (args) => {
     'tool collection name': 'Kilotest',
     'tool name': 'summarizeOneReport',
     request: {
-      'type of request': {
-        identifier: 'reportSummary',
-        description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting details about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.'
-      },
+      description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting details about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.',
       method: 'GET',
       URLs: {
-        'URL of your request': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
-        'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-      },
-      'closest ancestor request': {
-        identifier: 'reportList',
-        description: 'List all available reports.',
-        URLs: {
-          'for you': `${thisHost}/api/reportList`,
-          'equivalent URL for humans': `${thisHost}/targets.html`
-        }
+        'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
+        'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      }
+    },
+    'closest ancestor request': {
+      'tool name': 'listAllAvailableReports',
+      description: 'List all available reports.',
+      URLs: {
+        'for you': `${thisHost}/api/reportList`,
+        'for humans': `${thisHost}/targets.html`
       }
     },
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
-      'date and time': new Date().toISOString(),
+      'date and time': new Date().toISOString()
     },
-    'requested information': {
+    'response content': {
       'rule engines that tried to test the page': getSortedRuleEngineIDs(reportFacts.ruleEngineIDs)
       .map(id => getRuleEngineFacts(id)),
       'rule engines that could not test the page': getPreventionFacts(report),

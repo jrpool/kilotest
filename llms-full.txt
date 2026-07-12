@@ -84,7 +84,7 @@ The implementation is currently in an alpha phase and offers 4 tools:
     - `hostname`: all or part of the hostname of the page
 - `listAllAvailableReports`
   - method: `GET`
-  - purpose: get a list of all available reports
+  - purpose: list all available reports
   - path: `/api/reportList`
   - caveat: Cached results are likely to be stale and should not be used
 - `summarizeOneReport`

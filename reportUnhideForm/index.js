@@ -22,7 +22,15 @@ exports.answer = async (_, search) => {
     if (authCode === process.env.AUTH_CODE) {
       // Get the log of the report.
       const log = await getLog(... jobName.split('-'));
-      // Reverse the hiddenness property of the log.
+      // If this failed:
+      if (log.error) {
+        // Return why.
+        return {
+          status: 'error',
+          message: log.error
+        }
+      }
+      // Otherwise, i.e. if it succeeded, reverse the hiddenness property of the log.
       log.hidden = false;
       // Save the updated log.
       await fs.writeFile(path.join(logsPath, `${jobName}.json`), getJSON(log));
@@ -37,13 +45,23 @@ exports.answer = async (_, search) => {
     }
   }
   const reportFileNames = await fs.readdir(reportsPath);
+  // Initialize an array of report specifications.
   const reportSpecs = [];
   // For each report:
   for (const reportFileName of reportFileNames) {
     const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
     // Get its log.
     const log = await getLog(timeStamp, jobID);
-    const {what, hidden} = log;
+    const {error, what, hidden} = log;
+    // If this failed:
+    if (error) {
+      // Return why.
+      return {
+        status: 'error',
+        message: error
+      }
+    }
+    // Otherwise, i.e. if it succeeded, add the report to the array.
     reportSpecs.push({
       what,
       timeStamp,

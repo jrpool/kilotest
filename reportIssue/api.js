@@ -24,8 +24,16 @@ const getIssueFacts = async (timeStamp, jobID, issue) => {
   const wcagType = wcag.length === 3 ? 'guideline' : 'success criterion';
   // Get the report.
   const report = await getReport(timeStamp, jobID);
+  const {acts, catalog, error} = report;
+  // If this failed:
+  if (error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: error
+    };
+  }
   const violatorIndexSet = new Set();
-  const {acts, catalog} = report;
   // For each act of the report:
   acts.forEach(act => {
     // If it is a test act:

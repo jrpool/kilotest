@@ -15,6 +15,11 @@ const path = require('path');
 exports.answer = async pageArgs => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const log = await getLog(timeStamp, jobID);
+  // If this failed:
+  if (log.error) {
+    // Make the form report the failure.
+    log.what = 'The specified page is not available for retesting';
+  }
   const query = {
     target: log.what,
     timeStamp,

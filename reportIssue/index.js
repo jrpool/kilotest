@@ -43,7 +43,16 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   let violators = {};
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  const {acts, catalog} = report;
+  const {acts, catalog, error} = report;
+  // If this failed:
+  if (error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: error
+    };
+  }
+  // Otherwise, i.e. if it succeeded, get the test acts of the report.
   const testActs = acts.filter(act => act.type === 'test');
   // For each test act:
   testActs.forEach(act => {

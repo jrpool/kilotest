@@ -18,11 +18,16 @@ const populateQuery = async query => {
   const reClassified = {};
   // For each target:
   for (const targetLog of targetLogs) {
-    const {jobName} = targetLog;
+    const {jobName = '-'} = targetLog;
     // Get the latest report on it.
     const report = await getReport(... jobName.split('-'));
-    const {acts} = report;
-    // For each act in the report:
+    const {acts, error} = report;
+    // If this failed:
+    if (error) {
+      // Report why.
+      console.error(error);
+    }
+    // Otherwise, i.e. if it succeeded, for each act in the report:
     acts.forEach(act => {
       const {result, type, which} = act;
       // If it is a test act with standard instances:

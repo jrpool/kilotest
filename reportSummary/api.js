@@ -133,6 +133,15 @@ exports.response = async (args) => {
   }
   // Otherwise, i.e. if the report is available, get it.
   const report = await getReport(timeStamp, jobID);
+  const {error} = report;
+  // If this failed:
+  if (error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: error
+    };
+  }
   // Get facts about it.
   const reportFacts = await getReportFacts(report);
   // Create a response body.
@@ -169,7 +178,7 @@ exports.response = async (args) => {
       .map(id => getRuleEngineFacts(id).name)
       .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
       'number of elements reported as violators': reportFacts.violators.size,
-      'issues revealed by the reported rule violations': getSortedIssueIDs(reportFacts.issueIDs)
+      'issues revealed': getSortedIssueIDs(reportFacts.issueIDs)
       .map(id => getIssueFacts(id, timeStamp, jobID))
     }
   };

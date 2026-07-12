@@ -25,8 +25,18 @@ const path = require('path');
 const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, query) => {
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   const {what, url, urlLink, testInfo} = pageDataStrings;
+  // Get the   report.
   const report = await getReport(timeStamp, jobID);
-  const {acts, catalog} = report;
+  const {acts, catalog, error} = report;
+  // If this failed:
+  if (error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: error
+    };
+  }
+  // Otherwise, i.e. if it succeeded, get the catalog item of the specified violator.
   const catalogItem = catalog[catalogIndex] ?? {};
   const {boxID, startTag, tagName, text} = catalogItem;
   query.catalogIndex = catalogIndex;

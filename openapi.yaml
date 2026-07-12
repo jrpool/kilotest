@@ -108,7 +108,7 @@ paths:
         - name: issueID
           in: path
           required: true
-          description: Issue identifier (e.g., imageNoText). Available under "issues reported" > priority level > "identifier" in the describeQualityOfOneWebPage response.
+          description: Issue identifier (e.g., imageNoText). Available under "issues revealed by the reported violations" > "identifier" in the summarizeOneReport response.
           schema:
             type: string
             examples:
@@ -544,7 +544,7 @@ components:
                     type: string
                 number of elements reported as violators:
                   type: integer
-                issues revealed by the reported rule violations:
+                issues revealed:
                   type: array
                   items:
                     $ref: '#/components/schemas/IssueSummary'

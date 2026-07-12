@@ -37,8 +37,14 @@ const getIssuesSummary = async logs => {
     }
     // Get the corresponding report.
     const report = await getReport(timeStamp, jobID);
-    // For each act in it:
-    report.acts.forEach(act => {
+    const {acts = [], error} = report;
+    // If this failed:
+    if (error) {
+      // Report why.
+      console.error(error);
+    }
+    // For each act in it (none if the report retrieval failed):
+    acts.forEach(act => {
       // If it is a test act:
       if (act.type === 'test') {
         const {result, which} = act;

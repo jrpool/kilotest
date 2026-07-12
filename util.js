@@ -84,7 +84,7 @@ const getRecordPath = exports.getRecordPath = (recordType, timeStamp, jobID) => 
     return null;
   }
 };
-// Returns a log or report or an error message.
+// Returns a log or report.
 const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   const recordPath = getRecordPath(recordType, timeStamp, jobID);
   let recordJSON, record;
@@ -93,14 +93,14 @@ const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   }
   catch(error) {
     console.log(error.message);
-    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not found`;
+    recordJSON = JSON.stringify({error: `Requested ${recordType} ${timeStamp}-${jobID} not found`});
   }
   try {
     record = JSON.parse(recordJSON);
   }
   catch (error) {
     console.log(error.message);
-    return `ERROR: Requested ${recordType} ${timeStamp}-${jobID} not JSON`;
+    record = {error: `Requested ${recordType} ${timeStamp}-${jobID} not JSON`};
   }
   return record;
 };
@@ -247,13 +247,13 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
 // Adds issue IDs to the standard instances of a report.
 const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
   // Get a copy of the report.
-  const reportOrError = await getReport(timeStamp, jobID);
+  const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (typeof reportOrError === 'string') {
-    // Return this.
-    return reportOrError;
+  if (report.error) {
+    // Return why.
+    return report.error;
   }
-  const report = reportOrError;
+  // Otherwise, i.e. if it succeeded:
   const unclassifiableRules = new Set();
   // For each of its acts:
   for (const act of report.acts) {
@@ -294,15 +294,14 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
   // Save the annotated report.
   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
   // Get a copy of the log of the report.
-  const logOrError = await getLog(timeStamp, jobID, false);
+  const log = await getLog(timeStamp, jobID, false);
   // If this failed:
-  if (typeof logOrError === 'string') {
-    // Return this.
-    return logOrError;
+  if (log.error) {
+    // Return why.
+    return log.error;
   }
   // Otherwise, i.e. if it succeeded:
   else {
-    const log = logOrError;
     // Mark the report as annotated in the log.
     log.annotated = true;
     // Save the revised log.
@@ -310,20 +309,19 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
     // Return without an error message.
   }
 };
-// Returns a report log after conditionally annotating it or an error message.
+// Returns a report log after conditionally annotating it.
 const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
   const log = await getRecord('log', timeStamp, jobID);
-  if (typeof log === 'object' && annotate && ! log.annotated) {
+  if (annotate && ! (log.error || log.annotated)) {
     annotateReport(ruleIDs, timeStamp, jobID);
   }
   return log;
 };
-// Returns whether a report is hidden or an error message.
+// Returns whether a report is hidden.
 exports.isHidden = async (timeStamp, jobID) => {
+  // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
-  if (typeof log === 'string') {
-    return log;
-  }
+  // Return whether the log exists and its report is hidden.
   return !! log.hidden;
 };
 // Returns summary data on a report.
@@ -331,9 +329,9 @@ exports.getReportData = async (timeStamp, jobID) => {
   // Validate the report and annotate it if necessary.
   const log = await getLog(timeStamp, jobID, true);
   // If this failed:
-  if (typeof log === 'string') {
+  if (log.error) {
     // Return this.
-    return log;
+    return log.error;
   }
   // Initialize the data.
   const data = {
@@ -358,9 +356,9 @@ exports.getReportData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (typeof report === 'string') {
-    // Return this.
-    return report;
+  if (report.error) {
+    // Return why.
+    return report.error;
   }
   // For each act of the report:
   report.acts.forEach(act => {
@@ -537,8 +535,13 @@ const getLogs = exports.getLogs = async () => {
     const [timeStamp, jobID] = logName.split('-');
     // Get it.
     const log = await getLog(timeStamp, jobID);
-    // If this succeeded:
-    if (typeof log === 'object') {
+    // If this failed:
+    if (log.error) {
+      // Report why.
+      console.error(log.error);
+    }
+    // Otherwise, i.e. if it succeeded:
+    else {
       // If the report is not hidden:
       if (! log.hidden) {
         // Add the job name to the log.
@@ -546,11 +549,6 @@ const getLogs = exports.getLogs = async () => {
         // Add the log to the logs.
         logs.push(log);
       }
-    }
-    // Otherwise, i.e. if it failed:
-    else {
-      // Report this.
-      console.error(`Failed to get ${logName} log (${log})`);
     }
   }
   // Sort the logs by target name and secondarily by test time.
@@ -694,12 +692,12 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
   // If this failed:
-  if (typeof log === 'string') {
-    // Return the error.
-    return log;
+  if (log.error) {
+    // Return why.
+    return log.error;
   }
   const {url, what} = log;
-  // Get the elapsed time in days since the test.
+  // Otherwise, i.e. if it succeeded, get the elapsed time in days since the test.
   const daysAgo = getAgoDays(timeStamp);
   // Return the data.
   return {
@@ -768,7 +766,13 @@ exports.isReportAvailable = async (what, url) => {
 };
 // Returns the size of a report.
 exports.getReportSize = async (timeStamp, jobID) => {
-  const reportStat = await fs.stat(path.join(reportsPath, `${timeStamp}-${jobID}.json`));
+  const reportStat = await fs.stat(
+    path.join(reportsPath, `${timeStamp}-${jobID}.json`),
+    {throwIfNoEntry: false}
+  );
+  if (! reportStat) {
+    return 0;
+  }
   const reportSize = reportStat.size;
   return reportSize;
 };

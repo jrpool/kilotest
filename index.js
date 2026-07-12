@@ -274,26 +274,30 @@ const requestHandler = async (request, response) => {
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {
         const reportHidden = await isHidden(timeStamp, jobID);
         // If the report exists and is hidden:
-        if (reportHidden === true) {
-          console.log(`ERROR: Hidden report ${timeStamp}-${jobID} requested`);
+        if (reportHidden) {
+          console.error(`Hidden report ${timeStamp}-${jobID} requested`);
           // Report this as suspected abuse.
           await serveError(
-            getAbuseError(request, `Requested report ${timeStamp}-${jobID} not available`),
+            getAbuseError(request, `Hidden report ${timeStamp}-${jobID} requested`),
             response,
             true
           );
         }
-        // Otherwise, if the report does not exist or another error occurred:
-        else if (typeof reportHidden === 'string') {
-          // Report this as suspected abuse.
-          await serveError(getAbuseError(request, reportHidden), response, true);
-        }
-        // Otherwise, i.e. if the report log is valid and not hidden:
+        // Otherwise, i.e. if the report is not hidden:
         else {
-          // Get the report.
+          // Get it.
           const report = await getReport(timeStamp, jobID);
-          // If it exists and is valid:
-          if (typeof report === 'object') {
+          // If this failed:
+          if (report.error) {
+            // Report this as suspected abuse.
+            await serveError(
+              getAbuseError(request, `Nonexistent report ${timeStamp}-${jobID} requested`),
+              response,
+              true
+            );
+          }
+          // Otherwise, i.e. if it succeeded:
+          else {
             // Serve response headers for a JSON download.
             setHeaders('application/json', null, 'low');
             response.setHeader(
@@ -301,11 +305,6 @@ const requestHandler = async (request, response) => {
             );
             // Download the report.
             response.end(getJSON(report));
-          }
-          // Otherwise, i.e. if an error occurred:
-          else {
-            // Report it.
-            await serveError({message: report}, response, true);
           }
         }
       }

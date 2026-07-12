@@ -10,6 +10,7 @@ const {
   getRandomString,
   getReport,
   isHidden,
+  objectSort,
   ruleEngines
 } = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
@@ -73,10 +74,10 @@ const getRuleEngineFacts = ruleEngineID => {
 };
 // Returns facts about rule engines that were prevented from testing the page.
 const getPreventionFacts = report => {
-  return Object.entries(report.jobData.preventions).map(([ruleEngineID, reason]) => ({
+  return objectSort(Object.entries(report.jobData.preventions).map(([ruleEngineID, reason]) => ({
     'name': getRuleEngineFacts(ruleEngineID).name,
     'reason for failure': reason
-  }));
+  })), 'name', 'alpha');
 };
 // Returns rule engine IDs sorted by name.
 const getSortedRuleEngineIDs = ruleEngineIDSet => {

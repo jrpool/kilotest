@@ -44,7 +44,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportListResponse'
+                $ref: '#/components/schemas/SharedFacts'
 
   /api/testRecForm:
     post:
@@ -426,7 +426,7 @@ components:
 
     ReportListResponse:
       allOf:
-        - $ref: '#/components/schemas/CommonResponseFields'
+        - $ref: '#/components/schemas/SharedFacts'
         - type: object
           properties:
             response content:

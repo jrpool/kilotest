@@ -37,11 +37,6 @@ const getReportFacts = async (report) => {
       // Ensure its rule engine is in the facts.
       facts.ruleEngineIDs.add(which);
       const instances = result?.standardResult?.instances ?? [];
-      // If it has any standard instances:
-      if (instances.length) {
-        // Ensure its rule engine is among the reporters in the facts.
-        facts.reporterIDs.add(which);
-      }
       // For each of its standard instances:
       instances.forEach(instance => {
         const {catalogIndex, issueID} = instance;
@@ -52,11 +47,13 @@ const getReportFacts = async (report) => {
           if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {
             // Ensure the issue ID is in the facts.
             facts.issueIDs.add(issueID);
-          }
-          // If the instance has a catalog index:
-          if (catalogIndex) {
-            // Ensure the violator is in the facts.
-            facts.violators.add(catalogIndex);
+            // Ensure its rule engine is among the reporters in the facts.
+            facts.reporterIDs.add(which);
+            // If the instance has a catalog index:
+            if (catalogIndex) {
+              // Ensure the violator is in the facts.
+              facts.violators.add(catalogIndex);
+            }
           }
         }
       });
@@ -77,8 +74,8 @@ const getRuleEngineFacts = ruleEngineID => {
 // Returns facts about rule engines that were prevented from testing the page.
 const getPreventionFacts = report => {
   return Object.entries(report.jobData.preventions).map(([ruleEngineID, reason]) => ({
-    'rule engine': getRuleEngineFacts(ruleEngineID).name,
-    'reason for failure to test': reason
+    'name': getRuleEngineFacts(ruleEngineID).name,
+    'reason for failure': reason
   }));
 };
 // Returns rule engine IDs sorted by name.
@@ -110,8 +107,8 @@ const getIssueFacts = (issueID, timeStamp, jobID) => {
     'impact on a user': why,
     'priority': ['lowest', 'low', 'high', 'highest'][weight - 1],
     'URLs for more details': {
-      'For you': `https://kilotest.com/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
-      'For humans': `https://kilotest.com/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+      'for you': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+      'for humans': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
     }
   };
 };
@@ -139,9 +136,9 @@ exports.response = async (args) => {
   const reportFacts = await getReportFacts(report);
   // Create a response body.
   const content = {
-    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for a summary of one Kilotest report. The model had previously used the getlistOfAllAvailableReports tool and already had basic facts about the report provided by that tool. This summary does not repeat those facts.',
+    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for a summary of one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This summary does not repeat those facts.',
     'tool collection name': 'Kilotest',
-    'tool name': 'getSummaryOfOneReport',
+    'tool name': 'summarizeOneReport',
     request: {
       'type of request': {
         identifier: 'reportSummary',
@@ -153,14 +150,11 @@ exports.response = async (args) => {
         'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
-        'type of request': {
-          identifier: 'reportList',
-          description: 'Get a list of all available reports.'
-        },
-        method: 'GET',
+        identifier: 'reportList',
+        description: 'List all available reports.',
         URLs: {
-          'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
-          'equivalent URL for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+          'for you': `${thisHost}/api/reportList`,
+          'equivalent URL for humans': `${thisHost}/targets.html`
         }
       }
     },
@@ -178,7 +172,7 @@ exports.response = async (args) => {
       .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
       'number of elements reported as violators': reportFacts.violators.size,
       'issues revealed by the reported rule violations': getSortedIssueIDs(reportFacts.issueIDs)
-      .map(id => getIssueFacts(id))
+      .map(id => getIssueFacts(id, timeStamp, jobID))
     }
   };
   // Return it.

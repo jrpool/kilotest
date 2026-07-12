@@ -123,10 +123,10 @@ exports.response = async args => {
         'equivalent URL for humans': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
-        identifier: 'describeQualityOfOneWebPage',
-        description: 'Describe the quality of one web page.',
+        identifier: 'summarizeOneReport',
+        description: 'Summarize one report.',
         URLs: {
-          'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
+          'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
           'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
         }
       }

@@ -36,8 +36,8 @@ paths:
   /api/reportList:
     get:
       operationId: listAllAvailableReports
-      summary: Get a list of all available reports
-      description: Get a list of all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standards conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
+      summary: List all available reports
+      description: List all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standards conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
       responses:
         '200':
           description: List of all available reports
@@ -186,6 +186,8 @@ components:
                 - type: 'null'
                 - type: object
                   properties:
+                    identifier:
+                      type: string
                     description:
                       type: string
                     URLs:
@@ -366,7 +368,7 @@ components:
         - $ref: '#/components/schemas/CommonResponseFields'
         - type: object
           properties:
-            available reports:
+            requested information:
               type: array
               description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
               items:
@@ -449,6 +451,13 @@ components:
           type: string
         impact on a user:
           type: string
+        priority:
+          type: string
+          enum:
+            - lowest
+            - low
+            - high
+            - highest
         URLs for more details:
           $ref: '#/components/schemas/NextTierURLs'
 
@@ -467,7 +476,7 @@ components:
                 rule engines that could not test the page:
                   type: array
                   items:
-                    $ref: '#/components/schemas/PreventionInfo'
+                    $ref: '#/components/schemas/RuleEngineFailure'
                 names of rule engines that reported rule violations:
                   type: array
                   items:

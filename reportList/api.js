@@ -43,7 +43,7 @@ exports.response = async () => {
       },
       'whether a later report about the same page exists': !! superseded,
       'URLs for more details': {
-        'for you': `${thisHost}/api/reportIssues/${timeStamp}/${jobID}`,
+        'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'size of the report in bytes': reportSize,
@@ -58,7 +58,7 @@ exports.response = async () => {
     request: {
       'type of request': {
         identifier: 'reportList',
-        description: 'Get a list of all available reports. For each report, the list should identify which page was tested and when and provide URLs to begin incremental retrieval of the test results from the report.'
+        description: 'List all available reports. For each report, the list should identify which page was tested and when and provide URLs to begin incremental retrieval of the test results from the report.'
       },
       method: 'GET',
       URLs: {

@@ -53,7 +53,7 @@ const createMCPServer = () => {
       description: 'Returns a list of all available Kilotest reports; each report describes the results of a job that tested one web page for front-end quality (i.e. accessibility, usability, and standards conformity).',
       inputSchema: {},
       annotations: {
-        title: 'Get a list of all available reports',
+        title: 'List all available reports',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,

@@ -527,30 +527,31 @@ const getLogs = exports.getLogs = async () => {
   try {
     logFileNames = await fs.readdir(logsPath);
   }
-  catch(error) {
-    return `ERROR: logs directory not readable (${error.message})`;
+  catch {
+    console.error('Logs directory not readable');
+    logFileNames = [];
   }
   // For each log:
   for (const fileName of logFileNames) {
     const logName = fileName.slice(0, -5);
     const [timeStamp, jobID] = logName.split('-');
     // Get it.
-    const logOrError = await getLog(timeStamp, jobID);
-    // If this failed:
-    if (typeof logOrError === 'string') {
-      // Return this.
-      return logOrError;
+    const log = await getLog(timeStamp, jobID);
+    // If this succeeded:
+    if (typeof log === 'object') {
+      // If the report is not hidden:
+      if (! log.hidden) {
+        // Add the job name to the log.
+        log.jobName = logName;
+        // Add the log to the logs.
+        logs.push(log);
+      }
     }
-    const log = logOrError;
-    // If the report is hidden:
-    if (log.hidden) {
-      // Disregard it.
-      continue;
+    // Otherwise, i.e. if it failed:
+    else {
+      // Report this.
+      console.error(`Failed to get ${logName} log (${log})`);
     }
-    // Add the job name to the log.
-    log.jobName = logName;
-    // Add the log to the logs.
-    logs.push(log);
   }
   // Sort the logs by target name and secondarily by test time.
   logs.sort((a, b) => {

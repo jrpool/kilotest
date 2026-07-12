@@ -44,7 +44,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SharedFacts'
+                $ref: '#/components/schemas/ReportListResponse'
 
   /api/testRecForm:
     post:
@@ -431,7 +431,7 @@ components:
           properties:
             response content:
               type: array
-              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Reports are matched by page description, not page URL, so, if only the URL of a page has changed between reports, the reports are treated as reports about the same page.
+              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Whether two reports are about the same page is determined by the page descriptions, not page URLs.
               items:
                 $ref: '#/components/schemas/ReportListItem'
 
@@ -524,7 +524,7 @@ components:
 
     ReportSummaryResponse:
       allOf:
-        - $ref: '#/components/schemas/CommonResponseFields'
+        - $ref: '#/components/schemas/SharedFacts'
         - type: object
           properties:
             response content:

@@ -42,7 +42,7 @@ As of the date of this decision, a partial initial API version already exists: a
 
 ## Considered options
 
-1. **Iterate and instrument.** (1) Add a tool that implements level 4; then (2) add a tool that asks LLMs to comment on how the API design could better satisfy their needs; then (3) add metrics to make API usage and submitted LLM comments available to Kilotest managers.
+1. **Iterate and instrument.** (1) Finish redesigning the tools at levels 1, 2, and 3, to represent the hypothesized typical needs of LLM consumers; then (2) add a tool that implements level 4; then (3) add a tool that asks LLMs to comment on how the API design could better satisfy their needs; then (4) add metrics to make API usage and submitted LLM comments available to Kilotest managers.
 2. **Research first.** (1) Pause further API development while doing fundamental research to predict LLM needs; then (2) resume API and metrics development, including API redesign if the research results warrant.
 
 ## Decision
@@ -98,7 +98,7 @@ The sub-decision was **identifiers plus labels** (option 2). This decision was b
 - **Risk:** The cost estimate assumes a well-behaved client that preserves conversation history; a poorly implemented client could still incur higher-than-necessary costs.
   - **Mitigation:** MCP clients are expected to maintain message history by protocol; the ancestor labels provide a minimal human-friendly substitute.
 - **Risk:** Scenario 1 users may still want an aggregated "everything about page X" response.
-  - **Mitigation:** A future tool can be added to aggregate the hierarchy on the server side and return a structured summary, but that decision is deferred until usage data justify it.
+  - **Mitigation:** A future tool can be added to aggregate the hierarchy on the server side and return a structured summary, but that decision is deferred until usage and suggestions data justify it.
 
 ## References
 

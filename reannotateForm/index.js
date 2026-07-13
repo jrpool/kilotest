@@ -112,7 +112,7 @@ exports.answer = async () => {
     // Return the error.
     return {
       status: 'error',
-      error: query.error
+      message: query.error
     };
   }
   // Otherwise, i.e. if the query does not report an error, get the template.

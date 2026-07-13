@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the targets question.
+  Answers the issues question.
 */
 
 // IMPORTS
@@ -180,7 +180,7 @@ exports.answer = async () => {
       message: query.error
     };
   }
-  // Otherwise, i.e. if the query does not report an error, gt the template.
+  // Otherwise, i.e. if the query does not report an error, get the template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {

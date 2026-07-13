@@ -306,7 +306,8 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
     log.annotated = true;
     // Save the revised log.
     await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
-    // Return without an error message.
+    // Return success.
+    return '';
   }
 };
 // Returns a report log after conditionally annotating it.

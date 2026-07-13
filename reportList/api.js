@@ -69,9 +69,9 @@ exports.response = async () => {
       URLs: {
         'for you': `${thisHost}/api/reportList`,
         'for humans': `${thisHost}/targets.html`
-      }
+      },
+      'closest ancestor request': null
     },
-    'closest ancestor request': null,
     'response metadata': {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString()

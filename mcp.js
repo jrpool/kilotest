@@ -125,7 +125,11 @@ const createMCPServer = () => {
         openWorldHint: false
       }
     },
-    async ({what, url, why}) => {
+    async ({
+      'description of the web page': what,
+      'URL of the web page': url,
+      'reason for testing the web page': why
+    }) => {
       if (!isURL(url)) {
         return {content: [{type: 'text', text: JSON.stringify({error: 'Invalid URL'})}], isError: true};
       }

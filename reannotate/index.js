@@ -21,9 +21,17 @@ exports.answer = async authCode => {
     for (const targetData of targetsData) {
       const [timeStamp, jobID] = targetData.jobName.split('-');
       // Reannotate it.
-      await annotateReport(ruleIDs, timeStamp, jobID);
+      const annotationError = await annotateReport(ruleIDs, timeStamp, jobID);
+      // If this failed:
+      if (annotationError) {
+        // Return an error page.
+        return {
+          status: 'error',
+          message: annotationError
+        };
+      }
     }
-    // Get the answer page.
+    // If every annotation succeeded, get the answer page.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
     // Return it.
     return {

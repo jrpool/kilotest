@@ -149,14 +149,14 @@ exports.response = async (args) => {
       URLs: {
         'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-      }
-    },
-    'closest ancestor request': {
-      'tool name': 'listAllAvailableReports',
-      description: 'List all available reports.',
-      URLs: {
-        'for you': `${thisHost}/api/reportList`,
-        'for humans': `${thisHost}/targets.html`
+      },
+      'closest ancestor request': {
+        'tool name': 'listAllAvailableReports',
+        description: 'List all available reports.',
+        URLs: {
+          'for you': `${thisHost}/api/reportList`,
+          'for humans': `${thisHost}/targets.html`
+        }
       }
     },
     'response metadata': {

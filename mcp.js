@@ -12,8 +12,8 @@ const {StreamableHTTPServerTransport} = require(
 const {z} = require('zod');
 const {isReportAvailable, isURL} = require('./util');
 const targetAPI = require('./target/api');
-const reportListAPI = require('./reportList/api');
-const reportSummaryAPI = require('./reportSummary/api');
+const reportListAPI = require('./api/reportList');
+const reportSummaryAPI = require('./api/reportSummary');
 const reportIssueAPI = require('./reportIssue/api');
 const testRecFormAPI = require('./testRecForm/api');
 

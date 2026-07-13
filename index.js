@@ -345,7 +345,7 @@ const requestHandler = async (request, response) => {
       // If the service is provision of a list of all available reports:
       if (service === 'reportList') {
         // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'reportList', 'api')).response(specs);
+        const responseData = await require(path.join(__dirname, 'api', 'reportList')).response(specs);
         // Send them.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseData));
@@ -353,7 +353,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service is provision of a report summary:
       else if (service === 'reportSummary') {
         // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'reportSummary', 'api'))
+        const responseData = await require(path.join(__dirname, 'api', 'reportSummary'))
         .response(specs);
         // Send them.
         setHeaders('application/json', null, 'high');

@@ -13,7 +13,7 @@ const {z} = require('zod');
 const {isReportAvailable, isURL} = require('./util');
 const targetAPI = require('./target/api');
 const reportListAPI = require('./api/reportList');
-const reportSummaryAPI = require('./api/reportSummary');
+const reportFactsAPI = require('./api/reportFacts');
 const reportIssueAPI = require('./reportIssue/api');
 const testRecFormAPI = require('./testRecForm/api');
 
@@ -82,7 +82,7 @@ const createMCPServer = () => {
       }
     },
     async ({timeStamp, jobID}) => {
-      const result = await reportSummaryAPI.response([timeStamp, jobID]);
+      const result = await reportFactsAPI.response([timeStamp, jobID]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );

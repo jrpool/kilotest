@@ -1,17 +1,15 @@
 /*
-  api.js
+  reportList.js
   Responds to the reportList API request.
 */
 
 // IMPORTS
 
+const {getReportFacts} = require('./util');
 const {
-  getAgoDays,
-  getDateTime,
   getLogs,
   getNowStamp,
-  getRandomString,
-  getReportSize
+  getRandomString
 } = require('../util');
 
 // CONSTANTS
@@ -30,32 +28,17 @@ exports.response = async () => {
   for (const availableLog of availableLogs) {
     const {jobName} = availableLog;
     const [timeStamp, jobID] = jobName.split('-');
-    const reportSize = await getReportSize(timeStamp, jobID);
-    // If its report exists:
-    if (reportSize) {
-      const {superseded, url, what} = availableLog;
-      // Add facts about the report to the array.
-      reportsFacts.push({
-        identifier: jobName,
-        'creation date and time': getDateTime(timeStamp),
-        'days since the creation date': getAgoDays(timeStamp),
-        'tested web page': {
-          description: what,
-          URL: url
-        },
-        'whether a later report about the same page exists': !! superseded,
-        'URLs for more details': {
-          'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
-          'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-        },
-        'size of the report in bytes': reportSize,
-        'URL to get the entire report as machine-oriented JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
-      });
-    }
-    // Otherwise, i.e. if the report does not exist:
-    else {
+    // Get facts about the report.
+    const reportFacts = await getReportFacts(timeStamp, jobID);
+    // If this failed:
+    if (reportFacts.error) {
       // Report this.
-      console.error(`Log ${jobName} exists but its report does not.`);
+      console.error(`Failed to get facts for report ${jobName} (${reportFacts.error}).`);
+    }
+    // Otherwise, i.e. if it succeeded:
+    else {
+      // Add the facts to the array.
+      reportsFacts.push(reportFacts);
     }
   }
   // Create a response body.

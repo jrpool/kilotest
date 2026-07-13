@@ -1,10 +1,11 @@
 /*
-  api.js
-  Responds to the reportSummary API request.
+  reportFacts.js
+  Responds to the reportFacts API request.
 */
 
 // IMPORTS
 
+const {getReportFacts} = require('./util');
 const {
   getNowStamp,
   getRandomString,
@@ -22,7 +23,7 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 // FUNCTIONS
 
 // Returns facts about a report.
-const getReportFacts = async (report) => {
+const getActFacts = async (report) => {
   // Initialize the facts.
   const facts = {
     ruleEngineIDs: new Set(),
@@ -136,18 +137,23 @@ exports.response = async (args) => {
       message: error
     };
   }
-  // Otherwise, i.e. if it succeeded, get facts about it.
-  const reportFacts = await getReportFacts(report);
+  // Otherwise, i.e. if it succeeded, get facts from its test acts.
+  const actFacts = await getActFacts(report);
+  const {issueIDs, reporterIDs, ruleEngineIDs, violators} = actFacts;
+  // Get global facts about the report.
+  const reportFacts = await getReportFacts(timeStamp, jobID);
+  // Delete the unneeded ones.
+  delete reportFacts['URLs for more details'];
   // Create a response body.
   const content = {
-    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for a summary of one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This summary does not repeat those facts.',
+    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for facts about one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This summary does not repeat those facts.',
     'tool collection name': 'Kilotest',
     'tool name': 'summarizeOneReport',
     request: {
-      description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting details about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.',
+      description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting facts about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.',
       method: 'GET',
       URLs: {
-        'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
+        'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
         'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
@@ -164,15 +170,16 @@ exports.response = async (args) => {
       'date and time': new Date().toISOString()
     },
     'response content': {
-      'rule engines that tried to test the page': getSortedRuleEngineIDs(reportFacts.ruleEngineIDs)
+      ... reportFacts,
+      'rule engines that tried to test the page': getSortedRuleEngineIDs(ruleEngineIDs)
       .map(id => getRuleEngineFacts(id)),
       'rule engines that could not test the page': getPreventionFacts(report),
       'names of rule engines that reported rule violations': Array
-      .from(reportFacts.reporterIDs)
+      .from(reporterIDs)
       .map(id => getRuleEngineFacts(id).name)
       .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
-      'number of elements reported as violators': reportFacts.violators.size,
-      'issues revealed': getSortedIssueIDs(reportFacts.issueIDs)
+      'number of elements reported as violators': violators.size,
+      'issues revealed': getSortedIssueIDs(issueIDs)
       .map(id => getIssueFacts(id, timeStamp, jobID))
     }
   };

@@ -351,9 +351,9 @@ const requestHandler = async (request, response) => {
         response.end(JSON.stringify(responseData));
       }
       // Otherwise, if the service is provision of a report summary:
-      else if (service === 'reportSummary') {
+      else if (service === 'reportFacts') {
         // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'api', 'reportSummary'))
+        const responseData = await require(path.join(__dirname, 'api', 'reportFacts'))
         .response(specs);
         // Send them.
         setHeaders('application/json', null, 'high');

@@ -66,7 +66,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/TestRecFormResponse'
 
-  /api/reportSummary/{timeStamp}/{jobID}:
+  /api/reportFacts/{timeStamp}/{jobID}:
     get:
       operationId: summarizeOneReport
       summary: Summarize one report
@@ -95,7 +95,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportSummaryResponse'
+                $ref: '#/components/schemas/ReportFactsResponse'
         '404':
           description: No report with the specified identifier is available
 
@@ -522,7 +522,7 @@ components:
         URLs for more details:
           $ref: '#/components/schemas/NextTierURLs'
 
-    ReportSummaryResponse:
+    ReportFactsResponse:
       allOf:
         - $ref: '#/components/schemas/SharedFacts'
         - type: object
@@ -530,24 +530,26 @@ components:
             response content:
               type: object
               properties:
-                rule engines that tried to test the page:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/RuleEngineInfo'
-                rule engines that could not test the page:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/RuleEngineFailure'
-                names of rule engines that reported rule violations:
-                  type: array
-                  items:
-                    type: string
-                number of elements reported as violators:
-                  type: integer
-                issues revealed:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/IssueSummary'
+                allOf:
+                  - $ref: '#/components/schemas/ReportListItem'
+                  - rule engines that tried to test the page:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/RuleEngineInfo'
+                  - rule engines that could not test the page:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/RuleEngineFailure'
+                  - names of rule engines that reported rule violations:
+                      type: array
+                      items:
+                        type: string
+                  - number of elements reported as violators:
+                      type: integer
+                  - issues revealed:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/IssueSummary'
 
     HTMLElementDetail:
       type: object

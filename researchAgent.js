@@ -140,7 +140,7 @@ const requestService = async () => {
   console.log('======================\nRequest: Summarize one nonexistent report');
   [timeStamp, jobID] = ['111111T1111', 'abc'];
   method = 'GET';
-  path = `/api/reportSummary/${timeStamp}/${jobID}`;
+  path = `/api/reportFacts/${timeStamp}/${jobID}`;
   content = await submitRequest(path, method);
   if (! content.message) {
     return;
@@ -151,7 +151,7 @@ const requestService = async () => {
     return;
   }
   method = 'GET';
-  path = `/api/reportSummary/${timeStamp}/${jobID}`;
+  path = `/api/reportFacts/${timeStamp}/${jobID}`;
   content = await submitRequest(path, method);
   if (content.message || ! content.summary) {
     return;

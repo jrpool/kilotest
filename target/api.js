@@ -87,7 +87,7 @@ exports.response = async args => {
           'number of issues reported': issueCount,
           'number of HTML elements reported as exhibiting issues': violatorCount,
           'URLs for getting data about the reported issues': {
-            'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
+            'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
             'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
           },
           'URL for getting the full technical report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`

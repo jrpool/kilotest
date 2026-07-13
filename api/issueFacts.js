@@ -1,6 +1,6 @@
 /*
-  api.js
-  Responds to the report-issue request.
+  issueFacts.js
+  Responds to the issueFacts API request.
 */
 
 // IMPORTS
@@ -142,7 +142,7 @@ exports.response = async args => {
         identifier: 'summarizeOneReport',
         description: 'Summarize one report.',
         URLs: {
-          'for you': `${thisHost}/api/reportSummary/${timeStamp}/${jobID}`,
+          'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
           'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
         }
       }

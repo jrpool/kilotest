@@ -90,7 +90,7 @@ The implementation is currently in an alpha phase and offers these tools:
 - `summarizeOneReport`
   - method: `GET`
   - purpose: summarize one report
-  - path: `/api/reportSummary/{timeStamp}/{jobID}`
+  - path: `/api/reportFacts/{timeStamp}/{jobID}`
   - parameters
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier

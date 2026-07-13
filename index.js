@@ -731,7 +731,8 @@ const requestHandler = async (request, response) => {
             if (await isReportAvailable(what, url)) {
               // Report this.
               responseData = {
-                warning: 'A report on the page is already available'
+                status: 'warning',
+                message: 'A report on the page is already available'
               }
             }
             // Otherwise, i.e. if no report on the page is available:

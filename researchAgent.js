@@ -142,7 +142,7 @@ const requestService = async () => {
   method = 'GET';
   path = `/api/reportSummary/${timeStamp}/${jobID}`;
   content = await submitRequest(path, method);
-  if (! content.error) {
+  if (! content.message) {
     return;
   }
   console.log('======================\nRequest: Summarize one report');
@@ -153,7 +153,7 @@ const requestService = async () => {
   method = 'GET';
   path = `/api/reportSummary/${timeStamp}/${jobID}`;
   content = await submitRequest(path, method);
-  if (content.error || ! content.summary) {
+  if (content.message || ! content.summary) {
     return;
   }
   console.log('======================\nRequest: Describe one issue from one report');
@@ -170,7 +170,7 @@ const requestService = async () => {
     method = 'GET';
     path = `/api/reportIssue/${issueID}/${timeStamp}/${jobID}`;
     content = await submitRequest(path, method);
-    if (content.error) {
+    if (content.message) {
       return;
     }
   }
@@ -182,7 +182,7 @@ const requestService = async () => {
     'URL of the web page': 'https://oaaestuh.osneth',
     'reason for testing the web page': 'Just testing'
   });
-  if (content.error) {
+  if (content.message) {
     return;
   }
   console.log('======================\nRequest: Make an illicit test recommendation');
@@ -191,7 +191,7 @@ const requestService = async () => {
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'
   });
-  if (! content.warning) {
+  if (! content.message) {
     return;
   }
   console.log('======================\nRequest: Results');

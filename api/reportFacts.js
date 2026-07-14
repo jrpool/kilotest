@@ -153,11 +153,11 @@ exports.response = async (args) => {
   delete reportFacts['URLs for more details'];
   // Create a response body.
   const content = {
-    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for facts about one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This summary does not repeat those facts.',
+    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for facts about one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This document provides more detailed facts about one of the listed reports.',
     'tool collection name': 'Kilotest',
     'tool name': 'summarizeOneReport',
     request: {
-      description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting facts about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.',
+      description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and should provide URLs for getting more detailed facts about any of the issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.',
       method: 'GET',
       URLs: {
         'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,

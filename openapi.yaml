@@ -70,7 +70,7 @@ paths:
     get:
       operationId: summarizeOneReport
       summary: Summarize one report
-      description: Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and provide URLs for getting details about issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.
+      description: Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and should provide URLs for getting more detailed facts about any of the issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.
       parameters:
         - name: timeStamp
           in: path
@@ -532,6 +532,8 @@ components:
                 - $ref: '#/components/schemas/ReportListItem'
                 - type: object
                   properties:
+                    identifier:
+                      type: string
                     rule engines that tried to test the page:
                       type: array
                       items:

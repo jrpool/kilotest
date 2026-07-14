@@ -128,13 +128,12 @@ exports.response = async (args) => {
   }
   // Otherwise, i.e. if the report is not hidden, get it.
   const report = await getReport(timeStamp, jobID);
-  const {error} = report;
   // If this failed:
-  if (error) {
+  if (report.error) {
     // Return why.
     return {
       status: 'error',
-      message: error
+      message: report.error
     };
   }
   // Otherwise, i.e. if it succeeded, get facts from its test acts.
@@ -142,7 +141,15 @@ exports.response = async (args) => {
   const {issueIDs, reporterIDs, ruleEngineIDs, violators} = actFacts;
   // Get global facts about the report.
   const reportFacts = await getReportFacts(timeStamp, jobID);
-  // Delete the unneeded ones.
+  // If this failed:
+  if (reportFacts.error) {
+    // Return why.
+    return {
+      status: 'error',
+      message: reportFacts.error
+    };
+  }
+  // Otherwise, i.e. if it succeeded, delete the unneeded facts.
   delete reportFacts['URLs for more details'];
   // Create a response body.
   const content = {

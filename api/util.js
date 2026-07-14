@@ -25,18 +25,18 @@ exports.getReportFacts = async (timeStamp, jobID) => {
   if (log.error) {
     return log;
   }
-  const {jobName, superseded, url, what} = log;
+  const {superseded, url, what} = log;
   const reportSize = await getReportSize(timeStamp, jobID);
   // If its report does not exist:
   if (! reportSize) {
     // Return this.
     return {
-      error: `Report ${jobName} does not exist.`
+      error: `Report ${timeStamp}-${jobID} does not exist.`
     };
   }
   // Otherwise, i.e. if its report exists, get facts about it.
   const facts = {
-    identifier: jobName,
+    identifier: `${timeStamp}-${jobID}`,
     'creation date and time': getDateTime(timeStamp),
     'days since the creation date': getAgoDays(timeStamp),
     'tested web page': {

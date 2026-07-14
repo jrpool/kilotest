@@ -97,8 +97,7 @@ const requestService = async () => {
   let method;
   let path;
   let content;
-  let reports;
-  let report;
+  let reportListItems;
   let timeStamp;
   let jobID;
   let description;
@@ -117,15 +116,15 @@ const requestService = async () => {
   method = 'GET';
   path = '/api/reportList';
   content = await submitRequest(path, method);
-  reports = content?.['response content'] ?? [];
-  if (content.error || ! Array.isArray(reports) || ! reports.length) {
+  reportListItems = content?.['response content'] ?? [];
+  if (content.error || ! Array.isArray(reportListItems) || ! reportListItems.length) {
     return;
   }
   console.log('======================\nRequest: Summarize matching reports');
   // Choose one available report at random.
-  report = reports[Math.floor(Math.random() * reports.length)];
-  ({description, URL: url} = report?.['tested web page'] ?? ['', '']);
-  if (! (description && url)) {
+  const reportListItem = reportListItems[Math.floor(Math.random() * reportListItems.length)];
+  ({description, URL: url} = reportListItem?.['tested web page'] ?? ['', '']);
+  if (! (description && URL)) {
     return;
   }
   method = 'POST';
@@ -146,14 +145,15 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest: Summarize one report');
-  [timeStamp, jobID] = report.identifier?.split('-') ?? ['', ''];
+  [timeStamp, jobID] = reportListItem.identifier?.split('-') ?? ['', ''];
   if (! (timeStamp && jobID)) {
     return;
   }
   method = 'GET';
   path = `/api/reportFacts/${timeStamp}/${jobID}`;
   content = await submitRequest(path, method);
-  if (content.message || ! content.summary) {
+  const {message, summary} = content;
+  if (message || ! (summary && content['response content']['tested web page'].URL)) {
     return;
   }
   console.log('======================\nRequest: Describe one issue from one report');

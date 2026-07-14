@@ -528,25 +528,25 @@ components:
         - type: object
           properties:
             response content:
-              type: object
-              properties:
-                allOf:
-                  - $ref: '#/components/schemas/ReportListItem'
-                  - rule engines that tried to test the page:
+              allOf:
+                - $ref: '#/components/schemas/ReportListItem'
+                - type: object
+                  properties:
+                    rule engines that tried to test the page:
                       type: array
                       items:
                         $ref: '#/components/schemas/RuleEngineInfo'
-                  - rule engines that could not test the page:
+                    rule engines that could not test the page:
                       type: array
                       items:
                         $ref: '#/components/schemas/RuleEngineFailure'
-                  - names of rule engines that reported rule violations:
+                    names of rule engines that reported rule violations:
                       type: array
                       items:
                         type: string
-                  - number of elements reported as violators:
+                    number of elements reported as violators:
                       type: integer
-                  - issues revealed:
+                    issues revealed:
                       type: array
                       items:
                         $ref: '#/components/schemas/IssueSummary'

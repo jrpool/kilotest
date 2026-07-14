@@ -87,8 +87,8 @@ exports.response = async args => {
           'number of issues reported': issueCount,
           'number of HTML elements reported as exhibiting issues': violatorCount,
           'URLs for getting data about the reported issues': {
-            'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
-            'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+            'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
+            'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
           },
           'URL for getting the full technical report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
         });
@@ -111,8 +111,8 @@ exports.response = async args => {
         hostname
       },
       URLs: {
-        'for you': `${thisHost}/api/target`,
-        'for humans': 'none'
+        'for JSON output': `${thisHost}/api/target`,
+        'for HTML output': 'none'
       },
       'closest ancestor request': null
     },

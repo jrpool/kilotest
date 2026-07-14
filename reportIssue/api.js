@@ -135,15 +135,15 @@ exports.response = async args => {
       },
       method: 'GET',
       URLs: {
-        'for you': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
-        'for humans': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+        'for JSON output': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+        'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
         identifier: 'summarizeOneReport',
         description: 'Summarize one report.',
         URLs: {
-          'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
-          'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+          'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
+          'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
         }
       }
     },

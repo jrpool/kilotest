@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: Kilotest API
-  description: Kilotest tests web pages for front-end quality (i.e. accessibility, usability, and standards conformity) using an ensemble of ten independent rule engines that employ rule-based and machine-learning-based methods. This API enables its consumers to recommend web pages for testing, discover available test reports, and retrieve data from reports. Each report describes results of one job that tested one web page. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
-  version: 1.0.0
+  description: Kilotest runs jobs that test web pages for front-end quality (i.e. accessibility, usability, and standards conformity). The testing is performed by an ensemble of ten independent rule engines that employ rule-based and machine-learning-based methods. Each job tests one page and produces a report containing the test results. With this API you can recommend web pages for testing, discover available reports, and incrementally retrieve facts from reports. The incremental retrieval proceeds across 4 levels from (1) what reports are available to (2) what issues were reported in one report to (3) what elements violated one issue to (4) what diagnoses rule engines gave for one violation. For knowledge about Kilotest and ensemble testing, visit https://kilotest.com.
+  version: 0.1.0
   contact:
     name: Kilotest
     url: https://kilotest.com
@@ -13,6 +13,60 @@ servers:
     description: Kilotest production server
 
 paths:
+
+# Current paths.
+
+  /api/reportList:
+    get:
+      operationId: listAllAvailableReports
+      summary: List all available reports
+      description: For each available report, summarize facts about it and provide URLs for next-level retrieval of detailed facts.
+      responses:
+        '200':
+          description: List of all available reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportListResponse'
+
+  /api/reportFacts/{timeStamp}/{jobID}:
+    get:
+      operationId: summarizeOneReport
+      summary: Summarize one report
+      description: Describe briefly the job, the rule engines that tested the page, and the issues reported in the report and provide URLs for next-level retrieval of detailed facts. The timeStamp and jobID parameters jointly identify the report and were obtained from the response to a listAllAvailableReports operation.
+      parameters:
+        - name: timeStamp
+          description: timeStamp component of the report identifier, in the format YYMMDDTHHmm.
+          examples:
+            - 261023T0432
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{6}T\d{4}$'
+            examples:
+              - 260503T0432
+        - name: jobID
+          in: path
+          required: true
+          description: Job identifier component of the report identifier (e.g., xx0).
+          schema:
+            type: string
+            examples:
+              - xx0
+              - 58r
+      responses:
+        '200':
+          description: Summary of the specified report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportFactsResponse'
+        '404':
+          description: No report with the specified identifier is available
+
+# Provisional paths.
+
   /api/target:
     post:
       operationId: summarizeQualityOfMatchingWebPages
@@ -33,19 +87,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/TargetsResponse'
 
-  /api/reportList:
-    get:
-      operationId: listAllAvailableReports
-      summary: List all available reports
-      description: List all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standards conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
-      responses:
-        '200':
-          description: List of all available reports
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportListResponse'
-
   /api/testRecForm:
     post:
       operationId: recommendQualityTestingOfOneWebPage
@@ -65,39 +106,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TestRecFormResponse'
-
-  /api/reportFacts/{timeStamp}/{jobID}:
-    get:
-      operationId: summarizeOneReport
-      summary: Summarize one report
-      description: Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and should provide URLs for getting more detailed facts about any of the issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.
-      parameters:
-        - name: timeStamp
-          in: path
-          required: true
-          description: timeStamp component of the report identifier, in the format YYMMDDTHHMM (e.g., 260503T0432).
-          schema:
-            type: string
-            pattern: '^\d{6}T\d{4}$'
-            examples:
-              - 260503T0432
-        - name: jobID
-          in: path
-          required: true
-          description: Job identifier component of the report identifier (e.g., xx0).
-          schema:
-            type: string
-            examples:
-              - xx0
-      responses:
-        '200':
-          description: Summary of the specified report
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportFactsResponse'
-        '404':
-          description: No report with the specified identifier is available
 
   /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
     get:
@@ -140,6 +148,229 @@ paths:
 components:
   schemas:
 
+# Current schemas (in alphabetical order).
+
+    IssueSummary:
+      type: object
+      description: Facts about an issue reported in a report.
+      properties:
+        identifier:
+          type: string
+          examples:
+            - imageNoText
+        summary:
+          type: string
+          examples:
+            - description list misordered
+        impact on a user:
+          type: string
+          examples:
+            - Keyboard-only user cannot choose an option
+        priority:
+          type: string
+          description: Classification of the priority of the issue based on Testilo weights
+          enum:
+            - lowest
+            - low
+            - high
+            - highest
+        URLs for more details:
+          $ref: '#/components/schemas/NextLevelURLs'
+
+    NextLevelURLs:
+      type: object
+      description: URLs for retrieving the next level of detailed facts.
+      properties:
+        for JSON output:
+          type: string
+          description: URL in the API for JSON output.
+          format: uri
+        for HTML output:
+          type: string
+          description: URL in the web UI for HTML output.
+          format: uri
+
+    ReportFactsResponse:
+      allOf:
+        - $ref: '#/components/schemas/SharedFacts'
+        - type: object
+          description: Facts about a report.
+          properties:
+            response content:
+              description: Summary and detailed facts about a report.
+              allOf:
+                - $ref: '#/components/schemas/ReportListItem'
+                  description: Summary facts about a report.
+                - type: object
+                  description: Detailed facts about a report.
+                  properties:
+                    identifier:
+                      type: string
+                    rule engines that tried to test the page:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/RuleEngineFacts'
+                    rule engines that could not test the page:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/RuleEngineFailure'
+                    names of rule engines that reported rule violations:
+                      type: array
+                      items:
+                        type: string
+                    number of elements reported as violators:
+                      type: integer
+                    issues revealed:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/IssueSummary'
+
+    ReportListItem:
+      type: object
+      description: Summary facts about a report.
+      properties:
+        identifier:
+          type: string
+          examples:
+            - 261104T1659-029
+        creation date and time:
+          type: string
+          format: date-time
+        days since the creation date:
+          type: integer
+        tested web page:
+          type: object
+          properties:
+            description:
+              type: string
+            URL:
+              type: string
+              format: uri
+        whether a later report about the same page exists:
+          type: boolean
+          description: If true, a more recent report about this page is available. If you want the latest results, use that report instead.
+        URLs for more details:
+          $ref: '#/components/schemas/NextLevelURLs'
+        size of the report in bytes:
+          type: integer
+        URL to get the entire report as machine-oriented JSON:
+          type: string
+          format: uri
+
+    ReportListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SharedFacts'
+        - type: object
+          description: Summary facts about all available reports.
+          properties:
+            response content:
+              type: array
+              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Whether two reports are about the same page is determined by the page descriptions, not page URLs.
+              items:
+                $ref: '#/components/schemas/ReportListItem'
+
+    RuleEngineFacts:
+      type: object
+      description: Facts about a rule engine in the Kilotest ensemble.
+      properties:
+        identifier:
+          type: string
+          description: Short programmatic identifier for the rule engine.
+          examples:
+            - alfa
+        name:
+          type: string
+          description: Display name of the rule engine.
+          examples:
+            - Alfa
+        sponsor:
+          type: string
+          description: Organization that created, initially sponsored, or now sponsors the rule engine.
+          examples:
+            - Siteimprove
+
+    RuleEngineFailure:
+      type: object
+      description: Facts about the inability of a rule engine to complete its testing in a job.
+      properties:
+        name:
+          type: string
+          description: Display name of the rule engine.
+          examples:
+            - WAVE
+        reason for failure:
+          type: string
+          examples:
+            - Not enough credits.
+
+    SharedFacts:
+      type: object
+      description: Response specifications shared by all paths.
+      properties:
+        summary:
+          type: string
+          description: Natural-language facts about the request, the response, and Kilotest.
+        tool collection name:
+          type: string
+          description: The name of the collection of MCP tools to which this API connects consumers.
+          examples:
+            - Kilotest
+        tool name:
+          type: string
+          examples:
+            - listAllAvailableReports
+        request:
+          type: object
+          description: Properties of the request that are included in the response.
+          properties:
+            description:
+              examples:
+                - For each available report, summarize facts about it and provide URLs for next-level retrieval of detailed facts.
+              type: string
+            method:
+              type: string
+              enum:
+                - GET
+                - POST
+            payload:
+              type: object
+              description: The request payload, if method is POST, or otherwise omitted.
+            URLs:
+              type: object
+              properties:
+                'for JSON output':
+                  type: string
+                'for HTML output':
+                  type: string
+            closest ancestor request:
+              oneOf:
+                - type: 'null'
+                - type: object
+                  properties:
+                    'tool name':
+                      type: string
+                    description:
+                      type: string
+                    URLs:
+                      type: object
+                      properties:
+                        'for JSON output':
+                          type: string
+                        'for HTML output':
+                          type: string
+        response metadata:
+          type: object
+          properties:
+            identifier:
+              type: string
+              description: Unique identifier for this response instance.
+            date and time:
+              type: string
+              description: UTC date and time when the response was generated, in ISO 8601 format.
+              format: date-time
+
+# Provisional schemas (in alphabetical order).
+
     CommonResponseFields:
       type: object
       properties:
@@ -177,9 +408,9 @@ components:
             URLs:
               type: object
               properties:
-                'for you':
+                'for JSON output':
                   type: string
-                'for humans':
+                'for HTML output':
                   type: string
             closest ancestor request:
               oneOf:
@@ -193,70 +424,9 @@ components:
                     URLs:
                       type: object
                       properties:
-                        'for you':
+                        'for JSON output':
                           type: string
-                        'for humans':
-                          type: string
-        response metadata:
-          type: object
-          properties:
-            identifier:
-              type: string
-              description: Unique identifier for this response instance.
-            date and time:
-              type: string
-              description: UTC date and time when the response was generated, in ISO 8601 format.
-              format: date-time
-
-    SharedFacts:
-      type: object
-      properties:
-        summary:
-          type: string
-          description: Natural-language facts about the request, the response, and Kilotest.
-        tool collection name:
-          type: string
-          examples:
-            - Kilotest
-        tool name:
-          type: string
-          examples:
-            - listAllAvailableReports
-        request:
-          type: object
-          properties:
-            description:
-              type: string
-            method:
-              type: string
-              enum:
-                - GET
-                - POST
-            payload:
-              type: object
-              description: The request payload, if method is POST, or otherwise omitted.
-            URLs:
-              type: object
-              properties:
-                'for you':
-                  type: string
-                'for humans':
-                  type: string
-            closest ancestor request:
-              oneOf:
-                - type: 'null'
-                - type: object
-                  properties:
-                    'tool name':
-                      type: string
-                    description:
-                      type: string
-                    URLs:
-                      type: object
-                      properties:
-                        'for you':
-                          type: string
-                        'for humans':
+                        'for HTML output':
                           type: string
         response metadata:
           type: object
@@ -285,39 +455,6 @@ components:
     TestRecFormResponse:
       $ref: '#/components/schemas/CommonResponseFields'
 
-    RuleEngineInfo:
-      type: object
-      description: A rule engine in the Kilotest ensemble.
-      properties:
-        identifier:
-          type: string
-          description: Short programmatic identifier for the rule engine.
-          examples:
-            - alfa
-        name:
-          type: string
-          description: Display name of the rule engine.
-          examples:
-            - Alfa
-        sponsor:
-          type: string
-          description: Organization that created, initially sponsored, or now sponsors the rule engine.
-          examples:
-            - Siteimprove
-
-    RuleEngineFailure:
-      type: object
-      description: A rule engine that was unable to complete testing of the page.
-      properties:
-        name:
-          type: string
-          examples:
-            - WAVE
-        reason for failure:
-          type: string
-          examples:
-            - Not enough credits.
-
     RuleEnginesSummary:
       type: object
       description: Count and names of a set of rule engines.
@@ -328,19 +465,6 @@ components:
           type: array
           items:
             type: string
-
-    NextTierURLs:
-      type: object
-      description: URLs for retrieving the next level of detail.
-      properties:
-        for you:
-          type: string
-          format: uri
-          description: URL for an LLM to request the next tier of detail.
-        for humans:
-          type: string
-          format: uri
-          description: URL for a human to view the next tier of detail.
 
     TargetsItem:
       type: object
@@ -377,40 +501,8 @@ components:
         rule engines that reported issues:
           $ref: '#/components/schemas/RuleEnginesSummary'
         URLs for getting data about the reported issues:
-          $ref: '#/components/schemas/NextTierURLs'
+          $ref: '#/components/schemas/NextLevelURLs'
         URL for getting the full technical report as JSON:
-          type: string
-          format: uri
-
-    ReportListItem:
-      type: object
-      description: Summary data about a single available report.
-      properties:
-        identifier:
-          type: string
-          examples:
-            - 260504T1659-029
-        creation date and time:
-          type: string
-          format: date-time
-        days since the creation date:
-          type: integer
-        tested web page:
-          type: object
-          properties:
-            description:
-              type: string
-            URL:
-              type: string
-              format: uri
-        whether a later report about the same page exists:
-          type: boolean
-          description: If true, a more recent report about this page is available. If you want the latest results, use that report instead.
-        URLs for more details:
-          $ref: '#/components/schemas/NextTierURLs'
-        size of the report in bytes:
-          type: integer
-        URL to get the entire report as machine-oriented JSON:
           type: string
           format: uri
 
@@ -423,17 +515,6 @@ components:
         hostname:
           type: string
           description: All or part of the hostname of the web page. The hostname omits the scheme and the path.
-
-    ReportListResponse:
-      allOf:
-        - $ref: '#/components/schemas/SharedFacts'
-        - type: object
-          properties:
-            response content:
-              type: array
-              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Whether two reports are about the same page is determined by the page descriptions, not page URLs.
-              items:
-                $ref: '#/components/schemas/ReportListItem'
 
     TargetsResponse:
       allOf:
@@ -481,7 +562,7 @@ components:
         number of HTML elements reported as exhibiting the issue:
           type: integer
         URLs for details about the issue on the page:
-          $ref: '#/components/schemas/NextTierURLs'
+          $ref: '#/components/schemas/NextLevelURLs'
 
     IssuesByPriority:
       type: object
@@ -502,56 +583,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IssueEntry'
-
-    IssueSummary:
-      type: object
-      properties:
-        identifier:
-          type: string
-        summary:
-          type: string
-        impact on a user:
-          type: string
-        priority:
-          type: string
-          enum:
-            - lowest
-            - low
-            - high
-            - highest
-        URLs for more details:
-          $ref: '#/components/schemas/NextTierURLs'
-
-    ReportFactsResponse:
-      allOf:
-        - $ref: '#/components/schemas/SharedFacts'
-        - type: object
-          properties:
-            response content:
-              allOf:
-                - $ref: '#/components/schemas/ReportListItem'
-                - type: object
-                  properties:
-                    identifier:
-                      type: string
-                    rule engines that tried to test the page:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/RuleEngineInfo'
-                    rule engines that could not test the page:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/RuleEngineFailure'
-                    names of rule engines that reported rule violations:
-                      type: array
-                      items:
-                        type: string
-                    number of elements reported as violators:
-                      type: integer
-                    issues revealed:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/IssueSummary'
 
     HTMLElementDetail:
       type: object
@@ -618,7 +649,7 @@ components:
             rule engines that tried to test the page:
               type: array
               items:
-                $ref: '#/components/schemas/RuleEngineInfo'
+                $ref: '#/components/schemas/RuleEngineFacts'
             rule engines that were unable to test the page:
               type: array
               items:

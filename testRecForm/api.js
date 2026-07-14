@@ -41,8 +41,8 @@ exports.response = async (what, url, why) => {
         'reason for testing the web page': why
       },
       URLs: {
-        'for you': `${thisHost}/api/testRecForm`,
-        'for humans': `${thisHost}/testRecForm.html`
+        'for JSON output': `${thisHost}/api/testRecForm`,
+        'for HTML output': `${thisHost}/testRecForm.html`
       },
       'closest ancestor request': null
     },

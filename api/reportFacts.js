@@ -109,8 +109,8 @@ const getIssueFacts = (issueID, timeStamp, jobID) => {
     'impact on a user': why,
     'priority': ['lowest', 'low', 'high', 'highest'][weight - 1],
     'URLs for more details': {
-      'for you': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
-      'for humans': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+      'for JSON output': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+      'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
     }
   };
 };
@@ -160,15 +160,15 @@ exports.response = async (args) => {
       description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and should provide URLs for getting more detailed facts about any of the issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.',
       method: 'GET',
       URLs: {
-        'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
-        'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+        'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
+        'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
         'tool name': 'listAllAvailableReports',
         description: 'List all available reports.',
         URLs: {
-          'for you': `${thisHost}/api/reportList`,
-          'for humans': `${thisHost}/targets.html`
+          'for JSON output': `${thisHost}/api/reportList`,
+          'for HTML output': `${thisHost}/targets.html`
         }
       }
     },

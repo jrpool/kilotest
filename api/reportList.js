@@ -50,8 +50,8 @@ exports.response = async () => {
       description: 'List all available reports. For each report, the list should identify which page was tested and when and provide URLs to begin incremental retrieval of the test results from the report.',
       method: 'GET',
       URLs: {
-        'for you': `${thisHost}/api/reportList`,
-        'for humans': `${thisHost}/targets.html`
+        'for JSON output': `${thisHost}/api/reportList`,
+        'for HTML output': `${thisHost}/targets.html`
       },
       'closest ancestor request': null
     },

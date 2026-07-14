@@ -45,8 +45,8 @@ exports.getReportFacts = async (timeStamp, jobID) => {
     },
     'whether a later report about the same page exists': !! superseded,
     'URLs for more details': {
-      'for you': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
-      'for humans': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
+      'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     'size of the report in bytes': reportSize,
     'URL to get the entire report as machine-oriented JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`

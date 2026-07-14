@@ -1,6 +1,65 @@
 /*
   mcp.js
   Handles MCP (Model Context Protocol) requests for Kilotest tools.
+  Note: This file can be augmented with more comments:
+
+[mcp.js](cci:7://file:///Users/pool/Documents/Topics/repos/a11yTesting/kilotest/mcp.js:0:0-0:0) already has two of the description levels that [openapi.yaml](cci:7://file:///Users/pool/Documents/Topics/repos/a11yTesting/kilotest/openapi.yaml:0:0-0:0) uses, and it can add two more. Here's the comparison:
+
+## Already present in [mcp.js](cci:7://file:///Users/pool/Documents/Topics/repos/a11yTesting/kilotest/mcp.js:0:0-0:0)
+
+- **Tool-level `description`** (analogous to OpenAPI operation `description`): Each `registerTool` call includes a `description` string — e.g., `@/Users/pool/Documents/Topics/repos/a11yTesting/kilotest/mcp.js:32`.
+- **Parameter-level `.describe()`** (analogous to OpenAPI parameter `description`): Each zod input field uses `.describe()` — e.g., `@/Users/pool/Documents/Topics/repos/a11yTesting/kilotest/mcp.js:34-35`.
+
+## Missing — but supported by the MCP SDK
+
+1. **Server-level `instructions`** (analogous to OpenAPI `info.description` at `@/Users/pool/Documents/Topics/repos/a11yTesting/kilotest/openapi.yaml:4`): The `McpServer` constructor accepts a second argument with an `instructions` property. Currently the constructor at `@/Users/pool/Documents/Topics/repos/a11yTesting/kilotest/mcp.js:28` only passes `{name, version}`. You could add:
+
+```js
+const server = new McpServer(
+  {name: 'Kilotest', version: '1.0.0'},
+  {
+    instructions: 'Kilotest runs jobs that test web pages for front-end quality (i.e. accessibility, usability, and standards conformity). ...'
+  }
+);
+```
+
+This gives the LLM context about the entire tool collection, matching what `info.description` does in OpenAPI.
+
+2. **`outputSchema` with descriptions** (analogous to OpenAPI response/schema `description` properties): The `registerTool` config supports an `outputSchema` field — a zod schema whose `.describe()` calls propagate to the JSON Schema advertised in `tools/list`. Currently [mcp.js](cci:7://file:///Users/pool/Documents/Topics/repos/a11yTesting/kilotest/mcp.js:0:0-0:0) returns raw `JSON.stringify(result)` as text content with no output schema. You could add `outputSchema` and return `structuredContent`, e.g.:
+
+```js
+server.registerTool(
+  'listAllAvailableReports',
+  {
+    description: '...',
+    inputSchema: {},
+    outputSchema: z.object({
+      summary: z.string().describe('Natural-language facts about the request, the response, and Kilotest.'),
+      // ... other fields with .describe()
+    }),
+    annotations: { ... }
+  },
+  async () => {
+    const result = await reportListAPI.response();
+    return {
+      content: [{type: 'text', text: JSON.stringify(result)}],
+      structuredContent: result
+    };
+  }
+);
+```
+
+This would mirror the rich schema-level and property-level `description` properties throughout [openapi.yaml](cci:7://file:///Users/pool/Documents/Topics/repos/a11yTesting/kilotest/openapi.yaml:0:0-0:0) (e.g., `@/Users/pool/Documents/Topics/repos/a11yTesting/kilotest/openapi.yaml:154`, `:179`, `:242`, `:269`).
+
+## Summary
+
+| OpenAPI `description` level | [mcp.js](cci:7://file:///Users/pool/Documents/Topics/repos/a11yTesting/kilotest/mcp.js:0:0-0:0) current | Can add? |
+|---|---|---|
+| `info.description` (API-level) | ❌ | ✅ via `instructions` in constructor |
+| Operation `description` | ✅ | — |
+| Parameter `description` | ✅ via `.describe()` | — |
+| Response/schema `description` | ❌ | ✅ via `outputSchema` + `.describe()` |
+| Schema property `description` | ❌ | ✅ via `outputSchema` property `.describe()` |
 */
 
 // IMPORTS
@@ -50,7 +109,7 @@ const createMCPServer = () => {
   server.registerTool(
     'listAllAvailableReports',
     {
-      description: 'Returns a list of all available Kilotest reports; each report describes the results of a job that tested one web page for front-end quality (i.e. accessibility, usability, and standards conformity).',
+      description: 'For each available report, summarize facts about it and provide URLs for next-level retrieval of detailed facts.',
       inputSchema: {},
       annotations: {
         title: 'List all available reports',
@@ -70,7 +129,7 @@ const createMCPServer = () => {
     {
       description: 'Returns a summary of a specified Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a listAllAvailableReports response.',
       inputSchema: {
-        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHMM format, e.g. 260503T0432'),
+        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format, e.g. 260503T0432'),
         jobID: z.string().describe('Job identifier, e.g. x9z')
       },
       annotations: {
@@ -92,7 +151,7 @@ const createMCPServer = () => {
       description: 'Returns data from a specified Kilotest report about one of the issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required issueID, timeStamp, and jobID parameters identify the issue and the report and are obtained from a summarizeOneReport response.',
       inputSchema: {
         issueID: z.string().describe('Issue identifier, e.g. contrastPoor'),
-        timeStamp: z.string().describe('Report timestamp in YYMMDDTHHMM format, e.g. 260503T0432'),
+        timeStamp: z.string().describe('Report timestamp in YYMMDDTHHmm format, e.g. 260503T0432'),
         jobID: z.string().describe('Job identifier, e.g. x9z')
       },
       annotations: {

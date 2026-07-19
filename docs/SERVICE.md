@@ -203,7 +203,7 @@ kilotest.com {
   }
   @allowedPOST {
     method POST
-    path /mcp /retestRec.html/* /testRec.html/* /recAction.html /reannotate.html /wcagRenew.html /api/* /tutorialComment.html
+    path /mcp /retestRec.html/* /testRec.html /recAction.html /reannotate.html /wcagRenew.html /api/* /tutorialComment.html
   }
   @allowedOPTIONS method OPTIONS
   handle @allowedOPTIONS {

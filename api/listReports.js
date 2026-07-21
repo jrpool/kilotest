@@ -1,6 +1,6 @@
 /*
   listReports.js
-  Lists all available Kilotest reports.
+  Returns a response containing a list of the available reports.
 */
 
 // IMPORTS
@@ -42,7 +42,7 @@ exports.response = async () => {
       description: 'List all available reports. For each report, the list should state which page was tested, when the job was performed, and which URL I can use for incremental retrieval of the test results from the report.',
       method: 'GET',
       URLs: {
-        'for JSON output': `${thisHost}/api/reportList`,
+        'for JSON output': `${thisHost}/api/listReports`,
         'for HTML output': `${thisHost}/targets.html`
       },
       'closest ancestor request': null

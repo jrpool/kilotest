@@ -87,14 +87,17 @@ exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
   const issueClassification = issuesClassification[issueID];
   // If the issue is ignorable or is not classified:
   if (issueID === 'ignorable' || ! issueClassification) {
-    // Return this.
+    // Log and return this.
+    console.error(`Issue ${issueID} is ignorable or not classified.`);
     return {
       error: `Facts about ssue ${issueID} are not available.`
     };
   }
   const {summary = null, weight = null, why = null} = issueClassification;
   // Otherwise, i.e. if the issue is non-ignorable and classified, get its priority.
-  const priority = weight ? ['lowest', 'low', 'high', 'highest'][weight - 1] : null;
+  const priority = typeof weight === 'number'
+  ? ['lowest', 'low', 'high', 'highest'][weight - 1]
+  : null;
   // Get the basic facts about the issue.
   const facts = {
     identifier: issueID,

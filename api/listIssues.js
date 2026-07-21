@@ -1,16 +1,16 @@
 /*
   listIssues.js
-  Lists all issues in one Kilotest report.
+  Returns a response containing details about one report and a list of the issues in it.
 */
 
 // IMPORTS
 
-const {getReportFacts} = require('./util');
+const {getIssueBasics, getKilotestBasics, getReportBasics, getResponseMetadata} = require('./util');
 const {
+  getDateTime
   getNowStamp,
   getRandomString,
   getReport,
-  isHidden,
   isValidReport,
   objectSort,
   ruleEngines
@@ -82,6 +82,14 @@ const getRuleEngineFacts = ruleEngineID => {
     sponsor: ruleEngineData[1]
   };
 };
+// Returns rule engine IDs sorted by name.
+const getSortedRuleEngineIDs = ruleEngineIDSet => {
+  return Array.from(ruleEngineIDSet).sort((a, b) => {
+    const aName = ruleEngines[a][0];
+    const bName = ruleEngines[b][0];
+    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
+  });
+};
 // Returns facts about rule engines that were prevented from testing the page.
 const getPreventionFacts = report => {
   const {preventions} = report.jobData;
@@ -90,14 +98,6 @@ const getPreventionFacts = report => {
     'reason for failure': reason
   }));
   return objectSort(preventionFacts, 'name', 'alpha');
-};
-// Returns rule engine IDs sorted by name.
-const getSortedRuleEngineIDs = ruleEngineIDSet => {
-  return Array.from(ruleEngineIDSet).sort((a, b) => {
-    const aName = ruleEngines[a][0];
-    const bName = ruleEngines[b][0];
-    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
-  });
 };
 // Returns issue IDs sorted by priority and then summary.
 const getSortedIssueIDs = issueIDSet => {
@@ -133,38 +133,83 @@ const getIssueFacts = (issueID, timeStamp, jobID) => {
 // Returns a response to an API request for a summary of one report.
 exports.response = async (args) => {
   const [timeStamp, jobID] = args;
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report exists and is hidden:
-  if (reportIsHidden) {
-    // Return this.
+  // Get the basic facts about Kilotest.
+  const kilotestBasics = getKilotestBasics();
+  // Get the basic facts about the report.
+  const reportBasics = await getReportBasics(timeStamp, jobID);
+  // If this failed, the log file is invalid, or the report is hidden:
+  if (reportBasics.error) {
+    // Log and return this.
+    console.error(`Basics about report ${timeStamp}-${jobID} not obtained (${reportBasics.error})`);
     return {
       status: 'error',
-      message: 'Report not available',
+      message: `No facts about reuort ${timeStamp}-${jobID} are available.`
     };
   }
-  // Otherwise, i.e. if the report is not hidden, get it.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (report.error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: report.error
-    };
-  }
-  // Otherwise, i.e. if it succeeded, get facts from its test acts.
-  const actsFacts = await getActsFacts(report);
-  const {issueIDs, reporterIDs, ruleEngineIDs, violators} = actsFacts;
-  // Get global facts about the report.
-  const reportFacts = await getReportFacts(timeStamp, jobID);
-  // If this failed:
-  if (reportFacts.error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: reportFacts.error
-    };
-  }
+  const {strict, standard, device, browserID, executionTimeStamp} = report;
+  // Otherwise, get details about the report.
+  const reportDetails = {
+    'whether the job permitted redirection': !! strict,
+    'whether the report includes native results of rule engines': ['also', 'no'].includes(standard),
+    'whether the report includes standardized results': ['also', 'only'].includes(standard),
+    'device that was emulated by the job': device,
+    'browser type that was used by the job': browserID,
+    'when Kilotest made the job available to be performed': getDateTime(executionTimeStamp)
+  };
+  // Initialize details about the test results.
+  const ruleEngineIDs = new Set();
+  const reporterIDs = new Set();
+  const issueIDs = new Set();
+  const violatorIndexes = new Set();
+  // For each act in the report:
+  report.acts.forEach(act => {
+    // If the act is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      // Ensure its rule engine is in the result details.
+      ruleEngineIDs.add(which);
+      const instances = result?.standardResult?.instances ?? [];
+      // For each of the standard instances of the act:
+      instances.forEach(instance => {
+        const {catalogIndex, issueID} = instance;
+        const issueClassification = issuesClassification[issueID];
+        // If the instance has a non-ignorable issue, is classified, and has a valid weight:
+        if (
+          issueID
+          && issueID !== 'ignorable'
+          && issueClassification
+          && [1, 2, 3, 4].includes(issueClassification.weight)
+        ) {
+          // Ensure the issue ID is in the result details.
+          issueIDs.add(issueID);
+          // Ensure its rule engine is a reporter in the result details.
+          reporterIDs.add(which);
+          // If the instance has a catalog index:
+          if (catalogIndex) {
+            // Ensure the index of the violator is in the result details.
+            violatorIndexes.add(catalogIndex);
+          }
+        }
+      });
+    }
+  });
+  const sortedRuleEngineIDs = Array.from(ruleEngineIDs).sort((a, b) => {
+    const aName = ruleEngines[a][0];
+    const bName = ruleEngines[b][0];
+    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
+  });
+  // Get details about the test results.
+  const resultDetails = {
+    'rule engines that tried to test the page': sortedRuleEngineIDs
+    .map(id => getRuleEngineFacts(id)),
+    'rule engines that could not test the page': getPreventionFacts(report),
+    'names of rule engines that reported rule violations': Array
+    .from(reporterIDs)
+    .map(id => getRuleEngineFacts(id).name)
+    .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
+    'number of elements reported as violators': violators.size,
+    'ruleEngineIDs: Array.from(ruleEngineIDs),
+  };
   // Otherwise, i.e. if it succeeded, delete the unneeded facts.
   delete reportFacts['URLs for more details'];
   // Create a response body.
@@ -194,14 +239,6 @@ exports.response = async (args) => {
     },
     'response content': {
       ... reportFacts,
-      'rule engines that tried to test the page': getSortedRuleEngineIDs(ruleEngineIDs)
-      .map(id => getRuleEngineFacts(id)),
-      'rule engines that could not test the page': getPreventionFacts(report),
-      'names of rule engines that reported rule violations': Array
-      .from(reporterIDs)
-      .map(id => getRuleEngineFacts(id).name)
-      .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
-      'number of elements reported as violators': violators.size,
       'issues revealed': getSortedIssueIDs(issueIDs)
       .map(id => getIssueFacts(id, timeStamp, jobID))
       .filter(issueFacts => ! issueFacts.error)

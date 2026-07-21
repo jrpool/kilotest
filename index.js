@@ -342,31 +342,32 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for an API service:
     else if (pageName === 'api') {
       const [service,  ... specs] = pathTail.split('/');
-      // If the service is provision of a list of all available reports:
-      if (service === 'reportList') {
-        // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'api', 'reportList')).response(specs);
-        // Send them.
+      // If the service lists the available reports:
+      if (service === 'listReports') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'listReports'))
+        .response(specs);
+        // Send it.
         setHeaders('application/json', null, 'ultra');
-        response.end(JSON.stringify(responseData));
+        response.end(JSON.stringify(responseBody));
       }
-      // Otherwise, if the service is provision of a report summary:
-      else if (service === 'reportFacts') {
-        // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'api', 'reportFacts'))
+      // Otherwise, if the service lists the issues in a report:
+      else if (service === 'listIssues') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'reportFacts'))
         .response(specs);
         // Send them.
         setHeaders('application/json', null, 'high');
-        response.end(JSON.stringify(responseData));
+        response.end(JSON.stringify(responseBody));
       }
-      // Otherwise, if the service is the description of an issue from a report:
-      else if (service === 'reportIssue') {
-        // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'reportIssue', 'api'))
+      // Otherwise, if the service lists the violators of an issue in a report:
+      else if (service === 'listViolators') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'reportIssue', 'api'))
         .response(specs);
         // Send them.
         setHeaders('application/json', null, 'high');
-        response.end(JSON.stringify(responseData));
+        response.end(JSON.stringify(responseBody));
       }
       // Otherwise, i.e. if the service is invalid:
       else {

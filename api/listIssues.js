@@ -198,50 +198,42 @@ exports.response = async (args) => {
     const bName = ruleEngines[b][0];
     return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
   });
+  const {preventions} = report.jobData;
+  const preventionFacts = preventions?.map(([ruleEngineID, reason]) => ({
+    'name': ruleEngines[ruleEngineID][0],
+    'reason for failure': reason
+  }));
+  const sortedPreventionFacts = objectSort(preventionFacts, 'name', 'alpha');
   // Get details about the test results.
   const resultDetails = {
     'rule engines that tried to test the page': sortedRuleEngineIDs
     .map(id => getRuleEngineFacts(id)),
-    'rule engines that could not test the page': getPreventionFacts(report),
+    'rule engines that could not test the page': sortedPreventionFacts,
     'names of rule engines that reported rule violations': Array
     .from(reporterIDs)
     .map(id => getRuleEngineFacts(id).name)
     .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
-    'number of elements reported as violators': violators.size,
-    'ruleEngineIDs: Array.from(ruleEngineIDs),
+    'number of elements reported as violators': violatorIndexes.size,
+    'issues reported': Array.from(issueIDs).map(id => getIssueBasics(id, timeStamp, jobID))
   };
-  // Otherwise, i.e. if it succeeded, delete the unneeded facts.
-  delete reportFacts['URLs for more details'];
   // Create a response body.
   const content = {
-    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for a summary of facts about one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This document provides more facts about one of the listed reports.',
-    'tool collection name': 'Kilotest',
-    'tool name': 'summarizeOneReport',
+    ... kilotestBasics,
+    'tool name': 'listIssues',
     request: {
-      description: 'Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and should provide URLs for getting more detailed facts about any of the issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.',
+      description: 'Provide detailed facts about one report, including a list of the issues reported in it. For each issue, the list should state what the issue summarily is, how it tends to affect a user, which priority level it is classified as having, and which URL I can use for incremental retrieval of facts about violators (namely, elements exhibiting the issue).',
       method: 'GET',
       URLs: {
         'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
         'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
-      'closest ancestor request': {
-        'tool name': 'listAllAvailableReports',
-        description: 'List all available reports.',
-        URLs: {
-          'for JSON output': `${thisHost}/api/reportList`,
-          'for HTML output': `${thisHost}/targets.html`
-        }
-      }
+      'closest ancestor request': null
     },
-    'response metadata': {
-      identifier: `${getNowStamp()}-${getRandomString(3)}`,
-      'date and time': new Date().toISOString()
-    },
+    'response metadata': getResponseMetadata(),
     'response content': {
-      ... reportFacts,
-      'issues revealed': getSortedIssueIDs(issueIDs)
-      .map(id => getIssueFacts(id, timeStamp, jobID))
-      .filter(issueFacts => ! issueFacts.error)
+      'basics about the report': reportBasics,
+      'details about the report': reportDetails,
+      'details about the test results': resultDetails
     }
   };
   // Return it.

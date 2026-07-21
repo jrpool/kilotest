@@ -9,6 +9,8 @@ const {
   getAgoDays,
   getDateTime,
   getLog,
+  getNowStamp,
+  getRandomString,
   getReport,
   getReportSize
 } = require('../util');
@@ -20,6 +22,11 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
+// Returns uniform metadata for every response.
+exports.getResponseMetadata = () => ({
+  identifier: `${getNowStamp()}-${getRandomString(3)}`,
+  'date and time': new Date().toISOString()
+});
 // Returns the basic facts about Kilotest required in every list.
 exports.getKilotestBasics = () => ({
   'tool collection name': 'Kilotest',
@@ -33,7 +40,8 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   const log = await getLog(timeStamp, jobID, false);
   // If this failed:
   if (log.error) {
-    // Return why.
+    // Log and return why.
+    console.error(log.error);
     return log;
   }
   // Otherwise, i.e. if it succeeded but the report is hidden:
@@ -48,7 +56,8 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   const reportSize = await getReportSize(timeStamp, jobID);
   // If the  report does not exist:
   if (! reportSize) {
-    // Return this.
+    // Log and return this.
+    console.error(`Log ${timeStamp}-${jobID} is valid but its report does not exist.`);
     return {
       error: `No report ${timeStamp}-${jobID} is available.`
     };

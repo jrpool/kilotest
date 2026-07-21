@@ -1,11 +1,11 @@
 /*
-  reportList.js
-  Responds to the reportList API request.
+  listReports.js
+  Lists all available Kilotest reports.
 */
 
 // IMPORTS
 
-const {getReportFacts} = require('./util');
+const {getKilotestBasics, getReportBasics} = require('./util');
 const {
   getLogs,
   getNowStamp,
@@ -20,25 +20,25 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // Returns a response to an API request for reports.
 exports.response = async () => {
-  // Initialize an array of facts about reports.
-  const reportsFacts = [];
+  // Initialize an array of basic facts about reports.
+  const reportsBasics = [];
   // Get the available logs, with added job names.
   const availableLogs = await getLogs();
   // For each log:
   for (const availableLog of availableLogs) {
     const {jobName} = availableLog;
     const [timeStamp, jobID] = jobName.split('-');
-    // Get facts about the report.
-    const reportFacts = await getReportFacts(timeStamp, jobID);
+    // Get the basic facts about the report.
+    const reportBasics = await getReportBasics(timeStamp, jobID);
     // If this failed:
-    if (reportFacts.error) {
+    if (reportBasics.error) {
       // Report this.
-      console.error(`Failed to get facts for report ${jobName} (${reportFacts.error}).`);
+      console.error(`Failed to get facts for report ${jobName} (${reportBasics.error}).`);
     }
     // Otherwise, i.e. if it succeeded:
     else {
       // Add the facts to the array.
-      reportsFacts.push(reportFacts);
+      reportsBasics.push(reportBasics);
     }
   }
   // Create a response body.
@@ -59,7 +59,7 @@ exports.response = async () => {
       identifier: `${getNowStamp()}-${getRandomString(3)}`,
       'date and time': new Date().toISOString()
     },
-    'response content': reportsFacts
+    'response content': reportsBasics
   };
   // Return it.
   return content;

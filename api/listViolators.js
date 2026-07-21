@@ -1,6 +1,6 @@
 /*
-  issueFacts.js
-  Responds to the issueFacts API request.
+  listViolators.js
+  Lists all violators of one issue in one Kilotest report.
 */
 
 // IMPORTS
@@ -18,8 +18,8 @@ const {
 
 // FUNCTIONS
 
-// Gets facts about an issue.
-const getIssueFacts = async (timeStamp, jobID, issue) => {
+// Gets facts about an issue in a report.
+const getIssueFacts = async (issue, timeStamp, jobID) => {
   const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
   const wcagType = wcag.length === 3 ? 'guideline' : 'success criterion';
   // Get the report.
@@ -33,6 +33,7 @@ const getIssueFacts = async (timeStamp, jobID, issue) => {
       message: error
     };
   }
+  // Initialize the issue violators.
   const violatorIndexSet = new Set();
   // For each act of the report:
   acts.forEach(act => {
@@ -45,7 +46,7 @@ const getIssueFacts = async (timeStamp, jobID, issue) => {
         const {catalogIndex} = instance;
         // If its issue is the issue to be described and the instance has a catalog index:
         if (instance.issueID === issueID && catalogIndex) {
-          // Ensure that the violator is in the temporary data.
+          // Ensure that the violator is among the issue violators.
           violatorIndexSet.add(catalogIndex);
         }
       });
@@ -177,7 +178,7 @@ exports.response = async args => {
     },
     'number of HTML elements reported as exhibiting issues': violatorCount,
     'level of the issue': issueLevel,
-    'facts about the issue': await getIssueFacts(timeStamp, jobID, issue)
+    'facts about the issue': await getIssueFacts(issue, timeStamp, jobID)
   };
   return content;
 };

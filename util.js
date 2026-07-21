@@ -58,7 +58,7 @@ exports.isValidReport = report => {
   && report.acts.every(act =>
     typeof act === 'object'
     && typeof act.type === 'string'
-    && act.type === 'test' ? typeof act.which === 'string' && act.which : true
+    && act.type === 'test' ? Object.keys(tools).includes(act.which) : true
   )
   && typeof report.jobData === 'object';
 };

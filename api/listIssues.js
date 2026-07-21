@@ -1,6 +1,6 @@
 /*
-  reportFacts.js
-  Responds to the reportFacts API request.
+  listIssues.js
+  Lists all issues in one Kilotest report.
 */
 
 // IMPORTS
@@ -11,6 +11,7 @@ const {
   getRandomString,
   getReport,
   isHidden,
+  isValidReport,
   objectSort,
   ruleEngines
 } = require('../util');
@@ -22,47 +23,55 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
-// Returns facts about a report.
-const getActFacts = async (report) => {
+// Returns facts about the acts of a report.
+const getActsFacts = async (report) => {
   // Initialize the facts.
-  const facts = {
-    ruleEngineIDs: new Set(),
-    reporterIDs: new Set(),
-    issueIDs: new Set(),
-    violators: new Set()
-  };
-  // For each act in the report:
-  report.acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      // Ensure its rule engine is in the facts.
-      facts.ruleEngineIDs.add(which);
-      const instances = result?.standardResult?.instances ?? [];
-      // For each of its standard instances:
-      instances.forEach(instance => {
-        const {catalogIndex, issueID} = instance;
-        // If the instance identifies a non-ignorable issue:
-        if (issueID && issueID !== 'ignorable') {
+  const ruleEngineIDs = new Set();
+  const reporterIDs = new Set();
+  const issueIDs = new Set();
+  const violatorIndexes = new Set();
+  // If the report is valid:
+  if (isValidReport(report)) {
+    // For each act in it:
+    report.acts.forEach(act => {
+      // If the act is a test act:
+      if (act.type === 'test') {
+        const {result, which} = act;
+        // Ensure its rule engine is in the facts.
+        ruleEngineIDs.add(which);
+        const instances = result?.standardResult?.instances ?? [];
+        // For each of its standard instances:
+        instances.forEach(instance => {
+          const {catalogIndex, issueID} = instance;
           const issueClassification = issuesClassification[issueID];
-          // If the issue is classified and has a valid weight:
-          if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {
+          // If the instance has a non-ignorable issue, is classified, and has a valid weight:
+          if (
+            issueID
+            && issueID !== 'ignorable'
+            && issueClassification
+            && [1, 2, 3, 4].includes(issueClassification.weight)
+          ) {
             // Ensure the issue ID is in the facts.
-            facts.issueIDs.add(issueID);
+            issueIDs.add(issueID);
             // Ensure its rule engine is among the reporters in the facts.
-            facts.reporterIDs.add(which);
+            reporterIDs.add(which);
             // If the instance has a catalog index:
             if (catalogIndex) {
               // Ensure the violator is in the facts.
-              facts.violators.add(catalogIndex);
+              violatorIndexes.add(catalogIndex);
             }
           }
-        }
-      });
-    }
-  });
+        });
+      }
+    });
+  }
   // Return the facts.
-  return facts;
+  return {
+    ruleEngineIDs,
+    reporterIDs,
+    issueIDs,
+    violatorIndexes
+  };
 };
 // Returns facts about a rule engine.
 const getRuleEngineFacts = ruleEngineID => {
@@ -75,20 +84,22 @@ const getRuleEngineFacts = ruleEngineID => {
 };
 // Returns facts about rule engines that were prevented from testing the page.
 const getPreventionFacts = report => {
-  return objectSort(Object.entries(report.jobData.preventions).map(([ruleEngineID, reason]) => ({
-    'name': getRuleEngineFacts(ruleEngineID).name,
+  const {preventions} = report.jobData;
+  const preventionFacts = preventions.map(([ruleEngineID, reason]) => ({
+    'name': ruleEngines[ruleEngineID][0],
     'reason for failure': reason
-  })), 'name', 'alpha');
+  }));
+  return objectSort(preventionFacts, 'name', 'alpha');
 };
 // Returns rule engine IDs sorted by name.
 const getSortedRuleEngineIDs = ruleEngineIDSet => {
   return Array.from(ruleEngineIDSet).sort((a, b) => {
-    const aData = ruleEngines[a][0];
-    const bData = ruleEngines[b][0];
-    return aData.localeCompare(bData, 'en', {sensitivity: 'base'});
+    const aName = ruleEngines[a][0];
+    const bName = ruleEngines[b][0];
+    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
   });
 };
-// Returns issue IDs sorted by priority and summary.
+// Returns issue IDs sorted by priority and then summary.
 const getSortedIssueIDs = issueIDSet => {
   return Array.from(issueIDSet).sort((a, b) => {
     const aData = issuesClassification[a];
@@ -99,9 +110,14 @@ const getSortedIssueIDs = issueIDSet => {
     return aData.summary.localeCompare(bData.summary, 'en', {sensitivity: 'base'});
   });
 };
-// Get facts about an issue.
+// Returns facts about an issue in a report.
 const getIssueFacts = (issueID, timeStamp, jobID) => {
   const issueData = issuesClassification[issueID];
+  if (! issueData) {
+    return {
+      error: `Issue ${issueID} not classified`
+    };
+  }
   const {summary, weight, why} = issueData;
   return {
     identifier: issueID,
@@ -137,8 +153,8 @@ exports.response = async (args) => {
     };
   }
   // Otherwise, i.e. if it succeeded, get facts from its test acts.
-  const actFacts = await getActFacts(report);
-  const {issueIDs, reporterIDs, ruleEngineIDs, violators} = actFacts;
+  const actsFacts = await getActsFacts(report);
+  const {issueIDs, reporterIDs, ruleEngineIDs, violators} = actsFacts;
   // Get global facts about the report.
   const reportFacts = await getReportFacts(timeStamp, jobID);
   // If this failed:
@@ -153,7 +169,7 @@ exports.response = async (args) => {
   delete reportFacts['URLs for more details'];
   // Create a response body.
   const content = {
-    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for facts about one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This document provides more detailed facts about one of the listed reports.',
+    summary: 'This document fulfills a request made by a language model to a Kilotest tool. The model asked for a summary of facts about one Kilotest report. The model had previously used the listAllAvailableReports tool and had acquired from that tool basic facts about Kilotest, the ensemble testing that Kilotest performs, and the reports available from Kilotest. This document provides more facts about one of the listed reports.',
     'tool collection name': 'Kilotest',
     'tool name': 'summarizeOneReport',
     request: {
@@ -188,6 +204,7 @@ exports.response = async (args) => {
       'number of elements reported as violators': violators.size,
       'issues revealed': getSortedIssueIDs(issueIDs)
       .map(id => getIssueFacts(id, timeStamp, jobID))
+      .filter(issueFacts => ! issueFacts.error)
     }
   };
   // Return it.

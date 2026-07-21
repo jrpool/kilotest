@@ -93,14 +93,16 @@ const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   }
   catch(error) {
     console.log(error.message);
-    recordJSON = JSON.stringify({error: `Requested ${recordType} ${timeStamp}-${jobID} not found`});
+    recordJSON = JSON.stringify(
+      {error: `Requested ${recordType} ${timeStamp}-${jobID} does not exist`}
+    );
   }
   try {
     record = JSON.parse(recordJSON);
   }
   catch (error) {
     console.log(error.message);
-    record = {error: `Requested ${recordType} ${timeStamp}-${jobID} not JSON`};
+    record = {error: `Requested ${recordType} ${timeStamp}-${jobID} is not JSON`};
   }
   return record;
 };
@@ -310,11 +312,30 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
     return '';
   }
 };
+// Returns whether a log is valid.
+const isValidLog = log => {
+  const {what, url, annotated, hidden} = log;
+  if (
+    typeof what !== 'string'
+    || typeof url !== 'string'
+    || typeof annotated !== 'boolean'
+    || hidden && typeof hidden !== 'boolean'
+  ) {
+    return false;
+  }
+  return true;
+}
 // Returns a report log after conditionally annotating it.
 const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
   const log = await getRecord('log', timeStamp, jobID);
   if (annotate && ! (log.error || log.annotated)) {
     await annotateReport(ruleIDs, timeStamp, jobID);
+  }
+  if (log.error) {
+    return log;
+  }
+  if (! isValidLog(log)) {
+    return {error: `Log ${timeStamp}-${jobID} is invalid`};
   }
   return log;
 };
@@ -518,8 +539,8 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns a sorted array of the logs, with job names added, of the non-hidden reports.
-const getLogs = exports.getLogs = async () => {
+// Returns a sorted array of the logs, with added properties, of the non-hidden reports.
+const getEnhancedLogs = exports.getEnhancedLogs = async () => {
   // Initialize data on the tested targets.
   const logs = [];
   let logFileNames;
@@ -768,7 +789,7 @@ exports.getCountString = (count, singular, plural) => count === 1 ? `1 ${singula
 const minifyURL = exports.minifyURL = url => url.replace(/www\.|\/$/g, '').toLowerCase();
 // Returns whether a report about the specified page is already available.
 exports.isReportAvailable = async (what, url) => {
-  const logs = await getLogs();
+  const logs = await getEnhancedLogs();
   const whats = logs.map(log => log.what);
   const miniURLs = logs.map(log => minifyURL(log.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));

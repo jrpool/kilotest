@@ -110,7 +110,7 @@ const getIssuesSummary = async logs => {
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   // Get the logs of the latest reports on the tested targets.
-  const targetLogs = (await getLogs()).filter(log => ! log.superseded);
+  const targetLogs = (await getEnhancedLogs()).filter(log => ! log.superseded);
   // Get summary data on the issues.
   const issuesSummary = await getIssuesSummary(targetLogs);
   // If this failed:

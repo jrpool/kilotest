@@ -43,8 +43,8 @@ exports.getReportBasics = async (timeStamp, jobID) => {
       error: `No report ${timeStamp}-${jobID} is available.`
     };
   }
-  const {superseded = false, url = null, what = null} = log;
-  // Otherwise, i.e. if the report is available, get its size.
+  const {superseded = false, url, what} = log;
+  // Otherwise, i.e. if the log is valid and the report is available, get the report size.
   const reportSize = await getReportSize(timeStamp, jobID);
   // If the  report does not exist:
   if (! reportSize) {
@@ -76,14 +76,18 @@ exports.getReportBasics = async (timeStamp, jobID) => {
 // Returns the basic facts about an issue required in a list of the issues in a report.
 exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
   const issueClassification = issuesClassification[issueID];
-  if (! issueClassification) {
+  // If the issue is ignorable or is not classified:
+  if (issueID === 'ignorable' || ! issueClassification) {
+    // Return this.
     return {
-      error: `Issue ${issueID} not classified`
+      error: `Facts about ssue ${issueID} are not available.`
     };
   }
   const {summary = null, weight = null, why = null} = issueClassification;
+  // Otherwise, i.e. if the issue is non-ignorable and classified, get its priority.
   const priority = weight ? ['lowest', 'low', 'high', 'highest'][weight - 1] : null;
-  return {
+  // Get the basic facts about the issue.
+  const facts = {
     identifier: issueID,
     summary,
     'impact on a user': why,
@@ -93,6 +97,8 @@ exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
       'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
     }
   };
+  // Return them.
+  return facts;
 };
 // Returns the basic facts about a violator required in a list of the violators of an issue.
 exports.getViolatorBasics = async (catalogIndex, timeStamp, jobID) => {
@@ -103,22 +109,24 @@ exports.getViolatorBasics = async (catalogIndex, timeStamp, jobID) => {
   if (error || ! catalog) {
     // Return a failure.
     return {
-      error: error || `Report ${timeStamp}-${jobID} has no catalog`
+      error: `Facts about violators of issues in report ${timeStamp}-${jobID} are not available.`
     };
   }
   const violator = catalog[catalogIndex];
-  // Otherwise, if the specified violator is not in the catalog:
+  // Otherwise, if the report has a catalog but the specified violator is not in it:
   if (! violator) {
     return {
-      error: `Violator ${catalogIndex} not in the catalog`
+      error: `Facts about violator ${catalogIndex} in report ${timeStamp}-${jobID} are not available`
     };
   }
   const {pathID = null, startTag = null, text = null} = violator;
-  // Otherwise, i.e. if the violator is in the catalog, return basic facts about the violator.
-  return {
+  // Otherwise, i.e. if the violator is in the catalog, get the basic facts about the violator.
+  const facts = {
     identifier: String(catalogIndex),
     'start tag': startTag,
     'inner text': text,
     'XPath': pathID
   };
+  // Return them.
+  return facts;
 };

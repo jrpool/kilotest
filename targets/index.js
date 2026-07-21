@@ -70,7 +70,7 @@ const populateQuery = async query => {
   // Add a no-claimed message, if applicable, to the query.
   query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
   // Get the logs of the non-hidden reports.
-  const targetLogs = await getLogs();
+  const targetLogs = await getEnhancedLogs();
   query.which = targetLogs.length ? 'the following' : 'no';
   query.some = (targetLogs.length || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'

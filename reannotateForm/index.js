@@ -13,7 +13,7 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  const targetLogs = (await getLogs()).filter(log => ! log.superseded);
+  const targetLogs = (await getEnhancedLogs()).filter(log => ! log.superseded);
   const stillUnclassified = {};
   const reClassified = {};
   // For each target:

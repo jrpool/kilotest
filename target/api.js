@@ -27,7 +27,7 @@ exports.response = async args => {
   // Initialize an array of summaries of matching reports.
   const matchingReports = [];
   // Get the non-hidden logs.
-  const targetLogs = await getLogs();
+  const targetLogs = await getEnhancedLogs();
   // For each log:
   for (const targetLog of targetLogs) {
     const {jobName} = targetLog;

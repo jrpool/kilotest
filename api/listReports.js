@@ -23,7 +23,7 @@ exports.response = async () => {
   // Initialize an array of basic facts about reports.
   const reportsBasics = [];
   // Get the available logs, with added job names.
-  const availableLogs = await getLogs();
+  const availableLogs = await getEnhancedLogs();
   // For each log:
   for (const availableLog of availableLogs) {
     const {jobName} = availableLog;

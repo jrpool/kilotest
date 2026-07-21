@@ -16,7 +16,7 @@ exports.answer = async authCode => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get the logs of the latest reports per target.
-    const targetsData = (await getLogs()).filter(log => ! log.superseded);
+    const targetsData = (await getEnhancedLogs()).filter(log => ! log.superseded);
     // For each report:
     for (const targetData of targetsData) {
       const [timeStamp, jobID] = targetData.jobName.split('-');

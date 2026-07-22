@@ -7,12 +7,13 @@
 
 const {
   getIssueBasics,
-  getKilotestBasics,
   getReportBasics,
   getReportDetails,
   getReportIfOK,
   getResponseMetadata,
+  getResultDetails,
   getRuleEngineFacts,
+  getToolFacts,
   getViolatorBasics
 } = require('./util');
 const {
@@ -30,8 +31,8 @@ const {
 // Returns a response to an API request for a list of violators of one issue in one report.
 exports.response = async args => {
   const [issueID, timeStamp, jobID] = args;
-  // Get the basics about Kilotest.
-  const kilotestBasics = getKilotestBasics();
+  // Get facts about the tool collection.
+  const toolFacts = getToolFacts();
   // Get the basics about the report.
   const reportBasics = await getReportBasics(timeStamp, jobID);
   // Get the report or an error message.
@@ -43,7 +44,10 @@ exports.response = async args => {
   }
   // Otherwise, get details about the report.
   const reportDetails = getReportDetails(report);
-  const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
+  // Get details about the test results.
+  const resultDetails = getResultDetails(report);
+  // Get the basics about the issue.
+  const issueBasics = getIssueBasics(issueID, timeStamp, jobID);
   let issue;
   // Otherwise, i.e. if it succeeded, get the level of and the data on the issue.
   const issueLevel = [4, 3, 2, 1].find(level => {

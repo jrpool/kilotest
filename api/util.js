@@ -37,8 +37,8 @@ const getRuleEngineFacts = ruleEngineID => {
     sponsor: ruleEngineData[1] || null
   };
 };
-// Returns the basic facts about Kilotest required in every list.
-exports.getToolsBasics = () => ({
+// Returns the facts about the tool collection (Kilotest).
+exports.getToolsFacts = () => ({
   'name': 'Kilotest',
   'description': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against more than a thousand rules defined by an ensemble of ten rule engines. Testaro produces a report of the job containing standardized test results. Kilotest uses Testilo to classify the rule violations into about 300 issues and makes facts about the issues retrievable at four levels of granularity. You can start by using the listReports tool to get a list of available reports. You can then use the listIssues tool to get a list of issues in one report. You can then use the listViolators tool to get a list of elements on the tested page that exhibited one issue. You can then use the listDiagnoses tool to get a list of diagnoses of the issue on one element.',
   'URLs': {
@@ -99,8 +99,8 @@ exports.getReportDetails = report => {
   const {
     strict = null, standard = null, device = 'default', browserID = null, executionTimeStamp = null
   } = report;
-  // Get details about the report.
-  const reportDetails = {
+  // Get details about the job definition.
+  const jobDefinition = {
     'whether the job prohibited redirection': strict,
     'whether the report includes native results of rule engines': ['also', 'no'].includes(standard),
     'whether the report includes standardized results': ['also', 'only'].includes(standard),
@@ -108,12 +108,7 @@ exports.getReportDetails = report => {
     'browser type that was used by the job': browserID,
     'when Kilotest made the job available to be performed': getDateTime(executionTimeStamp)
   };
-  // Return them.
-  return reportDetails;
-};
-// Returns details about the test results of a report.
-exports.getResultDetails = report => {
-  // Initialize details about the test results.
+  // Initialize data about the test results.
   const ruleEngineIDs = new Set();
   const reporterIDs = new Set();
   const issueIDs = new Set();
@@ -123,7 +118,7 @@ exports.getResultDetails = report => {
     // If the act is a test act:
     if (act.type === 'test') {
       const {result, which} = act;
-      // Ensure its rule engine is in the result details.
+      // Ensure its rule engine is in the result data.
       ruleEngineIDs.add(which);
       const instances = result?.standardResult?.instances ?? [];
       // For each of the standard instances of the act:
@@ -137,13 +132,13 @@ exports.getResultDetails = report => {
           && issueClassification
           && [1, 2, 3, 4].includes(issueClassification.weight)
         ) {
-          // Ensure the issue ID is in the result details.
+          // Ensure the issue ID is in the result data.
           issueIDs.add(issueID);
-          // Ensure its rule engine is a reporter in the result details.
+          // Ensure its rule engine is a reporter in the result data.
           reporterIDs.add(which);
           // If the instance has a catalog index:
           if (catalogIndex) {
-            // Ensure the index of the violator is in the result details.
+            // Ensure the index of the violator is in the result data.
             violatorIndexes.add(catalogIndex);
           }
         }
@@ -161,6 +156,11 @@ exports.getResultDetails = report => {
     'reason for failure': reason
   }));
   const sortedPreventionFacts = objectSort(preventionFacts, 'name', 'alpha');
+  const weightCounts = [0, 0, 0, 0];
+  issueIDs.forEach(issueID => {
+    const issueClassification = issuesClassification[issueID];
+    weightCounts[issueClassification.weight - 1]++;
+  });
   // Get details about the test results.
   const resultDetails = {
     'rule engines that tried to test the page': sortedRuleEngineIDs
@@ -170,9 +170,32 @@ exports.getResultDetails = report => {
     .from(reporterIDs)
     .map(id => getRuleEngineFacts(id).name)
     .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
+    'counts of issues by priority': {
+      'lowest': weightCounts[0],
+      'low': weightCounts[1],
+      'high': weightCounts[2],
+      'highest': weightCounts[3]
+    },
     'number of elements reported as violators': violatorIndexes.size
   };
-  return resultDetails;
+  // Return the details about the job definition and the test results.
+  return {
+    'job definition': jobDefinitionDetails,
+    'test results': resultDetails
+  };
+};
+// Returns details about an issue in a report.
+exports.getIssueDetails = (issueID, timeStamp, jobID) => {
+  const {issueID, summary, weight, why} = issue;
+  const priority = typeof weight === 'number'
+  ? ['lowest', 'low', 'high', 'highest'][weight - 1]
+  : null;
+  return {
+    identifier: issueID,
+    summary,
+    'impact on a user': why,
+    priority
+  };
 };
 // Returns a report or an error message.
 exports.getReportIfOK = async (timeStamp, jobID, reportBasicsError) => {
@@ -190,7 +213,7 @@ exports.getReportIfOK = async (timeStamp, jobID, reportBasicsError) => {
   // Return it.
   return report;
 };
-// Returns the basic facts about an issue required in a list of the issues in a report.
+// Returns the basic facts about an issue in a report.
 exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
   const issueClassification = issuesClassification[issueID];
   // If the issue is ignorable or is not classified:
@@ -213,7 +236,7 @@ exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
     'impact on a user': why,
     priority,
     'URLs for more details': {
-      'for JSON output': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
+      'for JSON output': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
       'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
     }
   };

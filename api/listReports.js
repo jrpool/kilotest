@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getKilotestBasics, getReportBasics, getResponseMetadata} = require('./util');
+const {getReportBasics, getResponseMetadata, getToolsFacts} = require('./util');
 const {logsPath} = require('../util');
 const fs = require('fs').promises;
 
@@ -17,8 +17,8 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // Returns a response to an API request for a list of reports.
 exports.response = async () => {
-  // Get the basics about Kilotest.
-  const kilotestBasics = getKilotestBasics();
+  // Get facts about the tool collection.
+  const toolsFacts = getToolsFacts();
   // Initialize an array of basic facts about reports.
   const reportsBasics = [];
   // Get the names of the log files.
@@ -36,7 +36,7 @@ exports.response = async () => {
   }
   // Create a response body.
   const content = {
-    'tool collection': kilotestBasics,
+    'tool collection': toolsFacts,
     'tool name': 'listReports',
     request: {
       description: 'List all available reports. For each report, the list should state when the job was performed, which page was tested, and which URL I can use for incremental retrieval of the test results from the report.',

@@ -17,7 +17,7 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // Returns a response to an API request for a list of reports.
 exports.response = async () => {
-  // Get the basic facts about Kilotest.
+  // Get the basics about Kilotest.
   const kilotestBasics = getKilotestBasics();
   // Initialize an array of basic facts about reports.
   const reportsBasics = [];
@@ -26,7 +26,7 @@ exports.response = async () => {
   // For each of them:
   for (const logFileName of logFileNames) {
     const [timeStamp, jobID] = logFileName.slice(0, -5).split('-');
-    // Get the basic facts about its report.
+    // Get the basics about its report.
     const reportBasics = await getReportBasics(timeStamp, jobID);
     // If this succeeded, the log file is valid, and the report is not hidden:
     if (! reportBasics.error) {
@@ -36,10 +36,10 @@ exports.response = async () => {
   }
   // Create a response body.
   const content = {
-    ... kilotestBasics,
-    'tool name': 'listAllAvailableReports',
+    'tool collection': kilotestBasics,
+    'tool name': 'listReports',
     request: {
-      description: 'List all available reports. For each report, the list should state which page was tested, when the job was performed, and which URL I can use for incremental retrieval of the test results from the report.',
+      description: 'List all available reports. For each report, the list should state when the job was performed, which page was tested, and which URL I can use for incremental retrieval of the test results from the report.',
       method: 'GET',
       URLs: {
         'for JSON output': `${thisHost}/api/listReports`,

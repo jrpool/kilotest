@@ -1,11 +1,19 @@
 /*
   listViolators.js
-  Lists all violators of one issue in one Kilotest report.
+  Returns a response containing basics about one issue in one report and a list of its violators.
 */
 
 // IMPORTS
 
-const {getData} = require('../reportIssues/util');
+const {
+  getIssueBasics,
+  getKilotestBasics,
+  getReportBasics,
+  getReportDetails,
+  getReportIfOK,
+  getResponseMetadata,
+  getViolatorBasics
+} = require('./util');
 const {
   getDateTime,
   getNowStamp,
@@ -80,30 +88,22 @@ const getIssueFacts = async (issue, timeStamp, jobID) => {
     }))
   };
 };
-// Returns a response to a report-issue request.
+// Returns a response to an API request for a list of violators of one issue in one report.
 exports.response = async args => {
   const [issueID, timeStamp, jobID] = args;
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report is not available:
-  if (reportIsHidden) {
-    // Return this.
-    return {
-      status: 'error',
-      message: 'Report not available'
-    };
+  // Get the basics about Kilotest.
+  const kilotestBasics = getKilotestBasics();
+  // Get the basics about the report.
+  const reportBasics = await getReportBasics(timeStamp, jobID);
+  // Get the report or an error message.
+  const report = await getReportIfOK(timeStamp, jobID, reportBasics);
+  // If it is an error message:
+  if (report.status === 'error') {
+    // Return it.
+    return report;
   }
-  // Otherwise, i.e. if the report is available, get data on the report and its issues.
-  const data = await getData(timeStamp, jobID);
-  const {error, issuesData, pageData} = data;
-  // If this failed:
-  if (error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: error
-    };
-  }
-  const {what, url, daysAgo} = pageData;
+  // Otherwise, get details about the report.
+  const reportDetails = getReportDetails(report);
   const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
   let issue;
   // Otherwise, i.e. if it succeeded, get the level of and the data on the issue.

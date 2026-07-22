@@ -28,11 +28,13 @@ exports.getResponseMetadata = () => ({
   'date and time': new Date().toISOString()
 });
 // Returns the basic facts about Kilotest required in every list.
-exports.getKilotestBasics = () => ({
-  'tool collection name': 'Kilotest',
-  'tool collection description': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by performing more than a thousand tests on a page with the help of Testaro and an ensemble of ten rule engines. Kilotest analyzes the results with the help of Testilo and saves them in a report. You can interrogate Kilotest to retrieve information from the reports at four levels of granularity.',
-  'tool collection URL': process.env.DEPLOYED_KILOTEST_HOST,
-  'tool collection MCP server URL': `${thisHost}/mcp`
+exports.getToolsBasics = () => ({
+  'name': 'Kilotest',
+  'description': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against more than a thousand rules defined by an ensemble of ten rule engines. Testaro produces a report of the job containing standardized test results. Kilotest uses Testilo to classify the rule violations into about 300 issues and makes facts about the issues retrievable at four levels of granularity. You can start by using the listReports tool to get a list of available reports. You can then use the listIssues tool to get a list of issues in one report. You can then use the listViolators tool to get a list of elements on the tested page that exhibited one issue. You can then use the listDiagnoses tool to get a list of diagnoses of the issue on one element.',
+  'URLs': {
+    'for JSON output': `${thisHost}/mcp`,
+    'for HTML output': thisHost
+  }
 });
 // Returns the basic facts about a report required in a list of reports.
 exports.getReportBasics = async (timeStamp, jobID) => {
@@ -81,6 +83,39 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   };
   // Return them.
   return facts;
+};
+// Returns details about a report.
+exports.getReportDetails = report => {
+  const {
+    strict = null, standard = null, device = 'default', browserID = null, executionTimeStamp = null
+  } = report;
+  // Get details about the report.
+  const reportDetails = {
+    'whether the job prohibited redirection': strict,
+    'whether the report includes native results of rule engines': ['also', 'no'].includes(standard),
+    'whether the report includes standardized results': ['also', 'only'].includes(standard),
+    'device that was emulated by the job': device,
+    'browser type that was used by the job': browserID,
+    'when Kilotest made the job available to be performed': getDateTime(executionTimeStamp)
+  };
+  // Return them.
+  return reportDetails;
+};
+// Returns a report or an error message.
+const getReportIfOK = async (timeStamp, jobID, reportBasics) => {
+  // If the report basics were not retrievable, the log file is invalid, or the report is hidden:
+  if (reportBasics.error) {
+    // Log and return this.
+    console.error(`Basics about report ${timeStamp}-${jobID} not obtained (${reportBasics.error})`);
+    return {
+      status: 'error',
+      message: `No facts about report ${timeStamp}-${jobID} are available.`
+    };
+  }
+  // Otherwise, get the report.
+  const report = await getReport(timeStamp, jobID);
+  // Return it.
+  return report;
 };
 // Returns the basic facts about an issue required in a list of the issues in a report.
 exports.getIssueBasics = async (issueID, timeStamp, jobID) => {

@@ -12,7 +12,8 @@ const {
   getNowStamp,
   getRandomString,
   getReport,
-  getReportSize
+  getReportSize,
+  ruleEngines
 } = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
@@ -27,6 +28,15 @@ exports.getResponseMetadata = () => ({
   identifier: `${getNowStamp()}-${getRandomString(3)}`,
   'date and time': new Date().toISOString()
 });
+// Returns facts about a rule engine.
+exports.getRuleEngineFacts = ruleEngineID => {
+  const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
+  return {
+    identifier: ruleEngineID,
+    name: ruleEngineData[0] || null,
+    sponsor: ruleEngineData[1] || null
+  };
+};
 // Returns the basic facts about Kilotest required in every list.
 exports.getToolsBasics = () => ({
   'name': 'Kilotest',
@@ -102,11 +112,11 @@ exports.getReportDetails = report => {
   return reportDetails;
 };
 // Returns a report or an error message.
-const getReportIfOK = async (timeStamp, jobID, reportBasics) => {
+exports.getReportIfOK = async (timeStamp, jobID, reportBasicsError) => {
   // If the report basics were not retrievable, the log file is invalid, or the report is hidden:
-  if (reportBasics.error) {
+  if (reportBasicsError) {
     // Log and return this.
-    console.error(`Basics about report ${timeStamp}-${jobID} not obtained (${reportBasics.error})`);
+    console.error(`Basics about report ${timeStamp}-${jobID} not obtained (${reportBasicsError})`);
     return {
       status: 'error',
       message: `No facts about report ${timeStamp}-${jobID} are available.`

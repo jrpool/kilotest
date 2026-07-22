@@ -5,7 +5,14 @@
 
 // IMPORTS
 
-const {getIssueBasics, getKilotestBasics, getReportBasics, getResponseMetadata} = require('./util');
+const {
+  getIssueBasics,
+  getKilotestBasics,
+  getReportBasics,
+  getReportIfOK,
+  getResponseMetadata,
+  getRuleEngineFacts
+} = require('./util');
 const {
   getReportDetails,
   getReportIfOK,
@@ -20,15 +27,6 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
-// Returns facts about a rule engine.
-const getRuleEngineFacts = ruleEngineID => {
-  const ruleEngineData = ruleEngines[ruleEngineID];
-  return {
-    identifier: ruleEngineID,
-    name: ruleEngineData[0],
-    sponsor: ruleEngineData[1]
-  };
-};
 // Returns a response to an API request for a list of issues in one report.
 exports.response = async (args) => {
   const [timeStamp, jobID] = args;
@@ -37,7 +35,7 @@ exports.response = async (args) => {
   // Get the basics about the report.
   const reportBasics = await getReportBasics(timeStamp, jobID);
   // Get the report or an error message.
-  const report = await getReportIfOK(timeStamp, jobID, reportBasics);
+  const report = await getReportIfOK(timeStamp, jobID, reportBasics.error);
   // If it is an error message:
   if (report.status === 'error') {
     // Return it.

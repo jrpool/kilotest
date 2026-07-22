@@ -12,6 +12,7 @@ const {
   getReportDetails,
   getReportIfOK,
   getResponseMetadata,
+  getRuleEngineFacts,
   getViolatorBasics
 } = require('./util');
 const {
@@ -26,68 +27,6 @@ const {
 
 // FUNCTIONS
 
-// Gets facts about an issue in a report.
-const getIssueFacts = async (issue, timeStamp, jobID) => {
-  const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
-  const wcagType = wcag.length === 3 ? 'guideline' : 'success criterion';
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  const {acts, catalog, error} = report;
-  // If this failed:
-  if (error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: error
-    };
-  }
-  // Initialize the issue violators.
-  const violatorIndexSet = new Set();
-  // For each act of the report:
-  acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // For each standard instance of the act:
-      instances.forEach(instance => {
-        const {catalogIndex} = instance;
-        // If its issue is the issue to be described and the instance has a catalog index:
-        if (instance.issueID === issueID && catalogIndex) {
-          // Ensure that the violator is among the issue violators.
-          violatorIndexSet.add(catalogIndex);
-        }
-      });
-    }
-  });
-  return {
-    identifier: issueID,
-    summary,
-    'related WCAG 2.2 standard': {
-      layer: wcagType,
-      'numeric identifier': wcag
-    },
-    'impact on a user': why,
-    'rule engines reporting the issue': {
-      'number': reporterCount,
-      'names': reporters.map(tool => tool.toolName)
-    },
-    'number of HTML elements reported as exhibiting the issue': violatorCount,
-    'HTML elements reported as exhibiting the issue': Array
-    .from(violatorIndexSet)
-    .filter(index => catalog[index])
-    .map(index => ({
-      identifier: String(index),
-      'tag name': catalog[index].tagName,
-      'id attribute': catalog[index].id,
-      'start tag': catalog[index].startTag,
-      'inner text': catalog[index].text,
-      'inner text usable as a text fragment for linking': catalog[index].textLinkable,
-      'x, y, width, height in pixels': catalog[index].boxID.split(':'),
-      'XPath': catalog[index].pathID
-    }))
-  };
-};
 // Returns a response to an API request for a list of violators of one issue in one report.
 exports.response = async args => {
   const [issueID, timeStamp, jobID] = args;
@@ -96,7 +35,7 @@ exports.response = async args => {
   // Get the basics about the report.
   const reportBasics = await getReportBasics(timeStamp, jobID);
   // Get the report or an error message.
-  const report = await getReportIfOK(timeStamp, jobID, reportBasics);
+  const report = await getReportIfOK(timeStamp, jobID, reportBasics.error);
   // If it is an error message:
   if (report.status === 'error') {
     // Return it.

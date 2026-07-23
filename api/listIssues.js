@@ -37,10 +37,8 @@ exports.response = async (args) => {
   }
   // Otherwise, get details about the report.
   const reportDetails = getReportDetails(report);
-  // Get details about the test results.
-  const resultDetails = getResultDetails(report);
   const issuesBasics = Array
-  .from(resultDetails.issueIDs)
+  .from(reportDetails.issueIDs)
   .map(id => getIssueBasics(id, timeStamp, jobID));
   // Create a response body.
   const content = {

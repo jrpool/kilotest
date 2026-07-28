@@ -13,6 +13,7 @@ const {
   getRandomString,
   getReport,
   getReportSize,
+  objectSort,
   ruleEngines
 } = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
@@ -28,7 +29,7 @@ exports.getResponseMetadata = () => ({
   identifier: `${getNowStamp()}-${getRandomString(3)}`,
   'date and time': new Date().toISOString()
 });
-// Returns facts about a rule engine.
+// Returns the facts about a rule engine.
 const getRuleEngineFacts = ruleEngineID => {
   const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
   return {
@@ -74,8 +75,8 @@ exports.getReportBasics = async (timeStamp, jobID) => {
       error: `No report ${timeStamp}-${jobID} is available.`
     };
   }
-  // Otherwise, i.e. if its report exists, get the basic facts about it.
-  const facts = {
+  // Otherwise, i.e. if its report exists, get the basics about it.
+  const basics = {
     identifier: `${timeStamp}-${jobID}`,
     'creation date and time': getDateTime(timeStamp),
     'days since the creation date': getAgoDays(timeStamp),
@@ -92,16 +93,16 @@ exports.getReportBasics = async (timeStamp, jobID) => {
     'URL to get the entire report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
   };
   // Return them.
-  return facts;
+  return basics;
 };
 // Returns an array of rule-engine IDs, sorted by name.
 const sortRuleEngineIDs = ruleEngineIDSet => {
   const sortedRuleEngineIDs = Array.from(ruleEngineIDSet).sort((a, b) => {
-  const aName = ruleEngines[a][0];
-  const bName = ruleEngines[b][0];
-  return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
-});
-return sortedRuleEngineIDs;
+    const aName = ruleEngines[a][0];
+    const bName = ruleEngines[b][0];
+    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
+  });
+  return sortedRuleEngineIDs;
 };
 // Returns the details about a report, not including a list of the issues in it.
 exports.getReportDetails = report => {
@@ -200,7 +201,7 @@ exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
     // Log and return this.
     console.error(`Issue ${issueID} is ignorable or not classified.`);
     return {
-      error: `Facts about issue ${issueID} are not available.`
+      error: `Basics about issue ${issueID} are not available.`
     };
   }
   const {summary = null, weight = null, why = null} = issueClassification;
@@ -222,7 +223,7 @@ exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
   // Return them.
   return basics;
 };
-// Returns details about an issue in a report, not including a list of its violators.
+// Returns the details about an issue in a report, not including a list of its violators.
 exports.getIssueDetails = (issueID, report) => {
   // Initialize data about the issue.
   const reporterIDs = new Set();
@@ -252,8 +253,37 @@ exports.getIssueDetails = (issueID, report) => {
   // Return the details.
   return {
     'names of rule engines with violated rules belonging to the issue': Array.from(reporterIDs),
-    'indexes of violators in the catalog': Array.from(violatorIndexes)
+    'count of violators, i.e. elements exhibiting the issue': violatorIndexes.size
   };
+};
+// Returns the basics about a violator.
+exports.getViolatorBasics = async (catalogIndex, report) => {
+  const {catalog, id} = report;
+  // If the report has no id or no catalog:
+  if (! (id && catalog)) {
+    // Return a failure.
+    return {
+      error: ' Basics about violators in the report are not available.'
+    };
+  }
+  const violator = catalog[catalogIndex];
+  // Otherwise, if the report has a catalog but the specified violator is not in it:
+  if (! violator) {
+    // Return this.
+    return {
+      error: `Basics about violator ${catalogIndex} in report ${id} are not available`
+    };
+  }
+  const {pathID = null, startTag = null, text = null} = violator;
+  // Otherwise, i.e. if the violator is in the catalog, get the basics about the violator.
+  const basics = {
+    identifier: catalogIndex,
+    'start tag': startTag,
+    'inner text': text,
+    'XPath': pathID
+  };
+  // Return them.
+  return basics;
 };
 // Returns a report or an error message.
 exports.getReportIfOK = async (timeStamp, jobID, reportBasicsError) => {
@@ -270,34 +300,4 @@ exports.getReportIfOK = async (timeStamp, jobID, reportBasicsError) => {
   const report = await getReport(timeStamp, jobID);
   // Return it.
   return report;
-};
-// Returns the basic facts about a violator required in a list of the violators of an issue.
-exports.getViolatorBasics = async (catalogIndex, timeStamp, jobID) => {
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  const {catalog, error} = report;
-  // If this failed or the report has no catalog:
-  if (error || ! catalog) {
-    // Return a failure.
-    return {
-      error: `Facts about violators of issues in report ${timeStamp}-${jobID} are not available.`
-    };
-  }
-  const violator = catalog[catalogIndex];
-  // Otherwise, if the report has a catalog but the specified violator is not in it:
-  if (! violator) {
-    return {
-      error: `Facts about violator ${catalogIndex} in report ${timeStamp}-${jobID} are not available`
-    };
-  }
-  const {pathID = null, startTag = null, text = null} = violator;
-  // Otherwise, i.e. if the violator is in the catalog, get the basic facts about the violator.
-  const facts = {
-    identifier: String(catalogIndex),
-    'start tag': startTag,
-    'inner text': text,
-    'XPath': pathID
-  };
-  // Return them.
-  return facts;
 };

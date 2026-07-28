@@ -30,7 +30,7 @@ exports.response = async () => {
     const reportBasics = await getReportBasics(timeStamp, jobID);
     // If this succeeded, the log file is valid, and the report is not hidden:
     if (! reportBasics.error) {
-      // Add the facts to the array.
+      // Add the basics to the array.
       reportsBasics.push(reportBasics);
     }
   }

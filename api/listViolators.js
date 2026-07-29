@@ -27,6 +27,40 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
+// Returns the details about an issue in a report, not including a list of its violators.
+exports.getIssueDetails = (issueID, report) => {
+  // Initialize data about the issue.
+  const reporterIDs = new Set();
+  const violatorIndexes = new Set();
+  // For each act in the report:
+  report.acts.forEach(act => {
+    // If the act is a test act:
+    if (act.type === 'test') {
+      const {result, which} = act;
+      const instances = result?.standardResult?.instances ?? [];
+      // For each of the standard instances of the act:
+      instances.forEach(instance => {
+        // If the instance has the issue:
+        if (instance.issueID === issueID) {
+          // Ensure the rule engine is a reporter in the data.
+          reporterIDs.add(which);
+          const {catalogIndex} = instance;
+          // If the instance has a catalog index:
+          if (catalogIndex) {
+            // Ensure it is a violator in the data.
+            violatorIndexes.add(catalogIndex);
+          }
+        }
+      });
+    }
+  });
+  // Return the details.
+  return {
+    'names of rule engines with violated rules belonging to the issue': Array.from(reporterIDs),
+    'count of violators, i.e. elements exhibiting the issue': violatorIndexes.size
+  };
+};
+// Returns the response body.
 exports.response = async args => {
   const [issueID, timeStamp, jobID] = args;
   // Get facts about the tool collection.
@@ -48,9 +82,6 @@ exports.response = async args => {
   else {
     // Add the basics about the report to the response content.
     responseContent['basics about the report'] = await getReportBasics(timeStamp, jobID);
-  }
-  // If getting the report and its basics succeeded:
-  if (! responseContent['basics about the report'].error) {
 
   // Get the basics about the report.
   const reportBasics = await getReportBasics(timeStamp, jobID);

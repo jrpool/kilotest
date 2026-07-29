@@ -66,6 +66,7 @@ exports.response = async (args) => {
             && issueID !== 'ignorable'
             && summary
             && [1, 2, 3, 4].includes(weight)
+            && why
           ) {
             // Ensure the issue is in the data.
             issuesBasics[issueID] ??= {

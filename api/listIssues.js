@@ -8,12 +8,11 @@
 const {
   getIssueBasics,
   getReportBasics,
+  getReportDetails,
   getReportIfOK,
   getResponseMetadata,
-  getResultDetails,
   getToolsFacts
 } = require('./util');
-const {getReportDetails} = require('../util');
 
 // CONSTANTS
 
@@ -45,10 +44,10 @@ exports.response = async (args) => {
     'tool collection': toolsFacts,
     'tool name': 'listIssues',
     request: {
-      description: 'Provide detailed facts about one report, including a list of the issues reported in it. For each issue, the list should state what the issue is, how it tends to affect a user, which priority level it is classified as having, and which URL I can use for incremental retrieval of facts about violators (namely, elements exhibiting the issue). The timeStamp and jobID parameters identify the report that I want facts about. Those parameters were in the response to my earlier listReports request.',
+      description: 'Provide details about one report, including a list of the issues reported in it and basics about each issue. The timeStamp and jobID parameters identify the report that I want details about. Those parameters were in the response to my earlier listReports request.',
       method: 'GET',
       URLs: {
-        'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
+        'for JSON output': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
         'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': null

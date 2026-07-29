@@ -95,15 +95,6 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   // Return them.
   return basics;
 };
-// Returns an array of rule-engine IDs, sorted by name.
-const sortRuleEngineIDs = ruleEngineIDSet => {
-  const sortedRuleEngineIDs = Array.from(ruleEngineIDSet).sort((a, b) => {
-    const aName = ruleEngines[a][0];
-    const bName = ruleEngines[b][0];
-    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
-  });
-  return sortedRuleEngineIDs;
-};
 // Returns the details about a report, not including a list of the issues in it.
 exports.getReportDetails = report => {
   const {
@@ -155,7 +146,11 @@ exports.getReportDetails = report => {
       });
     }
   });
-  const sortedRuleEngineIDs = sortRuleEngineIDs(ruleEngineIDs);
+  const sortedRuleEngineIDs = Array.from(ruleEngineIDs).sort((a, b) => {
+    const aName = ruleEngines[a][0];
+    const bName = ruleEngines[b][0];
+    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
+  });
   const {preventions} = report.jobData;
   // Get the details about the rule engines that could not test the page.
   const preventionFacts = preventions?.map(([ruleEngineID, reason]) => ({

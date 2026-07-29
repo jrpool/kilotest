@@ -1,6 +1,6 @@
 /*
   listViolators.js
-  Returns a response containing basics about one issue in one report and a list of its violators.
+  Returns details about one issue in one report and basics about the violators of the issue.
 */
 
 // IMPORTS
@@ -8,12 +8,8 @@
 const {
   getIssueBasics,
   getReportBasics,
-  getReportDetails,
-  getReportIfOK,
   getResponseMetadata,
-  getResultDetails,
-  getRuleEngineFacts,
-  getToolFacts,
+  getToolsFacts,
   getViolatorBasics
 } = require('./util');
 const {
@@ -21,18 +17,41 @@ const {
   getNowStamp,
   getRandomString,
   getReport,
-  getToolsFacts,
   isHidden,
   tools
 } = require('../util');
 
+// CONSTANTS
+
+const thisHost = process.env.THIS_KILOTEST_HOST;
+
 // FUNCTIONS
 
-// Returns a response to an API request for a list of violators of one issue in one report.
 exports.response = async args => {
   const [issueID, timeStamp, jobID] = args;
   // Get facts about the tool collection.
-  const toolFacts = getToolFacts();
+  const toolsFacts = getToolsFacts();
+  // Initialize the response content.
+  const responseContent = {
+    'basics about the report': null,
+    'details about the issue': null,
+    'basics about the violators of rules belonging to the issue': null
+  };
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (report.error) {
+    // Add this to the response content.
+    responseContent['basics about the report'] = report;
+  }
+  // Otherwise, i.e. if it succeeded:
+  else {
+    // Add the basics about the report to the response content.
+    responseContent['basics about the report'] = await getReportBasics(timeStamp, jobID);
+  }
+  // If getting the report and its basics succeeded:
+  if (! responseContent['basics about the report'].error) {
+
   // Get the basics about the report.
   const reportBasics = await getReportBasics(timeStamp, jobID);
   // Get the report or an error message.

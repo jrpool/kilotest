@@ -1,6 +1,6 @@
 /*
   listReports.js
-  Returns a response containing a list of the available reports.
+  Returns basics about the available reports.
 */
 
 // IMPORTS
@@ -15,7 +15,6 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
-// Returns a response to an API request for a list of reports.
 exports.response = async () => {
   // Get facts about the tool collection.
   const toolsFacts = getToolsFacts();

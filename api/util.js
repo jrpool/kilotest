@@ -86,7 +86,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
     },
     'whether a later report about the same page exists': !! superseded,
     'URLs for more details': {
-      'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
+      'for JSON output': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
       'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     'size of the report in bytes': reportSize,

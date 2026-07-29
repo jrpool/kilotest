@@ -95,7 +95,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   // Return them.
   return basics;
 };
-// Returns the details about a report, not including a list of the issues in it.
+// Returns the details about a report, not including the IDs of the issues in it.
 exports.getReportDetails = report => {
   const {
     strict = null, standard = null, device = 'default', browserID = null, executionTimeStamp = null
@@ -157,7 +157,7 @@ exports.getReportDetails = report => {
     'name': ruleEngines[ruleEngineID][0],
     'reason for failure': reason
   }));
-  const sortedPreventionFacts = objectSort(preventionFacts, 'name', 'alpha');
+  const sortedPreventionFacts = objectSort(preventionFacts ?? [], 'name', 'alpha');
   const weightCounts = [0, 0, 0, 0];
   // For each issue:
   issueIDs.forEach(issueID => {

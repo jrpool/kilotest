@@ -5,12 +5,8 @@
 
 // IMPORTS
 
-const {
-  getReportBasics,
-  getResponseMetadata,
-  getToolsFacts
-} = require('./util');
-const {getDateTime, getReport, objectSort, ruleEngines} = require('../util');
+const {getResponseMetadata, getToolsFacts} = require('./util');
+const {alphaSort, getDateTime, getReport, objectSort, ruleEngines} = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // CONSTANTS
@@ -27,9 +23,6 @@ const getRuleEngineFacts = ruleEngineID => {
     name: ruleEngineData[0] || null,
     sponsor: ruleEngineData[1] || null
   };
-};
-// Returns the details about a report, not including the IDs of the issues in it.
-const getReportDetails = report => {
 };
 // Returns the response body.
 exports.response = async (args) => {
@@ -68,11 +61,12 @@ exports.response = async (args) => {
     const reporterIDs = new Set();
     const issueIDs = new Set();
     const violatorIndexes = new Set();
+    const issuesData = {};
     // For each act in the report:
     report.acts.forEach(act => {
+      const {result, type, which} = act;
       // If the act is a test act:
-      if (act.type === 'test') {
-        const {result, which} = act;
+      if (type === 'test') {
         // Ensure its rule engine is in the result data.
         ruleEngineIDs.add(which);
         const instances = result?.standardResult?.instances ?? [];
@@ -80,12 +74,14 @@ exports.response = async (args) => {
         instances.forEach(instance => {
           const {catalogIndex, issueID} = instance;
           const issueClassification = issuesClassification[issueID];
-          // If the instance has a non-ignorable issue, is classified, and has a valid weight:
+          const {summary, weight, why} = issueClassification;
+          // If the instance has a non-ignorable and fully classified issue:
           if (
             issueID
             && issueID !== 'ignorable'
             && issueClassification
-            && [1, 2, 3, 4].includes(issueClassification.weight)
+            && [1, 2, 3, 4].includes(weight)
+            && why
           ) {
             // Ensure the issue ID is in the result data.
             issueIDs.add(issueID);
@@ -96,6 +92,16 @@ exports.response = async (args) => {
               // Ensure the index of the violator is in the result data.
               violatorIndexes.add(catalogIndex);
             }
+            // Ensure the issue is in the result data.
+            issuesData[issueID] ??= {
+              id: issueID,
+              summary,
+              weight,
+              why,
+              reporterIDs: new Set()
+            };
+            // Ensure the reporter ID is in the data about the issue.
+            issuesData[issueID].reporterIDs.add(which);
           }
         });
       }
@@ -112,6 +118,7 @@ exports.response = async (args) => {
       'reason for failure': reason
     }));
     const sortedPreventionFacts = objectSort(preventionFacts ?? [], 'name', 'alpha');
+    // Initialize the counts of issues by weight.
     const weightCounts = [0, 0, 0, 0];
     // For each issue:
     issueIDs.forEach(issueID => {
@@ -136,62 +143,28 @@ exports.response = async (args) => {
       },
       'number of elements reported as violators': violatorIndexes.size
     };
-    // Return the details about the job definition and the test results.
-    return {
-      'job definition': jobDefinitionDetails,
-      'test results': resultDetails
-    };
-  }
-    // Add the basics about the report to the response content.
-    responseContent['basics about the report'] = await getReportBasics(timeStamp, jobID);
-    // Get details about the report.
-    responseContent['details about the report'] = getReportDetails(report);
-    // Initialize data about the basics about the issues reported.
-    const issuesBasics = {};
-    // For each act in the report:
-    report.acts.forEach(act => {
-      const {result, type, which} = act;
-      // If it is a test act:
-      if (type === 'test') {
-        const instances = result?.standardResult?.instances ?? [];
-        // For each of the standard instances of the act:
-        instances.forEach(instance => {
-          const {issueID} = instance;
-          const issueClassification = issuesClassification[issueID];
-          const {summary, weight, why} = issueClassification;
-          // If the instance has a non-ignorable issue, is classified, and has a valid weight:
-          if (
-            issueID
-            && issueID !== 'ignorable'
-            && summary
-            && [1, 2, 3, 4].includes(weight)
-            && why
-          ) {
-            // Ensure the issue is in the data.
-            issuesBasics[issueID] ??= {
-              id: issueID,
-              summary,
-              weight,
-              why,
-              reporterIDs: [which]
-            };
-          }
-        });
-      }
-    });
-    const sortedIssuesBasics = objectSort(Object.values(issuesBasics), 'id', 'alpha');
-    responseContent['basics about the issues reported'] = sortedIssuesBasics.map(issueBasics => {
-      const {id, summary, weight, why, reporterIDs} = issueBasics;
+    // Sort the data about issues by summary.
+    const sortedIssuesData = objectSort(Object.values(issuesData), 'summary', 'alpha');
+    // Get the basics about the issues.
+    const issuesBasics = sortedIssuesData.map(issueData => {
+      const {id, summary, weight, why, reporterIDs} = issueData;
       return {
         identifier: id,
         summary,
         priority: ['lowest', 'low', 'high', 'highest'][weight - 1],
         'impact on a user': why,
-        'rule engines that reported violations of rules belonging to the issue': reporterIDs
-        .map(reporterID => ruleEngines[reporterID][0])
-        .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))
+        'rule engines with any violations belonging to the issue': alphaSort(
+          Array.from(reporterIDs).map(reporterID => ruleEngines[reporterID][0])
+        )
       };
     });
+    // Add the details about the job and results to the response content.
+    responseContent['details about the report'] = {
+      'job definition': jobDefinitionDetails,
+      'test results': resultDetails
+    };
+    // Add the basics about the issues to the response content.
+    responseContent['basics about the issues reported'] = issuesBasics;
   }
   // Create a response body.
   const body = {

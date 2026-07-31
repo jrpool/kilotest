@@ -125,6 +125,19 @@ exports.response = async args => {
       const sortedViolatorIndexes = Array
       .from(violatorIndexes)
       .sort((a, b) => Number(a) - Number(b));
+      // For each violator:
+      sortedViolatorIndexes.forEach(violatorIndex => {
+        const catalogItem = report.catalog[violatorIndex];
+        // Get the basics about it.
+        const violatorBasics = {
+          'index in the DOM': Number(violatorIndex),
+          ''
+        }
+        // Add the catalog index to the basics about the violators.
+        violatorsBasics.push({
+          catalogIndex: violatorIndex
+        });
+      });
       // Add the catalog indexes of the violators of rules belonging to the issue to the data.
       responseContent['basics about the violators of rules belonging to the issue'] = {
         issueID,

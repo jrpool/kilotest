@@ -16,8 +16,6 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 // FUNCTIONS
 
 exports.response = async () => {
-  // Get facts about the tool collection.
-  const toolsFacts = getToolsFacts();
   // Initialize an array of basic facts about reports.
   const reportsBasics = [];
   // Get the names of the log files.
@@ -35,7 +33,7 @@ exports.response = async () => {
   }
   // Create a response body.
   const content = {
-    'tool collection': toolsFacts,
+    'tool collection': getToolsFacts(),
     'tool name': 'listReports',
     request: {
       description: 'List all available reports. For each report, the list should state when the job was performed, which page was tested, and which URL I can use for incremental retrieval of the test results from the report.',

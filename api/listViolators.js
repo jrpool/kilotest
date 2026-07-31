@@ -18,8 +18,6 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 // Returns the response body.
 exports.response = async args => {
   const [issueID, timeStamp, jobID] = args;
-  // Get facts about the tool collection.
-  const toolsFacts = getToolsFacts();
   // Initialize the response content.
   const responseContent = {
     'basics about the report': null,
@@ -126,7 +124,7 @@ exports.response = async args => {
   }
   // Create a response body.
   const body = {
-    'tool collection': toolsFacts,
+    'tool collection': getToolsFacts(),
     'tool name': 'listViolators',
     request: {
       description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',

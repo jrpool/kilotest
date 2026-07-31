@@ -41,7 +41,7 @@ exports.response = async () => {
     if (a.description !== b.description) {
       return a.description.localeCompare(b.description, 'en', { sensitivity: 'base' });
     }
-    return a['creation date and time'] - b['creation date and time'];
+    return a['creation date and time'].localeCompare(b['creation date and time']);
   });
   // Add the sorted basics about the reports to the response content.
   responseContent['basics about all available reports'] = reportsBasics;

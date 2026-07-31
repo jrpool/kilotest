@@ -1,6 +1,6 @@
 /*
   listViolators.js
-  Returns details about one issue in one report and basics about all its violators.
+  Returns details about one issue in one report and basics about all the violators of the issue.
 */
 
 // IMPORTS
@@ -126,12 +126,12 @@ exports.response = async args => {
   const body = {
     'tool collection': getToolsFacts(),
     'tool name': 'listViolators',
-    request: {
+    'this request': {
       description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
       method: 'GET',
       URLs: {
-        'for JSON output': `${thisHost}/api/listIssues/${issueID}/${timeStamp}/${jobID}`,
-        'for HTML output': `${thisHost}/reportIssues.html/${issueID}/${timeStamp}/${jobID}`
+        'of this request': `${thisHost}/api/listIssues/${issueID}/${timeStamp}/${jobID}`,
+        'of equivalent request for HTML output': `${thisHost}/reportIssues.html/${issueID}/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
         'tool name': 'listIssues',

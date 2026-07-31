@@ -15,8 +15,13 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
+// Returns the response body.
 exports.response = async () => {
-  // Initialize an array of basic facts about reports.
+  // Initialize the response content.
+  const responseContent = {
+    'basics about all available reports': null
+  };
+  // Initialize an array of basics about the reports.
   const reportsBasics = [];
   // Get the names of the log files.
   const logFileNames = await fs.readdir(logsPath);
@@ -31,21 +36,30 @@ exports.response = async () => {
       reportsBasics.push(reportBasics);
     }
   }
+  // Sort the array by page description and secondarily by increasing creation time.
+  reportsBasics.sort((a, b) => {
+    if (a.description !== b.description) {
+      return a.description.localeCompare(b.description, 'en', { sensitivity: 'base' });
+    }
+    return a['creation date and time'] - b['creation date and time'];
+  });
+  // Add the sorted basics about the reports to the response content.
+  responseContent['basics about all available reports'] = reportsBasics;
   // Create a response body.
   const content = {
     'tool collection': getToolsFacts(),
     'tool name': 'listReports',
-    request: {
+    'this request': {
       description: 'List all available reports. For each report, the list should state when the job was performed, which page was tested, and which URL I can use for incremental retrieval of the test results from the report.',
       method: 'GET',
       URLs: {
-        'for JSON output': `${thisHost}/api/listReports`,
-        'for HTML output': `${thisHost}/targets.html`
+        'of this request': `${thisHost}/api/listReports`,
+        'of equivalent request for HTML output': `${thisHost}/targets.html`
       },
       'closest ancestor request': null
     },
     'response metadata': getResponseMetadata(),
-    'response content': reportsBasics
+    'response content': responseContent
   };
   // Return it.
   return content;

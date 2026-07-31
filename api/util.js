@@ -13,7 +13,6 @@ const {
   getRandomString,
   getReport,
   getReportSize,
-  objectSort,
   ruleEngines
 } = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;

@@ -16,13 +16,13 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args) => {
+exports.response = async args => {
   const [timeStamp, jobID] = args;
   // Initialize the response content.
   const responseContent = {
     'basics about the report': null,
     'details about the report': null,
-    'basics about the issues reported': null
+    'basics about all issues reported in the report': null
   };
   // Get the report.
   const report = await getReport(timeStamp, jobID);
@@ -153,18 +153,18 @@ exports.response = async (args) => {
       'test results': resultDetails
     };
     // Add the basics about the issues to the response content.
-    responseContent['basics about the issues reported'] = issuesBasics;
+    responseContent['basics about all issues reported in the report'] = issuesBasics;
   }
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),
     'tool name': 'listIssues',
-    request: {
+    'this request': {
       description: 'Provide details about one report, including basics about the issues reported in it. The timeStamp and jobID parameters identify the report that I want details about. Those parameters were in the response to my earlier listReports request.',
       method: 'GET',
       URLs: {
-        'for JSON output': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
-        'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+        'of this request': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
+        'of equivalent request for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
       'closest ancestor request': null
     },

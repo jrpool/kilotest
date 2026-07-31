@@ -1,6 +1,6 @@
 /*
   listReports.js
-  Returns basics about the available reports.
+  Returns basics about all the available reports.
 */
 
 // IMPORTS

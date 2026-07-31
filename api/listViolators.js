@@ -1,6 +1,6 @@
 /*
   listViolators.js
-  Returns details about one issue in one report and basics about the violators of the issue.
+  Returns details about one issue in one report and basics about all its violators.
 */
 
 // IMPORTS
@@ -20,6 +20,7 @@ const {
   isHidden,
   tools
 } = require('../util');
+const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // CONSTANTS
 
@@ -82,40 +83,59 @@ exports.response = async args => {
   else {
     // Add the basics about the report to the response content.
     responseContent['basics about the report'] = await getReportBasics(timeStamp, jobID);
+    // Get the issue classification.
+    const issueClassification = issuesClassification[issueID];
+    const {summary, weight, why} = issueClassification;
+    // If the instance has a non-ignorable and fully classified issue:
+    if (
+      issueID
+      && issueID !== 'ignorable'
+      && issueClassification
+      && [1, 2, 3, 4].includes(weight)
+      && why
+    ) {
+      // Initialize data about the instances of the issue.
+      const ruleEngineIDs = new Set();
+      const violatorIndexes = new Set();
+      // For each act in the report:
+      report.acts.forEach(act => {
+        const {result, type, which} = act;
+        // If the act is a test act with a specified rule engine:
+        if (type === 'test' && which) {
+          const instances = result?.standardResult?.instances ?? [];
+          // For each of the standard instances of the act:
+          instances.forEach(instance => {
+            const {catalogIndex} = instance;
+            // If the instance has the issue ID:
+            if (instance.issueID === issueID) {
+              // Ensure the rule-engine ID is in the data.
+              ruleEngineIDs.add(which);
+              // If the instance has a catalog index:
+              if (catalogIndex) {
+                // Ensure the catalog index is in the data.
+                violatorIndexes.add(catalogIndex);
+              }
+            }
+          });
+        }
+      });
+      // Initialize the basics about the violators.
+      const violatorsBasics = [];
+      // Get the violator catalog indexes, sorted by DOM order.
+      const sortedViolatorIndexes = Array
+      .from(violatorIndexes)
+      .sort((a, b) => Number(a) - Number(b));
+      // Add the catalog indexes of the violators of rules belonging to the issue to the data.
+      responseContent['basics about the violators of rules belonging to the issue'] = {
+        issueID,
+        summary,
+        weight,
+        why,
+        violatorIndexes: Array.from(violatorIndexes)
+      };
+    }
 
-  // Get the basics about the report.
-  const reportBasics = await getReportBasics(timeStamp, jobID);
-  // Get the report or an error message.
-  const report = await getReportIfOK(timeStamp, jobID, reportBasics.error);
-  // If it is an error message:
-  if (report.status === 'error') {
-    // Return it.
-    return report;
-  }
-  // Otherwise, get details about the report.
-  const reportDetails = getReportDetails(report);
-  // Get details about the test results.
-  const resultDetails = getResultDetails(report);
-  // Get the basics about the issue.
-  const issueBasics = getIssueBasics(issueID, timeStamp, jobID);
-  let issue;
-  // Otherwise, i.e. if it succeeded, get the level of and the data on the issue.
-  const issueLevel = [4, 3, 2, 1].find(level => {
-    issue = issues[level].find(issue => issue.issueID === issueID);
-    return issue;
-  });
-  // If the issue was not one of those in the report:
-  if (! issue) {
-    // Return this.
-    return {
-      status: 'error',
-      message: 'Issue not found in the report'
-    };
-  }
-  const preventedTools = Object.entries(preventions).map(prevention => ({
-    name: tools[prevention[0]][0],
-    'reason for failure': prevention[1]
-  }));
+
   const thisHost = process.env.THIS_KILOTEST_HOST;
   // Get a response.
   const content = {

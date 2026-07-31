@@ -1,11 +1,11 @@
 /*
   listIssues.js
-  Returns details about one report and basics about the issues in it.
+  Returns details about one report and basics about all the issues in it.
 */
 
 // IMPORTS
 
-const {getResponseMetadata, getToolsFacts} = require('./util');
+const {getResponseMetadata, getRuleEngineFacts, getToolsFacts} = require('./util');
 const {alphaSort, getDateTime, getReport, objectSort, ruleEngines} = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
@@ -15,15 +15,6 @@ const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
-// Returns the facts about a rule engine.
-const getRuleEngineFacts = ruleEngineID => {
-  const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
-  return {
-    identifier: ruleEngineID,
-    name: ruleEngineData[0] || null,
-    sponsor: ruleEngineData[1] || null
-  };
-};
 // Returns the response body.
 exports.response = async (args) => {
   const [timeStamp, jobID] = args;
@@ -92,7 +83,7 @@ exports.response = async (args) => {
               // Ensure the index of the violator is in the result data.
               violatorIndexes.add(catalogIndex);
             }
-            // Ensure the issue is in the result data.
+            // Ensure the data about the issue are in the result data.
             issuesData[issueID] ??= {
               id: issueID,
               summary,

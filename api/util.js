@@ -38,6 +38,15 @@ exports.getToolsFacts = () => ({
     'for HTML output': thisHost
   }
 });
+// Returns the facts about a rule engine.
+exports.getRuleEngineFacts = ruleEngineID => {
+  const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
+  return {
+    identifier: ruleEngineID,
+    name: ruleEngineData[0] || null,
+    sponsor: ruleEngineData[1] || null
+  };
+};
 // Returns the basics about a report, without reading the report.
 exports.getReportBasics = async (timeStamp, jobID) => {
   // Get the log of the report.

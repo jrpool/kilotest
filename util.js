@@ -49,7 +49,7 @@ exports.getRandomString = length => {
   return Math.random().toString(36).slice(2, length + 2);
 };
 // Returns whether a report is valid.
-exports.isValidReport = report => {
+const isValidReport = exports.isValidReport = report => {
   // Return whether it has the type and properties required by Kilotest:
   return typeof report === 'object'
   && typeof report.target?.what === 'string'
@@ -60,7 +60,8 @@ exports.isValidReport = report => {
     && typeof act.type === 'string'
     && act.type === 'test' ? Object.keys(tools).includes(act.which) : true
   )
-  && typeof report.jobData === 'object';
+  && typeof report.jobData === 'object'
+  && typeof report.catalog === 'object';
 };
 // Encodes a string for use as a URL fragment.
 const fragmentEncode = string => {
@@ -107,9 +108,16 @@ const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
   return record;
 };
 // Returns a report.
-const getReport = exports.getReport = async (timeStamp, jobID) => await getRecord(
-  'report', timeStamp, jobID
-);
+const getReport = exports.getReport = async (timeStamp, jobID) => {
+  const report = await getRecord('report', timeStamp, jobID);
+  // If it is valid:
+  if (isValidReport(report)) {
+    // Return it.
+    return report;
+  }
+  // Otherwise, i.e. if it is invalid, return this.
+  return {error: `Requested report ${timeStamp}-${jobID} is not valid`};
+};
 // Returns the JSON stringification of an object, with a final newline.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
 // Returns a date string from a time stamp.

@@ -37,6 +37,22 @@ exports.getToolsFacts = () => ({
     'for HTML output': thisHost
   }
 });
+// Returns the facts about rule engines.
+exports.getRuleEnginesFacts = ruleEngineIDSet => {
+  const sortedRuleEngineIDs = Array.from(ruleEngineIDSet).sort((a, b) => {
+    const aName = ruleEngines[a][0];
+    const bName = ruleEngines[b][0];
+    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
+  });
+  return sortedRuleEngineIDs.map(id => {
+    const ruleEngineFacts = ruleEngines[id] ?? [];
+    return {
+      identifier: id,
+      name: ruleEngineFacts[0] || null,
+      sponsor: ruleEngineFacts[1] || null
+    };
+  });
+};
 // Returns the facts about a rule engine.
 exports.getRuleEngineFacts = ruleEngineID => {
   const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
@@ -77,7 +93,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   // Otherwise, i.e. if its report exists, get the basics about it.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
-    'creation date and time': getDateTime(timeStamp),
+    'creation date and time': getDateTime(timeStamp).toISOString(),
     'days since the creation date': getAgoDays(timeStamp),
     'tested web page': {
       description: what,

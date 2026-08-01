@@ -5,7 +5,12 @@
 
 // IMPORTS
 
-const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getToolsFacts} = require('./util');
+const {
+  getReportBasics,
+  getResponseMetadata,
+  getRuleEnginesFacts,
+  getToolsFacts
+} = require('./util');
 const {alphaSort, getDateTime, getReport, objectSort, ruleEngines} = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
@@ -38,7 +43,7 @@ exports.response = async args => {
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
     const {
-      strict = null, standard = null, device = 'default', browserID = null, executionTimeStamp = null
+      strict = null, standard = null, device = {id: 'default'}, browserID = null, executionTimeStamp = null
     } = report;
     // Get details about the job definition.
     const jobDefinitionDetails = {
@@ -47,7 +52,8 @@ exports.response = async args => {
       'whether standardized results are reported': ['also', 'only'].includes(standard),
       'device emulated by the job': device,
       'browser type used by the job': browserID,
-      'when Kilotest made the job available to be performed': getDateTime(executionTimeStamp)
+      'when Kilotest made the job available to be performed':
+      getDateTime(executionTimeStamp).toISOString()
     };
     // Initialize data about the test results.
     const ruleEngineIDs = new Set();
@@ -67,13 +73,14 @@ exports.response = async args => {
         instances.forEach(instance => {
           const {catalogIndex, issueID} = instance;
           // Get the issue classification.
-          const issueClassification = issuesClassification[issueID];
+          const issueClassification = issuesClassification[issueID] ?? {};
           const {summary, wcag, weight, why} = issueClassification;
           // If the instance has a non-ignorable and fully classified issue:
           if (
             issueID
             && issueID !== 'ignorable'
             && issueClassification
+            && summary
             && wcag
             && [1, 2, 3, 4].includes(weight)
             && why
@@ -101,14 +108,9 @@ exports.response = async args => {
         });
       }
     });
-    const sortedRuleEngineIDs = Array.from(ruleEngineIDs).sort((a, b) => {
-      const aName = ruleEngines[a][0];
-      const bName = ruleEngines[b][0];
-      return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
-    });
     const {preventions} = report.jobData;
     // Get the details about the rule engines that could not test the page.
-    const preventionFacts = preventions?.map(([ruleEngineID, reason]) => ({
+    const preventionFacts = Object.entries(preventions ?? {}).map(([ruleEngineID, reason]) => ({
       'name': ruleEngines[ruleEngineID][0],
       'reason for failure': reason
     }));
@@ -123,13 +125,10 @@ exports.response = async args => {
     });
     // Get details about the test results.
     const resultDetails = {
-      'rule engines that tried to test the page': sortedRuleEngineIDs
-      .map(id => getRuleEngineFacts(id)),
+      'rule engines that tried to test the page': getRuleEnginesFacts(ruleEngineIDs),
       'rule engines that could not test the page': sortedPreventionFacts,
-      'names of rule engines that reported rule violations': Array
-      .from(reporterIDs)
-      .map(id => getRuleEngineFacts(id).name)
-      .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'})),
+      'names of rule engines that reported rule violations': getRuleEnginesFacts(reporterIDs)
+      .map(facts => facts.name),
       'counts of issues by priority': {
         'highest': weightCounts[3],
         'high': weightCounts[2],
@@ -170,9 +169,16 @@ exports.response = async args => {
       method: 'GET',
       URLs: {
         'of this request': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
-        'of equivalent request for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+        'of the equivalent request for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
       },
-      'closest ancestor request': null
+      'closest ancestor request': {
+        'tool name': 'listReports',
+        description: 'Provide basics about all available reports.',
+        URLs: {
+          'for JSON output': `${thisHost}/api/listReports`,
+          'for HTML output': `${thisHost}/targets.html`
+        }
+      }
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

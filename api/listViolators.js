@@ -5,8 +5,13 @@
 
 // IMPORTS
 
-const {getReportBasics, getResponseMetadata, getToolsFacts} = require('./util');
-const {getReport, ruleEngines} = require('../util');
+const {
+  getReportBasics,
+  getResponseMetadata,
+  getRuleEnginesFacts,
+  getToolsFacts
+} = require('./util');
+const {getReport, objectSort} = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // CONSTANTS
@@ -38,11 +43,12 @@ exports.response = async args => {
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
     // Get the issue classification.
-    const issueClassification = issuesClassification[issueID];
+    const issueClassification = issuesClassification[issueID] ?? {};
     const {summary, wcag, weight, why} = issueClassification;
     // If the issue is non-ignorable and fully classified:
     if (
-      issueID !== 'ignorable'
+      issueID
+      && issueID !== 'ignorable'
       && issueClassification
       && summary
       && wcag
@@ -74,7 +80,7 @@ exports.response = async args => {
           instances.forEach(instance => {
             // If the instance has the issue ID:
             if (instance.issueID === issueID) {
-            const {catalogIndex} = instance;
+              const {catalogIndex} = instance;
               // Ensure the rule-engine ID is in the reporter data.
               reporterIDs.add(which);
               // If the instance has a catalog index:
@@ -91,17 +97,10 @@ exports.response = async args => {
           });
         }
       });
-      // Add the details about the reporters of the issue to the facts about the issue.
-      issueFacts['rule engines reporting violations belonging to the issue'] = Array
-      .from(reporterIDs)
-      .map(reporterID => {
-        const reporter = ruleEngines[reporterID];
-        return {
-          identifier: reporterID,
-          name: reporter?.[0] || null,
-          description: reporter?.[1] || null
-        };
-      });
+      // Get details about the reporters of the issue.
+      const reportersFacts = getRuleEnginesFacts(reporterIDs);
+      // Add them to the facts about the issue.
+      issueFacts['rule engines reporting violations belonging to the issue'] = reportersFacts;
       // Add the basics and details about the issue to the response content.
       responseContent['basics and details about the issue'] = issueFacts;
       // Get a sorted array of data about the violators.
@@ -133,11 +132,12 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'listViolators',
     'this request': {
-      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
+      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were faulted for the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
       method: 'GET',
       URLs: {
-        'of this request': `${thisHost}/api/listIssues/${issueID}/${timeStamp}/${jobID}`,
-        'of equivalent request for HTML output': `${thisHost}/reportIssues.html/${issueID}/${timeStamp}/${jobID}`
+        'of this request': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
+        'of the equivalent request for HTML output':
+        `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
       },
       'closest ancestor request': {
         'tool name': 'listIssues',

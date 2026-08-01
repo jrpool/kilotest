@@ -50,11 +50,11 @@ exports.response = async () => {
     'tool collection': getToolsFacts(),
     'tool name': 'listReports',
     'this request': {
-      description: 'List all available reports. For each report, the list should state when the job was performed, which page was tested, and which URL I can use for incremental retrieval of the test results from the report.',
+      description: 'Provide basics about all available reports.',
       method: 'GET',
       URLs: {
         'of this request': `${thisHost}/api/listReports`,
-        'of equivalent request for HTML output': `${thisHost}/targets.html`
+        'of the equivalent request for HTML output': `${thisHost}/targets.html`
       },
       'closest ancestor request': null
     },

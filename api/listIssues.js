@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getResponseMetadata, getRuleEngineFacts, getToolsFacts} = require('./util');
+const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getToolsFacts} = require('./util');
 const {alphaSort, getDateTime, getReport, objectSort, ruleEngines} = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
 
@@ -33,16 +33,20 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if it succeeded:
   else {
+    // Get the basics about the report.
+    const reportBasics = await getReportBasics(timeStamp, jobID);
+    // Add them to the response content.
+    responseContent['basics about the report'] = reportBasics;
     const {
       strict = null, standard = null, device = 'default', browserID = null, executionTimeStamp = null
     } = report;
     // Get details about the job definition.
     const jobDefinitionDetails = {
       'whether the job prohibited redirection': strict,
-      'whether the report includes native results of rule engines': ['also', 'no'].includes(standard),
-      'whether the report includes standardized results': ['also', 'only'].includes(standard),
-      'device that was emulated by the job': device,
-      'browser type that was used by the job': browserID,
+      'whether the native results of rule engines are reported': ['also', 'no'].includes(standard),
+      'whether standardized results are reported': ['also', 'only'].includes(standard),
+      'device emulated by the job': device,
+      'browser type used by the job': browserID,
       'when Kilotest made the job available to be performed': getDateTime(executionTimeStamp)
     };
     // Initialize data about the test results.
@@ -54,27 +58,29 @@ exports.response = async args => {
     // For each act in the report:
     report.acts.forEach(act => {
       const {result, type, which} = act;
-      // If the act is a test act:
-      if (type === 'test') {
+      // If the act is a test act with a specified rule engine:
+      if (type === 'test' && which) {
         // Ensure its rule engine is in the result data.
         ruleEngineIDs.add(which);
         const instances = result?.standardResult?.instances ?? [];
-        // For each of the standard instances of the act:
+        // For each standard instance of the act:
         instances.forEach(instance => {
           const {catalogIndex, issueID} = instance;
+          // Get the issue classification.
           const issueClassification = issuesClassification[issueID];
-          const {summary, weight, why} = issueClassification;
+          const {summary, wcag, weight, why} = issueClassification;
           // If the instance has a non-ignorable and fully classified issue:
           if (
             issueID
             && issueID !== 'ignorable'
             && issueClassification
+            && wcag
             && [1, 2, 3, 4].includes(weight)
             && why
           ) {
             // Ensure the issue ID is in the result data.
             issueIDs.add(issueID);
-            // Ensure its rule engine is a reporter in the result data.
+            // Ensure the rule-engine ID is in the reporter data.
             reporterIDs.add(which);
             // If the instance has a catalog index:
             if (catalogIndex) {
@@ -132,6 +138,11 @@ exports.response = async args => {
       },
       'number of elements reported as violators': violatorIndexes.size
     };
+    // Add the details about the job and results to the response content.
+    responseContent['details about the report'] = {
+      'job definition': jobDefinitionDetails,
+      'test results': resultDetails
+    };
     // Sort the data about issues by summary.
     const sortedIssuesData = objectSort(Object.values(issuesData), 'summary', 'alpha');
     // Get the basics about the issues.
@@ -147,11 +158,6 @@ exports.response = async args => {
         )
       };
     });
-    // Add the details about the job and results to the response content.
-    responseContent['details about the report'] = {
-      'job definition': jobDefinitionDetails,
-      'test results': resultDetails
-    };
     // Add the basics about the issues to the response content.
     responseContent['basics about all issues reported in the report'] = issuesBasics;
   }

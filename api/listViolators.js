@@ -21,9 +21,8 @@ exports.response = async args => {
   // Initialize the response content.
   const responseContent = {
     'basics about the report': null,
-    'details about the issue': null,
-    'rule engines reporting violations belonging to the issue': null,
-    'basics about the violators of rules belonging to the issue': null
+    'basics and details about the issue': null,
+    'basics about all elements exhibiting the issue': null
   };
   // Get the report.
   const report = await getReport(timeStamp, jobID);
@@ -34,58 +33,66 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if it succeeded:
   else {
-    // Add the basics about the report to the response content.
-    responseContent['basics about the report'] = await getReportBasics(timeStamp, jobID);
+    // Get the basics about the report.
+    const reportBasics = await getReportBasics(timeStamp, jobID);
+    // Add them to the response content.
+    responseContent['basics about the report'] = reportBasics;
     // Get the issue classification.
     const issueClassification = issuesClassification[issueID];
     const {summary, wcag, weight, why} = issueClassification;
     // If the issue is non-ignorable and fully classified:
     if (
-      issueID
-      && issueID !== 'ignorable'
+      issueID !== 'ignorable'
       && issueClassification
       && summary
+      && wcag
       && [1, 2, 3, 4].includes(weight)
       && why
     ) {
-      // Add the details about the issue to the response content.
-      responseContent['details about the issue'] = {
+      // Initialize the basics and details about the issue.
+      const issueFacts = {
         'identifier': issueID,
         summary,
         'impact on a user': why,
         'related WCAG standard': {
-          'layer': (wcag?.length > 4 ? 'success criterion' : 'guideline') || null,
-          'identifier': wcag || null
+          'layer': (wcag.length > 4 ? 'success criterion' : 'guideline'),
+          'identifier': wcag
         },
-        priority: ['lowest', 'low', 'high', 'highest'][weight - 1]
+        priority: ['lowest', 'low', 'high', 'highest'][weight - 1],
+        'rule engines reporting violations belonging to the issue': []
       };
       // Initialize data about the instances of the issue.
       const reporterIDs = new Set();
-      const violatorIndexes = new Set();
+      const violators = {};
       // For each act in the report:
       report.acts.forEach(act => {
         const {result, type, which} = act;
+        const instances = result?.standardResult?.instances || [];
         // If the act is a test act with a specified rule engine:
         if (type === 'test' && which) {
-          const instances = result?.standardResult?.instances ?? [];
-          // For each of the standard instances of the act:
+          // For each standard instance of the act:
           instances.forEach(instance => {
-            const {catalogIndex} = instance;
             // If the instance has the issue ID:
             if (instance.issueID === issueID) {
-              // Ensure the rule-engine ID is in the data.
+            const {catalogIndex} = instance;
+              // Ensure the rule-engine ID is in the reporter data.
               reporterIDs.add(which);
               // If the instance has a catalog index:
               if (catalogIndex) {
-                // Ensure the catalog index is in the data.
-                violatorIndexes.add(catalogIndex);
+                // Ensure the catalog index is in the violators data.
+                violators[catalogIndex] ??= {
+                  catalogIndex,
+                  reporters: new Set()
+                };
+                // Ensure the reporter ID is in the violator data.
+                violators[catalogIndex].reporters.add(which);
               }
             }
           });
         }
       });
-      // Add the details about the reporters of the issue to the response content.
-      responseContent['rule engines reporting violations belonging to the issue'] = Array
+      // Add the details about the reporters of the issue to the facts about the issue.
+      issueFacts['rule engines reporting violations belonging to the issue'] = Array
       .from(reporterIDs)
       .map(reporterID => {
         const reporter = ruleEngines[reporterID];
@@ -95,31 +102,30 @@ exports.response = async args => {
           description: reporter?.[1] || null
         };
       });
-      // Initialize the basics about the violators.
-      const violatorsBasics = [];
-      // Get the violator catalog indexes, sorted by DOM order.
-      const sortedViolatorIndexes = Array
-      .from(violatorIndexes)
-      .sort((a, b) => Number(a) - Number(b));
-      // For each violator index:
-      sortedViolatorIndexes.forEach(violatorIndex => {
-        const catalogItem = report.catalog[violatorIndex];
-        // If it is the index of a catalog item:
-        if (catalogItem) {
-          const {tagName, text} = catalogItem;
-          // Get the basics about it.
-          const violatorBasics = {
-            'index in the DOM': Number(violatorIndex),
-            'tag name': tagName || null,
-            'inner text': text || null,
-          };
-          // Add them to the basics about the violators.
-          violatorsBasics.push(violatorBasics);
+      // Add the basics and details about the issue to the response content.
+      responseContent['basics and details about the issue'] = issueFacts;
+      // Get a sorted array of data about the violators.
+      const sortedViolatorData = Object.values(violators).sort(
+        (a, b) => {
+          if (b.reporters.size === a.reporters.size) {
+            return Number(a.catalogIndex) - Number(b.catalogIndex);
+          }
+          return b.reporters.size - a.reporters.size;
         }
+      );
+      const {catalog} = report;
+      // Add basics about the violators to the response content.
+      responseContent['basics about all elements exhibiting the issue'] = sortedViolatorData
+      .map(violator => {
+        const {catalogIndex, reporters} = violator;
+        const catalogItem = catalog[catalogIndex];
+        return {
+          identifier: catalogIndex,
+          'tag name': catalogItem?.tagName || null,
+          'inner text': catalogItem?.text || null,
+          'count of rule engines faulting the element for the issue': reporters.size
+        };
       });
-      // Add the basics about the violators to the response content.
-      responseContent['basics about the violators of rules belonging to the issue']
-      = violatorsBasics;
     }
   }
   // Create a response body.

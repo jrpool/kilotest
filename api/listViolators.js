@@ -6,13 +6,13 @@
 // IMPORTS
 
 const {
+  getIssueClassification,
   getReportBasics,
   getResponseMetadata,
   getRuleEnginesFacts,
   getToolsFacts
 } = require('./util');
-const {getReport, objectSort} = require('../util');
-const issuesClassification = require('testilo/procs/score/tic').issues;
+const {getReport} = require('../util');
 
 // CONSTANTS
 
@@ -42,19 +42,11 @@ exports.response = async args => {
     const reportBasics = await getReportBasics(timeStamp, jobID);
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
-    // Get the issue classification.
-    const issueClassification = issuesClassification[issueID] ?? {};
-    const {summary, wcag, weight, why} = issueClassification;
+    // Get the classification of the issue.
+    const issueClassification = issueID ? getIssueClassification(issueID) : null;
     // If the issue is non-ignorable and fully classified:
-    if (
-      issueID
-      && issueID !== 'ignorable'
-      && issueClassification
-      && summary
-      && wcag
-      && [1, 2, 3, 4].includes(weight)
-      && why
-    ) {
+    if (issueClassification) {
+      const {summary, wcag, weight, why} = issueClassification;
       // Initialize the basics and details about the issue.
       const issueFacts = {
         'identifier': issueID,
@@ -121,7 +113,7 @@ exports.response = async args => {
         return {
           identifier: catalogIndex,
           'tag name': catalogItem?.tagName || null,
-          'inner text': catalogItem?.text || null,
+          'inner text': catalogItem?.text ?? null,
           'count of rule engines faulting the element for the issue': reporters.size
         };
       });

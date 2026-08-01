@@ -136,22 +136,39 @@ const getDateTime = exports.getDateTime = timeStamp => {
   const dateString
   = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(7,9)}:${timeStamp.slice(9,11)}Z`;
   const dateTime = new Date(dateString);
-  return dateTime;
+  return dateTime.toString() === 'Invalid Date' ? null : dateTime;
 };
-// Returns the time in days since a time stamp.
-const getAgoDays = exports.getAgoDays = timeStamp => Math.round(
-  (Date.now() - getDateTime(timeStamp)) / (1000 * 60 * 60 * 24)
-);
+// Returns the time in days since a Date or time stamp, or null if the argument is invalid.
+const getAgoDays = exports.getAgoDays = timeArg => {
+  let dateTime;
+  // If the argument is a string:
+  if (typeof timeArg === 'string') {
+    // Convert it from a time stamp to a Date, or null if invalid.
+    dateTime = getDateTime(timeArg);
+  }
+  // Otherwise, if it is a Date:
+  else if (timeArg instanceof Date) {
+    // Convert it to null if it is invalid.
+    dateTime = timeArg.toString() === 'Invalid Date' ? null : timeArg;
+  }
+  // Otherwise, i.e. if the argument is not a string or a Date:
+  else {
+    // Return this.
+    return null;
+  }
+  // If the argument is invalid:
+  if (!dateTime) {
+    // Return this.
+    return null;
+  }
+  // Otherwise, i.e. if it is valid, return the elapsed days since then.
+  return Math.round((Date.now() - dateTime) / (1000 * 60 * 60 * 24));
+};
 // Returns a time string from a time stamp.
 const getTimeString = timeStamp => {
   const timeString = `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
-  // If the time part of the time stamp is valid:
-  if (Date.parse(`2000-01-01T${timeString}`)) {
-    // Return a time string from it.
-    return timeString;
-  }
-  // Otherwise, return a failure.
-  return '';
+  // Return a time string from it.
+  return (Date.parse(`2000-01-01T${timeString}Z`)) ? timeString : null;
 };
 // Compares strings alphabetically and case-insensitively.
 const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'});
@@ -802,15 +819,16 @@ exports.isReportAvailable = async (what, url) => {
   const miniURLs = logs.map(log => minifyURL(log.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
-// Returns the size of a report.
-exports.getReportSize = async (timeStamp, jobID) => {
+// Returns the creation time and size of a report.
+exports.getReportStats = async (timeStamp, jobID) => {
   const reportStat = await fs.stat(
     path.join(reportsPath, `${timeStamp}-${jobID}.json`),
     {throwIfNoEntry: false}
   );
   if (! reportStat) {
-    return 0;
+    return null;
   }
+  const reportTime = reportStat.birthtime;
   const reportSize = reportStat.size;
-  return reportSize;
+  return {reportTime, reportSize};
 };

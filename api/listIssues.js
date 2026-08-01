@@ -6,13 +6,14 @@
 // IMPORTS
 
 const {
+  getIssueClassification,
   getReportBasics,
   getResponseMetadata,
+  getRuleEngineFacts,
   getRuleEnginesFacts,
   getToolsFacts
 } = require('./util');
-const {alphaSort, getDateTime, getReport, objectSort, ruleEngines} = require('../util');
-const issuesClassification = require('testilo/procs/score/tic').issues;
+const {getReport, objectSort} = require('../util');
 
 // CONSTANTS
 
@@ -43,7 +44,10 @@ exports.response = async args => {
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
     const {
-      strict = null, standard = null, device = {id: 'default'}, browserID = null, executionTimeStamp = null
+      strict = null,
+      standard = null,
+      device = {id: 'default'},
+      browserID = null
     } = report;
     // Get details about the job definition.
     const jobDefinitionDetails = {
@@ -51,14 +55,11 @@ exports.response = async args => {
       'whether the native results of rule engines are reported': ['also', 'no'].includes(standard),
       'whether standardized results are reported': ['also', 'only'].includes(standard),
       'device emulated by the job': device,
-      'browser type used by the job': browserID,
-      'when Kilotest made the job available to be performed':
-      getDateTime(executionTimeStamp).toISOString()
+      'browser type used by the job': browserID
     };
     // Initialize data about the test results.
     const ruleEngineIDs = new Set();
     const reporterIDs = new Set();
-    const issueIDs = new Set();
     const violatorIndexes = new Set();
     const issuesData = {};
     // For each act in the report:
@@ -66,35 +67,25 @@ exports.response = async args => {
       const {result, type, which} = act;
       // If the act is a test act with a specified rule engine:
       if (type === 'test' && which) {
-        // Ensure its rule engine is in the result data.
+        // Ensure its rule engine is in the results data.
         ruleEngineIDs.add(which);
         const instances = result?.standardResult?.instances ?? [];
         // For each standard instance of the act:
         instances.forEach(instance => {
           const {catalogIndex, issueID} = instance;
-          // Get the issue classification.
-          const issueClassification = issuesClassification[issueID] ?? {};
-          const {summary, wcag, weight, why} = issueClassification;
+          // Get the classification of its issue.
+          const issueClassification = issueID ? getIssueClassification(issueID) : null;
           // If the instance has a non-ignorable and fully classified issue:
-          if (
-            issueID
-            && issueID !== 'ignorable'
-            && issueClassification
-            && summary
-            && wcag
-            && [1, 2, 3, 4].includes(weight)
-            && why
-          ) {
-            // Ensure the issue ID is in the result data.
-            issueIDs.add(issueID);
-            // Ensure the rule-engine ID is in the reporter data.
+          if (issueClassification) {
+            const {summary, weight, why} = issueClassification;
+            // Ensure the rule-engine ID is in the reporters data.
             reporterIDs.add(which);
             // If the instance has a catalog index:
             if (catalogIndex) {
-              // Ensure the index of the violator is in the result data.
+              // Ensure the index of the violator is in the results data.
               violatorIndexes.add(catalogIndex);
             }
-            // Ensure the data about the issue are in the result data.
+            // Ensure the data about the issue are in the results data.
             issuesData[issueID] ??= {
               id: issueID,
               summary,
@@ -111,17 +102,16 @@ exports.response = async args => {
     const {preventions} = report.jobData;
     // Get the details about the rule engines that could not test the page.
     const preventionFacts = Object.entries(preventions ?? {}).map(([ruleEngineID, reason]) => ({
-      'name': ruleEngines[ruleEngineID][0],
+      'name': getRuleEngineFacts(ruleEngineID).name,
       'reason for failure': reason
     }));
     const sortedPreventionFacts = objectSort(preventionFacts ?? [], 'name', 'alpha');
     // Initialize the counts of issues by weight.
     const weightCounts = [0, 0, 0, 0];
     // For each issue:
-    issueIDs.forEach(issueID => {
-      const issueClassification = issuesClassification[issueID];
+    Object.values(issuesData).forEach(issueData => {
       // Increment the count of issues with its weight.
-      weightCounts[issueClassification.weight - 1]++;
+      weightCounts[issueData.weight - 1]++;
     });
     // Get details about the test results.
     const resultDetails = {
@@ -152,9 +142,8 @@ exports.response = async args => {
         summary,
         priority: ['lowest', 'low', 'high', 'highest'][weight - 1],
         'impact on a user': why,
-        'rule engines with any violations belonging to the issue': alphaSort(
-          Array.from(reporterIDs).map(reporterID => ruleEngines[reporterID][0])
-        )
+        'rule engines with any violations belonging to the issue': getRuleEnginesFacts(reporterIDs)
+        .map(ruleEnginesFact => ruleEnginesFact.name)
       };
     });
     // Add the basics about the issues to the response content.

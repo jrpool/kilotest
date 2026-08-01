@@ -36,12 +36,14 @@ exports.response = async () => {
       reportsBasics.push(reportBasics);
     }
   }
-  // Sort the array by page description and secondarily by increasing creation time.
+  // Sort the array by page description and secondarily by increasing completion time.
   reportsBasics.sort((a, b) => {
-    if (a.description !== b.description) {
-      return a.description.localeCompare(b.description, 'en', { sensitivity: 'base' });
+    if (a['tested web page'].description !== b['tested web page'].description) {
+      return a['tested web page']
+      .description
+      .localeCompare(b['tested web page'].description, 'en', { sensitivity: 'base' });
     }
-    return a['creation date and time'].localeCompare(b['creation date and time']);
+    return a['completion date and time'].localeCompare(b['completion date and time']);
   });
   // Add the sorted basics about the reports to the response content.
   responseContent['basics about all available reports'] = reportsBasics;

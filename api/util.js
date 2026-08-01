@@ -7,12 +7,12 @@
 
 const {
   getAgoDays,
-  getDateTime,
   getLog,
   getNowStamp,
   getRandomString,
   getReport,
-  getReportSize,
+  getReportStats,
+  objectSort,
   ruleEngines
 } = require('../util');
 const issuesClassification = require('testilo/procs/score/tic').issues;
@@ -37,30 +37,20 @@ exports.getToolsFacts = () => ({
     'for HTML output': thisHost
   }
 });
-// Returns the facts about rule engines.
-exports.getRuleEnginesFacts = ruleEngineIDSet => {
-  const sortedRuleEngineIDs = Array.from(ruleEngineIDSet).sort((a, b) => {
-    const aName = ruleEngines[a][0];
-    const bName = ruleEngines[b][0];
-    return aName.localeCompare(bName, 'en', {sensitivity: 'base'});
-  });
-  return sortedRuleEngineIDs.map(id => {
-    const ruleEngineFacts = ruleEngines[id] ?? [];
-    return {
-      identifier: id,
-      name: ruleEngineFacts[0] || null,
-      sponsor: ruleEngineFacts[1] || null
-    };
-  });
-};
 // Returns the facts about a rule engine.
-exports.getRuleEngineFacts = ruleEngineID => {
+const getRuleEngineFacts = exports.getRuleEngineFacts = ruleEngineID => {
   const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
   return {
     identifier: ruleEngineID,
     name: ruleEngineData[0] || null,
     sponsor: ruleEngineData[1] || null
   };
+};
+// Returns the facts about rule engines.
+exports.getRuleEnginesFacts = ruleEngineIDSet => {
+  const ruleEnginesFacts = Array.from(ruleEngineIDSet).map(id => getRuleEngineFacts(id));
+  objectSort(ruleEnginesFacts, 'name', 'alpha');
+  return ruleEnginesFacts;
 };
 // Returns the basics about a report, without reading the report.
 exports.getReportBasics = async (timeStamp, jobID) => {
@@ -80,21 +70,22 @@ exports.getReportBasics = async (timeStamp, jobID) => {
     };
   }
   const {superseded = false, url, what} = log;
-  // Otherwise, i.e. if the log is valid and the report is available, get the report size.
-  const reportSize = await getReportSize(timeStamp, jobID);
+  // Otherwise, i.e. if the log is valid and the report is available, get its time and size.
+  const reportStats = await getReportStats(timeStamp, jobID);
   // If the  report does not exist:
-  if (! reportSize) {
+  if (! reportStats) {
     // Log and return this.
     console.error(`Log ${timeStamp}-${jobID} is valid but its report does not exist.`);
     return {
       error: `No report ${timeStamp}-${jobID} is available.`
     };
   }
+  const {reportTime, reportSize} = reportStats;
   // Otherwise, i.e. if its report exists, get the basics about it.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
-    'creation date and time': getDateTime(timeStamp).toISOString(),
-    'days since the creation date': getAgoDays(timeStamp),
+    'completion date and time': reportTime.toISOString(),
+    'days since the report was completed': getAgoDays(reportTime),
     'tested web page': {
       description: what,
       URL: url
@@ -217,4 +208,25 @@ exports.getReportIfOK = async (timeStamp, jobID, reportBasicsError) => {
   const report = await getReport(timeStamp, jobID);
   // Return it.
   return report;
+};
+// Returns the classification of an issue.
+exports.getIssueClassification = issueID => {
+  // Get the issue classification.
+  const issueClassification = issuesClassification[issueID] ?? {};
+  const {summary, wcag, weight, why} = issueClassification;
+  // If the issue is non-ignorable and fully classified:
+  if (
+    issueID
+    && issueID !== 'ignorable'
+    && issueClassification
+    && summary
+    && wcag
+    && [1, 2, 3, 4].includes(weight)
+    && why
+  ) {
+    // Return the classification.
+    return issueClassification;
+  }
+  // Otherwise, i.e. if it is ignorable or not fully classified, return this.
+  return null;
 };

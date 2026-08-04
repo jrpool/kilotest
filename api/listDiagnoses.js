@@ -1,184 +1,135 @@
 /*
   listDiagnoses.js
-  Lists all diagnoses of one violation of one issue in one Kilotest report.
+  Returns details about one violator of one issue in one report and facts about all its diagnoses.
 */
 
 // IMPORTS
 
-const {getData} = require('../reportIssues/util');
 const {
-  getDateTime,
-  getNowStamp,
-  getRandomString,
-  getReport,
-  getToolsFacts,
-  isHidden,
-  tools
-} = require('../util');
+  getIssueClassification,
+  getReportBasics,
+  getResponseMetadata,
+  getToolsFacts
+} = require('./util');
+const {getReport} = require('../util');
+
+// CONSTANTS
+
+const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 
-// Gets facts about an issue in a report.
-const getIssueFacts = async (issue, timeStamp, jobID) => {
-  const {issueID, reporterCount, reporters, summary, violatorCount, wcag, why} = issue;
-  const wcagType = wcag.length === 3 ? 'guideline' : 'success criterion';
+// Returns the response body.
+exports.response = async args => {
+  const [catalogIndex, issueID, timeStamp, jobID] = args;
+  // Initialize the response content.
+  const responseContent = {
+    'basics about the report': null,
+    'basics about the issue': null,
+    'basics and details about the element': null,
+    'diagnoses of how the element exhibited the issue': null
+  };
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  const {acts, catalog, error} = report;
   // If this failed:
-  if (error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: error
-    };
+  if (report.error) {
+    // Add this to the response content.
+    responseContent['basics about the report'] = report;
   }
-  // Initialize the issue violators.
-  const violatorIndexSet = new Set();
-  // For each act of the report:
-  acts.forEach(act => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // For each standard instance of the act:
-      instances.forEach(instance => {
-        const {catalogIndex} = instance;
-        // If its issue is the issue to be described and the instance has a catalog index:
-        if (instance.issueID === issueID && catalogIndex) {
-          // Ensure that the violator is among the issue violators.
-          violatorIndexSet.add(catalogIndex);
+  // Otherwise, i.e. if it succeeded:
+  else {
+    // Get the basics about the report.
+    const reportBasics = await getReportBasics(timeStamp, jobID);
+    // Add them to the response content.
+    responseContent['basics about the report'] = reportBasics;
+    // Get the classification of the issue.
+    const issueClassification = issueID ? getIssueClassification(issueID) : null;
+    // If the issue is non-ignorable and fully classified:
+    if (issueClassification) {
+      const {summary, wcag, weight, why} = issueClassification;
+      // Initialize the basics about the issue.
+      const issueBasics = {
+        'identifier': issueID,
+        summary,
+        'impact on a user': why,
+        'related WCAG standard': {
+          'layer': (wcag.length > 4 ? 'success criterion' : 'guideline'),
+          'identifier': wcag
+        },
+        priority: ['lowest', 'low', 'high', 'highest'][weight - 1]
+      };
+      // Add the basics about the issue to the response content.
+      responseContent['basics about the issue'] = issueBasics;
+    }
+    const catalogItem = report.catalog[catalogIndex];
+    // If the violator is in the catalog:
+    if (catalogItem) {
+      // Get basics and details about the violator.
+      const violatorFacts = {
+        identifier: catalogIndex,
+        'tag name': catalogItem.tagName || null,
+        'start tag': catalogItem.startTag ?? null,
+        'inner text': catalogItem.text ?? null,
+        'XPath': catalogItem.pathID ?? null,
+        'x, y, width, and height of bounding box': catalogItem.boxID ?? null
+      };
+      // Add them to the response content.
+      responseContent['basics and details about the element exhibiting the issue']
+      = violatorFacts;
+      // Initialize data about the diagnoses of the violation of the issue.
+      const diagnoses = [];
+      // For each act in the report:
+      report.acts.forEach(act => {
+        const {result, type, which} = act;
+        const instances = result?.standardResult?.instances || [];
+        // If the act is a test act with a specified rule engine:
+        if (type === 'test' && which) {
+          // For each standard instance of the act:
+          instances.forEach(instance => {
+            const {count, ordinalSeverity, ruleID, what} = instance;
+            // If the instance has the issue ID and the catalog index of the violator:
+            if (instance.issueID === issueID && instance.catalogIndex === catalogIndex) {
+              // Get the diagnosis.
+              const diagnosis = {
+                'identifier of the violated rule': ruleID !== what ? ruleID : null,
+                'description of the violation': what,
+                'severity of the violation on a 0-to-3 scale': ordinalSeverity,
+                'count of violations of the rule by the element': count
+              }
+              diagnoses.push(diagnosis);
+            }
+          });
         }
       });
+      // Add the diagnoses to the response content.
+      responseContent['diagnoses of how the element exhibited the issue'] = diagnoses;
     }
-  });
-  return {
-    identifier: issueID,
-    summary,
-    'related WCAG 2.2 standard': {
-      layer: wcagType,
-      'numeric identifier': wcag
-    },
-    'impact on a user': why,
-    'rule engines reporting the issue': {
-      'number': reporterCount,
-      'names': reporters.map(tool => tool.toolName)
-    },
-    'number of HTML elements reported as exhibiting the issue': violatorCount,
-    'HTML elements reported as exhibiting the issue': Array
-    .from(violatorIndexSet)
-    .filter(index => catalog[index])
-    .map(index => ({
-      identifier: String(index),
-      'tag name': catalog[index].tagName,
-      'id attribute': catalog[index].id,
-      'start tag': catalog[index].startTag,
-      'inner text': catalog[index].text,
-      'inner text usable as a text fragment for linking': catalog[index].textLinkable,
-      'x, y, width, height in pixels': catalog[index].boxID.split(':'),
-      'XPath': catalog[index].pathID
-    }))
-  };
-};
-// Returns a response to a report-issue request.
-exports.response = async args => {
-  const [issueID, timeStamp, jobID] = args;
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report is not available:
-  if (reportIsHidden) {
-    // Return this.
-    return {
-      status: 'error',
-      message: 'Report not available'
-    };
   }
-  // Otherwise, i.e. if the report is available, get data on the report and its issues.
-  const data = await getData(timeStamp, jobID);
-  const {error, issuesData, pageData} = data;
-  // If this failed:
-  if (error) {
-    // Return why.
-    return {
-      status: 'error',
-      message: error
-    };
-  }
-  const {what, url, daysAgo} = pageData;
-  const {issueCount, issues, preventions, reporterCount, reporters, violatorCount} = issuesData;
-  let issue;
-  // Otherwise, i.e. if it succeeded, get the level of and the data on the issue.
-  const issueLevel = [4, 3, 2, 1].find(level => {
-    issue = issues[level].find(issue => issue.issueID === issueID);
-    return issue;
-  });
-  // If the issue was not one of those in the report:
-  if (! issue) {
-    // Return this.
-    return {
-      status: 'error',
-      message: 'Issue not found in the report'
-    };
-  }
-  const preventedTools = Object.entries(preventions).map(prevention => ({
-    name: tools[prevention[0]][0],
-    'reason for failure': prevention[1]
-  }));
-  const thisHost = process.env.THIS_KILOTEST_HOST;
-  // Get a response.
-  const content = {
-    summary: `This document fulfills a request made by a language model to a Kilotest tool. The model requested data, drawn from a Kilotest report, about one of the issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. Kilotest, with the help of Testaro, Testilo, and an ensemble of ten rule engines, performs tests on web pages, using a combination of rule- and machine-learning-based methods, and produces reports. Kilotest exposes several API endpoints to recommend web pages for testing and to obtain information from Kilotest reports. To learn more about Kilotest and the advantages of testing with an ensemble of rule engines, visit the deployed instance of Kilotest (${process.env.DEPLOYED_KILOTEST_HOST}), which contains an introduction on its home page and a tutorial.`,
-    'tool collection name': 'Kilotest',
-    'tool name': 'describeOneIssueFromOneReport',
-    request: {
-      'type of request': {
-        identifier: 'reportIssue',
-        description: 'Describe one issue from one report.'
-      },
+  // Create a response body.
+  const body = {
+    'tool collection': getToolsFacts(),
+    'tool name': 'listDiagnoses',
+    'this request': {
+      description: 'Provide details about one element exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The catalogIndex, issueID, timeStamp, and jobID parameters identify the element, issue, and report that I want details about. Those parameters were in the response to my earlier listViolators request.',
       method: 'GET',
       URLs: {
-        'for JSON output': `${thisHost}/api/reportIssue/${issueID}/${timeStamp}/${jobID}`,
-        'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+        'of this request':
+        `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
+        'of the equivalent request for HTML output':
+        `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
       },
       'closest ancestor request': {
-        identifier: 'summarizeOneReport',
-        description: 'Summarize one report.',
+        'tool name': 'listViolators',
+        description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were faulted for the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about.',
         URLs: {
-          'for JSON output': `${thisHost}/api/reportFacts/${timeStamp}/${jobID}`,
-          'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+          'for JSON output': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
+          'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
         }
       }
     },
-    'response metadata': {
-      identifier: `${getNowStamp()}-${getRandomString(3)}`,
-      'date and time': new Date().toISOString()
-    },
-    report: {
-      identifier: `${timeStamp}-${jobID}`,
-      'creation date': getDateTime(timeStamp),
-      'days since the creation date': daysAgo
-    },
-    'tested web page': {
-      description: what,
-      URL: url
-    },
-    'rule engines that tried to test the page': getToolsFacts(Object.keys(tools)),
-    'rule engines that were unable to test the page': preventedTools,
-    'rule engines that reported issues': {
-      number: reporterCount,
-      names: reporters.map(tool => tool.toolName)
-    },
-    'number of issues reported': {
-      total: issueCount,
-      'by priority': {
-        'highest priority': issues[4].length,
-        'high priority': issues[3].length,
-        'low priority': issues[2].length,
-        'lowest priority': issues[1].length
-      }
-    },
-    'number of HTML elements reported as exhibiting issues': violatorCount,
-    'level of the issue': issueLevel,
-    'facts about the issue': await getIssueFacts(issue, timeStamp, jobID)
-  };
-  return content;
+    'response metadata': getResponseMetadata(),
+    'response content': responseContent
+  }
+  // Return it.
+  return body;
 };

@@ -114,7 +114,13 @@ exports.response = async args => {
           identifier: catalogIndex,
           'tag name': catalogItem?.tagName || null,
           'inner text': catalogItem?.text ?? null,
-          'count of rule engines faulting the element for the issue': reporters.size
+          'count of rule engines faulting the element for the issue': reporters.size,
+          'URLs for more details': {
+            'for JSON output':
+            `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
+            'for HTML output':
+            `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
+          }
         };
       });
     }

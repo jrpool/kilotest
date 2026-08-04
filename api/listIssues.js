@@ -143,7 +143,11 @@ exports.response = async args => {
         priority: ['lowest', 'low', 'high', 'highest'][weight - 1],
         'impact on a user': why,
         'rule engines with any violations belonging to the issue': getRuleEnginesFacts(reporterIDs)
-        .map(ruleEnginesFact => ruleEnginesFact.name)
+        .map(ruleEnginesFact => ruleEnginesFact.name),
+        'URLs for more details': {
+          'for JSON output': `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`,
+          'for HTML output': `${thisHost}/reportIssue.html/${id}/${timeStamp}/${jobID}`
+        }
       };
     });
     // Add the basics about the issues to the response content.

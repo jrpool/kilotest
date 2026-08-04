@@ -10,7 +10,6 @@ const {
   getLog,
   getNowStamp,
   getRandomString,
-  getReport,
   getReportStats,
   objectSort,
   ruleEngines
@@ -100,114 +99,6 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   };
   // Return them.
   return basics;
-};
-// Returns the basics about an issue in a report, without reading the report.
-exports.getIssueBasics = async (issueID, timeStamp, jobID) => {
-  const issueClassification = issuesClassification[issueID];
-  // If the issue is ignorable or is not classified:
-  if (issueID === 'ignorable' || ! issueClassification) {
-    // Log and return this.
-    console.error(`Issue ${issueID} is ignorable or not classified.`);
-    return {
-      error: `Basics about issue ${issueID} are not available.`
-    };
-  }
-  const {summary = null, weight = null, why = null} = issueClassification;
-  // Otherwise, i.e. if the issue is non-ignorable and classified, get its priority.
-  const priority = typeof weight === 'number'
-  ? ['lowest', 'low', 'high', 'highest'][weight - 1]
-  : null;
-  // Get the basics about the issue.
-  const basics = {
-    identifier: issueID,
-    summary,
-    'impact on a user': why,
-    priority,
-    'URLs for more details': {
-      'for JSON output': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
-      'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
-    }
-  };
-  // Return them.
-  return basics;
-};
-// Returns the details about an issue in a report, not including a list of its violators.
-exports.getIssueDetails = (issueID, report) => {
-  // Initialize data about the issue.
-  const reporterIDs = new Set();
-  const violatorIndexes = new Set();
-  // For each act in the report:
-  report.acts.forEach(act => {
-    // If the act is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
-      const instances = result?.standardResult?.instances ?? [];
-      // For each of the standard instances of the act:
-      instances.forEach(instance => {
-        // If the instance has the issue:
-        if (instance.issueID === issueID) {
-          // Ensure the rule engine is a reporter in the data.
-          reporterIDs.add(which);
-          const {catalogIndex} = instance;
-          // If the instance has a catalog index:
-          if (catalogIndex) {
-            // Ensure it is a violator in the data.
-            violatorIndexes.add(catalogIndex);
-          }
-        }
-      });
-    }
-  });
-  // Return the details.
-  return {
-    'names of rule engines with violated rules belonging to the issue': Array.from(reporterIDs),
-    'count of violators, i.e. elements exhibiting the issue': violatorIndexes.size
-  };
-};
-// Returns the basics about a violator.
-exports.getViolatorBasics = async (catalogIndex, report) => {
-  const {catalog, id} = report;
-  // If the report has no id or no catalog:
-  if (! (id && catalog)) {
-    // Return a failure.
-    return {
-      error: ' Basics about violators in the report are not available.'
-    };
-  }
-  const violator = catalog[catalogIndex];
-  // Otherwise, if the report has a catalog but the specified violator is not in it:
-  if (! violator) {
-    // Return this.
-    return {
-      error: `Basics about violator ${catalogIndex} in report ${id} are not available`
-    };
-  }
-  const {pathID = null, startTag = null, text = null} = violator;
-  // Otherwise, i.e. if the violator is in the catalog, get the basics about the violator.
-  const basics = {
-    identifier: catalogIndex,
-    'start tag': startTag,
-    'inner text': text,
-    'XPath': pathID
-  };
-  // Return them.
-  return basics;
-};
-// Returns a report or an error message.
-exports.getReportIfOK = async (timeStamp, jobID, reportBasicsError) => {
-  // If the report basics were not retrievable, the log file is invalid, or the report is hidden:
-  if (reportBasicsError) {
-    // Log and return this.
-    console.error(`Basics about report ${timeStamp}-${jobID} not obtained (${reportBasicsError})`);
-    return {
-      status: 'error',
-      message: `No facts about report ${timeStamp}-${jobID} are available.`
-    };
-  }
-  // Otherwise, get the report.
-  const report = await getReport(timeStamp, jobID);
-  // Return it.
-  return report;
 };
 // Returns the classification of an issue.
 exports.getIssueClassification = issueID => {

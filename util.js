@@ -175,7 +175,7 @@ const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value.
-const objectSort = exports.objectSort = (objects, property, sortType) => objects
+exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -778,36 +778,11 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
 };
-// Returns data about rule engines sorted by their names.
-const getToolsData = exports.getToolsData = toolIDs => objectSort(
-  Array.from(toolIDs).map(toolID => {
-    const toolData = tools[toolID];
-    return {
-      toolID,
-      toolName: toolData[0],
-      toolMaker: toolData[1]
-    }
-  }),
-  'toolName',
-  'alpha'
-);
 // Returns a +-delimited list of sorted names of rule engines.
 exports.getToolList = toolIDs => Array.from(toolIDs)
 .map(toolID => tools[toolID][0])
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');
-// Returns facts about rule engines.
-exports.getToolsFacts = toolIDs => {
-  const crypticData = getToolsData(toolIDs);
-  return crypticData.map(tool => {
-    const {toolID, toolName, toolMaker} = tool;
-    return {
-      identifier: toolID,
-      name: toolName,
-      sponsor: toolMaker
-    };
-  });
-};
 // Returns a string describing a count.
 exports.getCountString = (count, singular, plural) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 // Minifies a URL for duplicate detection.

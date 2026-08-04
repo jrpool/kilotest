@@ -40,6 +40,8 @@ exports.response = async args => {
   else {
     // Get the basics about the report.
     const reportBasics = await getReportBasics(timeStamp, jobID);
+    // Delete the URLs for more details from them.
+    delete reportBasics['URLs for more details'];
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
     // Get the classification of the issue.

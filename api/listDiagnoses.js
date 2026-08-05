@@ -39,7 +39,7 @@ exports.response = async args => {
     // Get the basics about the report (which may be only an error message).
     const reportBasics = await getReportBasics(timeStamp, jobID);
     // Delete any URLs for more details from them.
-    delete reportBasics['URSs for more details'];
+    delete reportBasics['URLs for more details'];
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
   }

@@ -37,7 +37,7 @@ server.registerTool(
       summary: z.string().describe('Natural-language facts about the request, the response, and Kilotest.'),
       // ... other fields with .describe()
     }),
-    annotations: { ... }
+    annotations: {...}
   },
   async () => {
     const result = await reportListAPI.response();

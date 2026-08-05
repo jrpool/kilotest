@@ -39,7 +39,9 @@ exports.sendAlert = (subject, body) => new Promise(resolve => {
       }
     }, res => {
       let data = '';
-      res.on('data', chunk => { data += chunk; });
+      res.on('data', chunk => {
+        data += chunk;
+      });
       res.on('end', () => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           console.log(`Alert sent (${subject})`);

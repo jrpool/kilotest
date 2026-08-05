@@ -41,7 +41,7 @@ exports.response = async () => {
     if (a['tested web page'].description !== b['tested web page'].description) {
       return a['tested web page']
       .description
-      .localeCompare(b['tested web page'].description, 'en', { sensitivity: 'base' });
+      .localeCompare(b['tested web page'].description, 'en', {sensitivity: 'base'});
     }
     return a['completion date and time'].localeCompare(b['completion date and time']);
   });

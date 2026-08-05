@@ -26,7 +26,8 @@ exports.response = async args => {
   // Initialize the response content.
   const responseContent = {
     'basics about the report': null,
-    'basics and details about the issue': null,
+    'basics about the issue': null,
+    'details about the issue': null,
     'basics about all elements exhibiting the issue': null
   };
   // Get the report.
@@ -40,27 +41,46 @@ exports.response = async args => {
   else {
     // Get the basics about the report.
     const reportBasics = await getReportBasics(timeStamp, jobID);
-    // Delete the URLs for more details from them.
-    delete reportBasics['URLs for more details'];
-    // Add them to the response content.
-    responseContent['basics about the report'] = reportBasics;
-    // Get the classification of the issue.
-    const issueClassification = issueID ? getIssueClassification(issueID) : null;
-    // If the issue is non-ignorable and fully classified:
-    if (issueClassification) {
-      const {summary, wcag, weight, why} = issueClassification;
-      // Initialize the basics and details about the issue.
-      const issueFacts = {
-        'identifier': issueID,
-        summary,
-        'impact on a user': why,
-        'related WCAG standard': {
-          'layer': (wcag.length > 4 ? 'success criterion' : 'guideline'),
-          'identifier': wcag
-        },
-        priority: ['lowest', 'low', 'high', 'highest'][weight - 1],
-        'rule engines reporting violations belonging to the issue': []
-      };
+    // If this failed, the log file is invalid, or the report is hidden:
+    if (reportBasics.error) {
+      // Add this to the response content.
+      responseContent['basics about the report'] = reportBasics;
+    }
+    // Otherwise, i.e. if it succeeded, the log file is valid, and the report is not hidden:
+    else {
+      // Delete the URLs for more details from the basics about the report.
+      delete reportBasics['URLs for more details'];
+      // Add them to the response content.
+      responseContent['basics about the report'] = reportBasics;
+    }
+  }
+  // Get the classification of the issue.
+  const issueClassification = issueID ? getIssueClassification(issueID) : null;
+  // If the issue is ignorable or not fully classified:
+  if (! issueClassification) {
+    // Add this to the response content.
+    responseContent['basics about the issue'] = {
+      'error': 'No information about the specified issue is available'
+    };
+  }
+  // Otherwise, i.e. if it is non-ignorable and fully classified:
+  else {
+    const {summary, wcag, weight, why} = issueClassification;
+    // Initialize the basics and details about it.
+    const issueBasics = {
+      'identifier': issueID,
+      summary,
+      'impact on a user': why,
+      'related WCAG standard': {
+        'layer': (wcag.length > 4 ? 'success criterion' : 'guideline'),
+        'identifier': wcag
+      },
+      priority: ['lowest', 'low', 'high', 'highest'][weight - 1]
+    };
+    // Add the basics about the issue to the response content.
+    responseContent['basics about the issue'] = issueBasics;
+    // If the report exists and is not hidden and its log file is valid:
+    if (! report.error) {
       // Initialize data about the instances of the issue.
       const reporterIDs = new Set();
       const violators = {};
@@ -75,7 +95,7 @@ exports.response = async args => {
             // If the instance has the issue ID:
             if (instance.issueID === issueID) {
               const {catalogIndex} = instance;
-              // Ensure the rule-engine ID is in the reporter data.
+              // Ensure the rule-engine ID is in the reporters data.
               reporterIDs.add(which);
               // If the instance has a catalog index:
               if (catalogIndex) {
@@ -94,9 +114,12 @@ exports.response = async args => {
       // Get details about the reporters of the issue.
       const reportersFacts = getRuleEnginesFacts(reporterIDs);
       // Add them to the facts about the issue.
-      issueFacts['rule engines reporting violations belonging to the issue'] = reportersFacts;
-      // Add the basics and details about the issue to the response content.
-      responseContent['basics and details about the issue'] = issueFacts;
+      const issueDetails = {
+        'rule engines reporting violations belonging to the issue': reportersFacts
+      };
+      // Add the details about the issue to the response content.
+      responseContent['details about the issue'] = issueDetails;
+      const {catalog} = report;
       // Get a sorted array of data about the violators.
       const sortedViolatorData = Object.values(violators).sort(
         (a, b) => {
@@ -106,9 +129,8 @@ exports.response = async args => {
           return b.reporters.size - a.reporters.size;
         }
       );
-      const {catalog} = report;
-      // Add basics about the violators to the response content.
-      responseContent['basics about all elements exhibiting the issue'] = sortedViolatorData
+      // Get basics about the violators.
+      const violatorsBasics = sortedViolatorData
       .map(violator => {
         const {catalogIndex, reporters} = violator;
         const catalogItem = catalog[catalogIndex];
@@ -116,7 +138,7 @@ exports.response = async args => {
           identifier: catalogIndex,
           'tag name': catalogItem?.tagName || null,
           'inner text': catalogItem?.text ?? null,
-          'count of rule engines faulting the element for the issue': reporters.size,
+          'count of rule engines reporting that the element exhibits the issue': reporters.size,
           'URLs for more details': {
             'for JSON output':
             `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
@@ -125,6 +147,8 @@ exports.response = async args => {
           }
         };
       });
+      // Add basics about the violators to the response content.
+      responseContent['basics about all elements exhibiting the issue'] = violatorsBasics;
     }
   }
   // Create a response body.
@@ -132,7 +156,7 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'listViolators',
     'this request': {
-      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were faulted for the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
+      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported to be exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
       method: 'GET',
       URLs: {
         'of this request': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,

@@ -6,7 +6,9 @@
 // IMPORTS
 
 const {sendAlert} = require('./alerts');
-const issuesClassification = require('testilo/procs/score/tic').issues;
+const issuesClassification
+= exports.issuesClassification
+= require('testilo/procs/score/tic').issues;
 const fs = require('fs/promises');
 const path = require('path');
 const querystring = require('querystring');

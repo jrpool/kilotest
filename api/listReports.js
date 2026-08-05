@@ -5,13 +5,9 @@
 
 // IMPORTS
 
-const {getReportBasics, getResponseMetadata, getToolsFacts} = require('./util');
+const {getReportBasics, getResponseMetadata, getToolsFacts, thisHost} = require('./util');
 const {logsPath} = require('../util');
 const fs = require('fs').promises;
-
-// CONSTANTS
-
-const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 

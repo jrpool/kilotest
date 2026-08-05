@@ -11,14 +11,14 @@ const {
   getNowStamp,
   getRandomString,
   getReportStats,
+  issuesClassification,
   objectSort,
   ruleEngines
 } = require('../util');
-const issuesClassification = require('testilo/procs/score/tic').issues;
 
 // CONSTANTS
 
-const thisHost = process.env.THIS_KILOTEST_HOST;
+const thisHost = exports.thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 

@@ -9,13 +9,10 @@ const {
   getIssueClassification,
   getReportBasics,
   getResponseMetadata,
-  getToolsFacts
+  getToolsFacts,
+  thisHost
 } = require('./util');
 const {getReport} = require('../util');
-
-// CONSTANTS
-
-const thisHost = process.env.THIS_KILOTEST_HOST;
 
 // FUNCTIONS
 

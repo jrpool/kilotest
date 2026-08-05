@@ -354,18 +354,27 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service lists the issues in a report:
       else if (service === 'listIssues') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'reportFacts'))
+        const responseBody = await require(path.join(__dirname, 'api', 'listIssues'))
         .response(specs);
-        // Send them.
+        // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
       }
       // Otherwise, if the service lists the violators of an issue in a report:
       else if (service === 'listViolators') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'reportIssue', 'api'))
+        const responseBody = await require(path.join(__dirname, 'api', 'listViolators'))
         .response(specs);
-        // Send them.
+        // Send it.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service lists the diagnoses of a violation of an issue in a report:
+      else if (service === 'listDiagnoses') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'listDiagnoses'))
+        .response(specs);
+        // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
       }

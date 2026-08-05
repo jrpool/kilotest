@@ -341,7 +341,7 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is for an API service:
     else if (pageName === 'api') {
-      const [service,  ... specs] = pathTail.split('/');
+      const [service, ... specs] = pathTail.split('/');
       // If the service lists the available reports:
       if (service === 'listReports') {
         // Get the response body.

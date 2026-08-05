@@ -22,7 +22,15 @@ export default defineConfig([
       globals: globals.node
     },
     rules: {
-      "no-control-regex": "off"
+      "no-control-regex": "off",
+      "rest-spread-spacing": ["error", "never"],
+      "space-unary-ops": [
+        "error",
+        {
+          "words": true,
+          "nonwords": false
+        }
+      ]
     }
   },
   {

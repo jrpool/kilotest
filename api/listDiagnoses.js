@@ -137,7 +137,7 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'listDiagnoses',
     'this request': {
-      description: 'Provide details about one element exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The catalogIndex, issueID, timeStamp, and jobID parameters identify the element, issue, and report that I want details about. Those parameters were in the response to my earlier listViolators request.',
+      description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The catalogIndex, issueID, timeStamp, and jobID parameters identify the element, issue, and report that I want details about. Those parameters were in the response to my earlier listViolators request.',
       method: 'GET',
       URLs: {
         'of this request':
@@ -147,7 +147,7 @@ exports.response = async args => {
       },
       'closest ancestor request': {
         'tool name': 'listViolators',
-        description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were faulted for the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about.',
+        description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about.',
         URLs: {
           'for JSON output': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
           'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`

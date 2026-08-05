@@ -65,7 +65,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   if (log.hidden) {
     // Return this.
     return {
-      error: `No report ${timeStamp}-${jobID} is available.`
+      error: `Report ${timeStamp}-${jobID} is not available.`
     };
   }
   const {superseded = false, url, what} = log;
@@ -76,7 +76,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
     // Log and return this.
     console.error(`Log ${timeStamp}-${jobID} is valid but its report does not exist.`);
     return {
-      error: `No report ${timeStamp}-${jobID} is available.`
+      error: `Report ${timeStamp}-${jobID} could not be retrieved.`
     };
   }
   const {reportTime, reportSize} = reportStats;

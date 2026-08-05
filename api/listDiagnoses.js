@@ -36,8 +36,10 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if it succeeded:
   else {
-    // Get the basics about the report.
+    // Get the basics about the report (which may be only an error message).
     const reportBasics = await getReportBasics(timeStamp, jobID);
+    // Delete any URLs for more details from them.
+    delete reportBasics['URSs for more details'];
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
   }
@@ -70,7 +72,7 @@ exports.response = async args => {
     // Add them to the response content.
     responseContent['basics about the issue'] = issueBasics;
   }
-  // If the catalog exists:
+  // If the report and its catalog exist:
   if (report.catalog) {
     const catalogItem = report.catalog[catalogIndex];
     // If the violator is not in it:

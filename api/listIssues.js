@@ -36,14 +36,16 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if it succeeded:
   else {
-    // Get the basics about the report.
+    // Get the basics about the report (which may be only an error message).
     const reportBasics = await getReportBasics(timeStamp, jobID);
-    // If this succeeded, the log file is valid, and the report is not hidden:
+    // Delete any URLs for more details from the basics about the report.
+    delete reportBasics['URLs for more details'];
+    // Delete any URLs for more details from the basics about the report.
+    delete reportBasics['URLs for more details'];
+    // Add the basics about the report to the response content.
+    responseContent['basics about the report'] = reportBasics;
+    // If the basics about the report were obtained:
     if (! reportBasics.error) {
-      // Delete the URLs for more details from the basics about the report.
-      delete reportBasics['URLs for more details'];
-      // Add the basics about the report to the response content.
-      responseContent['basics about the report'] = reportBasics;
       const {
         strict = null,
         standard = null,

@@ -25,7 +25,7 @@ exports.response = async () => {
   for (const logFileName of logFileNames) {
     const [timeStamp, jobID] = logFileName.slice(0, -5).split('-');
     // Get the basics about its report.
-    const reportBasics = await getReportBasics(timeStamp, jobID);
+    const reportBasics = await getReportBasics(timeStamp, jobID, true);
     // If this succeeded, the log file is valid, and the report is not hidden:
     if (! reportBasics.error) {
       // Add the basics to the array.

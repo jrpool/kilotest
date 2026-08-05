@@ -37,9 +37,7 @@ exports.response = async args => {
   // Otherwise, i.e. if it succeeded:
   else {
     // Get the basics about the report (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID);
-    // Delete any URLs for more details from them.
-    delete reportBasics['URLs for more details'];
+    const reportBasics = await getReportBasics(timeStamp, jobID, false);
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
   }
@@ -127,7 +125,7 @@ exports.response = async args => {
           identifier: catalogIndex,
           'tag name': catalogItem?.tagName || null,
           'inner text': catalogItem?.text ?? null,
-          'count of rule engines reporting that the element exhibits the issue': reporters.size,
+          'count of rule engines reporting that the element exhibited the issue': reporters.size,
           'URLs for more details': {
             'for JSON output':
             `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,

@@ -102,11 +102,16 @@ exports.getReportBasics = async (timeStamp, jobID, withURLs = true) => {
     };
     // Add URLs for a retest recommendation to the basics.
     basics['URLs for a retest recommendation'] = {
-      'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}/urlEncodedReason`,
+      'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}/encodedReason`,
       'for HTML output': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
     };
     // Add instructions for a retest request to the basics.
-    basics['instructions for a retest request'] = 'Replace urlEncodedReason in the URL with a 20- to 100-character URL encoding of a reason why the same page should be retested';
+    basics['instructions for a retest request'] = {
+      'how to make a request': {
+        encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be retested'
+      },
+      'how to check whether the request has been fulfilled': 'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
+    };
   }
   // Return the basics.
   return basics;

@@ -21,9 +21,12 @@ exports.response = async () => {
       'for HTML output': `https://${thisHost}/testRecForm.html`
     },
     'instructions for a test request': {
-      encodedDescription: 'replace this segment with a 10- to 100-character URI-component encoding of a description of the page to be tested, conforming to the naming convention used in this list of reports',
-      encodedURL: 'replace this segment with the URI-component encoding of the URL of the page to be tested',
-      encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be tested'
+      'how to make a request': {
+        encodedDescription: 'replace this segment with a 10- to 100-character URI-component encoding of a description of the page to be tested, conforming to the naming convention used in this list of reports',
+        encodedURL: 'replace this segment with the URI-component encoding of the URL of the page to be tested',
+        encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be tested'
+      },
+      'how to check whether the request has been fulfilled': 'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
     }
   };
   // Initialize an array of basics about the reports.

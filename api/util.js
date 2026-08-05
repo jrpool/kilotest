@@ -52,7 +52,7 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
   return ruleEnginesFacts;
 };
 // Returns the basics about a report, without reading the report.
-exports.getReportBasics = async (timeStamp, jobID, withDetailURLs = true) => {
+exports.getReportBasics = async (timeStamp, jobID, withURLs = true) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
   // If this failed:
@@ -72,7 +72,7 @@ exports.getReportBasics = async (timeStamp, jobID, withDetailURLs = true) => {
   // Otherwise, i.e. if the log is valid and the report is available, get its time and size.
   const reportStats = await getReportStats(timeStamp, jobID);
   // If the  report does not exist:
-  if (! reportStats) {
+  if (!reportStats) {
     // Log and return this.
     console.error(`Log ${timeStamp}-${jobID} is valid but its report does not exist.`);
     return {
@@ -89,16 +89,24 @@ exports.getReportBasics = async (timeStamp, jobID, withDetailURLs = true) => {
       description: what,
       URL: url
     },
-    'whether a later report about the same page exists': !! superseded,
+    'whether a later report about the same page exists': !!superseded,
     'size of the report in bytes': reportSize,
     'URL to get the entire report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
   };
-  // Add URLs for more details to the basics if specified.
-  if (withDetailURLs) {
+  // If URLs are specified:
+  if (withURLs) {
+    // Add URLs for more details to the basics.
     basics['URLs for more details'] = {
       'for JSON output': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
       'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     };
+    // Add URLs for a retest recommendation to the basics.
+    basics['URLs for a retest recommendation'] = {
+      'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}/urlEncodedReason`,
+      'for HTML output': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
+    };
+    // Add instructions for a retest request to the basics.
+    basics['instructions for a retest request'] = 'Replace urlEncodedReason in the URL with a 20- to 100-character URL encoding of a reason why the same page should be retested';
   }
   // Return the basics.
   return basics;

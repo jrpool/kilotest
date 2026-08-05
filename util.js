@@ -355,13 +355,13 @@ const isValidLog = log => {
 // Returns a report log after conditionally annotating it.
 const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
   const log = await getRecord('log', timeStamp, jobID);
-  if (annotate && ! (log.error || log.annotated)) {
+  if (annotate && !(log.error || log.annotated)) {
     await annotateReport(ruleIDs, timeStamp, jobID);
   }
   if (log.error) {
     return log;
   }
-  if (! isValidLog(log)) {
+  if (!isValidLog(log)) {
     return {error: `Log ${timeStamp}-${jobID} is invalid`};
   }
   return log;
@@ -371,7 +371,7 @@ exports.isHidden = async (timeStamp, jobID) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
   // Return whether the log exists and its report is hidden.
-  return !! log.hidden;
+  return !!log.hidden;
 };
 // Returns summary data on a report.
 exports.getReportData = async (timeStamp, jobID) => {
@@ -592,7 +592,7 @@ const getEnhancedLogs = exports.getEnhancedLogs = async () => {
     // Otherwise, i.e. if it succeeded:
     else {
       // If the report is not hidden:
-      if (! log.hidden) {
+      if (!log.hidden) {
         // Add the job name to the log.
         log.jobName = logName;
         // Add the log to the logs.
@@ -657,7 +657,7 @@ exports.isRecommendable = async url => {
 };
 // Returns whether a string is a time stamp.
 exports.isTimeStamp = string => {
-  return !! getDateString(string);
+  return !!getDateString(string);
 };
 // Returns whether a string is a URL.
 const isURL = exports.isURL = string => {
@@ -758,7 +758,7 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
 // Gets HTML strings for page data from a report.
 exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
   // If the page data were not specified:
-  if (! pageData) {
+  if (!pageData) {
     // Get them.
     pageData = await getPageData(timeStamp, jobID);
   }
@@ -802,7 +802,7 @@ exports.getReportStats = async (timeStamp, jobID) => {
     path.join(reportsPath, `${timeStamp}-${jobID}.json`),
     {throwIfNoEntry: false}
   );
-  if (! reportStat) {
+  if (!reportStat) {
     return null;
   }
   const reportTime = reportStat.birthtime;

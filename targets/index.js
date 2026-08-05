@@ -8,11 +8,11 @@
 const {
   getAgoDays,
   getCountString,
+  getEnhancedLogs,
   getJobNames,
   getObject,
   getPageDataStrings,
   getRecs,
-  getLogs,
   getReportData,
   isRecommendable,
   jobsPath

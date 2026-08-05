@@ -41,7 +41,7 @@ exports.response = async args => {
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
     // If the basics about the report were obtained:
-    if (! reportBasics.error) {
+    if (!reportBasics.error) {
       const {
         strict = null,
         standard = null,

@@ -21,7 +21,7 @@ exports.answer = async (_, search) => {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
       // Get the log of the report.
-      const log = await getLog(... jobName.split('-'));
+      const log = await getLog(...jobName.split('-'));
       // If this failed:
       if (log.error) {
         // Return why.
@@ -83,7 +83,7 @@ exports.answer = async (_, search) => {
   reportSpecs.forEach(spec => {
     const {hidden, what, timeStamp, jobID} = spec;
     // If it is not already hidden:
-    if (! hidden) {
+    if (!hidden) {
       const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
       // Add a line with a radio button to hide it.
       lines.push(

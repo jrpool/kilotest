@@ -44,7 +44,7 @@ exports.response = async args => {
   // Get the classification of the issue.
   const issueClassification = issueID ? getIssueClassification(issueID) : null;
   // If the issue is ignorable or not fully classified:
-  if (! issueClassification) {
+  if (!issueClassification) {
     // Add this to the response content.
     responseContent['basics about the issue'] = {
       'error': 'No information about the specified issue is available'
@@ -67,7 +67,7 @@ exports.response = async args => {
     // Add the basics about the issue to the response content.
     responseContent['basics about the issue'] = issueBasics;
     // If the report exists and is not hidden and its log file is valid:
-    if (! report.error) {
+    if (!report.error) {
       // Initialize data about the instances of the issue.
       const reporterIDs = new Set();
       const violators = {};

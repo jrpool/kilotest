@@ -8,9 +8,9 @@
 const {sendAlert} = require('../alerts');
 const {
   annotateReport,
+  getEnhancedLogs,
   getReport,
   getToolNamesString,
-  getLogs,
   getWCAGLink,
   getWeightName,
   objectSort,
@@ -33,7 +33,7 @@ const getIssuesSummary = async logs => {
     const {annotated, jobName} = log;
     const [timeStamp, jobID] = jobName.split('-');
     // If the corresponding report is not yet annotated:
-    if (! annotated) {
+    if (!annotated) {
       // Annotate it and mark it as annotated in the log.
       await annotateReport(ruleIDs, timeStamp, jobID);
     }
@@ -110,7 +110,7 @@ const getIssuesSummary = async logs => {
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
   // Get the logs of the latest reports on the tested targets.
-  const targetLogs = (await getEnhancedLogs()).filter(log => ! log.superseded);
+  const targetLogs = (await getEnhancedLogs()).filter(log => !log.superseded);
   // Get summary data on the issues.
   const issuesSummary = await getIssuesSummary(targetLogs);
   // If this failed:
@@ -160,7 +160,7 @@ const populateQuery = async query => {
       }
     });
     lines.push(`${margin}</ul>`);
-    if (! existsIssue) {
+    if (!existsIssue) {
       lines.push(`${margin}<p>No issues with this priority.</p>`);
     }
   });

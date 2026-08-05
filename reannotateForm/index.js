@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssue, getReport, getLogs, ruleIDs} = require('../util');
+const {getEnhancedLogs, getIssue, getReport, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -13,14 +13,14 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  const targetLogs = (await getEnhancedLogs()).filter(log => ! log.superseded);
+  const targetLogs = (await getEnhancedLogs()).filter(log => !log.superseded);
   const stillUnclassified = {};
   const reClassified = {};
   // For each target:
   for (const targetLog of targetLogs) {
     const {jobName = '-'} = targetLog;
     // Get the latest report on it.
-    const report = await getReport(... jobName.split('-'));
+    const report = await getReport(...jobName.split('-'));
     const {acts = [], error} = report;
     // If this failed:
     if (error) {
@@ -47,7 +47,7 @@ const populateQuery = async query => {
             reClassified[which][ruleID].add(jobName);
           }
           // Otherwise, if the instance and the rule both have no issue ID:
-          else if (! issueID){
+          else if (!issueID){
             // Add the rule and the report to the rules that are still unclassified.
             stillUnclassified[which] ??= {};
             stillUnclassified[which][ruleID] ??= new Set();

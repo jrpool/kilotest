@@ -44,7 +44,7 @@ exports.response = async args => {
   // Get the classification of the issue.
   const issueClassification = issueID ? getIssueClassification(issueID) : null;
   // If the issue is ignorable or not fully classified:
-  if (! issueClassification) {
+  if (!issueClassification) {
     // Add this to the response content.
     responseContent['basics about the issue'] = {
       'error': 'No information about the specified issue is available'
@@ -74,7 +74,7 @@ exports.response = async args => {
   if (report.catalog) {
     const catalogItem = report.catalog[catalogIndex];
     // If the violator is not in it:
-    if (! catalogItem) {
+    if (!catalogItem) {
       // Add this to the response content.
       responseContent['basics about the element'] = {
         'error': 'No information about the specified element is available'

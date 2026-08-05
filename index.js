@@ -83,7 +83,7 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 const serveError = async (error, response, isHumanUser = true) => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   console.log(errorLines.join('\n') || 'ERROR');
-  if (! response.writableEnded) {
+  if (!response.writableEnded) {
     response.statusCode = 400;
     // If the request is from a human user:
     if (isHumanUser) {
@@ -341,7 +341,7 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is for an API service:
     else if (pageName === 'api') {
-      const [service, ... specs] = pathTail.split('/');
+      const [service, ...specs] = pathTail.split('/');
       // If the service lists the available reports:
       if (service === 'listReports') {
         // Get the response body.
@@ -376,6 +376,24 @@ const requestHandler = async (request, response) => {
         .response(specs);
         // Send it.
         setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service receives a retest request:
+      else if (service === 'requestRetest') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
+        .response(specs);
+        // Send it.
+        setHeaders('application/json', null, 'ultra');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service receives a test request:
+      else if (service === 'requestTest') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
+        .response(specs);
+        // Send it.
+        setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
       }
       // Otherwise, i.e. if the service is invalid:

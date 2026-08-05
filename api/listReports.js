@@ -15,7 +15,16 @@ const fs = require('fs').promises;
 exports.response = async () => {
   // Initialize the response content.
   const responseContent = {
-    'basics about all available reports': null
+    'basics about all available reports': null,
+    'URLs for a test request': {
+      'for JSON output': `https://${thisHost}/api/requestTest/encodedDescription/encodedURL/encodedReason`,
+      'for HTML output': `https://${thisHost}/testRecForm.html`
+    },
+    'instructions for a test request': {
+      encodedDescription: 'replace this segment with a 10- to 100-character URI-component encoding of a description of the page to be tested, conforming to the naming convention used in this list of reports',
+      encodedURL: 'replace this segment with the URI-component encoding of the URL of the page to be tested',
+      encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be tested'
+    }
   };
   // Initialize an array of basics about the reports.
   const reportsBasics = [];
@@ -27,7 +36,7 @@ exports.response = async () => {
     // Get the basics about its report.
     const reportBasics = await getReportBasics(timeStamp, jobID, true);
     // If this succeeded, the log file is valid, and the report is not hidden:
-    if (! reportBasics.error) {
+    if (!reportBasics.error) {
       // Add the basics to the array.
       reportsBasics.push(reportBasics);
     }

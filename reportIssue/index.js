@@ -37,7 +37,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Otherwise, i.e. if it succeeded, add the issue summary to the query.
   query.issue = issues[issueID]?.summary;
   // If adding the issue summary failed:
-  if (! query.issue) {
+  if (!query.issue) {
     // Populate the query with the reason.
     query.error = 'Issue not found';
     // Stop populating the query.
@@ -112,7 +112,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Convert the violator data to an array.
   violators = Object.entries(violators).map(entry => ({
     catalogIndex: entry[0],
-    ... entry[1]
+    ...entry[1]
   }));
   // Sort the violators in XPath order.
   violators.sort((a, b) => a.pathID.localeCompare(b.pathID));
@@ -133,7 +133,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     if (tagName) {
       lines.push(`${margin}    <li>Tag name: <code>${tagName}</code></li>`);
     }
-    if (text && ! ['HTML', 'HEAD', 'BODY', 'MAIN', 'NOSCRIPT'].includes(tagName)) {
+    if (text && !['HTML', 'HEAD', 'BODY', 'MAIN', 'NOSCRIPT'].includes(tagName)) {
       const textString = text.split('\n').join(' … ');
       lines.push(`${margin}    <li>Text: <q>${htmlSafe(textString)}</q></li>`);
     }

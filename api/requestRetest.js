@@ -12,12 +12,12 @@ const {getLog} = require('../util');
 
 // Returns the response body.
 exports.response = async args => {
-  const [timeStamp, jobID, encodedReason] = args;
+  const [timeStamp, jobID, reason] = args;
   // Initialize the response content.
   const responseContent = {
     'details about your request': {}
   };
-  const reasonLength = encodedReason.length;
+  const reasonLength = reason.length;
   // Get the log.
   const log = await getLog(timeStamp, jobID);
   const {hidden, superseded, url, what} = log;
@@ -49,9 +49,8 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if getting the log succeeded and the request is valid:
   else {
-    const why = decodeURIComponent(encodedReason);
     // Process the request.
-    await processTestRequest('retest', what, url, why);
+    await processTestRequest('retest', what, url, reason);
     // Add details about the request to the response content.
     responseContent['details about your request'] = {
       'date and time received': new Date().toISOString(),
@@ -59,7 +58,7 @@ exports.response = async args => {
         'description': what,
         'URL': url
       },
-      'reason why the page should be retested': why
+      'reason why the page should be retested': reason
     };
   }
   // Create a response body.
@@ -67,12 +66,15 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'requestRetest',
     'this request': {
-      description: 'Process and acknowledge my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listReports request. The encodedReason parameter is the URI-component encoding of a reason why the page should be retested.',
-      method: 'GET',
+      description: 'Process and acknowledge my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listReports request. The reason property of the request body is the reason why the page should be retested.',
+      method: 'POST',
       URLs: {
-        'of this request': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}/${encodedReason}`,
+        'of this request': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
         'of the equivalent request for HTML output':
         `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
+      },
+      body: {
+        reason
       },
       'closest ancestor request': {
         'tool name': 'listReports',

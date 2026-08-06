@@ -69,11 +69,16 @@ exports.response = async args => {
     'tool name': 'requestTest',
     'this request': {
       description: 'Process and acknowledge my request to test a page about which no report is available yet. I have provided a description and the URL of the page and a reason why it should be tested.',
-      method: 'GET',
+      method: 'POST',
       URLs: {
         'of this request':
-        `${thisHost}/api/requestTest/${encodedDescription}/${encodedURL}/${encodedReason}`,
+        `${thisHost}/api/requestTest`,
         'of the equivalent request for HTML output': `${thisHost}/testRecForm.html`
+      },
+      body: {
+        description,
+        url,
+        reason
       },
       'closest ancestor request': {
         'tool name': 'listReports',

@@ -46,6 +46,18 @@ exports.researchAgents = {
 
 // FUNCTIONS
 
+// Returns a function that executes a function sequentially.
+/** @returns {<T>(fn: () => T | Promise<T>) => Promise<T>} */
+const createLock = exports.createLock = () => {
+  let queue = Promise.resolve();
+  return fn => {
+    const result = queue.then(fn, fn);
+    queue = result.catch(() => {});
+    return result;
+  };
+};
+// Concurrency lock for the `recs.json` file.
+const recsLock = exports.recsLock = createLock();
 // Returns a random string.
 exports.getRandomString = length => {
   return Math.random().toString(36).slice(2, length + 2);
@@ -677,12 +689,19 @@ const getPlainText = exports.getPlainText = string => string
 const getNowStamp = exports.getNowStamp = () => {
   return getTimeStamp(new Date());
 };
-// Updates the test recommendations.
-const updateRecs = exports.updateRecs = async (what, url, why) => {
+// Updates the test recommendations as a transaction.
+const updateRecs = exports.updateRecs = (what, url, why) => recsLock(async () => {
   // Get the data on waiting recommendations.
   const recs = await getRecs();
   recs[url] ??= [];
-  // Add the recommendation to those for the target.
+  // If any recommendation has the same description and URL:
+  if (recs[url].some(rec => rec.what === what)) {
+    // Return this.
+    return {
+      error: 'duplicate'
+    };
+  }
+  // Otherwise, i.e. if the recommendation is not a duplicate, add it to those for the target.
   recs[url].push({
     timeStamp: getNowStamp(),
     what,
@@ -690,7 +709,9 @@ const updateRecs = exports.updateRecs = async (what, url, why) => {
   });
   // Save the revised recommendations.
   await fs.writeFile(recsPath, getJSON(recs));
-};
+  // Return success.
+  return {};
+});
 // Processes a test or retest recommendation in the UI.
 exports.processRec = async (testType, dirName, what, url, why) => {
   // If the recommendation is valid:
@@ -703,30 +724,41 @@ exports.processRec = async (testType, dirName, what, url, why) => {
   ) {
     // Make the reason display-safe.
     const plainWhy = getPlainText(why);
-    // Update the waiting recommendations.
-    await updateRecs(what, url, plainWhy);
-    // Log the recommendation.
-    console.log(`Test recommendation received for ${what}: ${plainWhy}`);
-    // Alert a manager about it.
-    await sendAlert(
-      `Kilotest: new ${testType} recommendation in the UI`,
-      `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
-    );
-    // Get the template.
-    let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
-    const query = {
-      target: what,
-      why: plainWhy
-    };
-    // Replace its placeholders.
-    Object.keys(query).forEach(param => {
-      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-    });
-    // Return the populated page.
-    return {
-      status: 'ok',
-      answerPage
-    };
+    // Update the waiting recommendations as a transaction.
+    const updateResult = await updateRecs(what, url, plainWhy);
+    // If the recommendation was a duplicate:
+    if (updateResult.error === 'duplicate') {
+      // Return this.
+      return {
+        status: 'error',
+        message: 'Duplicate recommendation'
+      };
+    }
+    // Otherwise, i.e. if it was not a duplicate:
+    else {
+      // Log the recommendation.
+      console.log(`Test recommendation received for ${what}: ${plainWhy}`);
+      // Alert a manager about it.
+      await sendAlert(
+        `Kilotest: new ${testType} recommendation in the UI`,
+        `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
+      );
+      // Get the template.
+      let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
+      const query = {
+        target: what,
+        why: plainWhy
+      };
+      // Replace its placeholders.
+      Object.keys(query).forEach(param => {
+        answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
+      });
+      // Return the populated page.
+      return {
+        status: 'ok',
+        answerPage
+      };
+    }
   }
   return {
     status: 'error',

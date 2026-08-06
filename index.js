@@ -10,6 +10,7 @@ require('dotenv').config({quiet: true});
 // IMPORTS
 const {
   annotateReport,
+  createLock,
   getJobNames,
   getJSON,
   getLogPath,
@@ -24,6 +25,7 @@ const {
   isJobID,
   jobsPath,
   logsPath,
+  recsLock,
   reportsPath,
   ruleIDs
 } = require('./util');
@@ -71,6 +73,7 @@ const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 // Values that may require alerts.
 const balancePath = path.join(__dirname, 'aiService0Balance.json');
+const jobLock = createLock();
 const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
 const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
 const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
@@ -185,6 +188,71 @@ const getAbuseError = (request, reason) => {
     time: new Date().toISOString()
   };
 };
+// Processes a job request from a Testaro agent.
+const processJobRequest = async (request, response, agentID) => jobLock(async () => {
+  let clean = true;
+  const messageStart = `Testaro agent ${agentID} requested a job, `;
+  const jobNames = await getJobNames();
+  const claimedJobNames = jobNames.claimed;
+  // For each claimed job:
+  for (const jobName of claimedJobNames) {
+    const job = await getObject(path.join(jobsPath, 'claimed', jobName));
+    const {id, sources} = job;
+    const {agent} = sources;
+    // If its assignee is the agent:
+    if (agent === agentID) {
+      const messageEnd = `but has not completed job ${id}`;
+      // Report this.
+      await serveError({message: `${messageStart}${messageEnd}`}, response, false);
+      // Reclassify the job as failed.
+      await fs.rename(
+        path.join(claimedPath, jobName), path.join(failedPath, jobName)
+      );
+      clean = false;
+      // Stop checking claimed jobs.
+      break;
+    }
+  }
+  // If no aborted-job error was found for the agent:
+  if (clean) {
+    const queuedJobNames = jobNames.queue;
+    // If any jobs are queued:
+    if (queuedJobNames.length) {
+      const oldestJobName = queuedJobNames[0];
+      // Get the first one.
+      const firstJob = await getObject(path.join(queuePath, oldestJobName));
+      // Add the agent ID to the job.
+      firstJob.sources.agent = agentID;
+      console.log(
+        `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the agent.`
+      );
+      // Assign the job to the agent.
+      response.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8'
+      });
+      response.end(JSON.stringify(firstJob));
+      const messageEnd
+      = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the agent`;
+      console.log(`${messageStart}${messageEnd}`);
+      // Save the job in the claimed-jobs directory.
+      await fs.writeFile(
+        path.join(claimedPath, oldestJobName), getJSON(firstJob)
+      );
+      // Delete it from the queue.
+      await fs.unlink(path.join(queuePath, oldestJobName));
+    }
+    // Otherwise, i.e. if no jobs are queued:
+    else {
+      response.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8'
+      });
+      // Send a no-jobs response to the agent.
+      response.end(JSON.stringify({}));
+      const messageEnd = 'but no job was in the queue';
+      console.log(`${messageStart}${messageEnd}`);
+    }
+  }
+});
 // Handles a request.
 const requestHandler = async (request, response) => {
   // Sets response headers.
@@ -377,24 +445,6 @@ const requestHandler = async (request, response) => {
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
       }
-      // Otherwise, if the service receives a retest request:
-      else if (service === 'requestRetest') {
-        // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
-        .response(specs);
-        // Send it.
-        setHeaders('application/json', null, 'ultra');
-        response.end(JSON.stringify(responseBody));
-      }
-      // Otherwise, if the service receives a test request:
-      else if (service === 'requestTest') {
-        // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
-        .response(specs);
-        // Send it.
-        setHeaders('application/json', null, 'ultra');
-        response.end(JSON.stringify(responseBody));
-      }
       // Otherwise, i.e. if the service is invalid:
       else {
         // Report this.
@@ -553,12 +603,15 @@ const requestHandler = async (request, response) => {
           }
           // Otherwise, i.e. if it is a rejection:
           else {
-            // Get the recommendations.
-            const recs = await getRecs();
-            // Delete the rejected URL.
-            delete recs[url];
-            // Save the revised recommendations.
-            await fs.writeFile(path.join(__dirname, 'jobs', 'recs.json'), getJSON(recs));
+            // Isolate this revision.
+            await recsLock(async () => {
+              // Get the recommendations.
+              const recs = await getRecs();
+              // Delete the rejected URL.
+              delete recs[url];
+              // Save the revised recommendations.
+              await fs.writeFile(path.join(__dirname, 'jobs', 'recs.json'), getJSON(recs));
+            });
             // Set a location header for a response.
             response.setHeader('content-location', '/recActionForm.html');
             // Get the answer data.
@@ -622,66 +675,8 @@ const requestHandler = async (request, response) => {
           const service = segments[1];
           // If the service is job assignment:
           if (service === 'job') {
-            let clean = true;
-            const messageStart = `Testaro agent ${agentID} requested a job, `;
-            const jobNames = await getJobNames();
-            const claimedJobNames = jobNames.claimed;
-            // For each claimed job:
-            for (const jobName of claimedJobNames) {
-              const job = await getObject(path.join(jobsPath, 'claimed', jobName));
-              const {id, sources} = job;
-              const {agent} = sources;
-              // If its assignee is the agent:
-              if (agent === agentID) {
-                const messageEnd = `but has not completed job ${id}`;
-                // Report this.
-                await serveError({message: `${messageStart}${messageEnd}`}, response, false);
-                // Reclassify the job as failed.
-                await fs.rename(
-                  path.join(claimedPath, jobName), path.join(failedPath, jobName)
-                );
-                clean = false;
-                // Stop checking claimed jobs.
-                break;
-              }
-            }
-            // If no aborted-job error was found for the agent:
-            if (clean) {
-              const queuedJobNames = jobNames.queue;
-              // If any jobs are queued:
-              if (queuedJobNames.length) {
-                const oldestJobName = queuedJobNames[0];
-                // Get the first one.
-                const firstJob = await getObject(path.join(queuePath, oldestJobName));
-                // Add the agent ID to the job.
-                firstJob.sources.agent = agentID;
-                console.log(
-                  `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the agent.`
-                );
-                // Assign the job to the agent.
-                response.writeHead(200, {
-                  'content-type': 'application/json; charset=utf-8'
-                });
-                response.end(JSON.stringify(firstJob));
-                const messageEnd
-                = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the agent`;
-                console.log(`${messageStart}${messageEnd}`);
-                // Move the job from the queue to the claimed-jobs directory.
-                await fs.rename(
-                  path.join(queuePath, oldestJobName), path.join(claimedPath, oldestJobName)
-                );
-              }
-              // Otherwise, i.e. if no jobs are queued:
-              else {
-                response.writeHead(200, {
-                  'content-type': 'application/json; charset=utf-8'
-                });
-                // Send a no-jobs response to the agent.
-                response.end(JSON.stringify({}));
-                const messageEnd = 'but no job was in the queue';
-                console.log(`${messageStart}${messageEnd}`);
-              }
-            }
+            // Process the job request as a transaction.
+            await processJobRequest(request, response, agentID);
           }
           // Otherwise, if the service is report acquisition:
           else if (service === 'report') {
@@ -718,6 +713,26 @@ const requestHandler = async (request, response) => {
             else {
               await serveError({message: 'ERROR: Report invalid'}, response, false);
             }
+          }
+          // Otherwise, if the service is to receive a retest request:
+          else if (service === 'requestRetest') {
+            const {reason} = postData;
+            // Get the response body.
+            const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
+            .response(...segments, reason);
+            // Send it.
+            setHeaders('application/json', null, 'ultra');
+            response.end(JSON.stringify(responseBody));
+          }
+          // Otherwise, if the service is to receive a test request:
+          else if (service === 'requestTest') {
+            const {what, url, reason} = postData;
+            // Get the response body.
+            const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
+            .response(what, url, reason);
+            // Send it.
+            setHeaders('application/json', null, 'ultra');
+            response.end(JSON.stringify(responseBody));
           }
           // Otherwise, if the service is not valid:
           else {

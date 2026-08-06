@@ -105,10 +105,16 @@ exports.getReportBasics = async (timeStamp, jobID, withURLs = true) => {
     };
     // If the report has not been superseded:
     if (!superseded) {
-      // Add URLs for a retest request to the basics.
-      basics['URLs to request that the page be retested'] = {
-        'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}/encodedReason`,
-        'for HTML output': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
+      // Add instructions for a retest request to the basics.
+      basics['how to request that the page be retested'] = {
+        URLs: {
+          'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
+          'for HTML output': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
+        },
+        'request method': 'POST',
+        'request body': {
+          reason: '20- to 100-character reason why the page should be retested'
+        }
       };
       // Add instructions for a retest request to the basics.
       basics['instructions for requesting that the page be retested'] = {
@@ -147,9 +153,17 @@ exports.getIssueClassification = issueID => {
 exports.processTestRequest = async (testType, what, url, why) => {
   // Get an email-safe version of the reason.
   const plainWhy = getPlainText(why);
-  // Update the waiting recommendations.
-  await updateRecs(what, url, plainWhy);
-  // Alert a manager about it.
+  // Update the waiting recommendations as a transaction.
+  const updateResult = await updateRecs(what, url, plainWhy);
+  // If the recommendation was a duplicate:
+  if (updateResult.error === 'duplicate') {
+    // Return this.
+    return {
+      status: 'error',
+      message: 'Duplicate request'
+    };
+  }
+  // Otherwise, i.e. if it was not a duplicate, alert a manager about it.
   await sendAlert(
     `Kilotest: new ${testType} recommendation in the API`,
     `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`

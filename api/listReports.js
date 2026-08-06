@@ -16,17 +16,18 @@ exports.response = async () => {
   // Initialize the response content.
   const responseContent = {
     'basics about all available reports': null,
-    'URLs for a test request': {
-      'for JSON output': `https://${thisHost}/api/requestTest/encodedDescription/encodedURL/encodedReason`,
+    'URLs to request that a page be tested': {
+      'for JSON output':
+      `https://${thisHost}/api/requestTest/encodedDescription/encodedURL/encodedReason`,
       'for HTML output': `https://${thisHost}/testRecForm.html`
     },
-    'instructions for a test request': {
-      'how to make a request': {
+    'instructions for requesting that a page be tested': {
+      'how to construct the URL of a request': {
         encodedDescription: 'replace this segment with a 10- to 100-character URI-component encoding of a description of the page to be tested, conforming to the naming convention used in this list of reports',
         encodedURL: 'replace this segment with the URI-component encoding of the URL of the page to be tested',
         encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be tested'
       },
-      'how to check whether the request has been fulfilled': 'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
+      'how to check whether requested testing has been completed': 'use this listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
     }
   };
   // Initialize an array of basics about the reports.
@@ -36,7 +37,7 @@ exports.response = async () => {
   // For each of them:
   for (const logFileName of logFileNames) {
     const [timeStamp, jobID] = logFileName.slice(0, -5).split('-');
-    // Get the basics about its report.
+    // Get the basics about its report, including retest request instructions.
     const reportBasics = await getReportBasics(timeStamp, jobID, true);
     // If this succeeded, the log file is valid, and the report is not hidden:
     if (!reportBasics.error) {

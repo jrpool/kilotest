@@ -5,8 +5,8 @@
 
 // IMPORTS
 
-const {getResponseMetadata, getToolsFacts, thisHost} = require('./util');
-const {getLog, updateRecs} = require('../util');
+const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
+const {getLog} = require('../util');
 
 // FUNCTIONS
 
@@ -51,7 +51,7 @@ exports.response = async args => {
   else {
     const why = decodeURIComponent(encodedReason);
     // Process the request.
-    await updateRecs(what, url, why);
+    await processTestRequest('retest', what, url, why);
     // Add details about the request to the response content.
     responseContent['details about your request'] = {
       'date and time received': new Date().toISOString(),
@@ -65,7 +65,7 @@ exports.response = async args => {
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),
-    'tool name': 'listIssues',
+    'tool name': 'requestRetest',
     'this request': {
       description: 'Process and acknowledge my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listReports request. The encodedReason parameter is the URI-component encoding of a reason why the page should be retested.',
       method: 'GET',

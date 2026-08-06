@@ -5,8 +5,8 @@
 
 // IMPORTS
 
-const {getResponseMetadata, getToolsFacts, thisHost} = require('./util');
-const {getLog, logsPath, updateRecs} = require('../util');
+const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
+const {getLog, logsPath} = require('../util');
 const fs = require('fs/promises');
 
 // FUNCTIONS
@@ -51,7 +51,7 @@ exports.response = async args => {
     // If the request is valid:
     if (!responseContent['details about your request'].error) {
       // Process the request.
-      await updateRecs(description, url, reason);
+      await processTestRequest('test', description, url, reason);
       // Add details about the request to the response content.
       responseContent['details about your request'] = {
         'date and time received': new Date().toISOString(),
@@ -66,9 +66,9 @@ exports.response = async args => {
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),
-    'tool name': 'listIssues',
+    'tool name': 'requestTest',
     'this request': {
-      description: 'Process and acknowledge my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listReports request.',
+      description: 'Process and acknowledge my request to test a page about which no report is available yet. I have provided a description and the URL of the page and a reason why it should be tested.',
       method: 'GET',
       URLs: {
         'of this request':

@@ -5,15 +5,18 @@
 
 // IMPORTS
 
+const {sendAlert} = require('../alerts');
 const {
   getAgoDays,
   getLog,
   getNowStamp,
+  getPlainText,
   getRandomString,
   getReportStats,
   issuesClassification,
   objectSort,
-  ruleEngines
+  ruleEngines,
+  updateRecs
 } = require('../util');
 
 // CONSTANTS
@@ -93,25 +96,28 @@ exports.getReportBasics = async (timeStamp, jobID, withURLs = true) => {
     'size of the report in bytes': reportSize,
     'URL to get the entire report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
   };
-  // If URLs are specified:
+  // If detail URLs are specified:
   if (withURLs) {
     // Add URLs for more details to the basics.
     basics['URLs for more details'] = {
       'for JSON output': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
       'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     };
-    // Add URLs for a retest recommendation to the basics.
-    basics['URLs for a retest recommendation'] = {
-      'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}/encodedReason`,
-      'for HTML output': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
-    };
-    // Add instructions for a retest request to the basics.
-    basics['instructions for a retest request'] = {
-      'how to make a request': {
-        encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be retested'
-      },
-      'how to check whether the request has been fulfilled': 'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
-    };
+    // If the report has not been superseded:
+    if (!superseded) {
+      // Add URLs for a retest request to the basics.
+      basics['URLs to request that the page be retested'] = {
+        'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}/encodedReason`,
+        'for HTML output': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
+      };
+      // Add instructions for a retest request to the basics.
+      basics['instructions for requesting that the page be retested'] = {
+        'how to construct the URL of a request': {
+          encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be retested'
+        },
+        'how to check whether the request has been fulfilled': 'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
+      };
+    }
   }
   // Return the basics.
   return basics;
@@ -136,4 +142,16 @@ exports.getIssueClassification = issueID => {
   }
   // Otherwise, i.e. if it is ignorable or not fully classified, return this.
   return null;
+};
+// Processes a test or retest request.
+exports.processTestRequest = async (testType, what, url, why) => {
+  // Get an email-safe version of the reason.
+  const plainWhy = getPlainText(why);
+  // Update the waiting recommendations.
+  await updateRecs(what, url, plainWhy);
+  // Alert a manager about it.
+  await sendAlert(
+    `Kilotest: new ${testType} recommendation in the API`,
+    `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
+  );
 };

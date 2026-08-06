@@ -22,7 +22,6 @@ const {
   isReportAvailable,
   isTimeStamp,
   isJobID,
-  isURL,
   jobsPath,
   logsPath,
   reportsPath,
@@ -725,58 +724,6 @@ const requestHandler = async (request, response) => {
             await serveError(
               {message: 'ERROR: Invalid service request from Testaro agent'}, response, false
             );
-          }
-        }
-        // Otherwise, if the first segment is the report finding service:
-        else if (segments[0] === 'target') {
-          const {description = '', hostname = ''} = postData;
-          // If the payload contains a description or hostname:
-          if (description || hostname) {
-            // Process the request and get the response data.
-            const responseData = await require(path.join(__dirname, 'target', 'api'))
-            .response([description, hostname]);
-            // Send them.
-            setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseData));
-          }
-          // Otherwise, i.e. if it is not a valid test recommendation:
-          else {
-            // Report this.
-            await serveError({message: 'ERROR: Request has neither a description fragment nor a URL fragment'}, response, false);
-          }
-        }
-        // Otherwise, if the first segment is the test recommendation service:
-        else if (segments[0] === 'testRecForm') {
-          const {
-            'description of the web page': what,
-            'URL of the web page': url,
-            'reason for testing the web page': why
-          } = postData;
-          // If the payload is a valid test recommendation:
-          if (what && isURL(url) && why) {
-            let responseData;
-            // If a report on the page is already available:
-            if (await isReportAvailable(what, url)) {
-              // Report this.
-              responseData = {
-                status: 'warning',
-                message: 'A report on the page is already available'
-              }
-            }
-            // Otherwise, i.e. if no report on the page is available:
-            else {
-              // Process the recommendation and get the response data.
-              responseData = await require(path.join(__dirname, 'testRecForm', 'api'))
-              .response(what, url, why);
-            }
-            // Send the response data.
-            setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseData));
-          }
-          // Otherwise, i.e. if it is not a valid test recommendation:
-          else {
-            // Report this.
-            await serveError({message: 'ERROR: Invalid test recommendation'}, response, false);
           }
         }
         // Otherwise, i.e. if the request is invalid:

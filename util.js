@@ -670,7 +670,9 @@ const isURL = exports.isURL = string => {
 // Makes a string breakable before non-initial slashes.
 exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
 // Converts a string to a plain-text 1-line ASCII string.
-const getPlainText = string => string.replace(/&/g, '+').replace(/[<>"'&]/g, ' ');
+const getPlainText = exports.getPlainText = string => string
+.replace(/&/g, '+')
+.replace(/[<>"'&]/g, ' ');
 // Returns a time stamp for now.
 const getNowStamp = exports.getNowStamp = () => {
   return getTimeStamp(new Date());

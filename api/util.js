@@ -33,7 +33,7 @@ exports.getResponseMetadata = () => ({
 // Returns the facts about the tool collection (Kilotest).
 exports.getToolsFacts = () => ({
   'name': 'Kilotest',
-  'description': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against more than a thousand rules defined by an ensemble of ten rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to classify the rule violations into about 300 issues and makes facts about the issues and the violations retrievable at four levels of granularity. You can start by using the listReports tool to get a list of available reports. You can then use the listIssues tool to get a list of issues in one report. You can then use the listViolators tool to get a list of elements on the tested page reported as exhibiting one issue. You can then use the listDiagnoses tool to get a list of diagnoses of how one element exhibited the issue.',
+  'description': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against more than a thousand rules defined by an ensemble of ten rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to classify the rule violations into about 300 issues and makes facts about the issues and the violations retrievable at four levels of granularity. You can start by using the listReports tool to get a list of available reports. If no report is available yet about the page that you want information about, you can use the requestTest tool to request that it be tested and await a report, usually within a day. You can use the listIssues tool to get a list of issues in one report. If you want the same page to be retested, you can request that with the requestRetest tool. You can use the listViolators tool to get a list of elements on the tested page that were reported as exhibiting one issue. You can then use the listDiagnoses tool to get a list of diagnoses of how one element exhibited the issue.',
   'URLs': {
     'for JSON output': `${thisHost}/mcp`,
     'for HTML output': thisHost
@@ -96,36 +96,18 @@ exports.getReportBasics = async (timeStamp, jobID, withURLs = true) => {
     'size of the report in bytes': reportSize,
     'URL to get the entire report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
   };
-  // If detail URLs are specified:
+  // If a response with URLs is specified:
   if (withURLs) {
-    // Add URLs for more details to the basics.
-    basics['URLs for more details'] = {
-      'for JSON output': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
-      'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+    // Add instructions for getting details to the basics.
+    basics['how to get details about the report'] = {
+      URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
+      'request method': 'GET'
     };
-    // If the report has not been superseded:
-    if (!superseded) {
-      // Add instructions for a retest request to the basics.
-      basics['how to request that the page be retested'] = {
-        URLs: {
-          'for JSON output': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
-          'for HTML output': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
-        },
-        'request method': 'POST',
-        'request body': {
-          reason: '20- to 100-character reason why the page should be retested'
-        }
-      };
-      // Add instructions for a retest request to the basics.
-      basics['instructions for requesting that the page be retested'] = {
-        'how to construct the URL of a request': {
-          encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be retested'
-        },
-        'how to check whether the request has been fulfilled': 'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
-      };
-    }
+    basics['how a web user can get details in HTML about the report'] = {
+      URL: `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+    };
   }
-  // Return the basics.
+  // Return the basics about the report.
   return basics;
 };
 // Returns the classification of an issue.

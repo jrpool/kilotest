@@ -15,20 +15,7 @@ const fs = require('fs').promises;
 exports.response = async () => {
   // Initialize the response content.
   const responseContent = {
-    'basics about all available reports': null,
-    'URLs to request that a page be tested': {
-      'for JSON output':
-      `https://${thisHost}/api/requestTest/encodedDescription/encodedURL/encodedReason`,
-      'for HTML output': `https://${thisHost}/testRecForm.html`
-    },
-    'instructions for requesting that a page be tested': {
-      'how to construct the URL of a request': {
-        encodedDescription: 'replace this segment with a 10- to 100-character URI-component encoding of a description of the page to be tested, conforming to the naming convention used in this list of reports',
-        encodedURL: 'replace this segment with the URI-component encoding of the URL of the page to be tested',
-        encodedReason: 'replace this segment with a 20- to 100-character URI-component encoding of a reason why the page should be tested'
-      },
-      'how to check whether requested testing has been completed': 'use this listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
-    }
+    'basics about all available reports': null
   };
   // Initialize an array of basics about the reports.
   const reportsBasics = [];

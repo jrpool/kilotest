@@ -25,6 +25,8 @@ exports.response = async args => {
   const responseContent = {
     'basics about the report': null,
     'details about the report': null,
+    'how to request that the page be retested': null,
+    'how a web user can request that the page be retested': null,
     'basics about all issues reported in the report': null
   };
   // Get the report.
@@ -131,6 +133,23 @@ exports.response = async args => {
         'job definition': jobDefinitionDetails,
         'test results': resultDetails
       };
+      // If the report has not been superseded:
+      if (!reportBasics['whether a later report about the same page exists']) {
+        // Add instructions for a retest request to the response content.
+        responseContent['how to request that the page be retested'] = {
+          URL: `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
+          'request method': 'POST',
+          'request body': {
+            reason: '20- to 100-character reason why the page should be retested'
+          },
+          'how to check whether the request has been fulfilled':
+          'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
+        };
+        // Add instructions for a web user to request a retest.
+        responseContent['how a web user can request that the page be retested'] = {
+          URL: `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
+        };
+      }
       // Sort the data about issues by summary.
       const sortedIssuesData = objectSort(Object.values(issuesData), 'summary', 'alpha');
       // Get the basics about the issues.

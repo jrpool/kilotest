@@ -37,7 +37,7 @@ exports.response = async args => {
   // Otherwise, i.e. if it succeeded:
   else {
     // Get the basics about the report (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID, false);
+    const reportBasics = await getReportBasics(timeStamp, jobID);
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
   }

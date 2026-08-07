@@ -55,7 +55,7 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
   return ruleEnginesFacts;
 };
 // Returns the basics about a report, without reading the report.
-exports.getReportBasics = async (timeStamp, jobID, withURLs = true) => {
+exports.getReportBasics = async (timeStamp, jobID) => {
   // Get the log of the report.
   const log = await getLog(timeStamp, jobID, false);
   // If this failed:
@@ -96,18 +96,7 @@ exports.getReportBasics = async (timeStamp, jobID, withURLs = true) => {
     'size of the report in bytes': reportSize,
     'URL to get the entire report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
   };
-  // If a response with URLs is specified:
-  if (withURLs) {
-    // Add instructions for getting details to the basics.
-    basics['how to get details about the report'] = {
-      URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
-      'request method': 'GET'
-    };
-    basics['how a web user can get details in HTML about the report'] = {
-      URL: `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-    };
-  }
-  // Return the basics about the report.
+  // Return them.
   return basics;
 };
 // Returns the classification of an issue.

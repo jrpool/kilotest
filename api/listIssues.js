@@ -39,7 +39,7 @@ exports.response = async args => {
   // Otherwise, i.e. if it succeeded:
   else {
     // Get the basics about the report (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID, false);
+    const reportBasics = await getReportBasics(timeStamp, jobID);
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
     // If the basics about the report were obtained:
@@ -128,13 +128,20 @@ exports.response = async args => {
         },
         'number of elements reported as violators': violatorIndexes.size
       };
-      // Add the details about the job and results to the response content.
+      // Add the details about the job and test results to the response content.
       responseContent['details about the report'] = {
         'job definition': jobDefinitionDetails,
         'test results': resultDetails
       };
-      // If the report has not been superseded:
-      if (!reportBasics['whether a later report about the same page exists']) {
+      // If the report has been superseded:
+      if (reportBasics['whether a later report about the same page exists']) {
+        // Add information about requesting a retest to the response content.
+        responseContent['how to request that the page be retested'] = {
+          notice: 'A later report about the same page already exists. The listIssues output about that report includes instructions for requesting a retest.'
+        };
+      }
+      // Otherwise, i.e. if the report has not been superseded:
+      else {
         // Add instructions for a retest request to the response content.
         responseContent['how to request that the page be retested'] = {
           URL: `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
@@ -179,18 +186,16 @@ exports.response = async args => {
     'this request': {
       description: 'Provide details about one report, including basics about the issues reported in it. The timeStamp and jobID parameters identify the report that I want details about. Those parameters were in the response to my earlier listReports request.',
       method: 'GET',
-      URLs: {
-        'of this request': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
-        'of the equivalent request for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-      },
+      URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
       'closest ancestor request': {
         'tool name': 'listReports',
         description: 'Provide basics about all available reports.',
-        URLs: {
-          'for JSON output': `${thisHost}/api/listReports`,
-          'for HTML output': `${thisHost}/targets.html`
-        }
-      }
+        method: 'GET',
+        URL: `${thisHost}/api/listReports`
+      },
+      'URL of a similar request for web users':
+      `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`,
+      'URL of the closest ancestor request for web users': `${thisHost}/targets.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

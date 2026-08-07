@@ -37,7 +37,7 @@ exports.response = async args => {
   // Otherwise, i.e. if it succeeded:
   else {
     // Get the basics about the report (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID, false);
+    const reportBasics = await getReportBasics(timeStamp, jobID);
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
   }
@@ -126,10 +126,13 @@ exports.response = async args => {
           'tag name': catalogItem?.tagName || null,
           'inner text': catalogItem?.text ?? null,
           'count of rule engines reporting that the element exhibited the issue': reporters.size,
-          'URLs for more details': {
-            'for JSON output':
+          'how to get details about the element': {
+            URL:
             `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
-            'for HTML output':
+            'request method': 'GET'
+          },
+          'how a web user can get details about the element': {
+            URL:
             `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
           }
         };
@@ -145,11 +148,11 @@ exports.response = async args => {
     'this request': {
       description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
       method: 'GET',
-      URLs: {
-        'of this request': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
-        'of the equivalent request for HTML output':
-        `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+      URL: `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
+      'of the equivalent request for HTML output':
+      `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
       },
+
       'closest ancestor request': {
         'tool name': 'listIssues',
         description: 'Provide details about one report, including basics about the issues reported in it. The timeStamp and jobID parameters identify the report that I want details about.',

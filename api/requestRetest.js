@@ -66,24 +66,22 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'requestRetest',
     'this request': {
-      description: 'Process and acknowledge my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listReports request. The reason property of the request body is the reason why the page should be retested.',
+      description: 'Process and acknowledge my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listIssues request. The reason property of the request body is the reason why the page should be retested.',
       method: 'POST',
-      URLs: {
-        'of this request': `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
-        'of the equivalent request for HTML output':
-        `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
-      },
+      URL: `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
       body: {
         reason
       },
       'closest ancestor request': {
-        'tool name': 'listReports',
-        description: 'Provide basics about all available reports.',
-        URLs: {
-          'for JSON output': `${thisHost}/api/listReports`,
-          'for HTML output': `${thisHost}/targets.html`
-        }
+        'tool name': 'listIssues',
+        description: 'Provide details about one report, including basics about the issues reported in it.',
+        method: 'GET',
+        URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
       }
+    },
+    'URLs of similar requests for web users': {
+      'this request': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`,
+      'closest ancestor request': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

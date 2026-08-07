@@ -68,13 +68,9 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'requestTest',
     'this request': {
-      description: 'Process and acknowledge my request to test a page about which no report is available yet. I have provided a description and the URL of the page and a reason why it should be tested.',
+      description: 'Process my request to test a page about which no report is available yet. I have provided a description and the URL of the page and a reason why it should be tested.',
       method: 'POST',
-      URLs: {
-        'of this request':
-        `${thisHost}/api/requestTest`,
-        'of the equivalent request for HTML output': `${thisHost}/testRecForm.html`
-      },
+      URL: `${thisHost}/api/requestTest`,
       body: {
         description,
         url,
@@ -83,11 +79,13 @@ exports.response = async args => {
       'closest ancestor request': {
         'tool name': 'listReports',
         description: 'Provide basics about all available reports.',
-        URLs: {
-          'for JSON output': `${thisHost}/api/listReports`,
-          'for HTML output': `${thisHost}/targets.html`
-        }
+        method: 'GET',
+        URL: `${thisHost}/api/listReports`
       }
+    },
+    'URLs of similar requests for web users': {
+      'this request': `${thisHost}/testRecForm.html`,
+      'closest ancestor request': `${thisHost}/targets.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

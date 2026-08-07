@@ -27,7 +27,7 @@ const logsPath = exports.logsPath = path.join(dbPath, 'logs');
 // Path of the reports directory.
 const reportsPath = exports.reportsPath = path.join(dbPath, 'reports');
 // Path of the hidden-reports directory.
-exports.hiddenReportsPath = path.join(dbPath, 'hiddenReports');
+const hiddenReportsPath = exports.hiddenReportsPath = path.join(dbPath, 'hiddenReports');
 // Path of the reports data file.
 const reportsDataPath = exports.reportsDataPath = path.join(dbPath, 'reportsData.json');
 // IDs, names, and sponsors of Testaro rule engines.
@@ -87,56 +87,19 @@ const isValidReport = exports.isValidReport = report => {
 const fragmentEncode = string => {
   return encodeURIComponent(string).replace(/-/g, '%2D');
 };
-// Returns the path of a log file.
-const getLogPath = exports.getLogPath
-= (timeStamp, jobID) => path.join(logsPath, `${timeStamp}-${jobID}.json`);
-// Returns the path of a report file.
-const getReportPath = exports.getReportPath
-= (timeStamp, jobID) => path.join(reportsPath, `${timeStamp}-${jobID}.json`);
-// Returns the path of a log or report file.
-const getRecordPath = exports.getRecordPath = (recordType, timeStamp, jobID) => {
-  if (recordType === 'log') {
-    return getLogPath(timeStamp, jobID);
-  }
-  else if (recordType === 'report') {
-    return getReportPath(timeStamp, jobID);
-  }
-  else {
-    return null;
-  }
-};
-// Returns a log or report.
-const getRecord = exports.getRecord = async (recordType, timeStamp, jobID) => {
-  const recordPath = getRecordPath(recordType, timeStamp, jobID);
-  let recordJSON, record;
-  try {
-    recordJSON = await fs.readFile(recordPath, 'utf8');
-  }
-  catch(error) {
-    console.log(error.message);
-    recordJSON = JSON.stringify(
-      {error: `Requested ${recordType} ${timeStamp}-${jobID} does not exist`}
-    );
-  }
-  try {
-    record = JSON.parse(recordJSON);
-  }
-  catch (error) {
-    console.log(error.message);
-    record = {error: `Requested ${recordType} ${timeStamp}-${jobID} is not JSON`};
-  }
-  return record;
-};
+// Returns the path of an available report file.
+const getReportPath = exports.getReportPath = (timeStamp, jobID) => path
+.join(reportsPath, `${timeStamp}-${jobID}.json`);
 // Returns a report.
 const getReport = exports.getReport = async (timeStamp, jobID) => {
-  const report = await getRecord('report', timeStamp, jobID);
+  const report = await fs.readFile(getReportPath(timeStamp, jobID));
   // If it is valid:
   if (isValidReport(report)) {
     // Return it.
     return report;
   }
   // Otherwise, i.e. if it is invalid, return this.
-  return {error: `Requested report ${timeStamp}-${jobID} is not valid`};
+  return {error: `Report ${timeStamp}-${jobID} is invalid`};
 };
 // Returns the JSON stringification of an object, with a final newline.
 const getJSON = exports.getJSON = object => `${JSON.stringify(object, null, 2)}\n`;
@@ -340,22 +303,8 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
   }
   // Save the annotated report.
   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-  // Get a copy of the log of the report.
-  const log = await getLog(timeStamp, jobID, false);
-  // If this failed:
-  if (log.error) {
-    // Return why.
-    return log.error;
-  }
-  // Otherwise, i.e. if it succeeded:
-  else {
-    // Mark the report as annotated in the log.
-    log.annotated = true;
-    // Save the revised log.
-    await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
-    // Return success.
-    return '';
-  }
+  // Return success.
+  return '';
 };
 // Returns whether a log is valid.
 const isValidLog = log => {
@@ -370,41 +319,27 @@ const isValidLog = log => {
   }
   return true;
 }
-// Returns a report log after conditionally annotating it.
-const getLog = exports.getLog = async (timeStamp, jobID, annotate = false) => {
-  const log = await getRecord('log', timeStamp, jobID);
-  if (annotate && !(log.error || log.annotated)) {
-    await annotateReport(ruleIDs, timeStamp, jobID);
-  }
-  if (log.error) {
-    return log;
-  }
-  if (!isValidLog(log)) {
-    return {error: `Log ${timeStamp}-${jobID} is invalid`};
-  }
-  return log;
-};
 // Returns whether a report is hidden.
 exports.isHidden = async (timeStamp, jobID) => {
-  // Get the log of the report.
-  const log = await getLog(timeStamp, jobID, false);
-  // Return whether the log exists and its report is hidden.
-  return !!log.hidden;
+  // Get the names of the hidden report files.
+  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath);
+  // Return whether the report is hidden.
+  return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
-// Returns summary data on a report.
+// Returns summary data on an available report.
 exports.getReportData = async (timeStamp, jobID) => {
-  // Validate the report and annotate it if necessary.
-  const log = await getLog(timeStamp, jobID, true);
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (log.error) {
+  if (report.error) {
     // Return why.
-    return {error: log.error};
+    return {error: report.error};
   }
-  // Initialize the data.
+  // Otherwise, i.e. if it succeeded, initialize the data.
   const data = {
-    what: log.what,
-    url: log.url,
-    jobName: `${timeStamp}-${jobID}`,
+    what: report.target.what,
+    url: report.target.url,
+    jobName: report.id,
     creationDate: getDateTime(timeStamp),
     daysAgo: getAgoDays(timeStamp),
     issueCount: 0,
@@ -420,13 +355,6 @@ exports.getReportData = async (timeStamp, jobID) => {
   const toolNameSet = new Set();
   const reporterIDSet = new Set();
   const violatorIndexSet = new Set();
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (report.error) {
-    // Return why.
-    return {error: report.error};
-  }
   // For each act of the report:
   report.acts.forEach(act => {
     // If it is a test act:
@@ -859,7 +787,7 @@ const getReportData = exports.getReportData = async reportFileName => {
     return data;
   }
   catch (error) {
-    console.error(`Getting data on report ${reportFile} failed (${error.message})`);
+    console.error(`Getting data from report file ${reportFileName} failed (${error.message})`);
     return null;
   }
 };
@@ -896,4 +824,19 @@ exports.makeReportsData = async () => {
   await fs.mkdir(dbPath, {recursive: true});
   // Save the reports data.
   await fs.writeFile(reportsDataPath, getJSON(reportsData));
+};
+// Gets the data on all reports.
+exports.getReportsData = async () => {
+  // Get the reports data file.
+  const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
+  try {
+    // Get its data.
+    const reportsData = JSON.parse(reportsDataJSON);
+    // Return them.
+    return reportsData;
+  }
+  catch (error) {
+    console.error(`Getting data from reports data file failed (${error.message})`);
+    return null;
+  }
 };

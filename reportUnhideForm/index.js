@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getLog, logsPath, reportsPath} = require('../util');
+const {hiddenReportsPath, makeReportsData, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -20,20 +20,20 @@ exports.answer = async (_, search) => {
   if (jobName) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
-      // Get the log of the report.
-      const log = await getLog(...jobName.split('-'));
-      // If this failed:
-      if (log.error) {
+      const fileName = `${jobName}.json`;
+      try {
+        // Move the report to the reports directory.
+        await fs.rename(path.join(hiddenReportsPath, fileName), path.join(reportsPath, fileName));
+        // Update the data on the available reports.
+        await makeReportsData();
+      }
+      catch (error) {
         // Return why.
         return {
           status: 'error',
-          message: log.error
+          message: `Unhiding report file ${fileName} failed (${error.message})`
         }
       }
-      // Otherwise, i.e. if it succeeded, reverse the hiddenness property of the log.
-      log.hidden = false;
-      // Save the updated log.
-      await fs.writeFile(path.join(logsPath, `${jobName}.json`), getJSON(log));
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {
@@ -44,51 +44,43 @@ exports.answer = async (_, search) => {
       }
     }
   }
-  const reportFileNames = await fs.readdir(reportsPath);
-  // Initialize an array of report specifications.
-  const reportSpecs = [];
-  // For each report:
-  for (const reportFileName of reportFileNames) {
-    const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
-    // Get its log.
-    const log = await getLog(timeStamp, jobID);
-    const {error, what, hidden} = log;
-    // If this failed:
-    if (error) {
-      // Return why.
-      return {
-        status: 'error',
-        message: error
-      }
-    }
-    // Otherwise, i.e. if it succeeded, add the report to the array.
-    reportSpecs.push({
+  // Initialize an array of data on reports to be unhidden.
+  const reportsData = [];
+  // Get the names of the hidden report files.
+  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath);
+  // For each hidden report:
+  for (const reportFileName of hiddenReportFileNames) {
+    // Get its file.
+    const reportJSON = await fs.readFile(path.join(hiddenReportsPath, reportFileName), 'utf8');
+    // Get the report.
+    const report = JSON.parse(reportJSON);
+    const {id, target} = report;
+    const [timeStamp, jobID] = id.split('-');
+    const {what} = target;
+    // Add its data to the array.
+    reportsData.push({
       what,
       timeStamp,
-      jobID,
-      hidden
+      jobID
     });
   }
-  // Sort the logs by page name and then by time stamp.
-  reportSpecs.sort((a, b) => {
+  // Sort the data by page name and then by time stamp.
+  reportsData.sort((a, b) => {
     if (a.what === b.what) {
       return a.timeStamp.localeCompare(b.timeStamp);
     }
-    return a.what.localeCompare(b.what);
+    return a.what.localeCompare(b.what, 'en', {sensitivity: 'base'});
   });
   const lines = [];
   const margin = ' '.repeat(12);
   // For each report:
-  reportSpecs.forEach(spec => {
-    const {hidden, what, timeStamp, jobID} = spec;
-    // If it is hidden:
-    if (hidden) {
-      const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
-      // Add a line with a radio button to unhide it.
-      lines.push(
-        `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
-      );
-    }
+  reportsData.forEach(data => {
+    const {jobID, timeStamp, what} = data;
+    const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
+    // Add a line with a radio button to unhide it.
+    lines.push(
+      `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
+    );
   });
   const query = {
     reports: lines.join('\n'),

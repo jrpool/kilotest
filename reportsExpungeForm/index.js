@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportData, logsPath, reportsPath} = require('../util');
+const {getReportData, makeReportsData, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -24,9 +24,9 @@ exports.answer = async (_, search) => {
       for (const jobName of jobNames) {
         // Delete it.
         await fs.unlink(path.join(reportsPath, `${jobName}.json`));
-        // Delete its log.
-        await fs.unlink(path.join(logsPath, `${jobName}.json`));
       }
+      // Update the data on the available reports.
+      await makeReportsData();
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {

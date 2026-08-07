@@ -13,7 +13,6 @@ const {
   createLock,
   getJobNames,
   getJSON,
-  getLogPath,
   getObject,
   getPOSTData,
   getReport,
@@ -25,6 +24,7 @@ const {
   isJobID,
   jobsPath,
   logsPath,
+  makeReportsData,
   recsLock,
   reportsPath,
   ruleIDs
@@ -693,14 +693,9 @@ const requestHandler = async (request, response) => {
               const [timeStamp, jobID] = id.split('-');
               // Save the report.
               await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-              // Create a log for the report.
-              const log = {
-                what,
-                url
-              };
-              // Save the log.
-              await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
-              // Annotate the report and mark it as annotated in the log.
+              // Update the data on the available reports.
+              await makeReportsData();
+              // Annotate the report.
               await annotateReport(ruleIDs, timeStamp, jobID);
               console.log(`Testaro report ${id} was annotated, saved, and logged`);
               // Check the monetary balances and send alerts if nearing exhaustion.

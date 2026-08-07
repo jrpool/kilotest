@@ -20,12 +20,20 @@ exports.answer = async (_, search) => {
   if (jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
-      // For each report to be deleted:
-      for (const jobName of jobNames) {
-        // Delete it.
-        await fs.unlink(path.join(reportsPath, `${jobName}.json`));
-        // Delete its log.
-        await fs.unlink(path.join(logsPath, `${jobName}.json`));
+      try {
+        // For each report to be deleted:
+        for (const jobName of jobNames) {
+          // Delete it.
+          await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+        }
+      }
+      // If this failed:
+      catch (error) {
+        // Return why.
+        return {
+          status: 'error',
+          message: `Deleting latest superseding reports failed (${error.message})`
+        }
       }
     }
     // Otherwise, i.e. if the authorization code is invalid:

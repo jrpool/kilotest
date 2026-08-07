@@ -33,9 +33,7 @@ exports.response = async () => {
         method: 'GET',
         URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
       };
-      reportBasics['how a web user can get details about the report'] = {
-        URL: `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-      };
+      reportBasics['web users can get details about the report at'] = `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`;
       // Add the basics to the array.
       reportsBasics.push(reportBasics);
     }
@@ -59,9 +57,11 @@ exports.response = async () => {
       description: 'Provide basics about all available reports.',
       method: 'GET',
       URL: `${thisHost}/api/listReports`,
-      'closest ancestor request': null,
-      'URL of a similar request for web users': `${thisHost}/targets.html`,
-      'URL of the closest ancestor request for web users': null
+      'closest ancestor request': null
+    },
+    'URLs of similar requests for web users': {
+      'this request': `${thisHost}/targets.html`,
+      'closest ancestor request': null
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

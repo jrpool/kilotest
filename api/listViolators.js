@@ -127,14 +127,10 @@ exports.response = async args => {
           'inner text': catalogItem?.text ?? null,
           'count of rule engines reporting that the element exhibited the issue': reporters.size,
           'how to get details about the element': {
-            URL:
-            `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
+            URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
             'request method': 'GET'
           },
-          'how a web user can get details about the element': {
-            URL:
-            `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
-          }
+          'web users can get details about the element at': `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
         };
       });
       // Add basics about the violators to the response content.
@@ -149,18 +145,16 @@ exports.response = async args => {
       description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
       method: 'GET',
       URL: `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
-      'of the equivalent request for HTML output':
-      `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
-      },
-
       'closest ancestor request': {
         'tool name': 'listIssues',
-        description: 'Provide details about one report, including basics about the issues reported in it. The timeStamp and jobID parameters identify the report that I want details about.',
-        URLs: {
-          'for JSON output': `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
-          'for HTML output': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
-        }
+        description: 'Provide details about one report, including basics about the issues reported in it.',
+        method: 'GET',
+        URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
       }
+    },
+    'URLs of similar requests for web users': {
+      'this request': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`,
+      'closest ancestor request': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

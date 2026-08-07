@@ -169,10 +169,11 @@ exports.response = async args => {
           'impact on a user': why,
           'rule engines with any violations belonging to the issue': getRuleEnginesFacts(reporterIDs)
           .map(ruleEnginesFact => ruleEnginesFact.name),
-          'URLs for more details': {
-            'for JSON output': `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`,
-            'for HTML output': `${thisHost}/reportIssue.html/${id}/${timeStamp}/${jobID}`
-          }
+          'how to get details about the issue': {
+            method: 'GET',
+            URL: `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`
+          },
+          'web users can get details about the issue at': `${thisHost}/reportIssue.html/${id}/${timeStamp}/${jobID}`
         };
       });
       // Add the basics about the issues to the response content.
@@ -191,11 +192,12 @@ exports.response = async args => {
         'tool name': 'listReports',
         description: 'Provide basics about all available reports.',
         method: 'GET',
-        URL: `${thisHost}/api/listReports`
-      },
-      'URL of a similar request for web users':
-      `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`,
-      'URL of the closest ancestor request for web users': `${thisHost}/targets.html`
+        URL: `${thisHost}/api/listReports`,
+      }
+    },
+    'URLs of similar requests for web users': {
+      'this request': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`,
+      'closest ancestor request': `${thisHost}/targets.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

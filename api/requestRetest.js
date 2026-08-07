@@ -44,7 +44,7 @@ exports.response = async args => {
   else if (reasonLength < 20 || reasonLength > 100) {
     // Add this to the response content.
     responseContent['details about your request'] = {
-      error: 'request invalid: the URI-component encoding of your reason is not between 20 and 100 characters long'
+      error: 'request invalid: your reason is not between 20 and 100 characters long'
     }
   }
   // Otherwise, i.e. if getting the log succeeded and the request is valid:
@@ -66,7 +66,7 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'requestRetest',
     'this request': {
-      description: 'Process and acknowledge my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listIssues request. The reason property of the request body is the reason why the page should be retested.',
+      description: 'Process my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listIssues request. The reason property of the request body is the reason why the page should be retested.',
       method: 'POST',
       URL: `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
       body: {

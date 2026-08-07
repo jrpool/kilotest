@@ -16,14 +16,20 @@ const wcagMap = require('./wcagMap.json');
 
 // CONSTANTS
 
+// Path of the data directory.
+const dbPath = exports.dbPath = path.join(__dirname, 'db');
 // Path of the jobs directory.
-const jobsPath = exports.jobsPath = path.join(__dirname, 'jobs');
-// Path of the logs directory.
-const logsPath = exports.logsPath = path.join(__dirname, 'logs');
+const jobsPath = exports.jobsPath = path.join(dbPath, 'jobs');
 // Path of the recommendations file.
-const recsPath = exports.recsPath = path.join(__dirname, 'jobs', 'recs.json');
+const recsPath = exports.recsPath = path.join(jobsPath, 'recs.json');
+// Path of the OBSOLETE logs directory.
+const logsPath = exports.logsPath = path.join(dbPath, 'logs');
 // Path of the reports directory.
-const reportsPath = exports.reportsPath = path.join(__dirname, 'reports');
+const reportsPath = exports.reportsPath = path.join(dbPath, 'reports');
+// Path of the hidden-reports directory.
+exports.hiddenReportsPath = path.join(dbPath, 'hiddenReports');
+// Path of the reports data file.
+const reportsDataPath = exports.reportsDataPath = path.join(dbPath, 'reportsData.json');
 // IDs, names, and sponsors of Testaro rule engines.
 const tools = exports.tools = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -830,8 +836,35 @@ exports.isReportAvailable = async (what, url) => {
   const miniURLs = logs.map(log => minifyURL(log.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
+// Returns data from a report.
+const getReportData = exports.getReportData = async reportFileName => {
+  try {
+    // Get the content of the report file.
+    const reportJSON = await fs.readFile(path.join(reportsPath, reportFileName), 'utf8');
+    // Get the report.
+    const report = JSON.parse(reportJSON);
+    // Get its data.
+    const data = {
+      timeStamp: report.id.split('-')[0],
+      jobID: report.id.split('-')[1],
+      what: report.target.what,
+      url: report.target.url,
+    };
+    // Get its creation time and size.
+    const [reportTime, reportSize] = await getReportStats(data.timeStamp, data.jobID);
+    // Add them to the report data.
+    data.reportTime = reportTime;
+    data.reportSize = reportSize;
+    // Return the data.
+    return data;
+  }
+  catch (error) {
+    console.error(`Getting data on report ${reportFile} failed (${error.message})`);
+    return null;
+  }
+};
 // Returns the creation time and size of a report.
-exports.getReportStats = async (timeStamp, jobID) => {
+const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
   const reportStat = await fs.stat(
     path.join(reportsPath, `${timeStamp}-${jobID}.json`),
     {throwIfNoEntry: false}
@@ -842,4 +875,25 @@ exports.getReportStats = async (timeStamp, jobID) => {
   const reportTime = reportStat.birthtime;
   const reportSize = reportStat.size;
   return {reportTime, reportSize};
+};
+// Creates and saves data on all reports.
+exports.makeReportsData = async () => {
+  // Initialize the reports data.
+  const reportsData = [];
+  // Get the names of all report files.
+  const reportFiles = await fs.readdir(reportsPath);
+  // For each of them:
+  for (const reportFile of reportFiles) {
+    // Get its data.
+    const reportData = await getReportData(reportFile);
+    // If this succeeded:
+    if (reportData) {
+      // Add the report data to the reports data.
+      reportsData.push(reportData);
+    }
+  }
+  // Ensure the data directory exists.
+  await fs.mkdir(dbPath, {recursive: true});
+  // Save the reports data.
+  await fs.writeFile(reportsDataPath, getJSON(reportsData));
 };

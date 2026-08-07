@@ -13,20 +13,17 @@ const fs = require('fs/promises');
 
 // Returns the response body.
 exports.response = async args => {
-  const [encodedDescription, encodedURL, encodedReason] = args;
+  const [description, url, reason] = args;
   // Initialize the response content.
   const responseContent = {
     'details about your request': {}
   };
-  const description = decodeURIComponent(encodedDescription);
-  const url = decodeURIComponent(encodedURL);
-  const reason = decodeURIComponent(encodedReason);
-  const whatLength = encodedDescription.length;
+  const whatLength = description.length;
   // If the encoded description is too short or too long:
   if (whatLength < 10 || whatLength > 100) {
     // Add this to the response content.
     responseContent['details about your request'] = {
-      error: 'request invalid: the URI-component encoding of your description of the page to be tested is not between 10 and 100 characters long'
+      error: 'request invalid: your description of the page to be tested is not between 10 and 100 characters long'
     };
   }
   // Otherwise, i.e. if it has a valid length:

@@ -137,20 +137,17 @@ exports.response = async args => {
     'this request': {
       description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The catalogIndex, issueID, timeStamp, and jobID parameters identify the element, issue, and report that I want details about. Those parameters were in the response to my earlier listViolators request.',
       method: 'GET',
-      URLs: {
-        'of this request':
-        `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
-        'of the equivalent request for HTML output':
-        `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
-      },
+      URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
       'closest ancestor request': {
         'tool name': 'listViolators',
-        description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about.',
-        URLs: {
-          'for JSON output': `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
-          'for HTML output': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
-        }
+        description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
+        method: 'GET',
+        URL: `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`
       }
+    },
+    'URLs of similar requests for web users': {
+      'this request': `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`,
+      'closest ancestor request': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

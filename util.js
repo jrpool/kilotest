@@ -306,24 +306,11 @@ const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID
   // Return success.
   return '';
 };
-// Returns whether a log is valid.
-const isValidLog = log => {
-  const {what, url, annotated, hidden} = log;
-  if (
-    typeof what !== 'string'
-    || typeof url !== 'string'
-    || typeof annotated !== 'boolean'
-    || hidden && typeof hidden !== 'boolean'
-  ) {
-    return false;
-  }
-  return true;
-}
 // Returns whether a report is hidden.
 exports.isHidden = async (timeStamp, jobID) => {
   // Get the names of the hidden report files.
   const hiddenReportFileNames = await fs.readdir(hiddenReportsPath);
-  // Return whether the report is hidden.
+  // Return whether the report is among them.
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
 // Returns summary data on an available report.
@@ -512,57 +499,6 @@ exports.getTextFragmentHref = (text, url) => {
   // Return a text-fragment link.
   return `${url}#:~:text=${fragmentList}`;
 };
-// Returns a sorted array of the logs, with added properties, of the non-hidden reports.
-const getEnhancedLogs = exports.getEnhancedLogs = async () => {
-  // Initialize data on the tested targets.
-  const logs = [];
-  let logFileNames;
-  try {
-    logFileNames = await fs.readdir(logsPath);
-  }
-  catch {
-    console.error('Logs directory not readable');
-    logFileNames = [];
-  }
-  // For each log:
-  for (const fileName of logFileNames) {
-    const logName = fileName.slice(0, -5);
-    const [timeStamp, jobID] = logName.split('-');
-    // Get it.
-    const log = await getLog(timeStamp, jobID);
-    // If this failed:
-    if (log.error) {
-      // Report why.
-      console.error(log.error);
-    }
-    // Otherwise, i.e. if it succeeded:
-    else {
-      // If the report is not hidden:
-      if (!log.hidden) {
-        // Add the job name to the log.
-        log.jobName = logName;
-        // Add the log to the logs.
-        logs.push(log);
-      }
-    }
-  }
-  // Sort the logs by target name and secondarily by test time.
-  logs.sort((a, b) => {
-    // During the sort, if the jobs tested the same target:
-    if (b.what === a.what) {
-      // Add to the earlier log the fact that its report has been superseded.
-      if (a.jobName < b.jobName) {
-        a.superseded = true;
-        return 1;
-      }
-      b.superseded = true;
-      return -1;
-    }
-    return a.what.localeCompare(b.what, {}, {sensitivity: 'base'});
-  });
-  // Return them.
-  return logs;
-};
 // Gets the name of an issue weight.
 exports.getWeightName = weight => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
 // Makes a string HTML-safe.
@@ -704,18 +640,19 @@ exports.getWCAGLink = numericID => {
   // Return the link.
   return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
 };
-// Returns page data from a report.
+// Returns page data from an available report.
 const getPageData = exports.getPageData = async (timeStamp, jobID) => {
-  // Get the log of the report.
-  const log = await getLog(timeStamp, jobID, false);
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (log.error) {
+  if (reportsDataPath.error) {
     // Return why.
-    return log;
+    return report;
   }
-  const {url, what} = log;
-  // Otherwise, i.e. if it succeeded, get the elapsed time in days since the test.
-  const daysAgo = getAgoDays(timeStamp);
+  const {url, what} = report.target;
+  const reportStats = getReportStats(timeStamp, jobID)
+  // Otherwise, i.e. if it succeeded, get the elapsed time in days since the report was created.
+  const daysAgo = getAgoDays(reportStats.reportTime);
   // Return the data.
   return {
     what,

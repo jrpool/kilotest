@@ -6,19 +6,18 @@
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getLog, logsPath} = require('../util');
-const fs = require('fs/promises');
+const {getReportsData} = require('../util');
 
 // FUNCTIONS
 
 // Returns the response body.
 exports.response = async args => {
-  const [description, url, reason] = args;
+  const [what, url, reason] = args;
   // Initialize the response content.
   const responseContent = {
     'details about your request': {}
   };
-  const whatLength = description.length;
+  const whatLength = what.length;
   // If the encoded description is too short or too long:
   if (whatLength < 10 || whatLength > 100) {
     // Add this to the response content.
@@ -28,35 +27,29 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if it has a valid length:
   else {
-    // Get the names of the log files.
-    const logFileNames = await fs.readdir(logsPath);
-    // For each of them:
-    for (const logFileName of logFileNames) {
-      const [timeStamp, jobID] = logFileName.slice(0, -5).split('-');
-      // Get the log.
-      const log = await getLog(timeStamp, jobID);
-      const {hidden, what} = log;
-      // If its report is not hidden and has the specified description and URL:
-      if (!hidden && what === description && log.url === url) {
-        // Add this to the response content.
-        responseContent['details about your request'] = {
-          error: 'request invalid: the page has already been tested and its report is available'
-        };
-        break;
-      }
+    // Get data on the available reports.
+    const reportsData = await getReportsData();
+    // Get data on those that are about the specified page.
+    const pageReportsData = reportsData.filter(data => data.what === what && data.url === url);
+    // If any exist:
+    if (pageReportsData.length) {
+      // Add this to the response content.
+      responseContent['details about your request'] = {
+        error: 'request invalid: the page has already been tested and its report is available'
+      };
     }
-    // If the request is valid:
-    if (!responseContent['details about your request'].error) {
+    // Otherwise, i.e. if none exist:
+    else {
       // Process the request.
-      await processTestRequest('test', description, url, reason);
+      await processTestRequest('test', what, url, reason);
       // Add details about the request to the response content.
       responseContent['details about your request'] = {
         'date and time received': new Date().toISOString(),
-        'page to be retested': {
-          description,
+        'page to be tested': {
+          description: what,
           'URL': url
         },
-        'reason why the page should be retested': reason
+        'reason why the page should be tested': reason
       };
     }
   }
@@ -69,8 +62,8 @@ exports.response = async args => {
       method: 'POST',
       URL: `${thisHost}/api/requestTest`,
       body: {
-        description,
-        url,
+        description: what,
+        URL: url,
         reason
       },
       'closest ancestor request': {

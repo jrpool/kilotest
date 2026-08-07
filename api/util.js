@@ -8,10 +8,10 @@
 const {sendAlert} = require('../alerts');
 const {
   getAgoDays,
-  getLog,
   getNowStamp,
   getPlainText,
   getRandomString,
+  getReportsData,
   getReportStats,
   issuesClassification,
   objectSort,
@@ -56,32 +56,31 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
 };
 // Returns the basics about a report, without reading the report.
 exports.getReportBasics = async (timeStamp, jobID) => {
-  // Get the log of the report.
-  const log = await getLog(timeStamp, jobID, false);
-  // If this failed:
-  if (log.error) {
-    // Log and return why.
-    console.error(log.error);
-    return log;
-  }
-  // Otherwise, i.e. if it succeeded but the report is hidden:
-  if (log.hidden) {
-    // Return this.
-    return {
-      error: `Report ${timeStamp}-${jobID} is not available.`
-    };
-  }
-  const {superseded = false, url, what} = log;
-  // Otherwise, i.e. if the log is valid and the report is available, get its time and size.
+  // Get the creation time and size of the report.
   const reportStats = await getReportStats(timeStamp, jobID);
   // If the  report does not exist:
   if (!reportStats) {
     // Log and return this.
-    console.error(`Log ${timeStamp}-${jobID} is valid but its report does not exist.`);
+    console.error(`Report ${timeStamp}-${jobID} does not exist.`);
     return {
       error: `Report ${timeStamp}-${jobID} could not be retrieved.`
     };
   }
+  // Get data on the available reports.
+  const reportsData = await getReportsData();
+  // Get data on the report.
+  const reportData = reportsData.find(data => data.timeStamp === timeStamp && data.jobID === jobID);
+  // If no such report exists:
+  if (!reportData) {
+    // Return this.
+    return {
+      error: `Report ${timeStamp}-${jobID} does not exist.`
+    };
+  }
+  const {url, what} = reportData;
+  const pageReportsData = reportsData.filter(data => data.what === what && data.url === url);
+  // Otherwise, i.e. if the report exists, get whether it has been superseded.
+  const isSuperseded = pageReportsData.length > 1;
   const {reportTime, reportSize} = reportStats;
   // Otherwise, i.e. if its report exists, get the basics about it.
   const basics = {
@@ -92,7 +91,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
       description: what,
       URL: url
     },
-    'whether a later report about the same page exists': !!superseded,
+    'whether a later report about the same page exists': isSuperseded,
     'size of the report in bytes': reportSize,
     'URL to get the entire report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
   };

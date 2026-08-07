@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getLog} = require('../util');
+const {getReportsData} = require('../util');
 
 // FUNCTIONS
 
@@ -18,23 +18,20 @@ exports.response = async args => {
     'details about your request': {}
   };
   const reasonLength = reason.length;
-  // Get the log.
-  const log = await getLog(timeStamp, jobID);
-  const {hidden, superseded, url, what} = log;
+  // Get data on the available reports.
+  const reportsData = await getReportsData();
+  // Get data on the report.
+  const reportData = reportsData.find(data => data.timeStamp === timeStamp && data.jobID === jobID);
+  const {what, url} = reportData || {};
   // If this failed:
-  if (log.error) {
-    // Add this to the response content.
-    responseContent['details about your request'] = log;
-  }
-  // Otherwise, if the report is hidden:
-  else if (hidden) {
+  if (!reportData) {
     // Add this to the response content.
     responseContent['details about your request'] = {
-      error: 'request invalid: no such report is available'
+      error: 'request invalid: the specified existing report is not an available report'
     };
   }
   // Otherwise, if the report has been superseded:
-  else if (superseded) {
+  else if (reportsData.filter(data => data.what === what && data.url === url).length > 1) {
     // Add this to the response content.
     responseContent['details about your request'] = {
       error: 'request invalid: a later report about the page exists'
@@ -47,7 +44,7 @@ exports.response = async args => {
       error: 'request invalid: your reason is not between 20 and 100 characters long'
     }
   }
-  // Otherwise, i.e. if getting the log succeeded and the request is valid:
+  // Otherwise, i.e. if getting the report succeeded and the request is valid:
   else {
     // Process the request.
     await processTestRequest('retest', what, url, reason);

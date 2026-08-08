@@ -30,13 +30,27 @@ exports.getResponseMetadata = () => ({
   identifier: `${getNowStamp()}-${getRandomString(3)}`,
   'date and time': new Date().toISOString()
 });
-// Returns the facts about the tool collection (Kilotest).
+// Returns facts about the tool collection (Kilotest).
 exports.getToolsFacts = () => ({
   'name': 'Kilotest',
-  'description': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against more than a thousand rules defined by an ensemble of ten rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to classify the rule violations into about 300 issues and makes facts about the issues and the violations retrievable at four levels of granularity. Level 1: Use the listReports tool to get a list of available reports. Level 2: Use the listIssues tool to get a list of issues in one report. Level 3: Use the listViolators tool to get a list of elements on one tested page that were reported as exhibiting one issue. Level 4: Use the listDiagnoses tool to get a list of diagnoses of how one element exhibited one issue. If no report is available yet about a page, you can use the requestTest tool to request that it be tested. If the latest report about a page is obsolete, because the page has been revised or for some other reason, you can use the requestRetest tool to request that the page be retested. Approval and testing of requests are usually completed within a day. You can use the listReports tool to determine whether the requested new report exists.',
-  'URLs': {
-    'for JSON output': `${thisHost}/mcp`,
-    'for HTML output': thisHost
+  'description': {
+    'what Kilotest does': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against more than a thousand rules defined by an ensemble of ten rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 300 issues. Kilotest makes facts about the issues and the violations retrievable at four levels of granularity.',
+    'how to retrieve findings': {
+      'level 1': 'Use the listReports tool to get a list of available reports.',
+      'level 2': 'Use the listIssues tool to get a list of issues in one report.',
+      'level 3': 'Use the listViolators tool to get a list of elements on one page that were reported in one report as exhibiting one issue.',
+      'level 4': 'Use the listDiagnoses tool to get a list of diagnoses of how one element on one page exhibited one issue in one report.',
+    },
+    'how to generate more findings': {
+      'new testing': 'If no report is available yet about a page, use the requestTest tool to request that it be tested.',
+      'retesting': 'If the listIssues tool shows that the latest report about a page is obsolete, because the page has been revised or for another reason, use the requestRetest tool to request that the page be retested.',
+      'latency': 'Requests for testing and retesting are usually approved and fulfilled within one day.',
+      'confirmation': 'Use the listReports tool to determine whether a requested new report exists. There is currently no process for notification of the outcome of requests.'
+    }
+  },
+  'URL': `${thisHost}/mcp`,
+  'how web users can obtain similar functionalities': {
+    URL: thisHost
   }
 });
 // Returns the facts about a rule engine.

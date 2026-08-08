@@ -22,14 +22,14 @@ exports.response = async args => {
   if (whatLength < 10 || whatLength > 100) {
     // Add this to the response content.
     responseContent['details about your request'] = {
-      error: 'request invalid: your description of the page to be tested is not between 10 and 100 characters long'
+      error: 'request invalid: your description of the page is not between 10 and 100 characters long'
     };
   }
   // Otherwise, i.e. if the URL is too short or too long::
   else if (url.length < 12 || url.length > 300) {
     // Add this to the response content.
     responseContent['details about your request'] = {
-      error: 'request invalid: you specified a URL for the page to be tested that is not between 12 and 300 characters long'
+      error: 'request invalid: you specified a URL for the page that is not between 12 and 300 characters long'
     };
   }
   // Otherwise, i.e. if the URL is invalid:

@@ -55,8 +55,8 @@ exports.response = async () => {
     method: 'POST',
     URL: `${thisHost}/api/requestTest`,
     'request body': {
-      description: '10- to 100-character description of the page to be tested conforming to the naming convention used in this list of reports',
-      URL: '12- to 300-character URL of the HTTPS page to be tested, including the scheme (https://) and any query parameters',
+      description: '10- to 100-character description of the page conforming to the naming convention used in this list of reports',
+      URL: '12- to 300-character URL of the page, including the https:// scheme and any query',
       reason: '20- to 100-character reason why the page should be tested'
     },
     'how to check whether the request has been fulfilled': 'use this listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'

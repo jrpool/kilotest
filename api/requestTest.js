@@ -1,12 +1,12 @@
 /*
   requestTest.js
-  Processes a request to test a page and returns an acknowledgement.
+  Processes a request to test an untested page and returns an acknowledgement.
 */
 
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getReportsData} = require('../util');
+const {getReportsData, isURL} = require('../util');
 
 // FUNCTIONS
 
@@ -18,18 +18,32 @@ exports.response = async args => {
     'details about your request': {}
   };
   const whatLength = what.length;
-  // If the encoded description is too short or too long:
+  // If the description is too short or too long:
   if (whatLength < 10 || whatLength > 100) {
     // Add this to the response content.
     responseContent['details about your request'] = {
       error: 'request invalid: your description of the page to be tested is not between 10 and 100 characters long'
     };
   }
-  // Otherwise, i.e. if it has a valid length:
+  // Otherwise, i.e. if the URL is too short or too long::
+  else if (url.length < 12 || url.length > 300) {
+    // Add this to the response content.
+    responseContent['details about your request'] = {
+      error: 'request invalid: you specified a URL for the page to be tested that is not between 12 and 300 characters long'
+    };
+  }
+  // Otherwise, i.e. if the URL is invalid:
+  else if (!isURL(url)) {
+    // Add this to the response content.
+    responseContent['details about your request'] = {
+      error: 'request invalid: you specified an invalid URL for the page'
+    };
+  }
+  // Otherwise, i.e. if the description and URL are valid:
   else {
     // Get data on the available reports.
     const reportsData = await getReportsData();
-    // Get data on those that are about the specified page.
+    // Get data on those that are about a page with the specified description and URL.
     const pageReportsData = reportsData.filter(data => data.what === what && data.url === url);
     // If any exist:
     if (pageReportsData.length) {

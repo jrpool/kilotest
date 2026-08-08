@@ -14,7 +14,9 @@ const {getReportsData} = require('../util');
 exports.response = async () => {
   // Initialize the response content.
   const responseContent = {
-    'basics about all available reports': null
+    'basics about all available reports': null,
+    'how to request that a page with no report be tested': null,
+    'how a web user can request that the page be tested': null
   };
   // Initialize an array of basics about the reports.
   const reportsBasics = [];
@@ -48,6 +50,21 @@ exports.response = async () => {
   });
   // Add the sorted basics about the reports to the response content.
   responseContent['basics about all available reports'] = reportsBasics;
+  // Add instructions for requesting a test to the response content.
+  responseContent['how to request that a page with no report be tested'] = {
+    method: 'POST',
+    URL: `${thisHost}/api/requestTest`,
+    'request body': {
+      description: '10- to 100-character description of the page to be tested conforming to the naming convention used in this list of reports',
+      URL: '12- to 300-character URL of the HTTPS page to be tested, including the scheme (https://) and any query parameters',
+      reason: '20- to 100-character reason why the page should be tested'
+    },
+    'how to check whether the request has been fulfilled': 'use this listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
+  };
+  // Add instructions for a web user to request a test to the response content.
+  responseContent['how a web user can request that the page be tested'] = {
+    URL: `${thisHost}/testRecForm.html`
+  };
   // Create a response body.
   const content = {
     'tool collection': getToolsFacts(),

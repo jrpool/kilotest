@@ -144,8 +144,8 @@ exports.response = async args => {
       else {
         // Add instructions for a retest request to the response content.
         responseContent['how to request that the page be retested'] = {
+          method: 'POST',
           URL: `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
-          'request method': 'POST',
           'request body': {
             reason: '20- to 100-character reason why the page should be retested'
           },

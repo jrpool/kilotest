@@ -157,8 +157,8 @@ const getTimeString = timeStamp => {
 const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
-// Sorts objects by a property value.
-exports.objectSort = (objects, property, sortType) => objects
+// Sorts objects by a property value and returns the sorted array.
+const objectSort = exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -231,7 +231,7 @@ const getRuleIDs = exports.getRuleIDs = () => {
   };
 };
 // Variable and invariant rules.
-const ruleIDs = exports.ruleIDs = getRuleIDs();
+exports.ruleIDs = getRuleIDs();
 // Returns the issue that a rule belongs to, or null if none.
 const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   const {invariant, variable} = ruleIDs;
@@ -255,7 +255,7 @@ const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
   return null;
 };
 // Adds issue IDs to the standard instances of a report.
-const annotateReport = exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
+exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
   // Get a copy of the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -741,7 +741,7 @@ const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
   const reportSize = reportStat.size;
   return {reportTime, reportSize};
 };
-// Creates and saves data on all reports.
+// Creates and saves data on all available reports.
 exports.makeReportsData = async () => {
   // Initialize the reports data.
   const reportsData = [];
@@ -757,13 +757,15 @@ exports.makeReportsData = async () => {
       reportsData.push(reportData);
     }
   }
+  // Sort the reports data by creation time.
+  objectSort(reportsData, 'reportTime', 'numericUp');
   // Ensure the data directory exists.
   await fs.mkdir(dbPath, {recursive: true});
   // Save the reports data.
   await fs.writeFile(reportsDataPath, getJSON(reportsData));
 };
-// Gets the data on all reports.
-exports.getReportsData = async () => {
+// Gets data on all available reports.
+const getReportsData = exports.getReportsData = async () => {
   // Get the reports data file.
   const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
   try {
@@ -776,4 +778,17 @@ exports.getReportsData = async () => {
     console.error(`Getting data from reports data file failed (${error.message})`);
     return null;
   }
+};
+// Gets data on the latest available reports.
+exports.getLatestReportsData = async () => {
+  // Get all available reports data.
+  const reportsData = await getReportsData();
+  const latestReportsData = {};
+  // For each report:
+  reportsData.forEach(reportData => {
+    // Deem it the latest report with its page description, replacing any previous one.
+    latestReportsData[reportData.what] = reportData;
+  });
+  // Return an array of data on the latest reports.
+  return objectSort(Object.values(latestReportsData), 'reportTime', 'numericUp');
 };

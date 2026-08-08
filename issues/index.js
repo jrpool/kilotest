@@ -7,8 +7,7 @@
 
 const {sendAlert} = require('../alerts');
 const {
-  annotateReport,
-  getEnhancedLogs,
+  getLatestReportsData,
   getReport,
   getToolNamesString,
   getWCAGLink,
@@ -23,20 +22,19 @@ const path = require('path');
 // FUNCTIONS
 
 // Gets summary data on the issues reported in a set of reports.
-const getIssuesSummary = async logs => {
+const getIssuesSummary = async () => {
   // Initialize the summary.
-  const summary = {};
+  const summary = {
+    totalCount: 0,
+    issues: []
+  };
   // Initialize data for a summary.
   const issuesData = {};
-  // For each log of a report to be inspected:
-  for (const log of logs) {
-    const {annotated, jobName} = log;
-    const [timeStamp, jobID] = jobName.split('-');
-    // If the corresponding report is not yet annotated:
-    if (!annotated) {
-      // Annotate it and mark it as annotated in the log.
-      await annotateReport(ruleIDs, timeStamp, jobID);
-    }
+  // Get data on the latest available report on each page.
+  const reportsData = await getLatestReportsData();
+  // For each of them:
+  for (const reportData of reportsData) {
+    const {timeStamp, jobID} = reportData;
     // Get the corresponding report.
     const report = await getReport(timeStamp, jobID);
     const {acts = [], error} = report;
@@ -68,9 +66,6 @@ const getIssuesSummary = async logs => {
       }
     });
   }
-  // Initialize the summary properties.
-  summary.totalCount = 0;
-  summary.issues = [];
   // For each issue:
   Object.entries(issuesData).forEach(([issueID, data]) => {
     const {count, reporters} = data;
@@ -109,10 +104,8 @@ const getIssuesSummary = async logs => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  // Get the logs of the latest reports on the tested targets.
-  const targetLogs = (await getEnhancedLogs()).filter(log => !log.superseded);
   // Get summary data on the issues.
-  const issuesSummary = await getIssuesSummary(targetLogs);
+  const issuesSummary = await getIssuesSummary();
   // If this failed:
   if (issuesSummary.error) {
     // Populate the query with the reason.

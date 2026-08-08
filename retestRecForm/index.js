@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getAgoString, getDateTimeString, getLog} = require('../util');
+const {getAgoString, getDateTimeString, getLatestReportsData} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -14,14 +14,26 @@ const path = require('path');
 // Returns a retest recommendation form.
 exports.answer = async pageArgs => {
   const [timeStamp, jobID] = pageArgs.split('/');
-  const log = await getLog(timeStamp, jobID);
-  // If this failed:
-  if (log.error) {
+  // Get data on the latest available reports.
+  const reportsData = await getLatestReportsData();
+  // Get data on the report whose page is to be retested.
+  const reportData = reportsData.find(
+    reportData => reportData.timeStamp === timeStamp && reportData.jobID === jobID
+  );
+  // Initialize the page description.
+  let target;
+  // If getting the data succeeded:
+  if (reportData) {
+    // Update the page description.
+    target = reportData.what;
+  }
+  // Otherwise, i.e. if it failed:
+  else {
     // Make the form report the failure.
-    log.what = 'The specified page is not available for retesting';
+    target = 'The specified page is not available for retesting';
   }
   const query = {
-    target: log.what,
+    target,
     timeStamp,
     jobID,
     ago: getAgoString(timeStamp),

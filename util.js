@@ -643,7 +643,7 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (reportsDataPath.error) {
+  if (report.error) {
     // Return why.
     return report;
   }
@@ -740,7 +740,7 @@ const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
   return {reportTime, reportSize};
 };
 // Creates and saves data on all available reports.
-exports.makeReportsData = async () => {
+const makeReportsData = exports.makeReportsData = async () => {
   // Initialize the reports data.
   const reportsData = [];
   // Get the names of all report files.
@@ -764,18 +764,23 @@ exports.makeReportsData = async () => {
 };
 // Gets data on all available reports.
 const getReportsData = exports.getReportsData = async () => {
-  // Get the reports data file.
-  const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
+  let reportsData;
   try {
+    // Get the reports data file.
+    const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
     // Get its data.
-    const reportsData = JSON.parse(reportsDataJSON);
-    // Return them.
-    return reportsData;
+    reportsData = JSON.parse(reportsDataJSON);
   }
-  catch (error) {
-    console.error(`Getting data from reports data file failed (${error.message})`);
-    return null;
+  // If this fails:
+  catch {
+    // Create or recreate the reports data file.
+    await makeReportsData();
+    // Get it.
+    const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
+    // Get its data.
+    reportsData = JSON.parse(reportsDataJSON);
   }
+  return reportsData;
 };
 // Gets data on the latest available report on each page.
 exports.getLatestReportsData = async () => {

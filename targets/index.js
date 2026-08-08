@@ -8,12 +8,13 @@
 const {
   getAgoDays,
   getCountString,
-  getEnhancedLogs,
   getJobNames,
+  getMultiReportWhats,
   getObject,
   getPageDataStrings,
   getRecs,
   getReportData,
+  getReportsData,
   isRecommendable,
   jobsPath
 } = require('../util');
@@ -69,18 +70,17 @@ const populateQuery = async query => {
   query.noQueued = lines.queue.length ? '' : 'No pages are queued for testing.';
   // Add a no-claimed message, if applicable, to the query.
   query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
-  // Get the logs of the non-hidden reports.
-  const targetLogs = await getEnhancedLogs();
-  query.which = targetLogs.length ? 'the following' : 'no';
-  query.some = (targetLogs.length || jobFileNames.queue.length || jobFileNames.claimed.length)
+  // Get data on all available reports.
+  const reportsData = await getReportsData();
+  query.which = reportsData.length ? 'the following' : 'no';
+  query.some = (reportsData.length || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'
   : 'a';
-  const multiReportTargets = new Set(targetLogs.filter(log => log.superseded).map(log => log.what));
-  // For each log:
-  for (const targetLog of targetLogs) {
-    const {jobName, url, what} = targetLog;
-    const [timeStamp, jobID] = jobName.split('-');
-    // Get data about its report.
+  const multiReportWhats = await getMultiReportWhats();
+  // For each report:
+  for (const data of reportsData) {
+    const {jobID, timeStamp, url, what} = data;
+    // Get data about it.
     const reportData = await getReportData(timeStamp, jobID);
     const {
       error,
@@ -104,7 +104,7 @@ const populateQuery = async query => {
     const daysAgo = getAgoDays(timeStamp);
     const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
     const {urlLink, testInfo} = pageDataStrings;
-    const testText = multiReportTargets.has(what) ? ` (${testInfo.toLowerCase()})` : '';
+    const testText = multiReportWhats.includes(what) ? ` (${testInfo.toLowerCase()})` : '';
     lines.tested.push(`${margin}  <summary>${what}${testText}</summary>`);
     lines.tested.push(`${margin}  <ul>`);
     // Add the URL of the target to the lines.

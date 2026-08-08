@@ -22,8 +22,6 @@ const dbPath = exports.dbPath = path.join(__dirname, 'db');
 const jobsPath = exports.jobsPath = path.join(dbPath, 'jobs');
 // Path of the recommendations file.
 const recsPath = exports.recsPath = path.join(jobsPath, 'recs.json');
-// Path of the OBSOLETE logs directory.
-const logsPath = exports.logsPath = path.join(dbPath, 'logs');
 // Path of the reports directory.
 const reportsPath = exports.reportsPath = path.join(dbPath, 'reports');
 // Path of the hidden-reports directory.
@@ -694,11 +692,11 @@ exports.getToolList = toolIDs => Array.from(toolIDs)
 exports.getCountString = (count, singular, plural) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 // Minifies a URL for duplicate detection.
 const minifyURL = exports.minifyURL = url => url.replace(/www\.|\/$/g, '').toLowerCase();
-// Returns whether a report about the specified page is already available.
+// Returns whether a report is available on a page with a description or URL.
 exports.isReportAvailable = async (what, url) => {
-  const logs = await getEnhancedLogs();
-  const whats = logs.map(log => log.what);
-  const miniURLs = logs.map(log => minifyURL(log.url));
+  const reportsData = await getReportsData();
+  const whats = reportsData.map(data => data.what);
+  const miniURLs = reportsData.map(data => minifyURL(data.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
 // Returns data from a report.
@@ -779,16 +777,27 @@ const getReportsData = exports.getReportsData = async () => {
     return null;
   }
 };
-// Gets data on the latest available reports.
+// Gets data on the latest available report on each page.
 exports.getLatestReportsData = async () => {
-  // Get all available reports data.
+  // Get data on all available reports.
   const reportsData = await getReportsData();
-  const latestReportsData = {};
-  // For each report:
-  reportsData.forEach(reportData => {
-    // Deem it the latest report with its page description, replacing any previous one.
-    latestReportsData[reportData.what] = reportData;
-  });
-  // Return an array of data on the latest reports.
-  return objectSort(Object.values(latestReportsData), 'reportTime', 'numericUp');
+  // Get data on the latest report on each page.
+  const latestReportsData = reportsData.filter(
+    (data, index) => data.what !== reportsData[index+ 1].what
+  );
+  // Return them.
+  return latestReportsData;
+};
+// Gets the descriptions of multi-report pages.
+exports.getMultiReportWhats = async () => {
+  // Get data on all available reports.
+  const reportsData = await getReportsData();
+  // Get their sorted page descriptions.
+  const whats = reportsData.map(reportData => reportData.what).sort();
+  // Get the descriptions that at least 2 reports have.
+  const multiReportWhats = whats.filter(
+    (what, index) => what !== whats[index - 1] && what === whats[index + 1]
+  );
+  // Return an array of descriptions of multi-report pages.
+  return multiReportWhats;
 };

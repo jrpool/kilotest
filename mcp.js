@@ -69,12 +69,11 @@ const {StreamableHTTPServerTransport} = require(
   '@modelcontextprotocol/sdk/server/streamableHttp.js'
 );
 const {z} = require('zod');
-const {isReportAvailable, isURL} = require('./util');
-const targetAPI = require('./target/api');
-const reportListAPI = require('./api/reportList');
-const reportFactsAPI = require('./api/reportFacts');
-const reportIssueAPI = require('./reportIssue/api');
-const testRecFormAPI = require('./testRecForm/api');
+const listReportsAPI = require('./api/listReports');
+const listIssuesAPI = require('./api/listIssues');
+const listViolatorsAPI = require('./api/listViolators');
+const requestTestAPI = require('./api/requestTest');
+const requestRetestAPI = require('./api/requestRetest');
 
 // CONSTANTS
 
@@ -84,35 +83,19 @@ exports.mcpPath = '/mcp';
 
 // Creates and returns an McpServer with Kilotest tools registered.
 const createMCPServer = () => {
-  const server = new McpServer({name: 'Kilotest', version: '1.0.0'});
+  const server = new McpServer({
+    name: 'Kilotest',
+    version: '2.0.0',
+    description: 'Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available',
+    instructions: 'Use the listReports tool to start. If it shows that there is a report available about the page you want facts about, drill down with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestTest tool to request that the page be tested. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested.'
+  });
   server.registerTool(
-    'summarizeQualityOfMatchingWebPages',
+    'listReports',
     {
-      description: 'Returns summary data from every available Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages that match the description or hostname fragment of a web page that you have provided. Matching is case-insensitive and succeeds if the page property either is included by or includes the specified fragment.',
-      inputSchema: {
-        description: z.string().describe('All or part of a description of the web page.'),
-        hostname: z.string().describe('All or part of the hostname of the URL of the web page.')
-      },
-      annotations: {
-        title: 'Summarize the quality of matching web pages',
-        readOnlyHint: true,
-        idempotentHint: true,
-        destructiveHint: false,
-        openWorldHint: false
-      }
-    },
-    async ({description, hostname}) => {
-      const result = await targetAPI.response([description, hostname]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
-    }
-  );
-  server.registerTool(
-    'listAllAvailableReports',
-    {
-      description: 'For each available report, summarize facts about it and provide URLs for next-level retrieval of detailed facts.',
+      description: 'Provide basics about all available reports.',
       inputSchema: {},
       annotations: {
-        title: 'List all available reports',
+        title: 'Provide basics about all available reports.',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -120,20 +103,20 @@ const createMCPServer = () => {
       }
     },
     async () => {
-      const result = await reportListAPI.response();
+      const result = await listReportsAPI.response();
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );
   server.registerTool(
-    'summarizeOneReport',
+    'listIssues',
     {
-      description: 'Returns a summary of a specified Kilotest report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required timeStamp and jobID parameters identify the report and are obtained from a listAllAvailableReports response.',
+      description: 'Provide details about one report, including basics about the issues reported in it.',
       inputSchema: {
-        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format, e.g. 260503T0432'),
-        jobID: z.string().describe('Job identifier, e.g. x9z')
+        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
+        jobID: z.string().describe('Job identifier of the report (example: x9z)')
       },
       annotations: {
-        title: 'Summarize one report',
+        title: 'Provide details about one report, including basics about the issues reported in it.',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -141,21 +124,21 @@ const createMCPServer = () => {
       }
     },
     async ({timeStamp, jobID}) => {
-      const result = await reportFactsAPI.response([timeStamp, jobID]);
+      const result = await listIssuesAPI.response([timeStamp, jobID]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );
   server.registerTool(
-    'describeOneIssueFromOneReport',
+    'listViolators',
     {
-      description: 'Returns data from a specified Kilotest report about one of the issues for the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The required issueID, timeStamp, and jobID parameters identify the issue and the report and are obtained from a summarizeOneReport response.',
+      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
       inputSchema: {
-        issueID: z.string().describe('Issue identifier, e.g. contrastPoor'),
-        timeStamp: z.string().describe('Report timestamp in YYMMDDTHHmm format, e.g. 260503T0432'),
-        jobID: z.string().describe('Job identifier, e.g. x9z')
+        issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
+        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
+        jobID: z.string().describe('Job identifier of the report (example: x9z)')
       },
       annotations: {
-        title: 'Describe one issue from one report',
+        title: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -163,39 +146,74 @@ const createMCPServer = () => {
       }
     },
     async ({issueID, timeStamp, jobID}) => {
-      const result = await reportIssueAPI.response([issueID, timeStamp, jobID]);
+      const result = await listViolatorsAPI.response([issueID, timeStamp, jobID]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );
   server.registerTool(
-    'recommendQualityTestingOfOneWebPage',
+    'listDiagnoses',
     {
-      description: 'Recommends a web page for Kilotest to test for front-end quality (i.e. accessibility, usability, and standards conformity). Do not call this tool until after you call listAllAvailableReports to check whether a report about the page, or a related page that satisfies your requirements, is available and to understand the naming conventions for pages.',
+      description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
       inputSchema: {
-        'description of the web page': z.string().describe('Short description of the page, following the naming conventions visible in the listAllAvailableReports response'),
-        'URL of the web page': z.string().describe('Full HTTPS URL of the page to test'),
-        'reason for testing the web page': z.string().describe('Reason for recommending this page for testing')
+        catalogIndex: z.string().describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'),
+        issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
+        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
+        jobID: z.string().describe('Job identifier of the report (example: x9z)')
       },
       annotations: {
-        title: 'Recommend quality testing of one web page',
+        title: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({catalogIndex, issueID, timeStamp, jobID}) => {
+      const result = await listViolatorsAPI.response([catalogIndex, issueID, timeStamp, jobID]);
+      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+    }
+  );
+  server.registerTool(
+    'requestTest',
+    {
+      description: 'Process my request to test a page about which no report is available yet.',
+      inputSchema: {
+        description: z.string().describe('10- to 100-character description of the page conforming to the naming convention used in the listReports output'),
+        URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
+        reason: z.string().describe('20- to 100-character reason why the page should be tested')
+      },
+      annotations: {
+        title: 'Process my request to test a page about which no report is available yet.',
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
         openWorldHint: false
       }
     },
-    async ({
-      'description of the web page': what,
-      'URL of the web page': url,
-      'reason for testing the web page': why
-    }) => {
-      if (!isURL(url)) {
-        return {content: [{type: 'text', text: JSON.stringify({error: 'Invalid URL'})}], isError: true};
+    async ({description, URL, reason}) => {
+      const result = await requestTestAPI.response([description, URL, reason]);
+      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+    }
+  );
+  server.registerTool(
+    'requestRetest',
+    {
+      description: 'Process my request to retest a page about which a report is available.',
+      inputSchema: {
+        timeStamp: z.string().describe('Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'),
+        jobID: z.string().describe('Job identifier of the latest report about the page (example: x9z)'),
+        reason: z.string().describe('20- to 100-character reason why the page should be retested')
+      },
+      annotations: {
+        title: 'Process my request to retest a page about which a report is available.',
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
       }
-      if (await isReportAvailable(what, url)) {
-        return {content: [{type: 'text', text: JSON.stringify({error: 'A report about the page is already available'})}], isError: true};
-      }
-      const result = await testRecFormAPI.response(what, url, why);
+    },
+    async ({timeStamp, jobID, reason}) => {
+      const result = await requestRetestAPI.response([timeStamp, jobID, reason]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );

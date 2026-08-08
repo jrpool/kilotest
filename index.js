@@ -708,22 +708,22 @@ const requestHandler = async (request, response) => {
               await serveError({message: 'ERROR: Report invalid'}, response, false);
             }
           }
+          // Otherwise, if the service is to receive a test request:
+          else if (service === 'requestTest') {
+            const {description, URL, reason} = postData;
+            // Get the response body.
+            const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
+            .response([description, URL, reason]);
+            // Send it.
+            setHeaders('application/json', null, 'ultra');
+            response.end(JSON.stringify(responseBody));
+          }
           // Otherwise, if the service is to receive a retest request:
           else if (service === 'requestRetest') {
             const {reason} = postData;
             // Get the response body.
             const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
-            .response(...segments, reason);
-            // Send it.
-            setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseBody));
-          }
-          // Otherwise, if the service is to receive a test request:
-          else if (service === 'requestTest') {
-            const {what, url, reason} = postData;
-            // Get the response body.
-            const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
-            .response(what, url, reason);
+            .response(segments.concat(reason));
             // Send it.
             setHeaders('application/json', null, 'ultra');
             response.end(JSON.stringify(responseBody));

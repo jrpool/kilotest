@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportData, logsPath, reportsPath} = require('../util');
+const {getReportData, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 

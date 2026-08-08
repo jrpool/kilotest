@@ -6,8 +6,7 @@
 // IMPORTS
 
 const {getReportBasics, getResponseMetadata, getToolsFacts, thisHost} = require('./util');
-const {logsPath} = require('../util');
-const fs = require('fs').promises;
+const {getReportsData} = require('../util');
 
 // FUNCTIONS
 
@@ -19,15 +18,15 @@ exports.response = async () => {
   };
   // Initialize an array of basics about the reports.
   const reportsBasics = [];
-  // Get the names of the log files.
-  const logFileNames = await fs.readdir(logsPath);
-  // For each of them:
-  for (const logFileName of logFileNames) {
-    const [timeStamp, jobID] = logFileName.slice(0, -5).split('-');
-    // Get the basics about its report (which may be only an error message).
+  // Get data on all available reports.
+  const reportsData = await getReportsData();
+  // For each report:
+  for (const data of reportsData) {
+    const {error, jobID, timeStamp} = data;
+    // Get the basics about it (which may be only an error message).
     const reportBasics = await getReportBasics(timeStamp, jobID);
-    // If this succeeded, the log file is valid, and the report is not hidden:
-    if (!reportBasics.error) {
+    // If this succeeded:
+    if (!error) {
       // Add instructions for getting details to the basics.
       reportBasics['how to get details about the report'] = {
         method: 'GET',

@@ -23,7 +23,6 @@ const {
   isTimeStamp,
   isJobID,
   jobsPath,
-  logsPath,
   makeReportsData,
   recsLock,
   reportsPath,
@@ -697,7 +696,7 @@ const requestHandler = async (request, response) => {
               await makeReportsData();
               // Annotate the report.
               await annotateReport(ruleIDs, timeStamp, jobID);
-              console.log(`Testaro report ${id} was annotated, saved, and logged`);
+              console.log(`Testaro report ${id} was annotated, saved, and indexed`);
               // Check the monetary balances and send alerts if nearing exhaustion.
               await checkBalancesForAlerts(report);
               // Delete the job.
@@ -775,7 +774,7 @@ const requestHandler = async (request, response) => {
 
 const serve = async (protocolModule, options) => {
   // Create any missing directories.
-  for (const path of [queuePath, claimedPath, failedPath, logsPath, reportsPath]) {
+  for (const path of [queuePath, claimedPath, failedPath, reportsPath]) {
     await fs.mkdir(path, {recursive: true});
   }
   const server = protocolModule === 'https'

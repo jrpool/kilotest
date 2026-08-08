@@ -66,7 +66,7 @@ exports.response = async args => {
     };
     // Add the basics about the issue to the response content.
     responseContent['basics about the issue'] = issueBasics;
-    // If the report exists and is not hidden and its log file is valid:
+    // If the report is available:
     if (!report.error) {
       // Initialize data about the instances of the issue.
       const reporterIDs = new Set();

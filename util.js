@@ -714,7 +714,7 @@ const getReportData = exports.getReportData = async reportFileName => {
       url: report.target.url,
     };
     // Get its creation time and size.
-    const [reportTime, reportSize] = await getReportStats(data.timeStamp, data.jobID);
+    const {reportTime, reportSize} = await getReportStats(data.timeStamp, data.jobID);
     // Add them to the report data.
     data.reportTime = reportTime;
     data.reportSize = reportSize;
@@ -744,11 +744,11 @@ const makeReportsData = exports.makeReportsData = async () => {
   // Initialize the reports data.
   const reportsData = [];
   // Get the names of all report files.
-  const reportFiles = await fs.readdir(reportsPath);
+  const reportFileNames = await fs.readdir(reportsPath);
   // For each of them:
-  for (const reportFile of reportFiles) {
+  for (const reportFileName of reportFileNames) {
     // Get its data.
-    const reportData = await getReportData(reportFile);
+    const reportData = await getReportData(reportFileName);
     // If this succeeded:
     if (reportData) {
       // Add the report data to the reports data.
@@ -770,6 +770,11 @@ const getReportsData = exports.getReportsData = async () => {
     const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
     // Get its data.
     reportsData = JSON.parse(reportsDataJSON);
+    // If it is empty:
+    if (!reportsData.length) {
+      // Throw an error.
+      throw new Error('Reports data file is empty');
+    }
   }
   // If this fails:
   catch {

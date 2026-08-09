@@ -70,7 +70,7 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
 };
 // Returns the basics about a report, without reading the report.
 exports.getReportBasics = async (timeStamp, jobID) => {
-  // Get the creation time and size of the report.
+  // Get the creation time of the report.
   const reportStats = await getReportStats(timeStamp, jobID);
   // If the  report does not exist:
   if (!reportStats) {
@@ -92,11 +92,14 @@ exports.getReportBasics = async (timeStamp, jobID) => {
     };
   }
   const {url, what} = reportData;
+  // Otherwise, i.e. if the report exists, get data on all available reports on the page.
   const pageReportsData = reportsData.filter(data => data.what === what && data.url === url);
-  // Otherwise, i.e. if the report exists, get whether it has been superseded.
-  const isSuperseded = pageReportsData.length > 1;
-  const {reportTime, reportSize} = reportStats;
-  // Otherwise, i.e. if its report exists, get the basics about it.
+  const lastPageReportData = pageReportsData.pop();
+  // Get whether this report has been superseded.
+  const isSuperseded = lastPageReportData.timeStamp !== timeStamp
+  || lastPageReportData.jobID !== jobID;
+  const {reportTime} = reportStats;
+  // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
     'completion date and time': reportTime.toISOString(),
@@ -105,9 +108,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
       description: what,
       URL: url
     },
-    'whether a later report about the same page exists': isSuperseded,
-    'size of the report in bytes': reportSize,
-    'URL to get the entire report as JSON': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
+    'whether a later report about the same page exists': isSuperseded
   };
   // Return them.
   return basics;

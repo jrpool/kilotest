@@ -14,7 +14,7 @@ const {
   getToolsFacts,
   thisHost
 } = require('./util');
-const {getReport, objectSort} = require('../util');
+const {getReport, getReportStats, objectSort} = require('../util');
 
 // FUNCTIONS
 
@@ -27,6 +27,8 @@ exports.response = async args => {
     'details about the report': null,
     'how to request that the page be retested': null,
     'how a web user can request that the page be retested': null,
+    'how to get the full report in JSON': null,
+    'how a web user can get the full report in JSON': null,
     'basics about all issues reported in the report': null
   };
   // Get the report.
@@ -128,6 +130,22 @@ exports.response = async args => {
         },
         'number of elements reported as violators': violatorIndexes.size
       };
+      // Get the size of the report.
+      const reportStats = await getReportStats(timeStamp, jobID);
+      // If this succeeded:
+      if (reportStats) {
+        const {reportSize} = reportStats;
+        // Add instructions for getting the full report to the response content.
+        responseContent['how to get the full report in JSON'] = {
+          'size of the report in bytes': reportSize,
+          method: 'GET',
+          URL: `${thisHost}/api/getReport/${timeStamp}/${jobID}`
+        };
+        // Add instructions for web users to get the full report to the response content.
+        responseContent['how a web user can get the full report in JSON'] = {
+          URL: `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
+        };
+      }
       // Add the details about the job and test results to the response content.
       responseContent['details about the report'] = {
         'job definition': jobDefinitionDetails,

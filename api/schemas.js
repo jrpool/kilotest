@@ -92,23 +92,23 @@ const toolsFactsSchema = z.object({
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
   description: z.string(),
-  method: z.enum(['GET', 'POST']),
+  method: z.literal('GET'),
   URL: z.string()
 }).meta({id: 'RequestReference'});
 
 // GET endpoints have no 'body'; POST endpoints get a request-specific body schema.
-const thisRequestSchema = bodySchema => z.object({
+const thisRequestSchema = (method, bodySchema) => z.object({
   description: z.string(),
-  method: z.enum(['GET', 'POST']),
+  method: z.literal(method),
   URL: z.string(),
   ...(bodySchema ? {body: bodySchema} : {}),
   'closest ancestor request': requestReferenceSchema.nullable()
 });
 
-const envelope = (responseContentSchema, bodySchema) => z.object({
+const envelope = (method, responseContentSchema, bodySchema) => z.object({
   'tool collection': toolsFactsSchema,
   'tool name': z.string(),
-  'this request': thisRequestSchema(bodySchema),
+  'this request': thisRequestSchema(method, bodySchema),
   'URLs of similar requests for web users': similarWebRequestsSchema,
   'response metadata': responseMetadataSchema,
   'response content': responseContentSchema
@@ -156,7 +156,7 @@ const issueBasicsOrErrorSchema = z.union([
   z.object({error: z.string()})
 ]).meta({id: 'IssueBasicsOrError'});
 
-exports.listReportsResponseSchema = envelope(z.object({
+exports.listReportsResponseSchema = envelope('GET', z.object({
   'basics about all available reports': z.array(reportBasicsSchema.extend({
     'how to get details about the report': z.object({method: z.literal('GET'), URL: z.string()}),
     'web users can get details about the report at': z.string()
@@ -170,7 +170,7 @@ exports.listReportsResponseSchema = envelope(z.object({
   'how a web user can request that the page be tested': z.object({URL: z.string()})
 }));
 
-exports.listIssuesResponseSchema = envelope(z.object({
+exports.listIssuesResponseSchema = envelope('GET', z.object({
   'basics about the report': reportBasicsOrErrorSchema,
   'details about the report': z.object({
     'job definition': z.object({
@@ -216,7 +216,7 @@ exports.listIssuesResponseSchema = envelope(z.object({
   }))
 }));
 
-exports.listViolatorsResponseSchema = envelope(z.object({
+exports.listViolatorsResponseSchema = envelope('GET', z.object({
   'basics about the report': reportBasicsOrErrorSchema,
   'basics about the issue': issueBasicsOrErrorSchema,
   'details about the issue': z.object({
@@ -232,7 +232,7 @@ exports.listViolatorsResponseSchema = envelope(z.object({
   })).nullable()
 }));
 
-exports.listDiagnosesResponseSchema = envelope(z.object({
+exports.listDiagnosesResponseSchema = envelope('GET', z.object({
   'basics about the report': reportBasicsOrErrorSchema,
   'basics about the issue': issueBasicsOrErrorSchema,
   'basics about the element': z.object({
@@ -253,12 +253,13 @@ exports.listDiagnosesResponseSchema = envelope(z.object({
   })).or(z.object({error: z.string()}))
 }));
 
-exports.getReportResponseSchema = envelope(z.object({
+exports.getReportResponseSchema = envelope('GET', z.object({
   'size of the report in bytes': z.union([z.number(), z.string()]),
   'full report': z.unknown().describe('The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.')
 }));
 
 exports.requestTestResponseSchema = envelope(
+  'POST',
   z.object({'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({
@@ -271,6 +272,7 @@ exports.requestTestResponseSchema = envelope(
 );
 
 exports.requestRetestResponseSchema = envelope(
+  'POST',
   z.object({'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({
@@ -283,6 +285,7 @@ exports.requestRetestResponseSchema = envelope(
 );
 
 exports.requestFeatureResponseSchema = envelope(
+  'POST',
   z.object({'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({

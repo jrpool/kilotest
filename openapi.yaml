@@ -24,66 +24,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -100,25 +41,7 @@ paths:
                         type: string
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -127,32 +50,9 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
@@ -283,66 +183,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -359,25 +200,7 @@ paths:
                         type: string
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -386,73 +209,14 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
                       basics about the report:
-                        anyOf:
-                          - type: object
-                            properties:
-                              identifier:
-                                type: string
-                                description: timeStamp-jobID identifier of the report.
-                              completion date and time:
-                                type: string
-                              days since the report was completed:
-                                type: number
-                              tested web page:
-                                type: object
-                                properties:
-                                  description:
-                                    type: string
-                                  URL:
-                                    type: string
-                                required:
-                                  - description
-                                  - URL
-                                additionalProperties: false
-                              whether a later report about the same page exists:
-                                type: boolean
-                            required:
-                              - identifier
-                              - completion date and time
-                              - days since the report was completed
-                              - tested web page
-                              - whether a later report about the same page exists
-                            additionalProperties: false
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
+                        $ref: '#/components/schemas/ReportBasicsOrError'
                       details about the report:
                         anyOf:
                           - type: object
@@ -483,23 +247,7 @@ paths:
                                   rule engines that tried to test the page:
                                     type: array
                                     items:
-                                      type: object
-                                      properties:
-                                        identifier:
-                                          type: string
-                                        name:
-                                          anyOf:
-                                            - type: string
-                                            - type: 'null'
-                                        sponsor:
-                                          anyOf:
-                                            - type: string
-                                            - type: 'null'
-                                      required:
-                                        - identifier
-                                        - name
-                                        - sponsor
-                                      additionalProperties: false
+                                      $ref: '#/components/schemas/RuleEngineFacts'
                                   rule engines that could not test the page:
                                     type: array
                                     items:
@@ -720,66 +468,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -796,25 +485,7 @@ paths:
                         type: string
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -823,118 +494,16 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
                       basics about the report:
-                        anyOf:
-                          - type: object
-                            properties:
-                              identifier:
-                                type: string
-                                description: timeStamp-jobID identifier of the report.
-                              completion date and time:
-                                type: string
-                              days since the report was completed:
-                                type: number
-                              tested web page:
-                                type: object
-                                properties:
-                                  description:
-                                    type: string
-                                  URL:
-                                    type: string
-                                required:
-                                  - description
-                                  - URL
-                                additionalProperties: false
-                              whether a later report about the same page exists:
-                                type: boolean
-                            required:
-                              - identifier
-                              - completion date and time
-                              - days since the report was completed
-                              - tested web page
-                              - whether a later report about the same page exists
-                            additionalProperties: false
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
+                        $ref: '#/components/schemas/ReportBasicsOrError'
                       basics about the issue:
-                        anyOf:
-                          - type: object
-                            properties:
-                              identifier:
-                                type: string
-                              summary:
-                                type: string
-                              impact on a user:
-                                type: string
-                              priority:
-                                type: string
-                                enum:
-                                  - lowest
-                                  - low
-                                  - high
-                                  - highest
-                              related WCAG standard:
-                                type: object
-                                properties:
-                                  layer:
-                                    type: string
-                                    enum:
-                                      - success criterion
-                                      - guideline
-                                  identifier:
-                                    type: string
-                                required:
-                                  - layer
-                                  - identifier
-                                additionalProperties: false
-                            required:
-                              - identifier
-                              - summary
-                              - impact on a user
-                              - priority
-                              - related WCAG standard
-                            additionalProperties: false
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
+                        $ref: '#/components/schemas/IssueBasicsOrError'
                       details about the issue:
                         anyOf:
                           - type: object
@@ -942,23 +511,7 @@ paths:
                               rule engines reporting violations belonging to the issue:
                                 type: array
                                 items:
-                                  type: object
-                                  properties:
-                                    identifier:
-                                      type: string
-                                    name:
-                                      anyOf:
-                                        - type: string
-                                        - type: 'null'
-                                    sponsor:
-                                      anyOf:
-                                        - type: string
-                                        - type: 'null'
-                                  required:
-                                    - identifier
-                                    - name
-                                    - sponsor
-                                  additionalProperties: false
+                                  $ref: '#/components/schemas/RuleEngineFacts'
                             required:
                               - rule engines reporting violations belonging to the issue
                             additionalProperties: false
@@ -1056,66 +609,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -1132,25 +626,7 @@ paths:
                         type: string
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -1159,118 +635,16 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
                       basics about the report:
-                        anyOf:
-                          - type: object
-                            properties:
-                              identifier:
-                                type: string
-                                description: timeStamp-jobID identifier of the report.
-                              completion date and time:
-                                type: string
-                              days since the report was completed:
-                                type: number
-                              tested web page:
-                                type: object
-                                properties:
-                                  description:
-                                    type: string
-                                  URL:
-                                    type: string
-                                required:
-                                  - description
-                                  - URL
-                                additionalProperties: false
-                              whether a later report about the same page exists:
-                                type: boolean
-                            required:
-                              - identifier
-                              - completion date and time
-                              - days since the report was completed
-                              - tested web page
-                              - whether a later report about the same page exists
-                            additionalProperties: false
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
+                        $ref: '#/components/schemas/ReportBasicsOrError'
                       basics about the issue:
-                        anyOf:
-                          - type: object
-                            properties:
-                              identifier:
-                                type: string
-                              summary:
-                                type: string
-                              impact on a user:
-                                type: string
-                              priority:
-                                type: string
-                                enum:
-                                  - lowest
-                                  - low
-                                  - high
-                                  - highest
-                              related WCAG standard:
-                                type: object
-                                properties:
-                                  layer:
-                                    type: string
-                                    enum:
-                                      - success criterion
-                                      - guideline
-                                  identifier:
-                                    type: string
-                                required:
-                                  - layer
-                                  - identifier
-                                additionalProperties: false
-                            required:
-                              - identifier
-                              - summary
-                              - impact on a user
-                              - priority
-                              - related WCAG standard
-                            additionalProperties: false
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
+                        $ref: '#/components/schemas/IssueBasicsOrError'
                       basics about the element:
                         anyOf:
                           - anyOf:
@@ -1381,66 +755,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -1457,25 +772,7 @@ paths:
                         type: string
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -1484,32 +781,9 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
@@ -1563,66 +837,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -1656,25 +871,7 @@ paths:
                         additionalProperties: false
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -1684,32 +881,9 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
@@ -1794,66 +968,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -1879,25 +994,7 @@ paths:
                         additionalProperties: false
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -1907,32 +1004,9 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
@@ -2002,66 +1076,7 @@ paths:
                 type: object
                 properties:
                   tool collection:
-                    type: object
-                    properties:
-                      name:
-                        type: string
-                      description:
-                        type: object
-                        properties:
-                          what Kilotest does:
-                            type: string
-                          how to retrieve findings:
-                            type: object
-                            properties:
-                              level 1:
-                                type: string
-                              level 2:
-                                type: string
-                              level 3:
-                                type: string
-                              level 4:
-                                type: string
-                            required:
-                              - level 1
-                              - level 2
-                              - level 3
-                              - level 4
-                            additionalProperties: false
-                          how to generate more findings:
-                            type: object
-                            properties:
-                              new testing:
-                                type: string
-                              retesting:
-                                type: string
-                              latency:
-                                type: string
-                              confirmation:
-                                type: string
-                            required:
-                              - new testing
-                              - retesting
-                              - latency
-                              - confirmation
-                            additionalProperties: false
-                        required:
-                          - what Kilotest does
-                          - how to retrieve findings
-                          - how to generate more findings
-                        additionalProperties: false
-                        description: Explanation of what Kilotest does and how to use its tools.
-                      URL:
-                        type: string
-                        description: URL of the Kilotest MCP server.
-                      web users can obtain similar functionalities at:
-                        type: string
-                    required:
-                      - name
-                      - description
-                      - URL
-                      - web users can obtain similar functionalities at
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ToolsFacts'
                   tool name:
                     type: string
                   this request:
@@ -2087,25 +1102,7 @@ paths:
                         additionalProperties: false
                       closest ancestor request:
                         anyOf:
-                          - type: object
-                            properties:
-                              tool name:
-                                type: string
-                              description:
-                                type: string
-                              method:
-                                type: string
-                                enum:
-                                  - GET
-                                  - POST
-                              URL:
-                                type: string
-                            required:
-                              - tool name
-                              - description
-                              - method
-                              - URL
-                            additionalProperties: false
+                          - $ref: '#/components/schemas/RequestReference'
                           - type: 'null'
                     required:
                       - description
@@ -2115,32 +1112,9 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    type: object
-                    properties:
-                      this request:
-                        type: string
-                        description: URL of the equivalent web UI page for this request.
-                      closest ancestor request:
-                        anyOf:
-                          - type: string
-                          - type: 'null'
-                    required:
-                      - this request
-                      - closest ancestor request
-                    additionalProperties: false
+                    $ref: '#/components/schemas/SimilarWebRequests'
                   response metadata:
-                    type: object
-                    properties:
-                      identifier:
-                        type: string
-                        description: Unique identifier of this response (timestamp and random suffix).
-                      date and time:
-                        type: string
-                        description: UTC date and time when the response was generated, in ISO 8601 format.
-                    required:
-                      - identifier
-                      - date and time
-                    additionalProperties: false
+                    $ref: '#/components/schemas/ResponseMetadata'
                   response content:
                     type: object
                     properties:
@@ -2174,3 +1148,216 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
+components:
+  schemas:
+    ToolsFacts:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: object
+          properties:
+            what Kilotest does:
+              type: string
+            how to retrieve findings:
+              type: object
+              properties:
+                level 1:
+                  type: string
+                level 2:
+                  type: string
+                level 3:
+                  type: string
+                level 4:
+                  type: string
+              required:
+                - level 1
+                - level 2
+                - level 3
+                - level 4
+              additionalProperties: false
+            how to generate more findings:
+              type: object
+              properties:
+                new testing:
+                  type: string
+                retesting:
+                  type: string
+                latency:
+                  type: string
+                confirmation:
+                  type: string
+              required:
+                - new testing
+                - retesting
+                - latency
+                - confirmation
+              additionalProperties: false
+          required:
+            - what Kilotest does
+            - how to retrieve findings
+            - how to generate more findings
+          additionalProperties: false
+          description: Explanation of what Kilotest does and how to use its tools.
+        URL:
+          type: string
+          description: URL of the Kilotest MCP server.
+        web users can obtain similar functionalities at:
+          type: string
+      required:
+        - name
+        - description
+        - URL
+        - web users can obtain similar functionalities at
+      additionalProperties: false
+    RequestReference:
+      type: object
+      properties:
+        tool name:
+          type: string
+        description:
+          type: string
+        method:
+          type: string
+          enum:
+            - GET
+            - POST
+        URL:
+          type: string
+      required:
+        - tool name
+        - description
+        - method
+        - URL
+      additionalProperties: false
+    SimilarWebRequests:
+      type: object
+      properties:
+        this request:
+          type: string
+          description: URL of the equivalent web UI page for this request.
+        closest ancestor request:
+          anyOf:
+            - type: string
+            - type: 'null'
+      required:
+        - this request
+        - closest ancestor request
+      additionalProperties: false
+    ResponseMetadata:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: Unique identifier of this response (timestamp and random suffix).
+        date and time:
+          type: string
+          description: UTC date and time when the response was generated, in ISO 8601 format.
+      required:
+        - identifier
+        - date and time
+      additionalProperties: false
+    ReportBasicsOrError:
+      anyOf:
+        - $ref: '#/components/schemas/ReportBasics'
+        - type: object
+          properties:
+            error:
+              type: string
+          required:
+            - error
+          additionalProperties: false
+    ReportBasics:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: timeStamp-jobID identifier of the report.
+        completion date and time:
+          type: string
+        days since the report was completed:
+          type: number
+        tested web page:
+          type: object
+          properties:
+            description:
+              type: string
+            URL:
+              type: string
+          required:
+            - description
+            - URL
+          additionalProperties: false
+        whether a later report about the same page exists:
+          type: boolean
+      required:
+        - identifier
+        - completion date and time
+        - days since the report was completed
+        - tested web page
+        - whether a later report about the same page exists
+      additionalProperties: false
+    RuleEngineFacts:
+      type: object
+      properties:
+        identifier:
+          type: string
+        name:
+          anyOf:
+            - type: string
+            - type: 'null'
+        sponsor:
+          anyOf:
+            - type: string
+            - type: 'null'
+      required:
+        - identifier
+        - name
+        - sponsor
+      additionalProperties: false
+    IssueBasicsOrError:
+      anyOf:
+        - type: object
+          properties:
+            identifier:
+              type: string
+            summary:
+              type: string
+            impact on a user:
+              type: string
+            priority:
+              type: string
+              enum:
+                - lowest
+                - low
+                - high
+                - highest
+            related WCAG standard:
+              type: object
+              properties:
+                layer:
+                  type: string
+                  enum:
+                    - success criterion
+                    - guideline
+                identifier:
+                  type: string
+              required:
+                - layer
+                - identifier
+              additionalProperties: false
+          required:
+            - identifier
+            - summary
+            - impact on a user
+            - priority
+            - related WCAG standard
+          additionalProperties: false
+        - type: object
+          properties:
+            error:
+              type: string
+          required:
+            - error
+          additionalProperties: false

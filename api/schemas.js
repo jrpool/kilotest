@@ -64,7 +64,7 @@ const ruleEngineFactsSchema = z.object({
   identifier: z.string(),
   name: z.string().nullable(),
   sponsor: z.string().nullable()
-});
+}).meta({id: 'RuleEngineFacts'});
 
 // Facts about the Kilotest tool collection, included in every response.
 const toolsFactsSchema = z.object({
@@ -86,15 +86,15 @@ const toolsFactsSchema = z.object({
   }).describe('Explanation of what Kilotest does and how to use its tools.'),
   URL: z.string().describe('URL of the Kilotest MCP server.'),
   'web users can obtain similar functionalities at': z.string()
-});
+}).meta({id: 'ToolsFacts'});
 
-// Identifies a related request (e.g. the closest ancestor request in the drill-down hierarchy).
+// Identifies a related request (e.g., the closest ancestor request in the drill-down hierarchy).
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
   description: z.string(),
   method: z.enum(['GET', 'POST']),
   URL: z.string()
-});
+}).meta({id: 'RequestReference'});
 
 // GET endpoints have no 'body'; POST endpoints get a request-specific body schema.
 const thisRequestSchema = bodySchema => z.object({
@@ -103,7 +103,7 @@ const thisRequestSchema = bodySchema => z.object({
   URL: z.string(),
   ...(bodySchema ? {body: bodySchema} : {}),
   'closest ancestor request': requestReferenceSchema.nullable()
-});
+}).meta({id: 'ThisRequest'});
 
 const envelope = (responseContentSchema, bodySchema) => z.object({
   'tool collection': toolsFactsSchema,
@@ -117,12 +117,12 @@ const envelope = (responseContentSchema, bodySchema) => z.object({
 const similarWebRequestsSchema = z.object({
   'this request': z.string().describe('URL of the equivalent web UI page for this request.'),
   'closest ancestor request': z.string().nullable()
-});
+}).meta({id: 'SimilarWebRequests'});
 
 const responseMetadataSchema = z.object({
   identifier: z.string().describe('Unique identifier of this response (timestamp and random suffix).'),
   'date and time': z.string().describe('UTC date and time when the response was generated, in ISO 8601 format.')
-});
+}).meta({id: 'ResponseMetadata'});
 
 // Facts about a report, as constructed by Kilotest's own getReportBasics (never copied from a Testaro report).
 const reportBasicsSchema = z.object({
@@ -131,20 +131,20 @@ const reportBasicsSchema = z.object({
   'days since the report was completed': z.number(),
   'tested web page': z.object({description: z.string(), URL: z.string()}),
   'whether a later report about the same page exists': z.boolean()
-});
+}).meta({id: 'ReportBasics'});
 
 const reportBasicsOrErrorSchema = z.union([
   reportBasicsSchema,
   z.object({error: z.string()})
-]);
+]).meta({id: 'ReportBasicsOrError'});
 
-// Facts about an issue, as constructed by Kilotest's own issue classification (never copied from a Testaro report).
+// Facts about an issue based on the Testilo issue classification.
 const issueBasicsSchema = z.object({
   identifier: z.string(),
   summary: z.string(),
   'impact on a user': z.string(),
   priority: z.enum(['lowest', 'low', 'high', 'highest'])
-});
+}).meta({id: 'IssueBasics'});
 
 const issueBasicsOrErrorSchema = z.union([
   issueBasicsSchema.extend({
@@ -154,7 +154,7 @@ const issueBasicsOrErrorSchema = z.union([
     })
   }),
   z.object({error: z.string()})
-]);
+]).meta({id: 'IssueBasicsOrError'});
 
 exports.listReportsResponseSchema = envelope(z.object({
   'basics about all available reports': z.array(reportBasicsSchema.extend({

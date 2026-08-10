@@ -1,0 +1,2176 @@
+openapi: 3.1.0
+info:
+  title: Kilotest API
+  description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 10 rule engines to test public web pages for front-end quality (accessibility, usability, and standards conformity). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
+  version: 39.0.0
+  contact:
+    name: Kilotest
+    url: https://github.com/jrpool/kilotest
+    email: info@kilotest.com
+servers:
+  - url: https://kilotest.com
+    description: Kilotest production server
+paths:
+  /api/listReports:
+    get:
+      operationId: listReports
+      summary: List all available reports
+      responses:
+        '200':
+          description: List all available reports
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      basics about all available reports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            identifier:
+                              type: string
+                              description: timeStamp-jobID identifier of the report.
+                            completion date and time:
+                              type: string
+                            days since the report was completed:
+                              type: number
+                            tested web page:
+                              type: object
+                              properties:
+                                description:
+                                  type: string
+                                URL:
+                                  type: string
+                              required:
+                                - description
+                                - URL
+                              additionalProperties: false
+                            whether a later report about the same page exists:
+                              type: boolean
+                            how to get details about the report:
+                              type: object
+                              properties:
+                                method:
+                                  type: string
+                                  const: GET
+                                URL:
+                                  type: string
+                              required:
+                                - method
+                                - URL
+                              additionalProperties: false
+                            web users can get details about the report at:
+                              type: string
+                          required:
+                            - identifier
+                            - completion date and time
+                            - days since the report was completed
+                            - tested web page
+                            - whether a later report about the same page exists
+                            - how to get details about the report
+                            - web users can get details about the report at
+                          additionalProperties: false
+                      how to request that a page with no report be tested:
+                        type: object
+                        properties:
+                          method:
+                            type: string
+                            const: POST
+                          URL:
+                            type: string
+                          request body:
+                            type: object
+                            properties:
+                              description:
+                                type: string
+                              URL:
+                                type: string
+                              reason:
+                                type: string
+                            required:
+                              - description
+                              - URL
+                              - reason
+                            additionalProperties: false
+                          how to check whether the request has been fulfilled:
+                            type: string
+                        required:
+                          - method
+                          - URL
+                          - request body
+                          - how to check whether the request has been fulfilled
+                        additionalProperties: false
+                      how a web user can request that the page be tested:
+                        type: object
+                        properties:
+                          URL:
+                            type: string
+                        required:
+                          - URL
+                        additionalProperties: false
+                    required:
+                      - basics about all available reports
+                      - how to request that a page with no report be tested
+                      - how a web user can request that the page be tested
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/listIssues/{timeStamp}/{jobID}:
+    get:
+      operationId: listIssues
+      summary: List basics about the issues in one report
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: List basics about the issues in one report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      basics about the report:
+                        anyOf:
+                          - type: object
+                            properties:
+                              identifier:
+                                type: string
+                                description: timeStamp-jobID identifier of the report.
+                              completion date and time:
+                                type: string
+                              days since the report was completed:
+                                type: number
+                              tested web page:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              whether a later report about the same page exists:
+                                type: boolean
+                            required:
+                              - identifier
+                              - completion date and time
+                              - days since the report was completed
+                              - tested web page
+                              - whether a later report about the same page exists
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                      details about the report:
+                        anyOf:
+                          - type: object
+                            properties:
+                              job definition:
+                                type: object
+                                properties:
+                                  whether the job prohibited redirection:
+                                    description: Copied from the report (strict); type not guaranteed.
+                                  whether the native results of rule engines are reported:
+                                    type: boolean
+                                  whether standardized results are reported:
+                                    type: boolean
+                                  device emulated by the job:
+                                    description: Device object copied verbatim from the report; shape may vary.
+                                  browser type used by the job:
+                                    description: Copied from the report (browserID); type not guaranteed.
+                                required:
+                                  - whether the job prohibited redirection
+                                  - whether the native results of rule engines are reported
+                                  - whether standardized results are reported
+                                  - device emulated by the job
+                                  - browser type used by the job
+                                additionalProperties: false
+                              test results:
+                                type: object
+                                properties:
+                                  rule engines that tried to test the page:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        identifier:
+                                          type: string
+                                        name:
+                                          anyOf:
+                                            - type: string
+                                            - type: 'null'
+                                        sponsor:
+                                          anyOf:
+                                            - type: string
+                                            - type: 'null'
+                                      required:
+                                        - identifier
+                                        - name
+                                        - sponsor
+                                      additionalProperties: false
+                                  rule engines that could not test the page:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        name:
+                                          anyOf:
+                                            - type: string
+                                            - type: 'null'
+                                        reason for failure:
+                                          description: Copied verbatim from the Testaro report; shape may vary.
+                                      required:
+                                        - name
+                                        - reason for failure
+                                      additionalProperties: false
+                                  names of rule engines that reported rule violations:
+                                    type: array
+                                    items:
+                                      anyOf:
+                                        - type: string
+                                        - type: 'null'
+                                  counts of issues by priority:
+                                    type: object
+                                    properties:
+                                      highest:
+                                        type: number
+                                      high:
+                                        type: number
+                                      low:
+                                        type: number
+                                      lowest:
+                                        type: number
+                                    required:
+                                      - highest
+                                      - high
+                                      - low
+                                      - lowest
+                                    additionalProperties: false
+                                  number of elements reported as violators:
+                                    type: number
+                                required:
+                                  - rule engines that tried to test the page
+                                  - rule engines that could not test the page
+                                  - names of rule engines that reported rule violations
+                                  - counts of issues by priority
+                                  - number of elements reported as violators
+                                additionalProperties: false
+                            required:
+                              - job definition
+                              - test results
+                            additionalProperties: false
+                          - type: 'null'
+                      how to request that the page be retested:
+                        anyOf:
+                          - anyOf:
+                              - type: object
+                                properties:
+                                  notice:
+                                    type: string
+                                required:
+                                  - notice
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  method:
+                                    type: string
+                                    const: POST
+                                  URL:
+                                    type: string
+                                  request body:
+                                    type: object
+                                    properties:
+                                      reason:
+                                        type: string
+                                    required:
+                                      - reason
+                                    additionalProperties: false
+                                  how to check whether the request has been fulfilled:
+                                    type: string
+                                required:
+                                  - method
+                                  - URL
+                                  - request body
+                                  - how to check whether the request has been fulfilled
+                                additionalProperties: false
+                          - type: 'null'
+                      how a web user can request that the page be retested:
+                        anyOf:
+                          - type: object
+                            properties:
+                              URL:
+                                type: string
+                            required:
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                      how to get the full report in JSON:
+                        anyOf:
+                          - type: object
+                            properties:
+                              size of the report in bytes:
+                                type: number
+                              method:
+                                type: string
+                                const: GET
+                              URL:
+                                type: string
+                            required:
+                              - size of the report in bytes
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                      how a web user can get the full report in JSON:
+                        anyOf:
+                          - type: object
+                            properties:
+                              URL:
+                                type: string
+                            required:
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                      basics about all issues reported in the report:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            identifier:
+                              type: string
+                            summary:
+                              type: string
+                            impact on a user:
+                              type: string
+                            priority:
+                              type: string
+                              enum:
+                                - lowest
+                                - low
+                                - high
+                                - highest
+                            rule engines with any violations belonging to the issue:
+                              type: array
+                              items:
+                                type: string
+                            how to get details about the issue:
+                              type: object
+                              properties:
+                                method:
+                                  type: string
+                                  const: GET
+                                URL:
+                                  type: string
+                              required:
+                                - method
+                                - URL
+                              additionalProperties: false
+                            web users can get details about the issue at:
+                              type: string
+                          required:
+                            - identifier
+                            - summary
+                            - impact on a user
+                            - priority
+                            - rule engines with any violations belonging to the issue
+                            - how to get details about the issue
+                            - web users can get details about the issue at
+                          additionalProperties: false
+                    required:
+                      - basics about the report
+                      - details about the report
+                      - how to request that the page be retested
+                      - how a web user can request that the page be retested
+                      - how to get the full report in JSON
+                      - how a web user can get the full report in JSON
+                      - basics about all issues reported in the report
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/listViolators/{issueID}/{timeStamp}/{jobID}:
+    get:
+      operationId: listViolators
+      summary: List elements reported as exhibiting one issue
+      parameters:
+        - in: path
+          name: issueID
+          schema:
+            type: string
+            description: 'Issue identifier (example: contrastPoor)'
+          required: true
+          description: 'Issue identifier (example: contrastPoor)'
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: List elements reported as exhibiting one issue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      basics about the report:
+                        anyOf:
+                          - type: object
+                            properties:
+                              identifier:
+                                type: string
+                                description: timeStamp-jobID identifier of the report.
+                              completion date and time:
+                                type: string
+                              days since the report was completed:
+                                type: number
+                              tested web page:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              whether a later report about the same page exists:
+                                type: boolean
+                            required:
+                              - identifier
+                              - completion date and time
+                              - days since the report was completed
+                              - tested web page
+                              - whether a later report about the same page exists
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                      basics about the issue:
+                        anyOf:
+                          - type: object
+                            properties:
+                              identifier:
+                                type: string
+                              summary:
+                                type: string
+                              impact on a user:
+                                type: string
+                              priority:
+                                type: string
+                                enum:
+                                  - lowest
+                                  - low
+                                  - high
+                                  - highest
+                              related WCAG standard:
+                                type: object
+                                properties:
+                                  layer:
+                                    type: string
+                                    enum:
+                                      - success criterion
+                                      - guideline
+                                  identifier:
+                                    type: string
+                                required:
+                                  - layer
+                                  - identifier
+                                additionalProperties: false
+                            required:
+                              - identifier
+                              - summary
+                              - impact on a user
+                              - priority
+                              - related WCAG standard
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                      details about the issue:
+                        anyOf:
+                          - type: object
+                            properties:
+                              rule engines reporting violations belonging to the issue:
+                                type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    identifier:
+                                      type: string
+                                    name:
+                                      anyOf:
+                                        - type: string
+                                        - type: 'null'
+                                    sponsor:
+                                      anyOf:
+                                        - type: string
+                                        - type: 'null'
+                                  required:
+                                    - identifier
+                                    - name
+                                    - sponsor
+                                  additionalProperties: false
+                            required:
+                              - rule engines reporting violations belonging to the issue
+                            additionalProperties: false
+                          - type: 'null'
+                      basics about all elements reported as exhibiting the issue:
+                        anyOf:
+                          - type: array
+                            items:
+                              type: object
+                              properties:
+                                identifier:
+                                  type: string
+                                tag name:
+                                  description: Copied from the report catalog entry; type not guaranteed.
+                                inner text:
+                                  description: Copied from the report catalog entry; type not guaranteed.
+                                count of rule engines reporting that the element exhibited the issue:
+                                  type: number
+                                how to get details about the element:
+                                  type: object
+                                  properties:
+                                    URL:
+                                      type: string
+                                    request method:
+                                      type: string
+                                      const: GET
+                                  required:
+                                    - URL
+                                    - request method
+                                  additionalProperties: false
+                                web users can get details about the element at:
+                                  type: string
+                              required:
+                                - identifier
+                                - tag name
+                                - inner text
+                                - count of rule engines reporting that the element exhibited the issue
+                                - how to get details about the element
+                                - web users can get details about the element at
+                              additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - basics about the report
+                      - basics about the issue
+                      - details about the issue
+                      - basics about all elements reported as exhibiting the issue
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}:
+    get:
+      operationId: listDiagnoses
+      summary: List diagnoses of how one element exhibited one issue
+      parameters:
+        - in: path
+          name: catalogIndex
+          schema:
+            type: string
+            description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'
+          required: true
+          description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'
+        - in: path
+          name: issueID
+          schema:
+            type: string
+            description: 'Issue identifier (example: contrastPoor)'
+          required: true
+          description: 'Issue identifier (example: contrastPoor)'
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: List diagnoses of how one element exhibited one issue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      basics about the report:
+                        anyOf:
+                          - type: object
+                            properties:
+                              identifier:
+                                type: string
+                                description: timeStamp-jobID identifier of the report.
+                              completion date and time:
+                                type: string
+                              days since the report was completed:
+                                type: number
+                              tested web page:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              whether a later report about the same page exists:
+                                type: boolean
+                            required:
+                              - identifier
+                              - completion date and time
+                              - days since the report was completed
+                              - tested web page
+                              - whether a later report about the same page exists
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                      basics about the issue:
+                        anyOf:
+                          - type: object
+                            properties:
+                              identifier:
+                                type: string
+                              summary:
+                                type: string
+                              impact on a user:
+                                type: string
+                              priority:
+                                type: string
+                                enum:
+                                  - lowest
+                                  - low
+                                  - high
+                                  - highest
+                              related WCAG standard:
+                                type: object
+                                properties:
+                                  layer:
+                                    type: string
+                                    enum:
+                                      - success criterion
+                                      - guideline
+                                  identifier:
+                                    type: string
+                                required:
+                                  - layer
+                                  - identifier
+                                additionalProperties: false
+                            required:
+                              - identifier
+                              - summary
+                              - impact on a user
+                              - priority
+                              - related WCAG standard
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                      basics about the element:
+                        anyOf:
+                          - anyOf:
+                              - type: object
+                                properties:
+                                  identifier:
+                                    type: string
+                                  tag name:
+                                    description: Copied from the report catalog entry; type not guaranteed.
+                                  inner text:
+                                    description: Copied from the report catalog entry; type not guaranteed.
+                                required:
+                                  - identifier
+                                  - tag name
+                                  - inner text
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  error:
+                                    type: string
+                                required:
+                                  - error
+                                additionalProperties: false
+                          - type: 'null'
+                      details about the element:
+                        anyOf:
+                          - type: object
+                            properties:
+                              start tag:
+                                description: Copied from the report catalog entry; type not guaranteed.
+                              XPath:
+                                description: Copied from the report catalog entry; type not guaranteed.
+                              x, y, width, and height of bounding box:
+                                description: Copied from the report catalog entry; type not guaranteed.
+                            required:
+                              - start tag
+                              - XPath
+                              - x, y, width, and height of bounding box
+                            additionalProperties: false
+                          - type: 'null'
+                      diagnoses of how the element exhibited the issue:
+                        anyOf:
+                          - type: array
+                            items:
+                              type: object
+                              properties:
+                                identifier of the violated rule:
+                                  description: Copied from the report instance (ruleID); type not guaranteed.
+                                description of the violation:
+                                  description: Copied from the report instance (what); type not guaranteed.
+                                severity of the violation on a 0-to-3 scale:
+                                  description: Copied from the report instance (ordinalSeverity); type not guaranteed.
+                                count of violations of the rule by the element:
+                                  type: number
+                              required:
+                                - identifier of the violated rule
+                                - description of the violation
+                                - severity of the violation on a 0-to-3 scale
+                                - count of violations of the rule by the element
+                              additionalProperties: false
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                    required:
+                      - basics about the report
+                      - basics about the issue
+                      - basics about the element
+                      - details about the element
+                      - diagnoses of how the element exhibited the issue
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/getReport/{timeStamp}/{jobID}:
+    get:
+      operationId: getReport
+      summary: Get one full report in JSON
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: Get one full report in JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      size of the report in bytes:
+                        anyOf:
+                          - type: number
+                          - type: string
+                      full report:
+                        description: The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.
+                    required:
+                      - size of the report in bytes
+                      - full report
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/requestTest:
+    post:
+      operationId: requestTest
+      summary: Request that a page be tested
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: 10- to 100-character description of the page conforming to the naming convention used in the listReports output
+                URL:
+                  type: string
+                  description: 12- to 300-character URL of the page, including the https:// scheme and any query
+                reason:
+                  type: string
+                  description: 20- to 100-character reason why the page should be tested
+              required:
+                - description
+                - URL
+                - reason
+      responses:
+        '200':
+          description: Request that a page be tested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                            description: 10- to 100-character description of the page conforming to the naming convention used in the listReports output
+                          URL:
+                            type: string
+                            description: 12- to 300-character URL of the page, including the https:// scheme and any query
+                          reason:
+                            type: string
+                            description: 20- to 100-character reason why the page should be tested
+                        required:
+                          - description
+                          - URL
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              page to be tested:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              reason why the page should be tested:
+                                type: string
+                            required:
+                              - date and time received
+                              - page to be tested
+                              - reason why the page should be tested
+                            additionalProperties: false
+                    required:
+                      - details about your request
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/requestRetest/{timeStamp}/{jobID}:
+    post:
+      operationId: requestRetest
+      summary: Request that a page be retested
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the latest report about the page (example: x9z)'
+          required: true
+          description: 'Job identifier of the latest report about the page (example: x9z)'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: 20- to 100-character reason why the page should be retested
+              required:
+                - reason
+      responses:
+        '200':
+          description: Request that a page be retested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          reason:
+                            type: string
+                            description: 20- to 100-character reason why the page should be retested
+                        required:
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              page to be retested:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              reason why the page should be retested:
+                                type: string
+                            required:
+                              - date and time received
+                              - page to be retested
+                              - reason why the page should be retested
+                            additionalProperties: false
+                    required:
+                      - details about your request
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/requestFeature:
+    post:
+      operationId: requestFeature
+      summary: Request a new feature or feature improvement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                request:
+                  type: string
+                  description: description of requested new feature or feature improvement
+              required:
+                - request
+      responses:
+        '200':
+          description: Request a new feature or feature improvement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                      description:
+                        type: object
+                        properties:
+                          what Kilotest does:
+                            type: string
+                          how to retrieve findings:
+                            type: object
+                            properties:
+                              level 1:
+                                type: string
+                              level 2:
+                                type: string
+                              level 3:
+                                type: string
+                              level 4:
+                                type: string
+                            required:
+                              - level 1
+                              - level 2
+                              - level 3
+                              - level 4
+                            additionalProperties: false
+                          how to generate more findings:
+                            type: object
+                            properties:
+                              new testing:
+                                type: string
+                              retesting:
+                                type: string
+                              latency:
+                                type: string
+                              confirmation:
+                                type: string
+                            required:
+                              - new testing
+                              - retesting
+                              - latency
+                              - confirmation
+                            additionalProperties: false
+                        required:
+                          - what Kilotest does
+                          - how to retrieve findings
+                          - how to generate more findings
+                        additionalProperties: false
+                        description: Explanation of what Kilotest does and how to use its tools.
+                      URL:
+                        type: string
+                        description: URL of the Kilotest MCP server.
+                      web users can obtain similar functionalities at:
+                        type: string
+                    required:
+                      - name
+                      - description
+                      - URL
+                      - web users can obtain similar functionalities at
+                    additionalProperties: false
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        enum:
+                          - GET
+                          - POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          request:
+                            type: string
+                            description: description of requested new feature or feature improvement
+                        required:
+                          - request
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              tool name:
+                                type: string
+                              description:
+                                type: string
+                              method:
+                                type: string
+                                enum:
+                                  - GET
+                                  - POST
+                              URL:
+                                type: string
+                            required:
+                              - tool name
+                              - description
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: string
+                        description: URL of the equivalent web UI page for this request.
+                      closest ancestor request:
+                        anyOf:
+                          - type: string
+                          - type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    type: object
+                    properties:
+                      identifier:
+                        type: string
+                        description: Unique identifier of this response (timestamp and random suffix).
+                      date and time:
+                        type: string
+                        description: UTC date and time when the response was generated, in ISO 8601 format.
+                    required:
+                      - identifier
+                      - date and time
+                    additionalProperties: false
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              disposition:
+                                type: string
+                            required:
+                              - date and time received
+                              - disposition
+                            additionalProperties: false
+                    required:
+                      - details about your request
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false

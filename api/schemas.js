@@ -91,12 +91,22 @@ const requestReferenceSchema = z.object({
   URL: z.string()
 });
 
-const thisRequestSchema = z.object({
+// GET endpoints have no 'body'; POST endpoints get a request-specific body schema.
+const thisRequestSchema = bodySchema => z.object({
   description: z.string(),
   method: z.enum(['GET', 'POST']),
   URL: z.string(),
-  body: z.record(z.unknown()).optional().describe('Present only for POST requests: the request body that was submitted.'),
+  ...(bodySchema ? {body: bodySchema} : {}),
   'closest ancestor request': requestReferenceSchema.nullable()
+});
+
+const envelope = (responseContentSchema, bodySchema) => z.object({
+  'tool collection': toolsFactsSchema,
+  'tool name': z.string(),
+  'this request': thisRequestSchema(bodySchema),
+  'URLs of similar requests for web users': similarWebRequestsSchema,
+  'response metadata': responseMetadataSchema,
+  'response content': responseContentSchema
 });
 
 const similarWebRequestsSchema = z.object({
@@ -107,16 +117,6 @@ const similarWebRequestsSchema = z.object({
 const responseMetadataSchema = z.object({
   identifier: z.string().describe('Unique identifier of this response (timestamp and random suffix).'),
   'date and time': z.string().describe('UTC date and time when the response was generated, in ISO 8601 format.')
-});
-
-// Wraps a per-endpoint response-content schema in the shared envelope used by every response.
-const envelope = responseContentSchema => z.object({
-  'tool collection': toolsFactsSchema,
-  'tool name': z.string(),
-  'this request': thisRequestSchema,
-  'URLs of similar requests for web users': similarWebRequestsSchema,
-  'response metadata': responseMetadataSchema,
-  'response content': responseContentSchema
 });
 
 // Facts about a report, as constructed by Kilotest's own getReportBasics (never copied from a Testaro report).
@@ -253,24 +253,26 @@ exports.getReportResponseSchema = envelope(z.object({
   'full report': z.unknown().describe('The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.')
 }));
 
-exports.requestTestResponseSchema = envelope(z.object({
-  'details about your request': z.union([
+exports.requestTestResponseSchema = envelope(
+  z.object({ 'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({
       'date and time received': z.string(),
       'page to be tested': z.object({description: z.string(), URL: z.string()}),
       'reason why the page should be tested': z.string()
     })
-  ])
-}));
+  ]) }),
+  z.object(exports.requestTestSchema)
+);
 
-exports.requestRetestResponseSchema = envelope(z.object({
-  'details about your request': z.union([
+exports.requestRetestResponseSchema = envelope(
+  z.object({ 'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({
       'date and time received': z.string(),
       'page to be retested': z.object({description: z.string(), URL: z.string()}),
       'reason why the page should be retested': z.string()
     })
-  ])
-}));
+  ]) }),
+  z.object({reason: exports.requestRetestSchema.reason})
+);

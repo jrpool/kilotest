@@ -75,6 +75,8 @@ const listViolatorsAPI = require('./api/listViolators');
 const listDiagnosesAPI = require('./api/listDiagnoses');
 const requestTestAPI = require('./api/requestTest');
 const requestRetestAPI = require('./api/requestRetest');
+const requestFeatureAPI = require('./api/requestFeature');
+
 const {
   getReportSchema,
   listIssuesSchema,
@@ -82,13 +84,15 @@ const {
   listDiagnosesSchema,
   requestTestSchema,
   requestRetestSchema,
+  requestFeatureSchema,
   listReportsResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
   listDiagnosesResponseSchema,
   getReportResponseSchema,
   requestTestResponseSchema,
-  requestRetestResponseSchema
+  requestRetestResponseSchema,
+  requestFeatureResponseSchema
 } = require('./api/schemas');
 
 // CONSTANTS
@@ -235,6 +239,25 @@ const createMCPServer = () => {
     },
     async ({timeStamp, jobID, reason}) => {
       const result = await requestRetestAPI.response([timeStamp, jobID, reason]);
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
+    }
+  );
+  server.registerTool(
+    'requestFeature',
+    {
+      description: 'Process my request to add or improve a feature.',
+      inputSchema: requestFeatureSchema,
+      outputSchema: requestFeatureResponseSchema,
+      annotations: {
+        title: 'Process my request to add or improve a feature.',
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({request}) => {
+      const result = await requestFeatureAPI.response([request]);
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );

@@ -50,6 +50,11 @@ exports.requestRetestSchema = {
   reason: z.string().describe('20- to 100-character reason why the page should be retested')
 };
 
+// requestFeature: POST /api/requestFeature
+exports.requestFeatureSchema = {
+  request: z.string().describe('description of requested new feature or feature improvement')
+};
+
 // listReports takes no input; omitted (mcp.js already uses inputSchema: {}).
 
 // RESPONSE SCHEMAS
@@ -254,25 +259,36 @@ exports.getReportResponseSchema = envelope(z.object({
 }));
 
 exports.requestTestResponseSchema = envelope(
-  z.object({ 'details about your request': z.union([
+  z.object({'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({
       'date and time received': z.string(),
       'page to be tested': z.object({description: z.string(), URL: z.string()}),
       'reason why the page should be tested': z.string()
     })
-  ]) }),
+  ])}),
   z.object(exports.requestTestSchema)
 );
 
 exports.requestRetestResponseSchema = envelope(
-  z.object({ 'details about your request': z.union([
+  z.object({'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({
       'date and time received': z.string(),
       'page to be retested': z.object({description: z.string(), URL: z.string()}),
       'reason why the page should be retested': z.string()
     })
-  ]) }),
+  ])}),
   z.object({reason: exports.requestRetestSchema.reason})
+);
+
+exports.requestFeatureResponseSchema = envelope(
+  z.object({'details about your request': z.union([
+    z.object({error: z.string()}),
+    z.object({
+      'date and time received': z.string(),
+      disposition: z.string()
+    })
+  ])}),
+  z.object(exports.requestFeatureSchema)
 );

@@ -520,36 +520,8 @@ const requestHandler = async (request, response) => {
     else {
       // Get the data from the request body.
       const postData = await getPOSTData(request);
-      // If the request is a retest recommendation:
-      if (pageName === 'retestRec.html') {
-        const {why} = postData;
-        const [timeStamp, jobID] = pathTail.split('/');
-        // If the request is valid:
-        if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
-          // Serve response headers.
-          setHeaders('text/html', `${pathname}${search}`, 'ultra');
-          // Get the answer data.
-          const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
-          .answer(pathTail, why);
-          // If they are valid:
-          if (answerData.status === 'ok') {
-            // Serve the answer page.
-            response.end(answerData.answerPage);
-          }
-          // Otherwise, i.e. if they are invalid:
-          else {
-            // Report the error.
-            await serveError({message: answerData.message}, response, true);
-          }
-        }
-        // Otherwise, i.e. if the request is invalid:
-        else {
-          // Report the error.
-          await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
-        }
-      }
-      // Otherwise, if it is a test recommendation:
-      else if (pageName === 'testRec.html') {
+      // If the request is a test recommendation:
+      if (pageName === 'testRec.html') {
         const {what, url, why} = postData;
         // If the request is valid:
         if (what && url.startsWith('https://') && why) {
@@ -581,6 +553,34 @@ const requestHandler = async (request, response) => {
         else {
           // Report the error.
           await serveError({message: 'ERROR: Invalid test recommendation'}, response, true);
+        }
+      }
+      // Otherwise, if it is a retest recommendation:
+      else if (pageName === 'retestRec.html') {
+        const {why} = postData;
+        const [timeStamp, jobID] = pathTail.split('/');
+        // If the request is valid:
+        if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
+          // Serve response headers.
+          setHeaders('text/html', `${pathname}${search}`, 'ultra');
+          // Get the answer data.
+          const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
+          .answer(pathTail, why);
+          // If they are valid:
+          if (answerData.status === 'ok') {
+            // Serve the answer page.
+            response.end(answerData.answerPage);
+          }
+          // Otherwise, i.e. if they are invalid:
+          else {
+            // Report the error.
+            await serveError({message: answerData.message}, response, true);
+          }
+        }
+        // Otherwise, i.e. if the request is invalid:
+        else {
+          // Report the error.
+          await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
         }
       }
       // Otherwise, if it is an action on a test or retest recommendation:
@@ -742,6 +742,16 @@ const requestHandler = async (request, response) => {
             // Get the response body.
             const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
             .response(segments.slice(1).concat(reason));
+            // Send it.
+            setHeaders('application/json', null, 'ultra');
+            response.end(JSON.stringify(responseBody));
+          }
+          // Otherwise, if the service is to receive a feature request:
+          else if (segments[0] === 'requestFeature') {
+            const {request} = postData;
+            // Get the response body.
+            const responseBody = await require(path.join(__dirname, 'api', 'requestFeature'))
+            .response(segments.slice(1).concat(request));
             // Send it.
             setHeaders('application/json', null, 'ultra');
             response.end(JSON.stringify(responseBody));

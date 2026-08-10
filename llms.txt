@@ -15,6 +15,7 @@ There is a [detailed explanation of Kilotest and its capabilities for LLMs](http
 - Get full report in JSON format: `/api/getReport/{timeStamp}/{jobID}`
 - Request testing of a web page: `/api/requestTest` (requires `POST` request)
 - Request retesting of a web page: `/api/requestRetest/{timeStamp}/{jobID}` (requires `POST` request)
+- Request adding or improving a feature: `/api/requestFeature` (requires `POST` request)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
 
 ## Web UI

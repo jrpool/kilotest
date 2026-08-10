@@ -27,15 +27,18 @@
     "@modelcontextprotocol/sdk": "*",
     "dotenv": "*",
     "testilo": "*",
-    "zod": "*"
+    "zod": "*",
+    "zod-openapi": "*"
   },
   "devDependencies": {
     "@eslint/css": "^1.0.0",
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^1.1.0",
     "@eslint/markdown": "^7.5.1",
+    "redocly-cli": "*",
     "eslint": "^10.0.3",
-    "globals": "^17.4.0"
+    "globals": "^17.4.0",
+    "js-yaml": "*"
   },
   "allowScripts": {
     "fsevents@2.3.2": true

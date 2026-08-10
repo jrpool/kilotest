@@ -10,6 +10,7 @@ info:
 servers:
   - url: https://kilotest.com
     description: Kilotest production server
+security: []
 paths:
   /api/listReports:
     get:

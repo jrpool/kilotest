@@ -1,6 +1,6 @@
 /*
   schemas.js
-  Zod input schemas shared by mcp.js (MCP tool inputSchema) and an openapi.yaml generation script. Descriptions are the single source of truth for parameter documentation.
+  Zod input and response schemas shared by mcp.js (MCP tool inputSchema/outputSchema), api/routes.js, and the openapi.yaml generation script (scripts/generate-openapi.js). Descriptions and component ids (.meta({id})) in this file are the single source of truth for parameter documentation and OpenAPI component naming and reuse.
 */
 
 // IMPORTS

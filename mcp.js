@@ -81,7 +81,14 @@ const {
   listViolatorsSchema,
   listDiagnosesSchema,
   requestTestSchema,
-  requestRetestSchema
+  requestRetestSchema,
+  listReportsResponseSchema,
+  listIssuesResponseSchema,
+  listViolatorsResponseSchema,
+  listDiagnosesResponseSchema,
+  getReportResponseSchema,
+  requestTestResponseSchema,
+  requestRetestResponseSchema
 } = require('./api/schemas');
 
 // CONSTANTS
@@ -103,6 +110,7 @@ const createMCPServer = () => {
     {
       description: 'Provide basics about all available reports.',
       inputSchema: {},
+      outputSchema: listReportsResponseSchema,
       annotations: {
         title: 'Provide basics about all available reports.',
         readOnlyHint: true,
@@ -113,7 +121,7 @@ const createMCPServer = () => {
     },
     async () => {
       const result = await listReportsAPI.response();
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
@@ -121,6 +129,7 @@ const createMCPServer = () => {
     {
       description: 'Provide details about one report, including basics about the issues reported in it.',
       inputSchema: listIssuesSchema,
+      outputSchema: listIssuesResponseSchema,
       annotations: {
         title: 'Provide details about one report, including basics about the issues reported in it.',
         readOnlyHint: true,
@@ -131,7 +140,7 @@ const createMCPServer = () => {
     },
     async ({timeStamp, jobID}) => {
       const result = await listIssuesAPI.response([timeStamp, jobID]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
@@ -139,6 +148,7 @@ const createMCPServer = () => {
     {
       description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
       inputSchema: listViolatorsSchema,
+      outputSchema: listViolatorsResponseSchema,
       annotations: {
         title: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
         readOnlyHint: true,
@@ -149,7 +159,7 @@ const createMCPServer = () => {
     },
     async ({issueID, timeStamp, jobID}) => {
       const result = await listViolatorsAPI.response([issueID, timeStamp, jobID]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
@@ -157,6 +167,7 @@ const createMCPServer = () => {
     {
       description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
       inputSchema: listDiagnosesSchema,
+      outputSchema: listDiagnosesResponseSchema,
       annotations: {
         title: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
         readOnlyHint: true,
@@ -167,7 +178,7 @@ const createMCPServer = () => {
     },
     async ({catalogIndex, issueID, timeStamp, jobID}) => {
       const result = await listDiagnosesAPI.response([catalogIndex, issueID, timeStamp, jobID]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
@@ -175,6 +186,7 @@ const createMCPServer = () => {
     {
       description: 'Get one full report in JSON format.',
       inputSchema: getReportSchema,
+      outputSchema: getReportResponseSchema,
       annotations: {
         title: 'Get one full report in JSON format.',
         readOnlyHint: true,
@@ -185,7 +197,7 @@ const createMCPServer = () => {
     },
     async ({timeStamp, jobID}) => {
       const result = await getReportAPI.response([timeStamp, jobID]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
@@ -193,6 +205,7 @@ const createMCPServer = () => {
     {
       description: 'Process my request to test a page about which no report is available yet.',
       inputSchema: requestTestSchema,
+      outputSchema: requestTestResponseSchema,
       annotations: {
         title: 'Process my request to test a page about which no report is available yet.',
         readOnlyHint: false,
@@ -203,7 +216,7 @@ const createMCPServer = () => {
     },
     async ({description, URL, reason}) => {
       const result = await requestTestAPI.response([description, URL, reason]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
@@ -211,6 +224,7 @@ const createMCPServer = () => {
     {
       description: 'Process my request to retest a page about which a report is available.',
       inputSchema: requestRetestSchema,
+      outputSchema: requestRetestResponseSchema,
       annotations: {
         title: 'Process my request to retest a page about which a report is available.',
         readOnlyHint: false,
@@ -221,7 +235,7 @@ const createMCPServer = () => {
     },
     async ({timeStamp, jobID, reason}) => {
       const result = await requestRetestAPI.response([timeStamp, jobID, reason]);
-      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   return server;

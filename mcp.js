@@ -188,11 +188,11 @@ const createMCPServer = () => {
   server.registerTool(
     'getReport',
     {
-      description: 'Get one full report in JSON format.',
+      description: 'Get one full report in JSON.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
-        title: 'Get one full report in JSON format.',
+        title: 'Get one full report in JSON.',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,

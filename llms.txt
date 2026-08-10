@@ -12,7 +12,7 @@ There is a [detailed explanation of Kilotest and its capabilities for LLMs](http
 - List all issues in one report: `/api/listIssues/{timeStamp}/{jobID}`
 - List all elements exhibiting one issue in one report: `/api/listViolators/{issueID}/{timeStamp}/{jobID}`
 - List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}`
-- Get full report in JSON format: `/api/getReport/{timeStamp}/{jobID}`
+- Get one full report in JSON: `/api/getReport/{timeStamp}/{jobID}`
 - Request testing of a web page: `/api/requestTest` (requires `POST` request)
 - Request retesting of a web page: `/api/requestRetest/{timeStamp}/{jobID}` (requires `POST` request)
 - Request adding or improving a feature: `/api/requestFeature` (requires `POST` request)
@@ -24,7 +24,7 @@ There is a [detailed explanation of Kilotest and its capabilities for LLMs](http
 - List all issues in one report: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
 - List all elements exhibiting one issue in one report: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
 - List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
-- Get full report in JSON format: `https://kilotest.com/fullReport.json/{timeStamp}/{jobID}`
+- Get one full report in JSON: `https://kilotest.com/fullReport.json/{timeStamp}/{jobID}`
 - [Request testing of a web page](https://kilotest.com/testRecForm.html)
 - Request retesting of a web page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
 - [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)

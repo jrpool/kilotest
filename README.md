@@ -4,7 +4,7 @@ An ensemble testing and reporting service for front-end web quality
 
 ## Features
 
-This application uses an ensemble of 10 rule engines to test public web pages for front-end quality (i.e. accessibility, usability, and conformity to standards).
+This application uses an ensemble of 10 rule engines to test public web pages for front-end quality (i.e. accessibility, usability, and standards conformity).
 
 The testing paradigm employed by Kilotest is discussed in these papers:
 
@@ -12,7 +12,7 @@ The testing paradigm employed by Kilotest is discussed in these papers:
 - [Testaro: Efficient Ensemble Testing for Web Accessibility](https://arxiv.org/abs/2309.10167)
 - [Accessibility Metatesting: Comparing Nine Testing Tools](https://arxiv.org/abs/2304.07591)
 
-Kilotest acts as a web server for human users and also as an MCP server for AI platforms.
+Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access.
 
 Testing for Kilotest is performed by one or more testing agents that obtain jobs from Kilotest, perform them, and send reports of the results back to Kilotest. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package.
 

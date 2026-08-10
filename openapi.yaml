@@ -34,9 +34,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: GET
                       URL:
                         type: string
                       closest ancestor request:
@@ -193,9 +191,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: GET
                       URL:
                         type: string
                       closest ancestor request:
@@ -478,9 +474,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: GET
                       URL:
                         type: string
                       closest ancestor request:
@@ -619,9 +613,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: GET
                       URL:
                         type: string
                       closest ancestor request:
@@ -765,9 +757,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: GET
                       URL:
                         type: string
                       closest ancestor request:
@@ -847,9 +837,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: POST
                       URL:
                         type: string
                       body:
@@ -978,9 +966,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: POST
                       URL:
                         type: string
                       body:
@@ -1086,9 +1072,7 @@ paths:
                         type: string
                       method:
                         type: string
-                        enum:
-                          - GET
-                          - POST
+                        const: POST
                       URL:
                         type: string
                       body:
@@ -1220,9 +1204,7 @@ components:
           type: string
         method:
           type: string
-          enum:
-            - GET
-            - POST
+          const: GET
         URL:
           type: string
       required:

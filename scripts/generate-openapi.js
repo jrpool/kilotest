@@ -67,6 +67,7 @@ const generate = () => {
     servers: [
       {url: 'https://kilotest.com', description: 'Kilotest production server'}
     ],
+    security: [],
     paths: buildPaths()
   });
   fs.writeFileSync(outputPath, yaml.dump(document, {noRefs: true, lineWidth: -1}));

@@ -68,12 +68,21 @@ const {McpServer} = require('@modelcontextprotocol/sdk/server/mcp.js');
 const {StreamableHTTPServerTransport} = require(
   '@modelcontextprotocol/sdk/server/streamableHttp.js'
 );
-const {z} = require('zod');
+const getReportAPI = require('./api/getReport');
 const listReportsAPI = require('./api/listReports');
 const listIssuesAPI = require('./api/listIssues');
 const listViolatorsAPI = require('./api/listViolators');
+const listDiagnosesAPI = require('./api/listDiagnoses');
 const requestTestAPI = require('./api/requestTest');
 const requestRetestAPI = require('./api/requestRetest');
+const {
+  getReportSchema,
+  listIssuesSchema,
+  listViolatorsSchema,
+  listDiagnosesSchema,
+  requestTestSchema,
+  requestRetestSchema
+} = require('./api/schemas');
 
 // CONSTANTS
 
@@ -111,10 +120,7 @@ const createMCPServer = () => {
     'listIssues',
     {
       description: 'Provide details about one report, including basics about the issues reported in it.',
-      inputSchema: {
-        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
-        jobID: z.string().describe('Job identifier of the report (example: x9z)')
-      },
+      inputSchema: listIssuesSchema,
       annotations: {
         title: 'Provide details about one report, including basics about the issues reported in it.',
         readOnlyHint: true,
@@ -132,11 +138,7 @@ const createMCPServer = () => {
     'listViolators',
     {
       description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
-      inputSchema: {
-        issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
-        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
-        jobID: z.string().describe('Job identifier of the report (example: x9z)')
-      },
+      inputSchema: listViolatorsSchema,
       annotations: {
         title: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
         readOnlyHint: true,
@@ -154,12 +156,7 @@ const createMCPServer = () => {
     'listDiagnoses',
     {
       description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
-      inputSchema: {
-        catalogIndex: z.string().describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'),
-        issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
-        timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
-        jobID: z.string().describe('Job identifier of the report (example: x9z)')
-      },
+      inputSchema: listDiagnosesSchema,
       annotations: {
         title: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
         readOnlyHint: true,
@@ -169,7 +166,25 @@ const createMCPServer = () => {
       }
     },
     async ({catalogIndex, issueID, timeStamp, jobID}) => {
-      const result = await listViolatorsAPI.response([catalogIndex, issueID, timeStamp, jobID]);
+      const result = await listDiagnosesAPI.response([catalogIndex, issueID, timeStamp, jobID]);
+      return {content: [{type: 'text', text: JSON.stringify(result)}]};
+    }
+  );
+  server.registerTool(
+    'getReport',
+    {
+      description: 'Get one full report in JSON format.',
+      inputSchema: getReportSchema,
+      annotations: {
+        title: 'Get one full report in JSON format.',
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({timeStamp, jobID}) => {
+      const result = await getReportAPI.response([timeStamp, jobID]);
       return {content: [{type: 'text', text: JSON.stringify(result)}]};
     }
   );
@@ -177,11 +192,7 @@ const createMCPServer = () => {
     'requestTest',
     {
       description: 'Process my request to test a page about which no report is available yet.',
-      inputSchema: {
-        description: z.string().describe('10- to 100-character description of the page conforming to the naming convention used in the listReports output'),
-        URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
-        reason: z.string().describe('20- to 100-character reason why the page should be tested')
-      },
+      inputSchema: requestTestSchema,
       annotations: {
         title: 'Process my request to test a page about which no report is available yet.',
         readOnlyHint: false,
@@ -199,11 +210,7 @@ const createMCPServer = () => {
     'requestRetest',
     {
       description: 'Process my request to retest a page about which a report is available.',
-      inputSchema: {
-        timeStamp: z.string().describe('Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'),
-        jobID: z.string().describe('Job identifier of the latest report about the page (example: x9z)'),
-        reason: z.string().describe('20- to 100-character reason why the page should be retested')
-      },
+      inputSchema: requestRetestSchema,
       annotations: {
         title: 'Process my request to retest a page about which a report is available.',
         readOnlyHint: false,

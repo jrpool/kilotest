@@ -49,9 +49,7 @@ exports.getToolsFacts = () => ({
     }
   },
   'URL': `${thisHost}/mcp`,
-  'how web users can obtain similar functionalities': {
-    URL: thisHost
-  }
+  'web users can obtain similar functionalities at': thisHost
 });
 // Returns the facts about a rule engine.
 const getRuleEngineFacts = exports.getRuleEngineFacts = ruleEngineID => {

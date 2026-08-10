@@ -444,6 +444,15 @@ const requestHandler = async (request, response) => {
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
       }
+      // Otherwise, if the service serves a report:
+      else if (service === 'getReport') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'getReport'))
+        .response(specs);
+        // Send it.
+        setHeaders('application/json', null, 'low');
+        response.end(JSON.stringify(responseBody));
+      }
       // Otherwise, i.e. if the service is invalid:
       else {
         // Report this.
@@ -705,11 +714,20 @@ const requestHandler = async (request, response) => {
             }
             // Otherwise, i.e. if the request is invalid:
             else {
-              await serveError({message: 'ERROR: Report invalid'}, response, false);
+              await serveError({message: 'ERROR: Request invalid'}, response, false);
             }
           }
-          // Otherwise, if the service is to receive a test request:
-          else if (service === 'requestTest') {
+          // Otherwise, i.e. if the service is invalid:
+          else {
+            await serveError(
+              {message: 'ERROR: Invalid service request from Testaro agent'}, response, false
+            );
+          }
+        }
+        // Otherwise, if the first segment is not the ID of the Testaro agent:
+        else if (segments[0] !== testaroAgent) {
+          // If the service is to receive a test request:
+          if (segments[0] === 'requestTest') {
             const {description, URL, reason} = postData;
             // Get the response body.
             const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
@@ -719,19 +737,19 @@ const requestHandler = async (request, response) => {
             response.end(JSON.stringify(responseBody));
           }
           // Otherwise, if the service is to receive a retest request:
-          else if (service === 'requestRetest') {
+          else if (segments[0] === 'requestRetest') {
             const {reason} = postData;
             // Get the response body.
             const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
-            .response(segments.concat(reason));
+            .response(segments.slice(1).concat(reason));
             // Send it.
             setHeaders('application/json', null, 'ultra');
             response.end(JSON.stringify(responseBody));
           }
-          // Otherwise, if the service is not valid:
+          // Otherwise, i.e. if the service is invalid:
           else {
             await serveError(
-              {message: 'ERROR: Invalid service request from Testaro agent'}, response, false
+              {message: 'ERROR: Invalid request'}, response, false
             );
           }
         }

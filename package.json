@@ -31,13 +31,13 @@
     "zod-openapi": "*"
   },
   "devDependencies": {
-    "@eslint/css": "^1.0.0",
-    "@eslint/js": "^10.0.1",
-    "@eslint/json": "^1.1.0",
-    "@eslint/markdown": "^7.5.1",
+    "@eslint/css": "*",
+    "@eslint/js": "*",
+    "@eslint/json": "*",
+    "@eslint/markdown": "*",
     "@redocly/cli": "*",
-    "eslint": "^10.0.3",
-    "globals": "^17.4.0",
+    "eslint": "*",
+    "globals": "*",
     "js-yaml": "*"
   },
   "allowScripts": {

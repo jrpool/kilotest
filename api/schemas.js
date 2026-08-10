@@ -103,7 +103,7 @@ const thisRequestSchema = bodySchema => z.object({
   URL: z.string(),
   ...(bodySchema ? {body: bodySchema} : {}),
   'closest ancestor request': requestReferenceSchema.nullable()
-}).meta({id: 'ThisRequest'});
+});
 
 const envelope = (responseContentSchema, bodySchema) => z.object({
   'tool collection': toolsFactsSchema,

@@ -82,7 +82,7 @@ const populateQuery = async query => {
   for (const extract of Object.values(reportsExtract)) {
     const {jobID, timeStamp, url, what} = extract;
     // Get data about it.
-    const reportData = await getReportData(`${timeStamp}-${jobID}.json`);
+    const reportData = await getReportData(timeStamp, jobID);
     const {
       error,
       issueCount,

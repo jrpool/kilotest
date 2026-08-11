@@ -79,7 +79,8 @@ const populateQuery = async query => {
   ? 'another'
   : 'a';
   const multiReportWhats = await getMultiReportWhats();
-  const sortedExtracts = objectSort(Object.values(reportsExtract), 'what', 'alpha');
+  let sortedExtracts = objectSort(Object.values(reportsExtract), 'reportTime', 'alpha');
+  sortedExtracts = objectSort(sortedExtracts, 'what', 'alpha');
   // For each report:
   for (const extract of sortedExtracts) {
     const {jobID, timeStamp, url, what} = extract;

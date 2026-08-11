@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getAgoString, getDateTimeString, getLatestReportsData} = require('../util');
+const {getAgoString, getDateTimeString, getLatestReportsExtract} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -15,17 +15,17 @@ const path = require('path');
 exports.answer = async pageArgs => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
-  const reportsData = await getLatestReportsData();
+  const reportsExtract = await getLatestReportsExtract();
   // Get data on the report whose page is to be retested.
-  const reportData = reportsData.find(
-    reportData => reportData.timeStamp === timeStamp && reportData.jobID === jobID
+  const reportExtract = Object.values(reportsExtract).find(
+    reportExtract => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
   );
   // Initialize the page description.
   let target;
   // If getting the data succeeded:
-  if (reportData) {
+  if (reportExtract) {
     // Update the page description.
-    target = reportData.what;
+    target = reportExtract.what;
   }
   // Otherwise, i.e. if it failed:
   else {

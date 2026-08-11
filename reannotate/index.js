@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {annotateReport, getReportsData, ruleIDs} = require('../util');
+const {annotateReport, getReportsExtract, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -16,14 +16,14 @@ exports.answer = async authCode => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get data on the available reports.
-    const reportsData = await getReportsData();
+    const reportsExtract = await getReportsExtract();
     // If this succeeded:
-    if (reportsData) {
+    if (reportsExtract) {
       // For each report:
-      for (const reportData of reportsData) {
+      for (const reportExtract of Object.values(reportsExtract)) {
         // Reannotate it.
         const annotationError = await annotateReport(
-          ruleIDs, reportData.timeStamp, reportData.jobID
+          ruleIDs, reportExtract.timeStamp, reportExtract.jobID
         );
         // If this failed:
         if (annotationError) {

@@ -16,7 +16,8 @@ const {
   getReportData,
   getReportsExtract,
   isRecommendable,
-  jobsPath
+  jobsPath,
+  objectSort
 } = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
@@ -78,8 +79,9 @@ const populateQuery = async query => {
   ? 'another'
   : 'a';
   const multiReportWhats = await getMultiReportWhats();
+  const sortedExtracts = objectSort(Object.values(reportsExtract), 'what', 'alpha');
   // For each report:
-  for (const extract of Object.values(reportsExtract)) {
+  for (const extract of sortedExtracts) {
     const {jobID, timeStamp, url, what} = extract;
     // Get data about it.
     const reportData = await getReportData(timeStamp, jobID);

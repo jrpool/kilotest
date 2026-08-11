@@ -740,12 +740,13 @@ exports.isHidden = async (timeStamp, jobID) => {
 };
 // Returns whether a report is available on a page with a description or URL.
 exports.isReportAvailable = async (what, url) => {
-  const reportsData = await getReportsData();
-  const whats = reportsData.map(data => data.what);
-  const miniURLs = reportsData.map(data => minifyURL(data.url));
+  const reportsExtract = await getReportsExtract();
+  const extracts = Object.values(reportsExtract);
+  const whats = extracts.map(extract => extract.what);
+  const miniURLs = extracts.map(extract => minifyURL(extract.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
-// Creates and saves an extract of all available reports.
+// Creates, saves, and returns an extract of all available reports.
 const makeReportsExtract = exports.makeReportsExtract = async () => {
   // Initialize the reports data.
   const reportsExtract = {};
@@ -766,52 +767,64 @@ const makeReportsExtract = exports.makeReportsExtract = async () => {
   await fs.mkdir(dbPath, {recursive: true});
   // Save the reports extract.
   await fs.writeFile(reportsExtractPath, getJSON(reportsExtract));
+  // Return it.
+  return reportsExtract;
 };
-// Gets data on all available reports.
-const getReportsData = exports.getReportsData = async () => {
-  let reportsData;
+// Gets an extract of all available reports.
+const getReportsExtract = exports.getReportsExtract = async () => {
+  let reportsExtract;
   try {
-    // Get the reports data file.
-    const reportsDataJSON = await fs.readFile(reportsExtractPath, 'utf8');
+    // Get the reports extract file.
+    const reportsExtractJSON = await fs.readFile(reportsExtractPath, 'utf8');
     // Get its data.
-    reportsData = JSON.parse(reportsDataJSON);
+    reportsExtract = JSON.parse(reportsExtractJSON);
     // If it is empty:
-    if (!reportsData.length) {
+    if (!Object.keys(reportsExtract).length) {
       // Throw an error.
-      throw new Error('Reports data file is empty');
+      throw new Error('Reports extract file is empty');
     }
   }
   // If this fails:
   catch {
-    // Create or recreate the reports extract.
-    await makeReportsExtract();
-    // Get it.
-    const reportsDataJSON = await fs.readFile(reportsExtractPath, 'utf8');
-    // Get its data.
-    reportsData = JSON.parse(reportsDataJSON);
+    // Create or recreate and get the reports extract.
+    reportsExtract = await makeReportsExtract();
   }
-  return reportsData;
+  // Return the extract.
+  return reportsExtract;
 };
-// Gets data on the latest available report on each page.
-exports.getLatestReportsData = async () => {
-  // Get data on all available reports.
-  const reportsData = await getReportsData();
-  // Get data on the latest report on each page.
-  const latestReportsData = reportsData.filter(
-    (data, index) => data.what !== reportsData[index+ 1].what
-  );
-  // Return them.
-  return latestReportsData;
+// Gets an extract of the latest available report on each page.
+exports.getLatestReportsExtract = async () => {
+  // Get an extract of all available reports.
+  const reportsExtract = await getReportsExtract();
+  const pageData = {};
+  // Identify the latest report for each page description.
+  Object.entries(reportsExtract).forEach(([jobName, extract]) => {
+    const {reportTime, what} = extract;
+    const savedTime = pageData[what]?.reportTime;
+    if (!savedTime || reportTime > savedTime) {
+      pageData[what] = {
+        jobName,
+        reportTime,
+      };
+    }
+  });
+  const latestReportsExtract = {};
+  Object.keys(pageData).forEach(what => {
+    const {jobName} = pageData[what];
+    latestReportsExtract[jobName] = reportsExtract[jobName];
+  });
+  // Return an extract of those reports.
+  return latestReportsExtract;
 };
 // Gets the descriptions of multi-report pages.
 exports.getMultiReportWhats = async () => {
-  // Get data on all available reports.
-  const reportsData = await getReportsData();
+  // Get an extract of all available reports.
+  const reportsExtract = await getReportsExtract();
   // Get their sorted page descriptions.
-  const whats = reportsData.map(reportData => reportData.what).sort();
-  // Get the descriptions that at least 2 reports have.
-  const multiReportWhats = whats.filter(
-    (what, index) => what !== whats[index - 1] && what === whats[index + 1]
+  const sortedWhats = Object.values(reportsExtract).map(extract => extract.what).sort();
+  // Get those that at least 2 reports have.
+  const multiReportWhats = sortedWhats.filter(
+    (what, index) => what !== sortedWhats[index - 1] && what === sortedWhats[index + 1]
   );
   // Return an array of descriptions of multi-report pages.
   return multiReportWhats;

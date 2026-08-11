@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index",
-    "lint": "npx eslint",
+    "lint": "npx eslint && npx markdownlint-cli2",
     "test": "echo \"Error: no test specified\" && exit 1",
     "generate:openapi": "node scripts/generate-openapi"
   },
@@ -40,6 +40,7 @@
     "eslint": "*",
     "globals": "*",
     "js-yaml": "*",
+    "markdownlint-cli2": "*",
     "zod-openapi": "*"
   },
   "allowScripts": {

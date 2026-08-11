@@ -6,11 +6,9 @@
 // IMPORTS
 
 const {
-  getData,
   getPageData,
   getPageDataStrings,
   getReport,
-  getToolsData,
   getToolList,
   getWCAGLink,
   getWeightName,
@@ -99,9 +97,8 @@ const getIssuesData = async (timeStamp, jobID) => {
       }
     });
     // Finish populating the final data.
-    final.reporters = getToolsData(temp.reporters);
     final.reporterList = getToolList(temp.reporters);
-    final.reporterCount = final.reporters.length;
+    final.reporterCount = temp.reporters.size;
     final.violatorCount = temp.violators.size;
     Object.values(temp.issues).forEach(issue => {
       const {issueID, summary, wcag, why, weight} = issue;
@@ -112,9 +109,8 @@ const getIssuesData = async (timeStamp, jobID) => {
         why,
         weight
       };
-      finalIssue.reporters = getToolsData(issue.reporters);
       finalIssue.reporterList = getToolList(issue.reporters);
-      finalIssue.reporterCount = finalIssue.reporters.length;
+      finalIssue.reporterCount = issue.reporters.size;
       finalIssue.violatorCount = issue.violators.size;
       final.issues[issue.weight].push(finalIssue);
     });
@@ -133,7 +129,7 @@ const getIssuesData = async (timeStamp, jobID) => {
   return {error: 'Report missing or invalid.'};
 };
 // Get page and issues data from a report.
-exports.getData = async (timeStamp, jobID) => {
+const getData = async (timeStamp, jobID) => {
   const pageData = await getPageData(timeStamp, jobID);
   const issuesData = await getIssuesData(timeStamp, jobID);
   const pageError = pageData.error || '';

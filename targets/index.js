@@ -14,7 +14,7 @@ const {
   getPageDataStrings,
   getRecs,
   getReportData,
-  getReportsData,
+  getReportsExtract,
   isRecommendable,
   jobsPath
 } = require('../util');
@@ -71,7 +71,7 @@ const populateQuery = async query => {
   // Add a no-claimed message, if applicable, to the query.
   query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
   // Get data on all available reports.
-  const reportsData = await getReportsData();
+  const reportsData = await getReportsExtract();
   query.which = reportsData.length ? 'the following' : 'no';
   query.some = (reportsData.length || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'

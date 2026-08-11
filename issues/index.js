@@ -7,7 +7,7 @@
 
 const {sendAlert} = require('../alerts');
 const {
-  getLatestReportsData,
+  getLatestReportsExtract,
   getReport,
   getToolNamesString,
   getWCAGLink,
@@ -30,10 +30,10 @@ const getIssuesSummary = async () => {
   // Initialize data for a summary.
   const issuesData = {};
   // Get data on the latest available report on each page.
-  const reportsData = await getLatestReportsData();
+  const reportsExtract = await getLatestReportsExtract();
   // For each of them:
-  for (const reportData of reportsData) {
-    const {timeStamp, jobID} = reportData;
+  for (const reportExtract of Object.values(reportsExtract)) {
+    const {timeStamp, jobID} = reportExtract;
     // Get the corresponding report.
     const report = await getReport(timeStamp, jobID);
     const {acts = [], error} = report;

@@ -27,7 +27,7 @@ const reportsPath = exports.reportsPath = path.join(dbPath, 'reports');
 // Path of the hidden-reports directory.
 const hiddenReportsPath = exports.hiddenReportsPath = path.join(dbPath, 'hiddenReports');
 // Path of the reports data file.
-const reportsDataPath = exports.reportsDataPath = path.join(dbPath, 'reportsData.json');
+const reportsExtractPath = exports.reportsExtractPath = path.join(dbPath, 'reportsExtract.json');
 // IDs, names, and sponsors of Testaro rule engines.
 const tools = exports.tools = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -700,7 +700,7 @@ exports.isReportAvailable = async (what, url) => {
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
 // Returns data from a report.
-const getReportData = exports.getReportData = async reportFileName => {
+const getReportExtract = exports.getReportExtract = async reportFileName => {
   try {
     // Get the content of the report file.
     const reportJSON = await fs.readFile(path.join(reportsPath, reportFileName), 'utf8');
@@ -712,12 +712,8 @@ const getReportData = exports.getReportData = async reportFileName => {
       jobID: report.id.split('-')[1],
       what: report.target.what,
       url: report.target.url,
+      reportTime: `20${report.jobData.endTime}Z`
     };
-    // Get its creation time and size.
-    const {reportTime, reportSize} = await getReportStats(data.timeStamp, data.jobID);
-    // Add them to the report data.
-    data.reportTime = reportTime;
-    data.reportSize = reportSize;
     // Return the data.
     return data;
   }
@@ -742,25 +738,24 @@ const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
 // Creates and saves data on all available reports.
 const makeReportsData = exports.makeReportsData = async () => {
   // Initialize the reports data.
-  const reportsData = [];
+  const reportsExtract = {};
   // Get the names of all report files.
   const reportFileNames = await fs.readdir(reportsPath);
   // For each of them:
   for (const reportFileName of reportFileNames) {
     // Get its data.
-    const reportData = await getReportData(reportFileName);
+    const reportExtract = await getReportExtract(reportFileName);
     // If this succeeded:
-    if (reportData) {
+    if (reportExtract) {
+      const jobName = reportFileName.slice(0, -5);
       // Add the report data to the reports data.
-      reportsData.push(reportData);
+      reportsExtract[jobName] = reportExtract;
     }
   }
-  // Sort the reports data by creation time.
-  objectSort(reportsData, 'reportTime', 'numericUp');
   // Ensure the data directory exists.
   await fs.mkdir(dbPath, {recursive: true});
   // Save the reports data.
-  await fs.writeFile(reportsDataPath, getJSON(reportsData));
+  await fs.writeFile(reportsExtractPath, getJSON(reportsExtract));
 };
 // Gets data on all available reports.
 const getReportsData = exports.getReportsData = async () => {

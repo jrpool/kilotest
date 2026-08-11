@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getLatestReportsData, processRec} = require('../util');
+const {getLatestReportsExtract, processRec} = require('../util');
 
 // FUNCTIONS
 
@@ -13,12 +13,12 @@ const {getLatestReportsData, processRec} = require('../util');
 exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
-  const reportsData = await getLatestReportsData();
+  const reportsExtract = await getLatestReportsExtract();
   // Get data on the report whose page is to be retested.
-  const reportData = reportsData.find(
-    reportData => reportData.timeStamp === timeStamp && reportData.jobID === jobID
+  const reportExtract = Object.values(reportsExtract).find(
+    reportExtract => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
   );
-  const {error, url, what} = reportData;
+  const {error, url, what} = reportExtract;
   // If this failed:
   if (error) {
     // Return why.

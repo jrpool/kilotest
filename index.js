@@ -595,7 +595,7 @@ const requestHandler = async (request, response) => {
           if (what) {
             // Set a location header for a response.
             response.setHeader('content-location', `${pathname}${search}`);
-            // Get the answer data about the remaining recommendations.
+            // Process the approval and get the answer data about the remaining recommendations.
             const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
             .answer(url, what, authCode);
             // If the answer data are valid:
@@ -618,7 +618,7 @@ const requestHandler = async (request, response) => {
               // Delete the rejected URL.
               delete recs[url];
               // Save the revised recommendations.
-              await fs.writeFile(path.join(__dirname, 'jobs', 'recs.json'), getJSON(recs));
+              await fs.writeFile(path.join(jobsPath, 'recs.json'), getJSON(recs));
             });
             // Set a location header for a response.
             response.setHeader('content-location', '/recActionForm.html');

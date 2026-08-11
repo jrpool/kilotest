@@ -23,7 +23,7 @@ const {
   isTimeStamp,
   isJobID,
   jobsPath,
-  makeReportsData,
+  makeReportsExtract,
   recsLock,
   reportsPath,
   ruleIDs
@@ -702,7 +702,7 @@ const requestHandler = async (request, response) => {
               // Save the report.
               await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
               // Update the data on the available reports.
-              await makeReportsData();
+              await makeReportsExtract();
               // Annotate the report.
               await annotateReport(ruleIDs, timeStamp, jobID);
               console.log(`Testaro report ${id} was annotated, saved, and indexed`);

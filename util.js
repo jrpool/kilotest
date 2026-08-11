@@ -60,7 +60,7 @@ const createLock = exports.createLock = () => {
   let queue = Promise.resolve();
   return fn => {
     const result = queue.then(fn, fn);
-    queue = result.catch(() => {});
+    queue = result.then(() => {}, () => {});
     return result;
   };
 };
@@ -92,7 +92,7 @@ const getAgoDays = exports.getAgoDays = timeArg => {
     return null;
   }
   // Otherwise, i.e. if it is valid, return the elapsed days since then.
-  return Math.round((Date.now() - dateTime) / (1000 * 60 * 60 * 24));
+  return Math.round((Date.now() - dateTime.getTime()) / (1000 * 60 * 60 * 24));
 };
 // Returns a string describing the time in days since a time stamp.
 exports.getAgoString = timeStamp => {
@@ -504,19 +504,24 @@ const isValidReport = exports.isValidReport = report => {
   )
   && typeof report.jobData === 'object'
   && report.jobData.endTime
-  && typeof new Date(`20${report.jobData.endTime}Z`) === Date
+  && !isNaN(new Date(`20${report.jobData.endTime}Z`).getTime())
   && typeof report.catalog === 'object';
 };
 // Returns a report.
 const getReport = exports.getReport = async (timeStamp, jobID) => {
-  const report = await fs.readFile(getReportPath(timeStamp, jobID));
-  // If it is valid:
-  if (isValidReport(report)) {
-    // Return it.
-    return report;
+  try {
+    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+    const report = JSON.parse(reportJSON);
+    // If it is valid:
+    if (isValidReport(report)) {
+      // Return it.
+      return report;
+    }
+    // Otherwise, i.e. if it is invalid, return this.
+    return {error: `Report ${timeStamp}-${jobID} is invalid`};
+  } catch (error) {
+    return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${error.message})`};
   }
-  // Otherwise, i.e. if it is invalid, return this.
-  return {error: `Report ${timeStamp}-${jobID} is invalid`};
 };
 // Adds issue IDs to the standard instances of a report.
 exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
@@ -655,7 +660,7 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
     return report;
   }
   const {url, what} = report.target;
-  const reportStats = getReportStats(timeStamp, jobID)
+  const reportStats = await getReportStats(timeStamp, jobID)
   // Otherwise, i.e. if it succeeded, get the elapsed time in days since the report was created.
   const daysAgo = getAgoDays(reportStats.reportTime);
   // Return the data.
@@ -740,26 +745,26 @@ exports.isReportAvailable = async (what, url) => {
   const miniURLs = reportsData.map(data => minifyURL(data.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
-// Creates and saves data on all available reports.
-const makeReportsData = exports.makeReportsData = async () => {
+// Creates and saves an extract of all available reports.
+const makeReportsExtract = exports.makeReportsExtract = async () => {
   // Initialize the reports data.
   const reportsExtract = {};
   // Get the names of all report files.
   const reportFileNames = await fs.readdir(reportsPath);
   // For each of them:
   for (const reportFileName of reportFileNames) {
-    // Get its data.
+    // Get its extract.
     const reportExtract = await getReportExtract(reportFileName);
     // If this succeeded:
     if (reportExtract) {
       const jobName = reportFileName.slice(0, -5);
-      // Add the report data to the reports data.
+      // Add the report extract to the reports extract.
       reportsExtract[jobName] = reportExtract;
     }
   }
   // Ensure the data directory exists.
   await fs.mkdir(dbPath, {recursive: true});
-  // Save the reports data.
+  // Save the reports extract.
   await fs.writeFile(reportsExtractPath, getJSON(reportsExtract));
 };
 // Gets data on all available reports.
@@ -778,8 +783,8 @@ const getReportsData = exports.getReportsData = async () => {
   }
   // If this fails:
   catch {
-    // Create or recreate the reports data file.
-    await makeReportsData();
+    // Create or recreate the reports extract.
+    await makeReportsExtract();
     // Get it.
     const reportsDataJSON = await fs.readFile(reportsExtractPath, 'utf8');
     // Get its data.

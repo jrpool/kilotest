@@ -156,7 +156,7 @@ const alphaCompare = (a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = strings => strings.sort((a, b) => alphaCompare(a, b));
 // Sorts objects by a property value and returns the sorted array.
-const objectSort = exports.objectSort = (objects, property, sortType) => objects
+exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -762,7 +762,7 @@ const getReportsData = exports.getReportsData = async () => {
   let reportsData;
   try {
     // Get the reports data file.
-    const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
+    const reportsDataJSON = await fs.readFile(reportsExtractPath, 'utf8');
     // Get its data.
     reportsData = JSON.parse(reportsDataJSON);
     // If it is empty:
@@ -776,7 +776,7 @@ const getReportsData = exports.getReportsData = async () => {
     // Create or recreate the reports data file.
     await makeReportsData();
     // Get it.
-    const reportsDataJSON = await fs.readFile(reportsDataPath, 'utf8');
+    const reportsDataJSON = await fs.readFile(reportsExtractPath, 'utf8');
     // Get its data.
     reportsData = JSON.parse(reportsDataJSON);
   }

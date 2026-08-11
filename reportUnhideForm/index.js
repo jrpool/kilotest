@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {hiddenReportsPath, makeReportsData, reportsPath} = require('../util');
+const {hiddenReportsPath, makeReportsExtract, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -25,7 +25,7 @@ exports.answer = async (_, search) => {
         // Move the report to the reports directory.
         await fs.rename(path.join(hiddenReportsPath, fileName), path.join(reportsPath, fileName));
         // Update the data on the available reports.
-        await makeReportsData();
+        await makeReportsExtract();
       }
       catch (error) {
         // Return why.

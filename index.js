@@ -385,7 +385,7 @@ const requestHandler = async (request, response) => {
       const topic = pageName.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
-        setHeaders('text/html', `${pathname}${search}`, 'ultra');
+        setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
         const answerData = await answer[topic](pathTail, search);
         // If they are valid:
@@ -506,7 +506,7 @@ const requestHandler = async (request, response) => {
     else {
       // Report the error.
       await serveError(
-        {message: `ERROR: Invalid GET request (${pathname}${search})`}, response, true
+        {message: `ERROR: Invalid GET request (${pathname})`}, response, true
       );
     }
   }
@@ -533,7 +533,7 @@ const requestHandler = async (request, response) => {
           // Otherwise, i.e. if no report on the page is available:
           else {
             // Serve headers for a response.
-            setHeaders('text/html', `${pathname}${search}`, 'ultra');
+            setHeaders('text/html', pathname, 'ultra');
             // Get the answer data.
             const answerData = await require(path.join(__dirname, 'testRec', 'index'))
             .answer(what, url, why);
@@ -562,7 +562,7 @@ const requestHandler = async (request, response) => {
         // If the request is valid:
         if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
           // Serve response headers.
-          setHeaders('text/html', `${pathname}${search}`, 'ultra');
+          setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
           const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
           .answer(pathTail, why);
@@ -594,7 +594,7 @@ const requestHandler = async (request, response) => {
           // If the request is an approval:
           if (what) {
             // Set a location header for a response.
-            response.setHeader('content-location', `${pathname}${search}`);
+            response.setHeader('content-location', pathname);
             // Process the approval and get the answer data about the remaining recommendations.
             const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
             .answer(url, what, authCode);
@@ -638,7 +638,7 @@ const requestHandler = async (request, response) => {
       else if (pageName === 'reannotate.html') {
         const {authCode} = postData;
         // Set headers for a response.
-        setHeaders('text/html', `${pathname}${search}`, 'ultra');
+        setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
         .answer(authCode);
@@ -657,7 +657,7 @@ const requestHandler = async (request, response) => {
       else if (pageName === 'wcagRenew.html') {
         const {authCode} = postData;
         // Set headers for a response.
-        setHeaders('text/html', `${pathname}${search}`, 'low');
+        setHeaders('text/html', pathname, 'low');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'wcagRenew', 'index'))
         .answer(authCode);

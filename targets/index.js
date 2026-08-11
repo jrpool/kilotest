@@ -71,15 +71,16 @@ const populateQuery = async query => {
   // Add a no-claimed message, if applicable, to the query.
   query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
   // Get data on all available reports.
-  const reportsData = await getReportsExtract();
-  query.which = reportsData.length ? 'the following' : 'no';
-  query.some = (reportsData.length || jobFileNames.queue.length || jobFileNames.claimed.length)
+  const reportsExtract = await getReportsExtract();
+  const reportCount = Object.keys(reportsExtract).length;
+  query.which = reportCount ? 'the following' : 'no';
+  query.some = (reportCount || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'
   : 'a';
   const multiReportWhats = await getMultiReportWhats();
   // For each report:
-  for (const data of reportsData) {
-    const {jobID, timeStamp, url, what} = data;
+  for (const extract of Object.values(reportsExtract)) {
+    const {jobID, timeStamp, url, what} = extract;
     // Get data about it.
     const reportData = await getReportData(`${timeStamp}-${jobID}.json`);
     const {

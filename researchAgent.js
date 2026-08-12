@@ -133,7 +133,6 @@ const requestService = async () => {
   if (!(timeStamp && jobID)) {
     return;
   }
-  method = 'GET';
   path = `/api/listIssues/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
   responseContent = body?.['response content'] ?? {};
@@ -151,7 +150,6 @@ const requestService = async () => {
   const issueIDs = issuesBasics.map(issueBasics => issueBasics.identifier);
   // Choose one at random.
   const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];
-  method = 'GET';
   path = `/api/listViolators/${issueID}/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
   responseContent = body?.['response content'] ?? {};
@@ -171,7 +169,6 @@ const requestService = async () => {
   const violatorIDs = violatorsBasics.map(violatorBasics => violatorBasics.identifier);
   // Choose one at random.
   const violatorID = violatorIDs[Math.floor(Math.random() * violatorIDs.length)];
-  method = 'GET';
   path = `/api/listDiagnoses/${violatorID}/${issueID}/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
   responseContent = body?.['response content'] ?? {};
@@ -182,6 +179,14 @@ const requestService = async () => {
     || !diagnoses.length
     || diagnoses.some(item => !item.includes('severity of the violation'))
   ) {
+    return;
+  }
+  console.log('======================\nRequest: Get one report');
+  path = `/api/getReport/${timeStamp}/${jobID}`;
+  body = await submitRequest(path, method);
+  responseContent = body?.['response content'] ?? {};
+  const fullReport = responseContent?.['full report'] ?? {};
+  if (responseContent.error || typeof fullReport !== 'object' || !fullReport.device) {
     return;
   }
   console.log('======================\nRequest: Make a test request with the GET method');

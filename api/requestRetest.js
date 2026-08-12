@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getReportsData} = require('../util');
+const {getReportsExtract} = require('../util');
 
 // FUNCTIONS
 
@@ -19,19 +19,26 @@ exports.response = async args => {
   };
   const reasonLength = reason.length;
   // Get data on the available reports.
-  const reportsData = await getReportsData();
+  const reportsExtract = await getReportsExtract();
   // Get data on the report.
-  const reportData = reportsData.find(data => data.timeStamp === timeStamp && data.jobID === jobID);
-  const {what, url} = reportData || {};
+  const reportExtract = Object
+  .values(reportsExtract)
+  .find(extract => extract.timeStamp === timeStamp && extract.jobID === jobID);
+  const {what, url} = reportExtract || {};
   // If this failed:
-  if (!reportData) {
+  if (!reportExtract) {
     // Add this to the response content.
     responseContent['details about your request'] = {
       error: 'request invalid: the specified existing report is not an available report'
     };
   }
   // Otherwise, if the report has been superseded:
-  else if (reportsData.filter(data => data.what === what && data.url === url).length > 1) {
+  else if (
+    Object
+    .values(reportsExtract)
+    .filter(extract => extract.what === what && extract.url === url)
+    .length > 1
+  ) {
     // Add this to the response content.
     responseContent['details about your request'] = {
       error: 'request invalid: a later report about the page exists'

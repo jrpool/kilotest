@@ -34,9 +34,9 @@ const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
 
 // FUNCTIONS
 
-// Gets and outputs the content or error message from a response.
-const getContent = async response => {
-  const content = await new Promise(resolve => {
+// Gets and outputs the body of a response.
+const getBody = async response => {
+  const body = await new Promise(resolve => {
     // Initialize an array of data from the response.
     const chunks = [];
     response
@@ -54,21 +54,20 @@ const getContent = async response => {
     })
     // When the response is completed:
     .on('end', () => {
-      const contentString = chunks.join('');
+      const bodyString = chunks.join('');
       try {
-        const content = JSON.parse(contentString);
-        // Return the response content as an object.
-        resolve(content);
+        const body = JSON.parse(bodyString);
+        // Return the response body as an object.
+        resolve(body);
       }
       // If it is not JSON:
       catch {
         // Return this.
-        resolve({message: `Response content not JSON (${contentString})`});
+        resolve({error: `Response body not JSON (${bodyString})`});
       }
     });
   });
-  console.log(JSON.stringify(content, null, 2));
-  return content;
+  return body;
 };
 const getRequestOptions = (path, method = 'GET') => ({
   method,
@@ -76,122 +75,102 @@ const getRequestOptions = (path, method = 'GET') => ({
   port,
   path,
   headers: {
-    'content-type': 'application/json; charset=utf-8'
+    'body-type': 'application/json; charset=utf-8'
   }
 });
-// Submits a request, returns the response content, and increments the results.
-const submitRequest = async (path, method, body = null) => new Promise(resolve => {
+// Submits a request, returns the response body, and increments the results.
+const submitRequest = async (path, method, requestBody = null) => new Promise(resolve => {
   console.log(`Making ${scheme} ${method} request on port ${port} to ${host}${path}`);
   client.request(getRequestOptions(path, method), async response => {
-    const responseContent = await getContent(response);
+    const responseContent = await getBody(response);
     resolve(responseContent);
   })
   .on('error', error => {
     console.log(`ERROR submitting request (${JSON.stringify(error, null, 2)})`);
     resolve({error});
   })
-  .end(body ? JSON.stringify(body) : '');
+  .end(requestBody ? JSON.stringify(requestBody) : '');
 });
-// Submits requests to a random Kilotest host.
+// Submits requests to the specified Kilotest host.
 const requestService = async () => {
   let method;
   let path;
-  let content;
+  let body;
   let reportListItems;
   let timeStamp;
   let jobID;
   let description;
   let url;
-  console.log('======================\nRequest: Summarize nonexistent reports');
-  method = 'POST';
-  path = '/api/target';
-  content = await submitRequest(path, method, {
-    description: 'oesntuhaesouht',
-    hostname: 'osentuhaoesuht.aoesntuh'
-  });
-  if (content.error) {
-    return;
-  }
   console.log('======================\nRequest: List all available reports');
   method = 'GET';
-  path = '/api/reportList';
-  content = await submitRequest(path, method);
-  reportListItems = content?.['response content'] ?? [];
-  if (content.error || !Array.isArray(reportListItems) || !reportListItems.length) {
+  path = '/api/listReports';
+  body = await submitRequest(path, method);
+  reportListItems = body?.['response body'] ?? [];
+  if (
+    body.error
+    || !Array.isArray(reportListItems)
+    || !reportListItems.length
+    || reportListItems.some(item => !item.includes('page with no report be tested'))
+  ) {
     return;
   }
-  console.log('======================\nRequest: Summarize matching reports');
-  // Choose one available report at random.
-  const reportListItem = reportListItems[Math.floor(Math.random() * reportListItems.length)];
-  ({description, URL: url} = reportListItem?.['tested web page'] ?? ['', '']);
-  if (!(description && URL)) {
-    return;
-  }
-  method = 'POST';
-  path = '/api/target';
-  content = await submitRequest(path, method, {
-    description,
-    hostname: new URL(url).hostname ?? ''
-  });
-  if (content.error) {
-    return;
-  }
-  console.log('======================\nRequest: Summarize one nonexistent report');
+  console.log('======================\nRequest: List issues in one nonexistent report');
   [timeStamp, jobID] = ['111111T1111', 'abc'];
   method = 'GET';
-  path = `/api/reportFacts/${timeStamp}/${jobID}`;
-  content = await submitRequest(path, method);
-  if (!content.message) {
+  path = `/api/listIssues/${timeStamp}/${jobID}`;
+  body = await submitRequest(path, method);
+  if (!body.error || !body.error.includes('missing, unreadable, or not JSON')) {
     return;
   }
-  console.log('======================\nRequest: Summarize one report');
-  [timeStamp, jobID] = reportListItem.identifier?.split('-') ?? ['', ''];
+  console.log('======================\nRequest: List issues in one report');
+  const item = reportListItems[0];
+  [timeStamp, jobID] = [item.timeStamp, item.jobID];
   if (!(timeStamp && jobID)) {
     return;
   }
   method = 'GET';
-  path = `/api/reportFacts/${timeStamp}/${jobID}`;
-  content = await submitRequest(path, method);
-  const {message, summary} = content;
-  if (message || !(summary && content['response content']['tested web page'].URL)) {
+  path = `/api/listIssues/${timeStamp}/${jobID}`;
+  body = await submitRequest(path, method);
+  const {error, summary} = body;
+  if (error || !(summary && body['response body']['tested web page'].URL)) {
     return;
   }
   console.log('======================\nRequest: Describe one issue from one report');
-  if (content['response content']['number of elements reported as violators'] === 0) {
+  if (body['response body']['number of elements reported as violators'] === 0) {
     console.log('reportIssue request cannot be submitted, because no issues were reported');
   }
   else {
     // Get the issue IDs.
     const issueIDs = Object
-    .values(content['response content']['issues revealed'])
+    .values(body['response body']['issues revealed'])
     .map(issue => issue.identifier);
     // Choose one at random.
     const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];
     method = 'GET';
     path = `/api/reportIssue/${issueID}/${timeStamp}/${jobID}`;
-    content = await submitRequest(path, method);
-    if (content.message) {
+    body = await submitRequest(path, method);
+    if (body.message) {
       return;
     }
   }
   console.log('======================\nRequest: Make a permitted test recommendation');
   method = 'POST';
   path = '/api/testRecForm';
-  content = await submitRequest(path, method, {
+  body = await submitRequest(path, method, {
     'description of the web page': 'aoseeou',
     'URL of the web page': 'https://oaaestuh.osneth',
     'reason for testing the web page': 'Just testing'
   });
-  if (content.message) {
+  if (body.message) {
     return;
   }
   console.log('======================\nRequest: Make an illicit test recommendation');
-  content = await submitRequest(path, method, {
+  body = await submitRequest(path, method, {
     'description of the web page': description,
     'URL of the web page': url,
     'reason for testing the web page': 'Just testing'
   });
-  if (!content.message) {
+  if (!body.message) {
     return;
   }
   console.log('======================\nRequest: Results');

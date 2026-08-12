@@ -71,7 +71,7 @@ const failedPath = path.join(jobsPath, 'failed');
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 // Values that may require alerts.
-const balancePath = path.join(__dirname, 'aiService0Balance.json');
+const balancePath = path.join(__dirname, 'ai0Balance.json');
 const jobLock = createLock();
 const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
 const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
@@ -153,6 +153,7 @@ const checkBalancesForAlerts = async report => {
         if (typeof newBalance === 'number') {
           // Update the recorded balance.
           await fs.writeFile(balancePath, getJSON({balance: newBalance}));
+          console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
           // If it is nearing exhaustion:
           if (newBalance < AI_SERVICE0_THRESHOLD) {
             // Alert a manager.
@@ -694,10 +695,6 @@ const requestHandler = async (request, response) => {
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
             // If the request is valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
-              // Acknowledge receipt.
-              response.setHeader('content-type', 'application/json; charset=utf-8');
-              response.end(JSON.stringify({status: 'ok'}));
-              console.log(`Testaro report ${id} was received from Testaro agent ${agentID}`);
               const [timeStamp, jobID] = id.split('-');
               // Save the report.
               await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
@@ -711,6 +708,10 @@ const requestHandler = async (request, response) => {
               // Delete the job.
               await fs.unlink(path.join(claimedPath, `${id}.json`));
               console.log(`Completed job ${id} deleted`);
+              // Acknowledge receipt.
+              response.setHeader('content-type', 'application/json; charset=utf-8');
+              response.end(JSON.stringify({status: 'ok'}));
+              console.log(`Testaro report ${id} was received from Testaro agent ${agentID}`);
             }
             // Otherwise, i.e. if the request is invalid:
             else {

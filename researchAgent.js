@@ -93,24 +93,25 @@ const submitRequest = async (path, method, requestBody = null) => new Promise(re
 });
 // Submits requests to the specified Kilotest host.
 const requestService = async () => {
+  let body;
+  let item;
+  let jobID;
   let method;
   let path;
-  let body;
-  let reportListItems;
+  let reportsBasics;
+  let responseContent;
   let timeStamp;
-  let jobID;
-  let description;
-  let url;
   console.log('======================\nRequest: List all available reports');
   method = 'GET';
   path = '/api/listReports';
   body = await submitRequest(path, method);
-  reportListItems = body?.['response body'] ?? [];
+  responseContent = body?.['response content'] ?? {};
+  reportsBasics = responseContent?.['basics about all available reports'] ?? [];
   if (
-    body.error
-    || !Array.isArray(reportListItems)
-    || !reportListItems.length
-    || reportListItems.some(item => !item.includes('page with no report be tested'))
+    responseContent.error
+    || !Array.isArray(reportsBasics)
+    || !reportsBasics.length
+    || reportsBasics.some(item => !item.includes('page with no report be tested'))
   ) {
     return;
   }
@@ -119,11 +120,15 @@ const requestService = async () => {
   method = 'GET';
   path = `/api/listIssues/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
-  if (!body.error || !body.error.includes('missing, unreadable, or not JSON')) {
+  responseContent = body?.['response content'] ?? {};
+  if (
+    !responseContent.error || !responseContent.error.includes('missing, unreadable, or not JSON')
+  ) {
     return;
   }
   console.log('======================\nRequest: List issues in one report');
-  const item = reportListItems[0];
+  // Choose one report at random.
+  item = reportsBasics[Math.floor(reportsBasics.length * Math.random())];
   [timeStamp, jobID] = [item.timeStamp, item.jobID];
   if (!(timeStamp && jobID)) {
     return;
@@ -131,46 +136,92 @@ const requestService = async () => {
   method = 'GET';
   path = `/api/listIssues/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
-  const {error, summary} = body;
-  if (error || !(summary && body['response body']['tested web page'].URL)) {
+  responseContent = body?.['response content'] ?? {};
+  const issuesBasics = responseContent?.['basics about all issues reported in the report'] ?? [];
+  if (
+    responseContent.error
+    || !Array.isArray(issuesBasics)
+    || !issuesBasics.length
+    || issuesBasics.some(item => !item.includes('impact on a user'))
+  ) {
     return;
   }
-  console.log('======================\nRequest: Describe one issue from one report');
-  if (body['response body']['number of elements reported as violators'] === 0) {
-    console.log('reportIssue request cannot be submitted, because no issues were reported');
+  console.log('======================\nRequest: List violators of one issue in one report');
+  // Get the issue IDs.
+  const issueIDs = issuesBasics.map(issueBasics => issueBasics.identifier);
+  // Choose one at random.
+  const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];
+  method = 'GET';
+  path = `/api/listViolators/${issueID}/${timeStamp}/${jobID}`;
+  body = await submitRequest(path, method);
+  responseContent = body?.['response content'] ?? {};
+  const violatorsBasics = responseContent?.['basics about all elements exhibiting the issue'];
+  if (
+    responseContent.error
+    || !Array.isArray(violatorsBasics)
+    || !violatorsBasics.length
+    || violatorsBasics.some(item => !item.includes('count of rule engines reporting'))
+  ) {
+    return;
   }
-  else {
-    // Get the issue IDs.
-    const issueIDs = Object
-    .values(body['response body']['issues revealed'])
-    .map(issue => issue.identifier);
-    // Choose one at random.
-    const issueID = issueIDs[Math.floor(Math.random() * issueIDs.length)];
-    method = 'GET';
-    path = `/api/reportIssue/${issueID}/${timeStamp}/${jobID}`;
-    body = await submitRequest(path, method);
-    if (body.message) {
-      return;
-    }
+  console.log(
+    '======================\nRequest: List diagnoses of one violation of one issue in one report'
+  );
+  // Get the issue IDs.
+  const violatorIDs = violatorsBasics.map(violatorBasics => violatorBasics.identifier);
+  // Choose one at random.
+  const violatorID = violatorIDs[Math.floor(Math.random() * violatorIDs.length)];
+  method = 'GET';
+  path = `/api/listDiagnoses/${violatorID}/${issueID}/${timeStamp}/${jobID}`;
+  body = await submitRequest(path, method);
+  responseContent = body?.['response content'] ?? {};
+  const diagnoses = responseContent?.['diagnoses of how the element exhibited the issue'];
+  if (
+    responseContent.error
+    || !Array.isArray(diagnoses)
+    || !diagnoses.length
+    || diagnoses.some(item => !item.includes('severity of the violation'))
+  ) {
+    return;
   }
-  console.log('======================\nRequest: Make a permitted test recommendation');
+  console.log('======================\nRequest: Make a test request with the GET method');
+  path = '/api/requestTest';
+  body = await submitRequest(path, method, {
+    'description of the web page': 'Organization that does not exist',
+    'URL of the web page': 'https://nonexistentorg.com',
+    'reason for testing the web page': 'Just testing'
+  });
+  responseContent = body?.['response content'] ?? {};
+  if (!responseContent.error) {
+    return;
+  }
+  console.log('======================\nRequest: Make a test request');
   method = 'POST';
-  path = '/api/testRecForm';
   body = await submitRequest(path, method, {
-    'description of the web page': 'aoseeou',
-    'URL of the web page': 'https://oaaestuh.osneth',
-    'reason for testing the web page': 'Just testing'
+    description: 'Organization that does not exist',
+    URL: 'https://nonexistentorg.com',
+    reason: 'Just testing'
   });
-  if (body.message) {
+  responseContent = body?.['response content'] ?? {};
+  if (responseContent.error || !responseContent['reason why the page should be tested']) {
     return;
   }
-  console.log('======================\nRequest: Make an illicit test recommendation');
+  console.log('======================\nRequest: Make a retest request');
+  path = `/api/requestRetest/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method, {
-    'description of the web page': description,
-    'URL of the web page': url,
-    'reason for testing the web page': 'Just testing'
+    reason: 'Just retesting'
   });
-  if (!body.message) {
+  responseContent = body?.['response content'] ?? {};
+  if (responseContent.error || !responseContent['reason why the page should be retested']) {
+    return;
+  }
+  console.log('======================\nRequest: Make a feature request');
+  path = `/api/requestFeature/${timeStamp}/${jobID}`;
+  body = await submitRequest(path, method, {
+    feature: 'Do the impossible'
+  });
+  responseContent = body?.['response content'] ?? {};
+  if (responseContent.error || !responseContent['manager notified']) {
     return;
   }
   console.log('======================\nRequest: Results');

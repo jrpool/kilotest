@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getReportBasics, getResponseMetadata, getToolsFacts, thisHost} = require('./util');
-const {getReportsData} = require('../util');
+const {getReportsExtract} = require('../util');
 
 // FUNCTIONS
 
@@ -21,10 +21,10 @@ exports.response = async () => {
   // Initialize an array of basics about the reports.
   const reportsBasics = [];
   // Get data on all available reports.
-  const reportsData = await getReportsData();
+  const reportsExtract = await getReportsExtract();
   // For each report:
-  for (const data of reportsData) {
-    const {error, jobID, timeStamp} = data;
+  for (const extract of Object.values(reportsExtract)) {
+    const {error, jobID, timeStamp} = extract;
     // Get the basics about it (which may be only an error message).
     const reportBasics = await getReportBasics(timeStamp, jobID);
     // If this succeeded:
@@ -66,7 +66,7 @@ exports.response = async () => {
     URL: `${thisHost}/testRecForm.html`
   };
   // Create a response body.
-  const content = {
+  const body = {
     'tool collection': getToolsFacts(),
     'tool name': 'listReports',
     'this request': {
@@ -83,5 +83,5 @@ exports.response = async () => {
     'response content': responseContent
   };
   // Return it.
-  return content;
+  return body;
 };

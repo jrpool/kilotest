@@ -25,7 +25,7 @@ exports.response = async args => {
     'basics about the report': null,
     'basics about the issue': null,
     'details about the issue': null,
-    'basics about all elements reported as exhibiting the issue': null
+    'basics about all elements exhibiting the issue': null
   };
   // Get the report.
   const report = await getReport(timeStamp, jobID);
@@ -134,7 +134,7 @@ exports.response = async args => {
         };
       });
       // Add basics about the violators to the response content.
-      responseContent['basics about all elements reported as exhibiting the issue'] = violatorsBasics;
+      responseContent['basics about all elements exhibiting the issue'] = violatorsBasics;
     }
   }
   // Create a response body.
@@ -142,7 +142,7 @@ exports.response = async args => {
     'tool collection': getToolsFacts(),
     'tool name': 'listViolators',
     'this request': {
-      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
+      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that exhibited the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
       method: 'GET',
       URL: `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
       'closest ancestor request': {

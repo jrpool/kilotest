@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getReportsData, isURL} = require('../util');
+const {getReportsExtract, isURL} = require('../util');
 
 // FUNCTIONS
 
@@ -41,18 +41,18 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if the description and URL are valid:
   else {
-    // Get data on the available reports.
-    const reportsData = await getReportsData();
-    // Get data on those that are about a page with the specified description and URL.
-    const pageReportsData = reportsData.filter(data => data.what === what && data.url === url);
-    // If any exist:
-    if (pageReportsData.length) {
+    // Get an extract of the available reports.
+    const reportsExtract = await getReportsExtract();
+    // If any report is on a page with the specified description and URL:
+    if (
+      Object.values(reportsExtract).some(extract => extract.what === what && extract.url === url)
+    ) {
       // Add this to the response content.
       responseContent['details about your request'] = {
         error: 'request invalid: the page has already been tested and its report is available'
       };
     }
-    // Otherwise, i.e. if none exist:
+    // Otherwise, i.e. if none is on the page:
     else {
       // Process the request.
       await processTestRequest('test', what, url, reason);
@@ -61,7 +61,7 @@ exports.response = async args => {
         'date and time received': new Date().toISOString(),
         'page to be tested': {
           description: what,
-          'URL': url
+          URL: url
         },
         'reason why the page should be tested': reason
       };

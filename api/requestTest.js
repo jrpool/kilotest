@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getReportsExtract, isURL} = require('../util');
+const {getReportExtracts, isURL} = require('../util');
 
 // FUNCTIONS
 
@@ -42,10 +42,10 @@ exports.response = async args => {
   // Otherwise, i.e. if the description and URL are valid:
   else {
     // Get an extract of the available reports.
-    const reportsExtract = await getReportsExtract();
+    const reportExtracts = await getReportExtracts();
     // If any report is on a page with the specified description and URL:
     if (
-      Object.values(reportsExtract).some(extract => extract.what === what && extract.url === url)
+      reportExtracts.some(extract => extract.what === what && extract.url === url)
     ) {
       // Add this to the response content.
       responseContent['details about your request'] = {

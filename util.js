@@ -373,7 +373,7 @@ exports.makeBreakable = string => string.replace(/\//g, '<wbr>/').replace(/^<wbr
 // Minifies a URL for duplicate detection.
 const minifyURL = exports.minifyURL = url => url.replace(/www\.|\/$/g, '').toLowerCase();
 // Sorts objects by a property value and returns the sorted array.
-exports.objectSort = (objects, property, sortType) => objects
+const objectSort = exports.objectSort = (objects, property, sortType) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -783,31 +783,20 @@ exports.isReportAvailable = async (what, url) => {
   const miniURLs = reportExtracts.map(reportExtract => minifyURL(reportExtract.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
-// Gets an extract of the latest available report on each page.
-exports.getLatestReportsExtract = async () => {
-  // Get an extract of all available reports.
-  const reportsExtract = await getReportsExtract();
-  const pageData = {};
-  // Identify the latest report for each page description.
-  Object.entries(reportsExtract).forEach(([jobName, extract]) => {
-    const {reportTime, what} = extract;
-    const savedTime = pageData[what]?.reportTime;
-    if (!savedTime || reportTime > savedTime) {
-      pageData[what] = {
-        jobName,
-        reportTime,
-      };
-    }
-  });
-  const latestReportsExtract = {};
-  Object.keys(pageData).forEach(what => {
-    const {jobName} = pageData[what];
-    latestReportsExtract[jobName] = reportsExtract[jobName];
-  });
-  // Return an extract of those reports.
-  return latestReportsExtract;
+// Gets extracts of the latest available reports for all page descriptions.
+exports.getLatestReportExtracts = async () => {
+  // Get extracts of all available reports.
+  const reportExtracts = await getReportExtracts();
+  // Sort them primarily by page description and secondarily by completion time.
+  objectSort(reportExtracts, 'reportTime', 'alpha');
+  objectSort(reportExtracts, 'what', 'alpha');
+  // Get the latest ones for all page descriptions.
+  const latestReportExtracts = reportExtracts
+  .filter((extract, index) => extract.what !== reportExtracts[index + 1].what);
+  // Return them.
+  return latestReportExtracts;
 };
-// Gets from the extract of all available reports and returns an extract of a report.
+// Returns an extract of an available report.
 exports.getReportExtract = async (timeStamp, jobID) => {
   // Get the extract of all available reports.
   const reportsExtract = await getReportsExtract();
@@ -827,10 +816,10 @@ exports.getReportExtract = async (timeStamp, jobID) => {
 };
 // Gets the descriptions of multi-report pages.
 exports.getMultiReportWhats = async () => {
-  // Get an extract of all available reports.
-  const reportsExtract = await getReportsExtract();
+  // Get extracts of all available reports.
+  const reportExtracts = await getReportExtracts();
   // Get their sorted page descriptions.
-  const sortedWhats = Object.values(reportsExtract).map(extract => extract.what).sort();
+  const sortedWhats = reportExtracts.map(extract => extract.what).sort();
   // Get those that at least 2 reports have.
   const multiReportWhats = sortedWhats.filter(
     (what, index) => what !== sortedWhats[index - 1] && what === sortedWhats[index + 1]

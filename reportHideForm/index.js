@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportsExtract, hiddenReportsPath, makeReportsExtract, reportsPath} = require('../util');
+const {getReportExtracts, hiddenReportsPath, makeReportsExtract, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -48,9 +48,9 @@ exports.answer = async (_, search) => {
   // Initialize an array of report specifications.
   const reportSpecs = [];
   // Get data on all available reports.
-  const reportsExtract = await getReportsExtract();
+  const reportExtracts = await getReportExtracts();
   // For each report:
-  for (const reportExtract of Object.values(reportsExtract)) {
+  for (const reportExtract of reportExtracts) {
     const {jobID, timeStamp, what} = reportExtract;
     // Add the report to the array.
     reportSpecs.push({

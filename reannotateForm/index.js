@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssue, getReport, getReportsExtract, ruleIDs} = require('../util');
+const {getIssue, getReport, getReportExtracts, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -17,9 +17,9 @@ const populateQuery = async query => {
   const reClassified = {};
   const stillUnclassified = {};
   // Get an extract of all available reports.
-  const reportsExtract = await getReportsExtract();
+  const reportExtracts = await getReportExtracts();
   // For each report:
-  for (const reportExtract of Object.values(reportsExtract)) {
+  for (const reportExtract of reportExtracts) {
     const {jobID, timeStamp} = reportExtract;
     // Get it.
     const report = await getReport(timeStamp, jobID);

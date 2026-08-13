@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {annotateReport, getReportsExtract, ruleIDs} = require('../util');
+const {annotateReport, getReportExtracts, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -16,15 +16,14 @@ exports.answer = async authCode => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get data on the available reports.
-    const reportsExtract = await getReportsExtract();
-    // If this succeeded:
-    if (reportsExtract) {
+    const reportExtracts = await getReportExtracts();
+    // If any exist:
+    if (reportExtracts.length) {
       // For each report:
-      for (const reportExtract of Object.values(reportsExtract)) {
+      for (const reportExtract of reportExtracts) {
+        const {timeStamp, jobID} = reportExtract;
         // Reannotate it.
-        const annotationError = await annotateReport(
-          ruleIDs, reportExtract.timeStamp, reportExtract.jobID
-        );
+        const annotationError = await annotateReport(ruleIDs, timeStamp, jobID);
         // If this failed:
         if (annotationError) {
           // Return an error page.
@@ -40,7 +39,7 @@ exports.answer = async authCode => {
       // Return an error page.
       return {
         status: 'error',
-        message: 'Failed to get data on the available reports'
+        message: 'Got data on no available reports'
       };
     }
     // If every annotation succeeded, get the answer page.

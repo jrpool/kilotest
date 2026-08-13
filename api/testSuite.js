@@ -135,11 +135,13 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest: List issues in one report');
+  const reportsBasicsIndex = Math.floor(reportsBasics.length * Math.random());
   // Choose one report at random.
-  item = reportsBasics[Math.floor(reportsBasics.length * Math.random())];
-  [timeStamp, jobID] = [item.timeStamp, item.jobID];
+  reportBasics = reportsBasics[reportsBasicsIndex];
+  [timeStamp, jobID] = [reportBasics.timeStamp, reportBasics.jobID];
   if (!(timeStamp && jobID)) {
-    console.log('No timeStamp or no jobID');
+    console.log(`reportBasicsIndex: ${reportsBasicsIndex}`);
+    console.log(`reportBasics: ${JSON.stringify(reportBasics, null, 2)}`);
     return;
   }
   path = `/api/listIssues/${timeStamp}/${jobID}`;

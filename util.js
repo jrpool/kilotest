@@ -792,7 +792,7 @@ exports.getLatestReportExtracts = async () => {
   objectSort(reportExtracts, 'what', 'alpha');
   // Get the latest ones for all page descriptions.
   const latestReportExtracts = reportExtracts
-  .filter((extract, index) => extract.what !== reportExtracts[index + 1].what);
+  .filter((extract, index) => extract.what !== reportExtracts[index + 1]?.what);
   // Return them.
   return latestReportExtracts;
 };

@@ -113,7 +113,9 @@ const requestService = async () => {
     responseContent.error
     || !Array.isArray(reportsBasics)
     || !reportsBasics.length
-    || reportsBasics.some(item => !item.includes('get details about the report'))
+    || reportsBasics.some(
+      reportBasics => reportBasics['how to get details about the report']?.method !== 'GET'
+    )
   ) {
     return;
   }

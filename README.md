@@ -47,4 +47,4 @@ See the `SERVICE.md` file for instructions on how to make Kilotest a service.
 
 ## Using Kilotest as an AI tool
 
-See the `AI-TOOL.md` file for information about the configuration of Kilotest as an AI tool.
+See the `AI-TOOLS.md` file for information about the configuration of Kilotest as a collection of AI tools.

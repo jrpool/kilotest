@@ -15,7 +15,8 @@ exports.response = async args => {
   const [what, url, reason] = args;
   // Initialize the response content.
   const responseContent = {
-    'details about your request': {}
+    'details about your request': {},
+    'disposition of your request': null
   };
   const whatLength = what.length;
   // If the description is empty or too long:
@@ -64,6 +65,12 @@ exports.response = async args => {
           URL: url
         },
         'reason why the page should be tested': reason
+      };
+      // Add information about the disposition of the request to the response content.
+      responseContent['disposition of your request'] = {
+        'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
+        'how you can check for completion': 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
+        'how a web user can check for completion': `A web user can visit ${thisHost}/targets.html to learn whether the page has been tested and a report is available.`
       };
     }
   }

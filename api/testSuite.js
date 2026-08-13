@@ -100,6 +100,7 @@ const requestService = async () => {
   let path;
   let reportsBasics;
   let requestDetails;
+  let requestDisposition;
   let responseContent;
   let timeStamp;
   console.log('======================\nRequest: List all available reports');
@@ -220,7 +221,11 @@ const requestService = async () => {
   });
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
-  if (!requestDetails['reason why the page should be tested']) {
+  requestDisposition = responseContent['disposition of your request'] ?? {};
+  if (
+    !requestDetails['reason why the page should be tested']
+    || !requestDisposition['received and logged']
+  ) {
     return;
   }
   console.log('======================\nRequest: Request a retest of a nonexistent report');
@@ -240,7 +245,11 @@ const requestService = async () => {
   });
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
-  if (!requestDetails['reason why the page should be retested']) {
+  requestDisposition = responseContent['disposition of your request'] ?? {};
+  if (
+    !requestDetails['reason why the page should be retested']
+    || !requestDisposition['received and logged']
+  ) {
     return;
   }
   console.log('======================\nRequest: Make a feature request');

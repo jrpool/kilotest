@@ -15,7 +15,8 @@ exports.response = async args => {
   const [timeStamp, jobID, reason] = args;
   // Initialize the response content.
   const responseContent = {
-    'details about your request': {}
+    'details about your request': {},
+    'disposition of your request': null
   };
   const reasonLength = reason.length;
   // Get data on the available reports.
@@ -63,6 +64,12 @@ exports.response = async args => {
         'URL': url
       },
       'reason why the page should be retested': reason
+    };
+    // Add information about the disposition of the request to the response content.
+    responseContent['disposition of your request'] = {
+      'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
+      'how you can check for completion': 'You can call the listReports tool to learn whether the page has been retested and a new report is available.',
+      'how a web user can check for completion': `A web user can visit ${thisHost}/targets.html to learn whether the page has been retested and a new report is available.`
     };
   }
   // Create a response body.

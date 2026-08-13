@@ -7,6 +7,7 @@
     "start": "node index",
     "lint": "npx eslint && npx markdownlint-cli2",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test:api": "node api/testSuite",
     "generate:openapi": "node scripts/generate-openapi"
   },
   "repository": {

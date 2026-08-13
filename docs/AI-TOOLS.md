@@ -1,32 +1,33 @@
-# Kilotest as connector to and creator of AI Tools
+# Kilotest as connector to and collection of AI Tools
 
 ## Introduction
 
 Until 2026 Kilotest was intended, and implemented, as a web application performing a service for human users.
 
-Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could also act as a connector to tools for use by language models. Language models are asked for help in all domains, including the domain of software quality. When asked about the front-end quality (accessibility, usability, and standards conformity) of specific web pages, models gave answers without the use of tools. The answers were at best fragmentary but often speculative and fabricated. If Kilotest offered to connect language models to its functionalities as tools, models could give more inexpensive, comprehensive, factual, authoritative, and grounded answers. Every reported defect could be documented and ascribed to one or more specific rule engines in the Kilotest ensemble.
+Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could also act as a provider of tools for use by language models. Language models are asked for help in all domains, including the domain of software quality. When asked about the front-end quality (accessibility, usability, and standards conformity) of specific web pages, models gave answers without the use of tools. The answers were at best fragmentary but often speculative and fabricated. If Kilotest provided its functionalities to language models, models could give more inexpensive, comprehensive, factual, authoritative, and grounded answers. Every reported defect could be documented and ascribed to one or more specific rule engines in the Kilotest ensemble.
 
-Given the potential of Kilotest to serve language models and the expected continued growth in the share of questions that are directed to AI platforms that use language models, a decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a connector to, and creator of, tools for language models**.
+Given the potential of Kilotest to serve language models and the expected continued growth in the share of questions that are directed to AI platforms that use language models, a decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a provider of tools for language models**.
 
 ## Terms
 
 - **Language model**: A model (e.g., Claude Haiku 4.5, Kimi K2.6, GPT-5.4, Gemini 3.1 Pro) that can consume and generate text, images, or other content.
 - **AI platform**: A platform (e.g., Claude Desktop, Perplexity, ChatGPT, Gemini 3.5 Flash) that gives human users access to the services of language models and connects language models to productivity resources.
-- **tool**: A specialized productivity resource providing a capability that the language model itself needs but does not have. In the OpenAPI specification, the term _operation_ is used to mean tool.
+- **tool**: A specialized productivity resource providing a capability that a language model needs but does not have. In the OpenAPI specification, the term _operation_ is used to mean tool.
 - **connector**: A service that allows AI platforms to enable their language models to discover, evaluate, and use tools.
-
-Tools can be independent of connectors that connect them to language models, but Kilotest can be both. It already provides capabilities to human users; it can re-use the same functions that underlie those capabilities and reconfigure those functions as tools for language models. Kilotest can also provide connectors to those tools for language models and make those connectors compatible with AI platforms.
 
 ## Internal additions
 
-The internal changes that have been made in the Kilotest codebase to support the use of Kilotest as a set of tools and connectors to them are:
+The internal changes that have been made in the Kilotest codebase to support the use of Kilotest as a collection of tools are:
 
 - An API, consisting of:
   - Additions to `index.js`.
   - Additions to `util.js`.
-  - Within directories providing API functionality:
-    - `api.js` modules.
-    - `util.js` modules, if needed, containing resources shared by the `index.js` and `api.js` modules in those directories.
+  - An `api` directory containing:
+    - Eight tool modules.
+    - A `util.js` module with shared functions used by tool modules.
+    - A `routes.js` file.
+    - A `schemas.js` file.
+    - A `testSuite.js` module for testing the API.
 - A [`JSON-LD`](https://json-ld.org/) script in the `index.html` file, providing structured data about the Kilotest API.
 - Additions to the `env.example` file.
 - An `llms.txt` file and an `llms-full.txt` file, documenting the use of Kilotest by language models, conforming to the [llms-txt](https://llmstxt.org/) specification.
@@ -34,12 +35,12 @@ The internal changes that have been made in the Kilotest codebase to support the
 - An `mcp.js` file, providing an MCP server for Kilotest.
 - A `sitemap.xml` file.
 - Additions to the `README.md` file.
-- This `AI-TOOL.md` file.
-- A `researchAgent.js` file, testing the API.
+- This `AI-TOOLS.md` file.
+- A [tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/).
 
 ## External actions
 
-The external actions that have been taken to support the use of Kilotest as an AI tool are:
+The external actions that have been taken to support the use of Kilotest as a collection of AI tools are:
 
 - A [pull request](https://github.com/public-apis/public-apis/pull/6346/changes) to add Kilotest to the list of public APIs in the `public-apis` repository.
 - A [request](https://rapidapi.com/studio/api_91f2ce07-2572-48bd-a34d-ff01ed6cd039/publish/general) to add Kilotest to the Rapid API Hub.
@@ -53,7 +54,7 @@ The external actions that have been taken to support the use of Kilotest as an A
 
 ## Use cases
 
-The rationale for Kilotest as a connector to tools for language models is set forth in the `llms-full.txt` file and is not repeated here.
+The rationale for Kilotest as a collection of tools for language models is set forth in the `llms-full.txt` file and is not repeated here.
 
 Some common anticipated use cases for this role are:
 
@@ -68,11 +69,7 @@ Among these use cases, case 3 would make it feasible for the user to tell an AI 
 
 Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI platform capability. The commonality is: “I have a question; answer it.” If Kilotest can be employed as an expert for AI platforms in relevant cases, platforms will be more successful in satisfying that demand. At present this is a difficult problem because of platform limitations and a lack of standardization.
 
-## Strategy
-
-The Kilotest project is attempting to solve the just-described problem. That attempt follows the following strategy.
-
-### Increments
+## Implementation strategy
 
 Connector and tool discovery and utilization have been only partly standardized. Major differences in protocols exist among model and platform families. Therefore, small testable increments of improvement in the connector and tool functionality of Kilotest can best be defined by model and platform family and by use-case characteristics.
 
@@ -80,7 +77,11 @@ One benefit of such incrementalism is that, after the first increment succeeds, 
 
 Another benefit is that subsequent increments can be defined incrementally rather than in advance. Lessons learned from the work on each increment can inform the choice of what to work on next.
 
-#### Increment 1
+## Implementation history
+
+The Kilotest project has been attempting to solve the just-described problem. A chronology of this work follows.
+
+### Increment 1
 
 In the first increment, the objective was to make Anthropic Claude models use Kilotest to help them answer questions from developers using the Claude Desktop application for use case 3, where the code in question is already deployed as a public web page.
 
@@ -88,7 +89,7 @@ A locally installed MCP server, `@ivotoby/openapi-mcp-server`, was used. It turn
 
 The model behavior motivated an architectural change in the MCP server and improvements in the naming and description of the Kilotest tools before the next increment.
 
-#### Increment 2
+### Increment 2
 
 Increment 2 repeated the exercise of increment 1 with the `claude.ai` web application instead of Claude Desktop, and with the improvements indicated by increment 1 made.
 
@@ -105,7 +106,7 @@ The trial in increment 2 suggested some opportunities for further improvements:
 - Clearer instructions about the sequencing of tool calls
 - Addition of instructions to attribute the interpretive additions by the model to the model or its other sources rather than to Kilotest.
 
-#### Increment 3
+### Increment 3
 
 After the above-described improvements were made, a similar exercise, with the home page of a company named “CMT Services”, was performed again in Claude Desktop. In this case Claude Haiku 4.5 succeeded in recognizing the relevance of Kilotest and used its tools, though imperfectly. Instead of using Kilotest to check for an existing report on the page, the model searched for it in a cached file with:
 
@@ -137,7 +138,7 @@ The misbehavior of Claude Haiku suggested that further improvements in the instr
 - a warning not to use cached lists of available reports
 - stronger advice to avoid implicitly attributing interpretations, judgments, and advice to Kilotest.
 
-#### Increment 4
+### Increment 4
 
 The first trial in which the user asked about a page **without** an available report repeated the conditions of Increment 3, except for the web page in question and the model. The model here was Claude Haiku in Extended mode, an option available with `claude.ai` but not Claude Desktop.
 
@@ -160,7 +161,7 @@ The most notable fact was that Claude Haiku converted a long workflow to a short
 
 This result suggested that the instructions should be revised to describe, as a valid option, a short workflow ending with a recommendation to the user to get the test results by self-service after the model submits a testing recommendation.
 
-#### Increment 5
+### Increment 5
 
 In the next increment the AI platform was changed to [Perplexity Pro](https://www.perplexity.ai/) on the web. With the platform UI, two configuration steps were taken:
 
@@ -181,8 +182,35 @@ For both models, the same exercise was also attempted with the second configurat
 
 The [Perplexity documentation](https://www.perplexity.ai/help-center/en/articles/13915507-adding-custom-remote-connectors) states that as of now the installed Perplexity application for macOS does not support remote connectors.
 
-#### Increment 6
+### Increment 6
 
 Once the compatibility of Kilotest as a connector with AI platforms of two different vendors had been confirmed, the focus of work returned to completion of the missing endpoints of the API. The first was an endpoint that would let a model efficiently search for an available report about a particular web page.
 
-The new `summarizeQualityOfMatchingWebPages` tool provides inputs for fragments of a description and of a URL hostname of a web page and responds with summary data about all and only the available reports of pages that match at least one of those fragments, where matching means either including or being included by the provided fragment, case-insensitively.
+The new `summarizeQualityOfMatchingWebPages` tool provided inputs for fragments of a description and of a URL hostname of a web page and responds with summary data about all and only the available reports of pages that match at least one of those fragments, where matching means either including or being included by the provided fragment, case-insensitively.
+
+### Increment 7
+
+Further experimentation made it clear that Increment 6 had been a detour. The problem with Increment 6 was that it does not improve efficiency by eliminating the need to get a list of all reports. Models must get a list of all reports in order to be confident that the answer to the question “Is a report available yet?” is correct. Any algorithm that matches a page description and a URL with those of existing reports is error-prone, organization names change, website designs change, URLs change, and organizations are related to one another. Typically, a desired report does not yet exist. In that case, the model needs the full list of reports in order to understand the naming convention for pages and to adhere to that convention when submitting a request to have the page of interest tested.
+
+For this reason, the tool being developed in increment 6 was deleted.
+
+### Increment 8
+
+The next increment reorganized the API by placing API-related code into a new `api` directory.
+
+### Increment 9
+
+The collection of tools was enlarged to a total of eight tools:
+
+- listReports
+- listIssues
+- listViolators
+- listDiagnoses
+- getReport
+- requestRetest
+- requestTest
+- requestFeature
+
+## Increment 10
+
+In the next increment, API code was refactored and the tools were made more consistent with one another.

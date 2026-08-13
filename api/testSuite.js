@@ -111,13 +111,14 @@ const requestService = async () => {
   responseContent = body?.['response content'] ?? {};
   reportsBasics = responseContent?.['basics about all available reports'] ?? [];
   if (
-    responseContent.error
+    !reportsBasics.length
     || !Array.isArray(reportsBasics)
     || !reportsBasics.length
     || reportsBasics.some(
       reportBasics => reportBasics['how to get details about the report']?.method !== 'GET'
     )
   ) {
+    console.log(`reportsBasics: ${JSON.stringify(reportsBasics, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: List issues in one nonexistent report');
@@ -130,6 +131,7 @@ const requestService = async () => {
   if (
     !reportBasics.error || !reportBasics.error.includes('missing, unreadable, or not JSON')
   ) {
+    console.log(`reportBasics: ${JSON.stringify(reportBasics, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: List issues in one report');
@@ -137,6 +139,7 @@ const requestService = async () => {
   item = reportsBasics[Math.floor(reportsBasics.length * Math.random())];
   [timeStamp, jobID] = [item.timeStamp, item.jobID];
   if (!(timeStamp && jobID)) {
+    console.log('No timeStamp or no jobID');
     return;
   }
   path = `/api/listIssues/${timeStamp}/${jobID}`;
@@ -144,11 +147,12 @@ const requestService = async () => {
   responseContent = body?.['response content'] ?? {};
   const issuesBasics = responseContent?.['basics about all issues reported in the report'] ?? [];
   if (
-    responseContent.error
+    !issuesBasics.length
     || !Array.isArray(issuesBasics)
     || !issuesBasics.length
     || issuesBasics.some(item => !item.includes('impact on a user'))
   ) {
+    console.log(`issuesBasics: ${JSON.stringify(issuesBasics, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: List violators of one issue in one report');
@@ -159,13 +163,14 @@ const requestService = async () => {
   path = `/api/listViolators/${issueID}/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
   responseContent = body?.['response content'] ?? {};
-  const violatorsBasics = responseContent?.['basics about all elements exhibiting the issue'];
+  const violatorsBasics = responseContent?.['basics about all elements exhibiting the issue'] ?? [];
   if (
-    responseContent.error
+    !violatorsBasics.length
     || !Array.isArray(violatorsBasics)
     || !violatorsBasics.length
     || violatorsBasics.some(item => !item.includes('count of rule engines reporting'))
   ) {
+    console.log(`violatorsBasics: ${JSON.stringify(violatorsBasics, null, 2)}`);
     return;
   }
   console.log(
@@ -178,13 +183,14 @@ const requestService = async () => {
   path = `/api/listDiagnoses/${violatorID}/${issueID}/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
   responseContent = body?.['response content'] ?? {};
-  const diagnoses = responseContent?.['diagnoses of how the element exhibited the issue'];
+  const diagnoses = responseContent?.['diagnoses of how the element exhibited the issue'] ?? [];
   if (
-    responseContent.error
+    !diagnoses.length
     || !Array.isArray(diagnoses)
     || !diagnoses.length
     || diagnoses.some(item => !item.includes('severity of the violation'))
   ) {
+    console.log(`diagnoses: ${JSON.stringify(diagnoses, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: Get one report');
@@ -193,6 +199,7 @@ const requestService = async () => {
   responseContent = body?.['response content'] ?? {};
   const fullReport = responseContent?.['full report'] ?? {};
   if (responseContent.error || typeof fullReport !== 'object' || !fullReport.device) {
+    console.log('Full report request failed');
     return;
   }
   console.log('======================\nRequest: Make a test request with the GET method');
@@ -203,6 +210,7 @@ const requestService = async () => {
     'reason for testing the web page': 'Just testing'
   });
   if (!body.error?.message?.['Invalid service request']) {
+    console.log(`body: ${JSON.stringify(body, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: Request a test with a too short URL');
@@ -215,6 +223,7 @@ const requestService = async () => {
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
   if (!requestDetails.error?.includes('specified a URL for the page')) {
+    console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: Request a test');
@@ -230,6 +239,8 @@ const requestService = async () => {
     !requestDetails['reason why the page should be tested']
     || !requestDisposition['received and logged']
   ) {
+    console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
+    console.log(`requestDisposition: ${JSON.stringify(requestDisposition, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: Request a retest of a nonexistent report');
@@ -240,6 +251,7 @@ const requestService = async () => {
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
   if (!requestDetails.error?.includes['not an available report']) {
+    console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: Request a retest');
@@ -254,6 +266,8 @@ const requestService = async () => {
     !requestDetails['reason why the page should be retested']
     || !requestDisposition['received and logged']
   ) {
+    console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
+    console.log(`requestDisposition: ${JSON.stringify(requestDisposition, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: Make a feature request');
@@ -264,6 +278,7 @@ const requestService = async () => {
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
   if (!requestDetails.disposition?.['received and logged']) {
+    console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     return;
   }
   console.log('======================\nRequest: Results');

@@ -457,7 +457,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, i.e. if the service is invalid:
       else {
         // Report this.
-        await serveError({message: 'ERROR: Invalid service request'}, response, false);
+        await serveError({message: 'Invalid service request'}, response, false);
       }
     }
     // Otherwise, if it is for a tutorial image:

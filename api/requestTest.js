@@ -18,11 +18,11 @@ exports.response = async args => {
     'details about your request': {}
   };
   const whatLength = what.length;
-  // If the description is too short or too long:
-  if (whatLength < 10 || whatLength > 100) {
+  // If the description is empty or too long:
+  if (!whatLength || whatLength > 100) {
     // Add this to the response content.
     responseContent['details about your request'] = {
-      error: 'request invalid: your description of the page is not between 10 and 100 characters long'
+      error: 'request invalid: your description of the page is not between 1 and 100 characters long'
     };
   }
   // Otherwise, i.e. if the URL is too short or too long::

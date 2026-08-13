@@ -34,7 +34,7 @@ const port = hostParts[2] || (scheme === 'https' ? 443 : 80);
 
 // FUNCTIONS
 
-// Gets and outputs the body of a response.
+// Gets, parses into an object, and returns the body of a response.
 const getBody = async response => {
   const body = await new Promise(resolve => {
     // Initialize an array of data from the response.
@@ -82,8 +82,8 @@ const getRequestOptions = (path, method = 'GET') => ({
 const submitRequest = async (path, method, requestBody = null) => new Promise(resolve => {
   console.log(`Making ${scheme} ${method} request on port ${port} to ${host}${path}`);
   client.request(getRequestOptions(path, method), async response => {
-    const responseContent = await getBody(response);
-    resolve(responseContent);
+    const responseBody = await getBody(response);
+    resolve(responseBody);
   })
   .on('error', error => {
     console.log(`ERROR submitting request (${JSON.stringify(error, null, 2)})`);
@@ -99,6 +99,7 @@ const requestService = async () => {
   let method;
   let path;
   let reportsBasics;
+  let requestDetails;
   let responseContent;
   let timeStamp;
   console.log('======================\nRequest: List all available reports');
@@ -111,7 +112,7 @@ const requestService = async () => {
     responseContent.error
     || !Array.isArray(reportsBasics)
     || !reportsBasics.length
-    || reportsBasics.some(item => !item.includes('page with no report be tested'))
+    || reportsBasics.some(item => !item.includes('get details about the report'))
   ) {
     return;
   }
@@ -200,18 +201,29 @@ const requestService = async () => {
   if (!responseContent.error) {
     return;
   }
-  console.log('======================\nRequest: Make a test request');
+  console.log('======================\nRequest: Request a test with a too short URL');
+  method = 'POST';
+  body = await submitRequest(path, method, {
+    description: 'Zilch',
+    URL: 'https://a.b',
+    reason: 'Just because'
+  });
+  requestDetails = body?.['response content']?.['details about your request'] ?? {};
+  if (!requestDetails.error || !requestDetails.includes('specified a URL for the page')) {
+    return;
+  }
+  console.log('======================\nRequest: Request a test');
   method = 'POST';
   body = await submitRequest(path, method, {
     description: 'Organization that does not exist',
     URL: 'https://nonexistentorg.com',
-    reason: 'Just testing'
+    reason: 'I have no good reason for wanting this page to be tested'
   });
-  responseContent = body?.['response content'] ?? {};
-  if (responseContent.error || !responseContent['reason why the page should be tested']) {
+  requestDetails = body?.['response content']?.['details about your request'] ?? {};
+  if (requestDetails.error || !requestDetails['reason why the page should be tested']) {
     return;
   }
-  console.log('======================\nRequest: Make a retest request');
+  console.log('======================\nRequest: Request a retest');
   path = `/api/requestRetest/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method, {
     reason: 'Just retesting'

@@ -151,7 +151,7 @@ const requestService = async () => {
     !issuesBasics.length
     || !Array.isArray(issuesBasics)
     || !issuesBasics.length
-    || issuesBasics.some(item => !item.includes('impact on a user'))
+    || issuesBasics.some(issueBasics => !issueBasics['impact on a user'])
   ) {
     console.log(`issuesBasics: ${JSON.stringify(issuesBasics, null, 2)}`);
     return;
@@ -169,7 +169,9 @@ const requestService = async () => {
     !violatorsBasics.length
     || !Array.isArray(violatorsBasics)
     || !violatorsBasics.length
-    || violatorsBasics.some(item => !item.includes('count of rule engines reporting'))
+    || violatorsBasics.some(violatorBasics => !violatorBasics[
+      'count of rule engines reporting that the element exhibited the issue'
+    ])
   ) {
     console.log(`violatorsBasics: ${JSON.stringify(violatorsBasics, null, 2)}`);
     return;

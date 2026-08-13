@@ -98,6 +98,7 @@ const requestService = async () => {
   let jobID;
   let method;
   let path;
+  let reportBasics;
   let reportsBasics;
   let requestDetails;
   let requestDisposition;
@@ -125,8 +126,9 @@ const requestService = async () => {
   path = `/api/listIssues/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method);
   responseContent = body?.['response content'] ?? {};
+  reportBasics = responseContent?.['basics about the report'] ?? {};
   if (
-    !responseContent.error || !responseContent.error.includes('missing, unreadable, or not JSON')
+    !reportBasics.error || !reportBasics.error.includes('missing, unreadable, or not JSON')
   ) {
     return;
   }

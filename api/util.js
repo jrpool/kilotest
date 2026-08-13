@@ -8,10 +8,11 @@
 const {sendAlert} = require('../alerts');
 const {
   getAgoDays,
+  getLatestReportExtracts,
   getNowStamp,
   getPlainText,
   getRandomString,
-  getReportsData,
+  getReportExtract,
   getReportStats,
   issuesClassification,
   objectSort,
@@ -78,24 +79,18 @@ exports.getReportBasics = async (timeStamp, jobID) => {
       error: `Report ${timeStamp}-${jobID} could not be retrieved.`
     };
   }
-  // Get data on the available reports.
-  const reportsData = await getReportsData();
-  // Get data on the report.
-  const reportData = reportsData.find(data => data.timeStamp === timeStamp && data.jobID === jobID);
+  // Get an extract of the report.
+  const reportExtract = await getReportExtract(timeStamp, jobID);
   // If no such report exists:
-  if (!reportData) {
+  if (reportExtract.error) {
     // Return this.
-    return {
-      error: `Report ${timeStamp}-${jobID} does not exist.`
-    };
+    return reportExtract;
   }
-  const {url, what} = reportData;
-  // Otherwise, i.e. if the report exists, get data on all available reports on the page.
-  const pageReportsData = reportsData.filter(data => data.what === what && data.url === url);
-  const lastPageReportData = pageReportsData.pop();
-  // Get whether this report has been superseded.
-  const isSuperseded = lastPageReportData.timeStamp !== timeStamp
-  || lastPageReportData.jobID !== jobID;
+  const {url, what} = reportExtract;
+  const latestReportExtracts = await getLatestReportExtracts();
+  // Otherwise, i.e. if the report exists, get whether this report has been superseded.
+  const isSuperseded = latestReportExtracts
+  .every(extract => extract.timeStamp !== timeStamp || extract.jobID !== jobID);
   const {reportTime} = reportStats;
   // Get the basics about the report.
   const basics = {

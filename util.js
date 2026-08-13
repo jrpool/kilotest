@@ -801,9 +801,7 @@ exports.getReportExtract = async (timeStamp, jobID) => {
   // Get the extract of all available reports.
   const reportsExtract = await getReportsExtract();
   // Get the extract of the report from it.
-  const reportExtract = Object
-  .values(reportsExtract)
-  .find(extract => extract.timeStamp === timeStamp && extract.jobID === jobID);
+  const reportExtract = reportsExtract[`${timeStamp}-${jobID}`];
   // If it exists:
   if (reportExtract) {
     // Return it.

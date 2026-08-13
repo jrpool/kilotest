@@ -94,7 +94,6 @@ const submitRequest = async (path, method, requestBody = null) => new Promise(re
 // Submits requests to the specified Kilotest host.
 const requestService = async () => {
   let body;
-  let item;
   let jobID;
   let method;
   let path;
@@ -138,7 +137,7 @@ const requestService = async () => {
   const reportsBasicsIndex = Math.floor(reportsBasics.length * Math.random());
   // Choose one report at random.
   reportBasics = reportsBasics[reportsBasicsIndex];
-  [timeStamp, jobID] = [reportBasics.timeStamp, reportBasics.jobID];
+  [timeStamp, jobID] = reportBasics.identifier?.split('-') || [null, null];
   if (!(timeStamp && jobID)) {
     console.log(`reportBasicsIndex: ${reportsBasicsIndex}`);
     console.log(`reportBasics: ${JSON.stringify(reportBasics, null, 2)}`);

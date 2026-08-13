@@ -695,29 +695,6 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
   };
 };
-// Returns data from a report.
-const getReportExtract = exports.getReportExtract = async reportFileName => {
-  try {
-    // Get the content of the report file.
-    const reportJSON = await fs.readFile(path.join(reportsPath, reportFileName), 'utf8');
-    // Get the report.
-    const report = JSON.parse(reportJSON);
-    // Get its data.
-    const data = {
-      timeStamp: report.id.split('-')[0],
-      jobID: report.id.split('-')[1],
-      what: report.target.what,
-      url: report.target.url,
-      reportTime: `20${report.jobData.endTime}Z`
-    };
-    // Return the data.
-    return data;
-  }
-  catch (error) {
-    console.error(`Getting data from report file ${reportFileName} failed (${error.message})`);
-    return null;
-  }
-};
 // Returns the creation time and size of a report.
 const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
   const reportStat = await fs.stat(
@@ -738,14 +715,6 @@ exports.isHidden = async (timeStamp, jobID) => {
   // Return whether the report is among them.
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
-// Returns whether a report is available on a page with a description or URL.
-exports.isReportAvailable = async (what, url) => {
-  const reportsExtract = await getReportsExtract();
-  const extracts = Object.values(reportsExtract);
-  const whats = extracts.map(extract => extract.what);
-  const miniURLs = extracts.map(extract => minifyURL(extract.url));
-  return whats.includes(what) || miniURLs.includes(minifyURL(url));
-};
 // Creates, saves, and returns an extract of all available reports.
 const makeReportsExtract = exports.makeReportsExtract = async () => {
   // Initialize the reports data.
@@ -754,18 +723,28 @@ const makeReportsExtract = exports.makeReportsExtract = async () => {
   const reportFileNames = await fs.readdir(reportsPath);
   // For each of them:
   for (const reportFileName of reportFileNames) {
-    // Get its extract.
-    const reportExtract = await getReportExtract(reportFileName);
-    // If this succeeded:
-    if (reportExtract) {
-      const jobName = reportFileName.slice(0, -5);
-      // Add the report extract to the reports extract.
-      reportsExtract[jobName] = reportExtract;
-    }
+    // Get its content.
+    const reportJSON = await fs.readFile(path.join(reportsPath, reportFileName), 'utf8');
+    // Get the object that it represents.
+    const report = JSON.parse(reportJSON);
+    const {target, jobData} = report;
+    const jobName = reportFileName.slice(0, -5);
+    const [timeStamp, jobID] = jobName.split('-');
+    const {what, url} = target;
+    // Get an extract from it.
+    const reportExtract = {
+      timeStamp,
+      jobID,
+      what,
+      url,
+      reportTime: new Date(`20${jobData.endTime}Z`).toISOString()
+    };
+    // Add the report extract to the reports extract.
+    reportsExtract[jobName] = reportExtract;
   }
   // Ensure the data directory exists.
   await fs.mkdir(dbPath, {recursive: true});
-  // Save the reports extract.
+  // Save the extract of the reports.
   await fs.writeFile(reportsExtractPath, getJSON(reportsExtract));
   // Return it.
   return reportsExtract;
@@ -792,6 +771,18 @@ const getReportsExtract = exports.getReportsExtract = async () => {
   // Return the extract.
   return reportsExtract;
 };
+// Returns extracts of all available reports.
+const getReportExtracts = exports.getReportExtracts = async () => {
+  const reportsExtract = await getReportsExtract();
+  return Object.values(reportsExtract);
+};
+// Returns whether a report is available on a page with a description or URL.
+exports.isReportAvailable = async (what, url) => {
+  const reportExtracts = await getReportExtracts();
+  const whats = reportExtracts.map(reportExtract => reportExtract.what);
+  const miniURLs = reportExtracts.map(reportExtract => minifyURL(reportExtract.url));
+  return whats.includes(what) || miniURLs.includes(minifyURL(url));
+};
 // Gets an extract of the latest available report on each page.
 exports.getLatestReportsExtract = async () => {
   // Get an extract of all available reports.
@@ -815,6 +806,24 @@ exports.getLatestReportsExtract = async () => {
   });
   // Return an extract of those reports.
   return latestReportsExtract;
+};
+// Gets from the extract of all available reports and returns an extract of a report.
+exports.getReportExtract = async (timeStamp, jobID) => {
+  // Get the extract of all available reports.
+  const reportsExtract = await getReportsExtract();
+  // Get the extract of the report from it.
+  const reportExtract = Object
+  .values(reportsExtract)
+  .find(extract => extract.timeStamp === timeStamp && extract.jobID === jobID);
+  // If it exists:
+  if (reportExtract) {
+    // Return it.
+    return reportExtract;
+  }
+  // Otherwise, i.e. if it does not exist, return this.
+  return {
+    error: `No report ${timeStamp}-${jobID} is available`
+  };
 };
 // Gets the descriptions of multi-report pages.
 exports.getMultiReportWhats = async () => {

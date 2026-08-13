@@ -197,8 +197,7 @@ const requestService = async () => {
     'URL of the web page': 'https://nonexistentorg.com',
     'reason for testing the web page': 'Just testing'
   });
-  responseContent = body?.['response content'] ?? {};
-  if (!responseContent.error) {
+  if (!body.error?.message?.['Invalid service request']) {
     return;
   }
   console.log('======================\nRequest: Request a test with a too short URL');
@@ -208,19 +207,30 @@ const requestService = async () => {
     URL: 'https://a.b',
     reason: 'Just because'
   });
-  requestDetails = body?.['response content']?.['details about your request'] ?? {};
-  if (!requestDetails.error || !requestDetails.includes('specified a URL for the page')) {
+  responseContent = body?.['response content'] ?? {};
+  requestDetails = responseContent['details about your request'] ?? {};
+  if (!requestDetails.error?.includes('specified a URL for the page')) {
     return;
   }
   console.log('======================\nRequest: Request a test');
-  method = 'POST';
   body = await submitRequest(path, method, {
     description: 'Organization that does not exist',
     URL: 'https://nonexistentorg.com',
     reason: 'I have no good reason for wanting this page to be tested'
   });
-  requestDetails = body?.['response content']?.['details about your request'] ?? {};
-  if (requestDetails.error || !requestDetails['reason why the page should be tested']) {
+  responseContent = body?.['response content'] ?? {};
+  requestDetails = responseContent['details about your request'] ?? {};
+  if (!requestDetails['reason why the page should be tested']) {
+    return;
+  }
+  console.log('======================\nRequest: Request a retest of a nonexistent report');
+  path = `/api/requestRetest/${timeStamp}/xyz`;
+  body = await submitRequest(path, method, {
+    reason: 'Just retesting what does not exist'
+  });
+  responseContent = body?.['response content'] ?? {};
+  requestDetails = responseContent['details about your request'] ?? {};
+  if (!requestDetails.error?.includes['not an available report']) {
     return;
   }
   console.log('======================\nRequest: Request a retest');
@@ -229,7 +239,8 @@ const requestService = async () => {
     reason: 'Just retesting'
   });
   responseContent = body?.['response content'] ?? {};
-  if (responseContent.error || !responseContent['reason why the page should be retested']) {
+  requestDetails = responseContent['details about your request'] ?? {};
+  if (!requestDetails['reason why the page should be retested']) {
     return;
   }
   console.log('======================\nRequest: Make a feature request');
@@ -238,7 +249,8 @@ const requestService = async () => {
     feature: 'Do the impossible'
   });
   responseContent = body?.['response content'] ?? {};
-  if (responseContent.error || !responseContent['manager notified']) {
+  requestDetails = responseContent['details about your request'] ?? {};
+  if (!requestDetails.disposition?.['received and logged']) {
     return;
   }
   console.log('======================\nRequest: Results');

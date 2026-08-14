@@ -711,6 +711,7 @@ const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
 };
 // Returns whether a report is hidden.
 exports.isHidden = async (timeStamp, jobID) => {
+  await fs.mkdir(hiddenReportsPath, {recursive: true});
   // Get the names of the hidden report files.
   const hiddenReportFileNames = await fs.readdir(hiddenReportsPath);
   // Return whether the report is among them.

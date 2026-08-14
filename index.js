@@ -18,6 +18,7 @@ const {
   getReport,
   getRecs,
   getReportPath,
+  hiddenReportsPath,
   isHidden,
   isReportAvailable,
   isTimeStamp,
@@ -803,7 +804,7 @@ const requestHandler = async (request, response) => {
 
 const serve = async (protocolModule, options) => {
   // Create any missing directories.
-  for (const path of [queuePath, claimedPath, failedPath, reportsPath]) {
+  for (const path of [queuePath, claimedPath, failedPath, hiddenReportsPath, reportsPath]) {
     await fs.mkdir(path, {recursive: true});
   }
   const server = protocolModule === 'https'

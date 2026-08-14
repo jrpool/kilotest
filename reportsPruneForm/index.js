@@ -26,7 +26,7 @@ exports.answer = async (_, search) => {
           // Delete it.
           await fs.unlink(path.join(reportsPath, `${jobName}.json`));
         }
-        // Update the data on the available reports.
+        // Update the extract of the available reports.
         await makeReportsExtract();
       }
       // If this failed:

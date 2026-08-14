@@ -20,13 +20,23 @@ exports.answer = async (_, search) => {
   if (jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
-      // For each report to be deleted:
-      for (const jobName of jobNames) {
-        // Delete it.
-        await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+      try {
+        // For each report to be deleted:
+        for (const jobName of jobNames) {
+          // Delete it.
+          await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+        }
+        // Update the extract of the available reports.
+        await makeReportsExtract();
       }
-      // Update the extract of the available reports.
-      await makeReportsExtract();
+      // If this failed:
+      catch (error) {
+        // Return why.
+        return {
+          status: 'error',
+          message: `Deleting sole reports failed (${error.message})`
+        }
+      }
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {

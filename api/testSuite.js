@@ -238,7 +238,7 @@ const requestService = async () => {
   requestDisposition = responseContent['disposition of your request'] ?? {};
   if (
     !requestDetails['reason why the page should be tested']
-    || !requestDisposition['received and logged']
+    || !requestDisposition['what happens next']?.includes('1 hour to 1 day')
   ) {
     console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     console.log(`requestDisposition: ${JSON.stringify(requestDisposition, null, 2)}`);
@@ -247,11 +247,11 @@ const requestService = async () => {
   console.log('======================\nRequest: Request a retest of a nonexistent report');
   path = `/api/requestRetest/${timeStamp}/xyz`;
   body = await submitRequest(path, method, {
-    reason: 'Just retesting what does not exist'
+    reason: 'It would be cool to retest what does not exist'
   });
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
-  if (!requestDetails.error?.includes['not an available report']) {
+  if (!requestDetails.error?.includes('not an available report')) {
     console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     return;
   }

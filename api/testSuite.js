@@ -209,12 +209,8 @@ const requestService = async () => {
   }
   console.log('======================\nRequest: Make a test request with the GET method');
   path = '/api/requestTest';
-  body = await submitRequest(path, method, {
-    'description of the web page': 'Organization that does not exist',
-    'URL of the web page': 'https://nonexistentorg.com',
-    'reason for testing the web page': 'Just testing'
-  });
-  if (!body.error?.message?.['Invalid service request']) {
+  body = await submitRequest(path, method);
+  if (body.error?.message !== 'Invalid service request') {
     console.log(`body: ${JSON.stringify(body, null, 2)}`);
     return;
   }

@@ -264,7 +264,8 @@ exports.getPOSTData = request => new Promise(resolve => {
     bodyParts.push(chunk);
   });
   request.on('end', () => {
-    const contentType = request.headers['content-type'];
+    const {headers} = request;
+    const contentType = headers['content-type'] || headers['body-type'] || '';
     if (contentType.startsWith('application/json')) {
       const bodyJSON = bodyParts.join('');
       const body = JSON.parse(bodyJSON);

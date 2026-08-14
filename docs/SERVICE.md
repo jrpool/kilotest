@@ -282,7 +282,7 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 ### Report protection
 
-Jobs and reports are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison.
+Jobs and reports are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. Therefore, reports risk deletion unless duplicates are made externally.
 
 Reports created on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created two _buckets_ named `kilotest-reports` and `kilotest-hidden-reports`, and has configured the buckets with read-write permissions, access keys and a single allowed IP address.
 

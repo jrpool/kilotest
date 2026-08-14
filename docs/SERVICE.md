@@ -280,6 +280,32 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 ## Security
 
+### Report protection
+
+Jobs and reports are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison.
+
+Reports created on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created two _buckets_ named `kilotest-reports` and `kilotest-hidden-reports`, and has configured the buckets with read-write permissions, access keys and a single allowed IP address.
+
+The server host uses `rclone` for file synchronization with external storage locations. Two files on the server host enable `rclone` for use by Kilotest. One file is `/home/linuxuser/.config/rclone/rclone.conf`. Its content, with secrets replaced, is:
+
+```ini
+[r2]
+type = s3
+provider = Cloudflare
+access_key_id = <access_key_id>
+secret_access_key = <secret_access_key>
+endpoint = https://<account_id>.r2.cloudflarestorage.com
+acl = private
+no_head = true
+```
+
+The other file is the `crontab` configuration file for `linuxuser`, which is managed with `crontab -e`. The commands in that file (shown with `crontab -l`) are:
+
+```crontab
+11 19 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/hiddenReports r2:kilotest-hidden-reports/ -v > /home/linuxuser/kilotest-to-r2.log 2>&1
+12 19 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/reports r2:kilotest-reports/ -v >> /home/linuxuser/kilotest-to-r2.log 2>&1
+```
+
 ### Possible future Testaro integration
 
 Kilotest uses Testaro to run jobs. In previous versions of Kilotest, Testaro was a dependency. It is currently not a dependenc. Instead, Testaro instances are installed on one or more other hosts, and each instance polls Kilotest to ask for jobs to run.
@@ -292,7 +318,7 @@ Testaro uses Playwright to launch and control headless browsers, often `chromium
 
 When either Playwright or Puppeteer launches a `chromium` browser, in most environments it is [sandboxed](https://www.geeksforgeeks.org/ethical-hacking/what-is-browser-sandboxing/). Sandboxing is a security feature that prevents the browser from accessing potentially unsafe system resources. But in the Ubuntu Linux operating system that was installed on the Vultr Cloud Compute host a sandboxed browser requires an [unprivileged user namespace](https://ubuntu.com/blog/ubuntu-23-10-restricted-unprivileged-user-namespaces), and when Ubuntu was installed its configuration disallowed such namespaces. The file `/etc/sysctl.d/99-kilotest-userns.conf` with the content `kernel.apparmor_restrict_unprivileged_userns = 1` prohibited unprivileged user namespaces and thereby made sandboxed browsers unlaunchable.
 
-### Potential modification
+#### Potential modification
 
 One modification to cope with this prohibition on the Vultr Cloud Compute host would be to configure Playwright and Puppeteer to launch `chromium` non-sandboxed. In both cases, launch arguments `'--no-sandbox'` and `'--disable-setuid-sandbox'` are available to specify this.
 
@@ -300,7 +326,7 @@ One modification to cope with this prohibition on the Vultr Cloud Compute host w
 - For the `qualWeb` tool, this would be done in the Testaro `tests/qualweb.js` file, where the `qualWeb.start` method is called with an options argument. Its `args` array property would include `'--no-sandbox'` and `'--disable-setuid-sandbox'`.
 - The `ibm` tool, too, could launch a Puppeteer `chromium` browser, if page content instead of a Playwright page were passed to the `accessibilityChecker.getCompliance` method, or if the implementation of the tool were changed in the future. For anticipation of such a case, the Testaro `aceconfig.js` file, of which a copy has been created at the root of the Kilotest project, would be modified. That file defines a `module.exports` object with a `puppeteerArgs` property, and, `--no-sandbox` and `--disable-setuid-sandbox` would be added to its array value.
 
-### Current modification
+#### Current modification
 
 However, non-sandboxed browsers are less secure than sandboxed ones, particularly when there is no restriction on who can use the service and what web pages they can test with it. Such restrictions are currently in place, but still permit testing of arbitrary web pages and may be relaxed in the future. Therefore, the potential modification described above would introduce nontrivial risk. An alternative solution was adopted instead. In it, the `chromium` configuration was left unchanged.
 

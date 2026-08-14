@@ -37,7 +37,7 @@ exports.answer = async (url, what, authCode) => {
     );
     console.log(`Retest queued for ${what} as job ${jobName}`);
     // Isolate this revision.
-    recsLock(async () => {
+    await recsLock(async () => {
       // Get the recommendations.
       const recs = await getRecs();
       // Delete the recommendations to retest the target.

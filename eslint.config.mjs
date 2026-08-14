@@ -8,19 +8,29 @@ import {defineConfig} from "eslint/config";
 export default defineConfig([
   {
     ignores: [
-      "IDEAS.md",
+      "docs/IDEAS.md",
       "package-lock.json"
     ]
   },
   {
     files: ["**/*.{js,mjs,cjs}"],
-    plugins: { js },
+    plugins: {
+      js
+    },
     extends: ["js/recommended"],
     languageOptions: {
       globals: globals.node
     },
     rules: {
-      "no-control-regex": "off"
+      "no-control-regex": "off",
+      "rest-spread-spacing": ["error", "never"],
+      "space-unary-ops": [
+        "error",
+        {
+          "words": true,
+          "nonwords": false
+        }
+      ]
     }
   },
   {

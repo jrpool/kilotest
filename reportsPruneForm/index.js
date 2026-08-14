@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportData, logsPath, reportsPath} = require('../util');
+const {getReportData, makeReportsExtract, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -16,21 +16,31 @@ exports.answer = async (_, search) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
-  // If the form has been displayed by itself after a submission and any reports are to be deleted:
+  // If the form has displayed itself after a submission and any reports are to be deleted:
   if (jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
-      // For each report to be deleted:
-      for (const jobName of jobNames) {
-        // Delete it.
-        await fs.unlink(path.join(reportsPath, `${jobName}.json`));
-        // Delete its log.
-        await fs.unlink(path.join(logsPath, `${jobName}.json`));
+      try {
+        // For each report to be deleted:
+        for (const jobName of jobNames) {
+          // Delete it.
+          await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+        }
+        // Update the extract of the available reports.
+        await makeReportsExtract();
+      }
+      // If this failed:
+      catch (error) {
+        // Return why.
+        return {
+          status: 'error',
+          message: `Deleting superseded reports failed (${error.message})`
+        }
       }
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {
-      // Report the error.
+      // Return this.
       return {
         status: 'error',
         message: 'Invalid authorization code'
@@ -51,7 +61,7 @@ exports.answer = async (_, search) => {
       // Return why.
       return {
         status: 'error',
-        message: error
+        message: error.message
       }
     }
     // Otherwise, i.e. if it succeeded, add the summary to the array.

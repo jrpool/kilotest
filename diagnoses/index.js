@@ -64,7 +64,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.testInfo = testInfo;
   query.issue = issues[issueID]?.summary;
   // If adding the issue summary failed:
-  if (! query.issue) {
+  if (!query.issue) {
     // Populate the query with the reason.
     query.error = 'Issue not found';
     // Stop populating the query.
@@ -77,7 +77,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.priority = getWeightName(weight);
   query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
   query.tagName = tagName || 'HTML';
-  if (text && ! ['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
+  if (text && !['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
     const textString = text.split('\n').join(' … ');
     query.text = `<q>${htmlSafe(textString)}</q>`;
   }

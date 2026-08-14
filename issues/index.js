@@ -7,14 +7,12 @@
 
 const {sendAlert} = require('../alerts');
 const {
-  annotateReport,
+  getLatestReportExtracts,
   getReport,
   getToolNamesString,
-  getLogs,
   getWCAGLink,
   getWeightName,
   objectSort,
-  ruleIDs
 } = require('../util');
 const {issues} = require('testilo/procs/score/tic');
 const fs = require('fs/promises');
@@ -23,20 +21,19 @@ const path = require('path');
 // FUNCTIONS
 
 // Gets summary data on the issues reported in a set of reports.
-const getIssuesSummary = async logs => {
+const getIssuesSummary = async () => {
   // Initialize the summary.
-  const summary = {};
+  const summary = {
+    totalCount: 0,
+    issues: []
+  };
   // Initialize data for a summary.
   const issuesData = {};
-  // For each log of a report to be inspected:
-  for (const log of logs) {
-    const {annotated, jobName} = log;
-    const [timeStamp, jobID] = jobName.split('-');
-    // If the corresponding report is not yet annotated:
-    if (! annotated) {
-      // Annotate it and mark it as annotated in the log.
-      await annotateReport(ruleIDs, timeStamp, jobID);
-    }
+  // Get extracts of the latest available report on each page.
+  const latestReportExtracts = await getLatestReportExtracts();
+  // For each of them:
+  for (const reportExtract of latestReportExtracts) {
+    const {timeStamp, jobID} = reportExtract;
     // Get the corresponding report.
     const report = await getReport(timeStamp, jobID);
     const {acts = [], error} = report;
@@ -68,9 +65,6 @@ const getIssuesSummary = async logs => {
       }
     });
   }
-  // Initialize the summary properties.
-  summary.totalCount = 0;
-  summary.issues = [];
   // For each issue:
   Object.entries(issuesData).forEach(([issueID, data]) => {
     const {count, reporters} = data;
@@ -109,10 +103,8 @@ const getIssuesSummary = async logs => {
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  // Get the logs of the latest reports on the tested targets.
-  const targetLogs = (await getLogs()).filter(log => ! log.superseded);
   // Get summary data on the issues.
-  const issuesSummary = await getIssuesSummary(targetLogs);
+  const issuesSummary = await getIssuesSummary();
   // If this failed:
   if (issuesSummary.error) {
     // Populate the query with the reason.
@@ -160,7 +152,7 @@ const populateQuery = async query => {
       }
     });
     lines.push(`${margin}</ul>`);
-    if (! existsIssue) {
+    if (!existsIssue) {
       lines.push(`${margin}<p>No issues with this priority.</p>`);
     }
   });

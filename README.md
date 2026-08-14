@@ -1,10 +1,10 @@
 # Kilotest
 
-An ensemble testing service with a focus on accessibility
+An ensemble testing and reporting service for front-end web quality
 
 ## Features
 
-This application uses an ensemble of 10 rule engines to test public web pages for front-end quality (i.e. accessibility, usability, and conformity to standards).
+This application uses an ensemble of 10 rule engines to test public web pages for front-end quality (i.e. accessibility, usability, and standards conformity).
 
 The testing paradigm employed by Kilotest is discussed in these papers:
 
@@ -12,7 +12,9 @@ The testing paradigm employed by Kilotest is discussed in these papers:
 - [Testaro: Efficient Ensemble Testing for Web Accessibility](https://arxiv.org/abs/2309.10167)
 - [Accessibility Metatesting: Comparing Nine Testing Tools](https://arxiv.org/abs/2304.07591)
 
-Kilotest acts as a server with human and agent users and with one or more testing agents that obtain jobs from Kilotest and do the actual testing. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package.
+Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access.
+
+Testing for Kilotest is performed by one or more testing agents that obtain jobs from Kilotest, perform them, and send reports of the results back to Kilotest. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package.
 
 An active production instance of Kilotest may require multiple testing agents to handle the load, because testing one web page typically takes about 3 minutes and agents test only one page at a time.
 
@@ -45,4 +47,4 @@ See the `SERVICE.md` file for instructions on how to make Kilotest a service.
 
 ## Using Kilotest as an AI tool
 
-See the `AI-TOOL.md` file for information about the configuration of Kilotest as an AI tool.
+See the `AI-TOOLS.md` file for information about the configuration of Kilotest as a collection of AI tools.

@@ -141,23 +141,23 @@
       }
       @media print {
         /* ── Layout ── */
-        body { font-size: 11pt; }
-        main { max-width: none; padding: 0; }
+        body {font-size: 11pt;}
+        main {max-width: none; padding: 0;}
 
         /* ── Hide elements that serve no purpose on a printed page ── */
         .skip-link,
         .tutorial-nav,
         #comment-form,
         #comment-diagnosis,
-        #lesson1-quiz button { display: none; }
+        #lesson1-quiz button {display: none;}
 
         /* ── Page breaks: start each h2 section, h3 section, and h4 subsection on a new page ── */
-        section.tutorial-section { break-before: page; }
-        section.tutorial-section > section { break-before: page; }
-        h3, h4 { break-before: page; }
+        section.tutorial-section {break-before: page;}
+        section.tutorial-section > section {break-before: page;}
+        h3, h4 {break-before: page;}
 
         /* ── Keep headings attached to the content that follows them ── */
-        h2, h3, h4 { break-after: avoid; }
+        h2, h3, h4 {break-after: avoid;}
 
         /* ── Avoid splitting self-contained blocks across pages ── */
         pre,
@@ -165,15 +165,15 @@
         .ai-output,
         .note,
         dl.compare,
-        .knowledge-check { break-inside: avoid; }
+        .knowledge-check {break-inside: avoid;}
 
         /* ── Force all details elements open so their content prints ── */
-        details { display: block; }
-        details > * { display: block; }
-        details > summary::marker { content: ''; }
+        details {display: block;}
+        details > * {display: block;}
+        details > summary::marker {content: '';}
 
         /* ── Print the href after external links as a reference ── */
-        a[href^="http"]::after { content: ' (' attr(href) ')'; font-size: 0.8em; }
+        a[href^="http"]::after {content: ' (' attr(href) ')'; font-size: 0.8em;}
       }
     </style>
   </head>

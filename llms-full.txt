@@ -156,7 +156,7 @@ More information about Kilotest features and internals:
 
 ### For language models and AI platforms
 
-- [AI-TOOL file](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOL.md)
+- [AI-TOOLS file](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOLS.md)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
 - [Tool caller for testing](https://github.com/jrpool/kilotest/blob/main/researchAgent.js)
 

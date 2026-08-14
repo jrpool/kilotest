@@ -8,10 +8,8 @@ node_modules/
 .DS_Store
 
 # Transactional data
-logs/
+db/
 results/
-jobs/
-reports/
 ai0Balance.json
 tutorial/comments.json
 

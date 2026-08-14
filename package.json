@@ -1,12 +1,14 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "38.2.2",
-  "description": "An ensemble testing service with a focus on accessibility",
+  "version": "39.0.0",
+  "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
   "scripts": {
     "start": "node index",
-    "lint": "npx eslint",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "npx eslint && npx markdownlint-cli2",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:api": "node api/testSuite",
+    "generate:openapi": "node scripts/generate-openapi"
   },
   "repository": {
     "type": "git",
@@ -20,7 +22,8 @@
   "author": "Jonathan Robert Pool <pool@jpdev.pro>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jrpool/kilotest/issues"
+    "url": "https://github.com/jrpool/kilotest/issues",
+    "email": "info@kilotest.com"
   },
   "homepage": "https://github.com/jrpool/kilotest",
   "dependencies": {
@@ -30,12 +33,16 @@
     "zod": "*"
   },
   "devDependencies": {
-    "@eslint/css": "^1.0.0",
-    "@eslint/js": "^10.0.1",
-    "@eslint/json": "^1.1.0",
-    "@eslint/markdown": "^7.5.1",
-    "eslint": "^10.0.3",
-    "globals": "^17.4.0"
+    "@eslint/css": "*",
+    "@eslint/js": "*",
+    "@eslint/json": "*",
+    "@eslint/markdown": "*",
+    "@redocly/cli": "*",
+    "eslint": "*",
+    "globals": "*",
+    "js-yaml": "*",
+    "markdownlint-cli2": "*",
+    "zod-openapi": "*"
   },
   "allowScripts": {
     "fsevents@2.3.2": true

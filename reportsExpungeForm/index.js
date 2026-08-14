@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportData, logsPath, reportsPath} = require('../util');
+const {getReportData, makeReportsExtract, objectSort, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -20,12 +20,22 @@ exports.answer = async (_, search) => {
   if (jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
-      // For each report to be deleted:
-      for (const jobName of jobNames) {
-        // Delete it.
-        await fs.unlink(path.join(reportsPath, `${jobName}.json`));
-        // Delete its log.
-        await fs.unlink(path.join(logsPath, `${jobName}.json`));
+      try {
+        // For each report to be deleted:
+        for (const jobName of jobNames) {
+          // Delete it.
+          await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+        }
+        // Update the extract of the available reports.
+        await makeReportsExtract();
+      }
+      // If this failed:
+      catch (error) {
+        // Return why.
+        return {
+          status: 'error',
+          message: `Deleting sole reports failed (${error.message})`
+        }
       }
     }
     // Otherwise, i.e. if the authorization code is invalid:
@@ -61,13 +71,9 @@ exports.answer = async (_, search) => {
       url
     });
   }
-  // Sort the summaries by URL and then by time stamp.
-  reportSpecs.sort((a, b) => {
-    if (a.url === b.url) {
-      return a.timeStamp.localeCompare(b.timeStamp);
-    }
-    return a.url.localeCompare(b.url);
-  });
+  // Sort the summaries primarily URL and secondarily by time stamp.
+  objectSort(reportSpecs, 'timeStamp', 'alpha');
+  objectSort(reportSpecs, 'url', 'alpha');
   const lines = [];
   const margin = ' '.repeat(12);
   let anyDeletable = false;

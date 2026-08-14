@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getJSON, getLog, logsPath, reportsPath} = require('../util');
+const {getReportExtracts, hiddenReportsPath, makeReportsExtract, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -20,20 +20,21 @@ exports.answer = async (_, search) => {
   if (jobName) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
-      // Get the log of the report.
-      const log = await getLog(... jobName.split('-'));
+      const fileName = `${jobName}.json`;
+      try {
+        // Move the specified report to the directory of hidden reports.
+        await fs.rename(path.join(reportsPath, fileName), path.join(hiddenReportsPath, fileName));
+        // Update the data on the available reports.
+        await makeReportsExtract();
+      }
       // If this failed:
-      if (log.error) {
+      catch (error) {
         // Return why.
         return {
           status: 'error',
-          message: log.error
-        }
+          message: `Hiding report ${jobName} failed (${error.message})`
+        };
       }
-      // Otherwise, i.e. if it succeeded, add a hiddenness property to the log.
-      log.hidden = true;
-      // Save the updated log.
-      await fs.writeFile(path.join(logsPath, `${jobName}.json`), getJSON(log));
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {
@@ -44,33 +45,21 @@ exports.answer = async (_, search) => {
       }
     }
   }
-  const reportFileNames = await fs.readdir(reportsPath);
   // Initialize an array of report specifications.
   const reportSpecs = [];
+  // Get data on all available reports.
+  const reportExtracts = await getReportExtracts();
   // For each report:
-  for (const reportFileName of reportFileNames) {
-    const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
-    // Get its log.
-    const log = await getLog(timeStamp, jobID);
-    // If this failed:
-    if (log.error) {
-      // Return why.
-      return {
-        status: 'error',
-        message: log.error
-      }
-    }
-    // Otherwise, i.e. if it succeeded:
-    const {what, hidden} = log;
+  for (const reportExtract of reportExtracts) {
+    const {jobID, timeStamp, what} = reportExtract;
     // Add the report to the array.
     reportSpecs.push({
       what,
       timeStamp,
-      jobID,
-      hidden
+      jobID
     });
   }
-  // Sort the logs by page name and then by time stamp.
+  // Sort the data by page name and then by time stamp.
   reportSpecs.sort((a, b) => {
     if (a.what === b.what) {
       return a.timeStamp.localeCompare(b.timeStamp);
@@ -79,17 +68,14 @@ exports.answer = async (_, search) => {
   });
   const lines = [];
   const margin = ' '.repeat(12);
-  // For each report:
+  // For each available report:
   reportSpecs.forEach(spec => {
-    const {hidden, what, timeStamp, jobID} = spec;
-    // If it is not already hidden:
-    if (! hidden) {
-      const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
-      // Add a line with a radio button to hide it.
-      lines.push(
-        `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
-      );
-    }
+    const {jobID, timeStamp, what} = spec;
+    const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
+    // Add a line with a radio button to hide it.
+    lines.push(
+      `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
+    );
   });
   const query = {
     reports: lines.join('\n'),

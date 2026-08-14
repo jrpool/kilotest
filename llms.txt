@@ -8,20 +8,25 @@ There is a [detailed explanation of Kilotest and its capabilities for LLMs](http
 
 ## API
 
-- [Get summaries of reports about a specified web page](/api/target)
-- [List all available reports](/api/reportList)
-- Summarize one report: `/api/reportFacts/{timeStamp}/{jobID}`
-- Get details about one issue from one report: `/api/reportIssue/{issueID}/{timeStamp}/{jobID}`
-- Recommend testing of a web page: `/api/testRecForm` (requires `POST` request)
+- [List all available reports](/api/listReports)
+- List all issues in one report: `/api/listIssues/{timeStamp}/{jobID}`
+- List all elements exhibiting one issue in one report: `/api/listViolators/{issueID}/{timeStamp}/{jobID}`
+- List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}`
+- Get one full report in JSON: `/api/getReport/{timeStamp}/{jobID}`
+- Request testing of a web page: `/api/requestTest` (requires `POST` request)
+- Request retesting of a web page: `/api/requestRetest/{timeStamp}/{jobID}` (requires `POST` request)
+- Request adding or improving a feature: `/api/requestFeature` (requires `POST` request)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
 
 ## Web UI
 
-- [Summarize test results for all tested pages](https://kilotest.com/targets.html)
-- Provide statistics about issues reported in one job: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
-- Provide details about one issue reported in one job: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
-- Provide diagnoses about one issue exhibited by one HTML element in one job: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
-- [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
-- [Recommend testing of a web page](https://kilotest.com/testRecForm.html)
+- [List all available reports](https://kilotest.com/targets.html)
+- List all issues in one report: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
+- List all elements exhibiting one issue in one report: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
+- List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+- Get one full report in JSON: `https://kilotest.com/fullReport.json/{timeStamp}/{jobID}`
+- [Request testing of a web page](https://kilotest.com/testRecForm.html)
+- Request retesting of a web page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
 - [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
+- [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)

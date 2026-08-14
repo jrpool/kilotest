@@ -1,691 +1,1349 @@
 openapi: 3.1.0
 info:
-  title: Kilotest Agent API
-  description: Kilotest tests web pages for front-end quality (i.e. accessibility, usability, and standards conformity) using an ensemble of ten independent rule engines that employ rule-based and machine-learning-based methods. This API enables AI agents to recommend web pages for testing, discover available test reports, and retrieve data from reports. Each report describes results of one job that tested one web page. For background on Kilotest and the advantages of ensemble testing, visit https://kilotest.com.
-  version: 1.0.0
+  title: Kilotest API
+  description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 10 rule engines to test public web pages for front-end quality (accessibility, usability, and standards conformity). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
+  version: 39.0.0
+  license:
+    name: MIT
+    identifier: MIT
   contact:
     name: Kilotest
-    url: https://kilotest.com
+    url: https://github.com/jrpool/kilotest
     email: info@kilotest.com
-
 servers:
   - url: https://kilotest.com
     description: Kilotest production server
-
+security: []
 paths:
-  /api/target:
-    post:
-      operationId: summarizeQualityOfMatchingWebPages
-      summary: Summarize the quality of matching web pages
-      description: Get summary data from the available reports about web pages whose descriptions or hostnames match your specifications. Matching is case-insensitive and succeeds if at least 1 specification is included by or includes the corresponding property of a tested page. The data include the name and URL of each tested web page, when the testing was performed, how many front-end quality (i.e. accessibility, usability, and standards conformity) issues were reported, and URLs for retrieving more detailed data from the report.
-      requestBody:
-        description: Page specifications
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Target'
-      responses:
-        '200':
-          description: Summary of the quality of matching web pages
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TargetsResponse'
-
-  /api/reportList:
+  /api/listReports:
     get:
-      operationId: listAllAvailableReports
+      operationId: listReports
       summary: List all available reports
-      description: List all available reports. Each report describes the results of a job that tested a web page for front-end quality (i.e. accessibility, usability, and standards conformity). For each report, the list identifies which page was tested and when and provides URLs to begin incremental retrieval of the test results.
       responses:
         '200':
-          description: List of all available reports
+          description: List all available reports
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReportListResponse'
-
-  /api/testRecForm:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: GET
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      basics about all available reports:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            identifier:
+                              type: string
+                              description: timeStamp-jobID identifier of the report.
+                            completion date and time:
+                              type: string
+                            days since the report was completed:
+                              type: number
+                            tested web page:
+                              type: object
+                              properties:
+                                description:
+                                  type: string
+                                URL:
+                                  type: string
+                              required:
+                                - description
+                                - URL
+                              additionalProperties: false
+                            whether a later report about the same page exists:
+                              type: boolean
+                            how to get details about the report:
+                              type: object
+                              properties:
+                                method:
+                                  type: string
+                                  const: GET
+                                URL:
+                                  type: string
+                              required:
+                                - method
+                                - URL
+                              additionalProperties: false
+                            web users can get details about the report at:
+                              type: string
+                          required:
+                            - identifier
+                            - completion date and time
+                            - days since the report was completed
+                            - tested web page
+                            - whether a later report about the same page exists
+                            - how to get details about the report
+                            - web users can get details about the report at
+                          additionalProperties: false
+                      how to request that a page with no report be tested:
+                        type: object
+                        properties:
+                          method:
+                            type: string
+                            const: POST
+                          URL:
+                            type: string
+                          request body:
+                            type: object
+                            properties:
+                              description:
+                                type: string
+                              URL:
+                                type: string
+                              reason:
+                                type: string
+                            required:
+                              - description
+                              - URL
+                              - reason
+                            additionalProperties: false
+                          how to check whether the request has been fulfilled:
+                            type: string
+                        required:
+                          - method
+                          - URL
+                          - request body
+                          - how to check whether the request has been fulfilled
+                        additionalProperties: false
+                      how a web user can request that the page be tested:
+                        type: object
+                        properties:
+                          URL:
+                            type: string
+                        required:
+                          - URL
+                        additionalProperties: false
+                    required:
+                      - basics about all available reports
+                      - how to request that a page with no report be tested
+                      - how a web user can request that the page be tested
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/listIssues/{timeStamp}/{jobID}:
+    get:
+      operationId: listIssues
+      summary: List basics about the issues in one report
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: List basics about the issues in one report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: GET
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      basics about the report:
+                        $ref: '#/components/schemas/ReportBasicsOrError'
+                      details about the report:
+                        anyOf:
+                          - type: object
+                            properties:
+                              job definition:
+                                type: object
+                                properties:
+                                  whether the job prohibited redirection:
+                                    description: Copied from the report (strict); type not guaranteed.
+                                  whether the native results of rule engines are reported:
+                                    type: boolean
+                                  whether standardized results are reported:
+                                    type: boolean
+                                  device emulated by the job:
+                                    description: Device object copied verbatim from the report; shape may vary.
+                                  browser type used by the job:
+                                    description: Copied from the report (browserID); type not guaranteed.
+                                required:
+                                  - whether the job prohibited redirection
+                                  - whether the native results of rule engines are reported
+                                  - whether standardized results are reported
+                                  - device emulated by the job
+                                  - browser type used by the job
+                                additionalProperties: false
+                              test results:
+                                type: object
+                                properties:
+                                  rule engines that tried to test the page:
+                                    type: array
+                                    items:
+                                      $ref: '#/components/schemas/RuleEngineFacts'
+                                  rule engines that could not test the page:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        name:
+                                          anyOf:
+                                            - type: string
+                                            - type: 'null'
+                                        reason for failure:
+                                          description: Copied verbatim from the Testaro report; shape may vary.
+                                      required:
+                                        - name
+                                        - reason for failure
+                                      additionalProperties: false
+                                  names of rule engines that reported rule violations:
+                                    type: array
+                                    items:
+                                      anyOf:
+                                        - type: string
+                                        - type: 'null'
+                                  counts of issues by priority:
+                                    type: object
+                                    properties:
+                                      highest:
+                                        type: number
+                                      high:
+                                        type: number
+                                      low:
+                                        type: number
+                                      lowest:
+                                        type: number
+                                    required:
+                                      - highest
+                                      - high
+                                      - low
+                                      - lowest
+                                    additionalProperties: false
+                                  number of elements reported as violators:
+                                    type: number
+                                required:
+                                  - rule engines that tried to test the page
+                                  - rule engines that could not test the page
+                                  - names of rule engines that reported rule violations
+                                  - counts of issues by priority
+                                  - number of elements reported as violators
+                                additionalProperties: false
+                            required:
+                              - job definition
+                              - test results
+                            additionalProperties: false
+                          - type: 'null'
+                      how to request that the page be retested:
+                        anyOf:
+                          - anyOf:
+                              - type: object
+                                properties:
+                                  notice:
+                                    type: string
+                                required:
+                                  - notice
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  method:
+                                    type: string
+                                    const: POST
+                                  URL:
+                                    type: string
+                                  request body:
+                                    type: object
+                                    properties:
+                                      reason:
+                                        type: string
+                                    required:
+                                      - reason
+                                    additionalProperties: false
+                                  how to check whether the request has been fulfilled:
+                                    type: string
+                                required:
+                                  - method
+                                  - URL
+                                  - request body
+                                  - how to check whether the request has been fulfilled
+                                additionalProperties: false
+                          - type: 'null'
+                      how a web user can request that the page be retested:
+                        anyOf:
+                          - type: object
+                            properties:
+                              URL:
+                                type: string
+                            required:
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                      how to get the full report in JSON:
+                        anyOf:
+                          - type: object
+                            properties:
+                              size of the report in bytes:
+                                type: number
+                              method:
+                                type: string
+                                const: GET
+                              URL:
+                                type: string
+                            required:
+                              - size of the report in bytes
+                              - method
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                      how a web user can get the full report in JSON:
+                        anyOf:
+                          - type: object
+                            properties:
+                              URL:
+                                type: string
+                            required:
+                              - URL
+                            additionalProperties: false
+                          - type: 'null'
+                      basics about all issues reported in the report:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            identifier:
+                              type: string
+                            summary:
+                              type: string
+                            impact on a user:
+                              type: string
+                            priority:
+                              type: string
+                              enum:
+                                - lowest
+                                - low
+                                - high
+                                - highest
+                            rule engines with any violations belonging to the issue:
+                              type: array
+                              items:
+                                type: string
+                            how to get details about the issue:
+                              type: object
+                              properties:
+                                method:
+                                  type: string
+                                  const: GET
+                                URL:
+                                  type: string
+                              required:
+                                - method
+                                - URL
+                              additionalProperties: false
+                            web users can get details about the issue at:
+                              type: string
+                          required:
+                            - identifier
+                            - summary
+                            - impact on a user
+                            - priority
+                            - rule engines with any violations belonging to the issue
+                            - how to get details about the issue
+                            - web users can get details about the issue at
+                          additionalProperties: false
+                    required:
+                      - basics about the report
+                      - details about the report
+                      - how to request that the page be retested
+                      - how a web user can request that the page be retested
+                      - how to get the full report in JSON
+                      - how a web user can get the full report in JSON
+                      - basics about all issues reported in the report
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/listViolators/{issueID}/{timeStamp}/{jobID}:
+    get:
+      operationId: listViolators
+      summary: List elements reported as exhibiting one issue
+      parameters:
+        - in: path
+          name: issueID
+          schema:
+            type: string
+            description: 'Issue identifier (example: contrastPoor)'
+          required: true
+          description: 'Issue identifier (example: contrastPoor)'
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: List elements reported as exhibiting one issue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: GET
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      basics about the report:
+                        $ref: '#/components/schemas/ReportBasicsOrError'
+                      basics about the issue:
+                        $ref: '#/components/schemas/IssueBasicsOrError'
+                      details about the issue:
+                        anyOf:
+                          - type: object
+                            properties:
+                              rule engines reporting violations belonging to the issue:
+                                type: array
+                                items:
+                                  $ref: '#/components/schemas/RuleEngineFacts'
+                            required:
+                              - rule engines reporting violations belonging to the issue
+                            additionalProperties: false
+                          - type: 'null'
+                      basics about all elements reported as exhibiting the issue:
+                        anyOf:
+                          - type: array
+                            items:
+                              type: object
+                              properties:
+                                identifier:
+                                  type: string
+                                tag name:
+                                  description: Copied from the report catalog entry; type not guaranteed.
+                                inner text:
+                                  description: Copied from the report catalog entry; type not guaranteed.
+                                count of rule engines reporting that the element exhibited the issue:
+                                  type: number
+                                how to get details about the element:
+                                  type: object
+                                  properties:
+                                    URL:
+                                      type: string
+                                    request method:
+                                      type: string
+                                      const: GET
+                                  required:
+                                    - URL
+                                    - request method
+                                  additionalProperties: false
+                                web users can get details about the element at:
+                                  type: string
+                              required:
+                                - identifier
+                                - tag name
+                                - inner text
+                                - count of rule engines reporting that the element exhibited the issue
+                                - how to get details about the element
+                                - web users can get details about the element at
+                              additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - basics about the report
+                      - basics about the issue
+                      - details about the issue
+                      - basics about all elements reported as exhibiting the issue
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}:
+    get:
+      operationId: listDiagnoses
+      summary: List diagnoses of how one element exhibited one issue
+      parameters:
+        - in: path
+          name: catalogIndex
+          schema:
+            type: string
+            description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'
+          required: true
+          description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'
+        - in: path
+          name: issueID
+          schema:
+            type: string
+            description: 'Issue identifier (example: contrastPoor)'
+          required: true
+          description: 'Issue identifier (example: contrastPoor)'
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: List diagnoses of how one element exhibited one issue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: GET
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      basics about the report:
+                        $ref: '#/components/schemas/ReportBasicsOrError'
+                      basics about the issue:
+                        $ref: '#/components/schemas/IssueBasicsOrError'
+                      basics about the element:
+                        anyOf:
+                          - anyOf:
+                              - type: object
+                                properties:
+                                  identifier:
+                                    type: string
+                                  tag name:
+                                    description: Copied from the report catalog entry; type not guaranteed.
+                                  inner text:
+                                    description: Copied from the report catalog entry; type not guaranteed.
+                                required:
+                                  - identifier
+                                  - tag name
+                                  - inner text
+                                additionalProperties: false
+                              - type: object
+                                properties:
+                                  error:
+                                    type: string
+                                required:
+                                  - error
+                                additionalProperties: false
+                          - type: 'null'
+                      details about the element:
+                        anyOf:
+                          - type: object
+                            properties:
+                              start tag:
+                                description: Copied from the report catalog entry; type not guaranteed.
+                              XPath:
+                                description: Copied from the report catalog entry; type not guaranteed.
+                              x, y, width, and height of bounding box:
+                                description: Copied from the report catalog entry; type not guaranteed.
+                            required:
+                              - start tag
+                              - XPath
+                              - x, y, width, and height of bounding box
+                            additionalProperties: false
+                          - type: 'null'
+                      diagnoses of how the element exhibited the issue:
+                        anyOf:
+                          - type: array
+                            items:
+                              type: object
+                              properties:
+                                identifier of the violated rule:
+                                  description: Copied from the report instance (ruleID); type not guaranteed.
+                                description of the violation:
+                                  description: Copied from the report instance (what); type not guaranteed.
+                                severity of the violation on a 0-to-3 scale:
+                                  description: Copied from the report instance (ordinalSeverity); type not guaranteed.
+                                count of violations of the rule by the element:
+                                  type: number
+                              required:
+                                - identifier of the violated rule
+                                - description of the violation
+                                - severity of the violation on a 0-to-3 scale
+                                - count of violations of the rule by the element
+                              additionalProperties: false
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                    required:
+                      - basics about the report
+                      - basics about the issue
+                      - basics about the element
+                      - details about the element
+                      - diagnoses of how the element exhibited the issue
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/getReport/{timeStamp}/{jobID}:
+    get:
+      operationId: getReport
+      summary: Get one full report in JSON
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the report (example: x9z)'
+          required: true
+          description: 'Job identifier of the report (example: x9z)'
+      responses:
+        '200':
+          description: Get one full report in JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: GET
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      size of the report in bytes:
+                        anyOf:
+                          - type: number
+                          - type: string
+                      full report:
+                        description: The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.
+                    required:
+                      - size of the report in bytes
+                      - full report
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/requestTest:
     post:
-      operationId: recommendQualityTestingOfOneWebPage
-      summary: Recommend quality testing of one web page
-      description: Submit a recommendation for Kilotest to test, for the first time, a particular web page for front-end quality (i.e. accessibility, usability, and standards conformity). Recommendations are typically approved and the testing completed within a day, whereupon the results can be found with the listAllAvailableReports operation. Before submitting a recommendation, use the listAllAvailableReports operation to ensure that no report about the page is available, and also to see the stylistic rules for the naming of pages. An attempt to recommend a page for testing will fail if a report about the page is already available.
+      operationId: requestTest
+      summary: Request that a page be tested
       requestBody:
-        description: Test recommendation specifications
-        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TestRecForm'
-      responses:
-        '200':
-          description: Acknowledgement of test recommendation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TestRecFormResponse'
-
-  /api/reportFacts/{timeStamp}/{jobID}:
-    get:
-      operationId: summarizeOneReport
-      summary: Summarize one report
-      description: Summarize one report. The summary should briefly describe the testing job and the results, including the rule engines that tested the web page and the issues that were revealed by the reported rule violations, and should provide URLs for getting more detailed facts about any of the issues. The timeStamp and jobID parameters identify the report and were obtained from the response to a listAllAvailableReports operation.
-      parameters:
-        - name: timeStamp
-          in: path
-          required: true
-          description: timeStamp component of the report identifier, in the format YYMMDDTHHMM (e.g., 260503T0432).
-          schema:
-            type: string
-            pattern: '^\d{6}T\d{4}$'
-            examples:
-              - 260503T0432
-        - name: jobID
-          in: path
-          required: true
-          description: Job identifier component of the report identifier (e.g., xx0).
-          schema:
-            type: string
-            examples:
-              - xx0
-      responses:
-        '200':
-          description: Summary of the specified report
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportFactsResponse'
-        '404':
-          description: No report with the specified identifier is available
-
-  /api/reportIssue/{issueID}/{timeStamp}/{jobID}:
-    get:
-      operationId: describeOneIssueFromOneReport
-      summary: Describe one issue from one report
-      description: Get issue-specific data from a specified report about the front-end quality (i.e. accessibility, usability, and standards conformity) of a web page. The data describe the issue, all of the HTML elements of the page that have the issue, and, for each such element, URLs for retrieving diagnoses by rule engines of the issue on the element.
-      parameters:
-        - name: issueID
-          in: path
-          required: true
-          description: Issue identifier (e.g., imageNoText). Available under "response content" > "issues revealed" > [item] > "identifier" in the summarizeOneReport response.
-          schema:
-            type: string
-            examples:
-              - imageNoText
-        - name: timeStamp
-          in: path
-          required: true
-          schema:
-            type: string
-            examples:
-              - 20271124T1647
-        - name: jobID
-          in: path
-          required: true
-          schema:
-            type: string
-            examples:
-              - x58
-      responses:
-        '200':
-          description: Details about the specified issue from the specified report
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ReportIssueResponse'
-        '404':
-          description: No report or issue found with the specified identifiers
-
-components:
-  schemas:
-
-    CommonResponseFields:
-      type: object
-      properties:
-        summary:
-          type: string
-          description: Natural-language description of this response and of Kilotest. Provides context for an agent encountering Kilotest for the first time.
-        tool collection name:
-          type: string
-          examples:
-            - Kilotest
-        tool name:
-          type: string
-          examples:
-            - listAllAvailableReports
-        request:
-          type: object
-          properties:
-            type of request:
-              type: object
-              properties:
-                identifier:
-                  type: string
-                  examples:
-                    - reportList
-                description:
-                  type: string
-            method:
-              type: string
-              enum:
-                - GET
-                - POST
-            payload:
-              type: object
-              description: The request payload, if method type is POST, or otherwise omitted.
-            URLs:
-              type: object
-              properties:
-                'for you':
-                  type: string
-                'for humans':
-                  type: string
-            closest ancestor request:
-              oneOf:
-                - type: 'null'
-                - type: object
-                  properties:
-                    identifier:
-                      type: string
-                    description:
-                      type: string
-                    URLs:
-                      type: object
-                      properties:
-                        'for you':
-                          type: string
-                        'for humans':
-                          type: string
-        response metadata:
-          type: object
-          properties:
-            identifier:
-              type: string
-              description: Unique identifier for this response instance.
-            date and time:
-              type: string
-              description: UTC date and time when the response was generated, in ISO 8601 format.
-              format: date-time
-
-    SharedFacts:
-      type: object
-      properties:
-        summary:
-          type: string
-          description: Natural-language facts about the request, the response, and Kilotest.
-        tool collection name:
-          type: string
-          examples:
-            - Kilotest
-        tool name:
-          type: string
-          examples:
-            - listAllAvailableReports
-        request:
-          type: object
-          properties:
-            description:
-              type: string
-            method:
-              type: string
-              enum:
-                - GET
-                - POST
-            payload:
-              type: object
-              description: The request payload, if method is POST, or otherwise omitted.
-            URLs:
-              type: object
-              properties:
-                'for you':
-                  type: string
-                'for humans':
-                  type: string
-            closest ancestor request:
-              oneOf:
-                - type: 'null'
-                - type: object
-                  properties:
-                    'tool name':
-                      type: string
-                    description:
-                      type: string
-                    URLs:
-                      type: object
-                      properties:
-                        'for you':
-                          type: string
-                        'for humans':
-                          type: string
-        response metadata:
-          type: object
-          properties:
-            identifier:
-              type: string
-              description: Unique identifier for this response instance.
-            date and time:
-              type: string
-              description: UTC date and time when the response was generated, in ISO 8601 format.
-              format: date-time
-
-    TestRecForm:
-      type: object
-      properties:
-        description of the web page:
-          type: string
-          description: Description of the web page to be tested.
-        URL of the web page:
-          type: string
-          description: URL of the web page to be tested.
-        reason for testing the web page:
-          type: string
-          description: Reason for testing the page.
-
-    TestRecFormResponse:
-      $ref: '#/components/schemas/CommonResponseFields'
-
-    RuleEngineInfo:
-      type: object
-      description: A rule engine in the Kilotest ensemble.
-      properties:
-        identifier:
-          type: string
-          description: Short programmatic identifier for the rule engine.
-          examples:
-            - alfa
-        name:
-          type: string
-          description: Display name of the rule engine.
-          examples:
-            - Alfa
-        sponsor:
-          type: string
-          description: Organization that created, initially sponsored, or now sponsors the rule engine.
-          examples:
-            - Siteimprove
-
-    RuleEngineFailure:
-      type: object
-      description: A rule engine that was unable to complete testing of the page.
-      properties:
-        name:
-          type: string
-          examples:
-            - WAVE
-        reason for failure:
-          type: string
-          examples:
-            - Not enough credits.
-
-    RuleEnginesSummary:
-      type: object
-      description: Count and names of a set of rule engines.
-      properties:
-        number:
-          type: integer
-        names:
-          type: array
-          items:
-            type: string
-
-    NextTierURLs:
-      type: object
-      description: URLs for retrieving the next level of detail.
-      properties:
-        for you:
-          type: string
-          format: uri
-          description: URL for an LLM to request the next tier of detail.
-        for humans:
-          type: string
-          format: uri
-          description: URL for a human to view the next tier of detail.
-
-    TargetsItem:
-      type: object
-      description: Summary data about a single available report.
-      properties:
-        identifier:
-          type: string
-          examples:
-            - 260504T1659-029
-        creation date:
-          type: string
-          format: date-time
-        days since the creation date:
-          type: integer
-        tested web page:
-          type: object
-          properties:
-            description:
-              type: string
-            URL:
-              type: string
-              format: uri
-        whether a later report about the same page exists:
-          type: boolean
-          description: If true, a more recent report about this page is available. If you want the latest results, use that report instead.
-        number of issues reported:
-          type: integer
-        number of HTML elements reported as exhibiting issues:
-          type: integer
-        rule engines that tried to test the page:
-          $ref: '#/components/schemas/RuleEnginesSummary'
-        rule engines that were unable to test the page:
-          $ref: '#/components/schemas/RuleEnginesSummary'
-        rule engines that reported issues:
-          $ref: '#/components/schemas/RuleEnginesSummary'
-        URLs for getting data about the reported issues:
-          $ref: '#/components/schemas/NextTierURLs'
-        URL for getting the full technical report as JSON:
-          type: string
-          format: uri
-
-    ReportListItem:
-      type: object
-      description: Summary data about a single available report.
-      properties:
-        identifier:
-          type: string
-          examples:
-            - 260504T1659-029
-        creation date and time:
-          type: string
-          format: date-time
-        days since the creation date:
-          type: integer
-        tested web page:
-          type: object
-          properties:
-            description:
-              type: string
-            URL:
-              type: string
-              format: uri
-        whether a later report about the same page exists:
-          type: boolean
-          description: If true, a more recent report about this page is available. If you want the latest results, use that report instead.
-        URLs for more details:
-          $ref: '#/components/schemas/NextTierURLs'
-        size of the report in bytes:
-          type: integer
-        URL to get the entire report as machine-oriented JSON:
-          type: string
-          format: uri
-
-    Target:
-      type: object
-      properties:
-        description:
-          type: string
-          description: All or part of a description of the web page. If the page is the home page of an organization, the description is the name of the organization (e.g., “Earthjustice”). Otherwise, the description appends minimal differentiating words to the name of the organization (e.g., “Earthjustice Donate”), without the word “page”.
-        hostname:
-          type: string
-          description: All or part of the hostname of the web page. The hostname omits the scheme and the path.
-
-    ReportListResponse:
-      allOf:
-        - $ref: '#/components/schemas/SharedFacts'
-        - type: object
-          properties:
-            response content:
-              type: array
-              description: One entry per available Kilotest report, in alphabetical order by page description and, in case of multiple reports per page, in order of creation date and time. Whether two reports are about the same page is determined by the page descriptions, not page URLs.
-              items:
-                $ref: '#/components/schemas/ReportListItem'
-
-    TargetsResponse:
-      allOf:
-        - $ref: '#/components/schemas/CommonResponseFields'
-        - type: object
-          properties:
-            matching reports:
-              type: array
-              description: One entry per available matching Kilotest report. A report is matching if its page description or hostname contains or is contained by a specified description or hostname fragment, respectively.
-              items:
-                $ref: '#/components/schemas/TargetsItem'
-
-    IssueEntry:
-      type: object
-      description: Details about a specific front-end quality issue found on a page.
-      properties:
-        identifier:
-          type: string
-          examples:
-            - imageNoText
-        summary:
-          type: string
-          description: Brief natural-language label for the issue.
-          examples:
-            - image not named
-        related WCAG 2.2 standard:
-          type: object
-          description: The WCAG 2.2 success criterion or guideline most closely related to this issue.
-          properties:
-            layer:
-              type: string
-              enum:
-                - guideline
-                - success criterion
-            'numeric identifier':
-              type: string
-              pattern: '^\d\.\d(\.\d+)?$'
-              examples:
-                - 1.1.1
-        impact on a user:
-          type: string
-          description: How this issue is likely to affect users.
-        rule engines reporting the issue:
-          $ref: '#/components/schemas/RuleEnginesSummary'
-        number of HTML elements reported as exhibiting the issue:
-          type: integer
-        URLs for details about the issue on the page:
-          $ref: '#/components/schemas/NextTierURLs'
-
-    IssuesByPriority:
-      type: object
-      properties:
-        highest priority:
-          type: array
-          items:
-            $ref: '#/components/schemas/IssueEntry'
-        high priority:
-          type: array
-          items:
-            $ref: '#/components/schemas/IssueEntry'
-        low priority:
-          type: array
-          items:
-            $ref: '#/components/schemas/IssueEntry'
-        lowest priority:
-          type: array
-          items:
-            $ref: '#/components/schemas/IssueEntry'
-
-    IssueSummary:
-      type: object
-      properties:
-        identifier:
-          type: string
-        summary:
-          type: string
-        impact on a user:
-          type: string
-        priority:
-          type: string
-          enum:
-            - lowest
-            - low
-            - high
-            - highest
-        URLs for more details:
-          $ref: '#/components/schemas/NextTierURLs'
-
-    ReportFactsResponse:
-      allOf:
-        - $ref: '#/components/schemas/SharedFacts'
-        - type: object
-          properties:
-            response content:
-              allOf:
-                - $ref: '#/components/schemas/ReportListItem'
-                - type: object
-                  properties:
-                    identifier:
-                      type: string
-                    rule engines that tried to test the page:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/RuleEngineInfo'
-                    rule engines that could not test the page:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/RuleEngineFailure'
-                    names of rule engines that reported rule violations:
-                      type: array
-                      items:
-                        type: string
-                    number of elements reported as violators:
-                      type: integer
-                    issues revealed:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/IssueSummary'
-
-    HTMLElementDetail:
-      type: object
-      description: Details about an HTML element reported as exhibiting an issue.
-      properties:
-        identifier:
-          type: string
-          description: Unique identifier of the element in the catalog of the report.
-        tag name:
-          type: string
-          examples:
-            - IMG
-        id attribute:
-          type: string
-          description: Value of the element's id attribute, if any.
-        start tag:
-          type: string
-          description: The opening tag of the element, including attributes.
-        inner text:
-          type: string
-          description: First and last lines of the inner text, if any, of the element.
-        inner text usable as a text fragment for linking:
-          type: boolean
-          description: Whether the inner text can be used as a text fragment for URL linking.
-        x, y, width, height in pixels:
-          type: array
-          items:
-            type: string
-          description: Bounding box coordinates and dimensions of the element.
-        XPath:
-          type: string
-          description: XPath of the element in the document.
-
-    ReportIssueResponse:
-      allOf:
-        - $ref: '#/components/schemas/CommonResponseFields'
-        - type: object
-          properties:
-            report:
-              type: object
-              properties:
-                identifier:
-                  type: string
-                  examples:
-                    - 20280216T1353-4r9
-                creation date:
-                  type: string
-                  format: date-time
-                days since the creation date:
-                  type: integer
-            tested web page:
               type: object
               properties:
                 description:
                   type: string
-                  examples:
-                    - ARQ Space Exploration Corporation
-                    - Edlir Velaj PF
+                  description: 10- to 100-character description of the page conforming to the naming convention used in the listReports output
                 URL:
                   type: string
-                  format: uri
-                  examples:
-                    - https://tiendalibros.com/
-            rule engines that tried to test the page:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleEngineInfo'
-            rule engines that were unable to test the page:
-              type: array
-              items:
-                $ref: '#/components/schemas/RuleEngineFailure'
-            rule engines that reported issues:
-              $ref: '#/components/schemas/RuleEnginesSummary'
-            number of issues reported:
+                  description: 12- to 300-character URL of the page, including the https:// scheme and any query
+                reason:
+                  type: string
+                  description: 20- to 100-character reason why the page should be tested
+              required:
+                - description
+                - URL
+                - reason
+      responses:
+        '200':
+          description: Request that a page be tested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                            description: 10- to 100-character description of the page conforming to the naming convention used in the listReports output
+                          URL:
+                            type: string
+                            description: 12- to 300-character URL of the page, including the https:// scheme and any query
+                          reason:
+                            type: string
+                            description: 20- to 100-character reason why the page should be tested
+                        required:
+                          - description
+                          - URL
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              page to be tested:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              reason why the page should be tested:
+                                type: string
+                            required:
+                              - date and time received
+                              - page to be tested
+                              - reason why the page should be tested
+                            additionalProperties: false
+                    required:
+                      - details about your request
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/requestRetest/{timeStamp}/{jobID}:
+    post:
+      operationId: requestRetest
+      summary: Request that a page be retested
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the latest report about the page (example: x9z)'
+          required: true
+          description: 'Job identifier of the latest report about the page (example: x9z)'
+      requestBody:
+        content:
+          application/json:
+            schema:
               type: object
               properties:
-                total:
-                  type: integer
-                by priority:
-                  type: object
-                  properties:
-                    highest priority:
-                      type: integer
-                    high priority:
-                      type: integer
-                    low priority:
-                      type: integer
-                    lowest priority:
-                      type: integer
-            number of HTML elements reported as exhibiting issues:
-              type: integer
-            level of the issue:
-              type: integer
+                reason:
+                  type: string
+                  description: 20- to 100-character reason why the page should be retested
+              required:
+                - reason
+      responses:
+        '200':
+          description: Request that a page be retested
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          reason:
+                            type: string
+                            description: 20- to 100-character reason why the page should be retested
+                        required:
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              page to be retested:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              reason why the page should be retested:
+                                type: string
+                            required:
+                              - date and time received
+                              - page to be retested
+                              - reason why the page should be retested
+                            additionalProperties: false
+                    required:
+                      - details about your request
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/requestFeature:
+    post:
+      operationId: requestFeature
+      summary: Request a new feature or feature improvement
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                request:
+                  type: string
+                  description: description of requested new feature or feature improvement
+              required:
+                - request
+      responses:
+        '200':
+          description: Request a new feature or feature improvement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          request:
+                            type: string
+                            description: description of requested new feature or feature improvement
+                        required:
+                          - request
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    $ref: '#/components/schemas/SimilarWebRequests'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              disposition:
+                                type: string
+                            required:
+                              - date and time received
+                              - disposition
+                            additionalProperties: false
+                    required:
+                      - details about your request
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+components:
+  schemas:
+    ToolsFacts:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: object
+          properties:
+            what Kilotest does:
+              type: string
+            how to retrieve findings:
+              type: object
+              properties:
+                level 1:
+                  type: string
+                level 2:
+                  type: string
+                level 3:
+                  type: string
+                level 4:
+                  type: string
+              required:
+                - level 1
+                - level 2
+                - level 3
+                - level 4
+              additionalProperties: false
+            how to generate more findings:
+              type: object
+              properties:
+                new testing:
+                  type: string
+                retesting:
+                  type: string
+                latency:
+                  type: string
+                confirmation:
+                  type: string
+              required:
+                - new testing
+                - retesting
+                - latency
+                - confirmation
+              additionalProperties: false
+          required:
+            - what Kilotest does
+            - how to retrieve findings
+            - how to generate more findings
+          additionalProperties: false
+          description: Explanation of what Kilotest does and how to use its tools.
+        URL:
+          type: string
+          description: URL of the Kilotest MCP server.
+        web users can obtain similar functionalities at:
+          type: string
+      required:
+        - name
+        - description
+        - URL
+        - web users can obtain similar functionalities at
+      additionalProperties: false
+    RequestReference:
+      type: object
+      properties:
+        tool name:
+          type: string
+        description:
+          type: string
+        method:
+          type: string
+          const: GET
+        URL:
+          type: string
+      required:
+        - tool name
+        - description
+        - method
+        - URL
+      additionalProperties: false
+    SimilarWebRequests:
+      type: object
+      properties:
+        this request:
+          type: string
+          description: URL of the equivalent web UI page for this request.
+        closest ancestor request:
+          anyOf:
+            - type: string
+            - type: 'null'
+      required:
+        - this request
+        - closest ancestor request
+      additionalProperties: false
+    ResponseMetadata:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: Unique identifier of this response (timestamp and random suffix).
+        date and time:
+          type: string
+          description: UTC date and time when the response was generated, in ISO 8601 format.
+      required:
+        - identifier
+        - date and time
+      additionalProperties: false
+    ReportBasicsOrError:
+      anyOf:
+        - $ref: '#/components/schemas/ReportBasics'
+        - type: object
+          properties:
+            error:
+              type: string
+          required:
+            - error
+          additionalProperties: false
+    ReportBasics:
+      type: object
+      properties:
+        identifier:
+          type: string
+          description: timeStamp-jobID identifier of the report.
+        completion date and time:
+          type: string
+        days since the report was completed:
+          type: number
+        tested web page:
+          type: object
+          properties:
+            description:
+              type: string
+            URL:
+              type: string
+          required:
+            - description
+            - URL
+          additionalProperties: false
+        whether a later report about the same page exists:
+          type: boolean
+      required:
+        - identifier
+        - completion date and time
+        - days since the report was completed
+        - tested web page
+        - whether a later report about the same page exists
+      additionalProperties: false
+    RuleEngineFacts:
+      type: object
+      properties:
+        identifier:
+          type: string
+        name:
+          anyOf:
+            - type: string
+            - type: 'null'
+        sponsor:
+          anyOf:
+            - type: string
+            - type: 'null'
+      required:
+        - identifier
+        - name
+        - sponsor
+      additionalProperties: false
+    IssueBasicsOrError:
+      anyOf:
+        - type: object
+          properties:
+            identifier:
+              type: string
+            summary:
+              type: string
+            impact on a user:
+              type: string
+            priority:
+              type: string
               enum:
-                - 1
-                - 2
-                - 3
-                - 4
-              description: Priority level of the issue (4 = highest, 1 = lowest).
-            facts about the issue:
+                - lowest
+                - low
+                - high
+                - highest
+            related WCAG standard:
               type: object
-              description: Details about the specified issue and the HTML elements exhibiting it.
               properties:
+                layer:
+                  type: string
+                  enum:
+                    - success criterion
+                    - guideline
                 identifier:
                   type: string
-                  examples:
-                    - imageNoText
-                summary:
-                  type: string
-                  description: Brief natural-language label for the issue.
-                  examples:
-                    - image not named
-                related WCAG 2.2 standard:
-                  type: object
-                  description: The WCAG 2.2 success criterion or guideline most closely related to the issue.
-                  properties:
-                    layer:
-                      type: string
-                      enum:
-                        - guideline
-                        - success criterion
-                    'numeric identifier':
-                      type: string
-                      pattern: '^\d\.\d(\.\d+)?$'
-                      examples:
-                        - 1.1.1
-                impact on a user:
-                  type: string
-                  description: How this issue is likely to affect users.
-                rule engines reporting the issue:
-                  $ref: '#/components/schemas/RuleEnginesSummary'
-                number of HTML elements reported as exhibiting the issue:
-                  type: integer
-                HTML elements reported as exhibiting the issue:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/HTMLElementDetail'
+              required:
+                - layer
+                - identifier
+              additionalProperties: false
+          required:
+            - identifier
+            - summary
+            - impact on a user
+            - priority
+            - related WCAG standard
+          additionalProperties: false
+        - type: object
+          properties:
+            error:
+              type: string
+          required:
+            - error
+          additionalProperties: false

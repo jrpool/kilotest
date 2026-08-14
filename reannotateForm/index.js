@@ -1,11 +1,11 @@
 /*
   index.js
-  Discloses unclassified rules.
+  Discloses unclassified and reclassified rules and serves a form to reannotate reports.
 */
 
 // IMPORTS
 
-const {getIssue, getReport, getLogs, ruleIDs} = require('../util');
+const {getIssue, getReport, getReportExtracts, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -13,15 +13,17 @@ const path = require('path');
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async query => {
-  const targetLogs = (await getLogs()).filter(log => ! log.superseded);
-  const stillUnclassified = {};
+  // Initialize data on rule classification.
   const reClassified = {};
-  // For each target:
-  for (const targetLog of targetLogs) {
-    const {jobName = '-'} = targetLog;
-    // Get the latest report on it.
-    const report = await getReport(... jobName.split('-'));
-    const {acts = [], error} = report;
+  const stillUnclassified = {};
+  // Get an extract of all available reports.
+  const reportExtracts = await getReportExtracts();
+  // For each report:
+  for (const reportExtract of reportExtracts) {
+    const {jobID, timeStamp} = reportExtract;
+    // Get it.
+    const report = await getReport(timeStamp, jobID);
+    const {acts = [], error, id} = report;
     // If this failed:
     if (error) {
       // Populate the query with the reason.
@@ -44,14 +46,14 @@ const populateQuery = async query => {
             // Add the rule and the report to the rules with changed issue IDs.
             reClassified[which] ??= {};
             reClassified[which][ruleID] ??= new Set();
-            reClassified[which][ruleID].add(jobName);
+            reClassified[which][ruleID].add(id);
           }
           // Otherwise, if the instance and the rule both have no issue ID:
-          else if (! issueID){
+          else if (!issueID){
             // Add the rule and the report to the rules that are still unclassified.
             stillUnclassified[which] ??= {};
             stillUnclassified[which][ruleID] ??= new Set();
-            stillUnclassified[which][ruleID].add(jobName);
+            stillUnclassified[which][ruleID].add(id);
           }
         });
       }

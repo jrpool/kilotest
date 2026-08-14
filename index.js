@@ -10,9 +10,9 @@ require('dotenv').config({quiet: true});
 // IMPORTS
 const {
   annotateReport,
+  createLock,
   getJobNames,
   getJSON,
-  getLogPath,
   getObject,
   getPOSTData,
   getReport,
@@ -22,9 +22,9 @@ const {
   isReportAvailable,
   isTimeStamp,
   isJobID,
-  isURL,
   jobsPath,
-  logsPath,
+  makeReportsExtract,
+  recsLock,
   reportsPath,
   ruleIDs
 } = require('./util');
@@ -71,7 +71,8 @@ const failedPath = path.join(jobsPath, 'failed');
 const testaroAgent = process.env.TESTARO_AGENT;
 const testaroAgentPW = process.env.TESTARO_AGENT_PW;
 // Values that may require alerts.
-const balancePath = path.join(__dirname, 'aiService0Balance.json');
+const balancePath = path.join(__dirname, 'ai0Balance.json');
+const jobLock = createLock();
 const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
 const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
 const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
@@ -83,7 +84,7 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 const serveError = async (error, response, isHumanUser = true) => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   console.log(errorLines.join('\n') || 'ERROR');
-  if (! response.writableEnded) {
+  if (!response.writableEnded) {
     response.statusCode = 400;
     // If the request is from a human user:
     if (isHumanUser) {
@@ -152,6 +153,7 @@ const checkBalancesForAlerts = async report => {
         if (typeof newBalance === 'number') {
           // Update the recorded balance.
           await fs.writeFile(balancePath, getJSON({balance: newBalance}));
+          console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
           // If it is nearing exhaustion:
           if (newBalance < AI_SERVICE0_THRESHOLD) {
             // Alert a manager.
@@ -186,6 +188,71 @@ const getAbuseError = (request, reason) => {
     time: new Date().toISOString()
   };
 };
+// Processes a job request from a Testaro agent.
+const processJobRequest = async (request, response, agentID) => jobLock(async () => {
+  let clean = true;
+  const messageStart = `Testaro agent ${agentID} requested a job, `;
+  const jobNames = await getJobNames();
+  const claimedJobNames = jobNames.claimed;
+  // For each claimed job:
+  for (const jobName of claimedJobNames) {
+    const job = await getObject(path.join(jobsPath, 'claimed', jobName));
+    const {id, sources} = job;
+    const {agent} = sources;
+    // If its assignee is the agent:
+    if (agent === agentID) {
+      const messageEnd = `but has not completed job ${id}`;
+      // Report this.
+      await serveError({message: `${messageStart}${messageEnd}`}, response, false);
+      // Reclassify the job as failed.
+      await fs.rename(
+        path.join(claimedPath, jobName), path.join(failedPath, jobName)
+      );
+      clean = false;
+      // Stop checking claimed jobs.
+      break;
+    }
+  }
+  // If no aborted-job error was found for the agent:
+  if (clean) {
+    const queuedJobNames = jobNames.queue;
+    // If any jobs are queued:
+    if (queuedJobNames.length) {
+      const oldestJobName = queuedJobNames[0];
+      // Get the first one.
+      const firstJob = await getObject(path.join(queuePath, oldestJobName));
+      // Add the agent ID to the job.
+      firstJob.sources.agent = agentID;
+      console.log(
+        `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the agent.`
+      );
+      // Assign the job to the agent.
+      response.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8'
+      });
+      response.end(JSON.stringify(firstJob));
+      const messageEnd
+      = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the agent`;
+      console.log(`${messageStart}${messageEnd}`);
+      // Save the job in the claimed-jobs directory.
+      await fs.writeFile(
+        path.join(claimedPath, oldestJobName), getJSON(firstJob)
+      );
+      // Delete it from the queue.
+      await fs.unlink(path.join(queuePath, oldestJobName));
+    }
+    // Otherwise, i.e. if no jobs are queued:
+    else {
+      response.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8'
+      });
+      // Send a no-jobs response to the agent.
+      response.end(JSON.stringify({}));
+      const messageEnd = 'but no job was in the queue';
+      console.log(`${messageStart}${messageEnd}`);
+    }
+  }
+});
 // Handles a request.
 const requestHandler = async (request, response) => {
   // Sets response headers.
@@ -319,7 +386,7 @@ const requestHandler = async (request, response) => {
       const topic = pageName.slice(0, -5);
       // If the page can be generated:
       if (answer[topic]) {
-        setHeaders('text/html', `${pathname}${search}`, 'ultra');
+        setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
         const answerData = await answer[topic](pathTail, search);
         // If they are valid:
@@ -341,37 +408,56 @@ const requestHandler = async (request, response) => {
     }
     // Otherwise, if it is for an API service:
     else if (pageName === 'api') {
-      const [service,  ... specs] = pathTail.split('/');
-      // If the service is provision of a list of all available reports:
-      if (service === 'reportList') {
-        // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'api', 'reportList')).response(specs);
-        // Send them.
+      const [service, ...specs] = pathTail.split('/');
+      // If the service lists the available reports:
+      if (service === 'listReports') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'listReports'))
+        .response(specs);
+        // Send it.
         setHeaders('application/json', null, 'ultra');
-        response.end(JSON.stringify(responseData));
+        response.end(JSON.stringify(responseBody));
       }
-      // Otherwise, if the service is provision of a report summary:
-      else if (service === 'reportFacts') {
-        // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'api', 'reportFacts'))
+      // Otherwise, if the service lists the issues in a report:
+      else if (service === 'listIssues') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'listIssues'))
         .response(specs);
-        // Send them.
+        // Send it.
         setHeaders('application/json', null, 'high');
-        response.end(JSON.stringify(responseData));
+        response.end(JSON.stringify(responseBody));
       }
-      // Otherwise, if the service is the description of an issue from a report:
-      else if (service === 'reportIssue') {
-        // Get the response (potentially error) data.
-        const responseData = await require(path.join(__dirname, 'reportIssue', 'api'))
+      // Otherwise, if the service lists the violators of an issue in a report:
+      else if (service === 'listViolators') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'listViolators'))
         .response(specs);
-        // Send them.
+        // Send it.
         setHeaders('application/json', null, 'high');
-        response.end(JSON.stringify(responseData));
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service lists the diagnoses of a violation of an issue in a report:
+      else if (service === 'listDiagnoses') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'listDiagnoses'))
+        .response(specs);
+        // Send it.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service serves a report:
+      else if (service === 'getReport') {
+        // Get the response body.
+        const responseBody = await require(path.join(__dirname, 'api', 'getReport'))
+        .response(specs);
+        // Send it.
+        setHeaders('application/json', null, 'low');
+        response.end(JSON.stringify(responseBody));
       }
       // Otherwise, i.e. if the service is invalid:
       else {
         // Report this.
-        await serveError({message: 'ERROR: Invalid service request'}, response, false);
+        await serveError({message: 'Invalid service request'}, response, false);
       }
     }
     // Otherwise, if it is for a tutorial image:
@@ -421,7 +507,7 @@ const requestHandler = async (request, response) => {
     else {
       // Report the error.
       await serveError(
-        {message: `ERROR: Invalid GET request (${pathname}${search})`}, response, true
+        {message: `ERROR: Invalid GET request (${pathname})`}, response, true
       );
     }
   }
@@ -435,36 +521,8 @@ const requestHandler = async (request, response) => {
     else {
       // Get the data from the request body.
       const postData = await getPOSTData(request);
-      // If the request is a retest recommendation:
-      if (pageName === 'retestRec.html') {
-        const {why} = postData;
-        const [timeStamp, jobID] = pathTail.split('/');
-        // If the request is valid:
-        if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
-          // Serve response headers.
-          setHeaders('text/html', `${pathname}${search}`, 'ultra');
-          // Get the answer data.
-          const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
-          .answer(pathTail, why);
-          // If they are valid:
-          if (answerData.status === 'ok') {
-            // Serve the answer page.
-            response.end(answerData.answerPage);
-          }
-          // Otherwise, i.e. if they are invalid:
-          else {
-            // Report the error.
-            await serveError({message: answerData.message}, response, true);
-          }
-        }
-        // Otherwise, i.e. if the request is invalid:
-        else {
-          // Report the error.
-          await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
-        }
-      }
-      // Otherwise, if it is a test recommendation:
-      else if (pageName === 'testRec.html') {
+      // If the request is a test recommendation:
+      if (pageName === 'testRec.html') {
         const {what, url, why} = postData;
         // If the request is valid:
         if (what && url.startsWith('https://') && why) {
@@ -476,7 +534,7 @@ const requestHandler = async (request, response) => {
           // Otherwise, i.e. if no report on the page is available:
           else {
             // Serve headers for a response.
-            setHeaders('text/html', `${pathname}${search}`, 'ultra');
+            setHeaders('text/html', pathname, 'ultra');
             // Get the answer data.
             const answerData = await require(path.join(__dirname, 'testRec', 'index'))
             .answer(what, url, why);
@@ -498,6 +556,34 @@ const requestHandler = async (request, response) => {
           await serveError({message: 'ERROR: Invalid test recommendation'}, response, true);
         }
       }
+      // Otherwise, if it is a retest recommendation:
+      else if (pageName === 'retestRec.html') {
+        const {why} = postData;
+        const [timeStamp, jobID] = pathTail.split('/');
+        // If the request is valid:
+        if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
+          // Serve response headers.
+          setHeaders('text/html', pathname, 'ultra');
+          // Get the answer data.
+          const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
+          .answer(pathTail, why);
+          // If they are valid:
+          if (answerData.status === 'ok') {
+            // Serve the answer page.
+            response.end(answerData.answerPage);
+          }
+          // Otherwise, i.e. if they are invalid:
+          else {
+            // Report the error.
+            await serveError({message: answerData.message}, response, true);
+          }
+        }
+        // Otherwise, i.e. if the request is invalid:
+        else {
+          // Report the error.
+          await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
+        }
+      }
       // Otherwise, if it is an action on a test or retest recommendation:
       else if (pageName === 'recAction.html') {
         const {target, authCode} = postData;
@@ -509,8 +595,8 @@ const requestHandler = async (request, response) => {
           // If the request is an approval:
           if (what) {
             // Set a location header for a response.
-            response.setHeader('content-location', `${pathname}${search}`);
-            // Get the answer data about the remaining recommendations.
+            response.setHeader('content-location', pathname);
+            // Process the approval and get the answer data about the remaining recommendations.
             const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
             .answer(url, what, authCode);
             // If the answer data are valid:
@@ -526,12 +612,15 @@ const requestHandler = async (request, response) => {
           }
           // Otherwise, i.e. if it is a rejection:
           else {
-            // Get the recommendations.
-            const recs = await getRecs();
-            // Delete the rejected URL.
-            delete recs[url];
-            // Save the revised recommendations.
-            await fs.writeFile(path.join(__dirname, 'jobs', 'recs.json'), getJSON(recs));
+            // Isolate this revision.
+            await recsLock(async () => {
+              // Get the recommendations.
+              const recs = await getRecs();
+              // Delete the rejected URL.
+              delete recs[url];
+              // Save the revised recommendations.
+              await fs.writeFile(path.join(jobsPath, 'recs.json'), getJSON(recs));
+            });
             // Set a location header for a response.
             response.setHeader('content-location', '/recActionForm.html');
             // Get the answer data.
@@ -550,7 +639,7 @@ const requestHandler = async (request, response) => {
       else if (pageName === 'reannotate.html') {
         const {authCode} = postData;
         // Set headers for a response.
-        setHeaders('text/html', `${pathname}${search}`, 'ultra');
+        setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
         .answer(authCode);
@@ -569,7 +658,7 @@ const requestHandler = async (request, response) => {
       else if (pageName === 'wcagRenew.html') {
         const {authCode} = postData;
         // Set headers for a response.
-        setHeaders('text/html', `${pathname}${search}`, 'low');
+        setHeaders('text/html', pathname, 'low');
         // Get the answer data.
         const answerData = await require(path.join(__dirname, 'wcagRenew', 'index'))
         .answer(authCode);
@@ -595,66 +684,8 @@ const requestHandler = async (request, response) => {
           const service = segments[1];
           // If the service is job assignment:
           if (service === 'job') {
-            let clean = true;
-            const messageStart = `Testaro agent ${agentID} requested a job, `;
-            const jobNames = await getJobNames();
-            const claimedJobNames = jobNames.claimed;
-            // For each claimed job:
-            for (const jobName of claimedJobNames) {
-              const job = await getObject(path.join(jobsPath, 'claimed', jobName));
-              const {id, sources} = job;
-              const {agent} = sources;
-              // If its assignee is the agent:
-              if (agent === agentID) {
-                const messageEnd = `but has not completed job ${id}`;
-                // Report this.
-                await serveError({message: `${messageStart}${messageEnd}`}, response, false);
-                // Reclassify the job as failed.
-                await fs.rename(
-                  path.join(claimedPath, jobName), path.join(failedPath, jobName)
-                );
-                clean = false;
-                // Stop checking claimed jobs.
-                break;
-              }
-            }
-            // If no aborted-job error was found for the agent:
-            if (clean) {
-              const queuedJobNames = jobNames.queue;
-              // If any jobs are queued:
-              if (queuedJobNames.length) {
-                const oldestJobName = queuedJobNames[0];
-                // Get the first one.
-                const firstJob = await getObject(path.join(queuePath, oldestJobName));
-                // Add the agent ID to the job.
-                firstJob.sources.agent = agentID;
-                console.log(
-                  `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the agent.`
-                );
-                // Assign the job to the agent.
-                response.writeHead(200, {
-                  'content-type': 'application/json; charset=utf-8'
-                });
-                response.end(JSON.stringify(firstJob));
-                const messageEnd
-                = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the agent`;
-                console.log(`${messageStart}${messageEnd}`);
-                // Move the job from the queue to the claimed-jobs directory.
-                await fs.rename(
-                  path.join(queuePath, oldestJobName), path.join(claimedPath, oldestJobName)
-                );
-              }
-              // Otherwise, i.e. if no jobs are queued:
-              else {
-                response.writeHead(200, {
-                  'content-type': 'application/json; charset=utf-8'
-                });
-                // Send a no-jobs response to the agent.
-                response.end(JSON.stringify({}));
-                const messageEnd = 'but no job was in the queue';
-                console.log(`${messageStart}${messageEnd}`);
-              }
-            }
+            // Process the job request as a transaction.
+            await processJobRequest(request, response, agentID);
           }
           // Otherwise, if the service is report acquisition:
           else if (service === 'report') {
@@ -664,91 +695,73 @@ const requestHandler = async (request, response) => {
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
             // If the request is valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
-              // Acknowledge receipt.
-              response.setHeader('content-type', 'application/json; charset=utf-8');
-              response.end(JSON.stringify({status: 'ok'}));
-              console.log(`Testaro report ${id} was received from Testaro agent ${agentID}`);
               const [timeStamp, jobID] = id.split('-');
               // Save the report.
               await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-              // Create a log for the report.
-              const log = {
-                what,
-                url
-              };
-              // Save the log.
-              await fs.writeFile(getLogPath(timeStamp, jobID), getJSON(log));
-              // Annotate the report and mark it as annotated in the log.
+              // Update the data on the available reports.
+              await makeReportsExtract();
+              // Annotate the report.
               await annotateReport(ruleIDs, timeStamp, jobID);
-              console.log(`Testaro report ${id} was annotated, saved, and logged`);
+              console.log(`Testaro report ${id} was annotated, saved, and indexed`);
               // Check the monetary balances and send alerts if nearing exhaustion.
               await checkBalancesForAlerts(report);
               // Delete the job.
               await fs.unlink(path.join(claimedPath, `${id}.json`));
               console.log(`Completed job ${id} deleted`);
+              // Acknowledge receipt.
+              response.setHeader('content-type', 'application/json; charset=utf-8');
+              response.end(JSON.stringify({status: 'ok'}));
+              console.log(`Testaro report ${id} was received from Testaro agent ${agentID}`);
             }
             // Otherwise, i.e. if the request is invalid:
             else {
-              await serveError({message: 'ERROR: Report invalid'}, response, false);
+              await serveError({message: 'ERROR: Request invalid'}, response, false);
             }
           }
-          // Otherwise, if the service is not valid:
+          // Otherwise, i.e. if the service is invalid:
           else {
             await serveError(
               {message: 'ERROR: Invalid service request from Testaro agent'}, response, false
             );
           }
         }
-        // Otherwise, if the first segment is the report finding service:
-        else if (segments[0] === 'target') {
-          const {description = '', hostname = ''} = postData;
-          // If the payload contains a description or hostname:
-          if (description || hostname) {
-            // Process the request and get the response data.
-            const responseData = await require(path.join(__dirname, 'target', 'api'))
-            .response([description, hostname]);
-            // Send them.
+        // Otherwise, if the first segment is not the ID of the Testaro agent:
+        else if (segments[0] !== testaroAgent) {
+          // If the service is to receive a test request:
+          if (segments[0] === 'requestTest') {
+            const {description, URL, reason} = postData;
+            // Get the response body.
+            const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
+            .response([description, URL, reason]);
+            // Send it.
             setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseData));
+            response.end(JSON.stringify(responseBody));
           }
-          // Otherwise, i.e. if it is not a valid test recommendation:
-          else {
-            // Report this.
-            await serveError({message: 'ERROR: Request has neither a description fragment nor a URL fragment'}, response, false);
-          }
-        }
-        // Otherwise, if the first segment is the test recommendation service:
-        else if (segments[0] === 'testRecForm') {
-          const {
-            'description of the web page': what,
-            'URL of the web page': url,
-            'reason for testing the web page': why
-          } = postData;
-          // If the payload is a valid test recommendation:
-          if (what && isURL(url) && why) {
-            let responseData;
-            // If a report on the page is already available:
-            if (await isReportAvailable(what, url)) {
-              // Report this.
-              responseData = {
-                status: 'warning',
-                message: 'A report on the page is already available'
-              }
-            }
-            // Otherwise, i.e. if no report on the page is available:
-            else {
-              // Process the recommendation and get the response data.
-              responseData = await require(path.join(__dirname, 'testRecForm', 'api'))
-              .response(what, url, why);
-            }
-            // Send the response data.
+          // Otherwise, if the service is to receive a retest request:
+          else if (segments[0] === 'requestRetest') {
+            const {reason} = postData;
+            // Get the response body.
+            const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
+            .response(segments.slice(1).concat(reason));
+            // Send it.
             setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseData));
+            response.end(JSON.stringify(responseBody));
           }
-          // Otherwise, i.e. if it is not a valid test recommendation:
+          // Otherwise, if the service is to receive a feature request:
+          else if (segments[0] === 'requestFeature') {
+            const {request} = postData;
+            // Get the response body.
+            const responseBody = await require(path.join(__dirname, 'api', 'requestFeature'))
+            .response(segments.slice(1).concat(request));
+            // Send it.
+            setHeaders('application/json', null, 'ultra');
+            response.end(JSON.stringify(responseBody));
+          }
+          // Otherwise, i.e. if the service is invalid:
           else {
-            // Report this.
-            await serveError({message: 'ERROR: Invalid test recommendation'}, response, false);
+            await serveError(
+              {message: 'ERROR: Invalid request'}, response, false
+            );
           }
         }
         // Otherwise, i.e. if the request is invalid:
@@ -790,7 +803,7 @@ const requestHandler = async (request, response) => {
 
 const serve = async (protocolModule, options) => {
   // Create any missing directories.
-  for (const path of [queuePath, claimedPath, failedPath, logsPath, reportsPath]) {
+  for (const path of [queuePath, claimedPath, failedPath, reportsPath]) {
     await fs.mkdir(path, {recursive: true});
   }
   const server = protocolModule === 'https'

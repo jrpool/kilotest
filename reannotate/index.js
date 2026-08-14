@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {annotateReport, getLogs, ruleIDs} = require('../util');
+const {annotateReport, getReportExtracts, ruleIDs} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -15,21 +15,32 @@ const path = require('path');
 exports.answer = async authCode => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
-    // Get the logs of the latest reports per target.
-    const targetsData = (await getLogs()).filter(log => ! log.superseded);
-    // For each report:
-    for (const targetData of targetsData) {
-      const [timeStamp, jobID] = targetData.jobName.split('-');
-      // Reannotate it.
-      const annotationError = await annotateReport(ruleIDs, timeStamp, jobID);
-      // If this failed:
-      if (annotationError) {
-        // Return an error page.
-        return {
-          status: 'error',
-          message: annotationError
-        };
+    // Get data on the available reports.
+    const reportExtracts = await getReportExtracts();
+    // If any exist:
+    if (reportExtracts.length) {
+      // For each report:
+      for (const reportExtract of reportExtracts) {
+        const {timeStamp, jobID} = reportExtract;
+        // Reannotate it.
+        const annotationError = await annotateReport(ruleIDs, timeStamp, jobID);
+        // If this failed:
+        if (annotationError) {
+          // Return an error page.
+          return {
+            status: 'error',
+            message: annotationError
+          };
+        }
       }
+    }
+    // Otherwis, i.e. if it failed:
+    else {
+      // Return an error page.
+      return {
+        status: 'error',
+        message: 'Got data on no available reports'
+      };
     }
     // If every annotation succeeded, get the answer page.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');

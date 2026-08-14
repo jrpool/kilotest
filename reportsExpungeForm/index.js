@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportData, makeReportsData, reportsPath} = require('../util');
+const {getReportData, makeReportsExtract, objectSort, reportsPath} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -25,8 +25,8 @@ exports.answer = async (_, search) => {
         // Delete it.
         await fs.unlink(path.join(reportsPath, `${jobName}.json`));
       }
-      // Update the data on the available reports.
-      await makeReportsData();
+      // Update the extract of the available reports.
+      await makeReportsExtract();
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {
@@ -61,13 +61,9 @@ exports.answer = async (_, search) => {
       url
     });
   }
-  // Sort the summaries by URL and then by time stamp.
-  reportSpecs.sort((a, b) => {
-    if (a.url === b.url) {
-      return a.timeStamp.localeCompare(b.timeStamp);
-    }
-    return a.url.localeCompare(b.url);
-  });
+  // Sort the summaries primarily URL and secondarily by time stamp.
+  objectSort(reportSpecs, 'timeStamp', 'alpha');
+  objectSort(reportSpecs, 'url', 'alpha');
   const lines = [];
   const margin = ' '.repeat(12);
   let anyDeletable = false;

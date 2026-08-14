@@ -80,7 +80,7 @@ const getRequestOptions = (path, method = 'GET') => ({
 });
 // Submits a request, returns the response body, and increments the results.
 const submitRequest = async (path, method, requestBody = null) => new Promise(resolve => {
-  console.log(`Making ${scheme} ${method} request on port ${port} to ${host}${path}`);
+  console.log(`Making ${scheme} ${method} request on port ${port} of ${host} to ${path}`);
   client.request(getRequestOptions(path, method), async response => {
     const responseBody = await getBody(response);
     resolve(responseBody);

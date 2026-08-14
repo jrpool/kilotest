@@ -12,7 +12,7 @@ const {getReportExtracts, isURL} = require('../util');
 
 // Returns the response body.
 exports.response = async args => {
-  const [what, url, reason] = args;
+  const [what = '', url = '', reason = ''] = args;
   // Initialize the response content.
   const responseContent = {
     'details about your request': {},

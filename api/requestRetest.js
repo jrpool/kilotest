@@ -12,7 +12,7 @@ const {getReportsExtract} = require('../util');
 
 // Returns the response body.
 exports.response = async args => {
-  const [timeStamp, jobID, reason] = args;
+  const [timeStamp = '', jobID = '', reason = ''] = args;
   // Initialize the response content.
   const responseContent = {
     'details about your request': {},

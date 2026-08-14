@@ -16,7 +16,7 @@ const {getReport, getReportStats} = require('../util');
 
 // Returns the response body.
 exports.response = async args => {
-  const [timeStamp, jobID] = args;
+  const [timeStamp = '', jobID = ''] = args;
   // Initialize the response content.
   const responseContent = {
     'size of the report in bytes': null,

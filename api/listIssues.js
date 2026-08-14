@@ -20,7 +20,7 @@ const {getReport, getReportStats, objectSort} = require('../util');
 
 // Returns the response body.
 exports.response = async args => {
-  const [timeStamp, jobID] = args;
+  const [timeStamp = '', jobID = ''] = args;
   // Initialize the response content.
   const responseContent = {
     'basics about the report': null,

@@ -12,7 +12,7 @@ const {sendAlert} = require('../alerts');
 
 // Returns the response body.
 exports.response = async args => {
-  const [request] = args;
+  const [request = ''] = args;
   // Initialize the response content.
   const responseContent = {
     'details about your request': null

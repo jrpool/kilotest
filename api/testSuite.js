@@ -191,7 +191,9 @@ const requestService = async () => {
     !diagnoses.length
     || !Array.isArray(diagnoses)
     || !diagnoses.length
-    || diagnoses.some(item => !item.includes('severity of the violation'))
+    || diagnoses.some(
+      diagnosis => typeof diagnosis !== 'object' || !diagnosis['description of the violation']
+    )
   ) {
     console.log(`diagnoses: ${JSON.stringify(diagnoses, null, 2)}`);
     return;

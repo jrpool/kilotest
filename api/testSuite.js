@@ -258,14 +258,14 @@ const requestService = async () => {
   console.log('======================\nRequest: Request a retest');
   path = `/api/requestRetest/${timeStamp}/${jobID}`;
   body = await submitRequest(path, method, {
-    reason: 'Just retesting'
+    reason: 'I just feel like making this request'
   });
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
   requestDisposition = responseContent['disposition of your request'] ?? {};
   if (
     !requestDetails['reason why the page should be retested']
-    || !requestDisposition['received and logged']
+    || !requestDisposition['how you can check for completion']
   ) {
     console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     console.log(`requestDisposition: ${JSON.stringify(requestDisposition, null, 2)}`);
@@ -278,7 +278,7 @@ const requestService = async () => {
   });
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
-  if (!requestDetails.disposition?.['received and logged']) {
+  if (!requestDetails.disposition?.includes('received and logged')) {
     console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     return;
   }

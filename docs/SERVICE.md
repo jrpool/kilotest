@@ -297,18 +297,21 @@ secret_access_key = <secret_access_key>
 endpoint = https://<account_id>.r2.cloudflarestorage.com
 acl = private
 no_head = true
+no_check_bucket = true
 ```
 
 The other file is the `crontab` configuration file for `linuxuser`, which is managed with `crontab -e`. The commands in that file (shown with `crontab -l`) are:
 
 ```crontab
-11 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/hiddenReports r2:kilotest-hidden-reports/ -v > /home/linuxuser/kilotest-to-r2.log 2>&1
-12 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/reports r2:kilotest-reports/ -v >> /home/linuxuser/kilotest-to-r2.log 2>&1
+11 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/hiddenReports r2:kilotest-hidden-reports/ -v --backup-dir r2:kilotest-hidden-reports-old/$(date +\%F) > /home/linuxuser/kilotest-to-r2.log 2>&1
+12 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/reports r2:kilotest-reports/ -v --backup-dir r2:kilotest-reports-old/$(date +\%F) >> /home/linuxuser/kilotest-to-r2.log 2>&1
 ```
 
-This configuration every morning (UTC) copies to R2 any reports not already there and overwrites any reports that have been modified after they were last deposited there, but does not delete any reports on R2 that have been deleted on the server.
+This configuration every morning (UTC) copies reports to R2 as follows:
 
-This procedure does not protect reports from corruption on the server. A corrupted report will overwrite the correct report on R2 during the next copy operation.
+- Reports already on R2 are not copied again.
+- Reports not yet on R2 are copied to it.
+- Reports on R2 that differ from and are older than the same-name reports on the server are moved to the corresponding `-old` directory, and the newer reports are copied to R2.
 
 Each daily copy operation is logged in `/home/linuxuser/kilotest-to-r2.log`. That file is replaced with a new one each day documenting only the operation on that day.
 

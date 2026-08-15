@@ -272,13 +272,17 @@ const requestService = async () => {
     return;
   }
   console.log('======================\nRequest: Make a feature request');
-  path = `/api/requestFeature/${timeStamp}/${jobID}`;
+  path = '/api/requestFeature';
+  const featureRequest = 'Do the impossible';
   body = await submitRequest(path, method, {
-    feature: 'Do the impossible'
+    feature: featureRequest
   });
-  responseContent = body?.['response content'] ?? {};
-  requestDetails = responseContent['details about your request'] ?? {};
-  if (!requestDetails.disposition?.includes('received and logged')) {
+  const feature = body?.['this request']?.body?.feature ?? {};
+  requestDetails = body?.['response content']?.['details about your request'] ?? {};
+  if (
+    feature !== featureRequest
+    || !requestDetails.disposition?.includes('received and logged')
+  ) {
     console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
     return;
   }

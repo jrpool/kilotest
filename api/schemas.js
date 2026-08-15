@@ -52,7 +52,7 @@ exports.requestRetestSchema = {
 
 // requestFeature: POST /api/requestFeature
 exports.requestFeatureSchema = {
-  request: z.string().describe('description of requested new feature or feature improvement')
+  feature: z.string().describe('description of requested feature improvement or new feature')
 };
 
 // listReports takes no input; omitted (mcp.js already uses inputSchema: {}).
@@ -105,11 +105,16 @@ const thisRequestSchema = (method, bodySchema) => z.object({
   'closest ancestor request': requestReferenceSchema.nullable()
 });
 
-const envelope = (method, responseContentSchema, bodySchema) => z.object({
+const envelope = (
+  method,
+  responseContentSchema,
+  bodySchema,
+  /** @type {z.ZodType} */ similarWebSchema = similarWebRequestsSchema
+) => z.object({
   'tool collection': toolsFactsSchema,
   'tool name': z.string(),
   'this request': thisRequestSchema(method, bodySchema),
-  'URLs of similar requests for web users': similarWebRequestsSchema,
+  'URLs of similar requests for web users': similarWebSchema,
   'response metadata': responseMetadataSchema,
   'response content': responseContentSchema
 });
@@ -293,5 +298,6 @@ exports.requestFeatureResponseSchema = envelope(
       disposition: z.string()
     })
   ])}),
-  z.object(exports.requestFeatureSchema)
+  z.object(exports.requestFeatureSchema),
+  z.null()
 );

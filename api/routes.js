@@ -90,7 +90,7 @@ module.exports = [
     operationId: 'requestFeature',
     method: 'post',
     path: '/api/requestFeature',
-    summary: 'Request a new feature or feature improvement',
+    summary: 'Request a feature improvement or new feature',
     bodySchema: z.object(requestFeatureSchema),
     responseSchema: requestFeatureResponseSchema
   }

@@ -20,6 +20,7 @@ const outputPath = path.join(__dirname, '..', 'openapi.yaml');
 
 // Builds the paths object for createDocument from the route table.
 const buildPaths = () => {
+  /** @type {import('zod-openapi').ZodOpenApiPathsObject} */
   const paths = {};
   routes.forEach(route => {
     const {method, path: routePath, summary, pathParamsSchema, bodySchema, responseSchema} = route;

@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Kilotest API
   description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 10 rule engines to test public web pages for front-end quality (accessibility, usability, and standards conformity). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
-  version: 39.0.0
+  version: 39.0.3
   license:
     name: MIT
     identifier: MIT
@@ -1045,21 +1045,21 @@ paths:
   /api/requestFeature:
     post:
       operationId: requestFeature
-      summary: Request a new feature or feature improvement
+      summary: Request a feature improvement or new feature
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                request:
+                feature:
                   type: string
-                  description: description of requested new feature or feature improvement
+                  description: description of requested feature improvement or new feature
               required:
-                - request
+                - feature
       responses:
         '200':
-          description: Request a new feature or feature improvement
+          description: Request a feature improvement or new feature
           content:
             application/json:
               schema:
@@ -1082,11 +1082,11 @@ paths:
                       body:
                         type: object
                         properties:
-                          request:
+                          feature:
                             type: string
-                            description: description of requested new feature or feature improvement
+                            description: description of requested feature improvement or new feature
                         required:
-                          - request
+                          - feature
                         additionalProperties: false
                       closest ancestor request:
                         anyOf:

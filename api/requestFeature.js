@@ -12,13 +12,13 @@ const {sendAlert} = require('../alerts');
 
 // Returns the response body.
 exports.response = async args => {
-  const [request = ''] = args;
+  const [feature = ''] = args;
   // Initialize the response content.
   const responseContent = {
     'details about your request': null
   };
-  // If the request is empty:
-  if (!request) {
+  // If the requested feature or improvement is empty:
+  if (!feature) {
     // Add this to the response content.
     responseContent['details about your request'] = {
       error: 'request invalid: request is empty'
@@ -27,7 +27,7 @@ exports.response = async args => {
   // Otherwise, i.e. if it exists:
   else {
     // Notify the manager.
-    await sendAlert('MCP feature request received', request);
+    await sendAlert('MCP feature request received', feature);
     // Add the disposition to the response content.
     responseContent['details about your request'] = {
       'date and time received': new Date().toISOString(),
@@ -43,7 +43,7 @@ exports.response = async args => {
       method: 'POST',
       URL: `${thisHost}/api/requestFeature`,
       body: {
-        request
+        feature
       },
       'closest ancestor request': null
     },

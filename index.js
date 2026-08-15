@@ -750,10 +750,10 @@ const requestHandler = async (request, response) => {
           }
           // Otherwise, if the service is to receive a feature request:
           else if (segments[0] === 'requestFeature') {
-            const {request} = postData;
+            const {feature} = postData;
             // Get the response body.
             const responseBody = await require(path.join(__dirname, 'api', 'requestFeature'))
-            .response(segments.slice(1).concat(request));
+            .response([feature]);
             // Send it.
             setHeaders('application/json', null, 'ultra');
             response.end(JSON.stringify(responseBody));

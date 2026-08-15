@@ -282,9 +282,9 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 ### Report protection
 
-Jobs and reports are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. Therefore, reports risk deletion unless duplicates are made externally.
+Jobs and reports are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. Therefore, reports risk deletion unless duplicates are made externally. Other files, including application code, dependencies, and `db/reportsExtract.json`, are not at risk, because they can be pushed from the local repository or regenerated.
 
-Reports created on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created two _buckets_ named `kilotest-reports` and `kilotest-hidden-reports`, and has configured the buckets with read-write permissions, access keys and a single allowed IP address.
+Reports created on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created two _buckets_ named `kilotest-reports` and `kilotest-hidden-reports`, and has created an API token scoped to those buckets with object read-write permissions, access and secret access keys for S3 clients, and a restriction to the IPv4 and IPv6 addresses of the server.
 
 The server host uses `rclone` for file synchronization with external storage locations. Two files on the server host enable `rclone` for use by Kilotest. One file is `/home/linuxuser/.config/rclone/rclone.conf`. Its content, with secrets replaced, is:
 
@@ -302,9 +302,24 @@ no_head = true
 The other file is the `crontab` configuration file for `linuxuser`, which is managed with `crontab -e`. The commands in that file (shown with `crontab -l`) are:
 
 ```crontab
-11 19 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/hiddenReports r2:kilotest-hidden-reports/ -v > /home/linuxuser/kilotest-to-r2.log 2>&1
-12 19 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/reports r2:kilotest-reports/ -v >> /home/linuxuser/kilotest-to-r2.log 2>&1
+11 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/hiddenReports r2:kilotest-hidden-reports/ -v > /home/linuxuser/kilotest-to-r2.log 2>&1
+12 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/reports r2:kilotest-reports/ -v >> /home/linuxuser/kilotest-to-r2.log 2>&1
 ```
+
+This configuration every morning (UTC) copies to R2 any reports not already there and overwrites any reports that have been modified after they were last deposited there, but does not delete any reports on R2 that have been deleted on the server.
+
+This procedure does not protect reports from corruption on the server. A corrupted report will overwrite the correct report on R2 during the next copy operation.
+
+Each daily copy operation is logged in `/home/linuxuser/kilotest-to-r2.log`. That file is replaced with a new one each day documenting only the operation on that day.
+
+If restoration becomes necessary, the files can be copied in the opposite direction with:
+
+```bash
+/usr/bin/rclone copy r2:kilotest-reports /opt/jpdev/kilotest/db/restored-reports -v
+/usr/bin/rclone copy r2:kilotest-hidden-reports /opt/jpdev/kilotest/db/restored-hidden-reports -v
+```
+
+After that the maintainer can inspect the original and restored directories and delete or move report files as needed. After that the `db/reportsExtract.json` file should be deleted, so it will be regenerated when next needed.
 
 ### Possible future Testaro integration
 

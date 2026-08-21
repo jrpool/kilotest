@@ -69,8 +69,10 @@ const protocol = process.env.PROTOCOL || 'http';
 const queuePath = path.join(jobsPath, 'queue');
 const claimedPath = path.join(jobsPath, 'claimed');
 const failedPath = path.join(jobsPath, 'failed');
-// Secrets of the Testaro workers, by worker ID, from a JSON-object environment variable.
-const workerSecrets = (() => {
+// Credentials of the Testaro workers, by worker ID, from a JSON-object environment variable.
+// Each worker ID maps to a secret (used only to authenticate the worker, never published) and a
+// name (a non-secret label safe to publish, e.g. in report data and logs).
+const workerCredentials = (() => {
   try {
     return JSON.parse(process.env.TESTARO_WORKERS || '{}');
   }
@@ -218,18 +220,23 @@ const getBasicAuth = request => {
   }
   return {id: decoded.slice(0, sepIndex), secret: decoded.slice(sepIndex + 1)};
 };
-// Gets the ID of the Testaro worker that made a request, or null if it is not authenticated.
-const getAuthorizedWorkerID = request => {
+// Gets the ID and published name of the Testaro worker that made a request, or null if it is
+// not authenticated. The ID authenticates the worker and is never published; the name is a
+// non-secret label safe to write into job/report data and log messages.
+const getAuthorizedWorker = request => {
   const credentials = getBasicAuth(request);
-  if (credentials && workerSecrets[credentials.id] === credentials.secret) {
-    return credentials.id;
+  if (credentials) {
+    const worker = workerCredentials[credentials.id];
+    if (worker && worker.secret === credentials.secret) {
+      return {id: credentials.id, name: worker.name || credentials.id};
+    }
   }
   return null;
 };
 // Processes a job request from a Testaro worker.
-const processJobRequest = async (request, response, workerID) => jobLock(async () => {
+const processJobRequest = async (request, response, workerName) => jobLock(async () => {
   let clean = true;
-  const messageStart = `Testaro worker ${workerID} requested a job, `;
+  const messageStart = `Testaro worker ${workerName} requested a job, `;
   const jobNames = await getJobNames();
   const claimedJobNames = jobNames.claimed;
   // For each claimed job:
@@ -238,7 +245,7 @@ const processJobRequest = async (request, response, workerID) => jobLock(async (
     const {id, sources} = job;
     const {agent} = sources;
     // If its assignee is the worker:
-    if (agent === workerID) {
+    if (agent === workerName) {
       const messageEnd = `but has not completed job ${id}`;
       // Report this.
       await serveError({message: `${messageStart}${messageEnd}`}, response, false);
@@ -259,8 +266,8 @@ const processJobRequest = async (request, response, workerID) => jobLock(async (
       const oldestJobName = queuedJobNames[0];
       // Get the first one.
       const firstJob = await getObject(path.join(queuePath, oldestJobName));
-      // Add the worker ID to the job.
-      firstJob.sources.agent = workerID;
+      // Add the worker's published name (never its authentication ID) to the job.
+      firstJob.sources.agent = workerName;
       console.log(
         `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the worker.`
       );
@@ -713,17 +720,18 @@ const requestHandler = async (request, response) => {
       }
       // Otherwise, if it is a request from a Testaro worker:
       else if (pageName === 'worker') {
-        // Get the ID of the worker if the request is authenticated with a valid Authorization
-        // header (HTTP Basic, i.e. base64-encoded "id:secret").
-        const workerID = getAuthorizedWorkerID(request);
+        // Get the worker's ID and published name if the request is authenticated with a valid
+        // Authorization header (HTTP Basic, i.e. base64-encoded "id:secret").
+        const worker = getAuthorizedWorker(request);
         // If it is authenticated:
-        if (workerID) {
+        if (worker) {
           // Get the requested service from the path.
           const service = pathTail;
           // If the service is job assignment:
           if (service === 'job') {
-            // Process the job request as a transaction.
-            await processJobRequest(request, response, workerID);
+            // Process the job request as a transaction, identifying the worker by its published
+            // name rather than its authentication ID.
+            await processJobRequest(request, response, worker.name);
           }
           // Otherwise, if the service is report acquisition:
           else if (service === 'report') {
@@ -749,7 +757,7 @@ const requestHandler = async (request, response) => {
               // Acknowledge receipt.
               response.setHeader('content-type', 'application/json; charset=utf-8');
               response.end(JSON.stringify({status: 'ok'}));
-              console.log(`Testaro report ${id} was received from Testaro worker ${workerID}`);
+              console.log(`Testaro report ${id} was received from Testaro worker ${worker.name}`);
             }
             // Otherwise, i.e. if the request is invalid:
             else {

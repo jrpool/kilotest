@@ -220,15 +220,15 @@ const getBasicAuth = request => {
   }
   return {id: decoded.slice(0, sepIndex), secret: decoded.slice(sepIndex + 1)};
 };
-// Gets the ID and published name of the Testaro worker that made a request, or null if it is
-// not authenticated. The ID authenticates the worker and is never published; the name is a
+// Gets the published name of the Testaro worker that made a request, or null if it is not
+// authenticated. The ID authenticates the worker and is never published; the name is a
 // non-secret label safe to write into job/report data and log messages.
-const getAuthorizedWorker = request => {
+const getAuthorizedWorkerName = request => {
   const credentials = getBasicAuth(request);
   if (credentials) {
     const worker = workerCredentials[credentials.id];
     if (worker && worker.secret === credentials.secret) {
-      return {id: credentials.id, name: worker.name || credentials.id};
+      return worker.name || credentials.id;
     }
   }
   return null;
@@ -266,7 +266,7 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
       const oldestJobName = queuedJobNames[0];
       // Get the first one.
       const firstJob = await getObject(path.join(queuePath, oldestJobName));
-      // Add the worker's published name (never its authentication ID) to the job.
+      // Add the public worker name to the job.
       firstJob.sources.agent = workerName;
       console.log(
         `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the worker.`
@@ -720,18 +720,17 @@ const requestHandler = async (request, response) => {
       }
       // Otherwise, if it is a request from a Testaro worker:
       else if (pageName === 'worker') {
-        // Get the worker's ID and published name if the request is authenticated with a valid
+        // Get the public name of the worker if the request is authenticated with a valid
         // Authorization header (HTTP Basic, i.e. base64-encoded "id:secret").
-        const worker = getAuthorizedWorker(request);
+        const workerName = getAuthorizedWorkerName(request);
         // If it is authenticated:
-        if (worker) {
+        if (workerName) {
           // Get the requested service from the path.
           const service = pathTail;
           // If the service is job assignment:
           if (service === 'job') {
-            // Process the job request as a transaction, identifying the worker by its published
-            // name rather than its authentication ID.
-            await processJobRequest(request, response, worker.name);
+            // Process the job request as a transaction.
+            await processJobRequest(request, response, workerName);
           }
           // Otherwise, if the service is report acquisition:
           else if (service === 'report') {
@@ -748,11 +747,11 @@ const requestHandler = async (request, response) => {
               // job ID.
               const claimedJob = await getObject(path.join(claimedPath, `${id}.json`));
               // If the job was actually assigned to this worker:
-              if (typeof claimedJob === 'object' && claimedJob.sources?.agent === worker.name) {
+              if (typeof claimedJob === 'object' && claimedJob.sources?.agent === workerName) {
                 // Stamp the report with the authenticated worker's published name, discarding
                 // whatever sources.agent value (if any) the worker itself submitted, so that a
                 // worker cannot misrepresent its identity in published report data.
-                report.sources = {...report.sources, agent: worker.name};
+                report.sources = {...report.sources, agent: workerName};
                 // Save the report.
                 await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
                 // Update the data on the available reports.
@@ -769,7 +768,7 @@ const requestHandler = async (request, response) => {
                 response.setHeader('content-type', 'application/json; charset=utf-8');
                 response.end(JSON.stringify({status: 'ok'}));
                 console.log(
-                  `Testaro report ${id} was received from Testaro worker ${worker.name}`
+                  `Testaro report ${id} was received from Testaro worker ${workerName}`
                 );
               }
               // Otherwise, i.e. if the job was not assigned to this worker:
@@ -777,7 +776,7 @@ const requestHandler = async (request, response) => {
                 await serveError(
                   getAbuseError(
                     request,
-                    `Worker ${worker.name} submitted a report for job ${id}, which was not currently assigned to it`
+                    `Worker ${workerName} submitted a report for job ${id}, which was not currently assigned to it`
                   ),
                   response,
                   false

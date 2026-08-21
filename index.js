@@ -739,27 +739,52 @@ const requestHandler = async (request, response) => {
             const {id, target} = report;
             const {what, url} = target;
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
-            // If the request is valid:
+            // If the request is syntactically valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
               const [timeStamp, jobID] = id.split('-');
-              // Save the report.
-              await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-              // Update the data on the available reports.
-              await makeReportsExtract();
-              // Annotate the report.
-              await annotateReport(ruleIDs, timeStamp, jobID);
-              console.log(`Testaro report ${id} was annotated, saved, and indexed`);
-              // Check the monetary balances and send alerts if nearing exhaustion.
-              await checkBalancesForAlerts(report);
-              // Delete the job.
-              await fs.unlink(path.join(claimedPath, `${id}.json`));
-              console.log(`Completed job ${id} deleted`);
-              // Acknowledge receipt.
-              response.setHeader('content-type', 'application/json; charset=utf-8');
-              response.end(JSON.stringify({status: 'ok'}));
-              console.log(`Testaro report ${id} was received from Testaro worker ${worker.name}`);
+              // Get the job as Kilotest assigned it (before the worker could have altered it),
+              // to verify that the worker submitting this report is the one the job was
+              // assigned to, and not, e.g., a different worker submitting a hijacked or stale
+              // job ID.
+              const claimedJob = await getObject(path.join(claimedPath, `${id}.json`));
+              // If the job was actually assigned to this worker:
+              if (typeof claimedJob === 'object' && claimedJob.sources?.agent === worker.name) {
+                // Stamp the report with the authenticated worker's published name, discarding
+                // whatever sources.agent value (if any) the worker itself submitted, so that a
+                // worker cannot misrepresent its identity in published report data.
+                report.sources = {...report.sources, agent: worker.name};
+                // Save the report.
+                await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
+                // Update the data on the available reports.
+                await makeReportsExtract();
+                // Annotate the report.
+                await annotateReport(ruleIDs, timeStamp, jobID);
+                console.log(`Testaro report ${id} was annotated, saved, and indexed`);
+                // Check the monetary balances and send alerts if nearing exhaustion.
+                await checkBalancesForAlerts(report);
+                // Delete the job.
+                await fs.unlink(path.join(claimedPath, `${id}.json`));
+                console.log(`Completed job ${id} deleted`);
+                // Acknowledge receipt.
+                response.setHeader('content-type', 'application/json; charset=utf-8');
+                response.end(JSON.stringify({status: 'ok'}));
+                console.log(
+                  `Testaro report ${id} was received from Testaro worker ${worker.name}`
+                );
+              }
+              // Otherwise, i.e. if the job was not assigned to this worker:
+              else {
+                await serveError(
+                  getAbuseError(
+                    request,
+                    `Worker ${worker.name} submitted a report for job ${id}, which was not currently assigned to it`
+                  ),
+                  response,
+                  false
+                );
+              }
             }
-            // Otherwise, i.e. if the request is invalid:
+            // Otherwise, i.e. if the request is syntactically invalid:
             else {
               await serveError({message: 'ERROR: Request invalid'}, response, false);
             }

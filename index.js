@@ -243,9 +243,9 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
   for (const jobName of claimedJobNames) {
     const job = await getObject(path.join(jobsPath, 'claimed', jobName));
     const {id, sources} = job;
-    const {agent} = sources;
+    const {worker} = sources;
     // If its assignee is the worker:
-    if (agent === workerName) {
+    if (worker === workerName) {
       const messageEnd = `but has not completed job ${id}`;
       // Report this.
       await serveError({message: `${messageStart}${messageEnd}`}, response, false);
@@ -266,8 +266,8 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
       const oldestJobName = queuedJobNames[0];
       // Get the first one.
       const firstJob = await getObject(path.join(queuePath, oldestJobName));
-      // Add the public worker name to the job.
-      firstJob.sources.agent = workerName;
+      // Add the public worker name to the job, in a property Testaro does not read or alter.
+      firstJob.sources.worker = workerName;
       console.log(
         `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the worker.`
       );
@@ -720,10 +720,9 @@ const requestHandler = async (request, response) => {
       }
       // Otherwise, if it is a request from a Testaro worker:
       else if (pageName === 'worker') {
-        // Get the public name of the worker if the request is authenticated with a valid
-        // Authorization header (HTTP Basic, i.e. base64-encoded "id:secret").
+        // Authenticate the worker and get its public name.
         const workerName = getAuthorizedWorkerName(request);
-        // If it is authenticated:
+        // If this succeeded:
         if (workerName) {
           // Get the requested service from the path.
           const service = pathTail;
@@ -732,7 +731,7 @@ const requestHandler = async (request, response) => {
             // Process the job request as a transaction.
             await processJobRequest(request, response, workerName);
           }
-          // Otherwise, if the service is report acquisition:
+          // Otherwise, if it is report acquisition:
           else if (service === 'report') {
             const {report} = postData;
             const {id, target} = report;
@@ -741,17 +740,16 @@ const requestHandler = async (request, response) => {
             // If the request is syntactically valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
               const [timeStamp, jobID] = id.split('-');
-              // Get the job as Kilotest assigned it (before the worker could have altered it),
-              // to verify that the worker submitting this report is the one the job was
-              // assigned to, and not, e.g., a different worker submitting a hijacked or stale
-              // job ID.
+              // Get the job the report is from.
               const claimedJob = await getObject(path.join(claimedPath, `${id}.json`));
               // If the job was actually assigned to this worker:
-              if (typeof claimedJob === 'object' && claimedJob.sources?.agent === workerName) {
-                // Stamp the report with the authenticated worker's published name, discarding
-                // whatever sources.agent value (if any) the worker itself submitted, so that a
-                // worker cannot misrepresent its identity in published report data.
-                report.sources = {...report.sources, agent: workerName};
+              if (typeof claimedJob === 'object' && claimedJob.sources?.worker === workerName) {
+                // Set the public worker name in the report, regardless of whatever value (if
+                // any) sources.agent has; that property is the worker's own business (e.g.
+                // Testaro sets it from its local AGENT variable) and Kilotest neither trusts nor
+                // alters it. sources.worker is Kilotest's own record of who actually did the
+                // job, verified above, and is what Kilotest publishes and logs.
+                report.sources = {...report.sources, worker: workerName};
                 // Save the report.
                 await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
                 // Update the data on the available reports.

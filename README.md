@@ -30,7 +30,7 @@ In the steps below, hosts `T` and `K` may be the same host or two different host
 1. Clone the Kilotest repository into a new directory on host `K`.
 1. In that directory, install the Kilotest dependencies: `npm install`.
 1. Copy the `env.testaro` file from the `kilotest` directory to `.env` in the `testaro` directory and replace the `__placeholder__` values in `.env` with actual values.
-1. Copy the `env.example` file in the `kilotest` directory to a new `.env` file in the same directory and replace the `__placeholder__` values in `.env` with actual values.
+1. Copy the `env.example` file in the `kilotest` directory to a new `.env` file in the same directory and replace the `__placeholder__` values in `.env` with actual values. `TESTARO_WORKERS` is a JSON object mapping each Testaro worker's ID to its secret; the ID and secret for a worker must match the `NETWATCH_WORKER_ID` and `NETWATCH_AUTH` values in that worker's `.env`. A worker authenticates each request with an HTTP Basic `Authorization` header (`id:secret`, base64-encoded); as of this writing that header is not yet sent by the published Testaro package, so this scheme requires a matching update to Testaro's `netWatch` request code.
 
 ### Usage
 

@@ -69,8 +69,16 @@ const protocol = process.env.PROTOCOL || 'http';
 const queuePath = path.join(jobsPath, 'queue');
 const claimedPath = path.join(jobsPath, 'claimed');
 const failedPath = path.join(jobsPath, 'failed');
-const testaroAgent = process.env.TESTARO_AGENT;
-const testaroAgentPW = process.env.TESTARO_AGENT_PW;
+// Secrets of the Testaro workers, by worker ID, from a JSON-object environment variable.
+const workerSecrets = (() => {
+  try {
+    return JSON.parse(process.env.TESTARO_WORKERS || '{}');
+  }
+  catch (error) {
+    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${error.message})`);
+    return {};
+  }
+})();
 // Values that may require alerts.
 const balancePath = path.join(__dirname, 'ai0Balance.json');
 const jobLock = createLock();
@@ -82,11 +90,11 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 // FUNCTIONS
 
 // Serves or sends an error message.
-const serveError = async (error, response, isHumanUser = true) => {
+const serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   console.log(errorLines.join('\n') || 'ERROR');
   if (!response.writableEnded) {
-    response.statusCode = 400;
+    response.statusCode = statusCode;
     // If the request is from a human user:
     if (isHumanUser) {
       // Serve an HTML page containing the message property of the error.
@@ -189,10 +197,39 @@ const getAbuseError = (request, reason) => {
     time: new Date().toISOString()
   };
 };
-// Processes a job request from a Testaro agent.
-const processJobRequest = async (request, response, agentID) => jobLock(async () => {
+// Gets the ID and secret from a request's HTTP Basic Authorization header, or null if the header
+// is absent or malformed.
+const getBasicAuth = request => {
+  const header = request.headers['authorization'] || '';
+  const match = header.match(/^Basic\s+(\S+)$/i);
+  if (!match) {
+    return null;
+  }
+  let decoded;
+  try {
+    decoded = Buffer.from(match[1], 'base64').toString('utf8');
+  }
+  catch {
+    return null;
+  }
+  const sepIndex = decoded.indexOf(':');
+  if (sepIndex === -1) {
+    return null;
+  }
+  return {id: decoded.slice(0, sepIndex), secret: decoded.slice(sepIndex + 1)};
+};
+// Gets the ID of the Testaro worker that made a request, or null if it is not authenticated.
+const getAuthorizedWorkerID = request => {
+  const credentials = getBasicAuth(request);
+  if (credentials && workerSecrets[credentials.id] === credentials.secret) {
+    return credentials.id;
+  }
+  return null;
+};
+// Processes a job request from a Testaro worker.
+const processJobRequest = async (request, response, workerID) => jobLock(async () => {
   let clean = true;
-  const messageStart = `Testaro agent ${agentID} requested a job, `;
+  const messageStart = `Testaro worker ${workerID} requested a job, `;
   const jobNames = await getJobNames();
   const claimedJobNames = jobNames.claimed;
   // For each claimed job:
@@ -200,8 +237,8 @@ const processJobRequest = async (request, response, agentID) => jobLock(async ()
     const job = await getObject(path.join(jobsPath, 'claimed', jobName));
     const {id, sources} = job;
     const {agent} = sources;
-    // If its assignee is the agent:
-    if (agent === agentID) {
+    // If its assignee is the worker:
+    if (agent === workerID) {
       const messageEnd = `but has not completed job ${id}`;
       // Report this.
       await serveError({message: `${messageStart}${messageEnd}`}, response, false);
@@ -214,7 +251,7 @@ const processJobRequest = async (request, response, agentID) => jobLock(async ()
       break;
     }
   }
-  // If no aborted-job error was found for the agent:
+  // If no aborted-job error was found for the worker:
   if (clean) {
     const queuedJobNames = jobNames.queue;
     // If any jobs are queued:
@@ -222,18 +259,18 @@ const processJobRequest = async (request, response, agentID) => jobLock(async ()
       const oldestJobName = queuedJobNames[0];
       // Get the first one.
       const firstJob = await getObject(path.join(queuePath, oldestJobName));
-      // Add the agent ID to the job.
-      firstJob.sources.agent = agentID;
+      // Add the worker ID to the job.
+      firstJob.sources.agent = workerID;
       console.log(
-        `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the agent.`
+        `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the worker.`
       );
-      // Assign the job to the agent.
+      // Assign the job to the worker.
       response.writeHead(200, {
         'content-type': 'application/json; charset=utf-8'
       });
       response.end(JSON.stringify(firstJob));
       const messageEnd
-      = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the agent`;
+      = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the worker`;
       console.log(`${messageStart}${messageEnd}`);
       // Save the job in the claimed-jobs directory.
       await fs.writeFile(
@@ -247,7 +284,7 @@ const processJobRequest = async (request, response, agentID) => jobLock(async ()
       response.writeHead(200, {
         'content-type': 'application/json; charset=utf-8'
       });
-      // Send a no-jobs response to the agent.
+      // Send a no-jobs response to the worker.
       response.end(JSON.stringify({}));
       const messageEnd = 'but no job was in the queue';
       console.log(`${messageStart}${messageEnd}`);
@@ -674,19 +711,19 @@ const requestHandler = async (request, response) => {
           await serveError({message: answerData.message}, response, true);
         }
       }
-      // Otherwise, if it is a request from an agent:
-      else if (pageName === 'api') {
-        // Get the segments of the path after api.
-        const segments = pathTail.split('/');
-        // If the first segment is the ID of the Testaro agent and the agent is authenticated:
-        if (segments[0] === testaroAgent && postData.agentPW === testaroAgentPW) {
-          const agentID = segments[0];
+      // Otherwise, if it is a request from a Testaro worker:
+      else if (pageName === 'worker') {
+        // Get the ID of the worker if the request is authenticated with a valid Authorization
+        // header (HTTP Basic, i.e. base64-encoded "id:secret").
+        const workerID = getAuthorizedWorkerID(request);
+        // If it is authenticated:
+        if (workerID) {
           // Get the requested service from the path.
-          const service = segments[1];
+          const service = pathTail;
           // If the service is job assignment:
           if (service === 'job') {
             // Process the job request as a transaction.
-            await processJobRequest(request, response, agentID);
+            await processJobRequest(request, response, workerID);
           }
           // Otherwise, if the service is report acquisition:
           else if (service === 'report') {
@@ -712,7 +749,7 @@ const requestHandler = async (request, response) => {
               // Acknowledge receipt.
               response.setHeader('content-type', 'application/json; charset=utf-8');
               response.end(JSON.stringify({status: 'ok'}));
-              console.log(`Testaro report ${id} was received from Testaro agent ${agentID}`);
+              console.log(`Testaro report ${id} was received from Testaro worker ${workerID}`);
             }
             // Otherwise, i.e. if the request is invalid:
             else {
@@ -722,54 +759,56 @@ const requestHandler = async (request, response) => {
           // Otherwise, i.e. if the service is invalid:
           else {
             await serveError(
-              {message: 'ERROR: Invalid service request from Testaro agent'}, response, false
+              {message: 'ERROR: Invalid service request from Testaro worker'}, response, false
             );
           }
         }
-        // Otherwise, if the first segment is not the ID of the Testaro agent:
-        else if (segments[0] !== testaroAgent) {
-          // If the service is to receive a test request:
-          if (segments[0] === 'requestTest') {
-            const {description, URL, reason} = postData;
-            // Get the response body.
-            const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
-            .response([description, URL, reason]);
-            // Send it.
-            setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseBody));
-          }
-          // Otherwise, if the service is to receive a retest request:
-          else if (segments[0] === 'requestRetest') {
-            const {reason} = postData;
-            // Get the response body.
-            const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
-            .response(segments.slice(1).concat(reason));
-            // Send it.
-            setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseBody));
-          }
-          // Otherwise, if the service is to receive a feature request:
-          else if (segments[0] === 'requestFeature') {
-            const {feature} = postData;
-            // Get the response body.
-            const responseBody = await require(path.join(__dirname, 'api', 'requestFeature'))
-            .response([feature]);
-            // Send it.
-            setHeaders('application/json', null, 'ultra');
-            response.end(JSON.stringify(responseBody));
-          }
-          // Otherwise, i.e. if the service is invalid:
-          else {
-            await serveError(
-              {message: 'ERROR: Invalid request'}, response, false
-            );
-          }
-        }
-        // Otherwise, i.e. if the request is invalid:
+        // Otherwise, i.e. if it is not authenticated:
         else {
           // Report this.
           await serveError(
-            {message: 'ERROR: Invalid API request'}, response, false
+            {message: 'ERROR: Unauthorized worker request'}, response, false, 401
+          );
+        }
+      }
+      // Otherwise, if it is a request from an API consumer:
+      else if (pageName === 'api') {
+        // Get the segments of the path after api.
+        const segments = pathTail.split('/');
+        // If the service is to receive a test request:
+        if (segments[0] === 'requestTest') {
+          const {description, URL, reason} = postData;
+          // Get the response body.
+          const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
+          .response([description, URL, reason]);
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to receive a retest request:
+        else if (segments[0] === 'requestRetest') {
+          const {reason} = postData;
+          // Get the response body.
+          const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
+          .response(segments.slice(1).concat(reason));
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to receive a feature request:
+        else if (segments[0] === 'requestFeature') {
+          const {feature} = postData;
+          // Get the response body.
+          const responseBody = await require(path.join(__dirname, 'api', 'requestFeature'))
+          .response([feature]);
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, i.e. if the service is invalid:
+        else {
+          await serveError(
+            {message: 'ERROR: Invalid request'}, response, false
           );
         }
       }

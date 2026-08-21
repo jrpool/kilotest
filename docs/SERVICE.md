@@ -203,7 +203,7 @@ kilotest.com {
   }
   @allowedPOST {
     method POST
-    path /mcp /retestRec.html/* /testRec.html /recAction.html /reannotate.html /wcagRenew.html /api/* /tutorialComment.html
+    path /mcp /retestRec.html/* /testRec.html /recAction.html /reannotate.html /wcagRenew.html /api/* /worker/* /tutorialComment.html
   }
   # Respond to OPTIONS requests.
   @allowedOPTIONS method OPTIONS
@@ -244,7 +244,7 @@ kilotest.com {
 
 This configuration can be futher tightened if experience warrants.
 
-The `flush_interval` setting prevents granular reporting by Testaro agents from being buffered, so the updates reach the browser without delay.
+The `flush_interval` setting prevents granular reporting by Testaro workers from being buffered, so the updates reach the browser without delay.
 
 ## Version management
 

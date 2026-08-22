@@ -18,7 +18,7 @@ Testing for Kilotest is performed by one or more testing agents that obtain jobs
 
 An active production instance of Kilotest may require multiple testing agents to handle the load, because testing one web page typically takes about 3 minutes and agents test only one page at a time.
 
-## Getting started locally with 1 testing agent
+## Getting started locally with 1 testing worker
 
 ### Installation
 

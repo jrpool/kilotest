@@ -227,8 +227,8 @@ const getAuthorizedWorkerName = request => {
   const credentials = getBasicAuth(request);
   if (credentials) {
     const worker = workerCredentials[credentials.id];
-    if (worker && worker.secret === credentials.secret) {
-      return worker.name || credentials.id;
+    if (worker && worker.secret === credentials.secret && worker.name) {
+      return worker.name;
     }
   }
   return null;

@@ -326,7 +326,7 @@ After that the maintainer can inspect the original and restored directories and 
 
 ### Possible future Testaro integration
 
-Kilotest uses Testaro to run jobs. In previous versions of Kilotest, Testaro was a dependency. It is currently not a dependenc. Instead, Testaro instances are installed on one or more other hosts, and each instance polls Kilotest to ask for jobs to run.
+Kilotest uses Testaro to run jobs. In previous versions of Kilotest, Testaro was a dependency. It is currently not a dependency. Instead, Testaro instances are installed on one or more other hosts, and each instance polls Kilotest to ask for jobs to run.
 
 In case Testaro again becomes a dependency of Kilotest, the notes below on security issues will be useful.
 

@@ -28,6 +28,7 @@ exports.sendAlert = (subject, body) => new Promise(resolve => {
       subject,
       text: body
     });
+    // Ask the alerting host to send an alert to the manager.
     const req = https.request({
       hostname: ALERT_API_HOST,
       path: ALERT_API_PATH,
@@ -43,10 +44,14 @@ exports.sendAlert = (subject, body) => new Promise(resolve => {
         data += chunk;
       });
       res.on('end', () => {
+        // If this succeeded:
         if (res.statusCode >= 200 && res.statusCode < 300) {
+          // Report this.
           console.log(`Alert sent (${subject})`);
         }
+        // Otherwise, i.e. if it failed:
         else {
+          // Report this.
           console.log(`ERROR: Alert API responded ${res.statusCode}: ${data}`);
         }
         resolve();

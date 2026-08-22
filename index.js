@@ -744,11 +744,8 @@ const requestHandler = async (request, response) => {
               const claimedJob = await getObject(path.join(claimedPath, `${id}.json`));
               // If the job was actually assigned to this worker:
               if (typeof claimedJob === 'object' && claimedJob.sources?.worker === workerName) {
-                // Set the public worker name in the report, regardless of whatever value (if
-                // any) sources.agent has; that property is the worker's own business (e.g.
-                // Testaro sets it from its local AGENT variable) and Kilotest neither trusts nor
-                // alters it. sources.worker is Kilotest's own record of who actually did the
-                // job, verified above, and is what Kilotest publishes and logs.
+                console.log(`Testaro report ${id} was received from worker ${workerName}`);
+                // Add the public worker name to the report.
                 report.sources = {...report.sources, worker: workerName};
                 // Save the report.
                 await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));

@@ -47,4 +47,16 @@ See the `SERVICE.md` file for instructions on how to make Kilotest a service.
 
 ## Using Kilotest as an AI tool
 
-See the `AI-TOOLS.md` file for information about the configuration of Kilotest as a collection of AI tools.
+Kilotest is not only a web application but also an API and an MCP server. AI platforms and models can use Kilotest via those interfaces.
+
+The URL for models using the MCP server is `http://kilotest.com/mcp`. The MCP server is listed at these services:
+
+- [Smithery](https://smithery.ai/servers/pool/kilotest)
+- [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest)
+
+There is additional documentation at:
+
+- [AI-TOOLS.md](AI-TOOLS.md)
+- [llms.txt](llms.txt)
+- [llms-full.txt](llms-full.txt)
+- [QAI](https://kilotest.com/qai)

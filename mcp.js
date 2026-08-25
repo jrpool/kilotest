@@ -199,8 +199,8 @@ const createMCPServer = () => {
         openWorldHint: false
       }
     },
-    async ({request}) => {
-      const result = await requestFeatureAPI.response([request]);
+    async ({feature}) => {
+      const result = await requestFeatureAPI.response([feature]);
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );

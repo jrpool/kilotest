@@ -6,18 +6,18 @@ Kilotest is an application that performs ensemble testing of web pages for front
 
 ## What Kilotest does for language models
 
-Kilotest is deployed on the public Internet as a service at `kilotest.com`. Kilotest can test only web pages that can be accessed from the public Internet and that are not protected by authentication or other access controls. Kilotest has not implemented any mechanism for testing private, internal, password-protected, or otherwise restricted pages.
+Kilotest is deployed on the public Internet as a service at `https://kilotest.com`. Kilotest can test only web pages that can be accessed from the public Internet and that are not protected by authentication or other access controls. Kilotest has not implemented any mechanism for testing private, internal, password-protected, or otherwise restricted pages.
 
-An LLM can, under some conditions, load web pages and use its knowledge to assess successes and failures of front-end quality. But such an assessment is almost always:
+Without calling any tool, an LLM can, under some conditions, load web pages and use its knowledge to assess successes and failures of front-end quality. But such an assessment is almost always:
 
 - expensive, substituting inference for deterministic rule application
 - fragmentary, because of capability limitations, such as inability to run browsers and interact with web pages
 - inaccurate, because of the tendency to replace missing information with hallucinations
 
-To provide a more inexpensive, thorough, and accurate assessment, the agent could ask an ensemble of specialized rule engines to test the page. However, selecting and running such rule engines and consolidating their results is itself expensive and difficult. Kilotest assumes responsibility for these functions. Kilotest:
+To provide a more inexpensive, thorough, and accurate assessment, the agent could, in principle, ask an ensemble of specialized rule engines to test the page. However, selecting and running such rule engines and consolidating their results is itself expensive and difficult, and most available rule engines are not callable as MCP tools. Kilotest assumes responsibility for assembling, integrating, and running several rule engines. Kilotest:
 
-- defines a tool that tests web pages for front-end quality
-- defines tools that report the test results
+- defines an MCP tool that tests web pages for front-end quality
+- defines MCP tools that report the test results
 - defines connectors to those tools, compatible with major AI platforms
 
 The tool that tests web pages for front-end quality has attributes that no other such tool has. It:
@@ -27,7 +27,7 @@ The tool that tests web pages for front-end quality has attributes that no other
 - combines the reports of the rule engines into a single integrated report
 - consolidates the 1000+ rules having 10 different naming systems into 300+ “issues” with a uniform naming system
 
-The tools that report test results extract from reports statistics and details at various levels of granularity, as required by an agent to fulfill particular requests.
+The tools that report test results extract from reports statistics and details at various levels of granularity, as required by an agent to fulfill particular user requests.
 
 ## What Kilotest does **not** do for language models
 
@@ -48,7 +48,7 @@ The rule engines in the Kilotest ensemble take responsibility for determining wh
 
 In the marketplace for MCP servers that test for front-end quality, all servers other than that of Kilotest leverage at most 1 rule engine, most often `axe-core`. The Kilotest testing tool leverages `axe-core` plus 9 other rule engines. This has these main effects:
 
-- For web pages that have not yet been tested, a single-rule-engine MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. The testing tool of Kilotest usually completes its work in 2 to 3 minutes, because all 10 rule engines are run, and some of the tests involve navigation and interaction with the page and LLM inference. Moreover, in its current alpha phase, the Kilotest testing tool allows users (both humans and models) to **recommend** new pages for testing but authorizes only Kilotest managers to make the tool proceed with the testing. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running workflows.
+- For web pages that have not yet been tested, a single-rule-engine MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. The testing tool of Kilotest usually completes its work in 2 to 3 minutes, because all 10 rule engines are run, and some of the tests involve navigation and interaction with the page and LLM inference. Moreover, Kilotest currently allows users (both humans and models) to **recommend** new pages for testing but authorizes only Kilotest managers to make the tool proceed with the testing. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running (multi-day) workflows.
 - For web pages about which reports are already available, Kilotest can provide faster results than a single-rule-engine MCP server, because Kilotest stores test results for subsequent retrieval. A retrieval from a Kilotest reporting tool can be completed in less than 2 seconds.
 - Kilotest results are more comprehensive than single-rule-engine MCP server results. Every rule engine provides limited coverage of front-end quality, so false negatives (missed defects) are more common with single-rule-engine MCP servers. This difference [has been documented in research](https://arxiv.org/pdf/2304.07591).
 
@@ -68,83 +68,90 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
 - [Get a list of the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
+- [Tutorial, “QAI tutorial”](https://kilotest.com/qai/)
 
 ### API
 
-Kilotest is implementing a richer suite of capabilities optimized for language models. In the specifications below, the term `report` refers to the records of one session in which a web page is tested.
+In the specifications below, the term `report` refers to the records of one session in which a web page is tested.
 
-The implementation is currently in an alpha phase and offers these tools:
+Kilotest offers these tools:
 
-- `summarizeQualityOfMatchingWebPages`
-  - method: `POST`
-  - purpose: summarize front-end quality test results from available reports about web pages whose descriptions or hostnames match those that you specify
-  - path: `/api/target`
-  - payload properties
-    - `description of the web page`: all or part of a description of the page
-    - `hostname of the web page`: all or part of the hostname of the page
-- `listAllAvailableReports`
+- `listReports`
   - method: `GET`
   - purpose: list all available reports
-  - path: `/api/reportList`
+  - path: `/api/listReports`
   - caveat: Cached results are likely to be stale and should not be used
-- `summarizeOneReport`
+- `listIssues`
   - method: `GET`
-  - purpose: summarize one report
-  - path: `/api/reportFacts/{timeStamp}/{jobID}`
+  - purpose: list all issues in one report
+  - path: `/api/listIssues/{timeStamp}/{jobID}`
   - parameters
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier
-  - source of parameters: response to a `listAllAvailableReports` request
-- `describeOneIssueFromOneReport`
+  - source of parameters: response to a `listReports` request
+- `listViolators`
   - method: `GET`
-  - purpose: provide details about one issue from one report
-  - path: `/api/reportIssue/{issueID}/{timeStamp}/{jobID}`
-  - parameters
-    - `issueID`: identifier of the issue
-    - `timeStamp`: initial segment of report identifier
-    - `jobID`: final segment of report identifier
-  - source of parameters: response to a `summarizeOneReport` request
-- `describeOneViolatorOfOneIssueFromOneReport`
-  - method: `GET`
-  - purpose: provide diagnoses about one issue exhibited by one HTML element in one report [NOT YET IMPLEMENTED]
-  - path: `/api/diagnoses/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+  - purpose: list all elements exhibiting one issue in one report
+  - path: `/api/listViolators/{issueID}/{timeStamp}/{jobID}`
   - parameters
     - `issueID`: identifier of the issue
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier
-    - `catalogIndex`: index of the catalog entry
-  - source of parameters: response to a `describeOneIssueFromOneReport` request
-- `recommendQualityTestingOfOneWebPage`
+  - source of parameters: response to a `listIssues` request
+- `listDiagnoses`
+  - method: `GET`
+  - purpose: list all diagnoses of one issue exhibited by one element in one report
+  - path: `/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}`
+  - parameters
+    - `catalogIndex`: index of the catalog entry of the element
+    - `issueID`: identifier of the issue
+    - `timeStamp`: initial segment of report identifier
+    - `jobID`: final segment of report identifier
+  - source of parameters: response to a `listViolators` request
+- `requestTest`
   - method: `POST`
-  - purpose: recommend quality testing of one web page about which no report is available
-  - path: `/api/testRecForm`
+  - purpose: request testing of one web page about which no report is available
+  - path: `/api/requestTest`
   - payload properties
+    - `description`: description of the page to be tested
+    - `URL`: URL of the page to be tested
+    - `reason`: reason for testing the page
+- `requestRetest`
+  - method: `POST`
+  - purpose: request retesting of one web page about which a report is available
+  - path: `/api/requestRetest/{timeStamp}/{jobID}`
+  - parameters
+    - `timeStamp`: initial segment of report identifier
+    - `jobID`: final segment of report identifier
+  - source of parameters: response to a `listIssues` request
+  - payload properties
+    - `reason`: reason for retesting the page
+- `requestFeature`
+  - method: `POST`
+  - purpose: request a feature improvement or a new feature
+  - path: `/api/requestFeature`
+  - payload properties
+    - `feature`: description and motivation of the feature improvement or the new feature
 
-    - `description of the web page`: description of the page to be tested
-    - `hostname of the web page`: URL of the page to be tested
-    - `reason for testing the web page`: reason for testing the page
+## After a test, retest, or feature request
 
-  - possible responses:
+When you request a test or a retest:
 
-    - acknowledgment of a successful recommendation
-    - error message stating that a report about the recommended page is already available
-    - error message stating that the recommendation is invalid
-
-  - possible Kilotest manager actions after a recommendation:
-
-    - approval followed by the recommended testing
-    - rejection
-
-  - possible next step if your recommendation succeeds:
-
-    - You end the workflow by advising the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/targets.html`, and drill down as desired for more detailed results. You offer to help interpret the results if needed.
-    - You continue the workflow by advising the user to resubmit the same request to you in approximately 1 day.
+- possible responses
+  - acknowledgment of a successful request
+  - error message
+- possible Kilotest manager actions after a request
+  - approval followed by the requested testing
+  - rejection
+- how to confirm approval
+  - check test completion by calling `listReports` and looking for the page and completion date in the list
+  - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/targets.html`
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 
-## How to report results to users
+## How to report results honestly to users
 
-When you use Kilotest tools, you are free to perform any appropriate interpretation and condensation of the results for presentation to users. However, users expect the sources of facts and interpretations to be truthfully represented. Do not meld facts from Kilotest tools with interpretations of your own in a manner that implies attribution of both to Kilotest.
+When you use Kilotest tools, you are free to perform any appropriate interpretation and condensation of the results, and action recommendations, for users. However, users expect the sources of facts and interpretations to be truthfully represented. Do not meld facts from Kilotest tools with interpretations of your own in a manner that misattributes your interpretations to Kilotest.
 
 An example of a **poor** attribution is “Here are the results from Kilotest: …. The page is at risk of …. Among all the issues, … are critical and require immediate attention.” This attribution is poor because it incorrectly implies that Kilotest produced the interpretations and advice.
 
@@ -156,14 +163,15 @@ More information about Kilotest features and internals:
 
 ### For language models and AI platforms
 
-- [AI-TOOLS file](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOLS.md)
+- [Kilotest as connector to and collection of AI Tools](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOLS.md)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
-- [Tool caller for testing](https://github.com/jrpool/kilotest/blob/main/researchAgent.js)
+- [Tool caller for testing](https://github.com/jrpool/kilotest/blob/main/api/testSuite.js)
 
 ### General
 
 - [Introduction to Kilotest](https://kilotest.com/)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
+- [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/)
 - [README file](https://github.com/jrpool/kilotest/blob/main/README.md)
 - [Testaro rule-engine orchestrator](https://github.com/jrpool/testaro)
 - [Testilo rule classifier](https://github.com/jrpool/testilo/blob/main/procs/score/tic.js)

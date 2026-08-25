@@ -43,9 +43,11 @@ The internal changes that have been made in the Kilotest codebase to support the
 The external actions that have been taken to support the use of Kilotest as a collection of AI tools are:
 
 - A [pull request](https://github.com/public-apis/public-apis/pull/6346/changes) to add Kilotest to the list of public APIs in the `public-apis` repository.
-- A [request](https://rapidapi.com/studio/api_91f2ce07-2572-48bd-a34d-ff01ed6cd039/publish/general) to add Kilotest to the Rapid API Hub.
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
+- Registration of Kilotest with the [Smithery](https://smithery.ai/servers/pool/kilotest) MCP server registry.
+- Registration of Kilotest with the [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest) MCP server registry.
+- Registration of Kilotest with the [RapidAPI](https://rapidapi.com/jrpool/api/kilotest/playground/apiendpoint_0f03577a-ff9a-472a-a0ed-533bd198981a) Hub.
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.
 - Configuration of Claude Desktop on the local development host and the `claude.ai` web application to connect Claude Desktop models to the Kilotest MCP server. The configuration was performed in the UI of each platform with the addition of Kilotest as a _connector_. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
 

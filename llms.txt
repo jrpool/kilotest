@@ -1,22 +1,21 @@
 # Kilotest
 
-Kilotest helps language models and AI platforms to give thorough, accurate and truthful answers when users ask about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. Kilotest integrates ten independent rule engines to test any public web page and creates a structured report of the results. Kilotest tools can provide multipage, single-page, and element-level test results.
-
-In the API section below, all endpoints require `GET` requests except as noted.
-
-There is a [detailed explanation of Kilotest and its capabilities for LLMs](https://kilotest.com/llms-full.txt).
+Kilotest helps language models and AI platforms to give thorough, accurate and truthful answers when users ask about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. Kilotest integrates an ensemble often independent rule engines to test any public web page. Kilotest creates a structured report of the results and saves the report for future reference. Kilotest API endpoints and MCP tools can provide multipage, single-page, and element-level test results.
 
 ## API
 
-- [List all available reports](/api/listReports)
-- List all issues in one report: `/api/listIssues/{timeStamp}/{jobID}`
-- List all elements exhibiting one issue in one report: `/api/listViolators/{issueID}/{timeStamp}/{jobID}`
-- List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}`
-- Get one full report in JSON: `/api/getReport/{timeStamp}/{jobID}`
-- Request testing of a web page: `/api/requestTest` (requires `POST` request)
-- Request retesting of a web page: `/api/requestRetest/{timeStamp}/{jobID}` (requires `POST` request)
-- Request adding or improving a feature: `/api/requestFeature` (requires `POST` request)
-- [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
+- [List all available reports](/api/listReports) (`GET`)
+- List all issues in one report: `/api/listIssues/{timeStamp}/{jobID}` (`GET`)
+- List all elements exhibiting one issue in one report: `/api/listViolators/{issueID}/{timeStamp}/{jobID}` (`GET`)
+- List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}` (`GET`)
+- Get one full report in JSON: `/api/getReport/{timeStamp}/{jobID}` (`GET`)
+- Request testing of a web page: `/api/requestTest` (`POST`)
+- Request retesting of a web page: `/api/requestRetest/{timeStamp}/{jobID}` (`POST`)
+- Request adding or improving a feature: `/api/requestFeature` (`POST`)
+
+## MCP Server
+
+- [MCP server for Kilotest](https://kilotest.com/mcp)
 
 ## Web UI
 
@@ -30,3 +29,10 @@ There is a [detailed explanation of Kilotest and its capabilities for LLMs](http
 - [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
+
+## More documents
+
+- [Detailed explanation of Kilotest and its capabilities for LLMs](https://kilotest.com/llms-full.txt)
+- [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
+- [Kilotest as connector to and collection of AI Tools](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOLS.md)
+- [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/)

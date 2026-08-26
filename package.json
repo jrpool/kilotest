@@ -17,7 +17,10 @@
   "keywords": [
     "accessibility",
     "a11y",
-    "testing"
+    "testing",
+    "mcp",
+    "mcp-server",
+    "modelcontextprotocol"
   ],
   "author": "Jonathan Robert Pool <pool@jpdev.pro>",
   "license": "MIT",

@@ -17,6 +17,7 @@ const listDiagnosesAPI = require('./api/listDiagnoses');
 const requestTestAPI = require('./api/requestTest');
 const requestRetestAPI = require('./api/requestRetest');
 const requestFeatureAPI = require('./api/requestFeature');
+const {version} = require('./api/version');
 
 const {
   getReportSchema,
@@ -46,7 +47,7 @@ exports.mcpPath = '/mcp';
 const createMCPServer = () => {
   const server = new McpServer({
     name: 'Kilotest',
-    version: '2.1.0',
+    version,
     description: 'Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available'
   },
   {

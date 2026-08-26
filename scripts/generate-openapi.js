@@ -9,8 +9,9 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const {createDocument} = require('zod-openapi');
-const {license, version} = require('../package.json');
+const {license} = require('../package.json');
 const routes = require('../api/routes');
+const {version} = require('../api/version');
 
 // CONSTANTS
 

@@ -18,6 +18,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Verify server.json version matches api/version.js
+        run: |
+          FILE_VERSION=$(node -e "console.log(require('./api/version').version)")
+          JSON_VERSION=$(node -e "console.log(require('./server.json').version)")
+          if [ "$FILE_VERSION" != "$JSON_VERSION" ]; then
+            echo "::error::server.json version ($JSON_VERSION) does not match api/version.js version ($FILE_VERSION)"
+            exit 1
+          fi
+          echo "Versions match: $FILE_VERSION"
+
       - name: Install mcp-publisher
         run: |
           set -euo pipefail

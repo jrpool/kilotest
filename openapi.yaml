@@ -1100,7 +1100,7 @@ paths:
                       - closest ancestor request
                     additionalProperties: false
                   URLs of similar requests for web users:
-                    $ref: '#/components/schemas/SimilarWebRequests'
+                    type: 'null'
                   response metadata:
                     $ref: '#/components/schemas/ResponseMetadata'
                   response content:

@@ -46,7 +46,7 @@ exports.mcpPath = '/mcp';
 const createMCPServer = () => {
   const server = new McpServer({
     name: 'Kilotest',
-    version: '2.0.0',
+    version: '2.1.0',
     description: 'Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available'
   },
   {

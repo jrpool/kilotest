@@ -3,6 +3,9 @@
   "version": "41.1.1",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "node index",
     "lint": "npx eslint && npx markdownlint-cli2",

@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'server.json'
-  workflow_dispatch:
+      - 'api/version.js'
 
 jobs:
   publish:

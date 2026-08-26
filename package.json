@@ -1,8 +1,11 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "41.1.0",
+  "version": "42.0.0",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "start": "node index",
     "lint": "npx eslint && npx markdownlint-cli2",

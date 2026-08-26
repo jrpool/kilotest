@@ -18,6 +18,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Set Node.js version
+        uses: actions/setup-node@v4
+        with:
+          node-version: '>=22.12.0'
+
       - name: Verify server.json version matches api/version.js
         run: |
           FILE_VERSION=$(node -e "console.log(require('./api/version').version)")

@@ -693,7 +693,7 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
     what,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Tested ${daysAgo} days ago by job <code>${jobID}</code> on ${when}`
+    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago by job <code>${jobID}</code> on ${when}`
   };
 };
 // Returns the creation time and size of a report.

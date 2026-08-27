@@ -220,9 +220,7 @@ const getBasicAuth = request => {
   }
   return {id: decoded.slice(0, sepIndex), secret: decoded.slice(sepIndex + 1)};
 };
-// Gets the published name of the Testaro worker that made a request, or null if it is not
-// authenticated. The ID authenticates the worker and is never published; the name is a
-// non-secret label safe to write into job/report data and log messages.
+// Gets the published name of a Testaro worker or null if not authenticated.
 const getAuthorizedWorkerName = request => {
   const credentials = getBasicAuth(request);
   if (credentials) {

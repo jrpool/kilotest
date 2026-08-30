@@ -91,16 +91,16 @@ const populateQuery = async query => {
   const formLines = [];
   if (reClassifiedLines.length) {
     query.how = 'Each <q>reclassified</q> rule indicates that report annotations are out of date. To update them, submit your authorization code.';
-    formLines.push(`${margin}<form action="/reannotate.html" method="post">`);
-    formLines.push(
-      `${margin}  <p><label>Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required></label></p>`
-    );
-    formLines.push(`${margin}  <p><button type="submit">Reannotate</button></p>`);
-    formLines.push(`${margin}</form>`);
   }
   else {
     query.how = 'No violated rules have been classified or reclassified after being reported, so reannotation of the reports is normally not necessary. If there is another reason for reannotation, submit your authorization code.';
   }
+  formLines.push(`${margin}<form action="/reannotate.html" method="post">`);
+  formLines.push(
+    `${margin}  <p><label>Authorization code: <input size="3" minLength="3" maxlength="3" name="authCode" required></label></p>`
+  );
+  formLines.push(`${margin}  <p><button type="submit">Reannotate</button></p>`);
+  formLines.push(`${margin}</form>`);
   query.reannotateForm = formLines.join('\n');
 };
 // Returns a page disclosing newly classified rules and a form to reannotate reports.

@@ -35,6 +35,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "*",
     "dotenv": "*",
+    "testilo": "*",
     "zod": "*"
   },
   "devDependencies": {

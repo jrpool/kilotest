@@ -14,7 +14,7 @@ const {
   getWeightName,
   objectSort,
 } = require('../util');
-const {issues} = require('testilo/procs/score/tic');
+const {issues: issueSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -69,13 +69,13 @@ const getIssuesSummary = async () => {
   Object.entries(issuesData).forEach(([issueID, data]) => {
     const {count, reporters} = data;
     // If the issue is still classified:
-    if (issues[issueID]) {
+    if (issueSpecs[issueID]) {
       // Increment the report violation count by the issue violation count.
       summary.totalCount += count;
       // Add the issue data and an initilized percentage to the summary.
       summary.issues.push({
         issueID,
-        weight: issues[issueID].weight,
+        weight: issueSpecs[issueID].weight,
         count,
         percentage: 0,
         reporters: getToolNamesString(reporters)
@@ -129,7 +129,7 @@ const populateQuery = async query => {
       if (reportedIssue.weight === weight && percentage >= 2) {
         existsIssue = true;
         // Get the data on it from the issue classification.
-        const issue = issues[issueID];
+        const issue = issueSpecs[issueID];
         const {summary, wcag, why} = issue;
         const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
         // Add a description of it to the lines.

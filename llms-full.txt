@@ -174,6 +174,6 @@ More information about Kilotest features and internals:
 - [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/)
 - [README file](https://github.com/jrpool/kilotest/blob/main/README.md)
 - [Testaro rule-engine orchestrator](https://github.com/jrpool/testaro)
-- [Testilo rule classifier](https://github.com/jrpool/testilo/blob/main/procs/score/tic.js)
+- [Testaro rule classifier](https://github.com/jrpool/testaro-issues)
 - [Research report on Testaro](https://arxiv.org/abs/2309.10167)
 - [Blog post on the Kilotest use case](https://medium.com/cvs-health-tech-blog/how-to-run-a-thousand-accessibility-tests-63692ad120c3)

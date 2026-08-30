@@ -18,7 +18,7 @@ const {
   objectSort,
   tools
 } = require('../util');
-const issuesClassification = require('testilo/procs/score/tic').issues;
+const {issues: issueSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -67,7 +67,7 @@ const getIssuesData = async (timeStamp, jobID) => {
           const {catalogIndex, issueID} = instance;
           // If the instance identifies its rule as belonging to a non-ignorable issue:
           if (issueID && issueID !== 'ignorable') {
-            const issueClassification = issuesClassification[issueID];
+            const issueClassification = issueSpecs[issueID];
             // If the issue has a current weighted classification:
             if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {
               const {summary, wcag, weight, why} = issueClassification;

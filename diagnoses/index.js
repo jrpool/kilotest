@@ -15,7 +15,7 @@ const {
   isHidden,
   tools
 } = require('../util');
-const {issues} = require('testilo/procs/score/tic');
+const {issues: issueSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -62,7 +62,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
-  query.issue = issues[issueID]?.summary;
+  query.issue = issueSpecs[issueID]?.summary;
   // If adding the issue summary failed:
   if (!query.issue) {
     // Populate the query with the reason.
@@ -71,7 +71,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     return;
   }
   // Otherwise, i.e. if it succeeded, get the issue details.
-  const issue = issues[issueID];
+  const issue = issueSpecs[issueID];
   const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);

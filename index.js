@@ -26,8 +26,7 @@ const {
   jobsPath,
   makeReportsExtract,
   recsLock,
-  reportsPath,
-  ruleIDs
+  reportsPath
 } = require('./util');
 const {handleMCP, mcpPath} = require('./mcp');
 const fs = require('fs/promises');
@@ -750,7 +749,7 @@ const requestHandler = async (request, response) => {
                 // Update the data on the available reports.
                 await makeReportsExtract();
                 // Annotate the report.
-                await annotateReport(ruleIDs, timeStamp, jobID);
+                await annotateReport(timeStamp, jobID);
                 console.log(`Testaro report ${id} was annotated, saved, and indexed`);
                 // Check the monetary balances and send alerts if nearing exhaustion.
                 await checkBalancesForAlerts(report);

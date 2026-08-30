@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssue, getReport, getReportExtracts, ruleIDs} = require('../util');
+const {getIssue, getReport, getReportExtracts} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -40,7 +40,7 @@ const populateQuery = async query => {
         result.standardResult.instances.forEach(instance => {
           const {ruleID} = instance;
           // Get the issue ID of the rule, or null if none.
-          const issueID = getIssue(ruleIDs, which, ruleID);
+          const issueID = getIssue(which, ruleID);
           // If the issue ID of the instance differs from that of the rule:
           if ((instance.issueID || null) !== issueID) {
             // Add the rule and the report to the rules with changed issue IDs.

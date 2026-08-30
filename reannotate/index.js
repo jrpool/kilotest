@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {annotateReport, getReportExtracts, ruleIDs} = require('../util');
+const {annotateReport, getReportExtracts} = require('../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -23,7 +23,7 @@ exports.answer = async authCode => {
       for (const reportExtract of reportExtracts) {
         const {timeStamp, jobID} = reportExtract;
         // Reannotate it.
-        const annotationError = await annotateReport(ruleIDs, timeStamp, jobID);
+        const annotationError = await annotateReport(timeStamp, jobID);
         // If this failed:
         if (annotationError) {
           // Return an error page.

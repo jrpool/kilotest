@@ -8,9 +8,9 @@
 const {
   getWeightName,
   htmlSafe,
-  tools
+  tools: engines
 } = require('../util');
-const {issues} = require('testilo/procs/score/tic');
+const {issues: issueSpecs, issueRules} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -19,8 +19,8 @@ const path = require('path');
 // Adds parameters to a query for the answer page.
 const populateQuery = async (issueID, query) => {
   // Add facts about the issue to the query.
-  query.issue = issues[issueID].summary;
-  const issue = issues[issueID];
+  query.issue = issueSpecs[issueID].summary;
+  const issue = issueSpecs[issueID];
   const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
@@ -28,15 +28,15 @@ const populateQuery = async (issueID, query) => {
   // Initialize the lines.
   const lines = [];
   const margin = ' '.repeat(6);
-  // For each tool with any rules belonging to the issue:
-  Object.keys(issue.tools).forEach(toolID => {
+  // For each rule engine with any rules belonging to the issue:
+  Object.keys(issueRules[issueID]).forEach(engineID => {
     // Add a line.
-    lines.push(`${margin}<li><h3>${tools[toolID][0]} rules</h3>`);
+    lines.push(`${margin}<li><h3>${engines[engineID][0]} rules</h3>`);
     lines.push(`${margin}  <ul>`);
-    const tool = issue.tools[toolID];
+    const engine = issueRules[issueID][engineID];
     // For each rule of the tool belonging to the issue:
-    Object.keys(tool).forEach(ruleID => {
-      const rule = tool[ruleID];
+    Object.keys(engine).forEach(ruleID => {
+      const rule = engine[ruleID];
       const {what} = rule;
       // Add facts about the rule.
       if (what === ruleID) {

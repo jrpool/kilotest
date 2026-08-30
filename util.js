@@ -6,9 +6,7 @@
 // IMPORTS
 
 const {sendAlert} = require('./alerts');
-const issuesClassification
-= exports.issuesClassification
-= require('testilo/procs/score/tic').issues;
+const {issues: issueSpecs, rules: ruleSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');
 const querystring = require('querystring');
@@ -120,26 +118,25 @@ const getDateTime = exports.getDateTime = timeStamp => {
   return dateTime.toString() === 'Invalid Date' ? null : dateTime;
 };
 // Returns the issue that a rule belongs to, or null if none.
-const getIssue = exports.getIssue = (ruleIDs, toolID, ruleID) => {
-  const {invariant, variable} = ruleIDs;
-  // Initialize the issue ID of the rule as if the rule ID is invariant.
-  let issueID = invariant[toolID]?.[ruleID];
-  // If the initialization succeeded:
-  if (issueID) {
-    // Return it.
-    return issueID;
+const getIssue = exports.getIssue = (engineID, ruleID) => {
+  const engineRules = ruleSpecs[engineID];
+  // If the rule engine has no rule specifications:
+  if (!engineRules) {
+    // Return a failure result.
+    return null;
   }
-  // Otherwise, change the rule ID to the first matching variable rule ID of the tool.
-  ruleID = Object
-  .keys(variable[toolID] ?? {})
-  .find(variableRuleID => new RegExp(variableRuleID).test(ruleID));
-  // If the change succeeded:
-  if (ruleID) {
-    // Return the issue ID.
-    return variable[toolID][ruleID];
+  const {invariant, variable} = engineRules;
+  // If the rule ID is invariant and classified:
+  if (invariant[ruleID]) {
+    // Return its issue ID.
+    return invariant[ruleID].issueID;
   }
-  // Otherwise, i.e. if no issue was found, return a failure result.
-  return null;
+  // Otherwise, find the first matching variable rule ID pattern.
+  const variableRuleID = Object
+  .keys(variable)
+  .find(pattern => new RegExp(`^${pattern}$`).test(ruleID));
+  // Return the issue ID if a pattern matched, or a failure result otherwise.
+  return variableRuleID ? variable[variableRuleID].issueID : null;
 };
 // Gets the names and categories of the job files.
 const getJobNames = exports.getJobNames = async () => {
@@ -178,58 +175,6 @@ const getObject = exports.getObject = async filePath => {
 // Returns a random string.
 exports.getRandomString = length => {
   return Math.random().toString(36).slice(2, length + 2);
-};
-// Compiles a directory of the issue classifications of invariant and variable rules.
-const getRuleIDs = exports.getRuleIDs = () => {
-  // Initialize data on invariant and variable rule IDs.
-  const invariant = {};
-  const variable = {};
-  // Initialize a validity checker.
-  const validityChecker = {};
-  // For each classified issue:
-  Object.keys(issuesClassification).forEach(issueID => {
-    const {tools, weight} = issuesClassification[issueID];
-    // If the weight is invalid:
-    if (weight < 1 || weight > 4) {
-      // Report this.
-      console.log(`ERROR: Issue ${issueID} weight is invalid`);
-    }
-    // For each tool that has any rules belonging to the issue:
-    Object.keys(tools).forEach(toolID => {
-      // For each such rule:
-      Object.keys(tools[toolID]).forEach(ruleID => {
-        // If it is a duplicate:
-        if (validityChecker[toolID]?.has(ruleID)) {
-          // Report this.
-          console.log(`ERROR: Rule ${ruleID} of tool ${toolID} belongs to 2 issues`);
-        }
-        // Otherwise, i.e. if it is not a duplicate:
-        else {
-          // Add it to the classified rules of the tool.
-          validityChecker[toolID] ??= new Set();
-          validityChecker[toolID].add(ruleID);
-        }
-        const rule = tools[toolID][ruleID];
-        // If it is variable:
-        if (rule.variable) {
-          variable[toolID] ??= {};
-          // Add its ID and the issue ID to the variable rule IDs.
-          variable[toolID][ruleID] = issueID;
-        }
-        // Otherwise, i.e. if it is invariant:
-        else {
-          invariant[toolID] ??= {};
-          // Add its ID and the issue ID to the invariant rule IDs.
-          invariant[toolID][ruleID] = issueID;
-        }
-      });
-    });
-  });
-  // Return the data.
-  return {
-    invariant,
-    variable
-  };
 };
 // Returns a time stamp from a date.
 const getTimeStamp = exports.getTimeStamp = date => {
@@ -449,8 +394,6 @@ exports.processRec = async (testType, dirName, what, url, why) => {
 };
 // Concurrency lock for the `recs.json` file.
 const recsLock = exports.recsLock = createLock();
-// Variable and invariant rules.
-exports.ruleIDs = getRuleIDs();
 // Updates the test recommendations as a transaction.
 const updateRecs = exports.updateRecs = (what, url, why) => recsLock(async () => {
   // Get the data on waiting recommendations.
@@ -525,7 +468,7 @@ const getReport = exports.getReport = async (timeStamp, jobID) => {
   }
 };
 // Adds issue IDs to the standard instances of a report.
-exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
+exports.annotateReport = async (timeStamp, jobID) => {
   // Get a copy of the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -544,7 +487,7 @@ exports.annotateReport = async (ruleIDs, timeStamp, jobID) => {
       for (const instance of result?.standardResult?.instances ?? []) {
         const {ruleID} = instance;
         // Classify its rule.
-        const issueID = getIssue(ruleIDs, which, ruleID);
+        const issueID = getIssue(which, ruleID);
         // If the rule was classifiable:
         if (issueID) {
           // Add the issue ID to the instance.
@@ -617,7 +560,7 @@ exports.getReportData = async (timeStamp, jobID) => {
       instances.forEach(instance => {
         const {catalogIndex, issueID} = instance;
         // If it has a non-ignorable classified issue ID:
-        if (issueID && issuesClassification[issueID] && issueID !== 'ignorable') {
+        if (issueID && issueSpecs[issueID] && issueID !== 'ignorable') {
           // Ensure that the tool is in the temporary data.
           reporterIDSet.add(which);
           // Ensure that the issue is in the temporary data.

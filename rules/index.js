@@ -33,7 +33,7 @@ const populateQuery = async (issueID, query) => {
   const lines = [];
   const margin = ' '.repeat(6);
   // For each rule engine with any rules belonging to the issue:
-  Object.keys(issueRules[issueID]).forEach(engineID => {
+  Object.keys(issueRules[issueID] ?? {}).forEach(engineID => {
     // Add a heading for the rules of the rule engine.
     lines.push(`${margin}<h3>${ruleEngines[engineID][0]} rules</h3>`);
     const {invariant, variable} = issueRules[issueID][engineID];

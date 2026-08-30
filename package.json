@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "42.0.6",
+  "version": "43.0.0",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
   "engines": {

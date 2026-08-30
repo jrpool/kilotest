@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "42.0.4",
+  "version": "42.0.5",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
   "engines": {
@@ -35,7 +35,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "*",
     "dotenv": "*",
-    "testilo": "*",
     "zod": "*"
   },
   "devDependencies": {

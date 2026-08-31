@@ -11,7 +11,7 @@ node_modules/
 db/
 results/
 ai0Balance.json
-tutorial/comments.json
+web/tutorial/comments.json
 
 # Secrets and environment-specific configurations
 .env

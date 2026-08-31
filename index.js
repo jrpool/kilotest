@@ -30,36 +30,36 @@ const {
 } = require('./util');
 const {handleMCP, mcpPath} = require('./mcp');
 const fs = require('fs/promises');
-const {handleComment} = require('./tutorial/index');
+const {handleComment} = require('./web/tutorial/index');
 const http = require('http');
 const https = require('https');
 const path = require('path');
 const {sendAlert} = require('./alerts');
 const answer = {
-  ai0BalanceForm: require('./ai0BalanceForm/index').answer,
-  diagnoses: require('./diagnoses/index').answer,
-  issues: require('./issues/index').answer,
-  manage: require('./manage/index').answer,
-  reannotate: require('./reannotate/index').answer,
-  reannotateForm: require('./reannotateForm/index').answer,
-  recActionForm: require('./recActionForm/index').answer,
-  reportIssue: require('./reportIssue/index').answer,
-  reportIssues: require('./reportIssues/index').answer,
-  reportsExpungeForm: require('./reportsExpungeForm/index').answer,
-  reportHideForm: require('./reportHideForm/index').answer,
-  reportsPruneForm: require('./reportsPruneForm/index').answer,
-  reportsRewindForm: require('./reportsRewindForm/index').answer,
-  reportUnhideForm: require('./reportUnhideForm/index').answer,
-  retestRec: require('./retestRec/index').answer,
-  retestRecForm: require('./retestRecForm/index').answer,
-  rules: require('./rules/index').answer,
-  targets: require('./targets/index').answer,
-  testOrder: require('./testOrder/index').answer,
-  testRec: require('./testRec/index').answer,
-  testRecForm: require('./testRecForm/index').answer,
-  tutorial: require('./tutorial/index').answer,
-  wcagRenew: require('./wcagRenew/index').answer,
-  wcagRenewForm: require('./wcagRenewForm/index').answer
+  ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
+  diagnoses: require('./web/diagnoses/index').answer,
+  issues: require('./web/issues/index').answer,
+  manage: require('./web/manage/index').answer,
+  reannotate: require('./web/reannotate/index').answer,
+  reannotateForm: require('./web/reannotateForm/index').answer,
+  recActionForm: require('./web/recActionForm/index').answer,
+  reportIssue: require('./web/reportIssue/index').answer,
+  reportIssues: require('./web/reportIssues/index').answer,
+  reportsExpungeForm: require('./web/reportsExpungeForm/index').answer,
+  reportHideForm: require('./web/reportHideForm/index').answer,
+  reportsPruneForm: require('./web/reportsPruneForm/index').answer,
+  reportsRewindForm: require('./web/reportsRewindForm/index').answer,
+  reportUnhideForm: require('./web/reportUnhideForm/index').answer,
+  retestRec: require('./web/retestRec/index').answer,
+  retestRecForm: require('./web/retestRecForm/index').answer,
+  rules: require('./web/rules/index').answer,
+  targets: require('./web/targets/index').answer,
+  testOrder: require('./web/testOrder/index').answer,
+  testRec: require('./web/testRec/index').answer,
+  testRecForm: require('./web/testRecForm/index').answer,
+  tutorial: require('./web/tutorial/index').answer,
+  wcagRenew: require('./web/wcagRenew/index').answer,
+  wcagRenewForm: require('./web/wcagRenewForm/index').answer
 };
 
 // CONSTANTS
@@ -505,7 +505,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for a tutorial image:
     else if (pathname.startsWith('/tutorial/images/')) {
       const imgFile = pathname.slice('/tutorial/images/'.length);
-      const imgPath = path.join(__dirname, 'tutorial', 'images', imgFile);
+      const imgPath = path.join(__dirname, 'web', 'tutorial', 'images', imgFile);
       try {
         const img = await fs.readFile(imgPath);
         const ext = path.extname(imgFile).toLowerCase();
@@ -578,7 +578,7 @@ const requestHandler = async (request, response) => {
             // Serve headers for a response.
             setHeaders('text/html', pathname, 'ultra');
             // Get the answer data.
-            const answerData = await require(path.join(__dirname, 'testRec', 'index'))
+            const answerData = await require(path.join(__dirname, 'web', 'testRec', 'index'))
             .answer(what, url, why);
             // If they are valid:
             if (answerData.status === 'ok') {
@@ -607,7 +607,7 @@ const requestHandler = async (request, response) => {
           // Serve response headers.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
-          const answerData = await require(path.join(__dirname, 'retestRec', 'index'))
+          const answerData = await require(path.join(__dirname, 'web', 'retestRec', 'index'))
           .answer(pathTail, why);
           // If they are valid:
           if (answerData.status === 'ok') {
@@ -639,7 +639,7 @@ const requestHandler = async (request, response) => {
             // Set a location header for a response.
             response.setHeader('content-location', pathname);
             // Process the approval and get the answer data about the remaining recommendations.
-            const answerData = await require(path.join(__dirname, 'testOrder', 'index'))
+            const answerData = await require(path.join(__dirname, 'web', 'testOrder', 'index'))
             .answer(url, what, authCode);
             // If the answer data are valid:
             if (answerData.status === 'ok') {
@@ -666,7 +666,7 @@ const requestHandler = async (request, response) => {
             // Set a location header for a response.
             response.setHeader('content-location', '/recActionForm.html');
             // Get the answer data.
-            const answerData = await require(path.join(__dirname, 'recActionForm', 'index')).answer();
+            const answerData = await require(path.join(__dirname, 'web', 'recActionForm', 'index')).answer();
             // Serve the test-order form with the remaining recommendations.
             response.end(answerData.answerPage);
           }
@@ -683,7 +683,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'reannotate', 'index'))
+        const answerData = await require(path.join(__dirname, 'web', 'reannotate', 'index'))
         .answer(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {
@@ -702,7 +702,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'low');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'wcagRenew', 'index'))
+        const answerData = await require(path.join(__dirname, 'web', 'wcagRenew', 'index'))
         .answer(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {

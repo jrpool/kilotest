@@ -1,6 +1,6 @@
 /*
   index.js
-  Serves a form for ordering a recommended test.
+  Serves a form for approving or rejecting a test request.
 */
 
 // IMPORTS

@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the targets question.
+  Returns a page listing all available reports.
 */
 
 // IMPORTS
@@ -116,16 +116,16 @@ const populateQuery = async query => {
     lines.tested.push(`${margin}    <li>URL: ${urlLink}</li>`);
     // Add facts about the report to the lines.
     lines.tested.push(`${margin}    <li>${testInfo}</li>`);
-    // If the page prevented any tool from performing its tests:
+    // If the page prevented any rule engine from performing its tests:
     if (preventedToolCount) {
       // Add this to the lines.
-      const toolCountString = getCountString(preventedToolCount, 'tool', 'tools');
+      const engineCountString = getCountString(preventedToolCount, 'rule engine', 'rule engines');
       lines.tested.push(
-        `${margin}    <li>Page not testable by ${toolCountString} (${preventedToolNames.join(' + ')})</li>`,
+        `${margin}    <li>Page not testable by ${engineCountString} (${preventedToolNames.join(' + ')})</li>`,
       );
     }
     // Add facts about the test results to the lines.
-     let reporterString = `${getCountString(reporterCount, 'tool', 'tools')} reported issues`;
+     let reporterString = `${getCountString(reporterCount, 'rule engine', 'rule engines')} reported issues`;
     if (reporterCount) {
       const reporterNamesString = reporterNames.join(' + ');
       reporterString = `${reporterString} (${reporterNamesString})`;

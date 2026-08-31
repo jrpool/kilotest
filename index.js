@@ -37,29 +37,29 @@ const path = require('path');
 const {sendAlert} = require('./alerts');
 const answer = {
   ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
-  diagnoses: require('./web/diagnoses/index').answer,
-  issues: require('./web/issues/index').answer,
+  diagnoses: require('./web/listDiagnoses/index').answer,
+  issues: require('./web/listIssues/index').answer,
   manage: require('./web/manage/index').answer,
   reannotate: require('./web/reannotate/index').answer,
   reannotateForm: require('./web/reannotateForm/index').answer,
-  recActionForm: require('./web/recActionForm/index').answer,
-  reportIssue: require('./web/reportIssue/index').answer,
-  reportIssues: require('./web/reportIssues/index').answer,
-  reportsExpungeForm: require('./web/reportsExpungeForm/index').answer,
-  reportHideForm: require('./web/reportHideForm/index').answer,
-  reportsPruneForm: require('./web/reportsPruneForm/index').answer,
-  reportsRewindForm: require('./web/reportsRewindForm/index').answer,
-  reportUnhideForm: require('./web/reportUnhideForm/index').answer,
-  retestRec: require('./web/retestRec/index').answer,
-  retestRecForm: require('./web/retestRecForm/index').answer,
-  rules: require('./web/rules/index').answer,
-  targets: require('./web/targets/index').answer,
-  testOrder: require('./web/testOrder/index').answer,
-  testRec: require('./web/testRec/index').answer,
-  testRecForm: require('./web/testRecForm/index').answer,
+  recActionForm: require('./web/enqueueForm/index').answer,
+  reportIssue: require('./web/listViolators/index').answer,
+  reportIssues: require('./web/listtIssues/index').answer,
+  reportsExpungeForm: require('./web/expungeReportsForm/index').answer,
+  reportHideForm: require('./web/hideReportForm/index').answer,
+  reportsPruneForm: require('./web/pruneReportsForm/index').answer,
+  reportsRewindForm: require('./web/rewindReportsForm/index').answer,
+  reportUnhideForm: require('./web/unhideReportForm/index').answer,
+  retestRec: require('./web/requestRetest/index').answer,
+  retestRecForm: require('./web/requestRetestForm/index').answer,
+  rules: require('./web/listRules/index').answer,
+  targets: require('./web/listReports/index').answer,
+  testOrder: require('./web/enqueue/index').answer,
+  testRec: require('./web/requestTest/index').answer,
+  testRecForm: require('./web/requestTestForm/index').answer,
   tutorial: require('./web/tutorial/index').answer,
-  wcagRenew: require('./web/wcagRenew/index').answer,
-  wcagRenewForm: require('./web/wcagRenewForm/index').answer
+  wcagRenew: require('./web/renewWCAG/index').answer,
+  wcagRenewForm: require('./web/renewWCAGForm/index').answer
 };
 
 // CONSTANTS
@@ -626,7 +626,7 @@ const requestHandler = async (request, response) => {
           await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
         }
       }
-      // Otherwise, if it is an action on a test or retest recommendation:
+      // Otherwise, if it is an approval or rejection of a test request:
       else if (pageName === 'recAction.html') {
         const {target, authCode} = postData;
         const [url, what] = target.split('\t');

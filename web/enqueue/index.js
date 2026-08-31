@@ -1,17 +1,19 @@
 /*
   index.js
-  Implements a retest order.
+  Implements a test request approval.
 */
 
 // IMPORTS
 
-const {getJSON, getNowStamp, getRandomString, getRecs, isURL, jobsPath, recsLock} = require('../../util');
+const {
+  getJSON, getNowStamp, getRandomString, getRecs, isURL, jobsPath, recsLock
+} = require('../../util');
 const fs = require('fs/promises');
 const path = require('path');
 
 // FUNCTIONS
 
-// Implements a test order and returns a revised recommendations page.
+// Implements a test request approval and returns a revised request page.
 exports.answer = async (url, what, authCode) => {
   // If the arguments are valid:
   if (isURL(url) && what && authCode === process.env.AUTH_CODE) {
@@ -40,7 +42,7 @@ exports.answer = async (url, what, authCode) => {
     await recsLock(async () => {
       // Get the recommendations.
       const recs = await getRecs();
-      // Delete the recommendations to retest the target.
+      // Delete the recommendations to test the target.
       delete recs[url];
       // Save the revised recommendations.
       await fs.writeFile(path.join(jobsPath, 'recs.json'), getJSON(recs));

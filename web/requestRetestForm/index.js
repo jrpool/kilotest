@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the retest question.
+  Serves a form for requesting a retest.
 */
 
 // IMPORTS

@@ -1,6 +1,6 @@
 /*
   index.js
-  Renews the WCAG map and serves an acknowledgment.
+  Renews the WCAG map.
 */
 
 // IMPORTS

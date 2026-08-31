@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the tutorial request and saves tutorial comments.
+  Serves the tutorial and saves tutorial comments.
 */
 
 // IMPORTS

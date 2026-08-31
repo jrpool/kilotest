@@ -19,15 +19,15 @@ Kilotest helps language models and AI platforms to give thorough, accurate and t
 
 ## Web UI
 
-- [List all available reports](https://kilotest.com/targets.html)
-- List all issues in one report: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
-- List all elements exhibiting one issue in one report: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
-- List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+- [List all available reports](https://kilotest.com/listReports.html)
+- List all issues in one report: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
+- List all elements exhibiting one issue in one report: `https://kilotest.com/listViolators.html/{issueID}/{timeStamp}/{jobID}`
+- List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
 - Get one full report in JSON: `https://kilotest.com/fullReport.json/{timeStamp}/{jobID}`
-- [Request testing of a web page](https://kilotest.com/testRecForm.html)
-- Request retesting of a web page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
+- [Request testing of a web page](https://kilotest.com/requestTestForm.html)
+- Request retesting of a web page: `https://kilotest.com/requestRetestForm.html/{timeStamp}/{jobID}`
 - [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
-- [Provide statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
+- [Provide statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
 
 ## More documents

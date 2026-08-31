@@ -146,8 +146,8 @@ exports.response = async args => {
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`,
-      'closest ancestor request': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`
+      'this request': `${thisHost}/listDiagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`,
+      'closest ancestor request': `${thisHost}/listViolators.html/${issueID}/${timeStamp}/${jobID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

@@ -1,6 +1,6 @@
 /*
   index.js
-  Discloses unclassified and reclassified rules and serves a form to reannotate reports.
+  Serves a form to reannotate reports.
 */
 
 // IMPORTS

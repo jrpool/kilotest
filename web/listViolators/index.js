@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the reportIssue question.
+  Lists the violators of an issue in a report.
 */
 
 // IMPORTS
@@ -151,7 +151,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
       }
     }
     const href
-    = `/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}?pathID=${pathID}`;
+    = `/listDiagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}?pathID=${pathID}`;
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(

@@ -69,7 +69,7 @@ exports.response = async args => {
     responseContent['disposition of your request'] = {
       'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
       'how you can check for completion': 'You can call the listReports tool to learn whether the page has been retested and a new report is available.',
-      'how a web user can check for completion': `A web user can visit ${thisHost}/targets.html to learn whether the page has been retested and a new report is available.`
+      'how a web user can check for completion': `A web user can visit ${thisHost}/listReports.html to learn whether the page has been retested and a new report is available.`
     };
   }
   // Create a response body.
@@ -91,8 +91,8 @@ exports.response = async args => {
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`,
-      'closest ancestor request': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'this request': `${thisHost}/requestRetestForm.html/${timeStamp}/${jobID}`,
+      'closest ancestor request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

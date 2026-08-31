@@ -1,6 +1,6 @@
 /*
   index.js
-  Returns a page listing all available reports.
+  Lists all available reports.
 */
 
 // IMPORTS
@@ -51,7 +51,7 @@ const populateQuery = async query => {
   query.recs = lines.recs.join('\n');
   // Add a no-recommendations message, if applicable, to the query.
   query.noRecs = lines.recs.length
-  ? 'Kilotest managers can <a href="recActionForm.html">approve or reject a recommendation</a>.'
+  ? 'Kilotest managers can <a href="enqueueForm.html">approve or reject a recommendation</a>.'
   : 'No recommendations await approval now.';
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
@@ -140,7 +140,7 @@ const populateQuery = async query => {
     // If any issues were reported:
     if (issueCount) {
       // Add a question link about the reported issues to the lines.
-      const href = `href="reportIssues.html/${timeStamp}/${jobID}"`;
+      const href = `href="listIssues.html/${timeStamp}/${jobID}"`;
       const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
       const questionString = issueCount === 1 ? 'was the issue' : 'were the issues';
       const link = `<a ${href} ${label}>What ${questionString}?</a>`;
@@ -156,7 +156,7 @@ const populateQuery = async query => {
       retestString = 'Currently in the queue for retesting';
     }
     else {
-      const href = `/retestRecForm.html/${timeStamp}/${jobID}`;
+      const href = `/requestRetestForm.html/${timeStamp}/${jobID}`;
       const retestContent = 'Should Kilotest retest the page?';
       retestString = `<a href="${href}">${retestContent}</a>`;
     }

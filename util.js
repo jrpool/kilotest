@@ -339,12 +339,12 @@ const objectSort = exports.objectSort = (objects, property, sortType) => objects
   // Otherwise, do not sort.
   return 0;
 });
-// Processes a test or retest recommendation in the UI.
-exports.processRec = async (testType, dirName, what, url, why) => {
+// Processes a test or retest request in the UI.
+exports.processTestRequest = async (testType, dirName, what, url, why) => {
   // If the recommendation is valid:
   if (
     ['test', 'retest'].includes(testType)
-    && ['testRec', 'retestRec'].some(end => dirName.endsWith(end))
+    && ['Test', 'Retest'].some(end => dirName.endsWith(end))
     && what
     && isURL(url)
     && why.length > 4

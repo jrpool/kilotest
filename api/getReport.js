@@ -56,7 +56,7 @@ exports.response = async args => {
     },
     'URLs of similar requests for web users': {
       'this request': `${thisHost}/fullReport.json/${timeStamp}/${jobID}`,
-      'closest ancestor request': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'closest ancestor request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

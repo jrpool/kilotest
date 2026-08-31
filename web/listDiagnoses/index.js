@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the diagnoses question.
+  Lists the diagnoses of a violator of an issue in a report.
 */
 
 // IMPORTS

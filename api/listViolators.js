@@ -130,7 +130,7 @@ exports.response = async args => {
             URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
             'request method': 'GET'
           },
-          'web users can get details about the element at': `${thisHost}/diagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
+          'web users can get details about the element at': `${thisHost}/listDiagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
         };
       });
       // Add basics about the violators to the response content.
@@ -153,8 +153,8 @@ exports.response = async args => {
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/reportIssue.html/${issueID}/${timeStamp}/${jobID}`,
-      'closest ancestor request': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`
+      'this request': `${thisHost}/listViolators.html/${issueID}/${timeStamp}/${jobID}`,
+      'closest ancestor request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

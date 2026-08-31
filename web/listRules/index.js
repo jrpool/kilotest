@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the issue-rules question.
+  List the rules belonging to an issue.
 */
 
 // IMPORTS

@@ -59,13 +59,13 @@ In the marketplace for MCP servers that test for front-end quality, all servers 
 Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 - [Home page](https://kilotest.com/)
-- [Get summary test results for all tested pages](https://kilotest.com/targets.html)
-- Get statistics about issues reported in one report: `https://kilotest.com/reportIssues.html/{timeStamp}/{jobID}`
-- Get details about one issue reported in one report: `https://kilotest.com/reportIssue.html/{issueID}/{timeStamp}/{jobID}`
-- Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/diagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
-- [Recommend the testing of a not-yet-tested page](https://kilotest.com/testRecForm.html)
-- Recommend the retesting of a previously tested page: `https://kilotest.com/retestRecForm.html/{timeStamp}/{jobID}`
-- [Get statistics about frequently reported issues across all pages](https://kilotest.com/issues.html)
+- [Get summary test results for all tested pages](https://kilotest.com/listReports.html)
+- Get statistics about issues reported in one report: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
+- Get details about one issue reported in one report: `https://kilotest.com/listViolators.html/{issueID}/{timeStamp}/{jobID}`
+- Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+- [Recommend the testing of a not-yet-tested page](https://kilotest.com/requestTestForm.html)
+- Recommend the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{timeStamp}/{jobID}`
+- [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
 - [Get a list of the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
 - [Tutorial, “QAI tutorial”](https://kilotest.com/qai/)
@@ -145,7 +145,7 @@ When you request a test or a retest:
   - rejection
 - how to confirm approval
   - check test completion by calling `listReports` and looking for the page and completion date in the list
-  - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/targets.html`
+  - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listReports.html`
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 

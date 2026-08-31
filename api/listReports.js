@@ -34,7 +34,7 @@ exports.response = async () => {
         method: 'GET',
         URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
       };
-      reportBasics['web users can get details about the report at'] = `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`;
+      reportBasics['web users can get details about the report at'] = `${thisHost}/listIssues.html/${timeStamp}/${jobID}`;
       // Add the basics to the array.
       reportsBasics.push(reportBasics);
     }
@@ -63,7 +63,7 @@ exports.response = async () => {
   };
   // Add instructions for a web user to request a test to the response content.
   responseContent['how a web user can request that the page be tested'] = {
-    URL: `${thisHost}/testRecForm.html`
+    URL: `${thisHost}/requestTestForm.html`
   };
   // Create a response body.
   const body = {
@@ -76,7 +76,7 @@ exports.response = async () => {
       'closest ancestor request': null
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/targets.html`,
+      'this request': `${thisHost}/listReports.html`,
       'closest ancestor request': null
     },
     'response metadata': getResponseMetadata(),

@@ -172,7 +172,7 @@ exports.response = async args => {
         };
         // Add instructions for a web user to request a retest.
         responseContent['how a web user can request that the page be retested'] = {
-          URL: `${thisHost}/retestRecForm.html/${timeStamp}/${jobID}`
+          URL: `${thisHost}/requestRetestForm.html/${timeStamp}/${jobID}`
         };
       }
       // Sort the data about issues by summary.
@@ -191,7 +191,7 @@ exports.response = async args => {
             method: 'GET',
             URL: `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`
           },
-          'web users can get details about the issue at': `${thisHost}/reportIssue.html/${id}/${timeStamp}/${jobID}`
+          'web users can get details about the issue at': `${thisHost}/listViolators.html/${id}/${timeStamp}/${jobID}`
         };
       });
       // Add the basics about the issues to the response content.
@@ -214,8 +214,8 @@ exports.response = async args => {
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/reportIssues.html/${timeStamp}/${jobID}`,
-      'closest ancestor request': `${thisHost}/targets.html`
+      'this request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`,
+      'closest ancestor request': `${thisHost}/listReports.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

@@ -1,15 +1,14 @@
 /*
   index.js
-  Answers the retest question.
+  Records a retest request.
 */
 
 // IMPORTS
 
-const {getLatestReportExtracts, processRec} = require('../../util');
+const {getLatestReportExtracts, processTestRequest} = require('../../util');
 
 // FUNCTIONS
 
-// Records a retest recommendation and returns an acknowledgement page.
 exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
@@ -27,6 +26,6 @@ exports.answer = async (pageArgs, why) => {
       message: error
     };
   }
-  // Otherwise, i.e. if it succeeded, process the recommendation.
-  return await processRec('retest', __dirname, what, url, why);
+  // Otherwise, i.e. if it succeeded, process the request.
+  return await processTestRequest('retest', __dirname, what, url, why);
 };

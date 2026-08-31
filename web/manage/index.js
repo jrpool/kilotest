@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the managers question.
+  Lists the actions that managers can take.
 */
 
 // IMPORTS

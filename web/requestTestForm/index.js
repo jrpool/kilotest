@@ -1,6 +1,6 @@
 /*
   index.js
-  Answers the test question.
+  Serves a form for requesting a test.
 */
 
 // IMPORTS
@@ -10,9 +10,8 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Returns a test recommendation form.
 exports.answer = async () => {
-  // Get the recommendation form template.
+  // Get the test request form template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Return it.
   return {

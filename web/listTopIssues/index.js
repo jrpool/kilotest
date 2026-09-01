@@ -7,9 +7,9 @@
 
 const {sendAlert} = require('../../alerts');
 const {
+  getEngineNamesString,
   getLatestReportExtracts,
   getReport,
-  getToolNamesString,
   getWCAGLink,
   getWeightName,
   objectSort,
@@ -78,7 +78,7 @@ const getIssuesSummary = async () => {
         weight: issueSpecs[issueID].weight,
         count,
         percentage: 0,
-        reporters: getToolNamesString(reporters)
+        reporters: getEngineNamesString(reporters)
       });
     }
     // Otherwise, i.e. if it is no longer classified:

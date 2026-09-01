@@ -13,7 +13,7 @@ const {
   getWeightName,
   htmlSafe,
   isHidden,
-  tools
+  ruleEngines
 } = require('../../util');
 const {issues: issueSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
@@ -107,7 +107,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
       const {ruleID, what} = instance;
       // Add lines for it to the array.
       diagnoses.push({
-        toolID: which,
+        engineID: which,
         ruleID,
         what
       });
@@ -115,10 +115,12 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   });
   // For each diagnosis:
   diagnoses.forEach(diagnosis => {
-    const {toolID, ruleID, what} = diagnosis;
+    const {engineID, ruleID, what} = diagnosis;
     // Add lines.
     lines.push(`${margin}<li>${htmlSafe(what)}`);
-    lines.push(`${margin}  <p>Tool: ${tools[toolID][0]} (${tools[toolID][1]})</p>`);
+    lines.push(
+      `${margin}  <p>Rule engine: ${ruleEngines[engineID][0]} (${ruleEngines[engineID][1]})</p>`
+    );
     if (ruleID !== what) {
       lines.push(`${margin}  <p>Rule: <code>${ruleID}</code></p>`);
     }

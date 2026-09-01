@@ -62,27 +62,27 @@ const populateQuery = async query => {
   const stillUnclassifiedLines = [];
   const reClassifiedLines = [];
   const margin = ' '.repeat(6);
-  // For each tool reporting any violations of still unclassified rules:
-  Object.keys(stillUnclassified).forEach(toolID => {
+  // For each rule engine reporting any violations of still unclassified rules:
+  Object.keys(stillUnclassified).forEach(engineID => {
     // For each such rule:
-    Object.keys(stillUnclassified[toolID]).forEach(ruleID => {
-      const reportIDs = Array.from(stillUnclassified[toolID][ruleID]);
+    Object.keys(stillUnclassified[engineID]).forEach(ruleID => {
+      const reportIDs = Array.from(stillUnclassified[engineID][ruleID]);
       // Add a line to the lines on the rule.
       stillUnclassifiedLines.push(
-        `${margin}<li>${toolID}: ${ruleID} (${reportIDs.join(', ')})</li>`
+        `${margin}<li>${engineID}: ${ruleID} (${reportIDs.join(', ')})</li>`
       );
     });
   });
   // Add the lines to the query.
   query.stillUnclassified = stillUnclassifiedLines.join('\n');
-  // For each tool reporting any discrepancies in rule classification:
-  Object.keys(reClassified).forEach(toolID => {
+  // For each rule engine reporting any discrepancies in rule classification:
+  Object.keys(reClassified).forEach(engineID => {
     // For each such rule:
-    Object.keys(reClassified[toolID]).forEach(ruleID => {
-      const reportIDs = Array.from(reClassified[toolID][ruleID]);
+    Object.keys(reClassified[engineID]).forEach(ruleID => {
+      const reportIDs = Array.from(reClassified[engineID][ruleID]);
       // Add a line to the lines on the rule.
       reClassifiedLines.push(
-        `${margin}<li>${toolID}: ${ruleID} (${reportIDs.join(', ')})</li>`
+        `${margin}<li>${engineID}: ${ruleID} (${reportIDs.join(', ')})</li>`
       );
     });
   });

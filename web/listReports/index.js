@@ -90,8 +90,8 @@ const populateQuery = async query => {
     const {
       error,
       issueCount,
-      preventedToolCount,
-      preventedToolNames,
+      preventedEngineCount,
+      preventedEngineNames,
       reporterNames,
       reporterCount,
       violatorCount
@@ -117,11 +117,11 @@ const populateQuery = async query => {
     // Add facts about the report to the lines.
     lines.tested.push(`${margin}    <li>${testInfo}</li>`);
     // If the page prevented any rule engine from performing its tests:
-    if (preventedToolCount) {
+    if (preventedEngineCount) {
       // Add this to the lines.
-      const engineCountString = getCountString(preventedToolCount, 'rule engine', 'rule engines');
+      const engineCountString = getCountString(preventedEngineCount, 'rule engine', 'rule engines');
       lines.tested.push(
-        `${margin}    <li>Page not testable by ${engineCountString} (${preventedToolNames.join(' + ')})</li>`,
+        `${margin}    <li>Page not testable by ${engineCountString} (${preventedEngineNames.join(' + ')})</li>`,
       );
     }
     // Add facts about the test results to the lines.

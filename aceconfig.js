@@ -10,7 +10,7 @@
 
 /*
   aceconfig
-  Configuration for the ibm tool.
+  Configuration for the ibm rule engine.
 */
 
 const os = require('os');

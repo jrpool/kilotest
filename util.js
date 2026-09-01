@@ -27,7 +27,7 @@ const hiddenReportsPath = exports.hiddenReportsPath = path.join(dbPath, 'hiddenR
 // Path of the reports data file.
 const reportsExtractPath = exports.reportsExtractPath = path.join(dbPath, 'reportsExtract.json');
 // IDs, names, and sponsors of Testaro rule engines.
-const tools = exports.tools = {
+const ruleEngines = exports.ruleEngines = {
   alfa: ['Alfa', 'Siteimprove'],
   aslint: ['ASLint', 'eSSENTIAL Accessibility'],
   axe: ['Axe', 'Deque'],
@@ -41,7 +41,6 @@ const tools = exports.tools = {
   wave: ['WAVE', 'Utah State University'],
   wax: ['WallyAX', 'Wally']
 };
-exports.ruleEngines = tools;
 exports.researchAgents = {
   'research-agent': 'Internal Research Agent'
 }
@@ -252,13 +251,14 @@ exports.getTextFragmentHref = (text, url) => {
   return `${url}#:~:text=${fragmentList}`;
 };
 // Returns a +-delimited list of sorted names of rule engines.
-exports.getToolList = toolIDs => Array.from(toolIDs)
-.map(toolID => tools[toolID][0])
+exports.getEngineList = engineIDs => Array.from(engineIDs)
+.map(engineID => ruleEngines[engineID][0])
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');
 // Returns a string of names of rule engines.
-exports.getToolNamesString = toolIDSet =>
-  alphaSort(Array.from(toolIDSet).map(toolID => tools[toolID]?.[0] || toolID)).join(' + ');
+exports.getEngineNamesString = engineIDSet => alphaSort(
+  Array.from(engineIDSet).map(engineID => ruleEngines[engineID]?.[0] || engineID)
+).join(' + ');
 // Gets the WCAG Understanding link for a numeric WCAG standard identifier.
 exports.getWCAGLink = numericID => {
   // Return the link.
@@ -444,7 +444,7 @@ const isValidReport = exports.isValidReport = report => {
   && report.acts.every(act =>
     typeof act === 'object'
     && typeof act.type === 'string'
-    && act.type === 'test' ? Object.keys(tools).includes(act.which) : true
+    && act.type === 'test' ? Object.keys(ruleEngines).includes(act.which) : true
   )
   && typeof report.jobData === 'object'
   && report.jobData.endTime
@@ -536,16 +536,16 @@ exports.getReportData = async (timeStamp, jobID) => {
     creationDate: getDateTime(timeStamp),
     daysAgo: getAgoDays(timeStamp),
     issueCount: 0,
-    toolNames: [],
-    toolCount: 0,
+    engineNames: [],
+    engineCount: 0,
     reporterNames: [],
     reporterCount: 0,
     violatorCount: 0,
-    preventedToolNames: [],
-    preventedToolCount: 0
+    preventedEngineNames: [],
+    preventedEngineCount: 0
   };
   const issueIDSet = new Set();
-  const toolNameSet = new Set();
+  const engineNameSet = new Set();
   const reporterIDSet = new Set();
   const violatorIndexSet = new Set();
   // For each act of the report:
@@ -553,15 +553,15 @@ exports.getReportData = async (timeStamp, jobID) => {
     // If it is a test act:
     if (act.type === 'test') {
       const {result, which} = act;
-      // Ensure that the tool is in the temporary data.
-      toolNameSet.add(tools[which][0]);
+      // Ensure that the rule engine is in the temporary data.
+      engineNameSet.add(ruleEngines[which][0]);
       const instances = result?.standardResult?.instances ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {
         const {catalogIndex, issueID} = instance;
         // If it has a non-ignorable classified issue ID:
         if (issueID && issueSpecs[issueID] && issueID !== 'ignorable') {
-          // Ensure that the tool is in the temporary data.
+          // Ensure that the rule engine is in the temporary data.
           reporterIDSet.add(which);
           // Ensure that the issue is in the temporary data.
           issueIDSet.add(issueID);
@@ -576,21 +576,21 @@ exports.getReportData = async (timeStamp, jobID) => {
   });
   // Populate the data with the act data.
   data.issueCount = issueIDSet.size;
-  data.toolNames = Array
-  .from(toolNameSet)
+  data.engineNames = Array
+  .from(engineNameSet)
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
-  data.toolCount = toolNameSet.size;
+  data.engineCount = engineNameSet.size;
   data.reporterNames = Array
   .from(reporterIDSet)
-  .map(id => tools[id][0])
+  .map(id => ruleEngines[id][0])
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.reporterCount = data.reporterNames.length;
   data.violatorCount = violatorIndexSet.size;
   // Add the names of any prevented rule engines to the data.
-  data.preventedToolNames = Object.keys(report.jobData?.preventions || {})
-  .map(toolID => tools[toolID][0])
+  data.preventedEngineNames = Object.keys(report.jobData?.preventions || {})
+  .map(engineID => ruleEngines[engineID][0])
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
-  data.preventedToolCount = data.preventedToolNames.length;
+  data.preventedEngineCount = data.preventedEngineNames.length;
   // Return the data.
   return data;
 }

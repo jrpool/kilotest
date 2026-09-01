@@ -9,7 +9,7 @@ const {
   getPageDataStrings,
   getPathID,
   getReport,
-  getToolNamesString,
+  getEngineNamesString,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
@@ -92,7 +92,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
         text: catalog[catalogIndex]?.text ?? '',
         reporters: new Set()
       };
-      // Ensure that the tool is in the sets of reporters of the violator and the issue.
+      // Ensure that the rule engine is in the sets of reporters of the violator and the issue.
       violators[catalogIndex].reporters.add(which);
       query.reporters.add(which);
     });
@@ -103,12 +103,12 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // For each violator:
   Object.values(violators).forEach(violatorData => {
     // Convert the set of its reporters to a string.
-    violatorData.reporters = getToolNamesString(violatorData.reporters);
+    violatorData.reporters = getEngineNamesString(violatorData.reporters);
   });
   const reporterCount = query.reporters.size;
   query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
   // Convert the set of issue reporters to a string.
-  query.reporters = getToolNamesString(query.reporters);
+  query.reporters = getEngineNamesString(query.reporters);
   // Convert the violator data to an array.
   violators = Object.entries(violators).map(entry => ({
     catalogIndex: entry[0],

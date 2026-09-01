@@ -54,7 +54,7 @@ exports.answer = async (_, search) => {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
     // Get a summary of it.
     const reportFacts = await getReportData(timeStamp, jobID);
-    const {error, issueCount, preventedToolCount, url} = reportFacts;
+    const {error, issueCount, preventedEngineCount, url} = reportFacts;
     // If this failed:
     if (error) {
       // Return why.
@@ -67,7 +67,7 @@ exports.answer = async (_, search) => {
       timeStamp,
       jobID,
       issueCount,
-      preventedToolCount,
+      preventedEngineCount,
       url
     });
   }
@@ -79,9 +79,9 @@ exports.answer = async (_, search) => {
   let anyDeletable = false;
   // For each summary:
   reportSpecs.forEach((spec, index) => {
-    const {timeStamp, jobID, issueCount, preventedToolCount, url} = spec;
+    const {timeStamp, jobID, issueCount, preventedEngineCount, url} = spec;
     const jobName = `${timeStamp}-${jobID}`;
-    const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventedToolCount}, issues ${issueCount}`;
+    const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventedEngineCount}, issues ${issueCount}`;
     // If its report is the sole report on a target:
     if (reportSpecs[index - 1]?.url !== url && reportSpecs[index + 1]?.url !== url) {
       // Add a line with a deletion checkbox.

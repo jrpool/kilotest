@@ -188,13 +188,13 @@ The [Perplexity documentation](https://www.perplexity.ai/help-center/en/articles
 
 Once the compatibility of Kilotest as a connector with AI platforms of two different vendors had been confirmed, the focus of work returned to completion of the missing endpoints of the API. The first was an endpoint that would let a model efficiently search for an available report about a particular web page.
 
-The new `summarizeQualityOfMatchingWebPages` tool provided inputs for fragments of a description and of a URL hostname of a web page and responds with summary data about all and only the available reports of pages that match at least one of those fragments, where matching means either including or being included by the provided fragment, case-insensitively.
+A new `summarizeQualityOfMatchingWebPages` tool provided inputs for fragments of a description and of a URL hostname of a web page and responds with summary data about all and only the available reports of pages that match at least one of those fragments, where matching means either including or being included by the provided fragment, case-insensitively.
 
 ### Increment 7
 
 Further experimentation made it clear that Increment 6 had been a detour. The problem with Increment 6 was that it does not improve efficiency by eliminating the need to get a list of all reports. Models must get a list of all reports in order to be confident that the answer to the question “Is a report available yet?” is correct. Any algorithm that matches a page description and a URL with those of existing reports is error-prone, organization names change, website designs change, URLs change, and organizations are related to one another. Typically, a desired report does not yet exist. In that case, the model needs the full list of reports in order to understand the naming convention for pages and to adhere to that convention when submitting a request to have the page of interest tested.
 
-For this reason, the tool being developed in increment 6 was deleted.
+For this reason, the tool developed in increment 6 was deleted.
 
 ### Increment 8
 

@@ -9,14 +9,14 @@ const {
   getPageData,
   getPageDataStrings,
   getReport,
-  getToolList,
+  getEngineList,
   getWCAGLink,
   getWeightName,
   htmlSafe,
   isHidden,
   isValidReport,
   objectSort,
-  tools
+  ruleEngines
 } = require('../../util');
 const {issues: issueSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
@@ -82,7 +82,7 @@ const getIssuesData = async (timeStamp, jobID) => {
                 reporterList: '',
                 violators: new Set()
               };
-              // Ensure the tool is in the temporary data.
+              // Ensure the rule engine is in the temporary data.
               temp.issues[issueID].reporters.add(which);
               temp.reporters.add(which);
               // If the instance has a catalog index:
@@ -97,7 +97,7 @@ const getIssuesData = async (timeStamp, jobID) => {
       }
     });
     // Finish populating the final data.
-    final.reporterList = getToolList(temp.reporters);
+    final.reporterList = getEngineList(temp.reporters);
     final.reporterCount = temp.reporters.size;
     final.violatorCount = temp.violators.size;
     Object.values(temp.issues).forEach(issue => {
@@ -109,7 +109,7 @@ const getIssuesData = async (timeStamp, jobID) => {
         why,
         weight
       };
-      finalIssue.reporterList = getToolList(issue.reporters);
+      finalIssue.reporterList = getEngineList(issue.reporters);
       finalIssue.reporterCount = issue.reporters.size;
       finalIssue.violatorCount = issue.violators.size;
       final.issues[issue.weight].push(finalIssue);
@@ -183,11 +183,11 @@ const populateQuery = async (timeStamp, jobID, query) => {
   // Initialize strings for the prevention notices query property.
   const preventionStrings = [];
   const margin = ' '.repeat(6);
-  Object.keys(preventions).forEach(preventedToolID => {
-    const toolName = tools[preventedToolID];
-    const toolNameString = `${toolName[0]} (${toolName[1]})`;
-    const causeString = htmlSafe(preventions[preventedToolID]);
-    const preventionString = `${margin}<li>Page not testable by ${toolNameString}: ${causeString}</li>`;
+  Object.keys(preventions).forEach(preventedEngineID => {
+    const engineName = ruleEngines[preventedEngineID];
+    const engineNameString = `${engineName[0]} (${engineName[1]})`;
+    const causeString = htmlSafe(preventions[preventedEngineID]);
+    const preventionString = `${margin}<li>Page not testable by ${engineNameString}: ${causeString}</li>`;
     preventionStrings.push(preventionString);
   });
   // Add prevention notices to the query.

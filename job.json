@@ -78,9 +78,21 @@
     {
       "type": "test",
       "launch": {},
+      "which": "pour",
+      "what": "Pour by David Yarham and Geoffrey Crofte"
+    },
+    {
+      "type": "test",
+      "launch": {},
       "which": "qualWeb",
       "what": "QualWeb by University of Lisbon",
       "withNewContent": false
+    },
+    {
+      "type": "test",
+      "launch": {},
+      "which": "surea11y",
+      "what": "SureA11y by Jorge Rumoroso"
     },
     {
       "type": "test",

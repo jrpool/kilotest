@@ -36,7 +36,9 @@ const ruleEngines = exports.ruleEngines = {
   ibm: ['Accessibility Checker', 'IBM'],
   nuVal: ['Html Checker API', 'World Wide Web Consortium'],
   nuVnu: ['Html Checker', 'World Wide Web Consortium'],
+  pour: ['Pour', 'David Yarham and Geoffrey Crofte'],
   qualWeb: ['QualWeb', 'University of Lisbon'],
+  surea11y: ['SureA11y', 'Jorge Rumoroso'],
   testaro: ['Testaro', 'CVS Health'],
   wave: ['WAVE', 'Utah State University'],
   wax: ['WallyAX', 'Wally']

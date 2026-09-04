@@ -833,7 +833,7 @@ const requestHandler = async (request, response) => {
         // Otherwise, i.e. if the service is invalid:
         else {
           await serveError(
-            {message: 'ERROR: Invalid request'}, response, false
+            {message: 'ERROR: Invalid service requested'}, response, false
           );
         }
       }

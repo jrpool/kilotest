@@ -521,7 +521,7 @@ exports.annotateReport = async (timeStamp, jobID) => {
   // Return success.
   return '';
 };
-// Returns summary data on an available report.
+// Returns basics about an available report.
 exports.getReportData = async (timeStamp, jobID) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);

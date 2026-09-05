@@ -8,8 +8,7 @@ node_modules/
 .DS_Store
 
 # Transactional data
-db/
-!test/fixtures/db/
+/db/
 results/
 ai0Balance.json
 web/tutorial/comments.json

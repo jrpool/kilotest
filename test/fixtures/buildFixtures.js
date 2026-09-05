@@ -216,6 +216,23 @@ const main = async () => {
     preventedReport
   );
 
+  // Fixture 7: hidden. A report placed in hiddenReports/ instead of reports/, so it must not appear in listReports, listIssues, listViolators, listDiagnoses, or getReport API responses. The reportsExtract must not include it.
+  const hiddenCatalog = {
+    '0': catalogItem('A', 'Secret link', '/html/body/a[1]', '5:10:60:20')
+  };
+  const hiddenActs = [
+    testAct(engineAxe, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 0, 2, 1)
+    ])
+  ];
+  const hiddenReport = report('260101T0007-hid', 'Hidden Page',
+    'https://example.com/hidden', hiddenActs, hiddenCatalog);
+  await writeJSON(
+    path.join(targetDir, 'hiddenReports', '260101T0007-hid.json'),
+    hiddenReport
+  );
+
   // Write an empty recs.json so getRecs does not try to create one.
   await writeJSON(path.join(targetDir, 'jobs', 'recs.json'), {});
 

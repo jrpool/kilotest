@@ -15,6 +15,7 @@ let sendAlertCalls = [];
 
 before(() => {
   sendAlertCalls = [];
+  // @ts-expect-error: Replacing the real function with a mock for testing.
   alerts.sendAlert = async (subject, body) => {
     sendAlertCalls.push({subject, body});
   };

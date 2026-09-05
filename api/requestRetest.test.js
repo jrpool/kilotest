@@ -18,6 +18,7 @@ let processTestRequestCalls = [];
 before(() => {
   process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
   processTestRequestCalls = [];
+  // @ts-expect-error: Replacing the real function with a mock for testing.
   apiUtil.processTestRequest = async (testType, what, url, reason) => {
     processTestRequestCalls.push({testType, what, url, reason});
   };

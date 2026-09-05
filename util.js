@@ -641,11 +641,11 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
 };
 // Returns the creation time and size of a report.
 const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
-  const reportStat = await fs.stat(
-    path.join(reportsPath(), `${timeStamp}-${jobID}.json`),
-    {throwIfNoEntry: false}
-  );
-  if (!reportStat) {
+  let reportStat;
+  try {
+    reportStat = await fs.stat(path.join(reportsPath(), `${timeStamp}-${jobID}.json`));
+  }
+  catch {
     return null;
   }
   const reportTime = reportStat.birthtime;

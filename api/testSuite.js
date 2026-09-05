@@ -137,6 +137,8 @@ const requestService = async () => {
   const reportsBasicsIndex = Math.floor(reportsBasics.length * Math.random());
   // Choose one report at random.
   reportBasics = reportsBasics[reportsBasicsIndex];
+  // Get whether the report has been superseded by a later report about the same page.
+  const isSuperseded = reportBasics['whether a later report about the same page exists'];
   [timeStamp, jobID] = reportBasics.identifier?.split('-') || [null, null];
   if (!(timeStamp && jobID)) {
     console.log(`reportBasicsIndex: ${reportsBasicsIndex}`);
@@ -263,13 +265,24 @@ const requestService = async () => {
   responseContent = body?.['response content'] ?? {};
   requestDetails = responseContent['details about your request'] ?? {};
   requestDisposition = responseContent['disposition of your request'] ?? {};
-  if (
-    !requestDetails['reason why the page should be retested']
-    || !requestDisposition['how you can check for completion']
-  ) {
-    console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
-    console.log(`requestDisposition: ${JSON.stringify(requestDisposition, null, 2)}`);
-    return;
+  // If the report has been superseded:
+  if (isSuperseded) {
+    // Expect the request to be rejected.
+    if (!requestDetails.error?.includes('a later report about the page exists')) {
+      console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
+      return;
+    }
+  }
+  // Otherwise, i.e. if the report has not been superseded:
+  else {
+    if (
+      !requestDetails['reason why the page should be retested']
+      || !requestDisposition['how you can check for completion']
+    ) {
+      console.log(`requestDetails: ${JSON.stringify(requestDetails, null, 2)}`);
+      console.log(`requestDisposition: ${JSON.stringify(requestDisposition, null, 2)}`);
+      return;
+    }
   }
   console.log('======================\nRequest: Make a feature request');
   path = '/api/requestFeature';

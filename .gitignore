@@ -9,6 +9,7 @@ node_modules/
 
 # Transactional data
 db/
+!test/fixtures/db/
 results/
 ai0Balance.json
 web/tutorial/comments.json

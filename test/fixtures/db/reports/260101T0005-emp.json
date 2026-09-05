@@ -1,0 +1,46 @@
+{
+  "id": "260101T0005-emp",
+  "what": "Empty Results Page",
+  "strict": false,
+  "standard": "only",
+  "device": {
+    "id": "default"
+  },
+  "browserID": "chromium",
+  "creationTimeStamp": "260101T0005",
+  "executionTimeStamp": "260101T0005",
+  "target": {
+    "what": "Empty Results Page",
+    "url": "https://example.com/empty"
+  },
+  "sources": {
+    "worker": "test-worker"
+  },
+  "acts": [
+    {
+      "type": "test",
+      "which": "axe",
+      "startTime": "26-01-01T00:00",
+      "endTime": "26-01-01T00:01",
+      "result": {
+        "standardResult": {
+          "instances": [],
+          "outcomeTotals": {
+            "failed": 0,
+            "cantTell": 0
+          }
+        }
+      }
+    }
+  ],
+  "jobData": {
+    "startTime": "26-01-01T00:00",
+    "endTime": "26-01-01T00:10",
+    "elapsedSeconds": 600,
+    "preventions": {},
+    "issuelessRules": []
+  },
+  "catalog": {},
+  "images": {},
+  "checkpoints": []
+}

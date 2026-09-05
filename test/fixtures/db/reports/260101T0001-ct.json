@@ -1,0 +1,69 @@
+{
+  "id": "260101T0001-ct",
+  "what": "All CantTell Page",
+  "strict": false,
+  "standard": "only",
+  "device": {
+    "id": "default"
+  },
+  "browserID": "chromium",
+  "creationTimeStamp": "260101T0001",
+  "executionTimeStamp": "260101T0001",
+  "target": {
+    "what": "All CantTell Page",
+    "url": "https://example.com/canttell"
+  },
+  "sources": {
+    "worker": "test-worker"
+  },
+  "acts": [
+    {
+      "type": "test",
+      "which": "axe",
+      "startTime": "26-01-01T00:00",
+      "endTime": "26-01-01T00:01",
+      "result": {
+        "standardResult": {
+          "instances": [
+            {
+              "ruleID": "r65",
+              "what": "Focus Visible",
+              "ordinalSeverity": 0,
+              "outcome": "cantTell",
+              "count": 1,
+              "catalogIndex": "0",
+              "checkpoint": 0,
+              "issueID": "focusIndicationBad"
+            }
+          ],
+          "outcomeTotals": {
+            "failed": 0,
+            "cantTell": 1
+          }
+        }
+      }
+    }
+  ],
+  "jobData": {
+    "startTime": "26-01-01T00:00",
+    "endTime": "26-01-01T00:10",
+    "elapsedSeconds": 600,
+    "preventions": {},
+    "issuelessRules": []
+  },
+  "catalog": {
+    "0": {
+      "tagName": "A",
+      "id": "",
+      "startTag": "<a>",
+      "text": "Click here",
+      "textLinkable": false,
+      "boxID": "5:10:60:20",
+      "pathID": "/html/body/a[1]",
+      "headingIndex": "",
+      "checkpoint": 0
+    }
+  },
+  "images": {},
+  "checkpoints": []
+}

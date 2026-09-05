@@ -1,0 +1,68 @@
+{
+  "id": "260101T0002-no",
+  "what": "No Outcomes Page",
+  "strict": false,
+  "standard": "only",
+  "device": {
+    "id": "default"
+  },
+  "browserID": "chromium",
+  "creationTimeStamp": "260101T0002",
+  "executionTimeStamp": "260101T0002",
+  "target": {
+    "what": "No Outcomes Page",
+    "url": "https://example.com/nooutcomes"
+  },
+  "sources": {
+    "worker": "test-worker"
+  },
+  "acts": [
+    {
+      "type": "test",
+      "which": "ibm",
+      "startTime": "26-01-01T00:00",
+      "endTime": "26-01-01T00:01",
+      "result": {
+        "standardResult": {
+          "instances": [
+            {
+              "ruleID": "r1",
+              "what": "Button has no accessible name",
+              "ordinalSeverity": 3,
+              "count": 1,
+              "catalogIndex": "0",
+              "checkpoint": 0,
+              "issueID": "linkNoText"
+            }
+          ],
+          "outcomeTotals": {
+            "failed": 0,
+            "cantTell": 0
+          }
+        }
+      }
+    }
+  ],
+  "jobData": {
+    "startTime": "26-01-01T00:00",
+    "endTime": "26-01-01T00:10",
+    "elapsedSeconds": 600,
+    "preventions": {},
+    "issuelessRules": []
+  },
+  "catalog": {
+    "0": {
+      "tagName": "BUTTON",
+      "id": "",
+      "startTag": "<button>",
+      "text": "Submit",
+      "textLinkable": false,
+      "boxID": "15:25:70:30",
+      "pathID": "/html/body/button[1]",
+      "headingIndex": "",
+      "checkpoint": 0
+    }
+  },
+  "images": {},
+  "checkpoints": []
+}

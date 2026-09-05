@@ -1,0 +1,80 @@
+{
+  "id": "260202T0000-new",
+  "what": "Mixed Outcomes Page",
+  "strict": false,
+  "standard": "only",
+  "device": {
+    "id": "default"
+  },
+  "browserID": "chromium",
+  "creationTimeStamp": "260202T0000",
+  "executionTimeStamp": "260202T0000",
+  "target": {
+    "what": "Mixed Outcomes Page",
+    "url": "https://example.com/mixed"
+  },
+  "sources": {
+    "worker": "test-worker"
+  },
+  "acts": [
+    {
+      "type": "test",
+      "which": "axe",
+      "startTime": "26-01-01T00:00",
+      "endTime": "26-01-01T00:01",
+      "result": {
+        "standardResult": {
+          "instances": [
+            {
+              "ruleID": "r11",
+              "what": "The link does not have an accessible name",
+              "ordinalSeverity": 2,
+              "outcome": "failed",
+              "count": 1,
+              "catalogIndex": "0",
+              "checkpoint": 0,
+              "issueID": "linkNoText"
+            }
+          ],
+          "outcomeTotals": {
+            "failed": 1,
+            "cantTell": 0
+          }
+        }
+      }
+    }
+  ],
+  "jobData": {
+    "startTime": "26-01-01T00:00",
+    "endTime": "26-02-02T00:10",
+    "elapsedSeconds": 600,
+    "preventions": {},
+    "issuelessRules": []
+  },
+  "catalog": {
+    "0": {
+      "tagName": "A",
+      "id": "",
+      "startTag": "<a>",
+      "text": "About Us",
+      "textLinkable": false,
+      "boxID": "10:20:80:30",
+      "pathID": "/html/body/a[1]",
+      "headingIndex": "",
+      "checkpoint": 0
+    },
+    "1": {
+      "tagName": "P",
+      "id": "",
+      "startTag": "<p>",
+      "text": "ALL ABOUT US",
+      "textLinkable": false,
+      "boxID": "10:60:80:20",
+      "pathID": "/html/body/p[1]",
+      "headingIndex": "",
+      "checkpoint": 0
+    }
+  },
+  "images": {},
+  "checkpoints": []
+}

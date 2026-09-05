@@ -15,9 +15,12 @@ const path = require('path');
 // CONSTANTS
 
 // Issue IDs with known specs in testaro-issues, chosen for different weights.
-const issueLinkNoText = 'linkNoText';       // weight 4 (highest)
-const issueFocusIndication = 'focusIndicationBad'; // weight 4
-const issueAllCaps = 'allCaps';              // weight 1 (lowest)
+// weight 4 (highest)
+const issueLinkNoText = 'linkNoText';
+// weight 4
+const issueFocusIndication = 'focusIndicationBad';
+// weight 1 (lowest)
+const issueAllCaps = 'allCaps';
 
 // Rule engine IDs that exist in util.js ruleEngines.
 const engineAxe = 'axe';

@@ -2,11 +2,7 @@
   buildFixtures.js
   Builds the fixture corpus for Kilotest tests.
 
-  Each fixture is a minimal Testaro report in the current format, crafted so
-  that the expected API response can be hand-computed and hard-coded into
-  tests. The fixtures collectively cover the `outcome` property values
-  (`failed`, `cantTell`, and missing/undefined), superseded reports, empty
-  reports, and prevented rule engines.
+  Each fixture is a minimal Testaro report in the current format, crafted so that the expected API response can be hand-computed and hard-coded into tests. The fixtures collectively cover the `outcome` property values (`failed`, `cantTell`, and missing/undefined), superseded reports, empty reports, and prevented rule engines.
 
   Run with: node test/fixtures/buildFixtures.js [targetDir]
   Defaults to test/fixtures/db under the project root.
@@ -116,11 +112,7 @@ const main = async () => {
   await fs.mkdir(path.join(targetDir, 'jobs', 'failed'), {recursive: true});
   await fs.mkdir(path.join(targetDir, 'hiddenReports'), {recursive: true});
 
-  // Fixture 1: mixedOutcomes
-  // Two rule engines, three instances: one failed, one cantTell, one failed.
-  // The cantTell instance must be excluded from issue/violator counts.
-  // Two distinct issues (linkNoText weight 4, allCaps weight 1) and two
-  // distinct violator catalog indexes (0 and 1).
+  // Fixture 1: mixedOutcomes. Two rule engines, four instances: two failed (same issue, same violator, two engines), one cantTell (excluded from counts), one failed (different issue, different violator). Two distinct issues (linkNoText weight 4, allCaps weight 1) and two distinct violator catalog indexes (0 and 1).
   const mixedCatalog = {
     '0': catalogItem('A', 'About Us', '/html/body/a[1]', '10:20:80:30'),
     '1': catalogItem('P', 'ALL ABOUT US', '/html/body/p[1]', '10:60:80:20')
@@ -145,9 +137,7 @@ const main = async () => {
       'https://example.com/mixed', mixedActs, mixedCatalog)
   );
 
-  // Fixture 2: allCantTell
-  // All instances have outcome cantTell, so no issues or violators should be
-  // reported by listIssues, listViolators, or listDiagnoses.
+  // Fixture 2: allCantTell. All instances have outcome cantTell, so no issues or violators should be reported by listIssues, listViolators, or listDiagnoses.
   const cantTellCatalog = {
     '0': catalogItem('A', 'Click here', '/html/body/a[1]', '5:10:60:20')
   };
@@ -163,10 +153,7 @@ const main = async () => {
       'https://example.com/canttell', cantTellActs, cantTellCatalog)
   );
 
-  // Fixture 3: noOutcomes
-  // Instances with no outcome property. Testaro defaults to 'failed', but
-  // Kilotest code checks `outcome !== 'cantTell'`, so missing outcome (undefined)
-  // is treated as a violation. This verifies that behavior.
+  // Fixture 3: noOutcomes. Instances with no outcome property. Testaro defaults to 'failed', but Kilotest code checks `outcome !== 'cantTell'`, so missing outcome (undefined) is treated as a violation. This verifies that behavior.
   const noOutcomeCatalog = {
     '0': catalogItem('BUTTON', 'Submit', '/html/body/button[1]', '15:25:70:30')
   };
@@ -189,9 +176,7 @@ const main = async () => {
       'https://example.com/nooutcomes', noOutcomeActs, noOutcomeCatalog)
   );
 
-  // Fixture 4: superseded
-  // A report about the same page as mixedOutcomes but with a later timestamp,
-  // so mixedOutcomes is superseded by this one.
+  // Fixture 4: superseded. A report about the same page as mixedOutcomes but with a later timestamp, so mixedOutcomes is superseded by this one.
   const newerActs = [
     testAct(ENGINE_AXE, [
       instance('r11', 'The link does not have an accessible name', 'failed',
@@ -204,17 +189,14 @@ const main = async () => {
       'https://example.com/mixed', newerActs, mixedCatalog, '26-02-02T00:10')
   );
 
-  // Fixture 5: empty
-  // A valid report with no test acts that have instances, so listIssues
-  // returns zero issues.
+  // Fixture 5: empty. A valid report with no test acts that have instances, so listIssues returns zero issues.
   await writeJSON(
     path.join(reportsDir, '260101T0005-emp.json'),
     report('260101T0005-emp', 'Empty Results Page',
       'https://example.com/empty', [testAct(ENGINE_AXE, [])], {})
   );
 
-  // Fixture 6: prevented
-  // A report where one rule engine was prevented from testing.
+  // Fixture 6: prevented. A report where one rule engine was prevented from testing.
   const preventedCatalog = {
     '0': catalogItem('IMG', 'An image', '/html/body/img[1]', '0:0:200:100')
   };

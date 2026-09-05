@@ -14,8 +14,7 @@ const wcagMap = require('./wcagMap.json');
 
 // CONSTANTS
 
-// Path of the data directory. Read afresh on every call (rather than cached at module load) so
-// that tests can point Kilotest at a fixture directory via the DB_DIR environment variable.
+// Path of the data directory. Read afresh on every call (rather than cached at module load) so that tests can point Kilotest at a fixture directory via the DB_DIR environment variable.
 const dbPath = exports.dbPath = () => process.env.DB_DIR || path.join(__dirname, 'db');
 // Path of the jobs directory.
 const jobsPath = exports.jobsPath = () => path.join(dbPath(), 'jobs');

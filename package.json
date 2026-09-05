@@ -55,9 +55,17 @@
     "fsevents@2.3.2": true
   },
   "c8": {
+    "all": true,
     "reporter": [
       "text",
       "html"
+    ],
+    "include": [
+      "index.js",
+      "mcp.js",
+      "alerts.js",
+      "util.js",
+      "api/**/*.js"
     ],
     "exclude": [
       "coverage/**",

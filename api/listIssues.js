@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {
-  getIssueClassification,
+  getIssueSpec,
   getReportBasics,
   getResponseMetadata,
   getRuleEngineFacts,
@@ -76,11 +76,11 @@ exports.response = async args => {
           // For each standard instance of the act:
           instances.forEach(instance => {
             const {catalogIndex, issueID} = instance;
-            // Get the classification of its issue.
-            const issueClassification = issueID ? getIssueClassification(issueID) : null;
+            // Get the specification of its issue.
+            const issueSpec = issueID ? getIssueSpec(issueID) : null;
             // If the instance has a non-ignorable and fully classified issue:
-            if (issueClassification) {
-              const {summary, weight, why} = issueClassification;
+            if (issueSpec) {
+              const {summary, weight, why} = issueSpec;
               // Ensure the rule-engine ID is in the reporters data.
               reporterIDs.add(which);
               // If the instance has a catalog index:

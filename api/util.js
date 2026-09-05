@@ -14,11 +14,11 @@ const {
   getRandomString,
   getReportExtract,
   getReportStats,
-  issuesClassification,
   objectSort,
   ruleEngines,
   updateRecs
 } = require('../util');
+const {issues: issueSpecs} = require('testaro-issues');
 
 // CONSTANTS
 
@@ -107,24 +107,21 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   return basics;
 };
 // Returns the classification of an issue.
-exports.getIssueClassification = issueID => {
-  // Get the issue classification.
-  const issueClassification = issuesClassification[issueID] ?? {};
-  const {summary, wcag, weight, why} = issueClassification;
-  // If the issue is non-ignorable and fully classified:
-  if (
-    issueID
-    && issueID !== 'ignorable'
-    && issueClassification
-    && summary
-    && wcag
-    && [1, 2, 3, 4].includes(weight)
-    && why
-  ) {
-    // Return the classification.
-    return issueClassification;
+exports.getIssueSpec = issueID => {
+  // Get the issue specification.
+  const issueSpec = issueSpecs[issueID];
+  // If it exists:
+  if (issueSpec) {
+    const {summary, wcag, weight, why} = issueSpec;
+    // If the issue is non-ignorable and fully classified:
+    if (issueID !== 'ignorable' && summary && wcag && [1, 2, 3, 4].includes(weight) && why) {
+      // Return its specification.
+      return issueSpec;
+    }
+    // Otherwise, return this.
+    return null;
   }
-  // Otherwise, i.e. if it is ignorable or not fully classified, return this.
+  // Otherwise, i.e. if it does not exist, return this.
   return null;
 };
 // Processes a test or retest request.

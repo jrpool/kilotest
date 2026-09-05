@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {
-  getIssueClassification,
+  getIssueSpec,
   getReportBasics,
   getResponseMetadata,
   getRuleEnginesFacts,
@@ -41,10 +41,10 @@ exports.response = async args => {
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
   }
-  // Get the classification of the issue.
-  const issueClassification = issueID ? getIssueClassification(issueID) : null;
+  // Get the specification of the issue.
+  const issueSpec = issueID ? getIssueSpec(issueID) : null;
   // If the issue is ignorable or not fully classified:
-  if (!issueClassification) {
+  if (!issueSpec) {
     // Add this to the response content.
     responseContent['basics about the issue'] = {
       'error': 'No information about the specified issue is available'
@@ -52,7 +52,7 @@ exports.response = async args => {
   }
   // Otherwise, i.e. if it is non-ignorable and fully classified:
   else {
-    const {summary, wcag, weight, why} = issueClassification;
+    const {summary, wcag, weight, why} = issueSpec;
     // Initialize the basics and details about it.
     const issueBasics = {
       'identifier': issueID,

@@ -560,9 +560,9 @@ exports.getReportData = async (timeStamp, jobID) => {
       const instances = result?.standardResult?.instances ?? [];
       // For each standard instance of the act:
       instances.forEach(instance => {
-        const {catalogIndex, issueID} = instance;
-        // If it has a non-ignorable classified issue ID:
-        if (issueID && issueSpecs[issueID] && issueID !== 'ignorable') {
+        const {catalogIndex, issueID, outcome} = instance;
+        // If it reports a violation and has a non-ignorable classified issue ID:
+        if (outcome !== 'cantTell' && issueID && issueSpecs[issueID] && issueID !== 'ignorable') {
           // Ensure that the rule engine is in the temporary data.
           reporterIDSet.add(which);
           // Ensure that the issue is in the temporary data.

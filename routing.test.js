@@ -1,7 +1,6 @@
 /*
   routing.test.js
-  Integration tests for HTTP routing in index.js, verifying that POST-only
-  API services reject GET requests.
+  Integration tests for HTTP routing in index.js, verifying that POST-only API services reject GET requests.
 */
 
 // IMPORTS

@@ -49,6 +49,7 @@
     "globals": "*",
     "js-yaml": "*",
     "markdownlint-cli2": "*",
+    "node-html-parser": "^9.0.3",
     "zod-openapi": "*"
   },
   "allowScripts": {

@@ -5858,3 +5858,70 @@ The gamble is **not** on whether the concept is sound (it is), but on **executio
 
 #### Summary
 Your architectural shift from static digests to interactive FAQ + LLM-driven Q&A is **well-grounded in current practice** and **solves real UX problems**. The risks are manageable with proper scoping and validation. I'd recommend a **phased rollout** starting with FAQs + manual custom-question handling, then adding LLM assistance once you understand user intent patterns.
+
+## Testing
+
+Now let's check the testSuite.js more fully to see how it picks fixtures (confirming the deficiency the user described), and check schemas.js/util.js in api for outcome handling.
+
+Here is a plan for building a rigorous testing system for Kilotest, informed by how QAI is structured. I read the QAI source (`src/util.test.ts`, `src/requestHandler.test.ts`, `package.json`) and the relevant parts of Kilotest (`api/*.js`, root `util.js`, `db/`, `web/listReports`) to ground this in what actually exists today, rather than in the abstract.
+
+### What QAI does that Kilotest should converge toward
+
+1. Colocated `*.test.ts` files next to the modules they test, run with the built-in `node:test` runner and `node:assert/strict`, no third-party test framework or mocking library.
+2. Coverage enforced by `c8` with 100% thresholds (lines/functions/branches/statements) as a gate, wired into `npm run check` alongside `typecheck`, `lint`, and `hint`.
+3. Server-level tests spin up a real ephemeral `http.Server` per test (`server.listen(0, ...)`) using `makeHandler(commentsFilePath, sendAlert)`, i.e. the handler factory takes its data-file path and side-effecting collaborators (like the alert sender) as parameters instead of importing hardcoded module-level constants. That is what makes deterministic, isolated tests possible: each test gets its own temp file/dir (`mkdtempDisposable`) and its own server instance, so there is no shared mutable fixture and no test order dependency.
+4. HTML responses are asserted with `node-html-parser`, not regex-only, so tests check structure (`querySelector('title')`, absence of `<script>`/`<img>` after sanitization) as well as text content.
+5. Failure paths are tested deliberately, not incidentally: unreadable/unwritable files (via `chmod`), missing fields, oversized/undersized input, duplicate detection, a broken `sendAlert` collaborator, etc. Every branch has a dedicated test, which is what makes 100% coverage meaningful rather than a vanity number.
+6. `node:test`'s built-in `testContext.mock.property(...)` is used for surgical monkey-patching (e.g. redirecting a route's file path) instead of a mocking library.
+
+### Why Kilotest's current setup cannot get there yet
+
+- `db/`, `db/reports`, `db/jobs`, etc. are computed once at module load as `path.join(__dirname, 'db')` in the top-level `util.js` (`dbPath`, `reportsPath`, `hiddenReportsPath`, `reportsExtractPath`, `jobsPath`, `recsPath`). Every downstream function (`getReportExtracts`, `getReportBasics`, job-claiming code, etc.) closes over these constants. There is currently no way to point any of this at a fixture directory the way QAI's `makeHandler(commentsFilePath, ...)` accepts a path.
+- `api/testSuite.js` is an end-to-end script, not a test suite: it talks to a live running server (local or deployed), picks a **random real report** (`Math.floor(reportsBasics.length * Math.random())`), and only asserts loose shape/presence conditions (`!issuesBasics.length`, `!issueBasics['impact on a user']`) because it cannot know in advance what the "correct" content of a real report is. It cannot catch a case where, say, `outcome === 'error'` is silently mapped to the wrong impact label, because it never encodes what the right answer should be.
+- There is no `test/` or `*.test.js` infrastructure, no `c8`, and no UI test of any kind.
+
+That correctly diagnoses the deficiency: you cannot write an assertion like "a report whose act has `outcome: 'error'` must be classified as X" against a randomly-selected real report, because you would first have to reverse-engineer what X should be from the code you are trying to test — that is circular.
+
+### Proposed plan
+
+#### Phase 0: Establish the toolchain
+- Add `c8` as a dev dependency; add an `npm test` script (`c8 --check-coverage node --test`) that actually runs something, replacing the current `"echo \"Error…\""` placeholder. Keep `test:api` for now as a separate, explicitly-labeled smoke/E2E script (see Phase 4) rather than deleting it immediately.
+- Decide coverage thresholds up front (QAI uses 100%; Kilotest may want to start lower, e.g. 80%, and ratchet up, given the amount of legacy code to backfill). This is a judgment call worth confirming with you before locking in a number in `package.json`.
+- Since Kilotest is CommonJS (`sourceType: "commonjs"` in `eslint.config.mjs`) and plain JS (not TypeScript), tests will be `*.test.js` using `require('node:test')` / `require('node:assert/strict')` — same runner and assertion library as QAI, just without the TS layer. This keeps the eventual TS migration (if you pursue it) a mechanical follow-up rather than a rewrite.
+
+#### Phase 1: Make data locations injectable (prerequisite for everything else)
+This is the load-bearing architectural change. Without it, no module can be tested against crafted fixtures without touching the real `db/`.
+- Refactor root `util.js` (and anything relying on its exported path constants) so the base data directory is resolved from a parameter or an environment variable read at call time (e.g. `KILOTEST_DB_DIR`, defaulting to today's `path.join(__dirname, 'db')`), rather than baked into module-load-time constants.
+- Where feasible, prefer explicit parameters over env vars for the innermost functions (mirroring `makeHandler(commentsFilePath, ...)`), and only use an env var at the outermost/server-bootstrap layer, so unit tests can call functions directly with a fixture path and never need to touch process env or the module cache.
+
+#### Phase 2: Build a crafted fixture corpus
+- Create `test/fixtures/db/` (or similar) with hand-authored, minimal Testaro reports covering the `outcome` cases you need verified: `success`, `failure`, `error`, mixed-outcome act arrays, an act with a missing/undefined `outcome`, a superseded report, an empty-violations report, etc.
+- Each fixture should be small enough that the expected API response can be hand-computed and hard-coded into the test as the "known-good" answer, exactly the property the current `test:api` script lacks.
+
+#### Phase 3: Unit tests, module by module
+Priority order, since these are the modules you just changed and where correctness of `outcome` handling matters most:
+1. `api/util.js` and root `util.js` (pure/near-pure helper functions: `getReportBasics`, `getReportExtracts`, `getToolsFacts`, response-metadata helpers).
+2. `api/listIssues.js`, `api/listViolators.js`, `api/listDiagnoses.js` (the modules that already reference `outcome`).
+3. `api/listReports.js`, `api/getReport.js`.
+4. `api/requestTest.js`, `api/requestRetest.js`, `api/requestFeature.js`, `api/schemas.js` (input validation edge cases: too-short/long fields, malformed bodies).
+Each test file lives next to its module (`api/listIssues.test.js`) and exercises it directly against Phase 2 fixtures, no server involved.
+
+#### Phase 4: Rework the API-level integration test
+Replace `test:api`'s "start from a live server, pick a random real report" approach with a QAI-style handler test:
+- Start an ephemeral server per test (or a shared one where safe) pointed at the fixture `db/` from Phase 2.
+- Walk through the same request sequence `testSuite.js` currently performs, but with hard-coded fixture identifiers and asserted exact expected values instead of "does this look non-empty."
+- Keep a much smaller, separate "smoke test against a real running deployment" script if you still want a pre-deploy sanity check, but do not conflate it with correctness testing.
+
+#### Phase 5: UI/web testing
+Kilotest's `web/*` pages are plain HTML + vanilla JS (no framework), analogous to QAI's server-rendered pages. Two complementary layers, matching QAI's toolset:
+- **Static/structural**: use `node-html-parser` (add as a dev dependency, same as QAI) to assert on the HTML served for each page/form (titles, presence of expected form fields, absence of raw unescaped user content).
+- **Behavioral**: for pages with client-side JS (`web/listReports/index.js` etc.) that fetch from the API and render results, either (a) extract the rendering logic into pure, testable functions that take API response JSON and return DOM-ready data/markup, so they can be unit-tested with `node:test` + `node:assert` without a browser, and/or (b) introduce a small number of real-browser tests (e.g. Playwright) only for the handful of interactions that cannot be verified any other way (form submission, client-side validation feedback). I would only reach for a browser automation tool if pure-function extraction proves impractical, since it adds real complexity and flakiness risk to a JS-only project.
+
+#### Phase 6: CI wiring and ratcheting
+- Add the test/coverage run to `.github/workflows/` (there is already a `.github/workflows/` dir) so `npm test` (and `npm run lint`) gate merges.
+- Track coverage percentage over time and raise the `c8` threshold as backfill work completes, rather than requiring 100% from day one across legacy code.
+
+#### On architectural convergence with QAI more broadly
+Beyond testing, actually adopting the QAI architecture would additionally involve: TypeScript with `--strict`, ESM (`"type": "module"`), the `@stylistic/eslint-plugin` + `@typescript-eslint/parser` lint stack, and the dependency-injection pattern (`makeHandler(path, collaborators)`) throughout, not just at the edges touched for testing. I would treat that as a separate, larger migration decided after the testing foundation above exists, since attempting both at once (rewrite the language/module system *and* build the test suite that is supposed to protect the rewrite) inverts the safety order.
+
+I have not made any changes yet. Given the phased nature of this, I would suggest reviewing/adjusting each phase before I implement it, starting with Phase 1 (the data-path injection refactor), since every later phase depends on it.

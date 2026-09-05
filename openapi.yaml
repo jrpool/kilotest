@@ -254,9 +254,9 @@ paths:
                                       type: object
                                       properties:
                                         name:
-                                          anyOf:
-                                            - type: string
-                                            - type: 'null'
+                                          type:
+                                            - string
+                                            - 'null'
                                         reason for failure:
                                           description: Copied verbatim from the Testaro report; shape may vary.
                                       required:
@@ -266,9 +266,9 @@ paths:
                                   names of rule engines that reported rule violations:
                                     type: array
                                     items:
-                                      anyOf:
-                                        - type: string
-                                        - type: 'null'
+                                      type:
+                                        - string
+                                        - 'null'
                                   counts of issues by priority:
                                     type: object
                                     properties:
@@ -782,9 +782,9 @@ paths:
                     type: object
                     properties:
                       size of the report in bytes:
-                        anyOf:
-                          - type: number
-                          - type: string
+                        type:
+                          - number
+                          - string
                       full report:
                         description: The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.
                     required:
@@ -1224,9 +1224,9 @@ components:
           type: string
           description: URL of the equivalent web UI page for this request.
         closest ancestor request:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
       required:
         - this request
         - closest ancestor request
@@ -1290,13 +1290,13 @@ components:
         identifier:
           type: string
         name:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
         sponsor:
-          anyOf:
-            - type: string
-            - type: 'null'
+          type:
+            - string
+            - 'null'
       required:
         - identifier
         - name

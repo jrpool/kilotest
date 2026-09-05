@@ -23,7 +23,7 @@ exports.answer = async (_, search) => {
       const fileName = `${jobName}.json`;
       try {
         // Move the report to the reports directory.
-        await fs.rename(path.join(hiddenReportsPath, fileName), path.join(reportsPath, fileName));
+        await fs.rename(path.join(hiddenReportsPath(), fileName), path.join(reportsPath(), fileName));
         // Update the data on the available reports.
         await makeReportsExtract();
       }
@@ -47,11 +47,11 @@ exports.answer = async (_, search) => {
   // Initialize an array of data on reports to be unhidden.
   const reportsData = [];
   // Get the names of the hidden report files.
-  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath);
+  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath());
   // For each hidden report:
   for (const reportFileName of hiddenReportFileNames) {
     // Get its file.
-    const reportJSON = await fs.readFile(path.join(hiddenReportsPath, reportFileName), 'utf8');
+    const reportJSON = await fs.readFile(path.join(hiddenReportsPath(), reportFileName), 'utf8');
     // Get the report.
     const report = JSON.parse(reportJSON);
     const {id, target} = report;

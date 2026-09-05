@@ -24,7 +24,7 @@ exports.answer = async (_, search) => {
         // For each report to be deleted:
         for (const jobName of jobNames) {
           // Delete it.
-          await fs.unlink(path.join(reportsPath, `${jobName}.json`));
+          await fs.unlink(path.join(reportsPath(), `${jobName}.json`));
         }
         // Update the extract of the available reports.
         await makeReportsExtract();
@@ -47,7 +47,7 @@ exports.answer = async (_, search) => {
       }
     }
   }
-  const reportNames = await fs.readdir(reportsPath);
+  const reportNames = await fs.readdir(reportsPath());
   const reportSpecs = [];
   // For each report:
   for (const reportName of reportNames) {

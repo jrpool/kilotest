@@ -60,7 +60,7 @@ const populateQuery = async query => {
     // For each job in the category:
     for (const fileName of jobFileNames[category]) {
       // Get the job.
-      const job = await getObject(path.join(jobsPath, category, fileName));
+      const job = await getObject(path.join(jobsPath(), category, fileName));
       // Add a line.
       lines[category].push(`${margin}<li><code>${job.target.url}</code> (${job.target.what})</li>`);
     }

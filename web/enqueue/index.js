@@ -35,7 +35,7 @@ exports.answer = async (url, what, authCode) => {
     };
     // Save the job in the queue.
     await fs.writeFile(
-      path.join(jobsPath, 'queue', `${jobName}.json`), getJSON(job)
+      path.join(jobsPath(), 'queue', `${jobName}.json`), getJSON(job)
     );
     console.log(`Retest queued for ${what} as job ${jobName}`);
     // Isolate this revision.
@@ -45,7 +45,7 @@ exports.answer = async (url, what, authCode) => {
       // Delete the recommendations to test the target.
       delete recs[url];
       // Save the revised recommendations.
-      await fs.writeFile(path.join(jobsPath, 'recs.json'), getJSON(recs));
+      await fs.writeFile(path.join(jobsPath(), 'recs.json'), getJSON(recs));
     });
     // Get the answer template.
     let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');

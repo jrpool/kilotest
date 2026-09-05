@@ -65,9 +65,9 @@ const answer = {
 // CONSTANTS
 
 const protocol = process.env.PROTOCOL || 'http';
-const queuePath = path.join(jobsPath, 'queue');
-const claimedPath = path.join(jobsPath, 'claimed');
-const failedPath = path.join(jobsPath, 'failed');
+const queuePath = () => path.join(jobsPath(), 'queue');
+const claimedPath = () => path.join(jobsPath(), 'claimed');
+const failedPath = () => path.join(jobsPath(), 'failed');
 // Credentials of the Testaro workers, by worker ID, from a JSON-object environment variable.
 // Each worker ID maps to a secret (used only to authenticate the worker, never published) and a
 // name (a non-secret label safe to publish, e.g. in report data and logs).
@@ -238,7 +238,7 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
   const claimedJobNames = jobNames.claimed;
   // For each claimed job:
   for (const jobName of claimedJobNames) {
-    const job = await getObject(path.join(jobsPath, 'claimed', jobName));
+    const job = await getObject(path.join(jobsPath(), 'claimed', jobName));
     const {id, sources} = job;
     const {worker} = sources;
     // If its assignee is the worker:
@@ -248,7 +248,7 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
       await serveError({message: `${messageStart}${messageEnd}`}, response, false);
       // Reclassify the job as failed.
       await fs.rename(
-        path.join(claimedPath, jobName), path.join(failedPath, jobName)
+        path.join(claimedPath(), jobName), path.join(failedPath(), jobName)
       );
       clean = false;
       // Stop checking claimed jobs.
@@ -262,7 +262,7 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
     if (queuedJobNames.length) {
       const oldestJobName = queuedJobNames[0];
       // Get the first one.
-      const firstJob = await getObject(path.join(queuePath, oldestJobName));
+      const firstJob = await getObject(path.join(queuePath(), oldestJobName));
       // Add the public worker name to the job, in a property Testaro does not read or alter.
       firstJob.sources.worker = workerName;
       console.log(
@@ -278,10 +278,10 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
       console.log(`${messageStart}${messageEnd}`);
       // Save the job in the claimed-jobs directory.
       await fs.writeFile(
-        path.join(claimedPath, oldestJobName), getJSON(firstJob)
+        path.join(claimedPath(), oldestJobName), getJSON(firstJob)
       );
       // Delete it from the queue.
-      await fs.unlink(path.join(queuePath, oldestJobName));
+      await fs.unlink(path.join(queuePath(), oldestJobName));
     }
     // Otherwise, i.e. if no jobs are queued:
     else {
@@ -661,7 +661,7 @@ const requestHandler = async (request, response) => {
               // Delete the rejected URL.
               delete recs[url];
               // Save the revised recommendations.
-              await fs.writeFile(path.join(jobsPath, 'recs.json'), getJSON(recs));
+              await fs.writeFile(path.join(jobsPath(), 'recs.json'), getJSON(recs));
             });
             // Set a location header for a response.
             response.setHeader('content-location', '/enqueueForm.html');
@@ -739,7 +739,7 @@ const requestHandler = async (request, response) => {
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
               const [timeStamp, jobID] = id.split('-');
               // Get the job the report is from.
-              const claimedJob = await getObject(path.join(claimedPath, `${id}.json`));
+              const claimedJob = await getObject(path.join(claimedPath(), `${id}.json`));
               // If the job was actually assigned to this worker:
               if (typeof claimedJob === 'object' && claimedJob.sources?.worker === workerName) {
                 console.log(`Testaro report ${id} was received from worker ${workerName}`);
@@ -755,7 +755,7 @@ const requestHandler = async (request, response) => {
                 // Check the monetary balances and send alerts if nearing exhaustion.
                 await checkBalancesForAlerts(report);
                 // Delete the job.
-                await fs.unlink(path.join(claimedPath, `${id}.json`));
+                await fs.unlink(path.join(claimedPath(), `${id}.json`));
                 console.log(`Completed job ${id} deleted`);
                 // Acknowledge receipt.
                 response.setHeader('content-type', 'application/json; charset=utf-8');
@@ -868,7 +868,7 @@ const requestHandler = async (request, response) => {
 
 const serve = async (protocolModule, options) => {
   // Create any missing directories.
-  for (const path of [queuePath, claimedPath, failedPath, hiddenReportsPath, reportsPath]) {
+  for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
     await fs.mkdir(path, {recursive: true});
   }
   const server = protocolModule === 'https'

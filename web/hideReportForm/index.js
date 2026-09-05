@@ -23,7 +23,7 @@ exports.answer = async (_, search) => {
       const fileName = `${jobName}.json`;
       try {
         // Move the specified report to the directory of hidden reports.
-        await fs.rename(path.join(reportsPath, fileName), path.join(hiddenReportsPath, fileName));
+        await fs.rename(path.join(reportsPath(), fileName), path.join(hiddenReportsPath(), fileName));
         // Update the data on the available reports.
         await makeReportsExtract();
       }

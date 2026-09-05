@@ -14,18 +14,19 @@ const wcagMap = require('./wcagMap.json');
 
 // CONSTANTS
 
-// Path of the data directory.
-const dbPath = exports.dbPath = path.join(__dirname, 'db');
+// Path of the data directory. Read afresh on every call (rather than cached at module load) so
+// that tests can point Kilotest at a fixture directory via the DB_DIR environment variable.
+const dbPath = exports.dbPath = () => process.env.DB_DIR || path.join(__dirname, 'db');
 // Path of the jobs directory.
-const jobsPath = exports.jobsPath = path.join(dbPath, 'jobs');
+const jobsPath = exports.jobsPath = () => path.join(dbPath(), 'jobs');
 // Path of the recommendations file.
-const recsPath = exports.recsPath = path.join(jobsPath, 'recs.json');
+const recsPath = exports.recsPath = () => path.join(jobsPath(), 'recs.json');
 // Path of the reports directory.
-const reportsPath = exports.reportsPath = path.join(dbPath, 'reports');
+const reportsPath = exports.reportsPath = () => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
-const hiddenReportsPath = exports.hiddenReportsPath = path.join(dbPath, 'hiddenReports');
+const hiddenReportsPath = exports.hiddenReportsPath = () => path.join(dbPath(), 'hiddenReports');
 // Path of the reports data file.
-const reportsExtractPath = exports.reportsExtractPath = path.join(dbPath, 'reportsExtract.json');
+const reportsExtractPath = exports.reportsExtractPath = () => path.join(dbPath(), 'reportsExtract.json');
 // IDs, names, and sponsors of Testaro rule engines.
 const ruleEngines = exports.ruleEngines = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -145,7 +146,7 @@ const getJobNames = exports.getJobNames = async () => {
   let fileNames;
   for (const category of ['queue', 'claimed', 'failed']) {
     try {
-      fileNames = await fs.readdir(path.join(jobsPath, category));
+      fileNames = await fs.readdir(path.join(jobsPath(), category));
     }
     catch(error) {
       return `ERROR: Job directory ${category} not readable (${error.message})`;
@@ -229,10 +230,10 @@ const getRecs = exports.getRecs = async () => {
   let recs;
   let recsJSON;
   try {
-    recsJSON = await fs.readFile(recsPath, 'utf8');
+    recsJSON = await fs.readFile(recsPath(), 'utf8');
   }
   catch(error) {
-    await fs.writeFile(recsPath, '{}\n');
+    await fs.writeFile(recsPath(), '{}\n');
     return `ERROR: recommendations file not readable, so created an empty one (${error.message})`;
   }
   try {
@@ -285,7 +286,7 @@ exports.isRecommendable = async url => {
   const jobNames = await getJobNames();
   // For each claimed job:
   for (const fileName of jobNames.claimed) {
-    const job = await getObject(path.join(jobsPath, 'claimed', fileName));
+    const job = await getObject(path.join(jobsPath(), 'claimed', fileName));
     // If its URL is that of the recommended target:
     if (job.target.url === url) {
       // Return this.
@@ -294,7 +295,7 @@ exports.isRecommendable = async url => {
   }
   // If no claimed job has the URL of the target, for each queued job:
   for (const fileName of jobNames.queue) {
-    const job = await getObject(path.join(jobsPath, 'queue', fileName));
+    const job = await getObject(path.join(jobsPath(), 'queue', fileName));
     // If its URL is that of the recommended target:
     if (job.target.url === url) {
       // Return this.
@@ -415,7 +416,7 @@ const updateRecs = exports.updateRecs = (what, url, why) => recsLock(async () =>
     why
   });
   // Save the revised recommendations.
-  await fs.writeFile(recsPath, getJSON(recs));
+  await fs.writeFile(recsPath(), getJSON(recs));
   // Return success.
   return {};
 });
@@ -435,7 +436,7 @@ exports.getPathID = (catalog, catalogIndex, pathID) => {
 };
 // Returns the path of an available report file.
 const getReportPath = exports.getReportPath = (timeStamp, jobID) => path
-.join(reportsPath, `${timeStamp}-${jobID}.json`);
+.join(reportsPath(), `${timeStamp}-${jobID}.json`);
 // Returns whether a report is valid.
 const isValidReport = exports.isValidReport = report => {
   // Return whether it has the type and properties required by Kilotest:
@@ -644,7 +645,7 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
 // Returns the creation time and size of a report.
 const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
   const reportStat = await fs.stat(
-    path.join(reportsPath, `${timeStamp}-${jobID}.json`),
+    path.join(reportsPath(), `${timeStamp}-${jobID}.json`),
     {throwIfNoEntry: false}
   );
   if (!reportStat) {
@@ -656,9 +657,9 @@ const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
 };
 // Returns whether a report is hidden.
 exports.isHidden = async (timeStamp, jobID) => {
-  await fs.mkdir(hiddenReportsPath, {recursive: true});
+  await fs.mkdir(hiddenReportsPath(), {recursive: true});
   // Get the names of the hidden report files.
-  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath);
+  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath());
   // Return whether the report is among them.
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
@@ -667,11 +668,11 @@ const makeReportsExtract = exports.makeReportsExtract = async () => {
   // Initialize the reports data.
   const reportsExtract = {};
   // Get the names of all report files.
-  const reportFileNames = await fs.readdir(reportsPath);
+  const reportFileNames = await fs.readdir(reportsPath());
   // For each of them:
   for (const reportFileName of reportFileNames) {
     // Get its content.
-    const reportJSON = await fs.readFile(path.join(reportsPath, reportFileName), 'utf8');
+    const reportJSON = await fs.readFile(path.join(reportsPath(), reportFileName), 'utf8');
     // Get the object that it represents.
     const report = JSON.parse(reportJSON);
     const {target, jobData} = report;
@@ -690,9 +691,9 @@ const makeReportsExtract = exports.makeReportsExtract = async () => {
     reportsExtract[jobName] = reportExtract;
   }
   // Ensure the data directory exists.
-  await fs.mkdir(dbPath, {recursive: true});
+  await fs.mkdir(dbPath(), {recursive: true});
   // Save the extract of the reports.
-  await fs.writeFile(reportsExtractPath, getJSON(reportsExtract));
+  await fs.writeFile(reportsExtractPath(), getJSON(reportsExtract));
   // Return it.
   return reportsExtract;
 };
@@ -701,7 +702,7 @@ const getReportsExtract = exports.getReportsExtract = async () => {
   let reportsExtract;
   try {
     // Get the reports extract file.
-    const reportsExtractJSON = await fs.readFile(reportsExtractPath, 'utf8');
+    const reportsExtractJSON = await fs.readFile(reportsExtractPath(), 'utf8');
     // Get its data.
     reportsExtract = JSON.parse(reportsExtractJSON);
     // If it is empty:

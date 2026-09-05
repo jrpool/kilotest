@@ -9,7 +9,8 @@ export default defineConfig([
   {
     ignores: [
       "docs/IDEAS.md",
-      "package-lock.json"
+      "package-lock.json",
+      "coverage/**"
     ]
   },
   {

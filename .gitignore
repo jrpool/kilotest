@@ -13,6 +13,9 @@ results/
 ai0Balance.json
 web/tutorial/comments.json
 
+# Test coverage reports
+coverage/
+
 # Secrets and environment-specific configurations
 .env
 .secrets

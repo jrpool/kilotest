@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node index",
     "lint": "npx eslint && npx markdownlint-cli2",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "c8 node --test",
     "test:api": "node api/testSuite",
     "generate:openapi": "node scripts/generate-openapi"
   },
@@ -44,6 +44,7 @@
     "@eslint/json": "*",
     "@eslint/markdown": "*",
     "@redocly/cli": "*",
+    "c8": "*",
     "eslint": "*",
     "globals": "*",
     "js-yaml": "*",
@@ -52,5 +53,15 @@
   },
   "allowScripts": {
     "fsevents@2.3.2": true
+  },
+  "c8": {
+    "reporter": [
+      "text",
+      "html"
+    ],
+    "exclude": [
+      "web/**",
+      "scripts/**"
+    ]
   }
 }

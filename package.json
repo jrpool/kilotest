@@ -60,6 +60,11 @@
       "html"
     ],
     "exclude": [
+      "coverage/**",
+      "test{,s}/**",
+      "test{,-*}.{js,cjs,mjs}",
+      "**/*{.,-}test.{js,cjs,mjs}",
+      "**/__tests__/**",
       "web/**",
       "scripts/**"
     ]

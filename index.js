@@ -861,6 +861,10 @@ const requestHandler = async (request, response) => {
   }
 };
 
+// EXPORTS
+
+exports.requestHandler = requestHandler;
+
 // SERVER
 
 const serve = async (protocolModule, options) => {
@@ -879,23 +883,25 @@ const serve = async (protocolModule, options) => {
 
 // EXECUTION
 
-if (protocol === 'http') {
-  console.log('Starting HTTP server');
-  serve(http, {});
-}
-else if (protocol === 'https') {
-  console.log('Starting HTTPS server');
-  fs.readFile(process.env.KEY, 'utf8')
-  .then(
-    key => {
-      fs.readFile(process.env.CERT, 'utf8')
-      .then(
-        cert => {
-          serve(https, {key, cert});
-        },
-        error => console.log(error.message)
-      );
-    },
-    error => console.log(error.message)
-  );
+if (require.main === module) {
+  if (protocol === 'http') {
+    console.log('Starting HTTP server');
+    serve(http, {});
+  }
+  else if (protocol === 'https') {
+    console.log('Starting HTTPS server');
+    fs.readFile(process.env.KEY, 'utf8')
+    .then(
+      key => {
+        fs.readFile(process.env.CERT, 'utf8')
+        .then(
+          cert => {
+            serve(https, {key, cert});
+          },
+          error => console.log(error.message)
+        );
+      },
+      error => console.log(error.message)
+    );
+  }
 }

@@ -13,8 +13,7 @@ const {
   jobsPath,
   recsPath,
   reportsPath,
-  hiddenReportsPath,
-  reportsExtractPath
+  hiddenReportsPath
 } = require('./util');
 
 // TESTS
@@ -48,7 +47,7 @@ test('dbPath honors DB_DIR when it is set', () => {
   }
 });
 
-test('jobsPath, recsPath, reportsPath, hiddenReportsPath, and reportsExtractPath derive from DB_DIR', () => {
+test('jobsPath, recsPath, reportsPath, and hiddenReportsPath derive from DB_DIR', () => {
   const saved = process.env.DB_DIR;
   process.env.DB_DIR = '/tmp/kilotest-fixtures';
   try {
@@ -56,7 +55,6 @@ test('jobsPath, recsPath, reportsPath, hiddenReportsPath, and reportsExtractPath
     assert.equal(recsPath(), path.join('/tmp/kilotest-fixtures', 'jobs', 'recs.json'));
     assert.equal(reportsPath(), path.join('/tmp/kilotest-fixtures', 'reports'));
     assert.equal(hiddenReportsPath(), path.join('/tmp/kilotest-fixtures', 'hiddenReports'));
-    assert.equal(reportsExtractPath(), path.join('/tmp/kilotest-fixtures', 'reportsExtract.json'));
   }
   finally {
     if (saved !== undefined) {

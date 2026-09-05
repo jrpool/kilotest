@@ -216,7 +216,7 @@ const main = async () => {
     preventedReport
   );
 
-  // Fixture 7: hidden. A report placed in hiddenReports/ instead of reports/, so it must not appear in listReports, listIssues, listViolators, listDiagnoses, or getReport API responses. The reportsExtract must not include it.
+  // Fixture 7: hidden. A report placed in hiddenReports/ instead of reports/, so it must not appear in listReports, listIssues, listViolators, listDiagnoses, or getReport API responses.
   const hiddenCatalog = {
     '0': catalogItem('A', 'Secret link', '/html/body/a[1]', '5:10:60:20')
   };

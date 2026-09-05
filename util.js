@@ -24,8 +24,6 @@ const recsPath = exports.recsPath = () => path.join(jobsPath(), 'recs.json');
 const reportsPath = exports.reportsPath = () => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
 const hiddenReportsPath = exports.hiddenReportsPath = () => path.join(dbPath(), 'hiddenReports');
-// Path of the reports data file.
-const reportsExtractPath = exports.reportsExtractPath = () => path.join(dbPath(), 'reportsExtract.json');
 // IDs, names, and sponsors of Testaro rule engines.
 const ruleEngines = exports.ruleEngines = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -662,66 +660,38 @@ exports.isHidden = async (timeStamp, jobID) => {
   // Return whether the report is among them.
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
-// Creates, saves, and returns an extract of all available reports.
-const makeReportsExtract = exports.makeReportsExtract = async () => {
-  // Initialize the reports data.
-  const reportsExtract = {};
-  // Get the names of all report files.
-  const reportFileNames = await fs.readdir(reportsPath());
-  // For each of them:
-  for (const reportFileName of reportFileNames) {
-    // Get its content.
+// Returns an extract of a report from its file name, or null if the file cannot be parsed.
+const getExtractFromFileName = async reportFileName => {
+  try {
     const reportJSON = await fs.readFile(path.join(reportsPath(), reportFileName), 'utf8');
-    // Get the object that it represents.
     const report = JSON.parse(reportJSON);
     const {target, jobData} = report;
     const jobName = reportFileName.slice(0, -5);
     const [timeStamp, jobID] = jobName.split('-');
     const {what, url} = target;
-    // Get an extract from it.
-    const reportExtract = {
+    return {
       timeStamp,
       jobID,
       what,
       url,
       reportTime: new Date(`20${jobData.endTime}Z`).toISOString()
     };
-    // Add the report extract to the reports extract.
-    reportsExtract[jobName] = reportExtract;
   }
-  // Ensure the data directory exists.
-  await fs.mkdir(dbPath(), {recursive: true});
-  // Save the extract of the reports.
-  await fs.writeFile(reportsExtractPath(), getJSON(reportsExtract));
-  // Return it.
-  return reportsExtract;
+  catch {
+    return null;
+  }
 };
-// Gets an extract of all available reports.
-const getReportsExtract = exports.getReportsExtract = async () => {
-  let reportsExtract;
-  try {
-    // Get the reports extract file.
-    const reportsExtractJSON = await fs.readFile(reportsExtractPath(), 'utf8');
-    // Get its data.
-    reportsExtract = JSON.parse(reportsExtractJSON);
-    // If it is empty:
-    if (!Object.keys(reportsExtract).length) {
-      // Throw an error.
-      throw new Error('Reports extract file is empty');
+// Returns extracts of all available reports by reading the report files directly.
+const getReportExtracts = exports.getReportExtracts = async () => {
+  const reportFileNames = await fs.readdir(reportsPath());
+  const extracts = [];
+  for (const reportFileName of reportFileNames) {
+    const extract = await getExtractFromFileName(reportFileName);
+    if (extract) {
+      extracts.push(extract);
     }
   }
-  // If this fails:
-  catch {
-    // Create or recreate and get the reports extract.
-    reportsExtract = await makeReportsExtract();
-  }
-  // Return the extract.
-  return reportsExtract;
-};
-// Returns extracts of all available reports.
-const getReportExtracts = exports.getReportExtracts = async () => {
-  const reportsExtract = await getReportsExtract();
-  return Object.values(reportsExtract);
+  return extracts;
 };
 // Returns whether a report is available on a page with a description or URL.
 exports.isReportAvailable = async (what, url) => {
@@ -732,43 +702,29 @@ exports.isReportAvailable = async (what, url) => {
 };
 // Gets extracts of the latest available reports for all page descriptions.
 exports.getLatestReportExtracts = async () => {
-  // Get extracts of all available reports.
   const reportExtracts = await getReportExtracts();
-  // Sort them primarily by page description and secondarily by completion time.
   objectSort(reportExtracts, 'reportTime', 'alpha');
   objectSort(reportExtracts, 'what', 'alpha');
-  // Get the latest ones for all page descriptions.
   const latestReportExtracts = reportExtracts
   .filter((extract, index) => extract.what !== reportExtracts[index + 1]?.what);
-  // Return them.
   return latestReportExtracts;
 };
-// Returns an extract of an available report.
+// Returns an extract of an available report by reading the report file directly.
 exports.getReportExtract = async (timeStamp, jobID) => {
-  // Get the extract of all available reports.
-  const reportsExtract = await getReportsExtract();
-  // Get the extract of the report from it.
-  const reportExtract = reportsExtract[`${timeStamp}-${jobID}`];
-  // If it exists:
-  if (reportExtract) {
-    // Return it.
-    return reportExtract;
+  const extract = await getExtractFromFileName(`${timeStamp}-${jobID}.json`);
+  if (extract) {
+    return extract;
   }
-  // Otherwise, i.e. if it does not exist, return this.
   return {
     error: `No report ${timeStamp}-${jobID} is available`
   };
 };
 // Gets the descriptions of multi-report pages.
 exports.getMultiReportWhats = async () => {
-  // Get extracts of all available reports.
   const reportExtracts = await getReportExtracts();
-  // Get their sorted page descriptions.
   const sortedWhats = reportExtracts.map(extract => extract.what).sort();
-  // Get those that at least 2 reports have.
   const multiReportWhats = sortedWhats.filter(
     (what, index) => what !== sortedWhats[index - 1] && what === sortedWhats[index + 1]
   );
-  // Return an array of descriptions of multi-report pages.
   return multiReportWhats;
 };

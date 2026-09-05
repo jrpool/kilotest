@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportData, makeReportsExtract, reportsPath} = require('../../util');
+const {getReportData, reportsPath} = require('../../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -26,8 +26,6 @@ exports.answer = async (_, search) => {
           // Delete it.
           await fs.unlink(path.join(reportsPath(), `${jobName}.json`));
         }
-        // Update the extract of the available reports.
-        await makeReportsExtract();
       }
       // If this failed:
       catch (error) {

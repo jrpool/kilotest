@@ -24,7 +24,6 @@ const {
   isTimeStamp,
   isJobID,
   jobsPath,
-  makeReportsExtract,
   recsLock,
   reportsPath
 } = require('./util');
@@ -747,8 +746,6 @@ const requestHandler = async (request, response) => {
                 report.sources = {...report.sources, worker: workerName};
                 // Save the report.
                 await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-                // Update the data on the available reports.
-                await makeReportsExtract();
                 // Annotate the report.
                 await annotateReport(timeStamp, jobID);
                 console.log(`Testaro report ${id} was annotated, saved, and indexed`);

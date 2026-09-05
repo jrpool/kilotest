@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getLatestReportExtracts, getReportsExtract} = require('../util');
+const {getLatestReportExtracts, getReportExtract} = require('../util');
 
 // FUNCTIONS
 
@@ -19,15 +19,11 @@ exports.response = async args => {
     'disposition of your request': null
   };
   const reasonLength = reason.length;
-  // Get data on the available reports.
-  const reportsExtract = await getReportsExtract();
   // Get data on the report.
-  const reportExtract = Object
-  .values(reportsExtract)
-  .find(extract => extract.timeStamp === timeStamp && extract.jobID === jobID);
-  const {what, url} = reportExtract || {};
+  const reportExtract = await getReportExtract(timeStamp, jobID);
+  const {what, url} = reportExtract.error ? {} : reportExtract;
   // If this failed:
-  if (!reportExtract) {
+  if (reportExtract.error) {
     // Add this to the response content.
     responseContent['details about your request'] = {
       error: 'request invalid: the specified existing report is not an available report'

@@ -660,14 +660,14 @@ exports.isHidden = async (timeStamp, jobID) => {
   // Return whether the report is among them.
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
-// Returns an extract of a report from its file name, or null if the file cannot be parsed.
-const getExtractFromFileName = async reportFileName => {
+// Returns an extract of an available report, or an error object if it cannot be read or parsed.
+const getReportExtract = exports.getReportExtract = async (timeStamp, jobID) => {
   try {
-    const reportJSON = await fs.readFile(path.join(reportsPath(), reportFileName), 'utf8');
+    const reportJSON = await fs.readFile(
+      path.join(reportsPath(), `${timeStamp}-${jobID}.json`), 'utf8'
+    );
     const report = JSON.parse(reportJSON);
     const {target, jobData} = report;
-    const jobName = reportFileName.slice(0, -5);
-    const [timeStamp, jobID] = jobName.split('-');
     const {what, url} = target;
     return {
       timeStamp,
@@ -678,22 +678,25 @@ const getExtractFromFileName = async reportFileName => {
     };
   }
   catch {
-    return null;
+    return {
+      error: `No report ${timeStamp}-${jobID} is available`
+    };
   }
 };
-// Returns extracts of all available reports by reading the report files directly.
+// Returns extracts of all available reports.
 const getReportExtracts = exports.getReportExtracts = async () => {
   const reportFileNames = await fs.readdir(reportsPath());
   const extracts = [];
   for (const reportFileName of reportFileNames) {
-    const extract = await getExtractFromFileName(reportFileName);
-    if (extract) {
+    const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
+    const extract = await getReportExtract(timeStamp, jobID);
+    if (!extract.error) {
       extracts.push(extract);
     }
   }
   return extracts;
 };
-// Returns whether a report is available on a page with a description or URL.
+// Returns whether a report with a description or URL is available.
 exports.isReportAvailable = async (what, url) => {
   const reportExtracts = await getReportExtracts();
   const whats = reportExtracts.map(reportExtract => reportExtract.what);
@@ -708,16 +711,6 @@ exports.getLatestReportExtracts = async () => {
   const latestReportExtracts = reportExtracts
   .filter((extract, index) => extract.what !== reportExtracts[index + 1]?.what);
   return latestReportExtracts;
-};
-// Returns an extract of an available report by reading the report file directly.
-exports.getReportExtract = async (timeStamp, jobID) => {
-  const extract = await getExtractFromFileName(`${timeStamp}-${jobID}.json`);
-  if (extract) {
-    return extract;
-  }
-  return {
-    error: `No report ${timeStamp}-${jobID} is available`
-  };
 };
 // Gets the descriptions of multi-report pages.
 exports.getMultiReportWhats = async () => {

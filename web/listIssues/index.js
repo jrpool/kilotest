@@ -64,9 +64,9 @@ const getIssuesData = async (timeStamp, jobID) => {
         const instances = result?.standardResult?.instances ?? [];
         // For each of its standard instances:
         instances.forEach(instance => {
-          const {catalogIndex, issueID} = instance;
-          // If the instance identifies its rule as belonging to a non-ignorable issue:
-          if (issueID && issueID !== 'ignorable') {
+          const {catalogIndex, issueID, outcome} = instance;
+          // If the instance reports a violation and identifies a non-ignorable issue:
+          if (outcome !== 'cantTell' && issueID && issueID !== 'ignorable') {
             const issueClassification = issueSpecs[issueID];
             // If the issue has a current weighted classification:
             if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {

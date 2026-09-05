@@ -63,14 +63,12 @@ test('listIssues returns an error status for a nonexistent report', async () => 
   assert.equal(result.status, 'error');
 });
 
-test('listIssues for the all-cantTell report includes the cantTell issue (web UI does not filter by outcome)', async () => {
+test('listIssues for the all-cantTell report shows no issue links', async () => {
   const result = await answer('260101T0001/ct');
   assert.equal(result.status, 'ok');
   const html = parse(result.answerPage);
   const violatorLinks = html.querySelectorAll('a[href*="listViolators.html"]');
-  // The web listIssues module does not check the outcome property, so it includes cantTell instances.
-  // This is a known discrepancy with the API modules, which correctly exclude cantTell instances.
-  assert.ok(violatorLinks.length > 0);
+  assert.equal(violatorLinks.length, 0);
 });
 
 test('listIssues for the empty report shows no issue links', async () => {

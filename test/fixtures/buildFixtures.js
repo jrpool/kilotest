@@ -5,7 +5,6 @@
   Each fixture is a minimal Testaro report in the current format, crafted so that the expected API response can be hand-computed and hard-coded into tests. The fixtures collectively cover the `outcome` property values (`failed`, `cantTell`, and missing/undefined), superseded reports, empty reports, and prevented rule engines.
 
   Run with: node test/fixtures/buildFixtures.js [targetDir]
-  Defaults to test/fixtures/db under the project root.
 */
 
 // IMPORTS
@@ -16,14 +15,14 @@ const path = require('path');
 // CONSTANTS
 
 // Issue IDs with known specs in testaro-issues, chosen for different weights.
-const ISSUE_LINK_NO_TEXT = 'linkNoText';       // weight 4 (highest)
-const ISSUE_FOCUS_INDICATION = 'focusIndicationBad'; // weight 4
-const ISSUE_ALL_CAPS = 'allCaps';              // weight 1 (lowest)
+const issueLinkNoText = 'linkNoText';       // weight 4 (highest)
+const issueFocusIndication = 'focusIndicationBad'; // weight 4
+const issueAllCaps = 'allCaps';              // weight 1 (lowest)
 
 // Rule engine IDs that exist in util.js ruleEngines.
-const ENGINE_AXE = 'axe';
-const ENGINE_ALFA = 'alfa';
-const ENGINE_IBM = 'ibm';
+const engineAxe = 'axe';
+const engineAlfa = 'alfa';
+const engineIbm = 'ibm';
 
 // FUNCTIONS
 
@@ -118,17 +117,17 @@ const main = async () => {
     '1': catalogItem('P', 'ALL ABOUT US', '/html/body/p[1]', '10:60:80:20')
   };
   const mixedActs = [
-    testAct(ENGINE_AXE, [
+    testAct(engineAxe, [
       instance('r11', 'The link does not have an accessible name', 'failed',
-        ISSUE_LINK_NO_TEXT, 0, 2, 1),
+        issueLinkNoText, 0, 2, 1),
       instance('r65', 'Focus Visible', 'cantTell',
-        ISSUE_FOCUS_INDICATION, 0, 0, 1)
+        issueFocusIndication, 0, 0, 1)
     ]),
-    testAct(ENGINE_ALFA, [
+    testAct(engineAlfa, [
       instance('r11', 'The link does not have an accessible name', 'failed',
-        ISSUE_LINK_NO_TEXT, 0, 2, 1),
+        issueLinkNoText, 0, 2, 1),
       instance('r3', 'Text is all-capital', 'failed',
-        ISSUE_ALL_CAPS, 1, 1, 1)
+        issueAllCaps, 1, 1, 1)
     ])
   ];
   await writeJSON(
@@ -142,9 +141,9 @@ const main = async () => {
     '0': catalogItem('A', 'Click here', '/html/body/a[1]', '5:10:60:20')
   };
   const cantTellActs = [
-    testAct(ENGINE_AXE, [
+    testAct(engineAxe, [
       instance('r65', 'Focus Visible', 'cantTell',
-        ISSUE_FOCUS_INDICATION, 0, 0, 1)
+        issueFocusIndication, 0, 0, 1)
     ])
   ];
   await writeJSON(
@@ -158,7 +157,7 @@ const main = async () => {
     '0': catalogItem('BUTTON', 'Submit', '/html/body/button[1]', '15:25:70:30')
   };
   const noOutcomeActs = [
-    testAct(ENGINE_IBM, [
+    testAct(engineIbm, [
       {
         ruleID: 'r1',
         what: 'Button has no accessible name',
@@ -166,7 +165,7 @@ const main = async () => {
         count: 1,
         catalogIndex: '0',
         checkpoint: 0,
-        issueID: ISSUE_LINK_NO_TEXT
+        issueID: issueLinkNoText
       }
     ])
   ];
@@ -178,9 +177,9 @@ const main = async () => {
 
   // Fixture 4: superseded. A report about the same page as mixedOutcomes but with a later timestamp, so mixedOutcomes is superseded by this one.
   const newerActs = [
-    testAct(ENGINE_AXE, [
+    testAct(engineAxe, [
       instance('r11', 'The link does not have an accessible name', 'failed',
-        ISSUE_LINK_NO_TEXT, 0, 2, 1)
+        issueLinkNoText, 0, 2, 1)
     ])
   ];
   await writeJSON(
@@ -193,7 +192,7 @@ const main = async () => {
   await writeJSON(
     path.join(reportsDir, '260101T0005-emp.json'),
     report('260101T0005-emp', 'Empty Results Page',
-      'https://example.com/empty', [testAct(ENGINE_AXE, [])], {})
+      'https://example.com/empty', [testAct(engineAxe, [])], {})
   );
 
   // Fixture 6: prevented. A report where one rule engine was prevented from testing.
@@ -201,9 +200,9 @@ const main = async () => {
     '0': catalogItem('IMG', 'An image', '/html/body/img[1]', '0:0:200:100')
   };
   const preventedActs = [
-    testAct(ENGINE_AXE, [
+    testAct(engineAxe, [
       instance('r11', 'The image has no alt text', 'failed',
-        ISSUE_LINK_NO_TEXT, 0, 2, 1)
+        issueLinkNoText, 0, 2, 1)
     ])
   ];
   const preventedReport = report('260101T0006-prv', 'Prevented Page',

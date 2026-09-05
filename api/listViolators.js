@@ -81,18 +81,21 @@ exports.response = async args => {
           instances.forEach(instance => {
             // If the instance has the issue ID:
             if (instance.issueID === issueID) {
-              const {catalogIndex} = instance;
-              // Ensure the rule-engine ID is in the reporters data.
-              reporterIDs.add(which);
-              // If the instance has a catalog index:
-              if (catalogIndex) {
-                // Ensure the catalog index is in the violators data.
-                violators[catalogIndex] ??= {
-                  catalogIndex,
-                  reporters: new Set()
-                };
-                // Ensure the reporter ID is in the violator data.
-                violators[catalogIndex].reporters.add(which);
+              const {catalogIndex, outcome} = instance;
+              // If the instance reports a violation:
+              if (outcome !== 'cantTell') {
+                // Ensure the rule-engine ID is in the reporters data.
+                reporterIDs.add(which);
+                // If the instance has a catalog index:
+                if (catalogIndex) {
+                  // Ensure the catalog index is in the violators data.
+                  violators[catalogIndex] ??= {
+                    catalogIndex,
+                    reporters: new Set()
+                  };
+                  // Ensure the reporter ID is in the data about the violator.
+                  violators[catalogIndex].reporters.add(which);
+                }
               }
             }
           });

@@ -110,9 +110,13 @@ exports.response = async args => {
           if (type === 'test' && which) {
             // For each standard instance of the act:
             instances.forEach(instance => {
-              const {count, ordinalSeverity, ruleID, what} = instance;
-              // If the instance has the issue ID and the catalog index of the violator:
-              if (instance.issueID === issueID && instance.catalogIndex === catalogIndex) {
+              const {count, ordinalSeverity, outcome, ruleID, what} = instance;
+              // If the instance reports a violation of the issue by the violator:
+              if (
+                outcome !== 'cantTell'
+                &&  instance.issueID === issueID
+                &&  instance.catalogIndex === catalogIndex
+              ) {
                 // Get the diagnosis.
                 const diagnosis = {
                   'identifier of the violated rule': ruleID !== what ? ruleID : null,

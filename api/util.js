@@ -106,7 +106,7 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   // Return them.
   return basics;
 };
-// Returns the classification of an issue.
+// Returns the specification of an issue.
 exports.getIssueSpec = issueID => {
   // Get the issue specification.
   const issueSpec = issueSpecs[issueID];

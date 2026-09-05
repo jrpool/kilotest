@@ -75,29 +75,32 @@ exports.response = async args => {
           const instances = result?.standardResult?.instances ?? [];
           // For each standard instance of the act:
           instances.forEach(instance => {
-            const {catalogIndex, issueID} = instance;
-            // Get the specification of its issue.
-            const issueSpec = issueID ? getIssueSpec(issueID) : null;
-            // If the instance has a non-ignorable and fully classified issue:
-            if (issueSpec) {
-              const {summary, weight, why} = issueSpec;
-              // Ensure the rule-engine ID is in the reporters data.
-              reporterIDs.add(which);
-              // If the instance has a catalog index:
-              if (catalogIndex) {
-                // Ensure the index of the violator is in the results data.
-                violatorIndexes.add(catalogIndex);
+            const {catalogIndex, issueID, outcome} = instance;
+            // If the instance reports a violation:
+            if (outcome !== 'cantTell') {
+              // Get the specification of its issue.
+              const issueSpec = issueID ? getIssueSpec(issueID) : null;
+              // If the instance has a non-ignorable and fully classified issue:
+              if (issueSpec) {
+                const {summary, weight, why} = issueSpec;
+                // Ensure the rule-engine ID is in the reporters data.
+                reporterIDs.add(which);
+                // If the instance has a catalog index:
+                if (catalogIndex) {
+                  // Ensure the index of the violator is in the results data.
+                  violatorIndexes.add(catalogIndex);
+                }
+                // Ensure the data about the issue are in the results data.
+                issuesData[issueID] ??= {
+                  id: issueID,
+                  summary,
+                  weight,
+                  why,
+                  reporterIDs: new Set()
+                };
+                // Ensure the reporter ID is in the data about the issue.
+                issuesData[issueID].reporterIDs.add(which);
               }
-              // Ensure the data about the issue are in the results data.
-              issuesData[issueID] ??= {
-                id: issueID,
-                summary,
-                weight,
-                why,
-                reporterIDs: new Set()
-              };
-              // Ensure the reporter ID is in the data about the issue.
-              issuesData[issueID].reporterIDs.add(which);
             }
           });
         }

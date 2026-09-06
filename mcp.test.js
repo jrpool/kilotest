@@ -8,6 +8,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const http = require('node:http');
 const {mcpPath, createMCPServer} = require('./mcp');
 
 // CONSTANTS
@@ -154,4 +155,110 @@ test('listViolators handler returns an error for an unknown issue', async () => 
   });
   const issueBasics = result.structuredContent['response content']['basics about the issue'];
   assert.ok(issueBasics.error);
+});
+
+// INTEGRATION TESTS FOR handleMCP
+
+// Helper: sends a single MCP JSON-RPC request to a local server and returns the parsed SSE response.
+const sendMCPRequest = (port, method, params, id) => new Promise((resolve, reject) => {
+  const body = JSON.stringify({jsonrpc: '2.0', method, params, id});
+  const req = http.request({
+    port,
+    method: 'POST',
+    path: '/mcp',
+    headers: {
+      'content-type': 'application/json',
+      'accept': 'application/json, text/event-stream',
+      'content-length': Buffer.byteLength(body)
+    }
+  }, res => {
+    let data = '';
+    res.on('data', chunk => {
+      data += chunk;
+    });
+    res.on('end', () => {
+      resolve({statusCode: res.statusCode, headers: res.headers, body: data});
+    });
+  });
+  req.on('error', reject);
+  req.write(body);
+  req.end();
+});
+
+// Helper: parses the JSON-RPC result from an SSE response body.
+const parseSSEResult = body => {
+  const jsonLine = body.split('\n').find(line => line.startsWith('data: '));
+  if (!jsonLine) {
+    throw new Error('No data line in SSE response');
+  }
+  return JSON.parse(jsonLine.slice(6));
+};
+
+// Helper: starts a local HTTP server with handleMCP and returns it.
+const startMCPServer = () => new Promise(resolve => {
+  const {handleMCP} = require('./mcp');
+  const server = http.createServer((req, res) => handleMCP(req, res));
+  server.listen(0, () => resolve(server));
+});
+
+test('handleMCP responds to initialize with server info', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    const res = await sendMCPRequest(port, 'initialize', {
+      protocolVersion: '2025-06-18',
+      capabilities: {},
+      clientInfo: {name: 'test', version: '1.0'}
+    }, 1);
+    assert.equal(res.statusCode, 200);
+    const result = parseSSEResult(res.body);
+    assert.equal(result.result.serverInfo.name, 'Kilotest');
+    assert.equal(result.result.protocolVersion, '2025-06-18');
+  }
+  finally {
+    server.close();
+  }
+});
+
+test('handleMCP lists all 8 tools via tools/list', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    const res = await sendMCPRequest(port, 'tools/list', {}, 2);
+    assert.equal(res.statusCode, 200);
+    const result = parseSSEResult(res.body);
+    const toolNames = result.result.tools.map(t => t.name);
+    assert.equal(toolNames.length, 8);
+    assert.deepEqual(toolNames, [
+      'listReports',
+      'listIssues',
+      'listViolators',
+      'listDiagnoses',
+      'getReport',
+      'requestTest',
+      'requestRetest',
+      'requestFeature'
+    ]);
+  }
+  finally {
+    server.close();
+  }
+});
+
+test('handleMCP executes listReports tool via tools/call', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    const res = await sendMCPRequest(port, 'tools/call', {
+      name: 'listReports',
+      arguments: {}
+    }, 3);
+    assert.equal(res.statusCode, 200);
+    const result = parseSSEResult(res.body);
+    assert.ok(result.result.content);
+    assert.equal(result.result.content[0].type, 'text');
+  }
+  finally {
+    server.close();
+  }
 });

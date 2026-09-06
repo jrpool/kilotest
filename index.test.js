@@ -34,11 +34,22 @@ let server;
 
 before(async () => {
   server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, resolve));
+  await new Promise(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
-  await new Promise(resolve => server.close(() => resolve()));
+  // Close all idle connections, then close the server with a timeout.
+  server.closeAllConnections?.();
+  await new Promise(resolve => {
+    const timer = setTimeout(() => {
+      server.closeAllConnections?.();
+      resolve();
+    }, 1000);
+    server.close(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
   // Restore recs.json to empty to prevent duplicate-recommendation errors in future runs.
   await fs.writeFile(recsPath, '{}\n');
   // Clean up any jobs created by tests.

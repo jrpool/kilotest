@@ -26,7 +26,12 @@ const closeServer = server => new Promise(resolve => {
     resolve();
     return;
   }
-  const timer = setTimeout(resolve, 1000);
+  // Close all idle connections, then close the server.
+  server.closeAllConnections?.();
+  const timer = setTimeout(() => {
+    server.closeAllConnections?.();
+    resolve();
+  }, 500);
   server.close(() => {
     clearTimeout(timer);
     resolve();
@@ -41,8 +46,6 @@ test('serve creates missing directories and returns an HTTP server', async () =>
   await fs.rm(queueDir, {recursive: true}).catch(() => {});
   process.env.PORT = '3987';
   const server = await serve(http, {});
-  // Unref the server so it does not keep the process alive.
-  server.unref();
   try {
     assert.ok(server);
     assert.equal(typeof server.listen, 'function');

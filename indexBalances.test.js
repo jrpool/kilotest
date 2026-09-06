@@ -42,11 +42,21 @@ let originalBalance;
 before(async () => {
   originalBalance = await fs.readFile(balancePath, 'utf8').catch(() => null);
   server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, resolve));
+  await new Promise(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
-  await new Promise(resolve => server.close(() => resolve()));
+  server.closeAllConnections?.();
+  await new Promise(resolve => {
+    const timer = setTimeout(() => {
+      server.closeAllConnections?.();
+      resolve();
+    }, 1000);
+    server.close(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
   if (originalBalance !== null) {
     await fs.writeFile(balancePath, originalBalance);
   }

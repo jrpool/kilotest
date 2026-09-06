@@ -7,9 +7,12 @@
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {getRuleEngineFacts, getRuleEnginesFacts} = require('./util');
+const path = require('node:path');
+const {getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getReportBasics, processTestRequest} = require('./util');
 
-// TESTS
+// SETUP
+
+const savedDBDir = process.env.DB_DIR;
 
 test('getRuleEngineFacts returns the name and sponsor of a known rule engine', () => {
   const facts = getRuleEngineFacts('axe');
@@ -39,4 +42,50 @@ test('getRuleEnginesFacts returns facts sorted alphabetically by name', () => {
 test('getRuleEnginesFacts returns an empty array for an empty set', () => {
   const facts = getRuleEnginesFacts(new Set());
   assert.deepEqual(facts, []);
+});
+
+test('getIssueSpec returns a specification for a known non-ignorable issue', () => {
+  const spec = getIssueSpec('linkNoText');
+  assert.ok(spec);
+  assert.ok(spec.summary);
+  assert.ok(spec.wcag);
+  assert.ok([1, 2, 3, 4].includes(spec.weight));
+  assert.ok(spec.why);
+});
+
+test('getIssueSpec returns null for an unknown issue ID', () => {
+  const spec = getIssueSpec('nonexistentIssue');
+  assert.equal(spec, null);
+});
+
+test('getIssueSpec returns null for the ignorable issue ID', () => {
+  const spec = getIssueSpec('ignorable');
+  assert.equal(spec, null);
+});
+
+test('getReportBasics returns an error for a nonexistent report', async () => {
+  process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
+  const basics = await getReportBasics('999999T9999', 'xyz');
+  assert.ok(basics.error);
+  if (savedDBDir !== undefined) {
+    process.env.DB_DIR = savedDBDir;
+  }
+  else {
+    delete process.env.DB_DIR;
+  }
+});
+
+test('processTestRequest returns an error for a duplicate recommendation', async () => {
+  process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
+  // Submit the same request twice; the second should be a duplicate.
+  await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
+  const result = await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'Duplicate request');
+  if (savedDBDir !== undefined) {
+    process.env.DB_DIR = savedDBDir;
+  }
+  else {
+    delete process.env.DB_DIR;
+  }
 });

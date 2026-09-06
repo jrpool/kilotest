@@ -86,3 +86,47 @@ test('listDiagnoses returns an error for a nonexistent report', async () => {
   const basics = body['response content']['basics about the report'];
   assert.ok(basics.error);
 });
+
+test('listDiagnoses returns guideline layer for an issue with a short WCAG code', async () => {
+  const body = await response(['0', 'duplicateID', '260101T0009', 'brd']);
+  const issueBasics = body['response content']['basics about the issue'];
+  assert.equal(issueBasics['related WCAG standard'].layer, 'guideline');
+  assert.equal(issueBasics['related WCAG standard'].identifier, '4.1');
+});
+
+test('listDiagnoses returns null tag name and inner text for a catalog item missing them', async () => {
+  const body = await response(['1', 'duplicateID', '260101T0009', 'brd']);
+  const elementBasics = body['response content']['basics about the element'];
+  assert.equal(elementBasics['tag name'], null);
+  assert.equal(elementBasics['inner text'], null);
+});
+
+test('listDiagnoses returns null rule ID when ruleID equals what', async () => {
+  const body = await response(['0', 'duplicateID', '260101T0009', 'brd']);
+  const diagnoses = body['response content']['diagnoses of how the element exhibited the issue'];
+  const axeDiagnosis = diagnoses.find(d => d['description of the violation'] === 'r99');
+  assert.ok(axeDiagnosis);
+  assert.equal(axeDiagnosis['identifier of the violated rule'], null);
+});
+
+test('listDiagnoses defaults count to 1 when count is missing', async () => {
+  const body = await response(['1', 'duplicateID', '260101T0009', 'brd']);
+  const diagnoses = body['response content']['diagnoses of how the element exhibited the issue'];
+  const ibmDiagnosis = diagnoses.find(d => d['description of the violation'] === 'Element has no role');
+  assert.ok(ibmDiagnosis);
+  assert.equal(ibmDiagnosis['count of violations of the rule by the element'], 1);
+});
+
+test('listDiagnoses returns null for missing start tag, XPath, and bounding box', async () => {
+  const body = await response(['2', 'duplicateID', '260101T0009', 'brd']);
+  const elementDetails = body['response content']['details about the element'];
+  assert.equal(elementDetails['start tag'], null);
+  assert.equal(elementDetails['XPath'], null);
+  assert.equal(elementDetails['x, y, width, and height of bounding box'], null);
+});
+
+test('listDiagnoses returns issue error for a falsy issue ID', async () => {
+  const body = await response(['0', '', '260101T0009', 'brd']);
+  const issueBasics = body['response content']['basics about the issue'];
+  assert.ok(issueBasics.error);
+});

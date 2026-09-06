@@ -38,11 +38,11 @@ test('listReports returns an ok status with valid HTML', async () => {
   assert.equal(html.querySelector('title').text, 'Pages tested | Kilotest');
 });
 
-test('listReports includes the 6 non-hidden fixture reports as details elements', async () => {
+test('listReports includes the 8 non-hidden fixture reports as details elements', async () => {
   const result = await answer();
   const html = parse(result.answerPage);
   const details = html.querySelectorAll('details');
-  assert.equal(details.length, 6);
+  assert.equal(details.length, 8);
 });
 
 test('listReports includes the page descriptions in summary elements', async () => {

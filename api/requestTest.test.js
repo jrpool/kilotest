@@ -57,6 +57,13 @@ test('requestTest rejects a URL shorter than 12 characters', async () => {
   assert.equal(processTestRequestCalls.length, 0);
 });
 
+test('requestTest rejects a syntactically invalid URL with the correct length', async () => {
+  const body = await response(['Test Page', 'not-a-valid-url', 'A reason that is long enough.']);
+  const details = body['response content']['details about your request'];
+  assert.ok(details.error.includes('invalid URL'));
+  assert.equal(processTestRequestCalls.length, 0);
+});
+
 test('requestTest rejects an already-tested page', async () => {
   const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'];

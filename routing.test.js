@@ -73,5 +73,5 @@ test('GET /api/listReports returns a valid JSON response', async () => {
   const body = JSON.parse(result.body);
   assert.equal(body['tool name'], 'listReports');
   const reports = body['response content']['basics about all available reports'];
-  assert.equal(reports.length, 6);
+  assert.equal(reports.length, 8);
 });

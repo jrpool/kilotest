@@ -1,0 +1,147 @@
+{
+  "id": "260101T0009-brd",
+  "what": "Branch Coverage Page",
+  "strict": false,
+  "standard": "only",
+  "device": {
+    "id": "default"
+  },
+  "browserID": "chromium",
+  "creationTimeStamp": "260101T0009",
+  "executionTimeStamp": "260101T0009",
+  "target": {
+    "what": "Branch Coverage Page",
+    "url": "https://example.com/branch"
+  },
+  "sources": {
+    "worker": "test-worker"
+  },
+  "acts": [
+    {
+      "type": "test",
+      "which": "axe",
+      "startTime": "26-01-01T00:00",
+      "endTime": "26-01-01T00:01",
+      "result": {
+        "standardResult": {
+          "instances": [
+            {
+              "ruleID": "r99",
+              "what": "r99",
+              "ordinalSeverity": 2,
+              "outcome": "failed",
+              "count": 1,
+              "catalogIndex": "0",
+              "checkpoint": 0,
+              "issueID": "duplicateID"
+            },
+            {
+              "ruleID": "r100",
+              "what": "Element has no role",
+              "ordinalSeverity": 1,
+              "outcome": "failed",
+              "catalogIndex": "1",
+              "checkpoint": 0,
+              "issueID": "duplicateID"
+            },
+            {
+              "ruleID": "r101",
+              "what": "Duplicate ID found",
+              "ordinalSeverity": 2,
+              "outcome": "failed",
+              "count": 1,
+              "catalogIndex": "2",
+              "checkpoint": 0,
+              "issueID": "duplicateID"
+            },
+            {
+              "ruleID": "r102",
+              "what": "Duplicate ID in orphan",
+              "ordinalSeverity": 2,
+              "outcome": "failed",
+              "count": 1,
+              "catalogIndex": "3",
+              "checkpoint": 0,
+              "issueID": "duplicateID"
+            }
+          ],
+          "outcomeTotals": {
+            "failed": 4,
+            "cantTell": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "test",
+      "which": "alfa",
+      "startTime": "26-01-01T00:00",
+      "endTime": "26-01-01T00:01",
+      "result": {
+        "standardResult": {}
+      }
+    },
+    {
+      "type": "test",
+      "which": "ibm",
+      "startTime": "26-01-01T00:00",
+      "endTime": "26-01-01T00:01",
+      "result": {
+        "standardResult": {
+          "instances": [
+            {
+              "ruleID": "r50",
+              "what": "Link has no text",
+              "ordinalSeverity": 2,
+              "outcome": "failed",
+              "catalogIndex": "0",
+              "checkpoint": 0
+            }
+          ],
+          "outcomeTotals": {
+            "failed": 1,
+            "cantTell": 0
+          }
+        }
+      }
+    }
+  ],
+  "jobData": {
+    "startTime": "26-01-01T00:00",
+    "endTime": "26-01-01T00:10",
+    "elapsedSeconds": 600,
+    "issuelessRules": []
+  },
+  "catalog": {
+    "0": {
+      "tagName": "DIV",
+      "id": "",
+      "startTag": "<div>",
+      "text": "",
+      "textLinkable": false,
+      "boxID": "0:0:100:50",
+      "pathID": "/html/body/div[1]",
+      "headingIndex": "",
+      "checkpoint": 0
+    },
+    "1": {
+      "id": "",
+      "startTag": "<div>",
+      "text": null,
+      "textLinkable": false,
+      "boxID": "5:5:90:40",
+      "pathID": "/html/body/div[2]",
+      "headingIndex": "",
+      "checkpoint": 0
+    },
+    "2": {
+      "id": "",
+      "text": "No tags",
+      "textLinkable": false,
+      "headingIndex": "",
+      "checkpoint": 0
+    }
+  },
+  "images": {},
+  "checkpoints": []
+}

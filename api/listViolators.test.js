@@ -71,3 +71,38 @@ test('listViolators includes reporter facts for the issue', async () => {
   const names = reporters.map(r => r.name).sort();
   assert.deepEqual(names, ['Alfa', 'Axe']);
 });
+
+test('listViolators sorts by catalogIndex when two violators have the same reporter count', async () => {
+  const body = await response(['linkNoText', '260101T0008', 'mul']);
+  const violators = body['response content']['basics about all elements exhibiting the issue'];
+  assert.equal(violators.length, 3);
+  // The violator with 2 reporters (catalogIndex 2) sorts first.
+  assert.equal(violators[0].identifier, '2');
+  assert.equal(violators[0]['count of rule engines reporting that the element exhibited the issue'], 2);
+  // The two violators with 1 reporter each are sorted by catalogIndex ascending.
+  assert.equal(violators[1].identifier, '0');
+  assert.equal(violators[1]['count of rule engines reporting that the element exhibited the issue'], 1);
+  assert.equal(violators[2].identifier, '1');
+  assert.equal(violators[2]['count of rule engines reporting that the element exhibited the issue'], 1);
+});
+
+test('listViolators returns guideline layer for an issue with a short WCAG code', async () => {
+  const body = await response(['duplicateID', '260101T0009', 'brd']);
+  const issueBasics = body['response content']['basics about the issue'];
+  assert.equal(issueBasics['related WCAG standard'].layer, 'guideline');
+});
+
+test('listViolators returns null tag name and text for a violator not in the catalog', async () => {
+  const body = await response(['duplicateID', '260101T0009', 'brd']);
+  const violators = body['response content']['basics about all elements exhibiting the issue'];
+  const orphan = violators.find(v => v.identifier === '3');
+  assert.ok(orphan);
+  assert.equal(orphan['tag name'], null);
+  assert.equal(orphan['inner text'], null);
+});
+
+test('listViolators returns an error for a falsy issue ID', async () => {
+  const body = await response(['', '260101T0009', 'brd']);
+  const issueBasics = body['response content']['basics about the issue'];
+  assert.ok(issueBasics.error);
+});

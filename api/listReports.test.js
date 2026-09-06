@@ -19,6 +19,8 @@ const fixtureIds = [
   ['260101T0002', 'no'],
   ['260101T0005', 'emp'],
   ['260101T0006', 'prv'],
+  ['260101T0008', 'mul'],
+  ['260101T0009', 'brd'],
   ['260202T0000', 'new']
 ];
 
@@ -41,10 +43,10 @@ after(() => {
 
 // TESTS
 
-test('listReports returns basics about all 6 non-hidden reports', async () => {
+test('listReports returns basics about all 8 non-hidden reports', async () => {
   const body = await response();
   const reportsBasics = body['response content']['basics about all available reports'];
-  assert.equal(reportsBasics.length, 6);
+  assert.equal(reportsBasics.length, 8);
   const ids = reportsBasics.map(b => b.identifier).sort();
   const expectedIds = fixtureIds.map(([ts, jid]) => `${ts}-${jid}`).sort();
   assert.deepEqual(ids, expectedIds);
@@ -66,9 +68,11 @@ test('listReports sorts reports by page description and then by completion time'
     descriptions,
     [
       'All CantTell Page',
+      'Branch Coverage Page',
       'Empty Results Page',
       'Mixed Outcomes Page',
       'Mixed Outcomes Page',
+      'Multi Violator Page',
       'No Outcomes Page',
       'Prevented Page'
     ]

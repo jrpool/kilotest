@@ -233,6 +233,89 @@ const main = async () => {
     hiddenReport
   );
 
+  // Fixture 8: multiViolator. Three violators for the same issue: two with 1 reporter each (exercising the catalogIndex tiebreaker) and one with 2 reporters (exercising the reporter-count descending sort).
+  const multiViolatorCatalog = {
+    '0': catalogItem('A', 'Home', '/html/body/a[1]', '10:10:40:20'),
+    '1': catalogItem('A', 'Contact', '/html/body/a[2]', '10:40:40:20'),
+    '2': catalogItem('A', 'Help', '/html/body/a[3]', '10:70:40:20')
+  };
+  const multiViolatorActs = [
+    testAct(engineAxe, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 0, 2, 1),
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 2, 2, 1)
+    ]),
+    testAct(engineAlfa, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 1, 2, 1),
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 2, 2, 1)
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260101T0008-mul.json'),
+    report('260101T0008-mul', 'Multi Violator Page',
+      'https://example.com/multiviolator', multiViolatorActs, multiViolatorCatalog)
+  );
+
+  // Fixture 9: branchCoverage. Covers remaining branch gaps in listDiagnoses and listIssues: an issue with a short WCAG code (guideline layer), a catalog item with no tagName or text, an instance where ruleID equals what and count is missing, a test act with null instances, and an instance with no issueID.
+  const issueDuplicateID = 'duplicateID';
+  const branchCatalog = {
+    '0': catalogItem('DIV', '', '/html/body/div[1]', '0:0:100:50'),
+    '1': {id: '', startTag: '<div>', text: null, textLinkable: false, boxID: '5:5:90:40', pathID: '/html/body/div[2]', headingIndex: '', checkpoint: 0},
+    '2': {id: '', text: 'No tags', textLinkable: false, headingIndex: '', checkpoint: 0}
+  };
+  const branchActs = [
+    testAct(engineAxe, [
+      instance('r99', 'r99', 'failed',
+        issueDuplicateID, 0, 2, 1),
+      {
+        ruleID: 'r100',
+        what: 'Element has no role',
+        ordinalSeverity: 1,
+        outcome: 'failed',
+        catalogIndex: '1',
+        checkpoint: 0,
+        issueID: issueDuplicateID
+      },
+      instance('r101', 'Duplicate ID found', 'failed',
+        issueDuplicateID, 2, 2, 1),
+      instance('r102', 'Duplicate ID in orphan', 'failed',
+        issueDuplicateID, 3, 2, 1)
+    ]),
+    {
+      type: 'test',
+      which: engineAlfa,
+      startTime: '26-01-01T00:00',
+      endTime: '26-01-01T00:01',
+      result: {
+        standardResult: {}
+      }
+    },
+    testAct(engineIbm, [
+      {
+        ruleID: 'r50',
+        what: 'Link has no text',
+        ordinalSeverity: 2,
+        outcome: 'failed',
+        catalogIndex: '0',
+        checkpoint: 0
+      }
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260101T0009-brd.json'),
+    report('260101T0009-brd', 'Branch Coverage Page',
+      'https://example.com/branch', branchActs, branchCatalog)
+  );
+  // Remove preventions from the brd fixture to cover the preventions ?? {} branch in listIssues.
+  const brdReport = JSON.parse(
+    await fs.readFile(path.join(reportsDir, '260101T0009-brd.json'), 'utf8')
+  );
+  delete brdReport.jobData.preventions;
+  await writeJSON(path.join(reportsDir, '260101T0009-brd.json'), brdReport);
+
   // Write an empty recs.json so getRecs does not try to create one.
   await writeJSON(path.join(targetDir, 'jobs', 'recs.json'), {});
 

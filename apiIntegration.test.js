@@ -71,7 +71,7 @@ test('GET /api/listReports returns valid JSON through the HTTP routing layer', a
   const {body} = await request('GET', '/api/listReports');
   assert.equal(body['tool name'], 'listReports');
   const reports = body['response content']['basics about all available reports'];
-  assert.equal(reports.length, 6);
+  assert.equal(reports.length, 8);
 });
 
 test('POST /api/requestFeature parses a JSON body and returns a JSON response through the HTTP routing layer', async () => {

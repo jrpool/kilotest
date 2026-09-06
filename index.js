@@ -207,21 +207,16 @@ const checkBalancesForAlerts = async report => {
         const balanceData = JSON.parse(balanceJSON);
         // Get an estimate of the balance after this job.
         const newBalance = balanceData.balance - cost;
-        if (typeof newBalance === 'number') {
-          // Update the recorded balance.
-          await fs.writeFile(balancePath, getJSON({balance: newBalance}));
-          console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
-          // If it is nearing exhaustion:
-          if (newBalance < AI_SERVICE0_THRESHOLD) {
-            // Alert a manager.
-            await sendAlert(
-              'Kilotest: AI service 0 balance low',
-              `Balance of AI service 0 account (https://console.anthropic.com) only about $${newBalance.toFixed(2)} (about $0.01 used per job)`
-            );
-          }
-        }
-        else {
-          console.log('ERROR: AI service 0 balance is not a number');
+        // Update the recorded balance.
+        await fs.writeFile(balancePath, getJSON({balance: newBalance}));
+        console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
+        // If it is nearing exhaustion:
+        if (newBalance < AI_SERVICE0_THRESHOLD) {
+          // Alert a manager.
+          await sendAlert(
+            'Kilotest: AI service 0 balance low',
+            `Balance of AI service 0 account (https://console.anthropic.com) only about $${newBalance.toFixed(2)} (about $0.01 used per job)`
+          );
         }
       }
       catch (error) {
@@ -253,13 +248,7 @@ const getBasicAuth = request => {
   if (!match) {
     return null;
   }
-  let decoded;
-  try {
-    decoded = Buffer.from(match[1], 'base64').toString('utf8');
-  }
-  catch {
-    return null;
-  }
+  const decoded = Buffer.from(match[1], 'base64').toString('utf8');
   const sepIndex = decoded.indexOf(':');
   if (sepIndex === -1) {
     return null;
@@ -834,12 +823,6 @@ const requestHandler = async (request, response) => {
               await serveError({message: 'ERROR: Request invalid'}, response, false);
             }
           }
-          // Otherwise, i.e. if the service is invalid:
-          else {
-            await serveError(
-              {message: 'ERROR: Invalid service request from Testaro worker'}, response, false
-            );
-          }
         }
         // Otherwise, i.e. if it is not authenticated:
         else {
@@ -902,11 +885,6 @@ const requestHandler = async (request, response) => {
           response.statusCode = 400;
           response.end(JSON.stringify({status: 'error', message: answerData.message}));
         }
-      }
-      // Otherwise, i.e. if it is any other POST request:
-      else {
-        // Report its invalidity.
-        await serveError({message: 'ERROR: Invalid POST request'}, response, true);
       }
     }
   }

@@ -52,7 +52,7 @@ test('index.js loads with invalid TESTARO_WORKERS and treats workers as empty', 
 
 test('POST /worker/job with invalid TESTARO_WORKERS returns 401 for any credentials', async () => {
   const server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, resolve));
+  await new Promise(resolve => server.listen(port, () => resolve()));
   try {
     const auth = Buffer.from('worker1:secret1').toString('base64');
     const res = await request('POST', '/worker/job', {}, {

@@ -935,7 +935,10 @@ const serve = async (protocolModule, options) => {
   server.listen(port, () => {
     console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
   });
+  return server;
 };
+
+exports.serve = serve;
 
 // EXECUTION
 

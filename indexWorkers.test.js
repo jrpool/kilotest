@@ -61,6 +61,16 @@ test('POST /worker/job with invalid TESTARO_WORKERS returns 401 for any credenti
     assert.equal(res.statusCode, 401);
   }
   finally {
-    await new Promise(resolve => server.close(() => resolve()));
+    server.closeAllConnections?.();
+    await new Promise(resolve => {
+      const timer = setTimeout(() => {
+        server.closeAllConnections?.();
+        resolve();
+      }, 1000);
+      server.close(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
   }
 });

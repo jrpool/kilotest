@@ -201,6 +201,23 @@ const startMCPServer = () => new Promise(resolve => {
   server.listen(0, () => resolve(server));
 });
 
+// Helper: closes a server with a timeout fallback.
+const closeMCPServer = server => new Promise(resolve => {
+  if (!server) {
+    resolve();
+    return;
+  }
+  server.closeAllConnections?.();
+  const timer = setTimeout(() => {
+    server.closeAllConnections?.();
+    resolve();
+  }, 1000);
+  server.close(() => {
+    clearTimeout(timer);
+    resolve();
+  });
+});
+
 test('handleMCP responds to initialize with server info', async () => {
   const server = await startMCPServer();
   try {
@@ -216,7 +233,7 @@ test('handleMCP responds to initialize with server info', async () => {
     assert.equal(result.result.protocolVersion, '2025-06-18');
   }
   finally {
-    server.close();
+    await closeMCPServer(server);
   }
 });
 
@@ -241,7 +258,7 @@ test('handleMCP lists all 8 tools via tools/list', async () => {
     ]);
   }
   finally {
-    server.close();
+    await closeMCPServer(server);
   }
 });
 
@@ -259,6 +276,6 @@ test('handleMCP executes listReports tool via tools/call', async () => {
     assert.equal(result.result.content[0].type, 'text');
   }
   finally {
-    server.close();
+    await closeMCPServer(server);
   }
 });

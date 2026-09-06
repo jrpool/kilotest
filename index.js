@@ -787,8 +787,8 @@ const requestHandler = async (request, response) => {
           // Otherwise, if it is report acquisition:
           else if (service === 'report') {
             const {report} = postData;
-            const {id, target} = report;
-            const {what, url} = target;
+            const {id, target} = report || {};
+            const {what, url} = target || {};
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
             // If the request is syntactically valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {

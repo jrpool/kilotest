@@ -67,7 +67,7 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
   objectSort(ruleEnginesFacts, 'name', 'alpha');
   return ruleEnginesFacts;
 };
-// Returns the basics about a report, without reading the report.
+// Returns the basics about a report.
 exports.getReportBasics = async (timeStamp, jobID) => {
   // Get the creation time of the report.
   const reportStats = await getReportStats(timeStamp, jobID);
@@ -79,13 +79,8 @@ exports.getReportBasics = async (timeStamp, jobID) => {
       error: `Report ${timeStamp}-${jobID} could not be retrieved.`
     };
   }
-  // Get an extract of the report.
+  // Otherwise, i.e. if it exists, get an extract of the report.
   const reportExtract = await getReportExtract(timeStamp, jobID);
-  // If no such report exists:
-  if (reportExtract.error) {
-    // Return this.
-    return reportExtract;
-  }
   const {url, what} = reportExtract;
   const latestReportExtracts = await getLatestReportExtracts();
   // Otherwise, i.e. if the report exists, get whether this report has been superseded.

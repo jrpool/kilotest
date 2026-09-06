@@ -21,6 +21,8 @@ const {
   getJSON,
   getNowStamp,
   getObject,
+  getPageData,
+  getPageDataStrings,
   getPlainText,
   getRandomString,
   getTextFragmentHref,
@@ -308,6 +310,50 @@ after(() => {
   else {
     delete process.env.DB_DIR;
   }
+});
+
+test('getPageData returns page data for a valid report', async () => {
+  const data = await getPageData('260101T0000', 'mix');
+  assert.equal(data.what, 'Mixed Outcomes Page');
+  assert.equal(data.url, 'https://example.com/mixed');
+  assert.equal(typeof data.daysAgo, 'number');
+});
+
+test('getPageData returns an error for a nonexistent report', async () => {
+  const data = await getPageData('999999T9999', 'xxx');
+  assert.ok(data.error);
+});
+
+test('getPageDataStrings returns HTML strings for a valid report', async () => {
+  const strings = await getPageDataStrings('260101T0000', 'mix');
+  assert.equal(strings.what, 'Mixed Outcomes Page');
+  assert.equal(strings.url, 'https://example.com/mixed');
+  assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
+  assert.ok(strings.testInfo.includes('by job <code>mix</code>'));
+  assert.ok(strings.testInfo.includes('2026-01-01 at 00:00'));
+});
+
+test('getPageDataStrings returns different testInfo for a different timeStamp', async () => {
+  const strings = await getPageDataStrings('260101T0001', 'ct');
+  assert.equal(strings.what, 'All CantTell Page');
+  assert.ok(strings.testInfo.includes('by job <code>ct</code>'));
+  assert.ok(strings.testInfo.includes('2026-01-01 at 00:01'));
+});
+
+test('getPageDataStrings returns an error for a nonexistent report', async () => {
+  const strings = await getPageDataStrings('999999T9999', 'xxx');
+  assert.ok(strings.error);
+});
+
+test('getPageDataStrings uses provided pageData instead of reading the report', async () => {
+  const strings = await getPageDataStrings('260101T0000', 'mix', {
+    what: 'Custom Page',
+    url: 'https://custom.com',
+    daysAgo: 1
+  });
+  assert.equal(strings.what, 'Custom Page');
+  assert.equal(strings.url, 'https://custom.com');
+  assert.ok(strings.testInfo.includes('1 day ago'));
 });
 
 test('processTestRequest returns an error for an invalid test type', async () => {

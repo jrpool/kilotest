@@ -607,9 +607,9 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
     return report;
   }
   const {url, what} = report.target;
-  const reportStats = await getReportStats(timeStamp, jobID)
-  // Otherwise, i.e. if it succeeded, get the elapsed time in days since the report was created.
-  const daysAgo = getAgoDays(reportStats.reportTime);
+  // Get the elapsed time in days since the report was completed, using the
+  // report content rather than the file system birth time.
+  const daysAgo = getAgoDays(new Date(`20${report.jobData.endTime}Z`));
   // Return the data.
   return {
     what,
@@ -643,7 +643,7 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
   };
 };
 // Returns the creation time and size of a report.
-const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
+exports.getReportStats = async (timeStamp, jobID) => {
   let reportStat;
   try {
     reportStat = await fs.stat(path.join(reportsPath(), `${timeStamp}-${jobID}.json`));

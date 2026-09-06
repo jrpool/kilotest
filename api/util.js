@@ -86,12 +86,15 @@ exports.getReportBasics = async (timeStamp, jobID) => {
   // Otherwise, i.e. if the report exists, get whether this report has been superseded.
   const isSuperseded = latestReportExtracts
   .every(extract => extract.timeStamp !== timeStamp || extract.jobID !== jobID);
-  const {reportTime} = reportStats;
+  // Get the completion time from the report content, not the file system birth time,
+  // because the birth time depends on when the file was created on the file system
+  // and does not reflect the actual report completion time.
+  const {reportTime} = reportExtract;
   // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
-    'completion date and time': reportTime.toISOString(),
-    'days since the report was completed': getAgoDays(reportTime),
+    'completion date and time': reportTime,
+    'days since the report was completed': getAgoDays(new Date(reportTime)),
     'tested web page': {
       description: what,
       URL: url

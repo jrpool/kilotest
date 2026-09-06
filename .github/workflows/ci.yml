@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  ci:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,3 +27,6 @@ jobs:
 
       - name: Run tests with coverage
         run: npm test
+
+      - name: Run smoke test against deployed server
+        run: node smokeTest.js

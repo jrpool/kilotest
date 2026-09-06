@@ -203,7 +203,7 @@ kilotest.com {
   }
   @allowedPOST {
     method POST
-    path /mcp /requestRetest.html/* /requestTest.html /recAction.html /reannotate.html /renewWCAG.html /api/* /tutorialComment.html
+    path /mcp /requestRetest.html/* /requestTest.html /recAction.html /reannotate.html /renewWCAG.html /api/* /tutorialComment.html /worker/job /worker/report
   }
   # Respond to OPTIONS requests.
   @allowedOPTIONS method OPTIONS
@@ -258,6 +258,28 @@ When a new version of the `kilotest` package has been published, the service can
 1. Update the dependencies: `npm update`
 1. Update the Playwright browsers: `npx playwright install`
 1. Restart the service: `pm2 restart kilotest`
+
+## Branch protection
+
+The `main` branch on GitHub is protected to prevent direct pushes and to require a passing smoke test before any pull request can merge. The settings are configured in the GitHub repository under Settings > Branches > Branch protection rules.
+
+The required settings are:
+
+1. Require a pull request before merging.
+1. Require status checks to pass before merging.
+1. Add "Smoke Test" as a required status check.
+1. Require branches to be up to date before merging.
+1. Do not allow bypassing the above settings.
+
+The smoke test is defined in `.github/workflows/smoke-test.yml` and runs `smokeTest.js`, which sends HTTPS requests to all valid GET and POST paths on the deployed server and verifies that Caddy forwards each one to Kilotest rather than returning a bare 404.
+
+When a pull request adds a new route to `index.js`, the Caddyfile at `/etc/caddy/Caddyfile` on the server must be updated to forward the new path before the pull request can merge. The workflow to follow is:
+
+1. Add the new route to the `routes` constant and the dispatch chain in `index.js`.
+1. Update the Caddyfile on the server to forward the new path.
+1. Open or update the pull request.
+1. The smoke test workflow runs and verifies that all paths, including the new one, are forwarded by Caddy.
+1. If the Caddyfile was not updated, the smoke test reports a bare 404 for the new path, the required status check fails, and the pull request cannot merge.
 
 ## Performance
 

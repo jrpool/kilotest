@@ -454,13 +454,12 @@ test('getPOSTData resolves with parsed query for form-urlencoded requests', asyn
   const {Readable} = require('node:stream');
   const {getPOSTData} = require('./util');
   const body = 'target=Page&why=Because';
-  const req = new Readable({
+  const req = Object.assign(new Readable({
     read() {
       this.push(Buffer.from(body));
       this.push(null);
     }
-  });
-  req.headers = {'content-type': 'application/x-www-form-urlencoded'};
+  }), {headers: {'content-type': 'application/x-www-form-urlencoded'}});
   const result = await getPOSTData(req);
   assert.equal(result.target, 'Page');
   assert.equal(result.why, 'Because');
@@ -597,13 +596,12 @@ test('getPOSTData resolves with parsed JSON for application/json requests', asyn
   const {Readable} = require('node:stream');
   const {getPOSTData} = require('./util');
   const body = JSON.stringify({target: 'Page', why: 'Because'});
-  const req = new Readable({
+  const req = Object.assign(new Readable({
     read() {
       this.push(Buffer.from(body));
       this.push(null);
     }
-  });
-  req.headers = {'content-type': 'application/json'};
+  }), {headers: {'content-type': 'application/json'}});
   const result = await getPOSTData(req);
   assert.equal(result.target, 'Page');
 });
@@ -612,13 +610,12 @@ test('getPOSTData resolves with parsed query for body-type form-urlencoded reque
   const {Readable} = require('node:stream');
   const {getPOSTData} = require('./util');
   const body = 'target=Page&why=Because';
-  const req = new Readable({
+  const req = Object.assign(new Readable({
     read() {
       this.push(Buffer.from(body));
       this.push(null);
     }
-  });
-  req.headers = {'body-type': 'application/x-www-form-urlencoded'};
+  }), {headers: {'body-type': 'application/x-www-form-urlencoded'}});
   const result = await getPOSTData(req);
   assert.equal(result.target, 'Page');
   assert.equal(result.why, 'Because');

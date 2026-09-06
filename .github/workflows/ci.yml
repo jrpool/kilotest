@@ -1,11 +1,11 @@
-name: Smoke Test
+name: CI
 
 on:
   pull_request:
     branches: [main]
 
 jobs:
-  smoke:
+  ci:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,6 +21,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm test
 
       - name: Run smoke test against deployed server
         run: node smokeTest.js

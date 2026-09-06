@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "46.0.8",
+  "version": "46.0.9",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
   "engines": {
@@ -66,7 +66,8 @@
       "mcp.js",
       "alerts.js",
       "util.js",
-      "api/**/*.js"
+      "api/**/*.js",
+      "web/**/*.js"
     ],
     "exclude": [
       "coverage/**",
@@ -74,8 +75,12 @@
       "test{,-*}.{js,cjs,mjs}",
       "**/*{.,-}test.{js,cjs,mjs}",
       "**/__tests__/**",
-      "web/**",
       "scripts/**"
-    ]
+    ],
+    "check-coverage": true,
+    "lines": 58,
+    "statements": 58,
+    "functions": 58,
+    "branches": 71
   }
 }

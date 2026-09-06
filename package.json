@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "46.0.6",
+  "version": "46.0.7",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
   "engines": {
@@ -10,7 +10,6 @@
     "start": "node index",
     "lint": "npx eslint && npx markdownlint-cli2",
     "test": "c8 node --test",
-    "test:api": "node api/testSuite",
     "generate:openapi": "node scripts/generate-openapi"
   },
   "repository": {

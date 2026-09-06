@@ -1,0 +1,23 @@
+name: Smoke Test
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set Node.js version
+        uses: actions/setup-node@v4
+        with:
+          node-version: '>=22.12.0'
+
+      - name: Run smoke test against deployed server
+        run: node smokeTest.js

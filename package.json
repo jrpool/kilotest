@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node index",
     "lint": "npx eslint && npx markdownlint-cli2",
-    "test": "c8 node --test",
+    "test": "c8 node --require ./test/setup.cjs --test",
     "test:smoke": "node smokeTest",
     "generate:openapi": "node scripts/generate-openapi"
   },

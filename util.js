@@ -220,6 +220,9 @@ exports.getPOSTData = request => new Promise(resolve => {
       const query = querystring.parse(body);
       resolve(query);
     }
+    else {
+      resolve(null);
+    }
   });
 });
 // Returns the waiting test and retest recommendations.

@@ -10,11 +10,8 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {
+  annotateReport,
   dbPath,
-  jobsPath,
-  recsPath,
-  reportsPath,
-  hiddenReportsPath,
   getAgoDays,
   getAgoString,
   getCountString,
@@ -22,23 +19,26 @@ const {
   getDateTime,
   getIssue,
   getJSON,
-  getObject,
   getNowStamp,
+  getObject,
   getPlainText,
   getRandomString,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
+  hiddenReportsPath,
   htmlSafe,
   isJobID,
+  isReportAvailable,
   isTimeStamp,
   isURL,
+  jobsPath,
   makeBreakable,
   minifyURL,
   objectSort,
   processTestRequest,
-  annotateReport,
-  isReportAvailable
+  recsPath,
+  reportsPath
 } = require('./util');
 
 // TESTS
@@ -129,7 +129,16 @@ test('getAgoDays returns 0 for the current time', () => {
 
 test('getAgoString returns "1 day" for a 1-day-old timestamp', () => {
   const date = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
-  assert.equal(getAgoString(date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11)), '1 day');
+  assert.equal(
+    getAgoString(date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11)), '1 day'
+  );
+});
+
+test('getAgoString returns "3 days" for a 3-day-old timestamp', () => {
+  const date = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  assert.equal(
+    getAgoString(date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11)), '3 days'
+  );
 });
 
 test('getCountString returns singular for count 1', () => {
@@ -619,6 +628,19 @@ test('getPOSTData resolves with parsed query for body-type form-urlencoded reque
   const result = await getPOSTData(req);
   assert.equal(result.target, 'Page');
   assert.equal(result.why, 'Because');
+});
+
+test('getPOSTData resolves with null for an unknown content type', async () => {
+  const {Readable} = require('node:stream');
+  const {getPOSTData} = require('./util');
+  const req = Object.assign(new Readable({
+    read() {
+      this.push(Buffer.from('data'));
+      this.push(null);
+    }
+  }), {headers: {}});
+  const result = await getPOSTData(req);
+  assert.equal(result, null);
 });
 
 test('getEngineNamesString falls back to the engine ID for an unknown engine', () => {

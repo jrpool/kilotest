@@ -63,6 +63,54 @@ const answer = {
 
 // CONSTANTS
 
+// Paths that the application is authorized to handle, by method, as glob-style patterns where * matches any sequence of characters.
+const routes = exports.routes = {
+  GET: [
+    '/mcp',
+    '/',
+    '/index.html',
+    '/robots.txt',
+    '/openapi.yaml',
+    '/openapi.json',
+    '/swagger.yaml',
+    '/swagger.json',
+    '/api-docs',
+    '/llms.txt',
+    '/llms-full.txt',
+    '/sitemap.xml',
+    '/style.css',
+    '/fullReport.json/*',
+    '/api/*',
+    '/tutorial/images/*',
+    '/favicon.*',
+    '*.html*'
+  ],
+  POST: [
+    '/mcp',
+    '/requestTest.html',
+    '/requestRetest.html/*',
+    '/recAction.html',
+    '/reannotate.html',
+    '/renewWCAG.html',
+    '/worker/job',
+    '/worker/report',
+    '/api/*',
+    '/tutorialComment.html'
+  ]
+};
+// Returns whether a pathname matches a glob-style pattern.
+const matchPath = (pattern, pathname) => {
+  const regex = new RegExp(
+    '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
+  );
+  return regex.test(pathname);
+};
+// Returns whether a pathname is authorized for a method.
+const isPathAllowed = (method, pathname) => {
+  const patterns = routes[method] || [];
+  return patterns.some(pattern => matchPath(pattern, pathname));
+};
+
 const protocol = process.env.PROTOCOL || 'http';
 const queuePath = () => path.join(jobsPath(), 'queue');
 const claimedPath = () => path.join(jobsPath(), 'claimed');
@@ -321,8 +369,12 @@ const requestHandler = async (request, response) => {
   const pathTail = pathname.split('/').slice(2).join('/');
   // If the request is a GET request:
   if (method === 'GET') {
+    // If the path is not authorized for GET requests:
+    if (!isPathAllowed('GET', pathname)) {
+      await serveError({message: `ERROR: Invalid GET request (${pathname})`}, response, true);
+    }
     // If it is for the model context protocol server:
-    if (pathname === mcpPath) {
+    else if (pathname === mcpPath) {
       // Handle the MCP request.
       await handleMCP(request, response);
     }
@@ -554,8 +606,12 @@ const requestHandler = async (request, response) => {
   }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
+    // If the path is not authorized for POST requests:
+    if (!isPathAllowed('POST', pathname)) {
+      await serveError({message: 'ERROR: Invalid POST request'}, response, true);
+    }
     // If it is for the model context protocol server:
-    if (pageName === 'mcp') {
+    else if (pageName === 'mcp') {
       await handleMCP(request, response);
     }
     // Otherwise, i.e. if it is not for the MCP server:

@@ -7,20 +7,10 @@
 // ENVIRONMENT (must be set before requiring index.js, because index.js reads
 // TESTARO_WORKERS and AUTH_CODE at module load time, and util.js reads DB_DIR.)
 
-// Copy the fixture database to a temporary directory so this file does not
-// interfere with other test files that run concurrently and read from the
-// shared fixture directory.
 const path = require('node:path');
-const fsSync = require('node:fs');
-const os = require('node:os');
-const tempDBDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'kilotest-idx-'));
-fsSync.cpSync(
-  path.join(__dirname, 'test', 'fixtures', 'db'),
-  tempDBDir,
-  {recursive: true}
-);
+const fixtureDBDir = path.join(__dirname, 'test', 'fixtures', 'db');
 
-process.env.DB_DIR = tempDBDir;
+process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';
 process.env.TESTARO_WORKERS = JSON.stringify({
   worker1: {secret: 'secret1', name: 'Worker One'}
@@ -37,14 +27,22 @@ const {requestHandler, routes} = require('./index');
 // CONSTANTS
 
 const port = 3997;
-const uniqueStamp = Date.now();
-const recsPath = path.join(tempDBDir, 'jobs', 'recs.json');
+const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
 
 // SETUP AND TEARDOWN
 
 let server;
 
 before(async () => {
+  // Restore recs.json and clean job directories before running.
+  await fs.writeFile(recsPath, '{}\n');
+  for (const sub of ['claimed', 'queue', 'failed']) {
+    const dir = path.join(fixtureDBDir, 'jobs', sub);
+    const files = await fs.readdir(dir).catch(() => []);
+    for (const file of files) {
+      await fs.unlink(path.join(dir, file)).catch(() => {});
+    }
+  }
   server = http.createServer(requestHandler);
   await new Promise(resolve => server.listen(port, () => resolve()));
 });
@@ -62,20 +60,20 @@ after(async () => {
       resolve();
     });
   });
-  // Restore recs.json to empty to prevent duplicate-recommendation errors in future runs.
+  // Restore recs.json and clean job directories after running.
   await fs.writeFile(recsPath, '{}\n');
-  // Clean up any jobs created by tests.
-  const jobsDir = path.join(tempDBDir, 'jobs');
   for (const sub of ['claimed', 'queue', 'failed']) {
-    const dir = path.join(jobsDir, sub);
+    const dir = path.join(fixtureDBDir, 'jobs', sub);
     const files = await fs.readdir(dir).catch(() => []);
     for (const file of files) {
       await fs.unlink(path.join(dir, file)).catch(() => {});
     }
   }
-  // Remove the temporary database directory.
-  await fs.rm(tempDBDir, {recursive: true, force: true});
 });
+
+// CONSTANTS
+
+const uniqueStamp = Date.now();
 
 // HELPERS
 
@@ -426,7 +424,7 @@ test('POST /worker/job without authentication returns 401', async () => {
 
 test('POST /worker/job with valid authentication returns a job or no-job response', async () => {
   // Clean up any claimed jobs left by prior tests.
-  const claimedDir = path.join(tempDBDir, 'jobs', 'claimed');
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
   const claimedFiles = await fs.readdir(claimedDir).catch(() => []);
   for (const file of claimedFiles) {
     await fs.unlink(path.join(claimedDir, file)).catch(() => {});
@@ -647,8 +645,8 @@ test('POST /worker/job with no colon in decoded credentials returns 401', async 
 
 test('POST /worker/job with a claimed job assigned to the worker returns an error and reclassifies the job', async () => {
   // Create a claimed job assigned to Worker One.
-  const claimedDir = path.join(tempDBDir, 'jobs', 'claimed');
-  const failedDir = path.join(tempDBDir, 'jobs', 'failed');
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
   const jobFile = '260101T0000-mix.json';
   const claimedJobPath = path.join(claimedDir, jobFile);
   const failedJobPath = path.join(failedDir, jobFile);
@@ -675,8 +673,8 @@ test('POST /worker/job with a claimed job assigned to the worker returns an erro
 
 test('POST /worker/job with a queued job assigns it to the worker', async () => {
   // Clean up claimed and queue directories.
-  const claimedDir = path.join(tempDBDir, 'jobs', 'claimed');
-  const queueDir = path.join(tempDBDir, 'jobs', 'queue');
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
   for (const dir of [claimedDir, queueDir]) {
     const files = await fs.readdir(dir).catch(() => []);
     for (const file of files) {
@@ -714,11 +712,11 @@ test('POST /worker/job with a queued job assigns it to the worker', async () => 
 test('POST /worker/report with valid authentication and valid claimed job processes the report', async () => {
   // Use a unique job ID that does not conflict with existing fixtures.
   const jobID = '990101T0000-tst';
-  const reportPath = path.join(tempDBDir, 'reports', `${jobID}.json`);
+  const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
   // Clean up any leftover report file.
   await fs.unlink(reportPath).catch(() => {});
   // Create a claimed job assigned to Worker One.
-  const claimedDir = path.join(tempDBDir, 'jobs', 'claimed');
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
   const jobPath = path.join(claimedDir, `${jobID}.json`);
   await fs.writeFile(jobPath, JSON.stringify({
     id: jobID,

@@ -2,27 +2,14 @@
   indexBalances.test.js
   Tests for checkBalancesForAlerts in index.js, which requires balance-related
   env vars to be set before index.js is loaded.
-
-  This file uses a temporary copy of the fixture database to avoid interfering
-  with other test files that run concurrently and share the same fixture directory.
 */
-
-// IMPORTS (needed before setting DB_DIR)
-
-const path = require('node:path');
-const fsSync = require('node:fs');
-const fs = require('node:fs/promises');
-const os = require('node:os');
 
 // ENVIRONMENT (must be set before requiring index.js)
 
-// Copy the fixture database to a temporary directory so this file does not
-// interfere with other test files that use the shared fixture directory.
-const tempDBDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'kilotest-bal-'));
-const sourceDBDir = path.join(__dirname, 'test', 'fixtures', 'db');
-fsSync.cpSync(sourceDBDir, tempDBDir, {recursive: true});
+const path = require('node:path');
+const fixtureDBDir = path.join(__dirname, 'test', 'fixtures', 'db');
 
-process.env.DB_DIR = tempDBDir;
+process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';
 process.env.TESTARO_WORKERS = JSON.stringify({
   worker1: {secret: 'secret1', name: 'Worker One'}
@@ -35,6 +22,7 @@ process.env.AI_MODEL0_OUTPUT_PRICE = '0.002';
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
+const fs = require('node:fs/promises');
 const {requestHandler} = require('./index');
 
 // CONSTANTS
@@ -42,8 +30,8 @@ const {requestHandler} = require('./index');
 const port = 3994;
 const balancePath = path.join(__dirname, 'ai0Balance.json');
 const jobID = '990101T0001-bal';
-const reportPath = path.join(tempDBDir, 'reports', `${jobID}.json`);
-const claimedDir = path.join(tempDBDir, 'jobs', 'claimed');
+const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
+const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
 const jobPath = path.join(claimedDir, `${jobID}.json`);
 
 // SETUP AND TEARDOWN
@@ -75,8 +63,9 @@ after(async () => {
   else {
     await fs.unlink(balancePath).catch(() => {});
   }
-  // Remove the temporary database directory.
-  await fs.rm(tempDBDir, {recursive: true, force: true});
+  // Clean up any report and job files created by tests.
+  await fs.unlink(reportPath).catch(() => {});
+  await fs.unlink(jobPath).catch(() => {});
 });
 
 // HELPERS

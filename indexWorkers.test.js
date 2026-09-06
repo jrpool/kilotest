@@ -8,33 +8,18 @@
 // ENVIRONMENT (must be set before requiring index.js)
 
 const path = require('node:path');
-const fsSync = require('node:fs');
-const os = require('node:os');
-// Copy the fixture database to a temporary directory for isolation.
-const tempDBDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'kilotest-wkr-'));
-fsSync.cpSync(
-  path.join(__dirname, 'test', 'fixtures', 'db'),
-  tempDBDir,
-  {recursive: true}
-);
+const fixtureDBDir = path.join(__dirname, 'test', 'fixtures', 'db');
 
-process.env.DB_DIR = tempDBDir;
+process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';
 process.env.TESTARO_WORKERS = 'not valid json';
 
 // IMPORTS
 
-const {test, after} = require('node:test');
+const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const fs = require('node:fs/promises');
 const {requestHandler} = require('./index');
-
-// TEARDOWN
-
-after(async () => {
-  await fs.rm(tempDBDir, {recursive: true, force: true});
-});
 
 // CONSTANTS
 

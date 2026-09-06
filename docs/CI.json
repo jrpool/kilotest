@@ -1,6 +1,6 @@
 {
   "id": 22391521,
-  "name": "Smoke Test",
+  "name": "CI",
   "target": "branch",
   "source_type": "Repository",
   "source": "jrpool/kilotest",
@@ -44,7 +44,8 @@
         "do_not_enforce_on_create": false,
         "required_status_checks": [
           {
-            "context": "Smoke Test"
+            "context": "ci",
+            "integration_id": 15368
           }
         ]
       }

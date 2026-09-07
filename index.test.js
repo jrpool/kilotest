@@ -598,6 +598,7 @@ test('POST /renewWCAG.html with valid auth code serves the answer page', async (
   const originalFetch = global.fetch;
   const wcagMapPath = path.join(__dirname, 'wcagMap.json');
   const wcagMapBackup = await fs.readFile(wcagMapPath, 'utf8');
+  // @ts-expect-error: Replacing the real function with a mock for testing.
   global.fetch = async () => ({
     status: 200,
     text: async () => '<a href="understanding/contrast-minimum"><span class="secno">1.4.3 </span>'

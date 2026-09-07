@@ -52,6 +52,7 @@ after(async () => {
 // Replaces global.fetch with a mock that returns the given status and body.
 const mockFetch = (status, body = '') => {
   originalFetch = global.fetch;
+  // @ts-expect-error: Replacing the real function with a mock for testing.
   global.fetch = async () => ({
     status,
     text: async () => body

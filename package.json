@@ -78,9 +78,9 @@
       "scripts/**"
     ],
     "check-coverage": true,
-    "lines": 64,
-    "statements": 64,
-    "functions": 70,
-    "branches": 86
+    "lines": 92,
+    "statements": 92,
+    "functions": 98,
+    "branches": 92
   }
 }

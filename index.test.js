@@ -22,7 +22,8 @@ const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
-const {requestHandler, routes, serveError, startServer} = require('./index');
+const indexModule = require('./index');
+const {requestHandler, routes, serveError, startServer, runIfMain} = indexModule;
 
 // CONSTANTS
 
@@ -1094,5 +1095,40 @@ test('startServer starts an HTTPS server when protocol is https', async () => {
       delete process.env.CERT;
     }
     fsSync.rmSync(tmpDir, {recursive: true, force: true});
+  }
+});
+
+test('runIfMain calls startServer when mainModule matches currentModule', async () => {
+  let called = false;
+  const originalStartServer = indexModule.startServer;
+  indexModule.startServer = async () => {
+    called = true;
+  };
+  try {
+    // Pass the same object for both arguments so the guard is true.
+    const fakeModule = {};
+    runIfMain(fakeModule, fakeModule);
+    // Wait for the microtask queue to flush the promise.
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(called, true);
+  }
+  finally {
+    indexModule.startServer = originalStartServer;
+  }
+});
+
+test('runIfMain does not call startServer when mainModule differs from currentModule', async () => {
+  let called = false;
+  const originalStartServer = indexModule.startServer;
+  indexModule.startServer = async () => {
+    called = true;
+  };
+  try {
+    runIfMain({}, {});
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(called, false);
+  }
+  finally {
+    indexModule.startServer = originalStartServer;
   }
 });

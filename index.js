@@ -933,8 +933,13 @@ exports.startServer = async () => {
   }
 };
 
+// Runs the server if the module was loaded directly (not required by a test).
+exports.runIfMain = (mainModule, currentModule) => {
+  if (mainModule === currentModule) {
+    exports.startServer().catch(error => console.log(error.message));
+  }
+};
+
 // EXECUTION
 
-if (require.main === module) {
-  exports.startServer().catch(error => console.log(error.message));
-}
+exports.runIfMain(require.main, module);

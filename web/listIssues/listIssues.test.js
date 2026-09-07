@@ -9,6 +9,29 @@ const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {parse} = require('node-html-parser');
+
+// Monkey-patch util functions before requiring index, so that index.js
+// destructures the patched versions.
+const util = require('../../util');
+const realIsHidden = util.isHidden;
+const realGetPageDataStrings = util.getPageDataStrings;
+let isHiddenCallCount = 0;
+let forceHiddenOnCall = -1;
+let pageDataStringsOverride = null;
+util.isHidden = async (timeStamp, jobID) => {
+  isHiddenCallCount++;
+  if (isHiddenCallCount === forceHiddenOnCall) {
+    return true;
+  }
+  return realIsHidden(timeStamp, jobID);
+};
+util.getPageDataStrings = async (...args) => {
+  if (pageDataStringsOverride !== null) {
+    return pageDataStringsOverride;
+  }
+  return realGetPageDataStrings(...args);
+};
+
 const {answer} = require('./index');
 
 // SETUP AND TEARDOWN
@@ -77,4 +100,52 @@ test('listIssues for the empty report shows no issue links', async () => {
   const html = parse(result.answerPage);
   const violatorLinks = html.querySelectorAll('a[href*="listViolators.html"]');
   assert.equal(violatorLinks.length, 0);
+});
+
+test('listIssues returns an error when a report becomes hidden during processing', async () => {
+  isHiddenCallCount = 0;
+  forceHiddenOnCall = 2;
+  try {
+    const result = await answer('260101T0000/mix');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Report is not available');
+  }
+  finally {
+    forceHiddenOnCall = -1;
+  }
+});
+
+test('listIssues includes prevention notices for the prevented report', async () => {
+  const result = await answer('260101T0006/prv');
+  assert.equal(result.status, 'ok');
+  assert.ok(result.answerPage.includes('Page not testable by'));
+  assert.ok(result.answerPage.includes('page timed out'));
+});
+
+test('listIssues returns an error when getPageDataStrings fails after getData succeeds', async () => {
+  pageDataStringsOverride = {error: 'Page data strings error'};
+  try {
+    const result = await answer('260101T0000/mix');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Page data strings error');
+  }
+  finally {
+    pageDataStringsOverride = null;
+  }
+});
+
+test('listIssues returns an error when report facts are not obtained', async () => {
+  pageDataStringsOverride = {
+    what: 'Mixed Outcomes Page',
+    url: 'https://example.com/mixed',
+    urlLink: '<a href="https://example.com/mixed">https://example.com/mixed</a>'
+  };
+  try {
+    const result = await answer('260101T0000/mix');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Report facts not obtained');
+  }
+  finally {
+    pageDataStringsOverride = null;
+  }
 });

@@ -8,7 +8,31 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+const fs = require('node:fs/promises');
 const {parse} = require('node-html-parser');
+
+// Monkey-patch util functions before requiring index, so that index.js
+// destructures the patched versions.
+const util = require('../../util');
+const realGetReport = util.getReport;
+const realGetPageDataStrings = util.getPageDataStrings;
+let getReportCallCount = 0;
+let failGetReportOnCall = -1;
+let pageDataStringsOverride = null;
+util.getReport = async (...args) => {
+  getReportCallCount++;
+  if (getReportCallCount === failGetReportOnCall) {
+    return {error: 'Report is invalid (test override)'};
+  }
+  return realGetReport(...args);
+};
+util.getPageDataStrings = async (...args) => {
+  if (pageDataStringsOverride !== null) {
+    return pageDataStringsOverride;
+  }
+  return realGetPageDataStrings(...args);
+};
+
 const {answer} = require('./index');
 
 // SETUP AND TEARDOWN
@@ -63,4 +87,93 @@ test('listViolators returns an error status for a nonexistent report', async () 
 test('listViolators returns an error status for an unknown issue', async () => {
   const result = await answer('nonexistentIssue/260101T0000/mix');
   assert.equal(result.status, 'error');
+});
+
+test('listViolators returns an error when getReport fails after getPageDataStrings succeeds', async () => {
+  getReportCallCount = 0;
+  failGetReportOnCall = 1;
+  try {
+    const result = await answer('linkNoText/260101T0000/mix');
+    assert.equal(result.status, 'error');
+    assert.ok(result.message.includes('invalid'));
+  }
+  finally {
+    failGetReportOnCall = -1;
+  }
+});
+
+test('listViolators includes take-me-there links for text-linkable violators', async () => {
+  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const reportsDir = path.join(dbDir, 'reports');
+  const reportPath = path.join(reportsDir, '260101T0003-tlk.json');
+  try {
+    const report = {
+      id: '260101T0003-tlk',
+      what: 'Text Linkable Page',
+      target: {what: 'Text Linkable Page', url: 'https://example.com/textlinkable'},
+      acts: [
+        {
+          type: 'test',
+          which: 'axe',
+          result: {
+            standardResult: {
+              instances: [
+                {
+                  ruleID: 'r11',
+                  what: 'The link does not have an accessible name',
+                  outcome: 'failed',
+                  count: 1,
+                  catalogIndex: '0',
+                  issueID: 'linkNoText'
+                }
+              ]
+            }
+          }
+        }
+      ],
+      jobData: {
+        startTime: '26-01-01T00:00',
+        endTime: '26-01-01T00:10',
+        preventions: {},
+        issuelessRules: []
+      },
+      catalog: {
+        '0': {
+          tagName: 'A',
+          id: '',
+          startTag: '<a>',
+          text: 'Click here',
+          textLinkable: true,
+          boxID: '10:20:80:30',
+          pathID: '/html/body/a[1]'
+        }
+      },
+      images: {},
+      checkpoints: []
+    };
+    await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
+    const result = await answer('linkNoText/260101T0003/tlk');
+    assert.equal(result.status, 'ok');
+    assert.ok(result.answerPage.includes('Take me there'));
+    assert.ok(result.answerPage.includes('Take me there</q> links will open'));
+  }
+  finally {
+    await fs.unlink(reportPath).catch(() => {});
+  }
+});
+
+test('listViolators returns an error when report facts are not obtained', async () => {
+  pageDataStringsOverride = {
+    what: 'Mixed Outcomes Page',
+    url: 'https://example.com/mixed',
+    urlLink: '<a href="https://example.com/mixed">https://example.com/mixed</a>'
+  };
+  try {
+    const result = await answer('linkNoText/260101T0000/mix');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Report facts not obtained');
+  }
+  finally {
+    pageDataStringsOverride = null;
+  }
 });

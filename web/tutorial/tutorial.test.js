@@ -86,3 +86,12 @@ test('handleComment truncates content to 500 characters', async () => {
   const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
   assert.equal(comments[0].content.length, 500);
 });
+
+test('handleComment creates comments.json when it does not exist', async () => {
+  await fs.unlink(commentsPath).catch(() => {});
+  const result = await handleComment('Test comment for missing file');
+  assert.equal(result.status, 'ok');
+  const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
+  assert.equal(comments.length, 1);
+  assert.equal(comments[0].content, 'Test comment for missing file');
+});

@@ -920,11 +920,12 @@ exports.serve = serve;
 
 // Starts the server using the configured protocol and credentials.
 exports.startServer = async () => {
-  if (protocol === 'http') {
+  const startProtocol = process.env.PROTOCOL || 'http';
+  if (startProtocol === 'http') {
     console.log('Starting HTTP server');
     return serve(http, {});
   }
-  else if (protocol === 'https') {
+  else if (startProtocol === 'https') {
     console.log('Starting HTTPS server');
     const key = await fs.readFile(process.env.KEY, 'utf8');
     const cert = await fs.readFile(process.env.CERT, 'utf8');

@@ -1031,3 +1031,68 @@ test('startServer starts an HTTP server when protocol is http', async () => {
     });
   }
 });
+
+test('startServer starts an HTTPS server when protocol is https', async () => {
+  // Generate a self-signed certificate for the test.
+  const {generateKeyPairSync} = require('node:crypto');
+  const {publicKey, privateKey} = generateKeyPairSync('rsa', {
+    modulusLength: 2048,
+    publicKeyEncoding: {type: 'spki', format: 'pem'},
+    privateKeyEncoding: {type: 'pkcs8', format: 'pem'}
+  });
+  // Write the key and cert to temporary files.
+  const os = require('node:os');
+  const fsSync = require('node:fs');
+  const tmpDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'kilotest-https-'));
+  const keyPath = path.join(tmpDir, 'key.pem');
+  const certPath = path.join(tmpDir, 'cert.pem');
+  fsSync.writeFileSync(keyPath, privateKey);
+  // For a self-signed cert, use the public key as a placeholder cert.
+  // The HTTPS server only needs matching key and cert PEM strings to start.
+  fsSync.writeFileSync(certPath, publicKey);
+  const savedProtocol = process.env.PROTOCOL;
+  const savedKey = process.env.KEY;
+  const savedCert = process.env.CERT;
+  process.env.PROTOCOL = 'https';
+  process.env.KEY = keyPath;
+  process.env.CERT = certPath;
+  try {
+    const server = await startServer();
+    assert.ok(server);
+    assert.equal(typeof server.listen, 'function');
+    const address = server.address();
+    assert.ok(address.port > 0);
+    server.closeAllConnections?.();
+    await new Promise(resolve => {
+      const timer = setTimeout(() => {
+        server.closeAllConnections?.();
+        resolve();
+      }, 1000);
+      server.close(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
+  finally {
+    if (savedProtocol !== undefined) {
+      process.env.PROTOCOL = savedProtocol;
+    }
+    else {
+      delete process.env.PROTOCOL;
+    }
+    if (savedKey !== undefined) {
+      process.env.KEY = savedKey;
+    }
+    else {
+      delete process.env.KEY;
+    }
+    if (savedCert !== undefined) {
+      process.env.CERT = savedCert;
+    }
+    else {
+      delete process.env.CERT;
+    }
+    fsSync.rmSync(tmpDir, {recursive: true, force: true});
+  }
+});

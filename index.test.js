@@ -564,6 +564,30 @@ test('POST /reannotate.html with invalid auth code returns an error page', async
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
+test('POST /reannotate.html with valid auth code reannotates reports and returns HTML', async () => {
+  // Back up all fixture reports, because annotateReport modifies them in place.
+  const reportsDir = path.join(fixtureDBDir, 'reports');
+  const reportFiles = await fs.readdir(reportsDir);
+  const backups = {};
+  for (const file of reportFiles) {
+    backups[file] = await fs.readFile(path.join(reportsDir, file), 'utf8');
+  }
+  try {
+    const res = await formRequest('POST', '/reannotate.html', {
+      authCode: 'test-auth-code'
+    });
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('text/html'));
+    assert.ok(res.body.length > 0);
+  }
+  finally {
+    // Restore all fixture reports.
+    for (const file of reportFiles) {
+      await fs.writeFile(path.join(reportsDir, file), backups[file]);
+    }
+  }
+});
+
 test('POST /renewWCAG.html with invalid auth code returns an error page', async () => {
   const res = await formRequest('POST', '/renewWCAG.html', {
     authCode: 'wrong-code'

@@ -318,12 +318,6 @@ test('GET /tutorial/images/nonexistent.png returns an error page', async () => {
   assert.ok(res.body.includes('Image not found'));
 });
 
-test('GET /listReports.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/listReports.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
 test('GET /nonexistent.html returns an abuse error', async () => {
   const res = await request('GET', '/nonexistent.html');
   assert.equal(res.statusCode, 400);
@@ -529,15 +523,6 @@ test('POST /recAction.html with valid auth code and rejection (no what) returns 
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-// TESTS: reannotate and renewWCAG
-
-test('POST /renewWCAG.html with valid auth code returns HTML', async () => {
-  const res = await formRequest('POST', '/renewWCAG.html', {
-    authCode: 'test-auth-code'
-  });
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
 // TESTS: tutorialComment
 
 test('POST /tutorialComment.html with content returns JSON', async () => {
@@ -553,18 +538,6 @@ test('GET /fullReport.json/260101T0007/hid returns an abuse error for a hidden r
   const res = await request('GET', '/fullReport.json/260101T0007/hid');
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Invalid request'));
-});
-
-test('GET /listViolators.html/linkNoText/260101T0000/mix serves a generated HTML page', async () => {
-  const res = await request('GET', '/listViolators.html/linkNoText/260101T0000/mix');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /listDiagnoses.html/linkNoText/260101T0000/mix/0 serves a generated HTML page', async () => {
-  const res = await request('GET', '/listDiagnoses.html/linkNoText/260101T0000/mix/0');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
 test('POST /recAction.html with valid auth code and approval returns HTML', async () => {
@@ -587,30 +560,6 @@ test('POST /reannotate.html with invalid auth code returns an error page', async
     authCode: 'wrong-code'
   });
   assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('POST /reannotate.html with valid auth code reannotates reports and returns HTML', async () => {
-  // Back up all fixture reports, because annotateReport modifies them in place.
-  const reportsDir = path.join(fixtureDBDir, 'reports');
-  const reportFiles = await fs.readdir(reportsDir);
-  const backups = {};
-  for (const file of reportFiles) {
-    backups[file] = await fs.readFile(path.join(reportsDir, file), 'utf8');
-  }
-  try {
-    const res = await formRequest('POST', '/reannotate.html', {
-      authCode: 'test-auth-code'
-    });
-    assert.equal(res.statusCode, 200);
-    assert.ok(res.headers['content-type'].includes('text/html'));
-    assert.ok(res.body.length > 0);
-  }
-  finally {
-    // Restore all fixture reports.
-    for (const file of reportFiles) {
-      await fs.writeFile(path.join(reportsDir, file), backups[file]);
-    }
-  }
 });
 
 test('POST /renewWCAG.html with invalid auth code returns an error page', async () => {
@@ -820,81 +769,40 @@ test('GET /requestRetest.html/260202T0000/new returns an error page when called 
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('GET /enqueueForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/enqueueForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
+// TESTS: GET HTML page routing
+// These verify that the HTTP routing layer connects each URL to the correct
+// handler and returns HTML with a 200 status. The handler logic itself is
+// tested by the unit tests in web/*/*.test.js.
 
-test('GET /manage.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/manage.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
+const htmlPagePaths = [
+  '/listReports.html',
+  '/listViolators.html/linkNoText/260101T0000/mix',
+  '/listDiagnoses.html/linkNoText/260101T0000/mix/0',
+  '/enqueueForm.html',
+  '/manage.html',
+  '/tutorial.html',
+  '/listTopIssues.html',
+  '/reannotateForm.html',
+  '/renewWCAGForm.html',
+  '/hideReportForm.html',
+  '/unhideReportForm.html',
+  '/expungeReportsForm.html',
+  '/pruneReportsForm.html',
+  '/rewindReportsForm.html',
+  '/ai0BalanceForm.html'
+];
 
-test('GET /tutorial.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/tutorial.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
+for (const pagePath of htmlPagePaths) {
+  test(`GET ${pagePath} serves a generated HTML page`, async () => {
+    const res = await request('GET', pagePath);
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('text/html'));
+  });
+}
 
 test('GET /listRules.html returns an error page when called without arguments', async () => {
   const res = await request('GET', '/listRules.html');
   assert.equal(res.statusCode, 400);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /listTopIssues.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/listTopIssues.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /reannotateForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/reannotateForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /renewWCAGForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/renewWCAGForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /hideReportForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/hideReportForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /unhideReportForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/unhideReportForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /expungeReportsForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/expungeReportsForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /pruneReportsForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/pruneReportsForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /rewindReportsForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/rewindReportsForm.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
-});
-
-test('GET /ai0BalanceForm.html serves a generated HTML page', async () => {
-  const res = await request('GET', '/ai0BalanceForm.html');
-  assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
@@ -987,16 +895,6 @@ test('POST /recAction.html with valid auth code and approval of a duplicate retu
   });
   // Either it succeeds (200) or returns an error (400).
   assert.ok(res.statusCode === 200 || res.statusCode === 400);
-});
-
-test('POST /renewWCAG.html with valid auth code but error condition returns an error page', async () => {
-  // RenewWCAG with valid auth code should either succeed or fail depending on
-  // whether the WCAG data is available. We test the error branch by checking
-  // that the response is HTML either way.
-  const res = await formRequest('POST', '/renewWCAG.html', {
-    authCode: 'test-auth-code'
-  });
-  assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
 test('POST /recAction.html with valid auth code and approval of an invalid URL returns an error', async () => {

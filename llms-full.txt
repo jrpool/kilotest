@@ -22,10 +22,10 @@ To provide a more inexpensive, thorough, and accurate assessment, the agent coul
 
 The tool that tests web pages for front-end quality has attributes that no other such tool has. It:
 
-- selects an ensemble of 10 rule engines that implement tests for, in total, more than a thousand rules for front-end quality
+- selects an ensemble of 12 rule engines that implement tests for, in total, more than a thousand rules for front-end quality
 - runs the tests of the rule engines
 - combines the reports of the rule engines into a single integrated report
-- consolidates the 1000+ rules having 10 different naming systems into 300+ “issues” with a uniform naming system
+- consolidates the 1000+ rules having 12 different naming systems into 300+ “issues” with a uniform naming system
 
 The tools that report test results extract from reports statistics and details at various levels of granularity, as required by an agent to fulfill particular user requests.
 
@@ -46,9 +46,9 @@ The rule engines in the Kilotest ensemble take responsibility for determining wh
 
 ## Kilotest versus other MCP servers
 
-In the marketplace for MCP servers that test for front-end quality, all servers other than that of Kilotest leverage at most 1 rule engine, most often `axe-core`. The Kilotest testing tool leverages `axe-core` plus 9 other rule engines. This has these main effects:
+In the marketplace for MCP servers that test for front-end quality, all servers other than that of Kilotest leverage at most 1 rule engine, most often `axe-core`. The Kilotest testing tool leverages `axe-core` plus 11 other rule engines. This has these main effects:
 
-- For web pages that have not yet been tested, a single-rule-engine MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. The testing tool of Kilotest usually completes its work in 2 to 3 minutes, because all 10 rule engines are run, and some of the tests involve navigation and interaction with the page and LLM inference. Moreover, Kilotest currently allows users (both humans and models) to **recommend** new pages for testing but authorizes only Kilotest managers to make the tool proceed with the testing. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running (multi-day) workflows.
+- For web pages that have not yet been tested, a single-rule-engine MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. The testing tool of Kilotest usually completes its work in 2 to 3 minutes, because all 12 rule engines are run, and some of the tests involve navigation and interaction with the page and LLM inference. Moreover, Kilotest currently allows users (both humans and models) to **recommend** new pages for testing but authorizes only Kilotest managers to make the tool proceed with the testing. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running (multi-day) workflows.
 - For web pages about which reports are already available, Kilotest can provide faster results than a single-rule-engine MCP server, because Kilotest stores test results for subsequent retrieval. A retrieval from a Kilotest reporting tool can be completed in less than 2 seconds.
 - Kilotest results are more comprehensive than single-rule-engine MCP server results. Every rule engine provides limited coverage of front-end quality, so false negatives (missed defects) are more common with single-rule-engine MCP servers. This difference [has been documented in research](https://arxiv.org/pdf/2304.07591).
 
@@ -165,7 +165,6 @@ More information about Kilotest features and internals:
 
 - [Kilotest as connector to and collection of AI Tools](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOLS.md)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
-- [Tool caller for testing](https://github.com/jrpool/kilotest/blob/main/api/testSuite.js)
 
 ### General
 

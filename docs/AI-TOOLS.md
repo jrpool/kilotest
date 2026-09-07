@@ -4,49 +4,46 @@
 
 Until 2026 Kilotest was intended, and implemented, as a web application performing a service for human users.
 
-Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could also act as a provider of tools for use by language models. Language models are asked for help in all domains, including the domain of software quality. When asked about the front-end quality (accessibility, usability, and standards conformity) of specific web pages, models gave answers without the use of tools. The answers were at best fragmentary but often speculative and fabricated. If Kilotest provided its functionalities to language models, models could give more inexpensive, comprehensive, factual, authoritative, and grounded answers. Every reported defect could be documented and ascribed to one or more specific rule engines in the Kilotest ensemble.
+Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could operate as a set of tools for language models to allow them to improve their answers to questions about the front-end quality (accessibility, usability, and standards conformity) of specific web pages.
 
-Given the potential of Kilotest to serve language models and the expected continued growth in the share of questions that are directed to AI platforms that use language models, a decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a provider of tools for language models**.
+A decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a provider of tools for language models**.
 
 ## Terms
 
-- **Language model**: A model (e.g., Claude Haiku 4.5, Kimi K2.6, GPT-5.4, Gemini 3.1 Pro) that can consume and generate text, images, or other content.
+- **Language model**: A model (e.g., Claude Haiku 4.5, Kimi K2.7, GPT-5.4, Gemini 3.1 Pro) that can consume and generate text, images, or other content.
 - **AI platform**: A platform (e.g., Claude Desktop, Perplexity, ChatGPT, Gemini 3.5 Flash) that gives human users access to the services of language models and connects language models to productivity resources.
 - **tool**: A specialized productivity resource providing a capability that a language model needs but does not have. In the OpenAPI specification, the term _operation_ is used to mean tool.
 - **connector**: A service that allows AI platforms to enable their language models to discover, evaluate, and use tools.
 
-## Internal additions
+## Internal features
 
-The internal changes that have been made in the Kilotest codebase to support the use of Kilotest as a collection of tools are:
+The internal features that make Kilotest a collection of tools for language models are:
 
-- An API, consisting of:
-  - Additions to `index.js`.
-  - Additions to `util.js`.
-  - An `api` directory containing:
-    - Eight tool modules.
-    - A `util.js` module with shared functions used by tool modules.
-    - A `routes.js` file.
-    - A `schemas.js` file.
-    - A `testSuite.js` module for testing the API.
+- An API, with specific functional and utility modules in the `api` directory.
+- Tests of the functionalities of the API.
 - A [`JSON-LD`](https://json-ld.org/) script in the `index.html` file, providing structured data about the Kilotest API.
-- Additions to the `env.example` file.
+- Environment variables in the `env.example` file.
 - An `llms.txt` file and an `llms-full.txt` file, documenting the use of Kilotest by language models, conforming to the [llms-txt](https://llmstxt.org/) specification.
-- An `openapi.yaml` file, documenting the Kilotest API, conforming to the [OpenAPI specification](https://spec.openapis.org/oas/v3.1.0).
+- A generated `openapi.yaml` file, documenting the Kilotest API, conforming to the [OpenAPI specification](https://spec.openapis.org/oas/v3.1.0).
 - An `mcp.js` file, providing an MCP server for Kilotest.
+- A `server.json` file, conforming to the [MCP server schema](https://modelcontextprotocol.io/), and a GitHub Actions workflow (`publish-mcp.yml`) that authenticates via GitHub OIDC and publishes that file to the official MCP Registry whenever `server.json` or `api/version.js` changes on the `main` branch.
+- `mcp`, `mcp-server`, and `modelcontextprotocol` keywords in `package.json`, supporting discovery of the `@jrpool/kilotest` npm package by tools and humans searching the npm registry for MCP servers.
 - A `sitemap.xml` file.
-- Additions to the `README.md` file.
+- Documentation in the `README.md` file.
 - This `AI-TOOLS.md` file.
 - A [tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/).
 
-## External actions
+## External features
 
-The external actions that have been taken to support the use of Kilotest as a collection of AI tools are:
+The external features that support the use of Kilotest as a collection of AI tools are:
 
 - A [pull request](https://github.com/public-apis/public-apis/pull/6346/changes) to add Kilotest to the list of public APIs in the `public-apis` repository.
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
+- Registration of Kilotest as an active server in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest) (`io.github.jrpool/kilotest`), maintained by the [Model Context Protocol](https://modelcontextprotocol.io/) project.
 - Registration of Kilotest with the [Smithery](https://smithery.ai/servers/pool/kilotest) MCP server registry.
 - Registration of Kilotest with the [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest) MCP server registry.
+- a [pull request](https://github.com/TensorBlock/awesome-mcp-servers/pull/2221) (on 2026-09-07) to add Kilotest to the [Awesome MCP Servers](https://github.com/TensorBlock/awesome-mcp-servers) list.
 - Registration of Kilotest with the [RapidAPI](https://rapidapi.com/jrpool/api/kilotest/playground/apiendpoint_0f03577a-ff9a-472a-a0ed-533bd198981a) Hub.
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.
 - Configuration of Claude Desktop on the local development host and the `claude.ai` web application to connect Claude Desktop models to the Kilotest MCP server. The configuration was performed in the UI of each platform with the addition of Kilotest as a _connector_. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
@@ -71,148 +68,23 @@ Among these use cases, case 3 would make it feasible for the user to tell an AI 
 
 Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI platform capability. The commonality is: “I have a question; answer it.” If Kilotest can be employed as an expert for AI platforms in relevant cases, platforms will be more successful in satisfying that demand. At present this is a difficult problem because of platform limitations and a lack of standardization.
 
-## Implementation strategy
+## Future work
 
-Connector and tool discovery and utilization have been only partly standardized. Major differences in protocols exist among model and platform families. Therefore, small testable increments of improvement in the connector and tool functionality of Kilotest can best be defined by model and platform family and by use-case characteristics.
+To-dos recommended by Claude Sonnet 5 Medium on Devin:
 
-One benefit of such incrementalism is that, after the first increment succeeds, it becomes possible to make and test external changes publicizing the fact that a particular platform-model combination delivers unprecedentedly inexpensive, comprehensive, and truthful answers in a particular class of use cases to questions about front-end web quality.
+- **Other directories not yet targeted**, beyond Smithery/Glama/RapidAPI: mcp.so, PulseMCP, MCP Market/LobeHub marketplace, Docker MCP Catalog, Cursor's MCP directory, and the VS Code MCP gallery.
 
-Another benefit is that subsequent increments can be defined incrementally rather than in advance. Lessons learned from the work on each increment can inform the choice of what to work on next.
+- **GitHub repo metadata is under-optimized for discovery**, independent of any MCP registry:
 
-## Implementation history
+  - `homepage` field on the repo is empty (should be `https://kilotest.com`).
+  - `topics` are only `mcp-server`, `model-context-protocol` — no `accessibility`, `a11y`, `wcag`, `llm-tools`, `ai-agent`, `openapi`, `playwright`, etc., which are what people actually browse/search by on GitHub.
+  - `has_discussions: false` — enabling Discussions would support the "Contributing"/use-case-3 audience the doc describes.
+  - No badges (npm version, MCP-registry-active, license) in `README.md`, which affects how scrapers/humans triage the repo when they land on it from a directory link.
 
-The Kilotest project has been attempting to solve the just-described problem. A chronology of this work follows.
+- **No content/backlink outreach.** Registrations are passive listings; there's no blog post, Show HN, or subreddit post (r/modelcontextprotocol, r/accessibility, r/webdev) building external backlinks and social-discovery signal, which the doc's own "difficult problem…lack of standardization" framing suggests is exactly the gap left for the **human**-driven parts of discoverability.
 
-### Increment 1
+- **No cross-linking from the Testaro repo**, which Kilotest depends on and which has its own audience; a mention there is essentially a free, topically-relevant backlink.
 
-In the first increment, the objective was to make Anthropic Claude models use Kilotest to help them answer questions from developers using the Claude Desktop application for use case 3, where the code in question is already deployed as a public web page.
+- **Client-onboarding friction isn't documented.** Some MCP clients need the `mcp-remote` npx bridge to use a remote streamable-HTTP server like Kilotest's. Ready-made Claude Desktop/Cursor/Windsurf config snippets in `AI-TOOLS.md`/`README.md` would convert "discovered" into "used" faster, since case 3 of your use cases assumes a technically savvy discoverer but not all users are.
 
-A locally installed MCP server, `@ivotoby/openapi-mcp-server`, was used. It turned out to be incompatible with Claude Desktop, so even though connections to Kilotest were made and calls to its tools were submitted the responses did not arrive.
-
-The model behavior motivated an architectural change in the MCP server and improvements in the naming and description of the Kilotest tools before the next increment.
-
-### Increment 2
-
-Increment 2 repeated the exercise of increment 1 with the `claude.ai` web application instead of Claude Desktop, and with the improvements indicated by increment 1 made.
-
-With Kilotest added as a custom connector, the user asked the platform, “I want to know whether the home page of the nonprofit organization named ‘Open Secrets’ has quality defects, such as with accissibility [_sic_] and usability.”
-
-It was discovered that Claude Haiku 4.5 with Extended capability used Kilotest tools, but Claude Haiku 4.5 without Extended capability did not.
-
-When Kilotest was used, it was used appropriately for the task, but the planning was suboptimal, because the model initially stated an intention to recommend the web page for testing instead of first checking for an existing available report on it.
-
-The output to the user was a mixture of Kilotest results with knowledge and judgments of the model. Kilotest results were presented with some selective pruning, interpretation, and advice on what to do.
-
-The trial in increment 2 suggested some opportunities for further improvements:
-
-- Clearer instructions about the sequencing of tool calls
-- Addition of instructions to attribute the interpretive additions by the model to the model or its other sources rather than to Kilotest.
-
-### Increment 3
-
-After the above-described improvements were made, a similar exercise, with the home page of a company named “CMT Services”, was performed again in Claude Desktop. In this case Claude Haiku 4.5 succeeded in recognizing the relevance of Kilotest and used its tools, though imperfectly. Instead of using Kilotest to check for an existing report on the page, the model searched for it in a cached file with:
-
-```bash
-Bash
-jq '.[] | .tested_web_page.description' /Users/pool/.claude/projects/-Users-pool-Documents/18b3821c-b60d-4f63-bf3f-542830ed3bc4/tool-results/toolu_012qMKW66d88vWjp8JKj5qNn.json 2>/dev/null | grep -i "cmt" || echo "CMT Services not found in tested pages"
-```
-
-Claude Haiku then incorrectly concluded: `CMT Services hasn't been tested yet. Let me search for their website so I can recommend it for quality testing.` The model asked the user for the URL and said:
-
-```text
-Once you provide the URL, I'll:
-
-Recommend their home page for quality testing with Kilotest
-Retrieve the quality report showing accessibility and usability defects
-Provide you with a detailed analysis of any issues found
-```
-
-The user provided the URL, and Claude Haiku then submitted a recommendation to Kilotest to test the page. The submission was successful and, as expected, yielded an error message: `{"error":"A report about the page is already available"}`.
-
-The model drew the correct conclusion from this and (contradicting itself) announced: `Great news—there's already a quality report for CMT Services! Let me retrieve it for you.` The model did so and gave the user an appropriate rendition of the results, modulo attribution. The results were introduced with `The Kilotest analysis found 51 quality defects on the CMT Services home page, affecting 163 HTML elements. Here's a breakdown:`. Some mildly interpretive additions, such as calling “high-priority” issues “critical”, were made without attribution, making it easy for a user to infer that they were made by Kilotest tools rather than the model.
-
-The same trial was repeated, with a different website, using Claude Sonnet 4.6 with Low effort. This model immediately checked for and found an already available report and used it in the production of output to the user. The output was somewhat less interpretive than that of Claude Haiku.
-
-Increment 3 showed that, after the naming, instructions, and connector configuration were improved, the relatively inexpensive Claude models use Kilotest where appropriate.
-
-The misbehavior of Claude Haiku suggested that further improvements in the instructions may improve the utilization of Kilotest, namely:
-
-- a warning not to use cached lists of available reports
-- stronger advice to avoid implicitly attributing interpretations, judgments, and advice to Kilotest.
-
-### Increment 4
-
-The first trial in which the user asked about a page **without** an available report repeated the conditions of Increment 3, except for the web page in question and the model. The model here was Claude Haiku in Extended mode, an option available with `claude.ai` but not Claude Desktop.
-
-The user asked: “I want to know whether the home page of Milgard Windows and Doors, at `www.milgard.com`, has quality defects, such as with accessibility and usability.”
-
-The model immediately:
-
-- found Kilotest
-- checked for an available report about the page
-- found no report
-- submitted a recommendation to test the page
-
-The recommendation was successfully received by the Kilotest service.
-
-During the workflow the model kept the user informed. After the last step, the model summarized the type of report that the user could expect and advised the user to check directly with the Kilotest UI at `https://kilotest.com/targets` in 24 to 48 hours for the results.
-
-The behavior of Claude Haiku in Extended mode was nearly perfect. The naming of the page in the recommendation was “Milgard Windows and Doors home page”, whereas “Milgard Windows and Doors” would have followed the existing naming pattern. This deviation suggests adding a specific instruction to name home pages without anything more than the name of the organization.
-
-The most notable fact was that Claude Haiku converted a long workflow to a short one by ending the output with a recommendation to the user to get the test results by self-service. The instructions to models presumed that the user and the model would jointly decide to maintain their relationship until the testing is completed and the model would then interpret the results for the user. Instead, Claude Haiku had enough imagination to suggest a viable workflow not even hinted at by the instructions.
-
-This result suggested that the instructions should be revised to describe, as a valid option, a short workflow ending with a recommendation to the user to get the test results by self-service after the model submits a testing recommendation.
-
-### Increment 5
-
-In the next increment the AI platform was changed to [Perplexity Pro](https://www.perplexity.ai/) on the web. With the platform UI, two configuration steps were taken:
-
-1. Kilotest was added as a custom connector, and the list of connectors thereafter included Kilotest.
-1. In the input section of the chat interface, with the “Add files or tools” button (visually `+`), Kilotest was added as a connector. Thereafter, a “Kilotest” button appeared in the input section to confirm the availability of that connector.
-
-The first model used was GPT-5.4.
-
-The prompt was: “I want to know whether the home page of the nonprofit organization named ‘Center for Democracy and Technology’ has quality defects, such as with accessibility and usability.”
-
-GPT-5.4 responded by correctly using two Kilotest tools, first to check for an available report and then to inspect the results of the report about the specified web page. The model then appropriately itemized and summarized findings from the report, without any substantial interpretive additions.
-
-The model was then changed to Sonar 2, created by Perplexity itself.
-
-The results were similar, with one exception: The answer from Sonar 2 included advice and judgments (“most urgent fixes”, “especially notable”), without any attribution, so a user might wrongly infer that these were generated by Kilotest tools.
-
-For both models, the same exercise was also attempted with the second configuration omitted, i.e. ••without** Kilotest being a named connector in the input section of the chat interface. In both cases, the models created their own unaided assessments and failed to mention or use the Kilotest tools.
-
-The [Perplexity documentation](https://www.perplexity.ai/help-center/en/articles/13915507-adding-custom-remote-connectors) states that as of now the installed Perplexity application for macOS does not support remote connectors.
-
-### Increment 6
-
-Once the compatibility of Kilotest as a connector with AI platforms of two different vendors had been confirmed, the focus of work returned to completion of the missing endpoints of the API. The first was an endpoint that would let a model efficiently search for an available report about a particular web page.
-
-A new `summarizeQualityOfMatchingWebPages` tool provided inputs for fragments of a description and of a URL hostname of a web page and responds with summary data about all and only the available reports of pages that match at least one of those fragments, where matching means either including or being included by the provided fragment, case-insensitively.
-
-### Increment 7
-
-Further experimentation made it clear that Increment 6 had been a detour. The problem with Increment 6 was that it does not improve efficiency by eliminating the need to get a list of all reports. Models must get a list of all reports in order to be confident that the answer to the question “Is a report available yet?” is correct. Any algorithm that matches a page description and a URL with those of existing reports is error-prone, organization names change, website designs change, URLs change, and organizations are related to one another. Typically, a desired report does not yet exist. In that case, the model needs the full list of reports in order to understand the naming convention for pages and to adhere to that convention when submitting a request to have the page of interest tested.
-
-For this reason, the tool developed in increment 6 was deleted.
-
-### Increment 8
-
-The next increment reorganized the API by placing API-related code into a new `api` directory.
-
-### Increment 9
-
-The collection of tools was enlarged to a total of eight tools:
-
-- listReports
-- listIssues
-- listViolators
-- listDiagnoses
-- getReport
-- requestRetest
-- requestTest
-- requestFeature
-
-## Increment 10
-
-In the next increment, API code was refactored and the tools were made more consistent with one another.
+- **No verified search-engine indexing step** (Google Search Console / Bing IndexNow submission of `sitemap.xml`) to accelerate crawling of `llms.txt`/`openapi.yaml`, separate from just having the files exist.

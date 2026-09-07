@@ -28,6 +28,7 @@ The internal features that make Kilotest a collection of tools for language mode
 - An `mcp.js` file, providing an MCP server for Kilotest.
 - A `server.json` file, conforming to the [MCP server schema](https://modelcontextprotocol.io/), and a GitHub Actions workflow (`publish-mcp.yml`) that authenticates via GitHub OIDC and publishes that file to the official MCP Registry whenever `server.json` or `api/version.js` changes on the `main` branch.
 - `mcp`, `mcp-server`, and `modelcontextprotocol` keywords in `package.json`, supporting discovery of the `@jrpool/kilotest` npm package by tools and humans searching the npm registry for MCP servers.
+- An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish`/`update`), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
 - A `sitemap.xml` file.
 - Documentation in the `README.md` file.
 - This `AI-TOOLS.md` file.
@@ -40,16 +41,27 @@ The external features that support the use of Kilotest as a collection of AI too
 - A [pull request](https://github.com/public-apis/public-apis/pull/6346/changes) to add Kilotest to the list of public APIs in the `public-apis` repository.
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
-- Registration of Kilotest as an active server in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest) (`io.github.jrpool/kilotest`), maintained by the [Model Context Protocol](https://modelcontextprotocol.io/) project.
+- Registration of Kilotest as an active server in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest) (`io.github.jrpool/kilotest`), maintained by the [Model Context Protocol](https://modelcontextprotocol.io/) project. The [PulseMCP](https://www.pulsemcp.com/servers) directory and the VS Code MCP gallery both crawl this registry, so Kilotest is discoverable through them with no separate submission.
 - Registration of Kilotest with the [Smithery](https://smithery.ai/servers/pool/kilotest) MCP server registry.
 - Registration of Kilotest with the [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest) MCP server registry.
 - a [pull request](https://github.com/TensorBlock/awesome-mcp-servers/pull/2221) (on 2026-09-07) to add Kilotest to the [Awesome MCP Servers](https://github.com/TensorBlock/awesome-mcp-servers) list.
 - Registration of Kilotest with the [RapidAPI](https://rapidapi.com/jrpool/api/kilotest/playground/apiendpoint_0f03577a-ff9a-472a-a0ed-533bd198981a) Hub.
+- Registration of Kilotest with the [LobeHub MCP Market](https://lobehub.com/mcp) (identifier: `jrpool-kilotest`).
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.
 - Configuration of Claude Desktop on the local development host and the `claude.ai` web application to connect Claude Desktop models to the Kilotest MCP server. The configuration was performed in the UI of each platform with the addition of Kilotest as a _connector_. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
 
   - Name: Kilotest
   - Remote MCP server URL: `https://kilotest.com/mcp`
+
+## Required maintenance
+
+Whenever the `/api/version.js` file is updated:
+
+- Update the `server.json` file (version field).
+- Update the `lhm.plugin.json` file (version field).
+- Regenerate `openapi.yaml` (`npm run generate:openapi`).
+- Create a pull request and merge to `main` (triggers `publish-mcp.yml` automatically for the MCP Registry).
+- Execute `lhm plugin update --dir .` (for LobeHub).
 
 ## Use cases
 
@@ -72,9 +84,7 @@ Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI
 
 To-dos recommended by Claude Sonnet 5 Medium on Devin:
 
-- **Other directories not yet targeted**, beyond Smithery/Glama/RapidAPI: mcp.so, PulseMCP, MCP Market/LobeHub marketplace, Docker MCP Catalog, Cursor's MCP directory, and the VS Code MCP gallery.
-
-- **GitHub repo metadata is under-optimized for discovery**, independent of any MCP registry:
+- **GitHub repo metadata are under-optimized for discovery**, independent of any MCP registry:
 
   - `homepage` field on the repo is empty (should be `https://kilotest.com`).
   - `topics` are only `mcp-server`, `model-context-protocol` — no `accessibility`, `a11y`, `wcag`, `llm-tools`, `ai-agent`, `openapi`, `playwright`, etc., which are what people actually browse/search by on GitHub.
@@ -88,3 +98,5 @@ To-dos recommended by Claude Sonnet 5 Medium on Devin:
 - **Client-onboarding friction isn't documented.** Some MCP clients need the `mcp-remote` npx bridge to use a remote streamable-HTTP server like Kilotest's. Ready-made Claude Desktop/Cursor/Windsurf config snippets in `AI-TOOLS.md`/`README.md` would convert "discovered" into "used" faster, since case 3 of your use cases assumes a technically savvy discoverer but not all users are.
 
 - **No verified search-engine indexing step** (Google Search Console / Bing IndexNow submission of `sitemap.xml`) to accelerate crawling of `llms.txt`/`openapi.yaml`, separate from just having the files exist.
+
+- **Other directories not yet targeted.** The [mcp.so](https://mcp.so/submit) directory offers a free tier but steers submitters toward a $39 paid listing; deferred as a commercial decision. The Docker MCP Catalog is not a fit because it requires stdio transport and a Dockerfile, and Kilotest is streamable-http.

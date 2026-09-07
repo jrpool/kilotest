@@ -918,27 +918,22 @@ const serve = async (protocolModule, options) => {
 
 exports.serve = serve;
 
-// EXECUTION
-
-if (require.main === module) {
+// Starts the server using the configured protocol and credentials.
+exports.startServer = async () => {
   if (protocol === 'http') {
     console.log('Starting HTTP server');
-    serve(http, {});
+    return serve(http, {});
   }
   else if (protocol === 'https') {
     console.log('Starting HTTPS server');
-    fs.readFile(process.env.KEY, 'utf8')
-    .then(
-      key => {
-        fs.readFile(process.env.CERT, 'utf8')
-        .then(
-          cert => {
-            serve(https, {key, cert});
-          },
-          error => console.log(error.message)
-        );
-      },
-      error => console.log(error.message)
-    );
+    const key = await fs.readFile(process.env.KEY, 'utf8');
+    const cert = await fs.readFile(process.env.CERT, 'utf8');
+    return serve(https, {key, cert});
   }
+};
+
+// EXECUTION
+
+if (require.main === module) {
+  exports.startServer().catch(error => console.log(error.message));
 }

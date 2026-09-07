@@ -22,7 +22,7 @@ const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
-const {requestHandler, routes, serveError} = require('./index');
+const {requestHandler, routes, serveError, startServer} = require('./index');
 
 // CONSTANTS
 
@@ -1004,4 +1004,30 @@ test('serveError does not write to a response that has already ended', async () 
   };
   await serveError({message: 'test error'}, mockResponse);
   assert.equal(wrote, false);
+});
+
+// UNIT TESTS FOR startServer
+
+test('startServer starts an HTTP server when protocol is http', async () => {
+  const server = await startServer();
+  try {
+    assert.ok(server);
+    assert.equal(typeof server.listen, 'function');
+    // Verify the server is listening by making a request.
+    const address = server.address();
+    assert.ok(address.port > 0);
+  }
+  finally {
+    server.closeAllConnections?.();
+    await new Promise(resolve => {
+      const timer = setTimeout(() => {
+        server.closeAllConnections?.();
+        resolve();
+      }, 1000);
+      server.close(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
 });

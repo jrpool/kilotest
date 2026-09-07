@@ -22,7 +22,7 @@ const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
-const {requestHandler, routes} = require('./index');
+const {requestHandler, routes, serveError} = require('./index');
 
 // CONSTANTS
 
@@ -960,4 +960,24 @@ test('POST /recAction.html with valid auth code and approval of an invalid URL r
   });
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Invalid authorization code'));
+});
+
+// UNIT TESTS FOR serveError
+
+test('serveError does not write to a response that has already ended', async () => {
+  let wrote = false;
+  const mockResponse = {
+    writableEnded: true,
+    set statusCode(value) {
+      wrote = true;
+    },
+    setHeader() {
+      wrote = true;
+    },
+    end() {
+      wrote = true;
+    }
+  };
+  await serveError({message: 'test error'}, mockResponse);
+  assert.equal(wrote, false);
 });

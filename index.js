@@ -138,7 +138,7 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 // FUNCTIONS
 
 // Serves or sends an error message.
-const serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
+const serveError = exports.serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   console.log(errorLines.join('\n') || 'ERROR');
   if (!response.writableEnded) {

@@ -24,6 +24,10 @@ let savedBalance;
 before(async () => {
   process.env.AUTH_CODE = 'test-auth-code';
   savedBalance = await fs.readFile(balancePath, 'utf8').catch(() => null);
+  // Ensure the balance file exists so the try block in index.js is covered.
+  if (savedBalance === null) {
+    await fs.writeFile(balancePath, '{"balance":0}\n');
+  }
 });
 
 after(async () => {
@@ -32,6 +36,9 @@ after(async () => {
   }
   if (savedBalance !== null) {
     await fs.writeFile(balancePath, savedBalance);
+  }
+  else {
+    await fs.unlink(balancePath).catch(() => {});
   }
 });
 

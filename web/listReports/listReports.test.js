@@ -16,8 +16,12 @@ const {answer} = require('./index');
 
 const savedDBDir = process.env.DB_DIR;
 
-before(() => {
+before(async () => {
   process.env.DB_DIR = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  // Ensure job subdirectories exist (they are empty and not tracked by Git).
+  for (const sub of ['queue', 'claimed', 'failed']) {
+    await fs.mkdir(path.join(process.env.DB_DIR, 'jobs', sub), {recursive: true});
+  }
 });
 
 after(() => {

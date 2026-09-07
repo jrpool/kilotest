@@ -1016,7 +1016,7 @@ test('startServer starts an HTTP server when protocol is http', async () => {
     assert.equal(typeof server.listen, 'function');
     // Verify the server is listening by making a request.
     const address = server.address();
-    assert.ok(address.port > 0);
+    assert.ok(typeof address === 'object' && address.port > 0);
   }
   finally {
     server.closeAllConnections?.();
@@ -1062,7 +1062,7 @@ test('startServer starts an HTTPS server when protocol is https', async () => {
     assert.ok(server);
     assert.equal(typeof server.listen, 'function');
     const address = server.address();
-    assert.ok(address.port > 0);
+    assert.ok(typeof address === 'object' && address.port > 0);
     server.closeAllConnections?.();
     await new Promise(resolve => {
       const timer = setTimeout(() => {
@@ -1103,6 +1103,7 @@ test('runIfMain calls startServer when mainModule matches currentModule', async 
   const originalStartServer = indexModule.startServer;
   indexModule.startServer = async () => {
     called = true;
+    return null;
   };
   try {
     // Pass the same object for both arguments so the guard is true.
@@ -1122,6 +1123,7 @@ test('runIfMain does not call startServer when mainModule differs from currentMo
   const originalStartServer = indexModule.startServer;
   indexModule.startServer = async () => {
     called = true;
+    return null;
   };
   try {
     runIfMain({}, {});

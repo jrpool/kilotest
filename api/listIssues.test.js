@@ -96,3 +96,13 @@ test('listIssues returns an error for a nonexistent report', async () => {
   const basics = body['response content']['basics about the report'];
   assert.ok(basics.error);
 });
+
+test('listIssues handles instances with missing issueID and null instances without error', async () => {
+  const body = await response(['260101T0009', 'brd']);
+  const issues = body['response content']['basics about all issues reported in the report'];
+  // The brd fixture has one instance with duplicateID (a valid issue) and one with no issueID (skipped).
+  // The alfa act has no instances array, so it should be handled as empty.
+  assert.ok(issues.length >= 1);
+  const ids = issues.map(i => i.identifier);
+  assert.ok(ids.includes('duplicateID'));
+});

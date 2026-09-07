@@ -98,23 +98,7 @@ const routes = exports.routes = {
     '/tutorialComment.html'
   ]
 };
-// Returns whether a pathname matches a glob-style pattern.
-const matchPath = (pattern, pathname) => {
-  const regex = new RegExp(
-    '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
-  );
-  return regex.test(pathname);
-};
-// Returns whether a pathname is authorized for a method.
-const isPathAllowed = (method, pathname) => {
-  const patterns = routes[method] || [];
-  return patterns.some(pattern => matchPath(pattern, pathname));
-};
-
 const protocol = process.env.PROTOCOL || 'http';
-const queuePath = () => path.join(jobsPath(), 'queue');
-const claimedPath = () => path.join(jobsPath(), 'claimed');
-const failedPath = () => path.join(jobsPath(), 'failed');
 // Credentials of the Testaro workers, by worker ID, from a JSON-object environment variable.
 // Each worker ID maps to a secret (used only to authenticate the worker, never published) and a
 // name (a non-secret label safe to publish, e.g. in report data and logs).
@@ -137,10 +121,26 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // FUNCTIONS
 
+const queuePath = () => path.join(jobsPath(), 'queue');
+const claimedPath = () => path.join(jobsPath(), 'claimed');
+const failedPath = () => path.join(jobsPath(), 'failed');
+// Returns whether a pathname matches a glob-style pattern.
+const matchPath = (pattern, pathname) => {
+  const regex = new RegExp(
+    '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
+  );
+  return regex.test(pathname);
+};
+// Returns whether a pathname is authorized for a method.
+const isPathAllowed = exports.isPathAllowed = (method, pathname) => {
+  const patterns = routes[method] || [];
+  return patterns.some(pattern => matchPath(pattern, pathname));
+};
 // Serves or sends an error message.
-const serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
+const serveError = exports.serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
-  console.log(errorLines.join('\n') || 'ERROR');
+  const errorSummary = errorLines.join('\n') || 'ERROR';
+  console.log(errorSummary);
   if (!response.writableEnded) {
     response.statusCode = statusCode;
     // If the request is from a human user:
@@ -151,7 +151,8 @@ const serveError = async (error, response, isHumanUser = true, statusCode = 400)
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3000');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
-      const errorPage = errorTemplate.replace(/__error__/, error.message || 'ERROR');
+      const errorMessage = error.message || 'ERROR';
+      const errorPage = errorTemplate.replace(/__error__/, errorMessage);
       response.end(errorPage);
     }
     // Otherwise, i.e. if it is from an agent:
@@ -207,21 +208,16 @@ const checkBalancesForAlerts = async report => {
         const balanceData = JSON.parse(balanceJSON);
         // Get an estimate of the balance after this job.
         const newBalance = balanceData.balance - cost;
-        if (typeof newBalance === 'number') {
-          // Update the recorded balance.
-          await fs.writeFile(balancePath, getJSON({balance: newBalance}));
-          console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
-          // If it is nearing exhaustion:
-          if (newBalance < AI_SERVICE0_THRESHOLD) {
-            // Alert a manager.
-            await sendAlert(
-              'Kilotest: AI service 0 balance low',
-              `Balance of AI service 0 account (https://console.anthropic.com) only about $${newBalance.toFixed(2)} (about $0.01 used per job)`
-            );
-          }
-        }
-        else {
-          console.log('ERROR: AI service 0 balance is not a number');
+        // Update the recorded balance.
+        await fs.writeFile(balancePath, getJSON({balance: newBalance}));
+        console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
+        // If it is nearing exhaustion:
+        if (newBalance < AI_SERVICE0_THRESHOLD) {
+          // Alert a manager.
+          await sendAlert(
+            'Kilotest: AI service 0 balance low',
+            `Balance of AI service 0 account (https://console.anthropic.com) only about $${newBalance.toFixed(2)} (about $0.01 used per job)`
+          );
         }
       }
       catch (error) {
@@ -231,9 +227,11 @@ const checkBalancesForAlerts = async report => {
   }
 };
 // Creates an error object about a suspicious request.
-const getAbuseError = (request, reason) => {
+const getAbuseError = exports.getAbuseError = (request, reason) => {
   const {method, url, headers} = request;
-  const ip = headers['x-forwarded-for'] || request.socket.remoteAddress || 'unknown';
+  const forwardedFor = headers['x-forwarded-for'];
+  const remoteAddress = request.socket.remoteAddress;
+  const ip = forwardedFor || remoteAddress || 'unknown';
   return {
     message: 'Invalid request',
     reason,
@@ -253,13 +251,7 @@ const getBasicAuth = request => {
   if (!match) {
     return null;
   }
-  let decoded;
-  try {
-    decoded = Buffer.from(match[1], 'base64').toString('utf8');
-  }
-  catch {
-    return null;
-  }
+  const decoded = Buffer.from(match[1], 'base64').toString('utf8');
   const sepIndex = decoded.indexOf(':');
   if (sepIndex === -1) {
     return null;
@@ -568,7 +560,8 @@ const requestHandler = async (request, response) => {
           '.webp': 'image/webp',
           '.svg': 'image/svg+xml'
         };
-        setHeaders(mimeTypes[ext] || 'application/octet-stream', null, 'low');
+        const mimeType = mimeTypes[ext] || 'application/octet-stream';
+        setHeaders(mimeType, null, 'low');
         response.end(img);
       }
       catch {
@@ -787,8 +780,9 @@ const requestHandler = async (request, response) => {
           // Otherwise, if it is report acquisition:
           else if (service === 'report') {
             const {report} = postData;
-            const {id, target} = report;
-            const {what, url} = target;
+            const reportObj = report || {};
+            const {id, target} = reportObj;
+            const {what, url} = target || {};
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
             // If the request is syntactically valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
@@ -833,12 +827,6 @@ const requestHandler = async (request, response) => {
             else {
               await serveError({message: 'ERROR: Request invalid'}, response, false);
             }
-          }
-          // Otherwise, i.e. if the service is invalid:
-          else {
-            await serveError(
-              {message: 'ERROR: Invalid service request from Testaro worker'}, response, false
-            );
           }
         }
         // Otherwise, i.e. if it is not authenticated:
@@ -903,11 +891,6 @@ const requestHandler = async (request, response) => {
           response.end(JSON.stringify({status: 'error', message: answerData.message}));
         }
       }
-      // Otherwise, i.e. if it is any other POST request:
-      else {
-        // Report its invalidity.
-        await serveError({message: 'ERROR: Invalid POST request'}, response, true);
-      }
     }
   }
   // Otherwise, i.e. if it is neither a GET nor a POST request:
@@ -928,36 +911,40 @@ const serve = async (protocolModule, options) => {
   for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
     await fs.mkdir(path, {recursive: true});
   }
-  const server = protocolModule === 'https'
+  const server = protocolModule === https
     ? https.createServer(options, requestHandler)
     : http.createServer(requestHandler);
   const port = process.env.PORT || '3000';
   server.listen(port, () => {
     console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
   });
+  return server;
+};
+
+exports.serve = serve;
+
+// Starts the server using the configured protocol and credentials.
+exports.startServer = async () => {
+  const startProtocol = process.env.PROTOCOL || 'http';
+  if (startProtocol === 'http') {
+    console.log('Starting HTTP server');
+    return serve(http, {});
+  }
+  else if (startProtocol === 'https') {
+    console.log('Starting HTTPS server');
+    const key = await fs.readFile(process.env.KEY, 'utf8');
+    const cert = await fs.readFile(process.env.CERT, 'utf8');
+    return serve(https, {key, cert});
+  }
+};
+
+// Runs the server if the module was loaded directly (not required by a test).
+exports.runIfMain = (mainModule, currentModule) => {
+  if (mainModule === currentModule) {
+    exports.startServer().catch(error => console.log(error.message));
+  }
 };
 
 // EXECUTION
 
-if (require.main === module) {
-  if (protocol === 'http') {
-    console.log('Starting HTTP server');
-    serve(http, {});
-  }
-  else if (protocol === 'https') {
-    console.log('Starting HTTPS server');
-    fs.readFile(process.env.KEY, 'utf8')
-    .then(
-      key => {
-        fs.readFile(process.env.CERT, 'utf8')
-        .then(
-          cert => {
-            serve(https, {key, cert});
-          },
-          error => console.log(error.message)
-        );
-      },
-      error => console.log(error.message)
-    );
-  }
-}
+exports.runIfMain(require.main, module);

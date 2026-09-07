@@ -111,7 +111,7 @@ exports.response = async args => {
         'name': getRuleEngineFacts(ruleEngineID).name,
         'reason for failure': reason
       }));
-      const sortedPreventionFacts = objectSort(preventionFacts ?? [], 'name', 'alpha');
+      const sortedPreventionFacts = objectSort(preventionFacts, 'name', 'alpha');
       // Initialize the counts of issues by weight.
       const weightCounts = [0, 0, 0, 0];
       // For each issue:

@@ -23,7 +23,7 @@ let server;
 before(async () => {
   process.env.DB_DIR = path.join(__dirname, 'test', 'fixtures', 'db');
   server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, resolve));
+  await new Promise(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
@@ -33,7 +33,17 @@ after(async () => {
   else {
     delete process.env.DB_DIR;
   }
-  await new Promise(resolve => server.close(() => resolve()));
+  server.closeAllConnections?.();
+  await new Promise(resolve => {
+    const timer = setTimeout(() => {
+      server.closeAllConnections?.();
+      resolve();
+    }, 1000);
+    server.close(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
 });
 
 // HELPERS
@@ -71,7 +81,7 @@ test('GET /api/listReports returns valid JSON through the HTTP routing layer', a
   const {body} = await request('GET', '/api/listReports');
   assert.equal(body['tool name'], 'listReports');
   const reports = body['response content']['basics about all available reports'];
-  assert.equal(reports.length, 6);
+  assert.equal(reports.length, 8);
 });
 
 test('POST /api/requestFeature parses a JSON body and returns a JSON response through the HTTP routing layer', async () => {

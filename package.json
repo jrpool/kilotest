@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "46.0.9",
+  "version": "46.0.11",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
   "engines": {
@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node index",
     "lint": "npx eslint && npx markdownlint-cli2",
-    "test": "c8 node --test",
+    "test": "c8 node --require ./test/setup.cjs --test --test-concurrency=1 --test-timeout=70",
     "test:smoke": "node smokeTest",
     "generate:openapi": "node scripts/generate-openapi"
   },
@@ -78,9 +78,9 @@
       "scripts/**"
     ],
     "check-coverage": true,
-    "lines": 58,
-    "statements": 58,
-    "functions": 58,
-    "branches": 71
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 100
   }
 }

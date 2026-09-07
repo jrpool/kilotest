@@ -142,11 +142,18 @@ const getJobNames = exports.getJobNames = async () => {
   const jobNames = {};
   let fileNames;
   for (const category of ['queue', 'claimed', 'failed']) {
+    const categoryPath = path.join(jobsPath(), category);
     try {
-      fileNames = await fs.readdir(path.join(jobsPath(), category));
+      fileNames = await fs.readdir(categoryPath);
     }
     catch(error) {
-      return `ERROR: Job directory ${category} not readable (${error.message})`;
+      if (error.code === 'ENOENT') {
+        await fs.mkdir(categoryPath, {recursive: true});
+        fileNames = [];
+      }
+      else {
+        return `ERROR: Job directory ${category} not readable (${error.message})`;
+      }
     }
     jobNames[category] = fileNames;
   }
@@ -219,6 +226,9 @@ exports.getPOSTData = request => new Promise(resolve => {
       const body = bodyParts.join('');
       const query = querystring.parse(body);
       resolve(query);
+    }
+    else {
+      resolve(null);
     }
   });
 });
@@ -604,9 +614,9 @@ const getPageData = exports.getPageData = async (timeStamp, jobID) => {
     return report;
   }
   const {url, what} = report.target;
-  const reportStats = await getReportStats(timeStamp, jobID)
-  // Otherwise, i.e. if it succeeded, get the elapsed time in days since the report was created.
-  const daysAgo = getAgoDays(reportStats.reportTime);
+  // Get the elapsed time in days since the report was completed, using the
+  // report content rather than the file system birth time.
+  const daysAgo = getAgoDays(new Date(`20${report.jobData.endTime}Z`));
   // Return the data.
   return {
     what,
@@ -640,7 +650,7 @@ exports.getPageDataStrings = async (timeStamp, jobID, pageData) => {
   };
 };
 // Returns the creation time and size of a report.
-const getReportStats = exports.getReportStats = async (timeStamp, jobID) => {
+exports.getReportStats = async (timeStamp, jobID) => {
   let reportStat;
   try {
     reportStat = await fs.stat(path.join(reportsPath(), `${timeStamp}-${jobID}.json`));

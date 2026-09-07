@@ -67,7 +67,7 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
   objectSort(ruleEnginesFacts, 'name', 'alpha');
   return ruleEnginesFacts;
 };
-// Returns the basics about a report, without reading the report.
+// Returns the basics about a report.
 exports.getReportBasics = async (timeStamp, jobID) => {
   // Get the creation time of the report.
   const reportStats = await getReportStats(timeStamp, jobID);
@@ -79,24 +79,22 @@ exports.getReportBasics = async (timeStamp, jobID) => {
       error: `Report ${timeStamp}-${jobID} could not be retrieved.`
     };
   }
-  // Get an extract of the report.
+  // Otherwise, i.e. if it exists, get an extract of the report.
   const reportExtract = await getReportExtract(timeStamp, jobID);
-  // If no such report exists:
-  if (reportExtract.error) {
-    // Return this.
-    return reportExtract;
-  }
   const {url, what} = reportExtract;
   const latestReportExtracts = await getLatestReportExtracts();
   // Otherwise, i.e. if the report exists, get whether this report has been superseded.
   const isSuperseded = latestReportExtracts
   .every(extract => extract.timeStamp !== timeStamp || extract.jobID !== jobID);
-  const {reportTime} = reportStats;
+  // Get the completion time from the report content, not the file system birth time,
+  // because the birth time depends on when the file was created on the file system
+  // and does not reflect the actual report completion time.
+  const {reportTime} = reportExtract;
   // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
-    'completion date and time': reportTime.toISOString(),
-    'days since the report was completed': getAgoDays(reportTime),
+    'completion date and time': reportTime,
+    'days since the report was completed': getAgoDays(new Date(reportTime)),
     'tested web page': {
       description: what,
       URL: url

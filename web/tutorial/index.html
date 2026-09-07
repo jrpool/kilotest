@@ -334,7 +334,7 @@
         <section id="testing-page">
           <h3>Testing the page</h3>
           <h4>By rule engines</h4>
-          <p>What do rule engines find about this issue when they test this page? For a quick answer, Kilotest subjected the page to testing by all 10 rule engines in its ensemble. Two of the rule engines reported rule violations belonging to this issue:</p>
+          <p>What do rule engines find about this issue when they test this page? For a quick answer, Kilotest subjected the page to testing by the 10 rule engines that were then in its ensemble (since then, 2 more were added, so now there are 12). Two of the rule engines reported rule violations belonging to this issue:</p>
           <ul>
             <li>The Testaro rule engine reported, <q>input has no autocomplete="email" attribute</q>. In other words, Testaro recognized this input as asking for the user&rsquo;s email address and therefore as requiring an <code>autocomplete="email"</code> attribute, but not having one.</li>
             <li>The HTML CodeSniffer rule engine, referencing this <code>form</code> element, reported, <q>Invalid autocomplete value: new-password. Element does not belong to Password control group.</q>. In other words, HTML CodeSniffer recognized that this form is not a password input (a form is not an input at all!) and therefore is not eligible for an <code>autocomplete="new-password"</code> attribute, but has one.</li>
@@ -346,7 +346,7 @@
           </ul>
           <p>You might think that this shows rule engines were effective in revealing the defects related to this issue, but this is not a success story. Yes, two rule engines found related defects, but the other eight rule engines did not. Inspection of those eight rule engines reveals that six of them include rules enforcing this standard in some way. So, did these six rule engines report false negatives? Did they fail to enforce their applicable rules here? Perhaps, but perhaps not. Suppose a rule engine has a rule that requires the value of any <code>autocomplete</code> attribute to be in the list of allowed values. Well, <code>new-password</code> is in the list. So that rule engine would, properly, not report a violation of <strong>that</strong> rule.</p>
           <p>We can clearly see from this example that no rule engine will find all accessibility defects, not even all defects that <strong>can</strong> be detected by rule engines. That is why Kilotest uses an <strong>ensemble</strong> of rule engines.</p>
-          <p>Of course, running ten rule engines also creates a risk of false positives reported by ten rule engines. In this particular case, there were none. For example, no rule engine claimed to find a defect related to this issue someplace else on the page. Kilotest, like any platform that integrates multiple rule engines, faces greater risks of false positives than a single rule engine would. It combats false positives by investigating user complaints and deprecating rules whose tests are found faulty.</p>
+          <p>Of course, running twelve rule engines also creates a risk of false positives reported by twelve rule engines. In this particular case, there were none. For example, no rule engine claimed to find a defect related to this issue someplace else on the page. Kilotest, like any platform that integrates multiple rule engines, faces greater risks of false positives than a single rule engine would. It combats false positives by investigating user complaints and deprecating rules whose tests are found faulty.</p>
           <h4>By AI agents</h4>
           <p>An AI agent powered by a frontier model was asked to visit the page and report any accessibility defect related to <code>autocomplete</code> attributes. The agent worked for about 3 minutes and then reported a missing <code>autocomplete="email"</code> attribute in the newsletter subscription form. But the page has no newsletter subscription form! It has a form to request a guide, not to subscribe to anything. Moreover, the agent provided code to support its conclusion, and the code differed pervasively from the actual code on the page. This response was a complete fabrication. The agent confessed to it, explaining that it resorted to hallucination when its security restrictions prevented it from accessing the necessary page data.</p>
           <p>A similar AI agent returned correct diagnoses when it was fed the page as an HTML document. That worked, because the two defects relevant to this practicum are discoverable from the HTML of the rendered page. Any defects arising from stylesheets or scripts would have been missed.</p>
@@ -418,7 +418,7 @@
               <legend>Choose the best answer</legend>
               <p>In this practicum, which rule engines discovered both <code>autocomplete</code> defects?</p>
               <ol>
-                <li><label><input type="radio" name="q4" value="a"> All 10 rule engines</label></li>
+                <li><label><input type="radio" name="q4" value="a"> All 12 rule engines</label></li>
                 <li><label><input type="radio" name="q4" value="b"> Six of the rule engines</label></li>
                 <li><label><input type="radio" name="q4" value="c"> Only Testaro and HTML CodeSniffer</label></li>
                 <li><label><input type="radio" name="q4" value="d"> None of the rule engines</label></li>

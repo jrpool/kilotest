@@ -1,6 +1,6 @@
 # Kilotest
 
-Kilotest helps language models and AI platforms to give thorough, accurate and truthful answers when users ask about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. Kilotest integrates an ensemble often independent rule engines to test any public web page. Kilotest creates a structured report of the results and saves the report for future reference. Kilotest API endpoints and MCP tools can provide multipage, single-page, and element-level test results.
+Kilotest helps language models and AI platforms to give thorough, accurate and truthful answers when users ask about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. Kilotest integrates an ensemble of twelve independent rule engines to test any public web page. Kilotest creates a structured report of the results and saves the report for future reference. Kilotest API endpoints and MCP tools can provide multipage, single-page, and element-level test results.
 
 ## API
 

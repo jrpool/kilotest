@@ -142,11 +142,18 @@ const getJobNames = exports.getJobNames = async () => {
   const jobNames = {};
   let fileNames;
   for (const category of ['queue', 'claimed', 'failed']) {
+    const categoryPath = path.join(jobsPath(), category);
     try {
-      fileNames = await fs.readdir(path.join(jobsPath(), category));
+      fileNames = await fs.readdir(categoryPath);
     }
     catch(error) {
-      return `ERROR: Job directory ${category} not readable (${error.message})`;
+      if (error.code === 'ENOENT') {
+        await fs.mkdir(categoryPath, {recursive: true});
+        fileNames = [];
+      }
+      else {
+        return `ERROR: Job directory ${category} not readable (${error.message})`;
+      }
     }
     jobNames[category] = fileNames;
   }

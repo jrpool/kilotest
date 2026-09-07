@@ -28,6 +28,7 @@ beforeEach(async () => {
   await fs.writeFile(recsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
+    await fs.mkdir(dir, {recursive: true});
     const files = await fs.readdir(dir).catch(() => []);
     for (const file of files) {
       try {
@@ -45,6 +46,7 @@ after(async () => {
   await fs.writeFile(recsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
+    await fs.mkdir(dir, {recursive: true});
     const files = await fs.readdir(dir).catch(() => []);
     for (const file of files) {
       try {

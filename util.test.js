@@ -456,9 +456,40 @@ test('isReportAvailable returns false for an unknown page and URL', async () => 
 
 // TESTS FOR REMAINING BRANCH COVERAGE
 
-test('getJobNames returns an error when a job directory is not readable', async () => {
+test('getJobNames creates missing job directories and returns empty arrays', async () => {
+  const os = require('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-jobnames-'));
+  const tmpDbDir = path.join(tmpRoot, 'db');
   const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = '/tmp/nonexistent-db-dir';
+  process.env.DB_DIR = tmpDbDir;
+  try {
+    const {getJobNames} = require('./util');
+    const result = await getJobNames();
+    assert.equal(typeof result, 'object');
+    assert.deepEqual(result.queue, []);
+    assert.deepEqual(result.claimed, []);
+    assert.deepEqual(result.failed, []);
+    // Verify the directories were created.
+    for (const category of ['queue', 'claimed', 'failed']) {
+      const stat = await fs.stat(path.join(tmpDbDir, 'jobs', category));
+      assert.ok(stat.isDirectory());
+    }
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
+  }
+});
+
+test('getJobNames returns an error when a job directory is a file, not a directory', async () => {
+  const os = require('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-jobnames-err-'));
+  const tmpJobsDir = path.join(tmpRoot, 'db', 'jobs');
+  await fs.mkdir(tmpJobsDir, {recursive: true});
+  // Create a file where the queue directory should be, causing ENOTDIR.
+  await fs.writeFile(path.join(tmpJobsDir, 'queue'), 'not a directory');
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
     const {getJobNames} = require('./util');
     const result = await getJobNames();
@@ -467,6 +498,7 @@ test('getJobNames returns an error when a job directory is not readable', async 
   }
   finally {
     process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
   }
 });
 

@@ -39,6 +39,7 @@ before(async () => {
   await fs.writeFile(recsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
+    await fs.mkdir(dir, {recursive: true});
     const files = await fs.readdir(dir).catch(() => []);
     for (const file of files) {
       await fs.unlink(path.join(dir, file)).catch(() => {});
@@ -65,6 +66,7 @@ after(async () => {
   await fs.writeFile(recsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
+    await fs.mkdir(dir, {recursive: true});
     const files = await fs.readdir(dir).catch(() => []);
     for (const file of files) {
       await fs.unlink(path.join(dir, file)).catch(() => {});
@@ -722,6 +724,7 @@ test('POST /worker/job with a queued job assigns it to the worker', async () => 
   const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
   const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
   for (const dir of [claimedDir, queueDir]) {
+    await fs.mkdir(dir, {recursive: true});
     const files = await fs.readdir(dir).catch(() => []);
     for (const file of files) {
       await fs.unlink(path.join(dir, file)).catch(() => {});

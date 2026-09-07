@@ -562,11 +562,58 @@ test('POST /reannotate.html with invalid auth code returns an error page', async
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
+test('POST /reannotate.html with valid auth code serves the answer page', async () => {
+  // Back up all fixture reports, because annotateReport modifies them in place.
+  const reportsDir = path.join(fixtureDBDir, 'reports');
+  const reportFiles = await fs.readdir(reportsDir);
+  const backups = {};
+  for (const file of reportFiles) {
+    backups[file] = await fs.readFile(path.join(reportsDir, file), 'utf8');
+  }
+  try {
+    const res = await formRequest('POST', '/reannotate.html', {
+      authCode: 'test-auth-code'
+    });
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('text/html'));
+    assert.ok(res.body.includes('Reannotation order'));
+  }
+  finally {
+    // Restore all fixture reports.
+    for (const file of reportFiles) {
+      await fs.writeFile(path.join(reportsDir, file), backups[file]);
+    }
+  }
+});
+
 test('POST /renewWCAG.html with invalid auth code returns an error page', async () => {
   const res = await formRequest('POST', '/renewWCAG.html', {
     authCode: 'wrong-code'
   });
   assert.ok(res.headers['content-type'].includes('text/html'));
+});
+
+test('POST /renewWCAG.html with valid auth code serves the answer page', async () => {
+  // Mock fetch to avoid a network dependency.
+  const originalFetch = global.fetch;
+  const wcagMapPath = path.join(__dirname, 'wcagMap.json');
+  const wcagMapBackup = await fs.readFile(wcagMapPath, 'utf8');
+  global.fetch = async () => ({
+    status: 200,
+    text: async () => '<a href="understanding/contrast-minimum"><span class="secno">1.4.3 </span>'
+  });
+  try {
+    const res = await formRequest('POST', '/renewWCAG.html', {
+      authCode: 'test-auth-code'
+    });
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('text/html'));
+    assert.ok(res.body.includes('WCAG map renewed'));
+  }
+  finally {
+    global.fetch = originalFetch;
+    await fs.writeFile(wcagMapPath, wcagMapBackup);
+  }
 });
 
 test('POST /tutorialComment.html with empty content returns a JSON error', async () => {

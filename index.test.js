@@ -719,7 +719,7 @@ test('POST /worker/job with a claimed job assigned to the worker returns an erro
   await fs.unlink(failedJobPath).catch(() => {});
 });
 
-test('POST /worker/job with a queued job assigns it to the worker', async () => {
+test('POST /worker/job with a queued job assigns it to the worker', {timeout: 500}, async () => {
   // Clean up claimed and queue directories.
   const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
   const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
@@ -1054,7 +1054,7 @@ test('startServer starts an HTTP server when protocol is http', async () => {
   }
 });
 
-test('startServer starts an HTTPS server when protocol is https', async () => {
+test('startServer starts an HTTPS server when protocol is https', {timeout: 500}, async () => {
   // Generate a self-signed certificate for the test using openssl.
   const {execSync} = require('node:child_process');
   const os = require('node:os');

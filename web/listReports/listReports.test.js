@@ -188,3 +188,29 @@ test('listReports returns an error when a report file is invalid', async () => {
     await fs.unlink(invalidReportPath).catch(() => {});
   }
 });
+
+test('listReports shows no-reports message when the database is empty', async () => {
+  // Create a temp DB with empty reports and jobs directories.
+  const os = require('node:os');
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'listreports-empty-'));
+  await fs.mkdir(path.join(tmpDir, 'reports'), {recursive: true});
+  await fs.mkdir(path.join(tmpDir, 'jobs', 'queue'), {recursive: true});
+  await fs.mkdir(path.join(tmpDir, 'jobs', 'claimed'), {recursive: true});
+  await fs.mkdir(path.join(tmpDir, 'jobs', 'failed'), {recursive: true});
+  await fs.writeFile(path.join(tmpDir, 'jobs', 'recs.json'), '{}\n');
+  const savedDBDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    delete require.cache[require.resolve('./index')];
+    const {answer} = require('./index');
+    const result = await answer();
+    assert.equal(result.status, 'ok');
+    assert.ok(result.answerPage.includes('no'));
+    assert.ok(result.answerPage.includes(' a '));
+  }
+  finally {
+    process.env.DB_DIR = savedDBDir;
+    delete require.cache[require.resolve('./index')];
+    await fs.rm(tmpDir, {recursive: true}).catch(() => {});
+  }
+});

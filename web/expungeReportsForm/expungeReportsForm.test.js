@@ -84,3 +84,31 @@ test('expungeReportsForm returns an error when a report file is corrupt', async 
     await fs.writeFile(reportPath, backup);
   }
 });
+
+test('expungeReportsForm shows no-deletable message when every URL has at least 2 reports', async () => {
+  // Create a temp DB with two reports sharing the same URL.
+  const os = require('node:os');
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'expunge-test-'));
+  const tmpReports = path.join(tmpDir, 'reports');
+  await fs.mkdir(tmpReports);
+  // Copy two reports that share the same URL.
+  const mixReport = await fs.readFile(path.join(fixtureDBDir, 'reports', '260101T0000-mix.json'), 'utf8');
+  const newReport = await fs.readFile(path.join(fixtureDBDir, 'reports', '260202T0000-new.json'), 'utf8');
+  await fs.writeFile(path.join(tmpReports, '260101T0000-mix.json'), mixReport);
+  await fs.writeFile(path.join(tmpReports, '260202T0000-new.json'), newReport);
+  const savedDBDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    delete require.cache[require.resolve('./index')];
+    const {answer} = require('./index');
+    const result = await answer(null, '');
+    assert.equal(result.status, 'ok');
+    assert.ok(result.answerPage.includes('no reports to delete'));
+    assert.ok(result.answerPage.includes('disabled'));
+  }
+  finally {
+    process.env.DB_DIR = savedDBDir;
+    delete require.cache[require.resolve('./index')];
+    await fs.rm(tmpDir, {recursive: true}).catch(() => {});
+  }
+});

@@ -149,3 +149,41 @@ test('listIssues returns an error when report facts are not obtained', async () 
     pageDataStringsOverride = null;
   }
 });
+
+test('listIssues shows plural violator count for an issue with multiple violators', async () => {
+  // The mul report has linkNoText with 3 violators.
+  const result = await answer('260101T0008/mul');
+  assert.equal(result.status, 'ok');
+  assert.ok(result.answerPage.includes('3 violators were'));
+});
+
+test('listIssues handles acts with no standardResult instances', async () => {
+  // Create a temporary report with an act that has no standardResult.
+  const fs = require('node:fs/promises');
+  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const reportPath = path.join(dbDir, 'reports', '260101T0004-nsi.json');
+  const report = {
+    id: '260101T0004-nsi',
+    target: {what: 'No Std Instances Page', url: 'https://example.com/nsi'},
+    acts: [
+      {type: 'test', which: 'axe', result: {}}
+    ],
+    jobData: {
+      startTime: '26-01-01T00:00',
+      endTime: '26-01-01T00:10',
+      preventions: {},
+      issuelessRules: []
+    },
+    catalog: {},
+    images: {},
+    checkpoints: []
+  };
+  await fs.writeFile(reportPath, JSON.stringify(report));
+  try {
+    const result = await answer('260101T0004/nsi');
+    assert.equal(result.status, 'ok');
+  }
+  finally {
+    await fs.unlink(reportPath).catch(() => {});
+  }
+});

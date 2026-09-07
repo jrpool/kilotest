@@ -190,3 +190,45 @@ test('listDiagnoses returns an error when report facts are not obtained', async 
     pageDataStringsOverride = null;
   }
 });
+
+test('listDiagnoses handles acts with no standardResult instances gracefully', async () => {
+  // Create a temporary report where an act has no standardResult.
+  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const reportPath = path.join(dbDir, 'reports', '260101T0004-nst.json');
+  const report = {
+    id: '260101T0004-nst',
+    target: {what: 'No Standard Result Page', url: 'https://example.com/noresult'},
+    acts: [
+      {
+        type: 'test',
+        which: 'axe',
+        result: {}
+      }
+    ],
+    jobData: {
+      startTime: '26-01-01T00:00',
+      endTime: '26-01-01T00:10',
+      preventions: {},
+      issuelessRules: []
+    },
+    catalog: {
+      '0': {
+        tagName: 'A',
+        id: '',
+        startTag: '<a>',
+        text: 'Click here',
+        pathID: '/html/body/a[1]'
+      }
+    },
+    images: {},
+    checkpoints: []
+  };
+  await fs.writeFile(reportPath, JSON.stringify(report));
+  try {
+    const result = await answer('linkNoText/260101T0004/nst/0');
+    assert.equal(result.status, 'ok');
+  }
+  finally {
+    await fs.unlink(reportPath).catch(() => {});
+  }
+});

@@ -102,3 +102,22 @@ test('answer returns ok and rewrites the WCAG map when the source returns valid 
   assert.equal(updatedMap['1.1.1'], 'understanding/non-text-content');
   assert.equal(updatedMap['2.5.8'], 'understanding/target-size-minimum');
 });
+
+test('answer returns an error when matchAll returns no entries', async () => {
+  // Mock matchAll to return null, covering the dead else branch on lines 48-55.
+  const originalMatchAll = String.prototype.matchAll;
+  String.prototype.matchAll = function() {
+    return null;
+  };
+  mockFetch(200, '<html></html>');
+  try {
+    delete require.cache[require.resolve('./index')];
+    const {answer} = require('./index');
+    const result = await answer('test-auth-code');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'No entries found in WCAG map source');
+  }
+  finally {
+    String.prototype.matchAll = originalMatchAll;
+  }
+});

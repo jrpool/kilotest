@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "46.0.10",
+  "version": "46.0.11",
   "description": "Ensemble testing for front-end web quality",
   "main": "index.js",
   "engines": {
@@ -78,9 +78,9 @@
       "scripts/**"
     ],
     "check-coverage": true,
-    "lines": 92,
-    "statements": 92,
-    "functions": 98,
-    "branches": 92
+    "lines": 100,
+    "statements": 100,
+    "functions": 100,
+    "branches": 100
   }
 }

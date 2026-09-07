@@ -8,7 +8,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const {getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getReportBasics, processTestRequest} = require('./util');
+const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} = require('./util');
 
 // SETUP
 
@@ -88,4 +88,21 @@ test('processTestRequest returns an error for a duplicate recommendation', async
   else {
     delete process.env.DB_DIR;
   }
+});
+
+test('getResponseMetadata returns an identifier and date string', () => {
+  const meta = getResponseMetadata();
+  assert.ok(meta.identifier);
+  assert.ok(meta.identifier.includes('-'));
+  assert.ok(meta['date and time']);
+  assert.equal(typeof meta['date and time'], 'string');
+});
+
+test('getToolsFacts returns facts about the Kilotest tool collection', () => {
+  const facts = getToolsFacts();
+  assert.equal(facts.name, 'Kilotest');
+  assert.ok(facts.description);
+  assert.ok(facts.description['what Kilotest does']);
+  assert.ok(facts.description['how to retrieve findings']);
+  assert.ok(facts.description['how to generate more findings']);
 });

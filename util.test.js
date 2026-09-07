@@ -11,25 +11,35 @@ const path = require('node:path');
 const fs = require('node:fs/promises');
 const {
   annotateReport,
+  createLock,
   dbPath,
   getAgoDays,
   getAgoString,
   getCountString,
   getDateString,
   getDateTime,
+  getEngineList,
   getIssue,
   getJSON,
+  getLatestReportExtracts,
+  getMultiReportWhats,
   getNowStamp,
   getObject,
   getPageData,
   getPageDataStrings,
   getPlainText,
   getRandomString,
+  getReportExtract,
+  getReportExtracts,
+  getReportPath,
+  getReportStats,
   getTextFragmentHref,
+  getTimeStamp,
   getWCAGLink,
   getWeightName,
   hiddenReportsPath,
   htmlSafe,
+  isHidden,
   isJobID,
   isReportAvailable,
   isTimeStamp,
@@ -39,8 +49,10 @@ const {
   minifyURL,
   objectSort,
   processTestRequest,
+  recsLock,
   recsPath,
-  reportsPath
+  reportsPath,
+  updateRecs
 } = require('./util');
 
 // TESTS
@@ -789,4 +801,136 @@ test('annotateReport handles a test act with no standardResult', async () => {
     process.env.DB_DIR = savedDbDir;
     fsSync.rmSync(tmpDir, {recursive: true});
   }
+});
+
+// UNIT TESTS FOR PREVIOUSLY UNTESTED EXPORTED FUNCTIONS
+
+test('createLock returns a function that runs tasks sequentially', async () => {
+  const lock = createLock();
+  const order = [];
+  const p1 = lock(async () => {
+    order.push('start 1');
+    await new Promise(r => setTimeout(r, 10));
+    order.push('end 1');
+    return 1;
+  });
+  const p2 = lock(async () => {
+    order.push('start 2');
+    return 2;
+  });
+  const [r1, r2] = await Promise.all([p1, p2]);
+  assert.equal(r1, 1);
+  assert.equal(r2, 2);
+  assert.deepEqual(order, ['start 1', 'end 1', 'start 2']);
+});
+
+test('createLock propagates errors without blocking subsequent tasks', async () => {
+  const lock = createLock();
+  const p1 = lock(async () => {
+    throw new Error('first failed');
+  });
+  const p2 = lock(async () => 'second succeeded');
+  await p1.catch(() => {});
+  const r2 = await p2;
+  assert.equal(r2, 'second succeeded');
+});
+
+test('getTimeStamp returns an 11-character stamp from a Date', () => {
+  const date = new Date('2026-03-15T14:30:00.000Z');
+  const stamp = getTimeStamp(date);
+  assert.equal(stamp.length, 11);
+  assert.equal(stamp.slice(0, 6), '260315');
+  assert.equal(stamp.slice(6, 7), 'T');
+  assert.equal(stamp.slice(7), '1430');
+});
+
+test('getEngineList returns a sorted +-delimited list of engine names', () => {
+  const result = getEngineList(new Set(['axe', 'wave', 'nuVal']));
+  const names = result.split(' + ');
+  assert.ok(names.length === 3);
+  assert.ok(names.includes('WAVE'));
+});
+
+test('recsLock is a function (the lock returned by createLock)', () => {
+  assert.equal(typeof recsLock, 'function');
+});
+
+test('updateRecs adds a recommendation and returns success', async () => {
+  await fs.writeFile(recsPath(), '{}\n');
+  const result = await updateRecs('Test Page', 'https://example.com/test', 'because');
+  assert.equal(result.error, undefined);
+  const recs = JSON.parse(await fs.readFile(recsPath(), 'utf8'));
+  assert.ok(recs['https://example.com/test']);
+  assert.equal(recs['https://example.com/test'].length, 1);
+  assert.equal(recs['https://example.com/test'][0].what, 'Test Page');
+  await fs.writeFile(recsPath(), '{}\n');
+});
+
+test('updateRecs returns a duplicate error for a repeated recommendation', async () => {
+  await fs.writeFile(recsPath(), '{}\n');
+  await updateRecs('Test Page', 'https://example.com/test', 'because');
+  const result = await updateRecs('Test Page', 'https://example.com/test', 'another reason');
+  assert.equal(result.error, 'duplicate');
+  await fs.writeFile(recsPath(), '{}\n');
+});
+
+test('getReportPath returns the path of a report file', () => {
+  const result = getReportPath('260101T0000', 'mix');
+  assert.ok(result.endsWith('260101T0000-mix.json'));
+});
+
+test('getReportStats returns reportTime and reportSize for a valid report', async () => {
+  const stats = await getReportStats('260101T0000', 'mix');
+  assert.ok(stats.reportTime instanceof Date);
+  assert.equal(typeof stats.reportSize, 'number');
+  assert.ok(stats.reportSize > 0);
+});
+
+test('getReportStats returns null for a nonexistent report', async () => {
+  const stats = await getReportStats('999999T9999', 'xxx');
+  assert.equal(stats, null);
+});
+
+test('isHidden returns false for a non-hidden report', async () => {
+  const result = await isHidden('260101T0000', 'mix');
+  assert.equal(result, false);
+});
+
+test('isHidden returns true for a hidden report', async () => {
+  const result = await isHidden('260101T0007', 'hid');
+  assert.equal(result, true);
+});
+
+test('getReportExtract returns an extract for a valid report', async () => {
+  const extract = await getReportExtract('260101T0000', 'mix');
+  assert.equal(extract.timeStamp, '260101T0000');
+  assert.equal(extract.jobID, 'mix');
+  assert.equal(extract.what, 'Mixed Outcomes Page');
+  assert.equal(extract.url, 'https://example.com/mixed');
+  assert.ok(extract.reportTime);
+});
+
+test('getReportExtract returns an error for a nonexistent report', async () => {
+  const extract = await getReportExtract('999999T9999', 'xxx');
+  assert.ok(extract.error);
+});
+
+test('getReportExtracts returns extracts of all available reports', async () => {
+  const extracts = await getReportExtracts();
+  assert.ok(extracts.length >= 8);
+  const ids = extracts.map(e => `${e.timeStamp}-${e.jobID}`);
+  assert.ok(ids.includes('260101T0000-mix'));
+  assert.ok(ids.includes('260101T0001-ct'));
+});
+
+test('getLatestReportExtracts returns only the latest report for each page', async () => {
+  const latest = await getLatestReportExtracts();
+  const mixReports = latest.filter(e => e.what === 'Mixed Outcomes Page');
+  assert.equal(mixReports.length, 1);
+  assert.equal(mixReports[0].timeStamp, '260202T0000');
+});
+
+test('getMultiReportWhats returns descriptions that have multiple reports', async () => {
+  const whats = await getMultiReportWhats();
+  assert.ok(whats.includes('Mixed Outcomes Page'));
 });

@@ -23,7 +23,7 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
 const indexModule = require('./index');
-const {requestHandler, routes, serveError, startServer, runIfMain} = indexModule;
+const {requestHandler, routes, serveError, startServer, runIfMain, isPathAllowed, getAbuseError} = indexModule;
 
 // CONSTANTS
 
@@ -298,6 +298,20 @@ test('GET /tutorial/images/newsletter-form.png serves the image', async () => {
   assert.ok(res.headers['content-type'].includes('image/png'));
 });
 
+test('GET /tutorial/images with an unknown extension serves octet-stream', async () => {
+  // Create a temporary image file with an unknown extension.
+  const imgPath = path.join(__dirname, 'web', 'tutorial', 'images', 'test.bmp');
+  await fs.writeFile(imgPath, 'fake bitmap data');
+  try {
+    const res = await request('GET', '/tutorial/images/test.bmp');
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('application/octet-stream'));
+  }
+  finally {
+    await fs.unlink(imgPath).catch(() => {});
+  }
+});
+
 test('GET /tutorial/images/nonexistent.png returns an error page', async () => {
   const res = await request('GET', '/tutorial/images/nonexistent.png');
   assert.equal(res.statusCode, 400);
@@ -449,6 +463,16 @@ test('POST /worker/report with invalid authentication returns 401', async () => 
 test('POST /worker/report with valid authentication but invalid report returns an error', async () => {
   const auth = Buffer.from('worker1:secret1').toString('base64');
   const res = await request('POST', '/worker/report', {report: {}}, {
+    authorization: `Basic ${auth}`
+  });
+  assert.equal(res.statusCode, 400);
+  const body = jsonBody(res);
+  assert.ok(body.error);
+});
+
+test('POST /worker/report with valid authentication but no report field returns an error', async () => {
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  const res = await request('POST', '/worker/report', {}, {
     authorization: `Basic ${auth}`
   });
   assert.equal(res.statusCode, 400);
@@ -989,6 +1013,17 @@ test('POST /recAction.html with valid auth code and approval of an invalid URL r
 
 // UNIT TESTS FOR serveError
 
+const mockRes = () => {
+  const state = {statusCode: null, headers: {}, body: null, writableEnded: false};
+  return {
+    get statusCode() {return state.statusCode;},
+    set statusCode(value) {state.statusCode = value;},
+    setHeader(name, value) {state.headers[name] = value;},
+    end(data) {state.body = data; state.writableEnded = true;},
+    _state: state
+  };
+};
+
 test('serveError does not write to a response that has already ended', async () => {
   let wrote = false;
   const mockResponse = {
@@ -1007,10 +1042,47 @@ test('serveError does not write to a response that has already ended', async () 
   assert.equal(wrote, false);
 });
 
+test('serveError logs ERROR when the error object has no entries', async () => {
+  const res = mockRes();
+  await serveError({}, res, true);
+  // The response should still be sent with the fallback message.
+  assert.ok(res._state.body);
+});
+
+test('serveError uses ERROR fallback when error has no message property', async () => {
+  const res = mockRes();
+  await serveError({code: 500}, res, true);
+  assert.ok(res._state.body.includes('ERROR'));
+});
+
+// UNIT TESTS FOR isPathAllowed
+
+test('isPathAllowed returns false for a method with no routes', () => {
+  assert.equal(isPathAllowed('DELETE', '/'), false);
+});
+
+// UNIT TESTS FOR getAbuseError
+
+test('getAbuseError uses unknown IP when no forwarding header or remote address', () => {
+  const mockRequest = {
+    method: 'GET',
+    url: '/suspicious',
+    headers: {},
+    socket: {remoteAddress: undefined}
+  };
+  const result = getAbuseError(mockRequest, 'test reason');
+  assert.equal(result['IP address'], 'unknown');
+  assert.equal(result.reason, 'test reason');
+});
+
 // UNIT TESTS FOR startServer
 
 test('startServer starts an HTTP server when protocol is http', async () => {
+  // Delete PROTOCOL to exercise the 'http' fallback in startServer.
+  const savedProtocol = process.env.PROTOCOL;
+  delete process.env.PROTOCOL;
   const server = await startServer();
+  process.env.PROTOCOL = savedProtocol;
   try {
     assert.ok(server);
     assert.equal(typeof server.listen, 'function');
@@ -1034,23 +1106,18 @@ test('startServer starts an HTTP server when protocol is http', async () => {
 });
 
 test('startServer starts an HTTPS server when protocol is https', async () => {
-  // Generate a self-signed certificate for the test.
-  const {generateKeyPairSync} = require('node:crypto');
-  const {publicKey, privateKey} = generateKeyPairSync('rsa', {
-    modulusLength: 2048,
-    publicKeyEncoding: {type: 'spki', format: 'pem'},
-    privateKeyEncoding: {type: 'pkcs8', format: 'pem'}
-  });
-  // Write the key and cert to temporary files.
+  // Generate a self-signed certificate for the test using openssl.
+  const {execSync} = require('node:child_process');
   const os = require('node:os');
   const fsSync = require('node:fs');
   const tmpDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'kilotest-https-'));
   const keyPath = path.join(tmpDir, 'key.pem');
   const certPath = path.join(tmpDir, 'cert.pem');
-  fsSync.writeFileSync(keyPath, privateKey);
-  // For a self-signed cert, use the public key as a placeholder cert.
-  // The HTTPS server only needs matching key and cert PEM strings to start.
-  fsSync.writeFileSync(certPath, publicKey);
+  // Generate a self-signed certificate valid for 1 day.
+  execSync(
+    `openssl req -x509 -newkey rsa:2048 -keyout "${keyPath}" -out "${certPath}" -days 1 -nodes -subj "/CN=localhost"`,
+    {stdio: 'pipe'}
+  );
   const savedProtocol = process.env.PROTOCOL;
   const savedKey = process.env.KEY;
   const savedCert = process.env.CERT;

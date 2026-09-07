@@ -98,23 +98,7 @@ const routes = exports.routes = {
     '/tutorialComment.html'
   ]
 };
-// Returns whether a pathname matches a glob-style pattern.
-const matchPath = (pattern, pathname) => {
-  const regex = new RegExp(
-    '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
-  );
-  return regex.test(pathname);
-};
-// Returns whether a pathname is authorized for a method.
-const isPathAllowed = (method, pathname) => {
-  const patterns = routes[method] || [];
-  return patterns.some(pattern => matchPath(pattern, pathname));
-};
-
 const protocol = process.env.PROTOCOL || 'http';
-const queuePath = () => path.join(jobsPath(), 'queue');
-const claimedPath = () => path.join(jobsPath(), 'claimed');
-const failedPath = () => path.join(jobsPath(), 'failed');
 // Credentials of the Testaro workers, by worker ID, from a JSON-object environment variable.
 // Each worker ID maps to a secret (used only to authenticate the worker, never published) and a
 // name (a non-secret label safe to publish, e.g. in report data and logs).
@@ -137,10 +121,26 @@ const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // FUNCTIONS
 
+const queuePath = () => path.join(jobsPath(), 'queue');
+const claimedPath = () => path.join(jobsPath(), 'claimed');
+const failedPath = () => path.join(jobsPath(), 'failed');
+// Returns whether a pathname matches a glob-style pattern.
+const matchPath = (pattern, pathname) => {
+  const regex = new RegExp(
+    '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
+  );
+  return regex.test(pathname);
+};
+// Returns whether a pathname is authorized for a method.
+const isPathAllowed = exports.isPathAllowed = (method, pathname) => {
+  const patterns = routes[method] || [];
+  return patterns.some(pattern => matchPath(pattern, pathname));
+};
 // Serves or sends an error message.
 const serveError = exports.serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
-  console.log(errorLines.join('\n') || 'ERROR');
+  const errorSummary = errorLines.join('\n') || 'ERROR';
+  console.log(errorSummary);
   if (!response.writableEnded) {
     response.statusCode = statusCode;
     // If the request is from a human user:
@@ -151,7 +151,8 @@ const serveError = exports.serveError = async (error, response, isHumanUser = tr
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3000');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
-      const errorPage = errorTemplate.replace(/__error__/, error.message || 'ERROR');
+      const errorMessage = error.message || 'ERROR';
+      const errorPage = errorTemplate.replace(/__error__/, errorMessage);
       response.end(errorPage);
     }
     // Otherwise, i.e. if it is from an agent:
@@ -226,9 +227,11 @@ const checkBalancesForAlerts = async report => {
   }
 };
 // Creates an error object about a suspicious request.
-const getAbuseError = (request, reason) => {
+const getAbuseError = exports.getAbuseError = (request, reason) => {
   const {method, url, headers} = request;
-  const ip = headers['x-forwarded-for'] || request.socket.remoteAddress || 'unknown';
+  const forwardedFor = headers['x-forwarded-for'];
+  const remoteAddress = request.socket.remoteAddress;
+  const ip = forwardedFor || remoteAddress || 'unknown';
   return {
     message: 'Invalid request',
     reason,
@@ -557,7 +560,8 @@ const requestHandler = async (request, response) => {
           '.webp': 'image/webp',
           '.svg': 'image/svg+xml'
         };
-        setHeaders(mimeTypes[ext] || 'application/octet-stream', null, 'low');
+        const mimeType = mimeTypes[ext] || 'application/octet-stream';
+        setHeaders(mimeType, null, 'low');
         response.end(img);
       }
       catch {
@@ -776,7 +780,8 @@ const requestHandler = async (request, response) => {
           // Otherwise, if it is report acquisition:
           else if (service === 'report') {
             const {report} = postData;
-            const {id, target} = report || {};
+            const reportObj = report || {};
+            const {id, target} = reportObj;
             const {what, url} = target || {};
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
             // If the request is syntactically valid:
@@ -906,7 +911,7 @@ const serve = async (protocolModule, options) => {
   for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
     await fs.mkdir(path, {recursive: true});
   }
-  const server = protocolModule === 'https'
+  const server = protocolModule === https
     ? https.createServer(options, requestHandler)
     : http.createServer(requestHandler);
   const port = process.env.PORT || '3000';

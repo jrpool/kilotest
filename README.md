@@ -1,5 +1,10 @@
 # Kilotest
 
+[![npm version](https://img.shields.io/npm/v/@jrpool/kilotest?label=npm)](https://www.npmjs.com/package/@jrpool/kilotest)
+[![license](https://img.shields.io/github/license/jrpool/kilotest?label=license)](LICENSE)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-success)](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest)
+[![GitHub stars](https://img.shields.io/github/stars/jrpool/kilotest?label=stars)](https://github.com/jrpool/kilotest/stargazers)
+
 An ensemble testing and reporting service for front-end web quality
 
 ## Features

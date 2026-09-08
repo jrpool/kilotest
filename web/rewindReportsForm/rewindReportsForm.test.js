@@ -72,7 +72,7 @@ test('rewindReportsForm deletes a latest superseding report with valid auth code
   }
 });
 
-test('rewindReportsForm returns an error when a report file is corrupt', async () => {
+test('rewindReportsForm returns an error when a report file is corrupt', {timeout: 500}, async () => {
   const reportPath = path.join(reportsPath(), '260101T0001-ct.json');
   const backup = await fs.readFile(reportPath, 'utf8');
   try {

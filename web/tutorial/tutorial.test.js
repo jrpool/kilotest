@@ -59,7 +59,7 @@ test('handleComment returns an error for content that is empty after sanitizatio
   assert.equal(result.message, 'Comment is empty after sanitization');
 });
 
-test('handleComment saves a sanitized comment and returns ok', async () => {
+test('handleComment saves a sanitized comment and returns ok', {timeout: 500}, async () => {
   // Replace comments with an empty array for a clean test.
   await fs.writeFile(commentsPath, '[]\n');
   const result = await handleComment('This is a <b>test</b> comment.');
@@ -70,7 +70,7 @@ test('handleComment saves a sanitized comment and returns ok', async () => {
   assert.ok(comments[0].timeStamp);
 });
 
-test('handleComment strips HTML tags and control characters', async () => {
+test('handleComment strips HTML tags and control characters', {timeout: 500}, async () => {
   await fs.writeFile(commentsPath, '[]\n');
   const result = await handleComment('<img src=x onerror=alert(1)>\x00\x07Hello');
   assert.equal(result.status, 'ok');
@@ -78,7 +78,7 @@ test('handleComment strips HTML tags and control characters', async () => {
   assert.equal(comments[0].content, 'Hello');
 });
 
-test('handleComment truncates content to 500 characters', async () => {
+test('handleComment truncates content to 500 characters', {timeout: 500}, async () => {
   await fs.writeFile(commentsPath, '[]\n');
   const longComment = 'x'.repeat(600);
   const result = await handleComment(longComment);
@@ -87,7 +87,7 @@ test('handleComment truncates content to 500 characters', async () => {
   assert.equal(comments[0].content.length, 500);
 });
 
-test('handleComment creates comments.json when it does not exist', async () => {
+test('handleComment creates comments.json when it does not exist', {timeout: 500}, async () => {
   await fs.unlink(commentsPath).catch(() => {});
   const result = await handleComment('Test comment for missing file');
   assert.equal(result.status, 'ok');

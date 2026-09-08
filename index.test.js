@@ -288,7 +288,7 @@ test('GET /fullReport.json/260101T0000/mix downloads the report as JSON', async 
   assert.ok(body.target);
 });
 
-test('GET /fullReport.json/invalid/invalid returns an error page', async () => {
+test('GET /fullReport.json/invalid/invalid returns an error page', {timeout: 500}, async () => {
   const res = await request('GET', '/fullReport.json/invalid/invalid');
   assert.equal(res.statusCode, 400);
   assert.ok(res.headers['content-type'].includes('text/html'));

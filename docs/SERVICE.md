@@ -199,7 +199,7 @@ kilotest.com {
   # Specify the only paths of forwardable requests.
   @allowedGET {
     method GET
-    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt *.html* /fullReport.json/* /api/* /tutorial/images/* /favicon.* /style.css /sitemap.xml
+    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorial/images/* /favicon.* /style.css /sitemap.xml
   }
   @allowedPOST {
     method POST

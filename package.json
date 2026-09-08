@@ -8,7 +8,7 @@
   },
   "scripts": {
     "start": "node index",
-    "lint": "npx eslint && npx markdownlint-cli2",
+    "lint": "npx eslint --stats && npx markdownlint-cli2",
     "test": "c8 node --require ./test/setup.cjs --test --test-concurrency=1 --test-timeout=70",
     "test:smoke": "node smokeTest",
     "generate:openapi": "node scripts/generate-openapi"

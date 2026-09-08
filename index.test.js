@@ -211,6 +211,13 @@ test('GET /llms-full.txt serves the LLM detailed guide as text', async () => {
   assert.ok(res.body.length > 0);
 });
 
+test('GET /capability.md serves the capability manifest as markdown', async () => {
+  const res = await request('GET', '/capability.md');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('text/markdown'));
+  assert.ok(res.body.length > 0);
+});
+
 test('GET /sitemap.xml serves the sitemap as XML', async () => {
   const res = await request('GET', '/sitemap.xml');
   assert.equal(res.statusCode, 200);

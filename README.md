@@ -63,6 +63,7 @@ There is additional documentation at:
 
 - [QAI](https://kilotest.com/qai): a tutorial for allowing AI assistants to use Kilotest
 - [AI-TOOLS.md](docs/AI-TOOLS.md): how Kilotest implements the MCP protocol
+- [Summary of Kilotest capabilities](https://kilotest.com/capability.md)
 - [llms.txt](llms.txt): basic documentation for LLMs
 - [llms-full.txt](llms-full.txt): comprehensive documentation for LLMs
 - [lhm.plugin.json](lhm.plugin.json): documentation for registration with the LobeHub MCP Market

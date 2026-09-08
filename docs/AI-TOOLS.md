@@ -27,6 +27,7 @@ The internal features that make Kilotest a collection of tools for language mode
 - A generated `openapi.yaml` file, documenting the Kilotest API, conforming to the [OpenAPI specification](https://spec.openapis.org/oas/v3.1.0).
 - An `mcp.js` file, providing an MCP server for Kilotest.
 - A `server.json` file, conforming to the [MCP server schema](https://modelcontextprotocol.io/), and a GitHub Actions workflow (`publish-mcp.yml`) that authenticates via GitHub OIDC and publishes that file to the official MCP Registry whenever `server.json` or `api/version.js` changes on the `main` branch.
+- A `capability.md` file with a URL, summarizing what Kilotest tools can do.
 - `mcp`, `mcp-server`, and `modelcontextprotocol` keywords in `package.json`, supporting discovery of the `@jrpool/kilotest` npm package by tools and humans searching the npm registry for MCP servers.
 - An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish`/`update`), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
 - A `sitemap.xml` file.
@@ -99,6 +100,7 @@ Other future work:
 
 - Add to QAI, or replace much of the current QAI content with, an [Add Custom Connector link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kilotest&connectorUrl=https%3A%2F%2Fkilotest.com%2Fmcp).
 - Consider subscribing to a `Claude.ai` Team plan and submitting Kilotest to the [Claude Connectors Directory](https://claude.com/docs/connectors/building/submission). Details provided by GLM-5.2 High: “If accepted, Kilotest would get a permanent listing URL like `https://claude.ai/directory/connectors/kilotest` with a Connect button, and would appear in Claude’s in-product browse/search and ‘Suggested Connectors’. This is the highest-value listing for your use cases, because it puts Kilotest directly in front of Claude users who have not explicitly searched for it.”
+- Recommended by GLM-5.2 High: Submit a Kilotest-appropriate request to one or more AI platforms and discover whether the model discovers Kilotest and, if so, either uses it or offers to use it in the creation of a response.
 - Recommended by ChatGPT: A general capability manifest that says, in one machine-readable place: Here are the capabilities Kilotest provides; here are all the interfaces through which you can invoke them; here are their requirements and effects. For example:
 
     ```markdown

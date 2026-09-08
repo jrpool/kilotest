@@ -87,7 +87,7 @@ test('answer returns an error when no reports are available', async () => {
   }
 });
 
-test('answer returns an error when a report fails annotation', async () => {
+test('answer returns an error when a report fails annotation', {timeout: 500}, async () => {
   // Back up all fixture reports, because annotateReport modifies good reports
   // in place before it reaches the bad one and returns an error.
   const backups = await backupReports();

@@ -389,7 +389,7 @@ test('POST /requestRetest.html/invalid/invalid with invalid data returns an erro
   assert.ok(res.body.includes('Invalid retest recommendation'));
 });
 
-test('POST /api/requestTest with valid JSON returns a JSON response', async () => {
+test('POST /api/requestTest with valid JSON returns a JSON response', {timeout: 500}, async () => {
   const res = await request('POST', '/api/requestTest', {
     description: `API Test Page ${uniqueStamp}`,
     URL: `https://example.com/api-test-${uniqueStamp}`,
@@ -916,7 +916,7 @@ test('POST /requestTest.html with valid format but duplicate URL returns an answ
   assert.ok(res.body.includes('Duplicate recommendation'));
 });
 
-test('POST /requestRetest.html with valid format but duplicate retest returns an answer error', async () => {
+test('POST /requestRetest.html with valid format but duplicate retest returns an answer error', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   // First retest to create the recommendation.
   await formRequest('POST', '/requestRetest.html/260202T0000/new', {
@@ -930,7 +930,7 @@ test('POST /requestRetest.html with valid format but duplicate retest returns an
   assert.ok(res.body.includes('Duplicate recommendation'));
 });
 
-test('POST /recAction.html with valid auth code and approval of a duplicate returns an error', async () => {
+test('POST /recAction.html with valid auth code and approval of a duplicate returns an error', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   // Create a recommendation.
   await formRequest('POST', '/requestTest.html', {

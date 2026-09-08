@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const {execSync} = require('child_process');
 
 // CONSTANTS
 
@@ -16,7 +17,7 @@ const excludeDirs = new Set(['node_modules', '.git', 'coverage']);
 // FUNCTIONS
 
 // Recursively collects all files under a directory, skipping excluded directories.
-const collectFiles = (dir) => {
+const collectFiles = dir => {
   const results = [];
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     const fullPath = path.join(dir, entry.name);
@@ -34,7 +35,7 @@ const collectFiles = (dir) => {
 
 // Converts a glob pattern to a RegExp for matching relative paths.
 // Supports * (non-segment), ** (any), and literal characters.
-const globToRegExp = (pattern) => {
+const globToRegExp = pattern => {
   const escaped = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     .replace(/\*\*/g, '\x00')
@@ -67,11 +68,14 @@ const getMarkdownlintIgnores = () => {
   return [...match[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
 };
 
-// Counts test() calls in a file, matching calls at the start of a line.
-const countTestCases = (filePath) => {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const matches = content.match(/^\s*test\s*\(/gm);
-  return matches ? matches.length : 0;
+// Runs the Node test runner with the TAP reporter and parses the test count, so dynamically generated tests (e.g., from for-loops) are counted accurately.
+const getTestCaseCount = () => {
+  const output = execSync(
+    'node --require ./test/setup.cjs --test --test-concurrency=1 --test-timeout=70 --test-reporter=tap',
+    {cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']}
+  );
+  const match = output.match(/^# tests (\d+)$/m);
+  return match ? Number(match[1]) : 0;
 };
 
 // MAIN
@@ -110,10 +114,7 @@ const markdownlintCount = relFiles.filter(
 
 // Test file and test-case counts.
 const testFiles = relFiles.filter(rel => /\.test\.js$/.test(rel));
-const testCaseCount = testFiles.reduce(
-  (sum, file) => sum + countTestCases(path.join(rootDir, file)),
-  0
-);
+const testCaseCount = getTestCaseCount();
 
 // Smoke-test path counts from the routes table in index.js.
 const {routes} = require('./index');

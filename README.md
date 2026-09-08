@@ -4,6 +4,7 @@
 [![license](https://img.shields.io/github/license/jrpool/kilotest?label=license)](LICENSE)
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-active-success)](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest)
 [![GitHub stars](https://img.shields.io/github/stars/jrpool/kilotest?label=stars)](https://github.com/jrpool/kilotest/stargazers)
+[![Indexed on TensorBlock MCP Index](https://mcp-index.tensorblock.co/v1/servers/github-jrpool-kilotest-f518ba36/badge.svg)](https://tensorblock.co/mcp/servers/github-jrpool-kilotest-f518ba36)
 
 An ensemble testing and reporting service for front-end web quality
 

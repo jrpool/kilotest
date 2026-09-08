@@ -32,7 +32,8 @@
               "outcome": "cantTell",
               "count": 1,
               "catalogIndex": "0",
-              "checkpoint": 0
+              "checkpoint": 0,
+              "issueID": "focusIndicationBad"
             }
           ],
           "outcomeTotals": {
@@ -48,9 +49,7 @@
     "endTime": "26-01-01T00:10",
     "elapsedSeconds": 600,
     "preventions": {},
-    "issuelessRules": [
-      "axe:r65"
-    ]
+    "issuelessRules": []
   },
   "catalog": {
     "0": {
@@ -66,8 +65,5 @@
     }
   },
   "images": {},
-  "checkpoints": []
-}
-{},
   "checkpoints": []
 }

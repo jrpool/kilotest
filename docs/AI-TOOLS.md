@@ -99,3 +99,31 @@ Other future work:
 
 - Add to QAI, or replace much of the current QAI content with, an [Add Custom Connector link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kilotest&connectorUrl=https%3A%2F%2Fkilotest.com%2Fmcp).
 - Consider subscribing to a `Claude.ai` Team plan and submitting Kilotest to the [Claude Connectors Directory](https://claude.com/docs/connectors/building/submission). Details provided by GLM-5.2 High: “If accepted, Kilotest would get a permanent listing URL like `https://claude.ai/directory/connectors/kilotest` with a Connect button, and would appear in Claude’s in-product browse/search and ‘Suggested Connectors’. This is the highest-value listing for your use cases, because it puts Kilotest directly in front of Claude users who have not explicitly searched for it.”
+- Recommended by ChatGPT: A general capability manifest that says, in one machine-readable place: Here are the capabilities Kilotest provides; here are all the interfaces through which you can invoke them; here are their requirements and effects. For example:
+
+    ```markdown
+    Capability: web-page-quality-audit
+
+    Purpose:
+      Test a public web page for accessibility,
+      usability, HTML and web-standards problems.
+
+    Interfaces:
+      MCP: https://kilotest.com/mcp
+      OpenAPI: https://kilotest.com/openapi.yaml
+      Web UI: https://kilotest.com/
+
+    Input:
+      Public URL
+
+    Output:
+      Structured findings, affected elements,
+      rule-engine diagnoses, WCAG mappings
+
+    Side effects:
+      Reads the specified public web page.
+      Does not modify the target site.
+
+    Cost:
+      ...
+    ```

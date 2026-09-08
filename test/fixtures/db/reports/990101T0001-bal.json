@@ -1,0 +1,38 @@
+{
+  "id": "990101T0001-bal",
+  "target": {
+    "what": "Test",
+    "url": "https://example.com/test"
+  },
+  "acts": [
+    {
+      "type": "test",
+      "which": "wave",
+      "data": {
+        "creditsRemaining": 5
+      }
+    },
+    {
+      "type": "test",
+      "which": "testaro",
+      "data": {
+        "ruleData": {
+          "allCaps": {
+            "aiModelUsage": {
+              "inputTokens": 100,
+              "outputTokens": 50
+            }
+          }
+        }
+      }
+    }
+  ],
+  "jobData": {
+    "endTime": "26-01-01T00:00",
+    "issuelessRules": []
+  },
+  "catalog": {},
+  "sources": {
+    "worker": "Worker One"
+  }
+}

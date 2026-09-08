@@ -81,7 +81,7 @@ test('answer returns ok with a populated answer page for a valid test request', 
   assert.ok(h1.textContent.includes('Test Page'));
 });
 
-test('answer returns an error when the URL is already queued', async () => {
+test('answer returns an error when the URL is already queued', {timeout: 500}, async () => {
   const {answer} = require('./index');
   // Create a queued job with the target URL.
   const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
@@ -107,7 +107,7 @@ test('answer returns an error when the URL is already queued', async () => {
   }
 });
 
-test('answer returns an error for an invalid recommendation', async () => {
+test('answer returns an error for an invalid recommendation', {timeout: 500}, async () => {
   const {answer} = require('./index');
   const result = await answer('', 'not-a-url', 'why');
   assert.equal(result.status, 'error');

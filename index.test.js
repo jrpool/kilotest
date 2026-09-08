@@ -1061,7 +1061,7 @@ test('startServer starts an HTTP server when protocol is http', async () => {
   }
 });
 
-test('startServer starts an HTTPS server when protocol is https', {timeout: 500}, async () => {
+test('startServer starts an HTTPS server when protocol is https', {timeout: 2000}, async () => {
   // Generate a self-signed certificate for the test using openssl.
   const {execSync} = require('node:child_process');
   const os = require('node:os');

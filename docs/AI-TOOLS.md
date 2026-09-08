@@ -46,12 +46,17 @@ The external features that support the use of Kilotest as a collection of AI too
 - Registration of Kilotest with the [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest) MCP server registry.
 - a [pull request](https://github.com/TensorBlock/awesome-mcp-servers/pull/2221) (on 2026-09-07) to add Kilotest to the [Awesome MCP Servers](https://github.com/TensorBlock/awesome-mcp-servers) list.
 - Registration of Kilotest with the [RapidAPI](https://rapidapi.com/jrpool/api/kilotest/playground/apiendpoint_0f03577a-ff9a-472a-a0ed-533bd198981a) Hub.
-- Registration of Kilotest with the [LobeHub MCP Market](https://lobehub.com/mcp) (identifier: `jrpool-kilotest`).
+- Registration of Kilotest with the [LobeHub MCP Market](https://lobehub.com/mcp) (identifier: `jrpool-kilotest`), enabled with an `lhm.plugin.json` file.
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.
 - Configuration of Claude Desktop on the local development host and the `claude.ai` web application to connect Claude Desktop models to the Kilotest MCP server. The configuration was performed in the UI of each platform with the addition of Kilotest as a _connector_. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
 
   - Name: Kilotest
   - Remote MCP server URL: `https://kilotest.com/mcp`
+
+- MCP-related topics added to the [repository details](https://github.com/jrpool/kilotest).
+- An [MCP Registry badge](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest) added to the `README.md` file.
+- A link to the MCP server on the `README.md` page of the [`testaro-issues`](https://github.com/jrpool/testaro-issues) repository.
+- Registration of Kilotest and its sitemap at [Google Search Console](https://search.google.com/search-console?resource_id=sc-domain:kilotest.com) and [Bing Webmaster Tools](https://www.bing.com/webmasters/home?siteUrl=https://kilotest.com/).
 
 ## Required maintenance
 
@@ -84,19 +89,13 @@ Use cases 1, 2, 4, 5, and 6 exemplify a widespread expectation and demand for AI
 
 To-dos recommended by Claude Sonnet 5 Medium on Devin:
 
-- **GitHub repo metadata are under-optimized for discovery**, independent of any MCP registry:
-
-  - `homepage` field on the repo is empty (should be `https://kilotest.com`).
-  - `topics` are only `mcp-server`, `model-context-protocol` — no `accessibility`, `a11y`, `wcag`, `llm-tools`, `ai-agent`, `openapi`, `playwright`, etc., which are what people actually browse/search by on GitHub.
-  - `has_discussions: false` — enabling Discussions would support the "Contributing"/use-case-3 audience the doc describes.
-  - No badges (npm version, MCP-registry-active, license) in `README.md`, which affects how scrapers/humans triage the repo when they land on it from a directory link.
-
 - **No content/backlink outreach.** Registrations are passive listings; there's no blog post, Show HN, or subreddit post (r/modelcontextprotocol, r/accessibility, r/webdev) building external backlinks and social-discovery signal, which the doc's own "difficult problem…lack of standardization" framing suggests is exactly the gap left for the **human**-driven parts of discoverability.
 
-- **No cross-linking from the Testaro repo**, which Kilotest depends on and which has its own audience; a mention there is essentially a free, topically-relevant backlink.
-
-- **Client-onboarding friction isn't documented.** Some MCP clients need the `mcp-remote` npx bridge to use a remote streamable-HTTP server like Kilotest's. Ready-made Claude Desktop/Cursor/Windsurf config snippets in `AI-TOOLS.md`/`README.md` would convert "discovered" into "used" faster, since case 3 of your use cases assumes a technically savvy discoverer but not all users are.
-
-- **No verified search-engine indexing step** (Google Search Console / Bing IndexNow submission of `sitemap.xml`) to accelerate crawling of `llms.txt`/`openapi.yaml`, separate from just having the files exist.
-
 - **Other directories not yet targeted.** The [mcp.so](https://mcp.so/submit) directory offers a free tier but steers submitters toward a $39 paid listing; deferred as a commercial decision. The Docker MCP Catalog is not a fit because it requires stdio transport and a Dockerfile, and Kilotest is streamable-http.
+
+- **Client-onboarding friction isn't documented.** Some MCP clients need the `mcp-remote` npx bridge to use a remote streamable-HTTP server like Kilotest's. Ready-made Claude Desktop/Cursor/Windsurf config instructions added to QAI would convert "discovered" into "used" faster, since case 3 of your use cases assumes a technically savvy discoverer but not all users are.
+
+Other future work:
+
+- Add to QAI, or replace much of the current QAI content with, an [Add Custom Connector link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kilotest&connectorUrl=https%3A%2F%2Fkilotest.com%2Fmcp).
+- Consider subscribing to a `Claude.ai` Team plan and submitting Kilotest to the [Claude Connectors Directory](https://claude.com/docs/connectors/building/submission). Details provided by GLM-5.2 High: “If accepted, Kilotest would get a permanent listing URL like `https://claude.ai/directory/connectors/kilotest` with a Connect button, and would appear in Claude’s in-product browse/search and ‘Suggested Connectors’. This is the highest-value listing for your use cases, because it puts Kilotest directly in front of Claude users who have not explicitly searched for it.”

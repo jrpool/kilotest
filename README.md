@@ -29,7 +29,7 @@ An active production instance of Kilotest may require multiple testing agents to
 
 In the steps below, hosts `T` and `K` may be the same host or two different hosts. Host `T` can be a Debian stable, Ubuntu LTS, Windows, or macOS host. Host `K` can be any server host that can run the latest LTS version of Node.js. If hosts `T` and `K` differ, then they must be open to `https` traffic and host `K` must permit `https` requests from host `T`.
 
-1. Clone the [Testaro project](https://github.com/jrpool/testaro) into a new directory on host `T`.
+1. Clone the [Testaro project](https://github.com/YRA-Tech/testaro) into a new directory on host `T`.
 1. In that directory, install the Testaro dependencies: `npm install`.
 1. Update the Testaro dependencies and rebuild: `npm run deps`.
 1. Clone the Kilotest repository into a new directory on host `K`.
@@ -61,7 +61,8 @@ The URL for models using the MCP server is `https://kilotest.com/mcp`. The MCP s
 
 There is additional documentation at:
 
-- [AI-TOOLS.md](docs/AI-TOOLS.md)
-- [llms.txt](llms.txt)
-- [llms-full.txt](llms-full.txt)
-- [QAI](https://kilotest.com/qai)
+- [QAI](https://kilotest.com/qai): a tutorial for allowing AI assistants to use Kilotest
+- [AI-TOOLS.md](docs/AI-TOOLS.md): how Kilotest implements the MCP protocol
+- [llms.txt](llms.txt): basic documentation for LLMs
+- [llms-full.txt](llms-full.txt): comprehensive documentation for LLMs
+- [lhm.plugin.json](lhm.plugin.json): documentation for registration with the LobeHub MCP Market

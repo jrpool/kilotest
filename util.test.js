@@ -398,7 +398,7 @@ test('processTestRequest returns an error for a mismatched directory name', asyn
   assert.equal(result.message, 'Invalid recommendation');
 });
 
-test('processTestRequest succeeds and populates the template for a valid request', async () => {
+test('processTestRequest succeeds and populates the template for a valid request', {timeout: 500}, async () => {
   // Reset recs.json to empty before the test.
   await fs.writeFile(recsPath(), '{}\n');
   const result = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
@@ -409,7 +409,7 @@ test('processTestRequest succeeds and populates the template for a valid request
   await fs.writeFile(recsPath(), '{}\n');
 });
 
-test('processTestRequest returns a duplicate error for a repeated request', async () => {
+test('processTestRequest returns a duplicate error for a repeated request', {timeout: 500}, async () => {
   // Reset recs.json to empty, then make a successful request.
   await fs.writeFile(recsPath(), '{}\n');
   await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');

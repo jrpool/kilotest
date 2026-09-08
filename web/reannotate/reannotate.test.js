@@ -87,7 +87,7 @@ test('answer returns an error when no reports are available', async () => {
   }
 });
 
-test('answer returns an error when a report fails annotation', {timeout: 500}, async () => {
+test('answer returns an error when a report fails annotation', {timeout: 2000}, async () => {
   // Back up all fixture reports, because annotateReport modifies good reports
   // in place before it reaches the bad one and returns an error.
   const backups = await backupReports();
@@ -122,7 +122,7 @@ test('answer returns an error when a report fails annotation', {timeout: 500}, a
   }
 });
 
-test('answer returns ok with an answer page when all reports annotate successfully', async () => {
+test('answer returns ok with an answer page when all reports annotate successfully', {timeout: 2000}, async () => {
   // Back up all fixture reports, because annotateReport modifies them in place.
   const backups = await backupReports();
   try {

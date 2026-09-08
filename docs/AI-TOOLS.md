@@ -45,7 +45,7 @@ The external features that support the use of Kilotest as a collection of AI too
 - Registration of Kilotest as an active server in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest) (`io.github.jrpool/kilotest`), maintained by the [Model Context Protocol](https://modelcontextprotocol.io/) project. The [PulseMCP](https://www.pulsemcp.com/servers) directory and the VS Code MCP gallery both crawl this registry, so Kilotest is discoverable through them with no separate submission.
 - Registration of Kilotest with the [Smithery](https://smithery.ai/servers/pool/kilotest) MCP server registry.
 - Registration of Kilotest with the [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest) MCP server registry.
-- a [pull request](https://github.com/TensorBlock/awesome-mcp-servers/pull/2221) (on 2026-09-07) to add Kilotest to the [Awesome MCP Servers](https://github.com/TensorBlock/awesome-mcp-servers) list.
+- Registration of Kilotest with [Awesome MCP Servers](https://www.tensorblock.co/mcp/servers/github-jrpool-kilotest-f518ba36).
 - Registration of Kilotest with the [RapidAPI](https://rapidapi.com/jrpool/api/kilotest/playground/apiendpoint_0f03577a-ff9a-472a-a0ed-533bd198981a) Hub.
 - Registration of Kilotest with the [LobeHub MCP Market](https://lobehub.com/mcp) (identifier: `jrpool-kilotest`), enabled with an `lhm.plugin.json` file.
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const apiUtil = require('./util');
@@ -17,11 +17,15 @@ let processTestRequestCalls = [];
 
 before(() => {
   process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
-  processTestRequestCalls = [];
   // @ts-expect-error: Replacing the real function with a mock for testing.
   apiUtil.processTestRequest = async (testType, what, url, reason) => {
     processTestRequestCalls.push({testType, what, url, reason});
   };
+});
+
+// Reset the call log before each test, so tests do not depend on execution order.
+beforeEach(() => {
+  processTestRequestCalls = [];
 });
 
 // Require requestRetest after the mock is in place, so it captures the mocked processTestRequest.

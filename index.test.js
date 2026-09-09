@@ -18,7 +18,7 @@ process.env.TESTARO_WORKERS = JSON.stringify({
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
@@ -35,7 +35,12 @@ const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
 let server;
 
 before(async () => {
-  // Restore recs.json and clean job directories before running.
+  server = http.createServer(requestHandler);
+  await new Promise(resolve => server.listen(port, () => resolve()));
+});
+
+// Restore recs.json and clean job directories before each test, so tests do not depend on execution order.
+beforeEach(async () => {
   await fs.writeFile(recsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
@@ -45,8 +50,6 @@ before(async () => {
       await fs.unlink(path.join(dir, file)).catch(() => {});
     }
   }
-  server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
@@ -859,6 +862,18 @@ for (const pagePath of htmlPagePaths) {
     assert.ok(res.headers['content-type'].includes('text/html'));
   });
 }
+
+test('GET /enqueueForm.html shows recommendations when recs.json has entries', async () => {
+  await fs.writeFile(recsPath, JSON.stringify({
+    'https://example.com/enqueue-test': [
+      {what: 'Enqueue Test Page', why: 'Needs testing for accessibility'}
+    ]
+  }));
+  const res = await request('GET', '/enqueueForm.html');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.includes('https://example.com/enqueue-test'));
+  assert.ok(res.body.includes('Enqueue Test Page'));
+});
 
 test('GET /listRules.html returns an error page when called without arguments', async () => {
   const res = await request('GET', '/listRules.html');

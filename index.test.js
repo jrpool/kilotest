@@ -1050,12 +1050,21 @@ test('getAbuseError uses unknown IP when no forwarding header or remote address'
 
 // UNIT TESTS FOR startServer
 
-test('startServer starts an HTTP server when protocol is http', async () => {
+test('startServer starts an HTTP server when protocol is http', {timeout: 500}, async () => {
   // Delete PROTOCOL to exercise the 'http' fallback in startServer.
   const savedProtocol = process.env.PROTOCOL;
+  // Use port 0 so the OS assigns an ephemeral port, avoiding collisions with production.
+  const savedPort = process.env.PORT;
+  process.env.PORT = '0';
   delete process.env.PROTOCOL;
   const server = await startServer();
   process.env.PROTOCOL = savedProtocol;
+  if (savedPort !== undefined) {
+    process.env.PORT = savedPort;
+  }
+  else {
+    delete process.env.PORT;
+  }
   try {
     assert.ok(server);
     assert.equal(typeof server.listen, 'function');
@@ -1078,6 +1087,56 @@ test('startServer starts an HTTP server when protocol is http', async () => {
   }
 });
 
+test('serve uses the default port 3000 when PORT is not set', {timeout: 500}, async () => {
+  // Exercise the '|| 3000' fallback branch in serve by deleting PORT and calling
+  // serve directly. The server will attempt to bind to port 3000. On a system
+  // where port 3000 is free, it succeeds and we close it. Where it is occupied,
+  // the error event fires and we accept that as proof the fallback was reached.
+  const savedPort = process.env.PORT;
+  delete process.env.PORT;
+  try {
+    const server = await indexModule.serve(http, {});
+    let bindError = null;
+    server.on('error', error => {
+      bindError = error;
+    });
+    // Wait briefly for either successful binding or an EADDRINUSE error.
+    await new Promise(resolve => {
+      const timer = setTimeout(resolve, 200);
+      server.on('listening', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+    if (bindError) {
+      assert.equal(bindError.code, 'EADDRINUSE', `Expected EADDRINUSE, got: ${bindError.message}`);
+    }
+    else {
+      const address = server.address();
+      assert.ok(typeof address === 'object' && address.port === 3000);
+    }
+    server.closeAllConnections?.();
+    await new Promise(resolve => {
+      const timer = setTimeout(() => {
+        server.closeAllConnections?.();
+        resolve();
+      }, 1000);
+      server.close(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  }
+  finally {
+    if (savedPort !== undefined) {
+      process.env.PORT = savedPort;
+    }
+    else {
+      delete process.env.PORT;
+    }
+  }
+});
+
 test('startServer starts an HTTPS server when protocol is https', {timeout: 2000}, async () => {
   // Generate a self-signed certificate for the test using openssl.
   const {execSync} = require('node:child_process');
@@ -1094,6 +1153,9 @@ test('startServer starts an HTTPS server when protocol is https', {timeout: 2000
   const savedProtocol = process.env.PROTOCOL;
   const savedKey = process.env.KEY;
   const savedCert = process.env.CERT;
+  // Use port 0 so the OS assigns an ephemeral port, avoiding collisions with production.
+  const savedPort = process.env.PORT;
+  process.env.PORT = '0';
   process.env.PROTOCOL = 'https';
   process.env.KEY = keyPath;
   process.env.CERT = certPath;
@@ -1133,6 +1195,12 @@ test('startServer starts an HTTPS server when protocol is https', {timeout: 2000
     }
     else {
       delete process.env.CERT;
+    }
+    if (savedPort !== undefined) {
+      process.env.PORT = savedPort;
+    }
+    else {
+      delete process.env.PORT;
     }
     fsSync.rmSync(tmpDir, {recursive: true, force: true});
   }

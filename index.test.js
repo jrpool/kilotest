@@ -698,7 +698,7 @@ test('POST /worker/job with no colon in decoded credentials returns 401', async 
 
 // TESTS: processJobRequest branches
 
-test('POST /worker/job with a claimed job assigned to the worker returns an error and reclassifies the job', async () => {
+test('POST /worker/job with a claimed job assigned to the worker returns an error and reclassifies the job', {timeout: 500}, async () => {
   // Create a claimed job assigned to Worker One.
   const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
   const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
@@ -719,6 +719,8 @@ test('POST /worker/job with a claimed job assigned to the worker returns an erro
   // The worker should get an error about the incomplete job.
   const body = jsonBody(res);
   assert.ok(body.error.message.includes('has not completed job'));
+  // Wait for the async rename to complete.
+  await new Promise(resolve => setTimeout(resolve, 100));
   // The job should have been moved to failed.
   const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
   assert.ok(failedExists, 'Job should be moved to failed directory');

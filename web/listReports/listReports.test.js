@@ -88,7 +88,7 @@ test('listReports includes a link to request testing a new page', async () => {
   assert.ok(testLink);
 });
 
-test('listReports shows recommendations when recs.json has entries', async () => {
+test('listReports shows recommendations when recs.json has entries', {timeout: 500}, async () => {
   const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
   const recsPath = path.join(dbDir, 'jobs', 'recs.json');
   const originalRecs = await fs.readFile(recsPath, 'utf8');

@@ -211,6 +211,13 @@ test('GET /llms-full.txt serves the LLM detailed guide as text', async () => {
   assert.ok(res.body.length > 0);
 });
 
+test('GET /capability.md serves the capability manifest as markdown', async () => {
+  const res = await request('GET', '/capability.md');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('text/markdown'));
+  assert.ok(res.body.length > 0);
+});
+
 test('GET /sitemap.xml serves the sitemap as XML', async () => {
   const res = await request('GET', '/sitemap.xml');
   assert.equal(res.statusCode, 200);
@@ -281,7 +288,7 @@ test('GET /fullReport.json/260101T0000/mix downloads the report as JSON', async 
   assert.ok(body.target);
 });
 
-test('GET /fullReport.json/invalid/invalid returns an error page', async () => {
+test('GET /fullReport.json/invalid/invalid returns an error page', {timeout: 500}, async () => {
   const res = await request('GET', '/fullReport.json/invalid/invalid');
   assert.equal(res.statusCode, 400);
   assert.ok(res.headers['content-type'].includes('text/html'));
@@ -382,7 +389,7 @@ test('POST /requestRetest.html/invalid/invalid with invalid data returns an erro
   assert.ok(res.body.includes('Invalid retest recommendation'));
 });
 
-test('POST /api/requestTest with valid JSON returns a JSON response', async () => {
+test('POST /api/requestTest with valid JSON returns a JSON response', {timeout: 500}, async () => {
   const res = await request('POST', '/api/requestTest', {
     description: `API Test Page ${uniqueStamp}`,
     URL: `https://example.com/api-test-${uniqueStamp}`,
@@ -909,7 +916,7 @@ test('POST /requestTest.html with valid format but duplicate URL returns an answ
   assert.ok(res.body.includes('Duplicate recommendation'));
 });
 
-test('POST /requestRetest.html with valid format but duplicate retest returns an answer error', async () => {
+test('POST /requestRetest.html with valid format but duplicate retest returns an answer error', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   // First retest to create the recommendation.
   await formRequest('POST', '/requestRetest.html/260202T0000/new', {
@@ -923,7 +930,7 @@ test('POST /requestRetest.html with valid format but duplicate retest returns an
   assert.ok(res.body.includes('Duplicate recommendation'));
 });
 
-test('POST /recAction.html with valid auth code and approval of a duplicate returns an error', async () => {
+test('POST /recAction.html with valid auth code and approval of a duplicate returns an error', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   // Create a recommendation.
   await formRequest('POST', '/requestTest.html', {
@@ -1054,7 +1061,7 @@ test('startServer starts an HTTP server when protocol is http', async () => {
   }
 });
 
-test('startServer starts an HTTPS server when protocol is https', {timeout: 500}, async () => {
+test('startServer starts an HTTPS server when protocol is https', {timeout: 2000}, async () => {
   // Generate a self-signed certificate for the test using openssl.
   const {execSync} = require('node:child_process');
   const os = require('node:os');

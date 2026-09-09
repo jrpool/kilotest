@@ -172,6 +172,7 @@ More information about Kilotest features and internals:
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
 - [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/)
 - [README file](https://github.com/jrpool/kilotest/blob/main/README.md)
+- [Summary of Kilotest capabilities](https://kilotest.com/capability.md)
 - [Testaro rule-engine orchestrator](https://github.com/YRA-Tech/testaro)
 - [Testaro rule classifier](https://github.com/YRA-Tech/testaro-issues)
 - [Research report on Testaro](https://arxiv.org/abs/2309.10167)

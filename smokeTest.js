@@ -14,50 +14,53 @@ const host = process.env.SMOKE_HOST || 'kilotest.com';
 // Concrete paths matching each wildcard pattern in the routes table, for smoke testing.
 const concretePaths = {
   GET: {
-    '/mcp': '/mcp',
+    '*.html*': '/listReports.html',
     '/': '/',
-    '/index.html': '/index.html',
-    '/robots.txt': '/robots.txt',
-    '/openapi.yaml': '/openapi.yaml',
-    '/openapi.json': '/openapi.json',
-    '/swagger.yaml': '/swagger.yaml',
-    '/swagger.json': '/swagger.json',
     '/api-docs': '/api-docs',
-    '/llms.txt': '/llms.txt',
+    '/api/*': '/api/listReports',
+    '/capability.md': '/capability.md',
+    '/favicon.*': '/favicon.ico',
+    '/fullReport.json/*': '/fullReport.json/260101T0000/mix',
+    '/index.html': '/index.html',
     '/llms-full.txt': '/llms-full.txt',
+    '/llms.txt': '/llms.txt',
+    '/mcp': '/mcp',
+    '/openapi.json': '/openapi.json',
+    '/openapi.yaml': '/openapi.yaml',
+    '/robots.txt': '/robots.txt',
     '/sitemap.xml': '/sitemap.xml',
     '/style.css': '/style.css',
-    '/fullReport.json/*': '/fullReport.json/260101T0000/mix',
-    '/api/*': '/api/listReports',
-    '/tutorial/images/*': '/tutorial/images/diagram.png',
-    '/favicon.*': '/favicon.ico',
-    '*.html*': '/listReports.html'
+    '/swagger.json': '/swagger.json',
+    '/swagger.yaml': '/swagger.yaml',
+    '/tutorial/images/*': '/tutorial/images/diagram.png'
   },
   POST: {
-    '/mcp': '/mcp',
-    '/requestTest.html': '/requestTest.html',
-    '/requestRetest.html/*': '/requestRetest.html/260101T0001/ct',
-    '/recAction.html': '/recAction.html',
-    '/reannotate.html': '/reannotate.html',
-    '/renewWCAG.html': '/renewWCAG.html',
-    '/worker/job': '/worker/job',
-    '/worker/report': '/worker/report',
     '/api/*': '/api/requestFeature',
-    '/tutorialComment.html': '/tutorialComment.html'
+    '/mcp': '/mcp',
+    '/reannotate.html': '/reannotate.html',
+    '/recAction.html': '/recAction.html',
+    '/renewWCAG.html': '/renewWCAG.html',
+    '/requestRetest.html/*': '/requestRetest.html/260101T0001/ct',
+    '/requestTest.html': '/requestTest.html',
+    '/tutorialComment.html': '/tutorialComment.html',
+    '/worker/job': '/worker/job',
+    '/worker/report': '/worker/report'
   }
 };
 // Minimal POST bodies for paths that require them.
 const postBodies = {
   '/api/requestFeature': {feature: 'smoke test'},
-  '/requestTest.html': {what: 'Smoke Test Page', url: 'https://smoketest.example.com', why: 'smoke test'},
-  '/requestRetest.html/260101T0001/ct': {why: 'smoke test'},
-  '/recAction.html': {target: 'https://smoketest.example.com\tSmoke Test Page', authCode: 'invalid'},
+  '/mcp': {},
   '/reannotate.html': {authCode: 'invalid'},
+  '/recAction.html': {
+    target: 'https://smoketest.example.com\tSmoke Test Page', authCode: 'invalid'
+  },
   '/renewWCAG.html': {authCode: 'invalid'},
-  '/worker/job': {},
-  '/worker/report': {},
+  '/requestRetest.html/260101T0001/ct': {why: 'smoke test'},
+  '/requestTest.html': {what: 'Smoke Test Page', url: 'https://smoketest.example.com', why: 'smoke test'},
   '/tutorialComment.html': {content: 'smoke test'},
-  '/mcp': {}
+  '/worker/job': {},
+  '/worker/report': {}
 };
 
 // FUNCTIONS

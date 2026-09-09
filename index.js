@@ -66,36 +66,37 @@ const answer = {
 // Paths that the application is authorized to handle, by method, as glob-style patterns where * matches any sequence of characters.
 const routes = exports.routes = {
   GET: [
-    '/mcp',
+    '*.html*',
     '/',
-    '/index.html',
-    '/robots.txt',
-    '/openapi.yaml',
-    '/openapi.json',
-    '/swagger.yaml',
-    '/swagger.json',
     '/api-docs',
-    '/llms.txt',
+    '/api/*',
+    '/capability.md',
+    '/favicon.*',
+    '/fullReport.json/*',
+    '/index.html',
     '/llms-full.txt',
+    '/llms.txt',
+    '/mcp',
+    '/openapi.json',
+    '/openapi.yaml',
+    '/robots.txt',
     '/sitemap.xml',
     '/style.css',
-    '/fullReport.json/*',
-    '/api/*',
-    '/tutorial/images/*',
-    '/favicon.*',
-    '*.html*'
+    '/swagger.json',
+    '/swagger.yaml',
+    '/tutorial/images/*'
   ],
   POST: [
-    '/mcp',
-    '/requestTest.html',
-    '/requestRetest.html/*',
-    '/recAction.html',
-    '/reannotate.html',
-    '/renewWCAG.html',
-    '/worker/job',
-    '/worker/report',
     '/api/*',
-    '/tutorialComment.html'
+    '/mcp',
+    '/reannotate.html',
+    '/recAction.html',
+    '/renewWCAG.html',
+    '/requestRetest.html/*',
+    '/requestTest.html',
+    '/tutorialComment.html',
+    '/worker/job',
+    '/worker/report'
   ]
 };
 const protocol = process.env.PROTOCOL || 'http';
@@ -411,6 +412,13 @@ const requestHandler = async (request, response) => {
       // Serve it.
       setHeaders('text/plain', '/llms-full.txt', 'medium');
       response.end(llmsfull);
+    }
+    // Otherwise, if it is for the summary of capabilities:
+    else if (pageName === 'capability.md') {
+      const capabilityDoc = await fs.readFile('capability.md', 'utf8');
+      // Serve it.
+      setHeaders('text/markdown', '/capability.md', 'medium');
+      response.end(capabilityDoc);
     }
     // Otherwise, if it is for the XML sitemap:
     else if (pageName === 'sitemap.xml') {

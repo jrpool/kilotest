@@ -21,7 +21,7 @@ jobs:
       - name: Set Node.js version
         uses: actions/setup-node@v4
         with:
-          node-version: '>=22.12.0'
+          node-version: '>=24.16.0'
 
       - name: Verify server.json version matches api/version.js
         run: |

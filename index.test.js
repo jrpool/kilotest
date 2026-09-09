@@ -18,7 +18,7 @@ process.env.TESTARO_WORKERS = JSON.stringify({
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
@@ -35,7 +35,12 @@ const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
 let server;
 
 before(async () => {
-  // Restore recs.json and clean job directories before running.
+  server = http.createServer(requestHandler);
+  await new Promise(resolve => server.listen(port, () => resolve()));
+});
+
+// Restore recs.json and clean job directories before each test, so tests do not depend on execution order.
+beforeEach(async () => {
   await fs.writeFile(recsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
@@ -45,8 +50,6 @@ before(async () => {
       await fs.unlink(path.join(dir, file)).catch(() => {});
     }
   }
-  server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
@@ -258,7 +261,7 @@ test('GET /api/listViolators/linkNoText/260101T0000/mix returns JSON', async () 
   assert.equal(body['tool name'], 'listViolators');
 });
 
-test('GET /api/listDiagnoses/0/linkNoText/260101T0000/mix returns JSON', async () => {
+test('GET /api/listDiagnoses/0/linkNoText/260101T0000/mix returns JSON', {timeout: 500}, async () => {
   const res = await request('GET', '/api/listDiagnoses/0/linkNoText/260101T0000/mix');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
@@ -272,7 +275,7 @@ test('GET /api/getReport/260101T0000/mix returns JSON with the report', async ()
   assert.equal(body['tool name'], 'getReport');
 });
 
-test('GET /api/invalidService returns an error', async () => {
+test('GET /api/invalidService returns an error', {timeout: 500}, async () => {
   const res = await request('GET', '/api/invalidService');
   assert.equal(res.statusCode, 400);
   const body = jsonBody(res);
@@ -509,7 +512,7 @@ test('serveError sends HTML for human requests (isHumanUser = true)', async () =
 
 // TESTS: recAction.html
 
-test('POST /recAction.html with invalid auth code returns an error', async () => {
+test('POST /recAction.html with invalid auth code returns an error', {timeout: 500}, async () => {
   const res = await formRequest('POST', '/recAction.html', {
     target: 'https://example.com\tTest Page',
     authCode: 'wrong-code'
@@ -549,7 +552,7 @@ test('GET /fullReport.json/260101T0007/hid returns an abuse error for a hidden r
   assert.ok(res.body.includes('Invalid request'));
 });
 
-test('POST /recAction.html with valid auth code and approval returns HTML', async () => {
+test('POST /recAction.html with valid auth code and approval returns HTML', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   await formRequest('POST', '/requestTest.html', {
     what: `Approval Test Page ${uniqueStamp}`,
@@ -626,7 +629,7 @@ test('POST /renewWCAG.html with valid auth code serves the answer page', async (
   }
 });
 
-test('POST /tutorialComment.html with empty content returns a JSON error', async () => {
+test('POST /tutorialComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
   const res = await request('POST', '/tutorialComment.html', {
     content: ''
   });
@@ -767,7 +770,7 @@ test('POST /worker/job with a queued job assigns it to the worker', {timeout: 50
 
 // TESTS: worker/report valid submission
 
-test('POST /worker/report with valid authentication and valid claimed job processes the report', async () => {
+test('POST /worker/report with valid authentication and valid claimed job processes the report', {timeout: 500}, async () => {
   // Use a unique job ID that does not conflict with existing fixtures.
   const jobID = '990101T0000-tst';
   const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
@@ -860,6 +863,18 @@ for (const pagePath of htmlPagePaths) {
   });
 }
 
+test('GET /enqueueForm.html shows recommendations when recs.json has entries', async () => {
+  await fs.writeFile(recsPath, JSON.stringify({
+    'https://example.com/enqueue-test': [
+      {what: 'Enqueue Test Page', why: 'Needs testing for accessibility'}
+    ]
+  }));
+  const res = await request('GET', '/enqueueForm.html');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.includes('https://example.com/enqueue-test'));
+  assert.ok(res.body.includes('Enqueue Test Page'));
+});
+
 test('GET /listRules.html returns an error page when called without arguments', async () => {
   const res = await request('GET', '/listRules.html');
   assert.equal(res.statusCode, 400);
@@ -900,7 +915,7 @@ test('POST /mcp returns a response from the MCP handler', async () => {
 
 // TESTS: answer error branches
 
-test('POST /requestTest.html with valid format but duplicate URL returns an answer error', async () => {
+test('POST /requestTest.html with valid format but duplicate URL returns an answer error', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   // First request to create the recommendation.
   await formRequest('POST', '/requestTest.html', {

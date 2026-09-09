@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 const alerts = require('../alerts');
 
@@ -14,11 +14,15 @@ const alerts = require('../alerts');
 let sendAlertCalls = [];
 
 before(() => {
-  sendAlertCalls = [];
   // @ts-expect-error: Replacing the real function with a mock for testing.
   alerts.sendAlert = async (subject, body) => {
     sendAlertCalls.push({subject, body});
   };
+});
+
+// Reset the call log before each test, so tests do not depend on execution order.
+beforeEach(() => {
+  sendAlertCalls = [];
 });
 
 // Require requestFeature after the mock is in place, so it captures the mocked sendAlert.

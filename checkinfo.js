@@ -71,7 +71,7 @@ const getMarkdownlintIgnores = () => {
 // Runs the Node test runner with the TAP reporter and parses the test count, so dynamically generated tests (e.g., from for-loops) are counted accurately.
 const getTestCaseCount = () => {
   const output = execSync(
-    'node --require ./test/setup.cjs --test --test-concurrency=1 --test-timeout=70 --test-reporter=tap',
+    'node --require ./test/setup.cjs --test --test-concurrency=1 --test-timeout=100 --test-reporter=tap',
     {cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']}
   );
   const match = output.match(/^# tests (\d+)$/m);

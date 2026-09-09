@@ -61,7 +61,7 @@ after(async () => {
 
 // TESTS
 
-test('answer returns ok with a populated answer page for a valid test request', async () => {
+test('answer returns ok with a populated answer page for a valid test request', {timeout: 500}, async () => {
   // Require the module after DB_DIR is set.
   const {answer} = require('./index');
   const result = await answer(

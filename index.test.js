@@ -261,7 +261,7 @@ test('GET /api/listViolators/linkNoText/260101T0000/mix returns JSON', async () 
   assert.equal(body['tool name'], 'listViolators');
 });
 
-test('GET /api/listDiagnoses/0/linkNoText/260101T0000/mix returns JSON', async () => {
+test('GET /api/listDiagnoses/0/linkNoText/260101T0000/mix returns JSON', {timeout: 500}, async () => {
   const res = await request('GET', '/api/listDiagnoses/0/linkNoText/260101T0000/mix');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
@@ -275,7 +275,7 @@ test('GET /api/getReport/260101T0000/mix returns JSON with the report', async ()
   assert.equal(body['tool name'], 'getReport');
 });
 
-test('GET /api/invalidService returns an error', async () => {
+test('GET /api/invalidService returns an error', {timeout: 500}, async () => {
   const res = await request('GET', '/api/invalidService');
   assert.equal(res.statusCode, 400);
   const body = jsonBody(res);
@@ -512,7 +512,7 @@ test('serveError sends HTML for human requests (isHumanUser = true)', async () =
 
 // TESTS: recAction.html
 
-test('POST /recAction.html with invalid auth code returns an error', async () => {
+test('POST /recAction.html with invalid auth code returns an error', {timeout: 500}, async () => {
   const res = await formRequest('POST', '/recAction.html', {
     target: 'https://example.com\tTest Page',
     authCode: 'wrong-code'
@@ -552,7 +552,7 @@ test('GET /fullReport.json/260101T0007/hid returns an abuse error for a hidden r
   assert.ok(res.body.includes('Invalid request'));
 });
 
-test('POST /recAction.html with valid auth code and approval returns HTML', async () => {
+test('POST /recAction.html with valid auth code and approval returns HTML', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   await formRequest('POST', '/requestTest.html', {
     what: `Approval Test Page ${uniqueStamp}`,
@@ -629,7 +629,7 @@ test('POST /renewWCAG.html with valid auth code serves the answer page', async (
   }
 });
 
-test('POST /tutorialComment.html with empty content returns a JSON error', async () => {
+test('POST /tutorialComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
   const res = await request('POST', '/tutorialComment.html', {
     content: ''
   });
@@ -770,7 +770,7 @@ test('POST /worker/job with a queued job assigns it to the worker', {timeout: 50
 
 // TESTS: worker/report valid submission
 
-test('POST /worker/report with valid authentication and valid claimed job processes the report', async () => {
+test('POST /worker/report with valid authentication and valid claimed job processes the report', {timeout: 500}, async () => {
   // Use a unique job ID that does not conflict with existing fixtures.
   const jobID = '990101T0000-tst';
   const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
@@ -915,7 +915,7 @@ test('POST /mcp returns a response from the MCP handler', async () => {
 
 // TESTS: answer error branches
 
-test('POST /requestTest.html with valid format but duplicate URL returns an answer error', async () => {
+test('POST /requestTest.html with valid format but duplicate URL returns an answer error', {timeout: 500}, async () => {
   await fs.writeFile(recsPath, '{}\n');
   // First request to create the recommendation.
   await formRequest('POST', '/requestTest.html', {

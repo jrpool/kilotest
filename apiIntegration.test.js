@@ -77,7 +77,7 @@ const request = (method, requestPath, body = null) => new Promise((resolve, reje
 
 // TESTS
 
-test('GET /api/listReports returns valid JSON through the HTTP routing layer', async () => {
+test('GET /api/listReports returns valid JSON through the HTTP routing layer', {timeout: 500}, async () => {
   const {body} = await request('GET', '/api/listReports');
   assert.equal(body['tool name'], 'listReports');
   const reports = body['response content']['basics about all available reports'];

@@ -673,12 +673,14 @@ exports.isHidden = async (timeStamp, jobID) => {
 // Returns an extract of an available report, or an error object if it cannot be read or parsed.
 const getReportExtract = exports.getReportExtract = async (timeStamp, jobID) => {
   try {
+    // Get the report.
     const reportJSON = await fs.readFile(
       path.join(reportsPath(), `${timeStamp}-${jobID}.json`), 'utf8'
     );
     const report = JSON.parse(reportJSON);
     const {target, jobData} = report;
     const {what, url} = target;
+    // Return an extract of it.
     return {
       timeStamp,
       jobID,
@@ -695,12 +697,17 @@ const getReportExtract = exports.getReportExtract = async (timeStamp, jobID) => 
 };
 // Returns extracts of all available reports.
 const getReportExtracts = exports.getReportExtracts = async () => {
+  // Get the names of the available report files.
   const reportFileNames = await fs.readdir(reportsPath());
+  // Initialize an array of extracts.
   const extracts = [];
+  // For each one:
   for (const reportFileName of reportFileNames) {
     const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
+    // Get an extract of it.
     const extract = await getReportExtract(timeStamp, jobID);
     if (!extract.error) {
+      // Add the extract to the array.
       extracts.push(extract);
     }
   }
@@ -715,11 +722,15 @@ exports.isReportAvailable = async (what, url) => {
 };
 // Gets extracts of the latest available reports for all page descriptions.
 exports.getLatestReportExtracts = async () => {
+  // Get extracts of all available reports.
   const reportExtracts = await getReportExtracts();
+  // Sort them by page description and, secondarily, completion time.
   objectSort(reportExtracts, 'reportTime', 'alpha');
   objectSort(reportExtracts, 'what', 'alpha');
+  // Get those that are not superseded.
   const latestReportExtracts = reportExtracts
   .filter((extract, index) => extract.what !== reportExtracts[index + 1]?.what);
+  // Return them.
   return latestReportExtracts;
 };
 // Gets the descriptions of multi-report pages.

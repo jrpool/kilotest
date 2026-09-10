@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getReportBasics, getResponseMetadata, getToolsFacts, thisHost} = require('./util');
-const {getReportExtracts} = require('../util');
+const {getLatestReportExtracts, getReportExtracts} = require('../util');
 
 // FUNCTIONS
 
@@ -22,11 +22,13 @@ exports.response = async () => {
   const reportsBasics = [];
   // Get extracts of all available reports.
   const reportExtracts = await getReportExtracts();
+  // Get the latest report extracts once, to avoid recomputing them for every report.
+  const latestReportExtracts = await getLatestReportExtracts();
   // For each report:
   for (const extract of reportExtracts) {
     const {error, jobID, timeStamp} = extract;
     // Get the basics about it (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID);
+    const reportBasics = await getReportBasics(timeStamp, jobID, extract, latestReportExtracts);
     // If this succeeded:
     if (!error) {
       // Add instructions for getting details to the basics.

@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node index",
+    "typecheck": "tsc --noEmit",
     "lint": "npx eslint && out=$(npx markdownlint-cli2 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$out\"; exit $code; fi",
     "test": "c8 node --require ./test/setup.cjs --test --test-concurrency=1 --test-timeout=100 --test-randomize",
     "test:smoke": "node smokeTest",
@@ -45,12 +46,14 @@
     "@eslint/json": "*",
     "@eslint/markdown": "*",
     "@redocly/cli": "*",
+    "@types/node": "*",
     "c8": "*",
     "eslint": "*",
     "globals": "*",
     "js-yaml": "*",
     "markdownlint-cli2": "*",
     "node-html-parser": "*",
+    "typescript": "*",
     "zod-openapi": "*"
   },
   "allowScripts": {

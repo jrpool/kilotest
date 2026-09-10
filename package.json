@@ -68,7 +68,7 @@
     "include": [
       "index.js",
       "mcp.js",
-      "alerts.js",
+      "alerts.ts",
       "util.js",
       "api/**/*.js",
       "web/**/*.js"

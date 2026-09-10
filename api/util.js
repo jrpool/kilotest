@@ -8,7 +8,7 @@
 const {sendAlert} = require('../alerts');
 const {
   getAgoDays,
-  getLatestReportExtracts,
+  getReportExtracts,
   getNowStamp,
   getPlainText,
   getRandomString,
@@ -68,11 +68,13 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
   return ruleEnginesFacts;
 };
 // Returns the basics about a report.
-// Accepts optional precomputed extract and latestReportExtracts to avoid redundant
-// reads when called in a loop over all reports (e.g. by listReports).
-exports.getReportBasics = async (timeStamp, jobID, extract = null, latestReportExtracts = null) => {
+// Accepts an optional precomputed extract to avoid redundant reads when called
+// in a loop over all reports (e.g. by listReports). When the extract comes from
+// getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
+exports.getReportBasics = async (timeStamp, jobID, extract = null) => {
+  const extractProvided = !!extract;
   // If an extract was not provided, verify the report exists and read it.
-  if (!extract) {
+  if (!extractProvided) {
     // Get the creation time of the report.
     const reportStats = await getReportStats(timeStamp, jobID);
     // If the  report does not exist:
@@ -87,13 +89,11 @@ exports.getReportBasics = async (timeStamp, jobID, extract = null, latestReportE
     extract = await getReportExtract(timeStamp, jobID);
   }
   const {url, what, reportTime} = extract;
-  // If the latest report extracts were not provided, compute them.
-  if (!latestReportExtracts) {
-    latestReportExtracts = await getLatestReportExtracts();
-  }
   // Get whether this report has been superseded.
-  const isSuperseded = latestReportExtracts
-  .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
+  const isSuperseded = extractProvided
+    ? extract.superseded === true
+    : (await getReportExtracts(true))
+      .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
   // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,

@@ -21,7 +21,6 @@ const {
   getEngineList,
   getIssue,
   getJSON,
-  getLatestReportExtracts,
   getMultiReportWhats,
   getNowStamp,
   getObject,
@@ -955,8 +954,8 @@ test('getReportExtracts returns extracts of all available reports', async () => 
   assert.ok(ids.includes('260101T0001-ct'));
 });
 
-test('getLatestReportExtracts returns only the latest report for each page', async () => {
-  const latest = await getLatestReportExtracts();
+test('getReportExtracts with onlyLatest returns only the latest report for each page', async () => {
+  const latest = await getReportExtracts(true);
   const mixReports = latest.filter(e => e.what === 'Mixed Outcomes Page');
   assert.equal(mixReports.length, 1);
   assert.equal(mixReports[0].timeStamp, '260202T0000');

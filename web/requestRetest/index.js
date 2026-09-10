@@ -5,14 +5,14 @@
 
 // IMPORTS
 
-const {getLatestReportExtracts, processTestRequest} = require('../../util');
+const {getReportExtracts, processTestRequest} = require('../../util');
 
 // FUNCTIONS
 
 exports.answer = async (pageArgs, why) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
-  const reportExtracts = await getLatestReportExtracts();
+  const reportExtracts = await getReportExtracts(true);
   // Get data on the report whose page is to be retested.
   const reportExtract = reportExtracts.find(
     reportExtract => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID

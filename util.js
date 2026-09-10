@@ -696,7 +696,7 @@ const getReportExtract = exports.getReportExtract = async (timeStamp, jobID) => 
   }
 };
 // Returns extracts of all available reports.
-const getReportExtracts = exports.getReportExtracts = async () => {
+const getReportExtracts = exports.getReportExtracts = async (onlyLatest = false) => {
   // Get the names of the available report files.
   const reportFileNames = await fs.readdir(reportsPath());
   // Initialize an array of extracts.
@@ -711,7 +711,19 @@ const getReportExtracts = exports.getReportExtracts = async () => {
       extracts.push(extract);
     }
   }
-  return extracts;
+  // Sort the extracts by page description and, secondarily, completion time.
+  objectSort(extracts, 'reportTime', 'alpha');
+  objectSort(extracts, 'what', 'alpha');
+  // For each extract:
+  extracts.forEach((extract, index) => {
+    // If it is superseded:
+    if (extract.what === extracts[index + 1]?.what) {
+      // Mark it as such.
+      extract.superseded = true;
+    }
+  })
+  // Return the array, excluding extracts of superseded reports if so specified.
+  return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
 // Returns whether a report with a description or URL is available.
 exports.isReportAvailable = async (what, url) => {
@@ -719,19 +731,6 @@ exports.isReportAvailable = async (what, url) => {
   const whats = reportExtracts.map(reportExtract => reportExtract.what);
   const miniURLs = reportExtracts.map(reportExtract => minifyURL(reportExtract.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
-};
-// Gets extracts of the latest available reports for all page descriptions.
-exports.getLatestReportExtracts = async () => {
-  // Get extracts of all available reports.
-  const reportExtracts = await getReportExtracts();
-  // Sort them by page description and, secondarily, completion time.
-  objectSort(reportExtracts, 'reportTime', 'alpha');
-  objectSort(reportExtracts, 'what', 'alpha');
-  // Get those that are not superseded.
-  const latestReportExtracts = reportExtracts
-  .filter((extract, index) => extract.what !== reportExtracts[index + 1]?.what);
-  // Return them.
-  return latestReportExtracts;
 };
 // Gets the descriptions of multi-report pages.
 exports.getMultiReportWhats = async () => {

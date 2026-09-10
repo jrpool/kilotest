@@ -6,7 +6,7 @@
 // IMPORTS
 
 const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
-const {getLatestReportExtracts, getReportExtract} = require('../util');
+const {getReportExtracts, getReportExtract} = require('../util');
 
 // FUNCTIONS
 
@@ -31,7 +31,7 @@ exports.response = async args => {
   }
   // Otherwise, if the report has been superseded:
   else if (
-    (await getLatestReportExtracts())
+    (await getReportExtracts(true))
     .every(extract => extract.timeStamp !== timeStamp || extract.jobID !== jobID)
   ) {
     // Add this to the response content.

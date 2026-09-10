@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getAgoString, getDateTimeString, getLatestReportExtracts} = require('../../util');
+const {getAgoString, getDateTimeString, getReportExtracts} = require('../../util');
 const fs = require('fs/promises');
 const path = require('path');
 
@@ -15,7 +15,7 @@ const path = require('path');
 exports.answer = async pageArgs => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
-  const reportExtracts = await getLatestReportExtracts();
+  const reportExtracts = await getReportExtracts(true);
   // Get data on the report whose page is to be retested.
   const reportExtract = reportExtracts.find(
     reportExtract => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID

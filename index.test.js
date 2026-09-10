@@ -350,7 +350,7 @@ test('GET /tutorial/images/nonexistent.png returns an error page', async () => {
   assert.ok(res.body.includes('Image not found'));
 });
 
-test('GET /nonexistent.html returns an abuse error', async () => {
+test('GET /nonexistent.html returns an abuse error', {timeout: 500}, async () => {
   const res = await request('GET', '/nonexistent.html');
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Invalid request'));
@@ -876,7 +876,7 @@ const htmlPagePaths = [
 ];
 
 for (const pagePath of htmlPagePaths) {
-  test(`GET ${pagePath} serves a generated HTML page`, async () => {
+  test(`GET ${pagePath} serves a generated HTML page`, {timeout: 500}, async () => {
     const res = await request('GET', pagePath);
     assert.equal(res.statusCode, 200);
     assert.ok(res.headers['content-type'].includes('text/html'));

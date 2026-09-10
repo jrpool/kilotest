@@ -360,6 +360,12 @@ const requestHandler = async (request, response) => {
   const {pathname, search} = requestURL;
   const pageName = pathname.split('/')[1];
   const pathTail = pathname.split('/').slice(2).join('/');
+  // If the request is a smoke-test probe, respond perfunctorily without executing a handler.
+  if (request.headers['x-kilotest-smoke']) {
+    response.setHeader('content-type', 'application/json; charset=utf-8');
+    response.end('{}');
+    return;
+  }
   // If the request is a GET request:
   if (method === 'GET') {
     // If the path is not authorized for GET requests:

@@ -147,6 +147,26 @@ test('routes has GET and POST arrays', () => {
   assert.ok(Array.isArray(routes.POST));
 });
 
+// TESTS: smoke-test short-circuit
+
+test('GET with x-kilotest-smoke header returns a perfunctory 200', async () => {
+  const res = await request('GET', '/api/listReports', null, {'x-kilotest-smoke': '1'});
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body, '{}');
+});
+
+test('POST with x-kilotest-smoke header returns a perfunctory 200', async () => {
+  const res = await request('POST', '/api/requestFeature', {}, {'x-kilotest-smoke': '1'});
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body, '{}');
+});
+
+test('GET without x-kilotest-smoke header executes the handler', async () => {
+  const res = await request('GET', '/api/listReports');
+  assert.equal(res.statusCode, 200);
+  assert.notEqual(res.body, '{}');
+});
+
 // TESTS: GET routes
 
 test('GET / serves the home page as HTML', async () => {

@@ -68,14 +68,16 @@ const postBodies = {
 // Sends an HTTPS request and returns the status code and body length.
 const sendRequest = (method, requestPath) => new Promise((resolve, reject) => {
   const body = method === 'POST' ? JSON.stringify(postBodies[requestPath] || {}) : null;
+  const headers = {'x-kilotest-smoke': '1'};
+  if (body) {
+    headers['content-type'] = 'application/json; charset=utf-8';
+    headers['content-length'] = Buffer.byteLength(body);
+  }
   const options = {
     method,
     host,
     path: requestPath,
-    headers: body ? {
-      'content-type': 'application/json; charset=utf-8',
-      'content-length': Buffer.byteLength(body)
-    } : {}
+    headers
   };
   const req = https.request(options, response => {
     const chunks = [];

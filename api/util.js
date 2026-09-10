@@ -68,28 +68,32 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
   return ruleEnginesFacts;
 };
 // Returns the basics about a report.
-exports.getReportBasics = async (timeStamp, jobID) => {
-  // Get the creation time of the report.
-  const reportStats = await getReportStats(timeStamp, jobID);
-  // If the  report does not exist:
-  if (!reportStats) {
-    // Log and return this.
-    console.error(`Report ${timeStamp}-${jobID} does not exist.`);
-    return {
-      error: `Report ${timeStamp}-${jobID} could not be retrieved.`
-    };
+// Accepts optional precomputed extract and latestReportExtracts to avoid redundant
+// reads when called in a loop over all reports (e.g. by listReports).
+exports.getReportBasics = async (timeStamp, jobID, extract = null, latestReportExtracts = null) => {
+  // If an extract was not provided, verify the report exists and read it.
+  if (!extract) {
+    // Get the creation time of the report.
+    const reportStats = await getReportStats(timeStamp, jobID);
+    // If the  report does not exist:
+    if (!reportStats) {
+      // Log and return this.
+      console.error(`Report ${timeStamp}-${jobID} does not exist.`);
+      return {
+        error: `Report ${timeStamp}-${jobID} could not be retrieved.`
+      };
+    }
+    // Otherwise, i.e. if it exists, get an extract of the report.
+    extract = await getReportExtract(timeStamp, jobID);
   }
-  // Otherwise, i.e. if it exists, get an extract of the report.
-  const reportExtract = await getReportExtract(timeStamp, jobID);
-  const {url, what} = reportExtract;
-  const latestReportExtracts = await getLatestReportExtracts();
-  // Otherwise, i.e. if the report exists, get whether this report has been superseded.
+  const {url, what, reportTime} = extract;
+  // If the latest report extracts were not provided, compute them.
+  if (!latestReportExtracts) {
+    latestReportExtracts = await getLatestReportExtracts();
+  }
+  // Get whether this report has been superseded.
   const isSuperseded = latestReportExtracts
-  .every(extract => extract.timeStamp !== timeStamp || extract.jobID !== jobID);
-  // Get the completion time from the report content, not the file system birth time,
-  // because the birth time depends on when the file was created on the file system
-  // and does not reflect the actual report completion time.
-  const {reportTime} = reportExtract;
+  .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
   // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,

@@ -173,7 +173,7 @@ test('listReports shows queued retest status for a report with a matching queued
   }
 });
 
-test('listReports returns an error when a report file is invalid', async () => {
+test('listReports returns an error when a report file is invalid', {timeout: 500}, async () => {
   const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
   const reportsDir = path.join(dbDir, 'reports');
   const invalidReportPath = path.join(reportsDir, '260101T9999-bad.json');

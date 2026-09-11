@@ -11,7 +11,7 @@ const {StreamableHTTPServerTransport} = require(
 );
 const getReportAPI = require('./api/getReport.ts');
 const listReportsAPI = require('./api/listReports.ts');
-const listIssuesAPI = require('./api/listIssues');
+const listIssuesAPI = require('./api/listIssues.ts');
 const listViolatorsAPI = require('./api/listViolators.ts');
 const listDiagnosesAPI = require('./api/listDiagnoses.ts');
 const requestTestAPI = require('./api/requestTest.ts');

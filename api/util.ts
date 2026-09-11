@@ -1,5 +1,5 @@
 /*
-  util.js
+  util.ts
   Utilities for API requests.
 */
 
@@ -53,7 +53,7 @@ exports.getToolsFacts = () => ({
   'web users can obtain similar functionalities at': thisHost
 });
 // Returns the facts about a rule engine.
-const getRuleEngineFacts = exports.getRuleEngineFacts = ruleEngineID => {
+const getRuleEngineFacts = exports.getRuleEngineFacts = (ruleEngineID: string) => {
   const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
   return {
     identifier: ruleEngineID,
@@ -62,7 +62,7 @@ const getRuleEngineFacts = exports.getRuleEngineFacts = ruleEngineID => {
   };
 };
 // Returns the facts about rule engines.
-exports.getRuleEnginesFacts = ruleEngineIDSet => {
+exports.getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
   const ruleEnginesFacts = Array.from(ruleEngineIDSet).map(id => getRuleEngineFacts(id));
   objectSort(ruleEnginesFacts, 'name', 'alpha');
   return ruleEnginesFacts;
@@ -71,7 +71,7 @@ exports.getRuleEnginesFacts = ruleEngineIDSet => {
 // Accepts an optional precomputed extract to avoid redundant reads when called
 // in a loop over all reports (e.g. by listReports). When the extract comes from
 // getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
-exports.getReportBasics = async (timeStamp, jobID, extract = null) => {
+exports.getReportBasics = async (timeStamp: string, jobID: string, extract: any = null) => {
   const extractProvided = !!extract;
   // If an extract was not provided, verify the report exists and read it.
   if (!extractProvided) {
@@ -93,7 +93,7 @@ exports.getReportBasics = async (timeStamp, jobID, extract = null) => {
   const isSuperseded = extractProvided
     ? extract.superseded === true
     : (await getReportExtracts(true))
-      .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
+      .every((ex: any) => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
   // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
@@ -109,7 +109,7 @@ exports.getReportBasics = async (timeStamp, jobID, extract = null) => {
   return basics;
 };
 // Returns the specification of an issue.
-exports.getIssueSpec = issueID => {
+exports.getIssueSpec = (issueID: string) => {
   // Get the issue specification.
   const issueSpec = issueSpecs[issueID];
   // If it exists:
@@ -127,7 +127,7 @@ exports.getIssueSpec = issueID => {
   return null;
 };
 // Processes a test or retest request.
-exports.processTestRequest = async (testType, what, url, why) => {
+exports.processTestRequest = async (testType: string, what: string, url: string, why: string) => {
   // Get an email-safe version of the reason.
   const plainWhy = getPlainText(why);
   // Update the waiting recommendations as a transaction.

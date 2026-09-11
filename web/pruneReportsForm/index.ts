@@ -1,6 +1,6 @@
 /*
-  index.js
-  Serves a form for deleting latest superseding reports.
+  index.ts
+  Serves a form for deleting superseded reports.
 */
 
 // IMPORTS
@@ -11,12 +11,12 @@ const path = require('path');
 
 // FUNCTIONS
 
-// Returns a form for deleting latest superseding reports.
-exports.answer = async (_, search) => {
+// Returns a form for deleting non-latest reports.
+exports.answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
-  // If the form has been displayed by itself after a submission and any reports are to be deleted:
+  // If the form has displayed itself after a submission and any reports are to be deleted:
   if (jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
@@ -28,17 +28,17 @@ exports.answer = async (_, search) => {
         }
       }
       // If this failed:
-      catch (error) {
+      catch (error: any) {
         // Return why.
         return {
           status: 'error',
-          message: `Deleting latest superseding reports failed (${error.message})`
+          message: `Deleting superseded reports failed (${error.message})`
         }
       }
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {
-      // Report the error.
+      // Return this.
       return {
         status: 'error',
         message: 'Invalid authorization code'
@@ -46,7 +46,8 @@ exports.answer = async (_, search) => {
     }
   }
   const reportNames = await fs.readdir(reportsPath());
-  const reportSpecs = [];
+  // Initialize an array of report summaries.
+  const reportSpecs: any[] = [];
   // For each report:
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
@@ -58,9 +59,10 @@ exports.answer = async (_, search) => {
       // Return why.
       return {
         status: 'error',
-        message: error
+        message: error.message
       }
     }
+    // Otherwise, i.e. if it succeeded, add the summary to the array.
     reportSpecs.push({
       timeStamp,
       jobID,
@@ -76,7 +78,7 @@ exports.answer = async (_, search) => {
     }
     return a.url.localeCompare(b.url);
   });
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(12);
   let anyDeletable = false;
   // For each summary:
@@ -84,25 +86,25 @@ exports.answer = async (_, search) => {
     const {timeStamp, jobID, issueCount, preventedEngineCount, url} = spec;
     const jobName = `${timeStamp}-${jobID}`;
     const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventedEngineCount}, issues ${issueCount}`;
-    // If its report is the latest report on a target with at least 2 reports:
-    if (reportSpecs[index - 1]?.url === url && reportSpecs[index + 1]?.url !== url) {
+    // If its report is a non-latest report:
+    if (reportSpecs[index + 1]?.url === url) {
       // Add a line with a deletion checkbox.
       lines.push(
         `${margin}<p><input type="checkbox" name="report" value="${jobName}"> ${specString}</p>`
       );
       anyDeletable = true;
     }
-    // Otherwise, i.e. if its report is a superseded report or the only report on its target:
+    // Otherwise, i.e. if its report is a latest report:
     else {
       // Add a line without a deletion checkbox.
       lines.push(`${margin}<p>${specString}</p>`);
     }
   });
   const intro = anyDeletable
-  ? 'Choose the latest superseding reports to delete.'
-  : 'Each target has only 1 report, so there are no reports to delete.';
+  ? 'Choose the superseded reports to delete.'
+  : 'Each target has only 1 report, so there are no superseded reports to delete.';
   const disabled = anyDeletable ? '' : ' disabled';
-  const query = {
+  const query: Record<string, string> = {
     reports: lines.join('\n'),
     intro,
     disabled

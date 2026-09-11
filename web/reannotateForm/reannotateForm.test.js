@@ -1,6 +1,6 @@
 /*
   reannotateForm.test.js
-  Unit tests for web/reannotateForm/index.js, covering error, no-reclassified,
+  Unit tests for web/reannotateForm/index.ts, covering error, no-reclassified,
   and success branches of answer and populateQuery.
 */
 
@@ -41,8 +41,8 @@ after(async () => {
 test('answer returns ok with reclassified rules listed in the page', async () => {
   // The fixture reports have instances whose issueIDs differ from the
   // current rule specs, so reclassified rules should be listed.
-  delete require.cache[require.resolve('./index')];
-  const {answer} = require('./index');
+  delete require.cache[require.resolve('./index.ts')];
+  const {answer} = require('./index.ts');
   const result = await answer();
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage, 'answerPage should be present');
@@ -75,8 +75,8 @@ test('answer returns ok with no-reclassified message when reports have no violat
   const originalDBDir = process.env.DB_DIR;
   process.env.DB_DIR = tempDir;
   try {
-    delete require.cache[require.resolve('./index')];
-    const {answer} = require('./index');
+    delete require.cache[require.resolve('./index.ts')];
+    const {answer} = require('./index.ts');
     const result = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage, 'answerPage should be present');
@@ -117,8 +117,8 @@ test('answer returns an error when a report fails to load', async () => {
   };
   await fs.writeFile(badReportPath, JSON.stringify(badReport));
   try {
-    delete require.cache[require.resolve('./index')];
-    const {answer} = require('./index');
+    delete require.cache[require.resolve('./index.ts')];
+    const {answer} = require('./index.ts');
     const result = await answer();
     assert.equal(result.status, 'error');
     assert.ok(result.message.includes('invalid'), `Expected message about invalid report, got: ${result.message}`);

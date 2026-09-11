@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Lists the most commonly reported issues in all available latest reports.
 */
 
@@ -23,12 +23,12 @@ const path = require('path');
 // Gets summary data on the issues reported in a set of reports.
 const getIssuesSummary = async () => {
   // Initialize the summary.
-  const summary = {
+  const summary: Record<string, any> = {
     totalCount: 0,
     issues: []
   };
   // Initialize data for a summary.
-  const issuesData = {};
+  const issuesData: Record<string, any> = {};
   // Get extracts of the latest available report on each page.
   const latestReportExtracts = await getReportExtracts(true);
   // For each of them:
@@ -43,13 +43,13 @@ const getIssuesSummary = async () => {
       summary.error = error;
     }
     // For each act in it (none if the report retrieval failed):
-    acts.forEach(act => {
+    acts.forEach((act: any) => {
       // If it is a test act:
       if (act.type === 'test') {
         const {result, which} = act;
         const instances = result?.standardResult?.instances ?? [];
         // For each of its standard instances:
-        instances.forEach(instance => {
+        instances.forEach((instance: any) => {
           const {count, issueID} = instance;
           // If the instance has a non-ignorable issue ID:
           if (issueID && issueID !== 'ignorable') {
@@ -90,7 +90,7 @@ const getIssuesSummary = async () => {
     }
   });
   // For each summarized issue:
-  summary.issues.forEach(issue => {
+  summary.issues.forEach((issue: any) => {
     // Add its percentage to its entry.
     issue.percentage = Math.round(100 * (issue.count / summary.totalCount));
   });
@@ -102,7 +102,7 @@ const getIssuesSummary = async () => {
   return summary;
 };
 // Adds parameters to a query for the answer page.
-const populateQuery = async query => {
+const populateQuery = async (query: Record<string, any>) => {
   // Get summary data on the issues.
   const issuesSummary = await getIssuesSummary();
   // If this failed:
@@ -113,7 +113,7 @@ const populateQuery = async query => {
     return;
   }
   // Otherwise, i.e. if it succeeded, initialize the lines.
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(6);
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
@@ -123,7 +123,7 @@ const populateQuery = async query => {
     lines.push(`${margin}<ul>`);
     let existsIssue = false;
     // For each reported issue:
-    reportedIssues.forEach(reportedIssue => {
+    reportedIssues.forEach((reportedIssue: any) => {
       const {issueID, percentage, reporters} = reportedIssue;
       // If it has the weight and its percentage is at least 2:
       if (reportedIssue.weight === weight && percentage >= 2) {
@@ -161,7 +161,7 @@ const populateQuery = async query => {
 };
 // Returns a page answering the issues question.
 exports.answer = async () => {
-  const query = {};
+  const query: Record<string, any> = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
   // If the query reports an error:

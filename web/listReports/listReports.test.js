@@ -1,6 +1,6 @@
 /*
   listReports.test.js
-  UI tests for web/listReports/index.js using the fixture corpus.
+  UI tests for web/listReports/index.ts using the fixture corpus.
 */
 
 // IMPORTS
@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index');
+const {answer} = require('./index.ts');
 
 // SETUP AND TEARDOWN
 
@@ -205,8 +205,8 @@ test('listReports shows no-reports message when the database is empty', async ()
   const savedDBDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    delete require.cache[require.resolve('./index')];
-    const {answer} = require('./index');
+    delete require.cache[require.resolve('./index.ts')];
+    const {answer} = require('./index.ts');
     const result = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('no'));
@@ -214,7 +214,7 @@ test('listReports shows no-reports message when the database is empty', async ()
   }
   finally {
     process.env.DB_DIR = savedDBDir;
-    delete require.cache[require.resolve('./index')];
+    delete require.cache[require.resolve('./index.ts')];
     await fs.rm(tmpDir, {recursive: true}).catch(() => {});
   }
 });

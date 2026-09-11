@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for deleting superseded reports.
 */
 
@@ -12,7 +12,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns a form for deleting non-latest reports.
-exports.answer = async (_, search) => {
+exports.answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
@@ -28,7 +28,7 @@ exports.answer = async (_, search) => {
         }
       }
       // If this failed:
-      catch (error) {
+      catch (error: any) {
         // Return why.
         return {
           status: 'error',
@@ -47,7 +47,7 @@ exports.answer = async (_, search) => {
   }
   const reportNames = await fs.readdir(reportsPath());
   // Initialize an array of report summaries.
-  const reportSpecs = [];
+  const reportSpecs: any[] = [];
   // For each report:
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
@@ -78,7 +78,7 @@ exports.answer = async (_, search) => {
     }
     return a.url.localeCompare(b.url);
   });
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(12);
   let anyDeletable = false;
   // For each summary:
@@ -104,7 +104,7 @@ exports.answer = async (_, search) => {
   ? 'Choose the superseded reports to delete.'
   : 'Each target has only 1 report, so there are no superseded reports to delete.';
   const disabled = anyDeletable ? '' : ' disabled';
-  const query = {
+  const query: Record<string, string> = {
     reports: lines.join('\n'),
     intro,
     disabled

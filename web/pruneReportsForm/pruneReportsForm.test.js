@@ -1,6 +1,6 @@
 /*
   pruneReportsForm.test.js
-  Unit tests for web/pruneReportsForm/index.js.
+  Unit tests for web/pruneReportsForm/index.ts.
 */
 
 // IMPORTS
@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('fs/promises');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index');
+const {answer} = require('./index.ts');
 const {reportsPath} = require('../../util.ts');
 
 // SETUP AND TEARDOWN

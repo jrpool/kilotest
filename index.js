@@ -50,7 +50,7 @@ const answer = {
   pruneReportsForm: require('./web/pruneReportsForm/index').answer,
   reannotate: require('./web/reannotate/index.ts').answer,
   reannotateForm: require('./web/reannotateForm/index').answer,
-  renewWCAG: require('./web/renewWCAG/index').answer,
+  renewWCAG: require('./web/renewWCAG/index.ts').answer,
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
   requestRetest: require('./web/requestRetest/index.ts').answer,
   requestRetestForm: require('./web/requestRetestForm/index.ts').answer,
@@ -765,7 +765,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'low');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'web', 'renewWCAG', 'index'))
+        const answerData = await require(path.join(__dirname, 'web', 'renewWCAG', 'index.ts'))
         .answer(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {

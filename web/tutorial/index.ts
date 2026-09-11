@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves the tutorial and saves tutorial comments.
 */
 
@@ -17,7 +17,7 @@ const commentsPath = path.join(__dirname, 'comments.json');
 // FUNCTIONS
 
 // Strips HTML tags and control characters, trims, and limits to 500 characters.
-const sanitize = str => str
+const sanitize = (str: string) => str
   .replace(/<[^>]*>/g, '')
   .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
   .trim()
@@ -32,7 +32,7 @@ exports.answer = async () => {
   };
 };
 // Sanitizes and saves a tutorial comment to comments.json.
-exports.handleComment = async content => {
+exports.handleComment = async (content: any) => {
   if (!content || typeof content !== 'string') {
     return {status: 'error', message: 'No content provided'};
   }
@@ -40,7 +40,7 @@ exports.handleComment = async content => {
   if (!sanitized) {
     return {status: 'error', message: 'Comment is empty after sanitization'};
   }
-  let comments = [];
+  let comments: any[] = [];
   try {
     // Get the existing comments.
     const existing = await fs.readFile(commentsPath, 'utf8');

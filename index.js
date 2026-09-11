@@ -29,7 +29,7 @@ const {
 } = require('./util.ts');
 const {handleMCP, mcpPath} = require('./mcp');
 const fs = require('fs/promises');
-const {handleComment} = require('./web/tutorial/index');
+const {handleComment} = require('./web/tutorial/index.ts');
 const http = require('http');
 const https = require('https');
 const path = require('path');
@@ -58,7 +58,7 @@ const answer = {
   requestTestForm: require('./web/requestTestForm/index.ts').answer,
   rewindReportsForm: require('./web/rewindReportsForm/index').answer,
   unhideReportForm: require('./web/unhideReportForm/index').answer,
-  tutorial: require('./web/tutorial/index').answer
+  tutorial: require('./web/tutorial/index.ts').answer
 };
 
 // CONSTANTS

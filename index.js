@@ -99,26 +99,9 @@ const routes = exports.routes = {
     '/worker/report'
   ]
 };
-const protocol = process.env.PROTOCOL || 'http';
-// Credentials of the Testaro workers, by worker ID, from a JSON-object environment variable.
-// Each worker ID maps to a secret (used only to authenticate the worker, never published) and a
-// name (a non-secret label safe to publish, e.g. in report data and logs).
-const workerCredentials = (() => {
-  try {
-    return JSON.parse(process.env.TESTARO_WORKERS || '{}');
-  }
-  catch (error) {
-    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${error.message})`);
-    return {};
-  }
-})();
 // Values that may require alerts.
 const balancePath = path.join(__dirname, 'ai0Balance.json');
 const jobLock = createLock();
-const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
-const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
-const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
-const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
 
 // FUNCTIONS
 
@@ -169,6 +152,11 @@ const serveError = exports.serveError = async (error, response, isHumanUser = tr
 };
 // Checks a report for balances nearing exhaustion.
 const checkBalancesForAlerts = async report => {
+  // Get the alert thresholds and prices from the environment.
+  const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
+  const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
+  const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
+  const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
   // If the variables to be monitored for alerts are defined:
   if (WAVE_THRESHOLD && AI_SERVICE0_THRESHOLD && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE) {
     // WAVE.
@@ -259,10 +247,23 @@ const getBasicAuth = request => {
   }
   return {id: decoded.slice(0, sepIndex), secret: decoded.slice(sepIndex + 1)};
 };
+// Returns the credentials of the Testaro workers, by worker ID, from a JSON-object
+// environment variable. Each worker ID maps to a secret (used only to authenticate the worker,
+// never published) and a name (a non-secret label safe to publish, e.g. in report data and logs).
+const getWorkerCredentials = () => {
+  try {
+    return JSON.parse(process.env.TESTARO_WORKERS || '{}');
+  }
+  catch (error) {
+    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${error.message})`);
+    return {};
+  }
+};
 // Gets the published name of a Testaro worker or null if not authenticated.
 const getAuthorizedWorkerName = request => {
   const credentials = getBasicAuth(request);
   if (credentials) {
+    const workerCredentials = getWorkerCredentials();
     const worker = workerCredentials[credentials.id];
     if (worker && worker.secret === credentials.secret && worker.name) {
       return worker.name;
@@ -929,6 +930,7 @@ const serve = async (protocolModule, options) => {
     ? https.createServer(options, requestHandler)
     : http.createServer(requestHandler);
   const port = process.env.PORT || '3000';
+  const protocol = process.env.PROTOCOL || 'http';
   server.listen(port, () => {
     console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
   });

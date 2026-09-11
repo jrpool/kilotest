@@ -4,8 +4,8 @@
   error paths, worker authentication, and helper function behavior.
 */
 
-// ENVIRONMENT (must be set before requiring index.js, because index.js reads
-// TESTARO_WORKERS and AUTH_CODE at module load time, and util.ts reads DB_DIR.)
+// ENVIRONMENT (the test environment configuration; all modules now read
+// process.env at call time, so load order no longer matters.)
 
 const path = require('node:path');
 const fixtureDBDir = path.join(__dirname, 'test', 'fixtures', 'db');
@@ -461,6 +461,36 @@ test('POST /worker/job without authentication returns 401', async () => {
   assert.equal(res.statusCode, 401);
   const body = jsonBody(res);
   assert.ok(body.error.message.includes('Unauthorized'));
+});
+
+test('POST /worker/job when TESTARO_WORKERS is unset returns 401', async () => {
+  const saved = process.env.TESTARO_WORKERS;
+  delete process.env.TESTARO_WORKERS;
+  try {
+    const auth = Buffer.from('worker1:secret1').toString('base64');
+    const res = await request('POST', '/worker/job', {}, {
+      authorization: `Basic ${auth}`
+    });
+    assert.equal(res.statusCode, 401);
+  }
+  finally {
+    process.env.TESTARO_WORKERS = saved;
+  }
+});
+
+test('POST /worker/job when TESTARO_WORKERS is invalid JSON returns 401', async () => {
+  const saved = process.env.TESTARO_WORKERS;
+  process.env.TESTARO_WORKERS = 'not valid JSON {';
+  try {
+    const auth = Buffer.from('worker1:secret1').toString('base64');
+    const res = await request('POST', '/worker/job', {}, {
+      authorization: `Basic ${auth}`
+    });
+    assert.equal(res.statusCode, 401);
+  }
+  finally {
+    process.env.TESTARO_WORKERS = saved;
+  }
 });
 
 test('POST /worker/job with valid authentication returns a job or no-job response', async () => {

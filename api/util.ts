@@ -20,12 +20,10 @@ const {
 } = require('../util.ts');
 const {issues: issueSpecs} = require('testaro-issues');
 
-// CONSTANTS
-
-const thisHost = exports.thisHost = process.env.THIS_KILOTEST_HOST;
-
 // FUNCTIONS
 
+// Returns the base URL of this Kilotest host.
+const getThisHost = exports.getThisHost = () => process.env.THIS_KILOTEST_HOST;
 // Returns uniform metadata for every response.
 exports.getResponseMetadata = () => ({
   identifier: `${getNowStamp()}-${getRandomString(3)}`,
@@ -49,8 +47,8 @@ exports.getToolsFacts = () => ({
       'confirmation': 'Use the listReports tool to determine whether a requested new report exists. There is currently no process for notification of the outcome of requests.'
     }
   },
-  'URL': `${thisHost}/mcp`,
-  'web users can obtain similar functionalities at': thisHost
+  'URL': `${getThisHost()}/mcp`,
+  'web users can obtain similar functionalities at': getThisHost()
 });
 // Returns the facts about a rule engine.
 const getRuleEngineFacts = exports.getRuleEngineFacts = (ruleEngineID: string) => {

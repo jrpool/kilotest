@@ -30,6 +30,8 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 
 Defer report-handling type definitions until Testaro's TypeScript conversion exports a stable `Report` type. Start with modules that don't touch the report schema.
 
+The `Report` interface is defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts`.
+
 ## Report Normalization
 
 Plan a one-time subproject to normalize old reports to the new Testaro-defined shape. After normalization, defensive runtime checks that accommodate historical variation in report structure can be removed.

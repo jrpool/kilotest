@@ -11,7 +11,7 @@ const {
   getResponseMetadata,
   getRuleEnginesFacts,
   getToolsFacts,
-  thisHost
+  getThisHost
 } = require('./util.ts');
 const {getReport} = require('../util.ts');
 
@@ -20,6 +20,7 @@ const {getReport} = require('../util.ts');
 // Returns the response body.
 exports.response = async (args: string[]) => {
   const [issueID = '', timeStamp = '', jobID = ''] = args;
+  const thisHost = getThisHost();
   // Initialize the response content.
   const responseContent: Record<string, any> = {
     'basics about the report': null,

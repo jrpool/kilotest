@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getResponseMetadata, getToolsFacts, thisHost} = require('./util.ts');
+const {getResponseMetadata, getThisHost, getToolsFacts} = require('./util.ts');
 const {sendAlert} = require('../alerts.ts');
 
 // FUNCTIONS
@@ -13,6 +13,7 @@ const {sendAlert} = require('../alerts.ts');
 // Returns the response body.
 exports.response = async (args: string[]) => {
   const [feature = ''] = args;
+  const thisHost = getThisHost();
   // Initialize the response content.
   const responseContent: Record<string, any> = {
     'details about your request': null

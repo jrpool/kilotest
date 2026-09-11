@@ -1,6 +1,6 @@
 /*
   listRules.test.js
-  Unit tests for web/listRules/index.js.
+  Unit tests for web/listRules/index.ts.
 */
 
 // IMPORTS
@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const {parse} = require('node-html-parser');
 
 // Monkey-patch testaro-issues to add a rule with what === ruleID,
-// covering the dead branch on line 55 of listRules/index.js.
+// covering the dead branch on line 55 of listRules/index.ts.
 const testaroIssues = require('testaro-issues');
 const originalRules = testaroIssues.rules;
 const patchEngine = Object.keys(originalRules)[0];
@@ -43,7 +43,7 @@ testaroIssues.issueRules = {
   }
 };
 
-const {answer} = require('./index');
+const {answer} = require('./index.ts');
 
 // TESTS
 

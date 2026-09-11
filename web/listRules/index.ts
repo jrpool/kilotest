@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   List the rules belonging to an issue.
 */
 
@@ -17,7 +17,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Adds parameters to a query for the answer page.
-const populateQuery = async (issueID, query) => {
+const populateQuery = async (issueID: string, query: Record<string, any>) => {
   // Add facts about the issue to the query.
   query.issue = issueSpecs[issueID]?.summary;
   if (!query.issue) {
@@ -30,14 +30,14 @@ const populateQuery = async (issueID, query) => {
   query.priority = getWeightName(weight);
   query.wcag = wcag;
   // Initialize the lines.
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(6);
   // For each rule engine with any rules belonging to the issue:
   Object.keys(issueRules[issueID] ?? {}).forEach(engineID => {
     // Add a heading for the rules of the rule engine.
     lines.push(`${margin}<h3>${ruleEngines[engineID][0]} rules</h3>`);
     const {invariant, variable} = issueRules[issueID][engineID];
-    const rulesByType = {
+    const rulesByType: Record<string, any[]> = {
       invariant,
       variable
     };
@@ -66,8 +66,8 @@ const populateQuery = async (issueID, query) => {
   query.rules = lines.join('\n');
 };
 // Returns a page answering the issue-rules question.
-exports.answer = async issueID => {
-  const query = {};
+exports.answer = async (issueID: string) => {
+  const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, query);
   // If this succeeded:

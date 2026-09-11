@@ -43,7 +43,7 @@ const answer = {
   listDiagnoses: require('./web/listDiagnoses/index').answer,
   listIssues: require('./web/listIssues/index').answer,
   listReports: require('./web/listReports/index').answer,
-  listRules: require('./web/listRules/index').answer,
+  listRules: require('./web/listRules/index.ts').answer,
   listTopIssues: require('./web/listTopIssues/index').answer,
   listViolators: require('./web/listViolators/index').answer,
   manage: require('./web/manage/index.ts').answer,

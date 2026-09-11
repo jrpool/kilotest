@@ -37,7 +37,7 @@ const {sendAlert} = require('./alerts.ts');
 const answer = {
   ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
   enqueue: require('./web/enqueue/index').answer,
-  enqueueForm: require('./web/enqueueForm/index').answer,
+  enqueueForm: require('./web/enqueueForm/index.ts').answer,
   expungeReportsForm: require('./web/expungeReportsForm/index').answer,
   hideReportForm: require('./web/hideReportForm/index').answer,
   listDiagnoses: require('./web/listDiagnoses/index').answer,
@@ -52,8 +52,8 @@ const answer = {
   reannotateForm: require('./web/reannotateForm/index').answer,
   renewWCAG: require('./web/renewWCAG/index').answer,
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
-  requestRetest: require('./web/requestRetest/index').answer,
-  requestRetestForm: require('./web/requestRetestForm/index').answer,
+  requestRetest: require('./web/requestRetest/index.ts').answer,
+  requestRetestForm: require('./web/requestRetestForm/index.ts').answer,
   requestTest: require('./web/requestTest/index.ts').answer,
   requestTestForm: require('./web/requestTestForm/index.ts').answer,
   rewindReportsForm: require('./web/rewindReportsForm/index').answer,
@@ -669,7 +669,7 @@ const requestHandler = async (request, response) => {
           // Serve response headers.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
-          const answerData = await require(path.join(__dirname, 'web', 'requestRetest', 'index'))
+          const answerData = await require(path.join(__dirname, 'web', 'requestRetest', 'index.ts'))
           .answer(pathTail, why);
           // If they are valid:
           if (answerData.status === 'ok') {
@@ -728,7 +728,7 @@ const requestHandler = async (request, response) => {
             // Set a location header for a response.
             response.setHeader('content-location', '/enqueueForm.html');
             // Get the answer data.
-            const answerData = await require(path.join(__dirname, 'web', 'enqueueForm', 'index'))
+            const answerData = await require(path.join(__dirname, 'web', 'enqueueForm', 'index.ts'))
             .answer();
             // Serve the test-order form with the remaining recommendations.
             response.end(answerData.answerPage);

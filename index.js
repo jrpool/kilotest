@@ -529,7 +529,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service lists the violators of an issue in a report:
       else if (service === 'listViolators') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'listViolators'))
+        const responseBody = await require(path.join(__dirname, 'api', 'listViolators.ts'))
         .response(specs);
         // Send it.
         setHeaders('application/json', null, 'high');

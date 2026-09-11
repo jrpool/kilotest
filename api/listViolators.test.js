@@ -1,6 +1,6 @@
 /*
   listViolators.test.js
-  Tests for api/listViolators.js using the fixture corpus, with emphasis on outcome handling.
+  Tests for api/listViolators.ts using the fixture corpus, with emphasis on outcome handling.
 */
 
 // IMPORTS
@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const {response} = require('./listViolators');
+const {response} = require('./listViolators.ts');
 
 // SETUP AND TEARDOWN
 

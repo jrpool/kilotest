@@ -1,5 +1,5 @@
 /*
-  listViolators.js
+  listViolators.ts
   Returns details about one issue in one report and basics about all the violators of the issue.
 */
 
@@ -18,10 +18,10 @@ const {getReport} = require('../util.ts');
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async args => {
+exports.response = async (args: string[]) => {
   const [issueID = '', timeStamp = '', jobID = ''] = args;
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'basics about the report': null,
     'basics about the issue': null,
     'details about the issue': null,
@@ -69,16 +69,16 @@ exports.response = async args => {
     // If the report is available:
     if (!report.error) {
       // Initialize data about the instances of the issue.
-      const reporterIDs = new Set();
-      const violators = {};
+      const reporterIDs: Set<string> = new Set();
+      const violators: Record<string, any> = {};
       // For each act in the report:
-      report.acts.forEach(act => {
+      report.acts.forEach((act: any) => {
         const {result, type, which} = act;
         const instances = result?.standardResult?.instances || [];
         // If the act is a test act with a specified rule engine:
         if (type === 'test' && which) {
           // For each standard instance of the act:
-          instances.forEach(instance => {
+          instances.forEach((instance: any) => {
             // If the instance has the issue ID:
             if (instance.issueID === issueID) {
               const {catalogIndex, outcome} = instance;

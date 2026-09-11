@@ -180,7 +180,11 @@ const getObject = exports.getObject = async (filePath: string) => {
 };
 // Returns a random string.
 exports.getRandomString = (length: number) => {
-  return Math.random().toString(36).slice(2, length + 2);
+  let result = '';
+  while (result.length < length) {
+    result += Math.floor(Math.random() * 36).toString(36);
+  }
+  return result;
 };
 // Returns a time stamp from a date.
 const getTimeStamp = exports.getTimeStamp = (date: Date) => {

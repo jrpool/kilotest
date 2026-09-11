@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util');
+const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util.ts');
 const {getReportExtracts, isURL} = require('../util.ts');
 
 // FUNCTIONS

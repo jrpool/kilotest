@@ -11,7 +11,7 @@ const {
   getResponseMetadata,
   getToolsFacts,
   thisHost
-} = require('./util');
+} = require('./util.ts');
 const {getReport} = require('../util.ts');
 
 // FUNCTIONS

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getResponseMetadata, getToolsFacts, thisHost} = require('./util');
+const {getResponseMetadata, getToolsFacts, thisHost} = require('./util.ts');
 const {sendAlert} = require('../alerts.ts');
 
 // FUNCTIONS

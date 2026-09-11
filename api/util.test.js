@@ -1,6 +1,6 @@
 /*
   util.test.js
-  Tests for api/util.js.
+  Tests for api/util.ts.
 */
 
 // IMPORTS
@@ -8,7 +8,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} = require('./util');
+const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} = require('./util.ts');
 
 // SETUP
 

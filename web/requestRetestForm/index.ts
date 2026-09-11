@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for requesting a retest.
 */
 
@@ -12,16 +12,16 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns a retest recommendation form.
-exports.answer = async pageArgs => {
+exports.answer = async (pageArgs: string) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
   const reportExtracts = await getReportExtracts(true);
   // Get data on the report whose page is to be retested.
   const reportExtract = reportExtracts.find(
-    reportExtract => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
+    (reportExtract: any) => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
   );
   // Initialize the page description.
-  let target;
+  let target: string;
   // If getting the data succeeded:
   if (reportExtract) {
     // Update the page description.
@@ -32,7 +32,7 @@ exports.answer = async pageArgs => {
     // Make the form report the failure.
     target = 'The specified page is not available for retesting';
   }
-  const query = {
+  const query: Record<string, string> = {
     target,
     timeStamp,
     jobID,

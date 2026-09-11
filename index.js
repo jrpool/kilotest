@@ -53,7 +53,7 @@ const answer = {
   renewWCAG: require('./web/renewWCAG/index').answer,
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
   requestRetest: require('./web/requestRetest/index.ts').answer,
-  requestRetestForm: require('./web/requestRetestForm/index').answer,
+  requestRetestForm: require('./web/requestRetestForm/index.ts').answer,
   requestTest: require('./web/requestTest/index.ts').answer,
   requestTestForm: require('./web/requestTestForm/index.ts').answer,
   rewindReportsForm: require('./web/rewindReportsForm/index').answer,

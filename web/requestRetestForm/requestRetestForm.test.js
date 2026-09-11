@@ -1,6 +1,6 @@
 /*
   requestRetestForm.test.js
-  Unit tests for web/requestRetestForm/index.js.
+  Unit tests for web/requestRetestForm/index.ts.
 */
 
 // IMPORTS
@@ -9,7 +9,7 @@ const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index');
+const {answer} = require('./index.ts');
 
 // SETUP AND TEARDOWN
 

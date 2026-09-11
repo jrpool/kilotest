@@ -1,0 +1,18 @@
+module.exports = {
+  apps: [
+    {
+      name: 'kilotest',
+      script: 'index.cjs',
+      instances: 1,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: '500M',
+      time: true,
+      env: {
+        NODE_ENV: 'production',
+        BASE_PATH: '/',
+        DEMO_SSE_DELAY_MS: '100'
+      }
+    }
+  ]
+};

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getResponseMetadata, getToolsFacts, processTestRequest, thisHost} = require('./util.ts');
+const {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} = require('./util.ts');
 const {getReportExtracts, isURL} = require('../util.ts');
 
 // FUNCTIONS
@@ -13,6 +13,7 @@ const {getReportExtracts, isURL} = require('../util.ts');
 // Returns the response body.
 exports.response = async (args: string[]) => {
   const [what = '', url = '', reason = ''] = args;
+  const thisHost = getThisHost();
   // Initialize the response content.
   const responseContent: Record<string, any> = {
     'details about your request': {},

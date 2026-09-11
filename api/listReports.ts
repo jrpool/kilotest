@@ -5,13 +5,14 @@
 
 // IMPORTS
 
-const {getReportBasics, getResponseMetadata, getToolsFacts, thisHost} = require('./util.ts');
+const {getReportBasics, getResponseMetadata, getThisHost, getToolsFacts} = require('./util.ts');
 const {getReportExtracts} = require('../util.ts');
 
 // FUNCTIONS
 
 // Returns the response body.
 exports.response = async () => {
+  const thisHost = getThisHost();
   // Initialize the response content.
   const responseContent: Record<string, any> = {
     'basics about all available reports': null,

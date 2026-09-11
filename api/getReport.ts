@@ -8,7 +8,7 @@
 const {
   getResponseMetadata,
   getToolsFacts,
-  thisHost
+  getThisHost
 } = require('./util.ts');
 const {getReport, getReportStats} = require('../util.ts');
 
@@ -17,6 +17,7 @@ const {getReport, getReportStats} = require('../util.ts');
 // Returns the response body.
 exports.response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
+  const thisHost = getThisHost();
   // Initialize the response content.
   const responseContent: Record<string, any> = {
     'size of the report in bytes': null,

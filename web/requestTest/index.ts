@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Records a test request.
 */
 
@@ -9,7 +9,7 @@ const {isRecommendable, processTestRequest} = require('../../util.ts');
 
 // FUNCTIONS
 
-exports.answer = async (what, url, why) => {
+exports.answer = async (what: string, url: string, why: string) => {
   const status = await isRecommendable(url);
   // If the target is already claimed or queued and is thus not requestable:
   if (status) {

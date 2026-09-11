@@ -1,6 +1,6 @@
 /*
   requestTest.test.js
-  Unit tests for web/requestTest/index.js, covering the success path of answer.
+  Unit tests for web/requestTest/index.ts, covering the success path of answer.
 */
 
 // IMPORTS
@@ -63,7 +63,7 @@ after(async () => {
 
 test('answer returns ok with a populated answer page for a valid test request', {timeout: 500}, async () => {
   // Require the module after DB_DIR is set.
-  const {answer} = require('./index');
+  const {answer} = require('./index.ts');
   const result = await answer(
     'Test Page', 'https://example.com/test-success', 'Because accessibility'
   );
@@ -82,7 +82,7 @@ test('answer returns ok with a populated answer page for a valid test request', 
 });
 
 test('answer returns an error when the URL is already queued', {timeout: 500}, async () => {
-  const {answer} = require('./index');
+  const {answer} = require('./index.ts');
   // Create a queued job with the target URL.
   const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
   const jobPath = path.join(queueDir, 'queuedJob.json');
@@ -108,7 +108,7 @@ test('answer returns an error when the URL is already queued', {timeout: 500}, a
 });
 
 test('answer returns an error for an invalid recommendation', {timeout: 500}, async () => {
-  const {answer} = require('./index');
+  const {answer} = require('./index.ts');
   const result = await answer('', 'not-a-url', 'why');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');

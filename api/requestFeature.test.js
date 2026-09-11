@@ -1,6 +1,6 @@
 /*
   requestFeature.test.js
-  Tests for api/requestFeature.js with mocked side effects.
+  Tests for api/requestFeature.ts with mocked side effects.
 */
 
 // IMPORTS
@@ -26,7 +26,7 @@ beforeEach(() => {
 });
 
 // Require requestFeature after the mock is in place, so it captures the mocked sendAlert.
-const {response} = require('./requestFeature');
+const {response} = require('./requestFeature.ts');
 
 after(() => {
 });

@@ -16,7 +16,7 @@ const listViolatorsAPI = require('./api/listViolators');
 const listDiagnosesAPI = require('./api/listDiagnoses');
 const requestTestAPI = require('./api/requestTest');
 const requestRetestAPI = require('./api/requestRetest');
-const requestFeatureAPI = require('./api/requestFeature');
+const requestFeatureAPI = require('./api/requestFeature.ts');
 const {version} = require('./api/version.ts');
 
 const {

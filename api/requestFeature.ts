@@ -1,5 +1,5 @@
 /*
-  requestFeature.js
+  requestFeature.ts
   Processes a request to add or improve a feature and returns an acknowledgement.
 */
 
@@ -11,10 +11,10 @@ const {sendAlert} = require('../alerts.ts');
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async args => {
+exports.response = async (args: string[]) => {
   const [feature = ''] = args;
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'details about your request': null
   };
   // If the requested feature or improvement is empty:

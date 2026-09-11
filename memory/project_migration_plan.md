@@ -20,7 +20,7 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 
 1. Add `tsconfig.json` and update `package.json` scripts; rename leaf modules to `.ts` one at a time (start with `alerts`).
 2. Enable `strict: true` per module, fixing errors as you go.
-3. DI refactor for modules that read env vars at load time (`alerts`, `index`) — handle production code and tests together per module.
+3. DI refactor for modules that read env vars at load time (`alerts`, `index`, `api/util`) — handle production code and tests together per module.
 4. Write a static module registry to replace the dynamic `require()` in `index.js`.
 5. Rename unconverted files to `.cjs`, then flip `"type": "module"` in `package.json`.
 6. Convert `.cjs` files to `.ts` (ESM) one at a time.

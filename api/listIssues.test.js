@@ -1,6 +1,6 @@
 /*
   listIssues.test.js
-  Tests for api/listIssues.js using the fixture corpus, with emphasis on outcome handling.
+  Tests for api/listIssues.ts using the fixture corpus, with emphasis on outcome handling.
 */
 
 // IMPORTS
@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const {response} = require('./listIssues');
+const {response} = require('./listIssues.ts');
 
 // SETUP AND TEARDOWN
 

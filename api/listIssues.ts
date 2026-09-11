@@ -1,5 +1,5 @@
 /*
-  listIssues.js
+  listIssues.ts
   Returns details about one report and basics about all the issues in it.
 */
 
@@ -19,10 +19,10 @@ const {getReport, getReportStats, objectSort} = require('../util.ts');
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async args => {
+exports.response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'basics about the report': null,
     'details about the report': null,
     'how to request that the page be retested': null,
@@ -41,7 +41,7 @@ exports.response = async args => {
   // Otherwise, i.e. if it succeeded:
   else {
     // Get the basics about the report (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID);
+    const reportBasics: any = await getReportBasics(timeStamp, jobID);
     // Add them to the response content.
     responseContent['basics about the report'] = reportBasics;
     // If the basics about the report were obtained:
@@ -61,12 +61,12 @@ exports.response = async args => {
         'browser type used by the job': browserID
       };
       // Initialize data about the test results.
-      const ruleEngineIDs = new Set();
-      const reporterIDs = new Set();
-      const violatorIndexes = new Set();
-      const issuesData = {};
+      const ruleEngineIDs: Set<string> = new Set();
+      const reporterIDs: Set<string> = new Set();
+      const violatorIndexes: Set<string> = new Set();
+      const issuesData: Record<string, any> = {};
       // For each act in the report:
-      report.acts.forEach(act => {
+      report.acts.forEach((act: any) => {
         const {result, type, which} = act;
         // If the act is a test act with a specified rule engine:
         if (type === 'test' && which) {
@@ -74,7 +74,7 @@ exports.response = async args => {
           ruleEngineIDs.add(which);
           const instances = result?.standardResult?.instances ?? [];
           // For each standard instance of the act:
-          instances.forEach(instance => {
+          instances.forEach((instance: any) => {
             const {catalogIndex, issueID, outcome} = instance;
             // If the instance reports a violation:
             if (outcome !== 'cantTell') {
@@ -124,7 +124,7 @@ exports.response = async args => {
         'rule engines that tried to test the page': getRuleEnginesFacts(ruleEngineIDs),
         'rule engines that could not test the page': sortedPreventionFacts,
         'names of rule engines that reported rule violations': getRuleEnginesFacts(reporterIDs)
-        .map(facts => facts.name),
+        .map((facts: any) => facts.name),
         'counts of issues by priority': {
           'highest': weightCounts[3],
           'high': weightCounts[2],
@@ -181,7 +181,7 @@ exports.response = async args => {
       // Sort the data about issues by summary.
       const sortedIssuesData = objectSort(Object.values(issuesData), 'summary', 'alpha');
       // Get the basics about the issues.
-      const issuesBasics = sortedIssuesData.map(issueData => {
+      const issuesBasics = sortedIssuesData.map((issueData: any) => {
         const {id, summary, weight, why, reporterIDs} = issueData;
         return {
           identifier: id,
@@ -189,7 +189,7 @@ exports.response = async args => {
           priority: ['lowest', 'low', 'high', 'highest'][weight - 1],
           'impact on a user': why,
           'rule engines with any violations belonging to the issue': getRuleEnginesFacts(reporterIDs)
-          .map(ruleEnginesFact => ruleEnginesFact.name),
+          .map((ruleEnginesFact: any) => ruleEnginesFact.name),
           'how to get details about the issue': {
             method: 'GET',
             URL: `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`

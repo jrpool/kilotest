@@ -54,7 +54,7 @@ const answer = {
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
   requestRetest: require('./web/requestRetest/index').answer,
   requestRetestForm: require('./web/requestRetestForm/index').answer,
-  requestTest: require('./web/requestTest/index').answer,
+  requestTest: require('./web/requestTest/index.ts').answer,
   requestTestForm: require('./web/requestTestForm/index.ts').answer,
   rewindReportsForm: require('./web/rewindReportsForm/index').answer,
   unhideReportForm: require('./web/unhideReportForm/index').answer,
@@ -640,7 +640,7 @@ const requestHandler = async (request, response) => {
             // Serve headers for a response.
             setHeaders('text/html', pathname, 'ultra');
             // Get the answer data.
-            const answerData = await require(path.join(__dirname, 'web', 'requestTest', 'index'))
+            const answerData = await require(path.join(__dirname, 'web', 'requestTest', 'index.ts'))
             .answer(what, url, why);
             // If they are valid:
             if (answerData.status === 'ok') {

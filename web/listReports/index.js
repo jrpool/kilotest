@@ -18,7 +18,7 @@ const {
   isRecommendable,
   jobsPath,
   objectSort
-} = require('../../util');
+} = require('../../util.ts');
 const fs = require('fs/promises');
 const path = require('path');
 

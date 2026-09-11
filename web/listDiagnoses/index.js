@@ -14,7 +14,7 @@ const {
   htmlSafe,
   isHidden,
   ruleEngines
-} = require('../../util');
+} = require('../../util.ts');
 const {issues: issueSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');

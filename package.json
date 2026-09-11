@@ -69,7 +69,7 @@
       "index.js",
       "mcp.js",
       "alerts.ts",
-      "util.js",
+      "util.ts",
       "api/**/*.{js,ts}",
       "web/**/*.{js,ts}"
     ],

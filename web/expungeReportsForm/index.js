@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportData, objectSort, reportsPath} = require('../../util');
+const {getReportData, objectSort, reportsPath} = require('../../util.ts');
 const fs = require('fs/promises');
 const path = require('path');
 

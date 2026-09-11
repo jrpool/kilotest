@@ -17,7 +17,7 @@ const {
   objectSort,
   ruleEngines,
   updateRecs
-} = require('../util');
+} = require('../util.ts');
 const {issues: issueSpecs} = require('testaro-issues');
 
 // CONSTANTS

@@ -13,7 +13,7 @@ const {
   getToolsFacts,
   thisHost
 } = require('./util');
-const {getReport} = require('../util');
+const {getReport} = require('../util.ts');
 
 // FUNCTIONS
 

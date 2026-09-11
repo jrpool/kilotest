@@ -11,7 +11,7 @@ const path = require('node:path');
 const fs = require('fs/promises');
 const {parse} = require('node-html-parser');
 const {answer} = require('./index');
-const {reportsPath, hiddenReportsPath} = require('../../util');
+const {reportsPath, hiddenReportsPath} = require('../../util.ts');
 
 // SETUP AND TEARDOWN
 

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getRecs} = require('../../util');
+const {getRecs} = require('../../util.ts');
 const fs = require('fs/promises');
 const path = require('path');
 

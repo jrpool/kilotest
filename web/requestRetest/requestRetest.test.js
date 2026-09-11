@@ -99,7 +99,7 @@ test('answer returns an error for an invalid retest recommendation', async () =>
 
 test('answer returns an error when the report extract has an error', async () => {
   // Mock getReportExtracts to return an extract with an error.
-  const util = require('../../util');
+  const util = require('../../util.ts');
   const original = util.getReportExtracts;
   util.getReportExtracts = async () => [
     {timeStamp: '260101T0001', jobID: 'ct', error: 'Report data unavailable'}

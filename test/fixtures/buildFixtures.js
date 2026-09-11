@@ -22,7 +22,7 @@ const issueFocusIndication = 'focusIndicationBad';
 // weight 1 (lowest)
 const issueAllCaps = 'allCaps';
 
-// Rule engine IDs that exist in util.js ruleEngines.
+// Rule engine IDs that exist in util.ts ruleEngines.
 const engineAxe = 'axe';
 const engineAlfa = 'alfa';
 const engineIbm = 'ibm';

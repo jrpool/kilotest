@@ -14,7 +14,7 @@ const {
   getToolsFacts,
   thisHost
 } = require('./util');
-const {getReport, getReportStats, objectSort} = require('../util');
+const {getReport, getReportStats, objectSort} = require('../util.ts');
 
 // FUNCTIONS
 

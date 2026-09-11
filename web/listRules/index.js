@@ -9,7 +9,7 @@ const {
   getWeightName,
   htmlSafe,
   ruleEngines
-} = require('../../util');
+} = require('../../util.ts');
 const {issues: issueSpecs, issueRules, rules: ruleSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');

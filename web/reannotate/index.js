@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {annotateReport, getReportExtracts} = require('../../util');
+const {annotateReport, getReportExtracts} = require('../../util.ts');
 const fs = require('fs/promises');
 const path = require('path');
 

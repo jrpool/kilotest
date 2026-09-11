@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getReportExtracts, processTestRequest} = require('../../util');
+const {getReportExtracts, processTestRequest} = require('../../util.ts');
 
 // FUNCTIONS
 

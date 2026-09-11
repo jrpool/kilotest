@@ -38,7 +38,7 @@ const answer = {
   ai0BalanceForm: require('./web/ai0BalanceForm/index.ts').answer,
   enqueue: require('./web/enqueue/index.ts').answer,
   enqueueForm: require('./web/enqueueForm/index.ts').answer,
-  expungeReportsForm: require('./web/expungeReportsForm/index').answer,
+  expungeReportsForm: require('./web/expungeReportsForm/index.ts').answer,
   hideReportForm: require('./web/hideReportForm/index.ts').answer,
   listDiagnoses: require('./web/listDiagnoses/index').answer,
   listIssues: require('./web/listIssues/index').answer,

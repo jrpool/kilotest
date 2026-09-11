@@ -55,7 +55,7 @@ const answer = {
   requestRetest: require('./web/requestRetest/index').answer,
   requestRetestForm: require('./web/requestRetestForm/index').answer,
   requestTest: require('./web/requestTest/index').answer,
-  requestTestForm: require('./web/requestTestForm/index').answer,
+  requestTestForm: require('./web/requestTestForm/index.ts').answer,
   rewindReportsForm: require('./web/rewindReportsForm/index').answer,
   unhideReportForm: require('./web/unhideReportForm/index').answer,
   tutorial: require('./web/tutorial/index').answer

@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for requesting a test.
 */
 
@@ -10,9 +10,9 @@ const path = require('path');
 
 // FUNCTIONS
 
-exports.answer = async () => {
+exports.answer = async (): Promise<{status: string; answerPage: string}> => {
   // Get the test request form template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Return it.
   return {
     status: 'ok',

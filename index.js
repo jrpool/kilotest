@@ -60,6 +60,17 @@ const answer = {
   unhideReportForm: require('./web/unhideReportForm/index.ts').answer,
   tutorial: require('./web/tutorial/index.ts').answer
 };
+// Response functions of the API services.
+const apiRespond = {
+  getReport: require('./api/getReport.ts').response,
+  listDiagnoses: require('./api/listDiagnoses.ts').response,
+  listIssues: require('./api/listIssues.ts').response,
+  listReports: require('./api/listReports.ts').response,
+  listViolators: require('./api/listViolators.ts').response,
+  requestFeature: require('./api/requestFeature.ts').response,
+  requestRetest: require('./api/requestRetest.ts').response,
+  requestTest: require('./api/requestTest.ts').response
+};
 
 // CONSTANTS
 
@@ -512,8 +523,7 @@ const requestHandler = async (request, response) => {
       // If the service lists the available reports:
       if (service === 'listReports') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'listReports.ts'))
-        .response(specs);
+        const responseBody = await apiRespond.listReports(specs);
         // Send it.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
@@ -521,8 +531,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service lists the issues in a report:
       else if (service === 'listIssues') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'listIssues.ts'))
-        .response(specs);
+        const responseBody = await apiRespond.listIssues(specs);
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -530,8 +539,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service lists the violators of an issue in a report:
       else if (service === 'listViolators') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'listViolators.ts'))
-        .response(specs);
+        const responseBody = await apiRespond.listViolators(specs);
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -539,8 +547,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service lists the diagnoses of a violation of an issue in a report:
       else if (service === 'listDiagnoses') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'listDiagnoses.ts'))
-        .response(specs);
+        const responseBody = await apiRespond.listDiagnoses(specs);
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -548,8 +555,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service serves a report:
       else if (service === 'getReport') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'getReport.ts'))
-        .response(specs);
+        const responseBody = await apiRespond.getReport(specs);
         // Send it.
         setHeaders('application/json', null, 'low');
         response.end(JSON.stringify(responseBody));
@@ -641,8 +647,7 @@ const requestHandler = async (request, response) => {
             // Serve headers for a response.
             setHeaders('text/html', pathname, 'ultra');
             // Get the answer data.
-            const answerData = await require(path.join(__dirname, 'web', 'requestTest', 'index.ts'))
-            .answer(what, url, why);
+            const answerData = await answer.requestTest(what, url, why);
             // If they are valid:
             if (answerData.status === 'ok') {
               // Serve the answer page.
@@ -670,8 +675,7 @@ const requestHandler = async (request, response) => {
           // Serve response headers.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
-          const answerData = await require(path.join(__dirname, 'web', 'requestRetest', 'index.ts'))
-          .answer(pathTail, why);
+          const answerData = await answer.requestRetest(pathTail, why);
           // If they are valid:
           if (answerData.status === 'ok') {
             // Serve the answer page.
@@ -702,8 +706,7 @@ const requestHandler = async (request, response) => {
             // Set a location header for a response.
             response.setHeader('content-location', pathname);
             // Process the approval and get the answer data about the remaining recommendations.
-            const answerData = await require(path.join(__dirname, 'web', 'enqueue', 'index.ts'))
-            .answer(url, what, authCode);
+            const answerData = await answer.enqueue(url, what, authCode);
             // If the answer data are valid:
             if (answerData.status === 'ok') {
               // Serve the test-order page with the remaining recommendations.
@@ -729,8 +732,7 @@ const requestHandler = async (request, response) => {
             // Set a location header for a response.
             response.setHeader('content-location', '/enqueueForm.html');
             // Get the answer data.
-            const answerData = await require(path.join(__dirname, 'web', 'enqueueForm', 'index.ts'))
-            .answer();
+            const answerData = await answer.enqueueForm();
             // Serve the test-order form with the remaining recommendations.
             response.end(answerData.answerPage);
           }
@@ -747,8 +749,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'web', 'reannotate', 'index.ts'))
-        .answer(authCode);
+        const answerData = await answer.reannotate(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.
@@ -766,8 +767,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'low');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'web', 'renewWCAG', 'index.ts'))
-        .answer(authCode);
+        const answerData = await answer.renewWCAG(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {
           // Serve the answer page.
@@ -860,8 +860,7 @@ const requestHandler = async (request, response) => {
         if (segments[0] === 'requestTest') {
           const {description, URL, reason} = postData;
           // Get the response body.
-          const responseBody = await require(path.join(__dirname, 'api', 'requestTest.ts'))
-          .response([description, URL, reason]);
+          const responseBody = await apiRespond.requestTest([description, URL, reason]);
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
@@ -870,8 +869,7 @@ const requestHandler = async (request, response) => {
         else if (segments[0] === 'requestRetest') {
           const {reason} = postData;
           // Get the response body.
-          const responseBody = await require(path.join(__dirname, 'api', 'requestRetest.ts'))
-          .response(segments.slice(1).concat(reason));
+          const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason));
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
@@ -880,8 +878,7 @@ const requestHandler = async (request, response) => {
         else if (segments[0] === 'requestFeature') {
           const {feature} = postData;
           // Get the response body.
-          const responseBody = await require(path.join(__dirname, 'api', 'requestFeature.ts'))
-          .response([feature]);
+          const responseBody = await apiRespond.requestFeature([feature]);
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

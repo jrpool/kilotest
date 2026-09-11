@@ -1,6 +1,6 @@
 /*
   requestTest.test.js
-  Tests for api/requestTest.js using the fixture corpus, with mocked side effects.
+  Tests for api/requestTest.ts using the fixture corpus, with mocked side effects.
 */
 
 // IMPORTS
@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 // Require requestTest after the mock is in place, so it captures the mocked processTestRequest.
-const {response} = require('./requestTest');
+const {response} = require('./requestTest.ts');
 
 after(() => {
   if (savedDBDir !== undefined) {

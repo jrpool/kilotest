@@ -1,5 +1,5 @@
 /*
-  requestTest.js
+  requestTest.ts
   Processes a request to test an untested page and returns an acknowledgement.
 */
 
@@ -11,10 +11,10 @@ const {getReportExtracts, isURL} = require('../util.ts');
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async args => {
+exports.response = async (args: string[]) => {
   const [what = '', url = '', reason = ''] = args;
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'details about your request': {},
     'disposition of your request': null
   };
@@ -46,7 +46,7 @@ exports.response = async args => {
     const reportExtracts = await getReportExtracts();
     // If any report is on a page with the specified description and URL:
     if (
-      reportExtracts.some(extract => extract.what === what && extract.url === url)
+      reportExtracts.some((extract: any) => extract.what === what && extract.url === url)
     ) {
       // Add this to the response content.
       responseContent['details about your request'] = {

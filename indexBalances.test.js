@@ -41,6 +41,10 @@ let originalBalance;
 
 before(async () => {
   originalBalance = await fs.readFile(balancePath, 'utf8').catch(() => null);
+  // Create the job directories, which are not tracked by git and may not exist on a fresh checkout.
+  for (const sub of ['claimed', 'queue', 'failed']) {
+    await fs.mkdir(path.join(fixtureDBDir, 'jobs', sub), {recursive: true});
+  }
   server = http.createServer(requestHandler);
   await new Promise(resolve => server.listen(port, () => resolve()));
 });

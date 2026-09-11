@@ -17,7 +17,7 @@ const listDiagnosesAPI = require('./api/listDiagnoses');
 const requestTestAPI = require('./api/requestTest');
 const requestRetestAPI = require('./api/requestRetest');
 const requestFeatureAPI = require('./api/requestFeature');
-const {version} = require('./api/version');
+const {version} = require('./api/version.ts');
 
 const {
   getReportSchema,

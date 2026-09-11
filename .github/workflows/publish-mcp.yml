@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'server.json'
-      - 'api/version.js'
+      - 'api/version.ts'
 
 jobs:
   publish:
@@ -23,12 +23,12 @@ jobs:
         with:
           node-version: '>=24.16.0'
 
-      - name: Verify server.json version matches api/version.js
+      - name: Verify server.json version matches api/version.ts
         run: |
-          FILE_VERSION=$(node -e "console.log(require('./api/version').version)")
+          FILE_VERSION=$(node -e "console.log(require('./api/version.ts').version)")
           JSON_VERSION=$(node -e "console.log(require('./server.json').version)")
           if [ "$FILE_VERSION" != "$JSON_VERSION" ]; then
-            echo "::error::server.json version ($JSON_VERSION) does not match api/version.js version ($FILE_VERSION)"
+            echo "::error::server.json version ($JSON_VERSION) does not match api/version.ts version ($FILE_VERSION)"
             exit 1
           fi
           echo "Versions match: $FILE_VERSION"

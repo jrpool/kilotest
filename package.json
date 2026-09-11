@@ -70,8 +70,8 @@
       "mcp.js",
       "alerts.ts",
       "util.js",
-      "api/**/*.js",
-      "web/**/*.js"
+      "api/**/*.{js,ts}",
+      "web/**/*.{js,ts}"
     ],
     "exclude": [
       "coverage/**",

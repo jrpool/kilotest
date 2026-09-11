@@ -26,7 +26,7 @@ The internal features that make Kilotest a collection of tools for language mode
 - An `llms.txt` file and an `llms-full.txt` file, documenting the use of Kilotest by language models, conforming to the [llms-txt](https://llmstxt.org/) specification.
 - A generated `openapi.yaml` file, documenting the Kilotest API, conforming to the [OpenAPI specification](https://spec.openapis.org/oas/v3.1.0).
 - An `mcp.js` file, providing an MCP server for Kilotest.
-- A `server.json` file, conforming to the [MCP server schema](https://modelcontextprotocol.io/), and a GitHub Actions workflow (`publish-mcp.yml`) that authenticates via GitHub OIDC and publishes that file to the official MCP Registry whenever `server.json` or `api/version.js` changes on the `main` branch.
+- A `server.json` file, conforming to the [MCP server schema](https://modelcontextprotocol.io/), and a GitHub Actions workflow (`publish-mcp.yml`) that authenticates via GitHub OIDC and publishes that file to the official MCP Registry whenever `server.json` or `api/version.ts` changes on the `main` branch.
 - A `capability.md` file with a URL, summarizing what Kilotest tools can do.
 - `mcp`, `mcp-server`, and `modelcontextprotocol` keywords in `package.json`, supporting discovery of the `@jrpool/kilotest` npm package by tools and humans searching the npm registry for MCP servers.
 - An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish`/`update`), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
@@ -61,7 +61,7 @@ The external features that support the use of Kilotest as a collection of AI too
 
 ## Required maintenance
 
-Whenever the `/api/version.js` file is updated:
+Whenever the `/api/version.ts` file is updated:
 
 - Update the `server.json` file (version field).
 - Update the `lhm.plugin.json` file (version field).

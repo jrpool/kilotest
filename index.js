@@ -51,7 +51,7 @@ const answer = {
   reannotate: require('./web/reannotate/index').answer,
   reannotateForm: require('./web/reannotateForm/index').answer,
   renewWCAG: require('./web/renewWCAG/index').answer,
-  renewWCAGForm: require('./web/renewWCAGForm/index').answer,
+  renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
   requestRetest: require('./web/requestRetest/index').answer,
   requestRetestForm: require('./web/requestRetestForm/index').answer,
   requestTest: require('./web/requestTest/index').answer,

@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for renewing the WCAG map.
 */
 
@@ -11,7 +11,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns a form for renewing the WCAG map.
-exports.answer = async () => {
+exports.answer = async (): Promise<{status: string; answerPage: string}> => {
   // Get the map renewal form.
   const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Return it.

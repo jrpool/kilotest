@@ -1,6 +1,6 @@
 /*
   requestTestForm.test.js
-  Unit tests for web/requestTestForm/index.js.
+  Unit tests for web/requestTestForm/index.ts.
 */
 
 // IMPORTS
@@ -8,7 +8,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index');
+const {answer} = require('./index.ts');
 
 // TESTS
 

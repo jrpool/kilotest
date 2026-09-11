@@ -62,6 +62,16 @@
   },
   "c8": {
     "all": true,
+    "extension": [
+      ".js",
+      ".cjs",
+      ".mjs",
+      ".ts",
+      ".tsx",
+      ".jsx",
+      ".cts",
+      ".mts"
+    ],
     "reporter": [
       "text",
       "html"

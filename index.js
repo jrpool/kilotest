@@ -52,7 +52,7 @@ const answer = {
   reannotateForm: require('./web/reannotateForm/index').answer,
   renewWCAG: require('./web/renewWCAG/index').answer,
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
-  requestRetest: require('./web/requestRetest/index').answer,
+  requestRetest: require('./web/requestRetest/index.ts').answer,
   requestRetestForm: require('./web/requestRetestForm/index').answer,
   requestTest: require('./web/requestTest/index.ts').answer,
   requestTestForm: require('./web/requestTestForm/index.ts').answer,
@@ -669,7 +669,7 @@ const requestHandler = async (request, response) => {
           // Serve response headers.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
-          const answerData = await require(path.join(__dirname, 'web', 'requestRetest', 'index'))
+          const answerData = await require(path.join(__dirname, 'web', 'requestRetest', 'index.ts'))
           .answer(pathTail, why);
           // If they are valid:
           if (answerData.status === 'ok') {

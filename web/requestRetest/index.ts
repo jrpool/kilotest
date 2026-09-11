@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Records a retest request.
 */
 
@@ -9,13 +9,13 @@ const {getReportExtracts, processTestRequest} = require('../../util.ts');
 
 // FUNCTIONS
 
-exports.answer = async (pageArgs, why) => {
+exports.answer = async (pageArgs: string, why: string) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
   const reportExtracts = await getReportExtracts(true);
   // Get data on the report whose page is to be retested.
   const reportExtract = reportExtracts.find(
-    reportExtract => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
+    (reportExtract: any) => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
   );
   const {error, url, what} = reportExtract;
   // If this failed:

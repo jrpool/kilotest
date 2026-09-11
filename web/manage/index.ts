@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Lists the actions that managers can take.
 */
 
@@ -11,9 +11,9 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns the answer page.
-exports.answer = async () => {
+exports.answer = async (): Promise<{status: string; answerPage: string}> => {
   // Get the answer page.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Return it.
   return {
     status: 'ok',

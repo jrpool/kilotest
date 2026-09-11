@@ -46,7 +46,7 @@ const answer = {
   listRules: require('./web/listRules/index').answer,
   listTopIssues: require('./web/listTopIssues/index').answer,
   listViolators: require('./web/listViolators/index').answer,
-  manage: require('./web/manage/index').answer,
+  manage: require('./web/manage/index.ts').answer,
   pruneReportsForm: require('./web/pruneReportsForm/index').answer,
   reannotate: require('./web/reannotate/index').answer,
   reannotateForm: require('./web/reannotateForm/index').answer,

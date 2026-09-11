@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Lists the violators of an issue in a report.
 */
 
@@ -24,7 +24,12 @@ const path = require('path');
 // FUNCTIONS
 
 // Adds parameters to a query for the answer page.
-const populateQuery = async (issueID, timeStamp, jobID, query) => {
+const populateQuery = async (
+  issueID: string,
+  timeStamp: string,
+  jobID: string,
+  query: Record<string, any>
+) => {
   // Get descriptions of the page facts.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   // If this failed:
@@ -56,7 +61,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Initialize those whose values depend on instance inspection.
   query.count = 0;
   query.reporters = new Set();
-  let violators = {};
+  let violators: any = {};
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   const {acts, catalog} = report;
@@ -68,19 +73,19 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     return;
   }
   // Otherwise, i.e. if it succeeded, get the test acts of the report.
-  const testActs = acts.filter(act => act.type === 'test');
+  const testActs = acts.filter((act: any) => act.type === 'test');
   // For each test act:
-  testActs.forEach(act => {
+  testActs.forEach((act: any) => {
     const {result, which} = act;
     const issueInstances = result?.standardResult?.instances?.filter(
-      instance => instance.issueID === issueID
+      (instance: any) => instance.issueID === issueID
     ) ?? [];
     // If the rule of any of its standard instances belongs to the issue:
     if (issueInstances.length) {
       query.reporters.add(which);
     }
     // For each standard instance whose rule belongs to the issue:
-    issueInstances.forEach(instance => {
+    issueInstances.forEach((instance: any) => {
       const pathID = instance.pathID || '/html';
       const catalogIndex = instance.catalogIndex || '0';
       const tagName = catalog[catalogIndex]?.tagName
@@ -100,7 +105,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
     query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
   });
   // For each violator:
-  Object.values(violators).forEach(violatorData => {
+  Object.values(violators).forEach((violatorData: any) => {
     // Convert the set of its reporters to a string.
     violatorData.reporters = getEngineNamesString(violatorData.reporters);
   });
@@ -109,18 +114,18 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   // Convert the set of issue reporters to a string.
   query.reporters = getEngineNamesString(query.reporters);
   // Convert the violator data to an array.
-  violators = Object.entries(violators).map(entry => ({
+  violators = Object.entries(violators).map((entry: [string, any]) => ({
     catalogIndex: entry[0],
     ...entry[1]
   }));
   // Sort the violators in XPath order.
-  violators.sort((a, b) => a.pathID.localeCompare(b.pathID));
+  violators.sort((a: any, b: any) => a.pathID.localeCompare(b.pathID));
   // Initialize the lines.
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(6);
   let takeMeAdviceNeeded = false;
   // For each violator:
-  violators.forEach((violator, index) => {
+  violators.forEach((violator: any, index: number) => {
     const {catalogIndex, pathID, reporters, tagName, text} = violator;
     // Add a heading to the lines.
     lines.push(`${margin}<li><h3>Element ${catalogIndex}</h3>`);
@@ -169,7 +174,7 @@ const populateQuery = async (issueID, timeStamp, jobID, query) => {
   }
 };
 // Returns a page answering the violators question.
-exports.answer = async pageArgs => {
+exports.answer = async (pageArgs: string) => {
   const [issueID, timeStamp, jobID] = pageArgs.split('/');
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
@@ -179,7 +184,7 @@ exports.answer = async pageArgs => {
       message: 'Report not available'
     };
   }
-  const query = {};
+  const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, query);
   // If this failed:

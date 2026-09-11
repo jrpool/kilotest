@@ -108,10 +108,16 @@ test('answer returns an error when the report extract has an error', async (t) =
       ]
     }
   });
-  // Re-require index.cts so it picks up the mocked module.
-  delete require.cache[require.resolve('./index.cts')];
-  const {answer} = require('./index.cts');
-  const result = await answer('260101T0001/ct', 'Because changes were made');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Report data unavailable');
+  try {
+    // Re-require index.cts so it picks up the mocked module.
+    delete require.cache[require.resolve('./index.cts')];
+    const {answer} = require('./index.cts');
+    const result = await answer('260101T0001/ct', 'Because changes were made');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Report data unavailable');
+  }
+  finally {
+    // Drop the mock-bound copy of index.cts so later tests get the real module.
+    delete require.cache[require.resolve('./index.cts')];
+  }
 });

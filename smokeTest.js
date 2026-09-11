@@ -10,7 +10,6 @@ const {routes} = require('./index');
 
 // CONSTANTS
 
-const host = process.env.SMOKE_HOST || 'kilotest.com';
 // Concrete paths matching each wildcard pattern in the routes table, for smoke testing.
 const concretePaths = {
   GET: {
@@ -75,7 +74,7 @@ const sendRequest = (method, requestPath) => new Promise((resolve, reject) => {
   }
   const options = {
     method,
-    host,
+    host: process.env.SMOKE_HOST || 'kilotest.com',
     path: requestPath,
     headers
   };

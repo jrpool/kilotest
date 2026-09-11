@@ -879,7 +879,7 @@ const requestHandler = async (request, response) => {
         else if (segments[0] === 'requestFeature') {
           const {feature} = postData;
           // Get the response body.
-          const responseBody = await require(path.join(__dirname, 'api', 'requestFeature'))
+          const responseBody = await require(path.join(__dirname, 'api', 'requestFeature.ts'))
           .response([feature]);
           // Send it.
           setHeaders('application/json', null, 'ultra');

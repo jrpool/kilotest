@@ -29,14 +29,14 @@ const {
 } = require('./util.ts');
 const {handleMCP, mcpPath} = require('./mcp');
 const fs = require('fs/promises');
-const {handleComment} = require('./web/tutorial/index');
+const {handleComment} = require('./web/tutorial/index.ts');
 const http = require('http');
 const https = require('https');
 const path = require('path');
 const {sendAlert} = require('./alerts.ts');
 const answer = {
   ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
-  enqueue: require('./web/enqueue/index').answer,
+  enqueue: require('./web/enqueue/index.ts').answer,
   enqueueForm: require('./web/enqueueForm/index.ts').answer,
   expungeReportsForm: require('./web/expungeReportsForm/index').answer,
   hideReportForm: require('./web/hideReportForm/index').answer,
@@ -48,7 +48,7 @@ const answer = {
   listViolators: require('./web/listViolators/index').answer,
   manage: require('./web/manage/index.ts').answer,
   pruneReportsForm: require('./web/pruneReportsForm/index').answer,
-  reannotate: require('./web/reannotate/index').answer,
+  reannotate: require('./web/reannotate/index.ts').answer,
   reannotateForm: require('./web/reannotateForm/index').answer,
   renewWCAG: require('./web/renewWCAG/index').answer,
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
@@ -58,7 +58,7 @@ const answer = {
   requestTestForm: require('./web/requestTestForm/index.ts').answer,
   rewindReportsForm: require('./web/rewindReportsForm/index').answer,
   unhideReportForm: require('./web/unhideReportForm/index').answer,
-  tutorial: require('./web/tutorial/index').answer
+  tutorial: require('./web/tutorial/index.ts').answer
 };
 
 // CONSTANTS
@@ -701,7 +701,7 @@ const requestHandler = async (request, response) => {
             // Set a location header for a response.
             response.setHeader('content-location', pathname);
             // Process the approval and get the answer data about the remaining recommendations.
-            const answerData = await require(path.join(__dirname, 'web', 'enqueue', 'index'))
+            const answerData = await require(path.join(__dirname, 'web', 'enqueue', 'index.ts'))
             .answer(url, what, authCode);
             // If the answer data are valid:
             if (answerData.status === 'ok') {
@@ -746,7 +746,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'web', 'reannotate', 'index'))
+        const answerData = await require(path.join(__dirname, 'web', 'reannotate', 'index.ts'))
         .answer(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {

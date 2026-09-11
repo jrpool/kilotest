@@ -1,6 +1,6 @@
 /*
   tutorial.test.js
-  Unit tests for web/tutorial/index.js, covering the answer and handleComment exports.
+  Unit tests for web/tutorial/index.ts, covering the answer and handleComment exports.
 */
 
 // IMPORTS
@@ -9,7 +9,7 @@ const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const {answer, handleComment} = require('./index');
+const {answer, handleComment} = require('./index.ts');
 
 // CONSTANTS
 

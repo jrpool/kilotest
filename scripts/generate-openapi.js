@@ -1,6 +1,6 @@
 /*
   generate-openapi.js
-  Generates openapi.yaml from the Kilotest API route table (api/routes.js) and Zod schemas (api/schemas.js), keeping the OpenAPI document in sync with schemas.js’s single source of truth.
+  Generates openapi.yaml from the Kilotest API route table (api/routes.js) and Zod schemas (api/schemas.ts), keeping the OpenAPI document in sync with schemas.ts’s single source of truth.
 */
 
 // IMPORTS

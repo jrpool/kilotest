@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   List the issues in a report.
 */
 
@@ -25,7 +25,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns data on the issues reported by a report.
-const getIssuesData = async (timeStamp, jobID) => {
+const getIssuesData = async (timeStamp: string, jobID: string) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   const reportIsHidden = await isHidden(timeStamp, jobID);
@@ -37,12 +37,12 @@ const getIssuesData = async (timeStamp, jobID) => {
   if (isValidReport(report)) {
     // Initialize the temporary data.
     const temp = {
-      issues: {},
-      reporters: new Set(),
-      violators: new Set()
+      issues: {} as Record<string, any>,
+      reporters: new Set<string>(),
+      violators: new Set<string>()
     };
     // Initialize the final data.
-    const final = {
+    const final: Record<string, any> = {
       reporters: [],
       reporterList: '',
       reporterCount: 0,
@@ -57,13 +57,13 @@ const getIssuesData = async (timeStamp, jobID) => {
       issueCount: 0
     };
     // For each act in the report:
-    report.acts.forEach(act => {
+    report.acts.forEach((act: any) => {
       // If it is a test act:
       if (act.type === 'test') {
         const {result, which} = act;
         const instances = result?.standardResult?.instances ?? [];
         // For each of its standard instances:
-        instances.forEach(instance => {
+        instances.forEach((instance: any) => {
           const {catalogIndex, issueID, outcome} = instance;
           // If the instance reports a violation and identifies a non-ignorable issue:
           if (outcome !== 'cantTell' && issueID && issueID !== 'ignorable') {
@@ -102,7 +102,7 @@ const getIssuesData = async (timeStamp, jobID) => {
     final.violatorCount = temp.violators.size;
     Object.values(temp.issues).forEach(issue => {
       const {issueID, summary, wcag, why, weight} = issue;
-      const finalIssue = {
+      const finalIssue: Record<string, any> = {
         issueID,
         summary,
         wcag,
@@ -129,9 +129,9 @@ const getIssuesData = async (timeStamp, jobID) => {
   return {error: 'Report missing or invalid.'};
 };
 // Get page and issues data from a report.
-const getData = async (timeStamp, jobID) => {
+const getData = async (timeStamp: string, jobID: string) => {
   const pageData = await getPageData(timeStamp, jobID);
-  const issuesData = await getIssuesData(timeStamp, jobID);
+  const issuesData: any = await getIssuesData(timeStamp, jobID);
   const pageError = pageData.error || '';
   const issuesError = issuesData.error || '';
   const errors = [pageError, issuesError].filter(Boolean).join('; ');
@@ -147,9 +147,9 @@ const getData = async (timeStamp, jobID) => {
   };
 };
 // Adds parameters to a query for the answer page.
-const populateQuery = async (timeStamp, jobID, query) => {
+const populateQuery = async (timeStamp: string, jobID: string, query: Record<string, any>) => {
   // Get data on the target and its issues according to the report.
-  const data = await getData(timeStamp, jobID);
+  const data: any = await getData(timeStamp, jobID);
   const {pageData, issuesData} = data;
   // If this failed:
   if (data.error) {
@@ -181,7 +181,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
     issues
   } = issuesData;
   // Initialize strings for the prevention notices query property.
-  const preventionStrings = [];
+  const preventionStrings: string[] = [];
   const margin = ' '.repeat(6);
   Object.keys(preventions).forEach(preventedEngineID => {
     const engineName = ruleEngines[preventedEngineID];
@@ -213,9 +213,9 @@ const populateQuery = async (timeStamp, jobID, query) => {
     // If any reported issues have the weight:
     if (weightIssues.length) {
       // Initialize lines for the weight details query property.
-      const detailsLines = [];
+      const detailsLines: string[] = [];
       // For each issue with the weight:
-      weightIssues.forEach(issueData => {
+      weightIssues.forEach((issueData: any) => {
         const weightIssueCount = weightIssues.length;
         // Add the issue count to the query.
         query[`${weightName}Count`] = weightIssueCount;
@@ -272,7 +272,7 @@ const populateQuery = async (timeStamp, jobID, query) => {
   });
 };
 // Returns a page answering the target-issues question.
-exports.answer = async pageArgs => {
+exports.answer = async (pageArgs: string) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
@@ -282,7 +282,7 @@ exports.answer = async pageArgs => {
       message: 'Report not available'
     };
   }
-  const query = {};
+  const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);
   // If this failed:

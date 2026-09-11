@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {sendAlert} = require('../../alerts');
+const {sendAlert} = require('../../alerts.ts');
 const {
   getEngineNamesString,
   getReportExtracts,

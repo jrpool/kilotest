@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {sendAlert} = require('./alerts');
+const {sendAlert} = require('./alerts.ts');
 const {issues: issueSpecs, rules: ruleSpecs} = require('testaro-issues');
 const fs = require('fs/promises');
 const path = require('path');

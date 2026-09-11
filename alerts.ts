@@ -1,25 +1,25 @@
 /*
-  alerts.js
+  alerts.ts
   Sends alert emails to a Kilotest manager when required.
 */
 
 // IMPORTS
 
-const https = require('https');
+const https = require('node:https') as typeof import('node:https');
 
 // CONSTANTS
 
 // Alert configuration.
-const MANAGER_EMAIL = process.env.MANAGER_EMAIL;
-const ALERT_API_HOST = process.env.ALERT_API_HOST;
-const ALERT_API_PATH = process.env.ALERT_API_PATH;
-const ALERT_API_KEY = process.env.ALERT_API_KEY;
-const ALERT_FROM = process.env.ALERT_FROM;
+const MANAGER_EMAIL = process.env['MANAGER_EMAIL'];
+const ALERT_API_HOST = process.env['ALERT_API_HOST'];
+const ALERT_API_PATH = process.env['ALERT_API_PATH'];
+const ALERT_API_KEY = process.env['ALERT_API_KEY'];
+const ALERT_FROM = process.env['ALERT_FROM'];
 
 // FUNCTIONS
 
 // Sends an email alert to a manager.
-exports.sendAlert = (subject, body) => new Promise(resolve => {
+exports.sendAlert = (subject: string, body: string): Promise<void> => new Promise(resolve => {
   // If the alert configuration is complete:
   if (MANAGER_EMAIL && ALERT_API_HOST && ALERT_API_PATH && ALERT_API_KEY && ALERT_FROM) {
     const payload = JSON.stringify({
@@ -45,7 +45,7 @@ exports.sendAlert = (subject, body) => new Promise(resolve => {
       });
       res.on('end', () => {
         // If this succeeded:
-        if (res.statusCode >= 200 && res.statusCode < 300) {
+        if (res.statusCode !== undefined && res.statusCode >= 200 && res.statusCode < 300) {
           // Report this.
           console.log(`Alert sent (${subject})`);
         }

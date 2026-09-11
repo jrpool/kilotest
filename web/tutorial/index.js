@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {sendAlert} = require('../../alerts');
+const {sendAlert} = require('../../alerts.ts');
 const {getJSON, getNowStamp} = require('../../util');
 const fs = require('fs/promises');
 const path = require('path');

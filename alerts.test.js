@@ -1,6 +1,6 @@
 /*
   alerts.test.js
-  Tests for alerts.js, covering the success, failure, error, timeout, and unconfigured paths.
+  Tests for alerts.ts, covering the success, failure, error, timeout, and unconfigured paths.
 */
 
 // IMPORTS
@@ -31,8 +31,8 @@ after(() => {
       delete process.env[key];
     }
   }
-  delete require.cache[require.resolve('./alerts')];
-  require('./alerts');
+  delete require.cache[require.resolve('./alerts.ts')];
+  require('./alerts.ts');
 });
 
 // HELPER
@@ -72,10 +72,10 @@ const clearAlertConfig = () => {
   }
 };
 
-// Loads alerts.js fresh so it picks up the current env vars and https.request.
+// Loads alerts.ts fresh so it picks up the current env vars and https.request.
 const loadAlerts = () => {
-  delete require.cache[require.resolve('./alerts')];
-  return require('./alerts');
+  delete require.cache[require.resolve('./alerts.ts')];
+  return require('./alerts.ts');
 };
 
 // TESTS

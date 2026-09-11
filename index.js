@@ -33,7 +33,7 @@ const {handleComment} = require('./web/tutorial/index');
 const http = require('http');
 const https = require('https');
 const path = require('path');
-const {sendAlert} = require('./alerts');
+const {sendAlert} = require('./alerts.ts');
 const answer = {
   ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
   enqueue: require('./web/enqueue/index').answer,

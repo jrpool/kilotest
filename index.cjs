@@ -1,0 +1,963 @@
+/*
+  index.cjs
+  Manages Kilotest.
+*/
+
+// ENVIRONMENT
+
+require('dotenv').config({quiet: true});
+
+// IMPORTS
+const {
+  annotateReport,
+  createLock,
+  getJobNames,
+  getJSON,
+  getObject,
+  getPOSTData,
+  getReport,
+  getRecs,
+  getReportPath,
+  hiddenReportsPath,
+  isHidden,
+  isReportAvailable,
+  isTimeStamp,
+  isJobID,
+  jobsPath,
+  recsLock,
+  reportsPath
+} = require('./util.ts');
+const {handleMCP, mcpPath} = require('./mcp.cjs');
+const fs = require('fs/promises');
+const {handleComment} = require('./web/tutorial/index.ts');
+const http = require('http');
+const https = require('https');
+const path = require('path');
+const {sendAlert} = require('./alerts.ts');
+const answer = {
+  ai0BalanceForm: require('./web/ai0BalanceForm/index.ts').answer,
+  enqueue: require('./web/enqueue/index.ts').answer,
+  enqueueForm: require('./web/enqueueForm/index.ts').answer,
+  expungeReportsForm: require('./web/expungeReportsForm/index.ts').answer,
+  hideReportForm: require('./web/hideReportForm/index.ts').answer,
+  listDiagnoses: require('./web/listDiagnoses/index.ts').answer,
+  listIssues: require('./web/listIssues/index.ts').answer,
+  listReports: require('./web/listReports/index.ts').answer,
+  listRules: require('./web/listRules/index.ts').answer,
+  listTopIssues: require('./web/listTopIssues/index.ts').answer,
+  listViolators: require('./web/listViolators/index.ts').answer,
+  manage: require('./web/manage/index.ts').answer,
+  pruneReportsForm: require('./web/pruneReportsForm/index.ts').answer,
+  reannotate: require('./web/reannotate/index.ts').answer,
+  reannotateForm: require('./web/reannotateForm/index.ts').answer,
+  renewWCAG: require('./web/renewWCAG/index.ts').answer,
+  renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
+  requestRetest: require('./web/requestRetest/index.ts').answer,
+  requestRetestForm: require('./web/requestRetestForm/index.ts').answer,
+  requestTest: require('./web/requestTest/index.ts').answer,
+  requestTestForm: require('./web/requestTestForm/index.ts').answer,
+  rewindReportsForm: require('./web/rewindReportsForm/index.ts').answer,
+  unhideReportForm: require('./web/unhideReportForm/index.ts').answer,
+  tutorial: require('./web/tutorial/index.ts').answer
+};
+// Response functions of the API services.
+const apiRespond = {
+  getReport: require('./api/getReport.ts').response,
+  listDiagnoses: require('./api/listDiagnoses.ts').response,
+  listIssues: require('./api/listIssues.ts').response,
+  listReports: require('./api/listReports.ts').response,
+  listViolators: require('./api/listViolators.ts').response,
+  requestFeature: require('./api/requestFeature.ts').response,
+  requestRetest: require('./api/requestRetest.ts').response,
+  requestTest: require('./api/requestTest.ts').response
+};
+
+// CONSTANTS
+
+// Paths that the application is authorized to handle, by method, as glob-style patterns where * matches any sequence of characters.
+const routes = exports.routes = {
+  GET: [
+    '*.html*',
+    '/',
+    '/api-docs',
+    '/api/*',
+    '/capability.md',
+    '/favicon.*',
+    '/fullReport.json/*',
+    '/index.html',
+    '/llms-full.txt',
+    '/llms.txt',
+    '/mcp',
+    '/openapi.json',
+    '/openapi.yaml',
+    '/robots.txt',
+    '/sitemap.xml',
+    '/style.css',
+    '/swagger.json',
+    '/swagger.yaml',
+    '/tutorial/images/*'
+  ],
+  POST: [
+    '/api/*',
+    '/mcp',
+    '/reannotate.html',
+    '/recAction.html',
+    '/renewWCAG.html',
+    '/requestRetest.html/*',
+    '/requestTest.html',
+    '/tutorialComment.html',
+    '/worker/job',
+    '/worker/report'
+  ]
+};
+// Values that may require alerts.
+const balancePath = path.join(__dirname, 'ai0Balance.json');
+const jobLock = createLock();
+
+// FUNCTIONS
+
+const queuePath = () => path.join(jobsPath(), 'queue');
+const claimedPath = () => path.join(jobsPath(), 'claimed');
+const failedPath = () => path.join(jobsPath(), 'failed');
+// Returns whether a pathname matches a glob-style pattern.
+const matchPath = (pattern, pathname) => {
+  const regex = new RegExp(
+    '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
+  );
+  return regex.test(pathname);
+};
+// Returns whether a pathname is authorized for a method.
+const isPathAllowed = exports.isPathAllowed = (method, pathname) => {
+  const patterns = routes[method] || [];
+  return patterns.some(pattern => matchPath(pattern, pathname));
+};
+// Serves or sends an error message.
+const serveError = exports.serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
+  const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
+  const errorSummary = errorLines.join('\n') || 'ERROR';
+  console.log(errorSummary);
+  if (!response.writableEnded) {
+    response.statusCode = statusCode;
+    // If the request is from a human user:
+    if (isHumanUser) {
+      // Serve an HTML page containing the message property of the error.
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      response.setHeader('content-location', '/error.html');
+      response.setHeader('Access-Control-Allow-Origin', '*');
+      response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3000');
+      const errorTemplate = await fs.readFile('error.html', 'utf8');
+      const errorMessage = error.message || 'ERROR';
+      const errorPage = errorTemplate.replace(/__error__/, errorMessage);
+      response.end(errorPage);
+    }
+    // Otherwise, i.e. if it is from an agent:
+    else {
+      // Send a JSON response containing the entire error.
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({error}));
+    }
+  }
+  else {
+    console.log('Cannot send error response because the response has ended.');
+  }
+};
+// Checks a report for balances nearing exhaustion.
+const checkBalancesForAlerts = async report => {
+  // Get the alert thresholds and prices from the environment.
+  const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
+  const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
+  const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
+  const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
+  // If the variables to be monitored for alerts are defined:
+  if (WAVE_THRESHOLD && AI_SERVICE0_THRESHOLD && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE) {
+    // WAVE.
+    const waveAct = report.acts.find(act => act.type === 'test' && act.which === 'wave');
+    const creditsRemaining = waveAct?.data?.creditsRemaining;
+    // If a WAVE balance nearing exhaustion is reported:
+    if (typeof creditsRemaining === 'number' && creditsRemaining < WAVE_THRESHOLD) {
+      // Alert a manager.
+      await sendAlert(
+        'Kilotest: WAVE balance low',
+        `Only ${creditsRemaining} WAVE credits remain (3 used per job)`
+      );
+    }
+    const testaroAct = report.acts.find(act => act.type === 'test' && act.which === 'testaro');
+    // Get the AI model token usage for the testaro allCaps test.
+    const usage = testaroAct?.data?.ruleData?.allCaps?.aiModelUsage;
+    let balanceJSON = null;
+    try {
+      // Get the recorded AI service 0 balance.
+      balanceJSON = await fs.readFile(balancePath, 'utf8');
+    }
+    catch {
+      console.error('ERROR: AI service 0 balance file missing');
+    }
+    // If the variables required for an AI service 0 balance alert are defined:
+    if (usage && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE && balanceJSON) {
+      const inputCost = AI_MODEL0_INPUT_PRICE * usage.inputTokens;
+      const outputCost = AI_MODEL0_OUTPUT_PRICE * usage.outputTokens;
+      const cost = inputCost + outputCost;
+      // If any cost was incurred:
+      if (cost > 0) {
+        // Warn about this.
+        console.log(
+          'This job has made the production AI service 0 balance record wrong. Update it.'
+        );
+      }
+      try {
+        const balanceData = JSON.parse(balanceJSON);
+        // Get an estimate of the balance after this job.
+        const newBalance = balanceData.balance - cost;
+        // Update the recorded balance.
+        await fs.writeFile(balancePath, getJSON({balance: newBalance}));
+        console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
+        // If it is nearing exhaustion:
+        if (newBalance < AI_SERVICE0_THRESHOLD) {
+          // Alert a manager.
+          await sendAlert(
+            'Kilotest: AI service 0 balance low',
+            `Balance of AI service 0 account (https://console.anthropic.com) only about $${newBalance.toFixed(2)} (about $0.01 used per job)`
+          );
+        }
+      }
+      catch (error) {
+        console.log(`ERROR managing AI service 0 balance: ${error.message}`);
+      }
+    }
+  }
+};
+// Creates an error object about a suspicious request.
+const getAbuseError = exports.getAbuseError = (request, reason) => {
+  const {method, url, headers} = request;
+  const forwardedFor = headers['x-forwarded-for'];
+  const remoteAddress = request.socket.remoteAddress;
+  const ip = forwardedFor || remoteAddress || 'unknown';
+  return {
+    message: 'Invalid request',
+    reason,
+    'IP address': ip,
+    method,
+    URL: url,
+    'user agent': headers['user-agent'] || 'none',
+    referer: headers.referer || 'none',
+    time: new Date().toISOString()
+  };
+};
+// Gets the ID and secret from a request's HTTP Basic Authorization header, or null if the header
+// is absent or malformed.
+const getBasicAuth = request => {
+  const header = request.headers['authorization'] || '';
+  const match = header.match(/^Basic\s+(\S+)$/i);
+  if (!match) {
+    return null;
+  }
+  const decoded = Buffer.from(match[1], 'base64').toString('utf8');
+  const sepIndex = decoded.indexOf(':');
+  if (sepIndex === -1) {
+    return null;
+  }
+  return {id: decoded.slice(0, sepIndex), secret: decoded.slice(sepIndex + 1)};
+};
+// Returns the credentials of the Testaro workers, by worker ID, from a JSON-object
+// environment variable. Each worker ID maps to a secret (used only to authenticate the worker,
+// never published) and a name (a non-secret label safe to publish, e.g. in report data and logs).
+const getWorkerCredentials = () => {
+  try {
+    return JSON.parse(process.env.TESTARO_WORKERS || '{}');
+  }
+  catch (error) {
+    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${error.message})`);
+    return {};
+  }
+};
+// Gets the published name of a Testaro worker or null if not authenticated.
+const getAuthorizedWorkerName = request => {
+  const credentials = getBasicAuth(request);
+  if (credentials) {
+    const workerCredentials = getWorkerCredentials();
+    const worker = workerCredentials[credentials.id];
+    if (worker && worker.secret === credentials.secret && worker.name) {
+      return worker.name;
+    }
+  }
+  return null;
+};
+// Processes a job request from a Testaro worker.
+const processJobRequest = async (request, response, workerName) => jobLock(async () => {
+  let clean = true;
+  const messageStart = `Testaro worker ${workerName} requested a job, `;
+  const jobNames = await getJobNames();
+  const claimedJobNames = jobNames.claimed;
+  // For each claimed job:
+  for (const jobName of claimedJobNames) {
+    const job = await getObject(path.join(jobsPath(), 'claimed', jobName));
+    const {id, sources} = job;
+    const {worker} = sources;
+    // If its assignee is the worker:
+    if (worker === workerName) {
+      const messageEnd = `but has not completed job ${id}`;
+      // Report this.
+      await serveError({message: `${messageStart}${messageEnd}`}, response, false);
+      // Reclassify the job as failed.
+      await fs.rename(
+        path.join(claimedPath(), jobName), path.join(failedPath(), jobName)
+      );
+      clean = false;
+      // Stop checking claimed jobs.
+      break;
+    }
+  }
+  // If no aborted-job error was found for the worker:
+  if (clean) {
+    const queuedJobNames = jobNames.queue;
+    // If any jobs are queued:
+    if (queuedJobNames.length) {
+      const oldestJobName = queuedJobNames[0];
+      // Get the first one.
+      const firstJob = await getObject(path.join(queuePath(), oldestJobName));
+      // Add the public worker name to the job, in a property Testaro does not read or alter.
+      firstJob.sources.worker = workerName;
+      console.log(
+        `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the worker.`
+      );
+      // Assign the job to the worker.
+      response.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8'
+      });
+      response.end(JSON.stringify(firstJob));
+      const messageEnd
+      = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the worker`;
+      console.log(`${messageStart}${messageEnd}`);
+      // Save the job in the claimed-jobs directory.
+      await fs.writeFile(
+        path.join(claimedPath(), oldestJobName), getJSON(firstJob)
+      );
+      // Delete it from the queue.
+      await fs.unlink(path.join(queuePath(), oldestJobName));
+    }
+    // Otherwise, i.e. if no jobs are queued:
+    else {
+      response.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8'
+      });
+      // Send a no-jobs response to the worker.
+      response.end(JSON.stringify({}));
+      const messageEnd = 'but no job was in the queue';
+      console.log(`${messageStart}${messageEnd}`);
+    }
+  }
+});
+// Handles a request.
+const requestHandler = async (request, response) => {
+  // Sets response headers.
+  const setHeaders = (contentType, location, volatility = 'high') => {
+    response.setHeader('content-type', `${contentType}; charset=utf-8`);
+    if (location) {
+      response.setHeader('content-location', location);
+    }
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    const lives = {
+      ultra: [3, 30],
+      high: [300, 3000],
+      medium: [1000, 10000],
+      low: [5000, 50000]
+    };
+    response.setHeader(
+      'Cache-Control',
+      `public, max-age=${lives[volatility][0]}, stale-while-revalidate=${lives[volatility][1]}`
+    );
+  };
+  const {method, url} = request;
+  const requestURL = new URL(url, 'https://localhost:3000');
+  const {pathname, search} = requestURL;
+  const pageName = pathname.split('/')[1];
+  const pathTail = pathname.split('/').slice(2).join('/');
+  // If the request is a smoke-test probe, respond perfunctorily without executing a handler.
+  if (request.headers['x-kilotest-smoke']) {
+    response.setHeader('content-type', 'application/json; charset=utf-8');
+    response.end('{}');
+    return;
+  }
+  // If the request is a GET request:
+  if (method === 'GET') {
+    // If the path is not authorized for GET requests:
+    if (!isPathAllowed('GET', pathname)) {
+      await serveError({message: `ERROR: Invalid GET request (${pathname})`}, response, true);
+    }
+    // If it is for the model context protocol server:
+    else if (pathname === mcpPath) {
+      // Handle the MCP request.
+      await handleMCP(request, response);
+    }
+    // Otherwise, if it is for the home page:
+    else if (['/', '/index.html'].includes(pathname)) {
+      // Get the home page.
+      const homePage = await fs.readFile('index.html', 'utf8');
+      // Serve it.
+      setHeaders('text/html', '/index.html', 'medium');
+      response.end(homePage);
+    }
+    // Otherwise, if it is for the crawler specification:
+    else if (pageName === 'robots.txt') {
+      const robots = await fs.readFile('robots.txt', 'utf8');
+      // Serve it.
+      setHeaders('text/plain', '/robots.txt', 'low');
+      response.end(robots);
+    }
+    // Otherwise, if it is for the OpenAPI specification:
+    else if (pageName === 'openapi.yaml') {
+      const openapi = await fs.readFile('openapi.yaml', 'utf8');
+      // Serve it.
+      setHeaders('text/yaml', '/openapi.yaml', 'medium');
+      response.end(openapi);
+    }
+    // Otherwise, if it is for the OpenAPI specification where it is not:
+    else if (['openapi.json', 'swagger.yaml', 'swagger.json', 'api-docs'].includes(pageName)) {
+      // Redirect the client permanently to where the specification is.
+      response.writeHead(301, {Location: '/openapi.yaml'});
+      response.end();
+    }
+    // Otherwise, if it is for the large-language-model summary guide:
+    else if (pageName === 'llms.txt') {
+      const llms = await fs.readFile('llms.txt', 'utf8');
+      // Serve it.
+      setHeaders('text/plain', '/llms.txt', 'medium');
+      response.end(llms);
+    }
+    // Otherwise, if it is for the large-language-model detailed guide:
+    else if (pageName === 'llms-full.txt') {
+      const llmsfull = await fs.readFile('llms-full.txt', 'utf8');
+      // Serve it.
+      setHeaders('text/plain', '/llms-full.txt', 'medium');
+      response.end(llmsfull);
+    }
+    // Otherwise, if it is for the summary of capabilities:
+    else if (pageName === 'capability.md') {
+      const capabilityDoc = await fs.readFile('capability.md', 'utf8');
+      // Serve it.
+      setHeaders('text/markdown', '/capability.md', 'medium');
+      response.end(capabilityDoc);
+    }
+    // Otherwise, if it is for the XML sitemap:
+    else if (pageName === 'sitemap.xml') {
+      const sitemap = await fs.readFile('sitemap.xml', 'utf8');
+      // Serve it.
+      setHeaders('application/xml', '/sitemap.xml', 'medium');
+      response.end(sitemap);
+    }
+    // Otherwise, if it is for a full report download:
+    else if (pageName === 'fullReport.json') {
+      const [timeStamp, jobID] = pathTail.split('/');
+      // If the request is syntactically valid:
+      if (isTimeStamp(timeStamp) && isJobID(jobID)) {
+        const reportHidden = await isHidden(timeStamp, jobID);
+        // If the report exists and is hidden:
+        if (reportHidden) {
+          console.error(`Hidden report ${timeStamp}-${jobID} requested`);
+          // Report this as suspected abuse.
+          await serveError(
+            getAbuseError(request, `Hidden report ${timeStamp}-${jobID} requested`),
+            response,
+            true
+          );
+        }
+        // Otherwise, i.e. if the report is not hidden:
+        else {
+          // Get it.
+          const report = await getReport(timeStamp, jobID);
+          // If this failed:
+          if (report.error) {
+            // Report this as suspected abuse.
+            await serveError(
+              getAbuseError(request, `Nonexistent report ${timeStamp}-${jobID} requested`),
+              response,
+              true
+            );
+          }
+          // Otherwise, i.e. if it succeeded:
+          else {
+            // Serve response headers for a JSON download.
+            setHeaders('application/json', null, 'low');
+            response.setHeader(
+              'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
+            );
+            // Download the report.
+            response.end(getJSON(report));
+          }
+        }
+      }
+      // Otherwise, i.e. if the request is syntactically invalid:
+      else {
+        // Report the error.
+        await serveError({message: 'ERROR: Invalid report request'}, response, true);
+      }
+    }
+    // Otherwise, if it is for an HTML page other than the home page:
+    else if (pageName.endsWith('.html')) {
+      const topic = pageName.slice(0, -5);
+      // If the page can be generated:
+      if (answer[topic]) {
+        setHeaders('text/html', pathname, 'ultra');
+        // Get the answer data.
+        const answerData = await answer[topic](pathTail, search);
+        // If they are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error as suspected abuse.
+          await serveError(getAbuseError(request, answerData.message), response, true);
+        }
+      }
+      // Otherwise, i.e. if the answer cannot be generated:
+      else {
+        // Report the error as suspected abuse.
+        await serveError(getAbuseError(request, 'Request for nonexistent page'), response, true);
+      }
+    }
+    // Otherwise, if it is for an API service:
+    else if (pageName === 'api') {
+      const [service, ...specs] = pathTail.split('/');
+      // If the service lists the available reports:
+      if (service === 'listReports') {
+        // Get the response body.
+        const responseBody = await apiRespond.listReports(specs);
+        // Send it.
+        setHeaders('application/json', null, 'ultra');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service lists the issues in a report:
+      else if (service === 'listIssues') {
+        // Get the response body.
+        const responseBody = await apiRespond.listIssues(specs);
+        // Send it.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service lists the violators of an issue in a report:
+      else if (service === 'listViolators') {
+        // Get the response body.
+        const responseBody = await apiRespond.listViolators(specs);
+        // Send it.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service lists the diagnoses of a violation of an issue in a report:
+      else if (service === 'listDiagnoses') {
+        // Get the response body.
+        const responseBody = await apiRespond.listDiagnoses(specs);
+        // Send it.
+        setHeaders('application/json', null, 'high');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service serves a report:
+      else if (service === 'getReport') {
+        // Get the response body.
+        const responseBody = await apiRespond.getReport(specs);
+        // Send it.
+        setHeaders('application/json', null, 'low');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, i.e. if the service is invalid:
+      else {
+        // Report this.
+        await serveError({message: 'Invalid service request'}, response, false);
+      }
+    }
+    // Otherwise, if it is for a tutorial image:
+    else if (pathname.startsWith('/tutorial/images/')) {
+      const imgFile = pathname.slice('/tutorial/images/'.length);
+      const imgPath = path.join(__dirname, 'web', 'tutorial', 'images', imgFile);
+      try {
+        const img = await fs.readFile(imgPath);
+        const ext = path.extname(imgFile).toLowerCase();
+        const mimeTypes = {
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.webp': 'image/webp',
+          '.svg': 'image/svg+xml'
+        };
+        const mimeType = mimeTypes[ext] || 'application/octet-stream';
+        setHeaders(mimeType, null, 'low');
+        response.end(img);
+      }
+      catch {
+        await serveError({message: 'ERROR: Image not found'}, response, true);
+      }
+    }
+    // Otherwise, if it is for the application icon:
+    else if (pathname.includes('favicon.')) {
+      // Get the site icon.
+      const icon = await fs.readFile(path.join(__dirname, 'favicon.ico'));
+      // Serve it.
+      setHeaders('image/x-icon', null, 'low');
+      response.write(icon, 'binary');
+      response.end('');
+    }
+    // Otherwise, if it is for the stylesheet:
+    else if (pathname === '/style.css') {
+      try {
+        // Serve it.
+        const styleSheet = await fs.readFile('style.css', 'utf8');
+        setHeaders('text/css', null, 'low');
+        response.end(styleSheet);
+      }
+      catch (error) {
+        await serveError({message: error.message}, response, true);
+      }
+    }
+    // Otherwise, i.e. if it is any other GET request:
+    else {
+      // Report the error.
+      await serveError(
+        {message: `ERROR: Invalid GET request (${pathname})`}, response, true
+      );
+    }
+  }
+  // Otherwise, if the request is a POST request:
+  else if (method === 'POST') {
+    // If the path is not authorized for POST requests:
+    if (!isPathAllowed('POST', pathname)) {
+      await serveError({message: 'ERROR: Invalid POST request'}, response, true);
+    }
+    // If it is for the model context protocol server:
+    else if (pageName === 'mcp') {
+      await handleMCP(request, response);
+    }
+    // Otherwise, i.e. if it is not for the MCP server:
+    else {
+      // Get the data from the request body.
+      const postData = await getPOSTData(request);
+      // If the request is a test recommendation:
+      if (pageName === 'requestTest.html') {
+        const {what, url, why} = postData;
+        // If the request is valid:
+        if (what && url.startsWith('https://') && why) {
+          // If a report on the page is already available:
+          if (await isReportAvailable(what, url)) {
+            // Report the error.
+            await serveError({message: 'ERROR: Page has already been tested'}, response, true);
+          }
+          // Otherwise, i.e. if no report on the page is available:
+          else {
+            // Serve headers for a response.
+            setHeaders('text/html', pathname, 'ultra');
+            // Get the answer data.
+            const answerData = await answer.requestTest(what, url, why);
+            // If they are valid:
+            if (answerData.status === 'ok') {
+              // Serve the answer page.
+              response.end(answerData.answerPage);
+            }
+            // Otherwise, i.e. if they are invalid:
+            else {
+              // Report the error.
+              await serveError({message: answerData.message}, response, true);
+            }
+          }
+        }
+        // Otherwise, i.e. if the request is invalid:
+        else {
+          // Report the error.
+          await serveError({message: 'ERROR: Invalid test recommendation'}, response, true);
+        }
+      }
+      // Otherwise, if it is a retest recommendation:
+      else if (pageName === 'requestRetest.html') {
+        const {why} = postData;
+        const [timeStamp, jobID] = pathTail.split('/');
+        // If the request is valid:
+        if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
+          // Serve response headers.
+          setHeaders('text/html', pathname, 'ultra');
+          // Get the answer data.
+          const answerData = await answer.requestRetest(pathTail, why);
+          // If they are valid:
+          if (answerData.status === 'ok') {
+            // Serve the answer page.
+            response.end(answerData.answerPage);
+          }
+          // Otherwise, i.e. if they are invalid:
+          else {
+            // Report the error.
+            await serveError({message: answerData.message}, response, true);
+          }
+        }
+        // Otherwise, i.e. if the request is invalid:
+        else {
+          // Report the error.
+          await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
+        }
+      }
+      // Otherwise, if it is an approval or rejection of a test request:
+      else if (pageName === 'recAction.html') {
+        const {target, authCode} = postData;
+        const [url, what] = target.split('\t');
+        // If the request is valid:
+        if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
+          // Set the non-location headers for a response.
+          setHeaders('text/html', null, 'ultra');
+          // If the request is an approval:
+          if (what) {
+            // Set a location header for a response.
+            response.setHeader('content-location', pathname);
+            // Process the approval and get the answer data about the remaining recommendations.
+            const answerData = await answer.enqueue(url, what, authCode);
+            // If the answer data are valid:
+            if (answerData.status === 'ok') {
+              // Serve the test-order page with the remaining recommendations.
+              response.end(answerData.answerPage);
+            }
+            // Otherwise, i.e. if they are invalid:
+            else {
+              // Report the error.
+              await serveError({message: answerData.message}, response, true);
+            }
+          }
+          // Otherwise, i.e. if it is a rejection:
+          else {
+            // Isolate this revision.
+            await recsLock(async () => {
+              // Get the recommendations.
+              const recs = await getRecs();
+              // Delete the rejected URL.
+              delete recs[url];
+              // Save the revised recommendations.
+              await fs.writeFile(path.join(jobsPath(), 'recs.json'), getJSON(recs));
+            });
+            // Set a location header for a response.
+            response.setHeader('content-location', '/enqueueForm.html');
+            // Get the answer data.
+            const answerData = await answer.enqueueForm();
+            // Serve the test-order form with the remaining recommendations.
+            response.end(answerData.answerPage);
+          }
+        }
+        // Otherwise, i.e. if the request is invalid:
+        else {
+          // Report the error.
+          await serveError({message: 'ERROR: Invalid test order'}, response, true);
+        }
+      }
+      // Otherwise, if it is a reannotation order:
+      else if (pageName === 'reannotate.html') {
+        const {authCode} = postData;
+        // Set headers for a response.
+        setHeaders('text/html', pathname, 'ultra');
+        // Get the answer data.
+        const answerData = await answer.reannotate(authCode);
+        // If the answer data are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          await serveError({message: answerData.message}, response, true);
+        }
+      }
+      // Otherwise, if it is a WCAG map renewal:
+      else if (pageName === 'renewWCAG.html') {
+        const {authCode} = postData;
+        // Set headers for a response.
+        setHeaders('text/html', pathname, 'low');
+        // Get the answer data.
+        const answerData = await answer.renewWCAG(authCode);
+        // If the answer data are valid:
+        if (answerData.status === 'ok') {
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          // Report the error.
+          await serveError({message: answerData.message}, response, true);
+        }
+      }
+      // Otherwise, if it is a request from a Testaro worker:
+      else if (pageName === 'worker') {
+        // Authenticate the worker and get its public name.
+        const workerName = getAuthorizedWorkerName(request);
+        // If this succeeded:
+        if (workerName) {
+          // Get the requested service from the path.
+          const service = pathTail;
+          // If the service is job assignment:
+          if (service === 'job') {
+            // Process the job request as a transaction.
+            await processJobRequest(request, response, workerName);
+          }
+          // Otherwise, if it is report acquisition:
+          else if (service === 'report') {
+            const {report} = postData;
+            const reportObj = report || {};
+            const {id, target} = reportObj;
+            const {what, url} = target || {};
+            const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
+            // If the request is syntactically valid:
+            if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
+              const [timeStamp, jobID] = id.split('-');
+              // Get the job the report is from.
+              const claimedJob = await getObject(path.join(claimedPath(), `${id}.json`));
+              // If the job was actually assigned to this worker:
+              if (typeof claimedJob === 'object' && claimedJob.sources?.worker === workerName) {
+                console.log(`Testaro report ${id} was received from worker ${workerName}`);
+                // Add the public worker name to the report.
+                report.sources = {...report.sources, worker: workerName};
+                // Save the report.
+                await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
+                // Annotate the report.
+                await annotateReport(timeStamp, jobID);
+                console.log(`Testaro report ${id} was annotated, saved, and indexed`);
+                // Check the monetary balances and send alerts if nearing exhaustion.
+                await checkBalancesForAlerts(report);
+                // Delete the job.
+                await fs.unlink(path.join(claimedPath(), `${id}.json`));
+                console.log(`Completed job ${id} deleted`);
+                // Acknowledge receipt.
+                response.setHeader('content-type', 'application/json; charset=utf-8');
+                response.end(JSON.stringify({status: 'ok'}));
+                console.log(
+                  `Testaro report ${id} was received from Testaro worker ${workerName}`
+                );
+              }
+              // Otherwise, i.e. if the job was not assigned to this worker:
+              else {
+                await serveError(
+                  getAbuseError(
+                    request,
+                    `Worker ${workerName} submitted a report for job ${id}, which was not currently assigned to it`
+                  ),
+                  response,
+                  false
+                );
+              }
+            }
+            // Otherwise, i.e. if the request is syntactically invalid:
+            else {
+              await serveError({message: 'ERROR: Request invalid'}, response, false);
+            }
+          }
+        }
+        // Otherwise, i.e. if it is not authenticated:
+        else {
+          // Report this.
+          await serveError(
+            {message: 'ERROR: Unauthorized worker request'}, response, false, 401
+          );
+        }
+      }
+      // Otherwise, if it is a request from an API consumer:
+      else if (pageName === 'api') {
+        // Get the segments of the path after api.
+        const segments = pathTail.split('/');
+        // If the service is to receive a test request:
+        if (segments[0] === 'requestTest') {
+          const {description, URL, reason} = postData;
+          // Get the response body.
+          const responseBody = await apiRespond.requestTest([description, URL, reason]);
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to receive a retest request:
+        else if (segments[0] === 'requestRetest') {
+          const {reason} = postData;
+          // Get the response body.
+          const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason));
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to receive a feature request:
+        else if (segments[0] === 'requestFeature') {
+          const {feature} = postData;
+          // Get the response body.
+          const responseBody = await apiRespond.requestFeature([feature]);
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, i.e. if the service is invalid:
+        else {
+          await serveError(
+            {message: 'ERROR: Invalid service requested'}, response, false
+          );
+        }
+      }
+      // Otherwise, if it is a tutorial comment:
+      else if (pageName === 'tutorialComment.html') {
+        const {content} = postData;
+        setHeaders('application/json', null, 'low');
+        const answerData = await handleComment(content);
+        if (answerData.status === 'ok') {
+          response.end(JSON.stringify({status: 'ok'}));
+        }
+        else {
+          response.statusCode = 400;
+          response.end(JSON.stringify({status: 'error', message: answerData.message}));
+        }
+      }
+    }
+  }
+  // Otherwise, i.e. if it is neither a GET nor a POST request:
+  else {
+    // Report its invalidity. (Caddy handles OPTIONS requests.)
+    await serveError({message: 'ERROR: Invalid request method'}, response, true);
+  }
+};
+
+// EXPORTS
+
+exports.requestHandler = requestHandler;
+
+// SERVER
+
+const serve = async (protocolModule, options) => {
+  // Create any missing directories.
+  for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
+    await fs.mkdir(path, {recursive: true});
+  }
+  const server = protocolModule === https
+    ? https.createServer(options, requestHandler)
+    : http.createServer(requestHandler);
+  const port = process.env.PORT || '3000';
+  const protocol = process.env.PROTOCOL || 'http';
+  server.listen(port, () => {
+    console.log(`Kilotest server listening at ${protocol}://localhost:${port}.`);
+  });
+  return server;
+};
+
+exports.serve = serve;
+
+// Starts the server using the configured protocol and credentials.
+exports.startServer = async () => {
+  const startProtocol = process.env.PROTOCOL || 'http';
+  if (startProtocol === 'http') {
+    console.log('Starting HTTP server');
+    return serve(http, {});
+  }
+  else if (startProtocol === 'https') {
+    console.log('Starting HTTPS server');
+    const key = await fs.readFile(process.env.KEY, 'utf8');
+    const cert = await fs.readFile(process.env.CERT, 'utf8');
+    return serve(https, {key, cert});
+  }
+};
+
+// Runs the server if the module was loaded directly (not required by a test).
+exports.runIfMain = (mainModule, currentModule) => {
+  if (mainModule === currentModule) {
+    exports.startServer().catch(error => console.log(error.message));
+  }
+};
+
+// EXECUTION
+
+exports.runIfMain(require.main, module);

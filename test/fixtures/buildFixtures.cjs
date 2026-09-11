@@ -1,0 +1,328 @@
+/*
+  buildFixtures.cjs
+  Builds the fixture corpus for Kilotest tests.
+
+  Each fixture is a minimal Testaro report in the current format, crafted so that the expected API response can be hand-computed and hard-coded into tests. The fixtures collectively cover the `outcome` property values (`failed`, `cantTell`, and missing/undefined), superseded reports, empty reports, and prevented rule engines.
+
+  Run with: node test/fixtures/buildFixtures.cjs [targetDir]
+*/
+
+// IMPORTS
+
+const fs = require('fs/promises');
+const path = require('path');
+
+// CONSTANTS
+
+// Issue IDs with known specs in testaro-issues, chosen for different weights.
+// weight 4 (highest)
+const issueLinkNoText = 'linkNoText';
+// weight 4
+const issueFocusIndication = 'focusIndicationBad';
+// weight 1 (lowest)
+const issueAllCaps = 'allCaps';
+
+// Rule engine IDs that exist in util.ts ruleEngines.
+const engineAxe = 'axe';
+const engineAlfa = 'alfa';
+const engineIbm = 'ibm';
+
+// FUNCTIONS
+
+// Returns a minimal catalog item.
+const catalogItem = (tagName, text, pathID = '/html', boxID = '0:0:100:50') => ({
+  tagName,
+  id: '',
+  startTag: `<${tagName.toLowerCase()}>`,
+  text,
+  textLinkable: false,
+  boxID,
+  pathID,
+  headingIndex: '',
+  checkpoint: 0
+});
+
+// Returns a minimal standard instance.
+const instance = (
+  ruleID, what, outcome, issueID, catalogIndex, ordinalSeverity = 2, count = 1
+) => ({
+  ruleID,
+  what,
+  ordinalSeverity,
+  outcome,
+  count,
+  catalogIndex: String(catalogIndex),
+  checkpoint: 0,
+  issueID
+});
+
+// Returns a minimal test act.
+const testAct = (which, instances) => ({
+  type: 'test',
+  which,
+  startTime: '26-01-01T00:00',
+  endTime: '26-01-01T00:01',
+  result: {
+    standardResult: {
+      instances,
+      outcomeTotals: {
+        failed: instances.filter(i => i.outcome === 'failed').length,
+        cantTell: instances.filter(i => i.outcome === 'cantTell').length
+      }
+    }
+  }
+});
+
+// Returns a minimal valid report.
+const report = (id, what, url, acts, catalog, endTime = '26-01-01T00:10') => ({
+  id,
+  what,
+  strict: false,
+  standard: 'only',
+  device: {id: 'default'},
+  browserID: 'chromium',
+  creationTimeStamp: id.slice(0, 11),
+  executionTimeStamp: id.slice(0, 11),
+  target: {what, url},
+  sources: {worker: 'test-worker'},
+  acts,
+  jobData: {
+    startTime: '26-01-01T00:00',
+    endTime,
+    elapsedSeconds: 600,
+    preventions: {},
+    issuelessRules: []
+  },
+  catalog,
+  images: {},
+  checkpoints: []
+});
+
+// Writes a JSON file with a trailing newline.
+const writeJSON = async (filePath, object) => {
+  await fs.writeFile(filePath, `${JSON.stringify(object, null, 2)}\n`);
+};
+
+// MAIN
+
+const main = async () => {
+  const targetDir = process.argv[2] || path.join(__dirname, 'db');
+  const reportsDir = path.join(targetDir, 'reports');
+  await fs.mkdir(reportsDir, {recursive: true});
+  await fs.mkdir(path.join(targetDir, 'jobs', 'queue'), {recursive: true});
+  await fs.mkdir(path.join(targetDir, 'jobs', 'claimed'), {recursive: true});
+  await fs.mkdir(path.join(targetDir, 'jobs', 'failed'), {recursive: true});
+  await fs.mkdir(path.join(targetDir, 'hiddenReports'), {recursive: true});
+
+  // Fixture 1: mixedOutcomes. Two rule engines, four instances: two failed (same issue, same violator, two engines), one cantTell (excluded from counts), one failed (different issue, different violator). Two distinct issues (linkNoText weight 4, allCaps weight 1) and two distinct violator catalog indexes (0 and 1).
+  const mixedCatalog = {
+    '0': catalogItem('A', 'About Us', '/html/body/a[1]', '10:20:80:30'),
+    '1': catalogItem('P', 'ALL ABOUT US', '/html/body/p[1]', '10:60:80:20')
+  };
+  const mixedActs = [
+    testAct(engineAxe, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 0, 2, 1),
+      instance('r65', 'Focus Visible', 'cantTell',
+        issueFocusIndication, 0, 0, 1)
+    ]),
+    testAct(engineAlfa, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 0, 2, 1),
+      instance('r3', 'Text is all-capital', 'failed',
+        issueAllCaps, 1, 1, 1)
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260101T0000-mix.json'),
+    report('260101T0000-mix', 'Mixed Outcomes Page',
+      'https://example.com/mixed', mixedActs, mixedCatalog)
+  );
+
+  // Fixture 2: allCantTell. All instances have outcome cantTell, so no issues or violators should be reported by listIssues, listViolators, or listDiagnoses.
+  const cantTellCatalog = {
+    '0': catalogItem('A', 'Click here', '/html/body/a[1]', '5:10:60:20')
+  };
+  const cantTellActs = [
+    testAct(engineAxe, [
+      instance('r65', 'Focus Visible', 'cantTell',
+        issueFocusIndication, 0, 0, 1)
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260101T0001-ct.json'),
+    report('260101T0001-ct', 'All CantTell Page',
+      'https://example.com/canttell', cantTellActs, cantTellCatalog)
+  );
+
+  // Fixture 3: noOutcomes. Instances with no outcome property. Testaro defaults to 'failed', but Kilotest code checks `outcome !== 'cantTell'`, so missing outcome (undefined) is treated as a violation. This verifies that behavior.
+  const noOutcomeCatalog = {
+    '0': catalogItem('BUTTON', 'Submit', '/html/body/button[1]', '15:25:70:30')
+  };
+  const noOutcomeActs = [
+    testAct(engineIbm, [
+      {
+        ruleID: 'r1',
+        what: 'Button has no accessible name',
+        ordinalSeverity: 3,
+        count: 1,
+        catalogIndex: '0',
+        checkpoint: 0,
+        issueID: issueLinkNoText
+      }
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260101T0002-no.json'),
+    report('260101T0002-no', 'No Outcomes Page',
+      'https://example.com/nooutcomes', noOutcomeActs, noOutcomeCatalog)
+  );
+
+  // Fixture 4: superseded. A report about the same page as mixedOutcomes but with a later timestamp, so mixedOutcomes is superseded by this one.
+  const newerActs = [
+    testAct(engineAxe, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 0, 2, 1)
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260202T0000-new.json'),
+    report('260202T0000-new', 'Mixed Outcomes Page',
+      'https://example.com/mixed', newerActs, mixedCatalog, '26-02-02T00:10')
+  );
+
+  // Fixture 5: empty. A valid report with no test acts that have instances, so listIssues returns zero issues.
+  await writeJSON(
+    path.join(reportsDir, '260101T0005-emp.json'),
+    report('260101T0005-emp', 'Empty Results Page',
+      'https://example.com/empty', [testAct(engineAxe, [])], {})
+  );
+
+  // Fixture 6: prevented. A report where one rule engine was prevented from testing.
+  const preventedCatalog = {
+    '0': catalogItem('IMG', 'An image', '/html/body/img[1]', '0:0:200:100')
+  };
+  const preventedActs = [
+    testAct(engineAxe, [
+      instance('r11', 'The image has no alt text', 'failed',
+        issueLinkNoText, 0, 2, 1)
+    ])
+  ];
+  const preventedReport = report('260101T0006-prv', 'Prevented Page',
+    'https://example.com/prevented', preventedActs, preventedCatalog);
+  preventedReport.jobData.preventions = {alfa: 'page timed out'};
+  await writeJSON(
+    path.join(reportsDir, '260101T0006-prv.json'),
+    preventedReport
+  );
+
+  // Fixture 7: hidden. A report placed in hiddenReports/ instead of reports/, so it must not appear in listReports, listIssues, listViolators, listDiagnoses, or getReport API responses.
+  const hiddenCatalog = {
+    '0': catalogItem('A', 'Secret link', '/html/body/a[1]', '5:10:60:20')
+  };
+  const hiddenActs = [
+    testAct(engineAxe, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 0, 2, 1)
+    ])
+  ];
+  const hiddenReport = report('260101T0007-hid', 'Hidden Page',
+    'https://example.com/hidden', hiddenActs, hiddenCatalog);
+  await writeJSON(
+    path.join(targetDir, 'hiddenReports', '260101T0007-hid.json'),
+    hiddenReport
+  );
+
+  // Fixture 8: multiViolator. Three violators for the same issue: two with 1 reporter each (exercising the catalogIndex tiebreaker) and one with 2 reporters (exercising the reporter-count descending sort).
+  const multiViolatorCatalog = {
+    '0': catalogItem('A', 'Home', '/html/body/a[1]', '10:10:40:20'),
+    '1': catalogItem('A', 'Contact', '/html/body/a[2]', '10:40:40:20'),
+    '2': catalogItem('A', 'Help', '/html/body/a[3]', '10:70:40:20')
+  };
+  const multiViolatorActs = [
+    testAct(engineAxe, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 0, 2, 1),
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 2, 2, 1)
+    ]),
+    testAct(engineAlfa, [
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 1, 2, 1),
+      instance('r11', 'The link does not have an accessible name', 'failed',
+        issueLinkNoText, 2, 2, 1)
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260101T0008-mul.json'),
+    report('260101T0008-mul', 'Multi Violator Page',
+      'https://example.com/multiviolator', multiViolatorActs, multiViolatorCatalog)
+  );
+
+  // Fixture 9: branchCoverage. Covers remaining branch gaps in listDiagnoses and listIssues: an issue with a short WCAG code (guideline layer), a catalog item with no tagName or text, an instance where ruleID equals what and count is missing, a test act with null instances, and an instance with no issueID.
+  const issueDuplicateID = 'duplicateID';
+  const branchCatalog = {
+    '0': catalogItem('DIV', '', '/html/body/div[1]', '0:0:100:50'),
+    '1': {id: '', startTag: '<div>', text: null, textLinkable: false, boxID: '5:5:90:40', pathID: '/html/body/div[2]', headingIndex: '', checkpoint: 0},
+    '2': {id: '', text: 'No tags', textLinkable: false, headingIndex: '', checkpoint: 0}
+  };
+  const branchActs = [
+    testAct(engineAxe, [
+      instance('r99', 'r99', 'failed',
+        issueDuplicateID, 0, 2, 1),
+      {
+        ruleID: 'r100',
+        what: 'Element has no role',
+        ordinalSeverity: 1,
+        outcome: 'failed',
+        catalogIndex: '1',
+        checkpoint: 0,
+        issueID: issueDuplicateID
+      },
+      instance('r101', 'Duplicate ID found', 'failed',
+        issueDuplicateID, 2, 2, 1),
+      instance('r102', 'Duplicate ID in orphan', 'failed',
+        issueDuplicateID, 3, 2, 1)
+    ]),
+    {
+      type: 'test',
+      which: engineAlfa,
+      startTime: '26-01-01T00:00',
+      endTime: '26-01-01T00:01',
+      result: {
+        standardResult: {}
+      }
+    },
+    testAct(engineIbm, [
+      {
+        ruleID: 'r50',
+        what: 'Link has no text',
+        ordinalSeverity: 2,
+        outcome: 'failed',
+        catalogIndex: '0',
+        checkpoint: 0
+      }
+    ])
+  ];
+  await writeJSON(
+    path.join(reportsDir, '260101T0009-brd.json'),
+    report('260101T0009-brd', 'Branch Coverage Page',
+      'https://example.com/branch', branchActs, branchCatalog)
+  );
+  // Remove preventions from the brd fixture to cover the preventions ?? {} branch in listIssues.
+  const brdReport = JSON.parse(
+    await fs.readFile(path.join(reportsDir, '260101T0009-brd.json'), 'utf8')
+  );
+  delete brdReport.jobData.preventions;
+  await writeJSON(path.join(reportsDir, '260101T0009-brd.json'), brdReport);
+
+  // Write an empty recs.json so getRecs does not try to create one.
+  await writeJSON(path.join(targetDir, 'jobs', 'recs.json'), {});
+
+  console.log(`Fixtures built in ${targetDir}`);
+};
+
+main().catch(error => {
+  console.error(error);
+  process.exit(1);
+});

@@ -43,7 +43,7 @@ testaroIssues.issueRules = {
   }
 };
 
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 
 // TESTS
 

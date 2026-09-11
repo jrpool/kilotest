@@ -5,34 +5,37 @@
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, after, mock} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {parse} = require('node-html-parser');
 
-// Monkey-patch util functions before requiring index, so that index.js
-// destructures the patched versions.
-const util = require('../../util.ts');
-const realIsHidden = util.isHidden;
-const realGetPageDataStrings = util.getPageDataStrings;
+// Mock the util functions called by index.cts before requiring it, so that
+// it imports the mocked versions. Other exports delegate to the real module.
+const realUtil = require('../../util.ts');
 let isHiddenCallCount = 0;
 let forceHiddenOnCall = -1;
 let pageDataStringsOverride = null;
-util.isHidden = async (timeStamp, jobID) => {
-  isHiddenCallCount++;
-  if (isHiddenCallCount === forceHiddenOnCall) {
-    return true;
+mock.module('../../util.ts', {
+  exports: {
+    ...realUtil,
+    isHidden: async (timeStamp, jobID) => {
+      isHiddenCallCount++;
+      if (isHiddenCallCount === forceHiddenOnCall) {
+        return true;
+      }
+      return realUtil.isHidden(timeStamp, jobID);
+    },
+    getPageDataStrings: async (...args) => {
+      if (pageDataStringsOverride !== null) {
+        return pageDataStringsOverride;
+      }
+      return realUtil.getPageDataStrings(...args);
+    }
   }
-  return realIsHidden(timeStamp, jobID);
-};
-util.getPageDataStrings = async (...args) => {
-  if (pageDataStringsOverride !== null) {
-    return pageDataStringsOverride;
-  }
-  return realGetPageDataStrings(...args);
-};
+});
 
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 
 // SETUP AND TEARDOWN
 

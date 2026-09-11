@@ -5,25 +5,25 @@
 
 // IMPORTS
 
-const {sendAlert} = require('./alerts.ts');
-const {issues: issueSpecs, rules: ruleSpecs} = require('testaro-issues');
-const fs = require('fs/promises');
-const path = require('path');
-const querystring = require('querystring');
-const wcagMap = require('./wcagMap.json');
+import {sendAlert} from './alerts.ts';
+import {issues as issueSpecs, rules as ruleSpecs} from 'testaro-issues';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import querystring from 'node:querystring';
+import wcagMap from './wcagMap.json' with {type: 'json'};
 
 // CONSTANTS
 
 // Path of the data directory. Read afresh on every call (rather than cached at module load) so that tests can point Kilotest at a fixture directory via the DB_DIR environment variable.
-const dbPath = exports.dbPath = () => process.env.DB_DIR || path.join(__dirname, 'db');
+export const dbPath = () => process.env.DB_DIR || path.join(import.meta.dirname, 'db');
 // Path of the jobs directory.
-const jobsPath = exports.jobsPath = () => path.join(dbPath(), 'jobs');
+export const jobsPath = () => path.join(dbPath(), 'jobs');
 // Path of the recommendations file.
-const recsPath = exports.recsPath = () => path.join(jobsPath(), 'recs.json');
+export const recsPath = () => path.join(jobsPath(), 'recs.json');
 // Path of the reports directory.
-const reportsPath = exports.reportsPath = () => path.join(dbPath(), 'reports');
+export const reportsPath = () => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
-const hiddenReportsPath = exports.hiddenReportsPath = () => path.join(dbPath(), 'hiddenReports');
+export const hiddenReportsPath = () => path.join(dbPath(), 'hiddenReports');
 // IDs, names, and sponsors of Testaro rule engines.
 const ruleEngines: Record<string, [string, string]> = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -41,8 +41,8 @@ const ruleEngines: Record<string, [string, string]> = {
   wave: ['WAVE', 'Utah State University'],
   wax: ['WallyAX', 'Wally']
 };
-exports.ruleEngines = ruleEngines;
-exports.researchAgents = {
+export {ruleEngines};
+export const researchAgents = {
   'research-agent': 'Internal Research Agent'
 }
 
@@ -53,7 +53,7 @@ const alphaCompare = (a: string, b: string) => a.localeCompare(b, 'en', {sensiti
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = (strings: string[]) => strings.sort((a, b) => alphaCompare(a, b));
 // Returns a function that executes a function sequentially.
-const createLock = exports.createLock = (): (<T>(fn: () => T | Promise<T>) => Promise<T>) => {
+export const createLock = (): (<T>(fn: () => T | Promise<T>) => Promise<T>) => {
   let queue: Promise<void> = Promise.resolve();
   return <T>(fn: () => T | Promise<T>): Promise<T> => {
     const result = queue.then(fn, fn);
@@ -66,7 +66,7 @@ const fragmentEncode = (string: string) => {
   return encodeURIComponent(string).replace(/-/g, '%2D');
 };
 // Returns the time in days since a Date or time stamp, or null if the argument is invalid.
-const getAgoDays = exports.getAgoDays = (timeArg: string | Date) => {
+export const getAgoDays = (timeArg: string | Date) => {
   let dateTime;
   // If the argument is a string:
   if (typeof timeArg === 'string') {
@@ -92,14 +92,14 @@ const getAgoDays = exports.getAgoDays = (timeArg: string | Date) => {
   return Math.round((Date.now() - dateTime.getTime()) / (1000 * 60 * 60 * 24));
 };
 // Returns a string describing the time in days since a time stamp.
-exports.getAgoString = (timeStamp: string) => {
+export const getAgoString = (timeStamp: string) => {
   const agoDays = getAgoDays(timeStamp);
   return agoDays === 1 ? '1 day' : `${agoDays} days`;
 };
 // Returns a string describing a count.
-exports.getCountString = (count: number, singular: string, plural: string) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
+export const getCountString = (count: number, singular: string, plural: string) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 // Returns a date string from a time stamp.
-const getDateString = exports.getDateString = (timeStamp: string) => {
+export const getDateString = (timeStamp: string) => {
   const dateString = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
   // If the date part of the time stamp is valid:
   if (Date.parse(dateString)) {
@@ -110,14 +110,14 @@ const getDateString = exports.getDateString = (timeStamp: string) => {
   return '';
 };
 // Returns the date and time represented by a time stamp.
-const getDateTime = exports.getDateTime = (timeStamp: string) => {
+export const getDateTime = (timeStamp: string) => {
   const dateString
   = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(7,9)}:${timeStamp.slice(9,11)}Z`;
   const dateTime = new Date(dateString);
   return dateTime.toString() === 'Invalid Date' ? null : dateTime;
 };
 // Returns the issue that a rule belongs to, or null if none.
-const getIssue = exports.getIssue = (engineID: string, ruleID: string) => {
+export const getIssue = (engineID: string, ruleID: string) => {
   const engineRules = ruleSpecs[engineID];
   // If the rule engine has no rule specifications:
   if (!engineRules) {
@@ -138,9 +138,9 @@ const getIssue = exports.getIssue = (engineID: string, ruleID: string) => {
   return variableRuleID ? variable[variableRuleID].issueID : null;
 };
 // Gets the names and categories of the job files.
-const getJobNames = exports.getJobNames = async (): Promise<any> => {
+export const getJobNames = async (): Promise<any> => {
   const jobNames: Record<string, string[]> = {};
-  let fileNames;
+  let fileNames: string[] = [];
   for (const category of ['queue', 'claimed', 'failed']) {
     const categoryPath = path.join(jobsPath(), category);
     try {
@@ -160,9 +160,9 @@ const getJobNames = exports.getJobNames = async (): Promise<any> => {
   return jobNames;
 }
 // Returns the JSON stringification of an object, with a final newline.
-const getJSON = exports.getJSON = (object: any) => `${JSON.stringify(object, null, 2)}\n`;
+export const getJSON = (object: any) => `${JSON.stringify(object, null, 2)}\n`;
 // Returns an object from a JSON file.
-const getObject = exports.getObject = async (filePath: string) => {
+export const getObject = async (filePath: string) => {
   let fileContent, object;
   try {
     fileContent = await fs.readFile(filePath, 'utf8');
@@ -179,7 +179,7 @@ const getObject = exports.getObject = async (filePath: string) => {
   return object;
 };
 // Returns a random string.
-exports.getRandomString = (length: number) => {
+export const getRandomString = (length: number) => {
   let result = '';
   while (result.length < length) {
     result += Math.floor(Math.random() * 36).toString(36);
@@ -187,12 +187,12 @@ exports.getRandomString = (length: number) => {
   return result;
 };
 // Returns a time stamp from a date.
-const getTimeStamp = exports.getTimeStamp = (date: Date) => {
+export const getTimeStamp = (date: Date) => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
   return timeStamp;
 };
 // Returns a time stamp for now.
-const getNowStamp = exports.getNowStamp = () => {
+export const getNowStamp = () => {
   return getTimeStamp(new Date());
 };
 // Returns a time string from a time stamp.
@@ -202,18 +202,18 @@ const getTimeString = (timeStamp: string) => {
   return (Date.parse(`2000-01-01T${timeString}Z`)) ? timeString : null;
 };
 // Returns a date-and-time string.
-const getDateTimeString = exports.getDateTimeString = (timeStamp: string) => {
+export const getDateTimeString = (timeStamp: string) => {
   const dateString = getDateString(timeStamp);
   const timeString = getTimeString(timeStamp);
   const dateTimeString = `${dateString} at ${timeString}`;
   return dateTimeString;
 }
 // Converts a string to a plain-text 1-line ASCII string.
-const getPlainText = exports.getPlainText = (string: string) => string
+export const getPlainText = (string: string) => string
 .replace(/&/g, '+')
 .replace(/[<>"'&]/g, ' ');
 // Returns the data from a POST request.
-exports.getPOSTData = (request: import('node:http').IncomingMessage) => new Promise(resolve => {
+export const getPOSTData = (request: import('node:http').IncomingMessage) => new Promise(resolve => {
   const bodyParts: Buffer[] = [];
   request.on('data', chunk => {
     bodyParts.push(chunk);
@@ -237,7 +237,7 @@ exports.getPOSTData = (request: import('node:http').IncomingMessage) => new Prom
   });
 });
 // Returns the waiting test and retest recommendations.
-const getRecs = exports.getRecs = async () => {
+export const getRecs = async () => {
   let recs;
   let recsJSON;
   try {
@@ -256,7 +256,7 @@ const getRecs = exports.getRecs = async () => {
   return recs;
 };
 // Converts a catalog item text to a text-fragment link destination.
-exports.getTextFragmentHref = (text: string, url: string) => {
+export const getTextFragmentHref = (text: string, url: string) => {
   const fragmentList = text
   .split('\n')
   .map(fragment => fragmentEncode(fragment))
@@ -265,23 +265,23 @@ exports.getTextFragmentHref = (text: string, url: string) => {
   return `${url}#:~:text=${fragmentList}`;
 };
 // Returns a +-delimited list of sorted names of rule engines.
-exports.getEngineList = (engineIDs: Iterable<string>) => Array.from(engineIDs)
+export const getEngineList = (engineIDs: Iterable<string>) => Array.from(engineIDs)
 .map(engineID => ruleEngines[engineID][0])
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');
 // Returns a string of names of rule engines.
-exports.getEngineNamesString = (engineIDSet: Iterable<string>) => alphaSort(
+export const getEngineNamesString = (engineIDSet: Iterable<string>) => alphaSort(
   Array.from(engineIDSet).map(engineID => ruleEngines[engineID]?.[0] || engineID)
 ).join(' + ');
 // Gets the WCAG Understanding link for a numeric WCAG standard identifier.
-exports.getWCAGLink = (numericID: string) => {
+export const getWCAGLink = (numericID: string) => {
   // Return the link.
-  return `https://www.w3.org/WAI/WCAG22/Understanding/${wcagMap[numericID]}`;
+  return `https://www.w3.org/WAI/WCAG22/Understanding/${(wcagMap as Record<string, string>)[numericID]}`;
 };
 // Gets the name of an issue weight.
-exports.getWeightName = (weight: number) => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
+export const getWeightName = (weight: number) => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
 // Makes a string HTML-safe.
-exports.htmlSafe = (string: string) => string ? string
+export const htmlSafe = (string: string) => string ? string
 .replace(/&/g, '&amp;')
 .replace(/</g, '&lt;')
 .replace(/>/g, '&gt;')
@@ -289,11 +289,11 @@ exports.htmlSafe = (string: string) => string ? string
 .replace(/'/g, '&apos;')
 : '';
 // Returns whether a string is a job ID.
-exports.isJobID = (string: string) => {
+export const isJobID = (string: string) => {
   return /^[a-z0-9]{3}$/.test(string);
 };
 // Returns whether a job to test a target is eligible for a recommendation.
-exports.isRecommendable = async (url: string) => {
+export const isRecommendable = async (url: string) => {
   const jobNames = await getJobNames();
   // For each claimed job:
   for (const fileName of jobNames.claimed) {
@@ -317,11 +317,11 @@ exports.isRecommendable = async (url: string) => {
   return '';
 };
 // Returns whether a string is a time stamp.
-exports.isTimeStamp = (string: string) => {
+export const isTimeStamp = (string: string) => {
   return !!getDateString(string);
 };
 // Returns whether a string is a URL.
-const isURL = exports.isURL = (string: string) => {
+export const isURL = (string: string) => {
   try {
     return string.startsWith('https://') && new URL(string);
   } catch {
@@ -329,11 +329,11 @@ const isURL = exports.isURL = (string: string) => {
   }
 };
 // Makes a string breakable before non-initial slashes.
-exports.makeBreakable = (string: string) => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
+export const makeBreakable = (string: string) => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
 // Minifies a URL for duplicate detection.
-const minifyURL = exports.minifyURL = (url: string) => url.replace(/www\.|\/$/g, '').toLowerCase();
+export const minifyURL = (url: string) => url.replace(/www\.|\/$/g, '').toLowerCase();
 // Sorts objects by a property value and returns the sorted array.
-const objectSort = exports.objectSort = (objects: any[], property: string, sortType: string) => objects
+export const objectSort = (objects: any[], property: string, sortType: string) => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
@@ -354,7 +354,7 @@ const objectSort = exports.objectSort = (objects: any[], property: string, sortT
   return 0;
 });
 // Processes a test or retest request in the UI.
-exports.processTestRequest = async (testType: string, dirName: string, what: string, url: string, why: string) => {
+export const processTestRequest = async (testType: string, dirName: string, what: string, url: string, why: string) => {
   // If the recommendation is valid:
   if (
     ['test', 'retest'].includes(testType)
@@ -407,9 +407,9 @@ exports.processTestRequest = async (testType: string, dirName: string, what: str
   };
 };
 // Concurrency lock for the `recs.json` file.
-const recsLock = exports.recsLock = createLock();
+export const recsLock = createLock();
 // Updates the test recommendations as a transaction.
-const updateRecs = exports.updateRecs = (what: string, url: string, why: string) => recsLock(async (): Promise<{error?: string}> => {
+export const updateRecs = (what: string, url: string, why: string) => recsLock(async (): Promise<{error?: string}> => {
   // Get the data on waiting recommendations.
   const recs = await getRecs();
   recs[url] ??= [];
@@ -435,7 +435,7 @@ const updateRecs = exports.updateRecs = (what: string, url: string, why: string)
 // REPORT FUNCTIONS
 
 // Returns the path ID of the element of a standard instance.
-exports.getPathID = (catalog: Record<string, any>, catalogIndex: string, pathID?: string) => {
+export const getPathID = (catalog: Record<string, any>, catalogIndex: string, pathID?: string) => {
   if (catalogIndex) {
     const catalogItem = catalog[catalogIndex] || {};
     if (catalogItem.pathID) {
@@ -446,10 +446,10 @@ exports.getPathID = (catalog: Record<string, any>, catalogIndex: string, pathID?
   return pathID ?? '/html';
 };
 // Returns the path of an available report file.
-const getReportPath = exports.getReportPath = (timeStamp: string, jobID: string) => path
+export const getReportPath = (timeStamp: string, jobID: string) => path
 .join(reportsPath(), `${timeStamp}-${jobID}.json`);
 // Returns whether a report is valid.
-const isValidReport = exports.isValidReport = (report: any) => {
+export const isValidReport = (report: any) => {
   // Return whether it has the type and properties required by Kilotest:
   return typeof report === 'object'
   && typeof report.target?.what === 'string'
@@ -466,7 +466,7 @@ const isValidReport = exports.isValidReport = (report: any) => {
   && typeof report.catalog === 'object';
 };
 // Returns a report.
-const getReport = exports.getReport = async (timeStamp: string, jobID: string) => {
+export const getReport = async (timeStamp: string, jobID: string) => {
   try {
     const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
     const report = JSON.parse(reportJSON);
@@ -482,7 +482,7 @@ const getReport = exports.getReport = async (timeStamp: string, jobID: string) =
   }
 };
 // Adds issue IDs to the standard instances of a report.
-exports.annotateReport = async (timeStamp: string, jobID: string) => {
+export const annotateReport = async (timeStamp: string, jobID: string) => {
   // Get a copy of the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -534,7 +534,7 @@ exports.annotateReport = async (timeStamp: string, jobID: string) => {
   return '';
 };
 // Returns basics about an available report.
-exports.getReportData = async (timeStamp: string, jobID: string) => {
+export const getReportData = async (timeStamp: string, jobID: string) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -609,7 +609,7 @@ exports.getReportData = async (timeStamp: string, jobID: string) => {
   return data;
 }
 // Returns page data from an available report.
-const getPageData = exports.getPageData = async (timeStamp: string, jobID: string) => {
+export const getPageData = async (timeStamp: string, jobID: string) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -629,7 +629,7 @@ const getPageData = exports.getPageData = async (timeStamp: string, jobID: strin
   };
 };
 // Gets HTML strings for page data from a report.
-exports.getPageDataStrings = async (timeStamp: string, jobID: string, pageData?: any) => {
+export const getPageDataStrings = async (timeStamp: string, jobID: string, pageData?: any) => {
   // If the page data were not specified:
   if (!pageData) {
     // Get them.
@@ -654,7 +654,7 @@ exports.getPageDataStrings = async (timeStamp: string, jobID: string, pageData?:
   };
 };
 // Returns the creation time and size of a report.
-exports.getReportStats = async (timeStamp: string, jobID: string) => {
+export const getReportStats = async (timeStamp: string, jobID: string) => {
   let reportStat;
   try {
     reportStat = await fs.stat(path.join(reportsPath(), `${timeStamp}-${jobID}.json`));
@@ -667,7 +667,7 @@ exports.getReportStats = async (timeStamp: string, jobID: string) => {
   return {reportTime, reportSize};
 };
 // Returns whether a report is hidden.
-exports.isHidden = async (timeStamp: string, jobID: string) => {
+export const isHidden = async (timeStamp: string, jobID: string) => {
   await fs.mkdir(hiddenReportsPath(), {recursive: true});
   // Get the names of the hidden report files.
   const hiddenReportFileNames = await fs.readdir(hiddenReportsPath());
@@ -675,7 +675,7 @@ exports.isHidden = async (timeStamp: string, jobID: string) => {
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
 // Returns an extract of an available report, or an error object if it cannot be read or parsed.
-const getReportExtract = exports.getReportExtract = async (timeStamp: string, jobID: string) => {
+export const getReportExtract = async (timeStamp: string, jobID: string) => {
   try {
     // Get the report.
     const reportJSON = await fs.readFile(
@@ -700,7 +700,7 @@ const getReportExtract = exports.getReportExtract = async (timeStamp: string, jo
   }
 };
 // Returns extracts of all available reports.
-const getReportExtracts = exports.getReportExtracts = async (onlyLatest: boolean = false) => {
+export const getReportExtracts = async (onlyLatest: boolean = false) => {
   // Get the names of the available report files.
   const reportFileNames = await fs.readdir(reportsPath());
   // Initialize an array of extracts.
@@ -730,14 +730,14 @@ const getReportExtracts = exports.getReportExtracts = async (onlyLatest: boolean
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
 // Returns whether a report with a description or URL is available.
-exports.isReportAvailable = async (what: string, url: string) => {
+export const isReportAvailable = async (what: string, url: string) => {
   const reportExtracts = await getReportExtracts();
   const whats = reportExtracts.map(reportExtract => reportExtract.what);
   const miniURLs = reportExtracts.map(reportExtract => minifyURL(reportExtract.url));
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
 // Gets the descriptions of multi-report pages.
-exports.getMultiReportWhats = async () => {
+export const getMultiReportWhats = async () => {
   const reportExtracts = await getReportExtracts();
   const sortedWhats = reportExtracts.map(extract => extract.what).sort();
   const multiReportWhats = sortedWhats.filter(

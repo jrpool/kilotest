@@ -8,7 +8,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 
 // TESTS
 

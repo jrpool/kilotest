@@ -26,7 +26,7 @@ beforeEach(() => {
   sendAlertCalls = [];
 });
 
-const {response} = require('./requestFeature.ts');
+const {response} = require('./requestFeature.cts');
 
 after(() => {
 });

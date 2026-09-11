@@ -29,47 +29,47 @@ const {
 } = require('./util.ts');
 const {handleMCP, mcpPath} = require('./mcp.cjs');
 const fs = require('fs/promises');
-const {handleComment} = require('./web/tutorial/index.ts');
+const {handleComment} = require('./web/tutorial/index.cts');
 const http = require('http');
 const https = require('https');
 const path = require('path');
 const {sendAlert} = require('./alerts.ts');
 const answer = {
-  ai0BalanceForm: require('./web/ai0BalanceForm/index.ts').answer,
-  enqueue: require('./web/enqueue/index.ts').answer,
-  enqueueForm: require('./web/enqueueForm/index.ts').answer,
-  expungeReportsForm: require('./web/expungeReportsForm/index.ts').answer,
-  hideReportForm: require('./web/hideReportForm/index.ts').answer,
-  listDiagnoses: require('./web/listDiagnoses/index.ts').answer,
-  listIssues: require('./web/listIssues/index.ts').answer,
-  listReports: require('./web/listReports/index.ts').answer,
-  listRules: require('./web/listRules/index.ts').answer,
-  listTopIssues: require('./web/listTopIssues/index.ts').answer,
-  listViolators: require('./web/listViolators/index.ts').answer,
-  manage: require('./web/manage/index.ts').answer,
-  pruneReportsForm: require('./web/pruneReportsForm/index.ts').answer,
-  reannotate: require('./web/reannotate/index.ts').answer,
-  reannotateForm: require('./web/reannotateForm/index.ts').answer,
-  renewWCAG: require('./web/renewWCAG/index.ts').answer,
-  renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
-  requestRetest: require('./web/requestRetest/index.ts').answer,
-  requestRetestForm: require('./web/requestRetestForm/index.ts').answer,
-  requestTest: require('./web/requestTest/index.ts').answer,
-  requestTestForm: require('./web/requestTestForm/index.ts').answer,
-  rewindReportsForm: require('./web/rewindReportsForm/index.ts').answer,
-  unhideReportForm: require('./web/unhideReportForm/index.ts').answer,
-  tutorial: require('./web/tutorial/index.ts').answer
+  ai0BalanceForm: require('./web/ai0BalanceForm/index.cts').answer,
+  enqueue: require('./web/enqueue/index.cts').answer,
+  enqueueForm: require('./web/enqueueForm/index.cts').answer,
+  expungeReportsForm: require('./web/expungeReportsForm/index.cts').answer,
+  hideReportForm: require('./web/hideReportForm/index.cts').answer,
+  listDiagnoses: require('./web/listDiagnoses/index.cts').answer,
+  listIssues: require('./web/listIssues/index.cts').answer,
+  listReports: require('./web/listReports/index.cts').answer,
+  listRules: require('./web/listRules/index.cts').answer,
+  listTopIssues: require('./web/listTopIssues/index.cts').answer,
+  listViolators: require('./web/listViolators/index.cts').answer,
+  manage: require('./web/manage/index.cts').answer,
+  pruneReportsForm: require('./web/pruneReportsForm/index.cts').answer,
+  reannotate: require('./web/reannotate/index.cts').answer,
+  reannotateForm: require('./web/reannotateForm/index.cts').answer,
+  renewWCAG: require('./web/renewWCAG/index.cts').answer,
+  renewWCAGForm: require('./web/renewWCAGForm/index.cts').answer,
+  requestRetest: require('./web/requestRetest/index.cts').answer,
+  requestRetestForm: require('./web/requestRetestForm/index.cts').answer,
+  requestTest: require('./web/requestTest/index.cts').answer,
+  requestTestForm: require('./web/requestTestForm/index.cts').answer,
+  rewindReportsForm: require('./web/rewindReportsForm/index.cts').answer,
+  unhideReportForm: require('./web/unhideReportForm/index.cts').answer,
+  tutorial: require('./web/tutorial/index.cts').answer
 };
 // Response functions of the API services.
 const apiRespond = {
-  getReport: require('./api/getReport.ts').response,
-  listDiagnoses: require('./api/listDiagnoses.ts').response,
-  listIssues: require('./api/listIssues.ts').response,
-  listReports: require('./api/listReports.ts').response,
-  listViolators: require('./api/listViolators.ts').response,
-  requestFeature: require('./api/requestFeature.ts').response,
-  requestRetest: require('./api/requestRetest.ts').response,
-  requestTest: require('./api/requestTest.ts').response
+  getReport: require('./api/getReport.cts').response,
+  listDiagnoses: require('./api/listDiagnoses.cts').response,
+  listIssues: require('./api/listIssues.cts').response,
+  listReports: require('./api/listReports.cts').response,
+  listViolators: require('./api/listViolators.cts').response,
+  requestFeature: require('./api/requestFeature.cts').response,
+  requestRetest: require('./api/requestRetest.cts').response,
+  requestTest: require('./api/requestTest.cts').response
 };
 
 // CONSTANTS

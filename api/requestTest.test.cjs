@@ -8,7 +8,7 @@
 const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const apiUtil = require('./util.ts');
+const apiUtil = require('./util.cts');
 
 // SETUP AND TEARDOWN
 
@@ -29,7 +29,7 @@ beforeEach(() => {
 });
 
 // Require requestTest after the mock is in place, so it captures the mocked processTestRequest.
-const {response} = require('./requestTest.ts');
+const {response} = require('./requestTest.cts');
 
 after(() => {
   if (savedDBDir !== undefined) {

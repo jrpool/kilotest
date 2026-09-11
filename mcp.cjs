@@ -9,15 +9,15 @@ const {McpServer} = require('@modelcontextprotocol/sdk/server/mcp.js');
 const {StreamableHTTPServerTransport} = require(
   '@modelcontextprotocol/sdk/server/streamableHttp.js'
 );
-const getReportAPI = require('./api/getReport.ts');
-const listReportsAPI = require('./api/listReports.ts');
-const listIssuesAPI = require('./api/listIssues.ts');
-const listViolatorsAPI = require('./api/listViolators.ts');
-const listDiagnosesAPI = require('./api/listDiagnoses.ts');
-const requestTestAPI = require('./api/requestTest.ts');
-const requestRetestAPI = require('./api/requestRetest.ts');
-const requestFeatureAPI = require('./api/requestFeature.ts');
-const {version} = require('./api/version.ts');
+const getReportAPI = require('./api/getReport.cts');
+const listReportsAPI = require('./api/listReports.cts');
+const listIssuesAPI = require('./api/listIssues.cts');
+const listViolatorsAPI = require('./api/listViolators.cts');
+const listDiagnosesAPI = require('./api/listDiagnoses.cts');
+const requestTestAPI = require('./api/requestTest.cts');
+const requestRetestAPI = require('./api/requestRetest.cts');
+const requestFeatureAPI = require('./api/requestFeature.cts');
+const {version} = require('./api/version.cts');
 
 const {
   getReportSchema,
@@ -35,7 +35,7 @@ const {
   requestTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema
-} = require('./api/schemas.ts');
+} = require('./api/schemas.cts');
 
 // CONSTANTS
 

@@ -5,35 +5,38 @@
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, after, mock} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {parse} = require('node-html-parser');
 
-// Monkey-patch util functions before requiring index, so that index.js
-// destructures the patched versions.
-const util = require('../../util.ts');
-const realGetReport = util.getReport;
-const realGetPageDataStrings = util.getPageDataStrings;
+// Mock the util functions called by index.cts before requiring it, so that
+// it imports the mocked versions. Other exports delegate to the real module.
+const realUtil = require('../../util.ts');
 let getReportCallCount = 0;
 let failGetReportOnCall = -1;
 let pageDataStringsOverride = null;
-util.getReport = async (...args) => {
-  getReportCallCount++;
-  if (getReportCallCount === failGetReportOnCall) {
-    return {error: 'Report is invalid (test override)'};
+mock.module('../../util.ts', {
+  exports: {
+    ...realUtil,
+    getReport: async (...args) => {
+      getReportCallCount++;
+      if (getReportCallCount === failGetReportOnCall) {
+        return {error: 'Report is invalid (test override)'};
+      }
+      return realUtil.getReport(...args);
+    },
+    getPageDataStrings: async (...args) => {
+      if (pageDataStringsOverride !== null) {
+        return pageDataStringsOverride;
+      }
+      return realUtil.getPageDataStrings(...args);
+    }
   }
-  return realGetReport(...args);
-};
-util.getPageDataStrings = async (...args) => {
-  if (pageDataStringsOverride !== null) {
-    return pageDataStringsOverride;
-  }
-  return realGetPageDataStrings(...args);
-};
+});
 
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 
 // SETUP AND TEARDOWN
 

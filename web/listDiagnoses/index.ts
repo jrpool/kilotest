@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Lists the diagnoses of a violator of an issue in a report.
 */
 
@@ -22,7 +22,14 @@ const path = require('path');
 // FUNCTIONS
 
 // Adds parameters to a query for the answer page.
-const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, query) => {
+const populateQuery = async (
+  issueID: string,
+  timeStamp: string,
+  jobID: string,
+  catalogIndex: string,
+  pathID: string | null,
+  query: Record<string, any>
+) => {
   // Get descriptions of the page facts.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   // If this failed:
@@ -47,7 +54,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   const catalogItem = catalog[catalogIndex] ?? {};
   const {boxID, startTag, tagName, text} = catalogItem;
   query.catalogIndex = catalogIndex;
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(6);
   if (catalogIndex && catalogItem.textLinkable) {
     const href = getTextFragmentHref(text, url);
@@ -94,16 +101,16 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
     query.box = '[not obtained]';
   }
   // Initialize an array of diagnoses.
-  let diagnoses = [];
-  const testActs = acts.filter(act => act.type === 'test');
+  let diagnoses: any[] = [];
+  const testActs = acts.filter((act: any) => act.type === 'test');
   // For each test act:
-  testActs.forEach(act => {
+  testActs.forEach((act: any) => {
     const {result, which} = act;
     const caseInstances = result?.standardResult?.instances?.filter(
-      instance => instance.issueID === issueID && instance.catalogIndex === catalogIndex
+      (instance: any) => instance.issueID === issueID && instance.catalogIndex === catalogIndex
     ) ?? [];
     // For each standard instance that pertains to this combination of issue and violator:
-    caseInstances.forEach(instance => {
+    caseInstances.forEach((instance: any) => {
       const {ruleID, what} = instance;
       // Add lines for it to the array.
       diagnoses.push({
@@ -130,7 +137,7 @@ const populateQuery = async (issueID, timeStamp, jobID, catalogIndex, pathID, qu
   query.diagnoses = lines.join('\n');
 };
 // Returns a page answering the diagnoses question.
-exports.answer = async (pageArgs, search) => {
+exports.answer = async (pageArgs: string, search: string) => {
   const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/');
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
@@ -142,7 +149,7 @@ exports.answer = async (pageArgs, search) => {
   }
   const params = new URLSearchParams(search);
   const pathID = params.get('pathID');
-  const query = {};
+  const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, catalogIndex, pathID, query);
   // If this failed:

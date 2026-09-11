@@ -40,7 +40,7 @@ const answer = {
   enqueueForm: require('./web/enqueueForm/index.ts').answer,
   expungeReportsForm: require('./web/expungeReportsForm/index.ts').answer,
   hideReportForm: require('./web/hideReportForm/index.ts').answer,
-  listDiagnoses: require('./web/listDiagnoses/index').answer,
+  listDiagnoses: require('./web/listDiagnoses/index.ts').answer,
   listIssues: require('./web/listIssues/index').answer,
   listReports: require('./web/listReports/index').answer,
   listRules: require('./web/listRules/index.ts').answer,

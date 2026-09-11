@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Renews the WCAG map.
 */
 
@@ -12,7 +12,7 @@ const {getJSON} = require('../../util.ts');
 // FUNCTIONS
 
 // Renews the WCAG map and serves an acknowledgment.
-exports.answer = async authCode => {
+exports.answer = async (authCode: string) => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get the map source response.
@@ -29,7 +29,7 @@ exports.answer = async authCode => {
       // If there are entries:
       if (mapEntries) {
         // Initialize the WCAG map.
-        const wcagMap = {};
+        const wcagMap: Record<string, string> = {};
         // For each entry:
         for (const entry of mapEntries) {
           // Add it to the map.

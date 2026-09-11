@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for hiding a report.
 */
 
@@ -12,7 +12,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns a form for hiding a report.
-exports.answer = async (_, search) => {
+exports.answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobName = searchParams?.get('report');
@@ -26,7 +26,7 @@ exports.answer = async (_, search) => {
         await fs.rename(path.join(reportsPath(), fileName), path.join(hiddenReportsPath(), fileName));
       }
       // If this failed:
-      catch (error) {
+      catch (error: any) {
         // Return why.
         return {
           status: 'error',
@@ -44,7 +44,7 @@ exports.answer = async (_, search) => {
     }
   }
   // Initialize an array of report specifications.
-  const reportSpecs = [];
+  const reportSpecs: any[] = [];
   // Get data on all available reports.
   const reportExtracts = await getReportExtracts();
   // For each report:
@@ -64,7 +64,7 @@ exports.answer = async (_, search) => {
     }
     return a.what.localeCompare(b.what);
   });
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(12);
   // For each available report:
   reportSpecs.forEach(spec => {
@@ -75,7 +75,7 @@ exports.answer = async (_, search) => {
       `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
     );
   });
-  const query = {
+  const query: Record<string, string> = {
     reports: lines.join('\n'),
   };
   // Get the hiding form template.

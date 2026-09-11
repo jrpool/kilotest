@@ -35,11 +35,11 @@ const https = require('https');
 const path = require('path');
 const {sendAlert} = require('./alerts.ts');
 const answer = {
-  ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
+  ai0BalanceForm: require('./web/ai0BalanceForm/index.ts').answer,
   enqueue: require('./web/enqueue/index.ts').answer,
   enqueueForm: require('./web/enqueueForm/index.ts').answer,
   expungeReportsForm: require('./web/expungeReportsForm/index').answer,
-  hideReportForm: require('./web/hideReportForm/index').answer,
+  hideReportForm: require('./web/hideReportForm/index.ts').answer,
   listDiagnoses: require('./web/listDiagnoses/index').answer,
   listIssues: require('./web/listIssues/index').answer,
   listReports: require('./web/listReports/index').answer,
@@ -50,7 +50,7 @@ const answer = {
   pruneReportsForm: require('./web/pruneReportsForm/index').answer,
   reannotate: require('./web/reannotate/index.ts').answer,
   reannotateForm: require('./web/reannotateForm/index').answer,
-  renewWCAG: require('./web/renewWCAG/index').answer,
+  renewWCAG: require('./web/renewWCAG/index.ts').answer,
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
   requestRetest: require('./web/requestRetest/index.ts').answer,
   requestRetestForm: require('./web/requestRetestForm/index.ts').answer,
@@ -765,7 +765,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'low');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'web', 'renewWCAG', 'index'))
+        const answerData = await require(path.join(__dirname, 'web', 'renewWCAG', 'index.ts'))
         .answer(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {

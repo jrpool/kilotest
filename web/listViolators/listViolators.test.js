@@ -1,6 +1,6 @@
 /*
   listViolators.test.js
-  UI tests for web/listViolators/index.js using the fixture corpus.
+  UI tests for web/listViolators/index.ts using the fixture corpus.
 */
 
 // IMPORTS
@@ -33,7 +33,7 @@ util.getPageDataStrings = async (...args) => {
   return realGetPageDataStrings(...args);
 };
 
-const {answer} = require('./index');
+const {answer} = require('./index.ts');
 
 // SETUP AND TEARDOWN
 

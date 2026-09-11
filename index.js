@@ -511,7 +511,7 @@ const requestHandler = async (request, response) => {
       // If the service lists the available reports:
       if (service === 'listReports') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'listReports'))
+        const responseBody = await require(path.join(__dirname, 'api', 'listReports.ts'))
         .response(specs);
         // Send it.
         setHeaders('application/json', null, 'ultra');

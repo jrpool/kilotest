@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Reannotates all available latest reports.
 */
 
@@ -12,7 +12,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Implements a reannotation order and returns an acknowledgement page.
-exports.answer = async authCode => {
+exports.answer = async (authCode: string) => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get data on the available reports.

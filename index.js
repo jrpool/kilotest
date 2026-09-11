@@ -48,7 +48,7 @@ const answer = {
   listViolators: require('./web/listViolators/index').answer,
   manage: require('./web/manage/index.ts').answer,
   pruneReportsForm: require('./web/pruneReportsForm/index').answer,
-  reannotate: require('./web/reannotate/index').answer,
+  reannotate: require('./web/reannotate/index.ts').answer,
   reannotateForm: require('./web/reannotateForm/index').answer,
   renewWCAG: require('./web/renewWCAG/index').answer,
   renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
@@ -746,7 +746,7 @@ const requestHandler = async (request, response) => {
         // Set headers for a response.
         setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
-        const answerData = await require(path.join(__dirname, 'web', 'reannotate', 'index'))
+        const answerData = await require(path.join(__dirname, 'web', 'reannotate', 'index.ts'))
         .answer(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {

@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form to reannotate reports.
 */
 
@@ -12,10 +12,10 @@ const path = require('path');
 // FUNCTIONS
 
 // Adds parameters to a query for the answer page.
-const populateQuery = async query => {
+const populateQuery = async (query: Record<string, any>) => {
   // Initialize data on rule classification.
-  const reClassified = {};
-  const stillUnclassified = {};
+  const reClassified: Record<string, Record<string, Set<string>>> = {};
+  const stillUnclassified: Record<string, Record<string, Set<string>>> = {};
   // Get an extract of all available reports.
   const reportExtracts = await getReportExtracts();
   // For each report:
@@ -32,12 +32,12 @@ const populateQuery = async query => {
       return;
     }
     // Otherwise, i.e. if it succeeded, for each act in the report:
-    acts.forEach(act => {
+    acts.forEach((act: any) => {
       const {result, type, which} = act;
       // If it is a test act with standard instances:
       if (type === 'test' && result?.standardResult?.instances?.length) {
         // For each standard instance:
-        result.standardResult.instances.forEach(instance => {
+        result.standardResult.instances.forEach((instance: any) => {
           const {ruleID} = instance;
           // Get the issue ID of the rule, or null if none.
           const issueID = getIssue(which, ruleID);
@@ -59,8 +59,8 @@ const populateQuery = async query => {
       }
     });
   };
-  const stillUnclassifiedLines = [];
-  const reClassifiedLines = [];
+  const stillUnclassifiedLines: string[] = [];
+  const reClassifiedLines: string[] = [];
   const margin = ' '.repeat(6);
   // For each rule engine reporting any violations of still unclassified rules:
   Object.keys(stillUnclassified).forEach(engineID => {
@@ -88,7 +88,7 @@ const populateQuery = async query => {
   });
   // Add the lines to the query.
   query.reClassified = reClassifiedLines.join('\n');
-  const formLines = [];
+  const formLines: string[] = [];
   if (reClassifiedLines.length) {
     query.how = 'Each <q>reclassified</q> rule indicates that report annotations are out of date. To update them, submit your authorization code.';
   }
@@ -105,7 +105,7 @@ const populateQuery = async query => {
 };
 // Returns a page disclosing newly classified rules and a form to reannotate reports.
 exports.answer = async () => {
-  const query = {};
+  const query: Record<string, any> = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
   // If the query reports an error:

@@ -1,6 +1,6 @@
 /*
   generate-openapi.js
-  Generates openapi.yaml from the Kilotest API route table (api/routes.js) and Zod schemas (api/schemas.ts), keeping the OpenAPI document in sync with schemas.ts’s single source of truth.
+  Generates openapi.yaml from the Kilotest API route table (api/routes.ts) and Zod schemas (api/schemas.ts), keeping the OpenAPI document in sync with schemas.ts’s single source of truth.
 */
 
 // IMPORTS
@@ -10,7 +10,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 const {createDocument} = require('zod-openapi');
 const {license} = require('../package.json');
-const routes = require('../api/routes');
+const routes = require('../api/routes.ts');
 const {version} = require('../api/version.ts');
 
 // CONSTANTS

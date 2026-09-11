@@ -67,12 +67,12 @@
       "html"
     ],
     "include": [
-      "index.js",
-      "mcp.js",
+      "index.cjs",
+      "mcp.cjs",
       "alerts.ts",
       "util.ts",
-      "api/**/*.{js,ts}",
-      "web/**/*.{js,ts}"
+      "api/**/*.{js,ts,cts}",
+      "web/**/*.{js,ts,cts}"
     ],
     "exclude": [
       "coverage/**",

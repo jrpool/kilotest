@@ -1,13 +1,13 @@
 /*
   routes.test.js
-  Tests for api/routes.js, verifying the structure and completeness of the OpenAPI route metadata.
+  Tests for api/routes.ts, verifying the structure and completeness of the OpenAPI route metadata.
 */
 
 // IMPORTS
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const routes = require('./routes');
+const routes = require('./routes.ts');
 
 // TESTS
 

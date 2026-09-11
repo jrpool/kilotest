@@ -1,6 +1,6 @@
 /*
   expungeReportsForm.test.js
-  Unit tests for web/expungeReportsForm/index.js.
+  Unit tests for web/expungeReportsForm/index.ts.
 */
 
 // IMPORTS
@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('fs/promises');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index');
+const {answer} = require('./index.ts');
 const {reportsPath} = require('../../util.ts');
 
 // SETUP AND TEARDOWN
@@ -99,8 +99,8 @@ test('expungeReportsForm shows no-deletable message when every URL has at least 
   const savedDBDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    delete require.cache[require.resolve('./index')];
-    const {answer} = require('./index');
+    delete require.cache[require.resolve('./index.ts')];
+    const {answer} = require('./index.ts');
     const result = await answer(null, '');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('no reports to delete'));
@@ -108,7 +108,7 @@ test('expungeReportsForm shows no-deletable message when every URL has at least 
   }
   finally {
     process.env.DB_DIR = savedDBDir;
-    delete require.cache[require.resolve('./index')];
+    delete require.cache[require.resolve('./index.ts')];
     await fs.rm(tmpDir, {recursive: true}).catch(() => {});
   }
 });

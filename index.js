@@ -38,12 +38,12 @@ const answer = {
   ai0BalanceForm: require('./web/ai0BalanceForm/index.ts').answer,
   enqueue: require('./web/enqueue/index.ts').answer,
   enqueueForm: require('./web/enqueueForm/index.ts').answer,
-  expungeReportsForm: require('./web/expungeReportsForm/index').answer,
+  expungeReportsForm: require('./web/expungeReportsForm/index.ts').answer,
   hideReportForm: require('./web/hideReportForm/index.ts').answer,
   listDiagnoses: require('./web/listDiagnoses/index').answer,
   listIssues: require('./web/listIssues/index').answer,
   listReports: require('./web/listReports/index').answer,
-  listRules: require('./web/listRules/index').answer,
+  listRules: require('./web/listRules/index.ts').answer,
   listTopIssues: require('./web/listTopIssues/index').answer,
   listViolators: require('./web/listViolators/index').answer,
   manage: require('./web/manage/index.ts').answer,
@@ -57,7 +57,7 @@ const answer = {
   requestTest: require('./web/requestTest/index.ts').answer,
   requestTestForm: require('./web/requestTestForm/index.ts').answer,
   rewindReportsForm: require('./web/rewindReportsForm/index').answer,
-  unhideReportForm: require('./web/unhideReportForm/index').answer,
+  unhideReportForm: require('./web/unhideReportForm/index.ts').answer,
   tutorial: require('./web/tutorial/index.ts').answer
 };
 

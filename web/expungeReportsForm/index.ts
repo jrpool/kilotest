@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for deleting sole reports.
 */
 
@@ -12,7 +12,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns a form for deleting sole reports.
-exports.answer = async (_, search) => {
+exports.answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
@@ -28,7 +28,7 @@ exports.answer = async (_, search) => {
         }
       }
       // If this failed:
-      catch (error) {
+      catch (error: any) {
         // Return why.
         return {
           status: 'error',
@@ -46,7 +46,7 @@ exports.answer = async (_, search) => {
     }
   }
   const reportNames = await fs.readdir(reportsPath());
-  const reportSpecs = [];
+  const reportSpecs: any[] = [];
   // For each report:
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
@@ -72,7 +72,7 @@ exports.answer = async (_, search) => {
   // Sort the summaries primarily URL and secondarily by time stamp.
   objectSort(reportSpecs, 'timeStamp', 'alpha');
   objectSort(reportSpecs, 'url', 'alpha');
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(12);
   let anyDeletable = false;
   // For each summary:
@@ -98,7 +98,7 @@ exports.answer = async (_, search) => {
   ? 'Choose the sole reports to delete.'
   : 'Each target has at least 2 reports, so there are no reports to delete.';
   const disabled = anyDeletable ? '' : ' disabled';
-  const query = {
+  const query: Record<string, string> = {
     reports: lines.join('\n'),
     intro,
     disabled

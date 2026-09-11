@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for unhiding a report.
 */
 
@@ -12,7 +12,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Returns a form for unhiding a report.
-exports.answer = async (_, search) => {
+exports.answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobName = searchParams?.get('report');
@@ -25,7 +25,7 @@ exports.answer = async (_, search) => {
         // Move the report to the reports directory.
         await fs.rename(path.join(hiddenReportsPath(), fileName), path.join(reportsPath(), fileName));
       }
-      catch (error) {
+      catch (error: any) {
         // Return why.
         return {
           status: 'error',
@@ -43,7 +43,7 @@ exports.answer = async (_, search) => {
     }
   }
   // Initialize an array of data on reports to be unhidden.
-  const reportsData = [];
+  const reportsData: any[] = [];
   // Get the names of the hidden report files.
   const hiddenReportFileNames = await fs.readdir(hiddenReportsPath());
   // For each hidden report:
@@ -69,7 +69,7 @@ exports.answer = async (_, search) => {
     }
     return a.what.localeCompare(b.what, 'en', {sensitivity: 'base'});
   });
-  const lines = [];
+  const lines: string[] = [];
   const margin = ' '.repeat(12);
   // For each report:
   reportsData.forEach(data => {
@@ -80,7 +80,7 @@ exports.answer = async (_, search) => {
       `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
     );
   });
-  const query = {
+  const query: Record<string, string> = {
     reports: lines.join('\n'),
   };
   // Get the unhiding form template.

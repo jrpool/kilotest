@@ -1,6 +1,6 @@
 /*
   getReport.test.js
-  Tests for api/getReport.js using the fixture corpus.
+  Tests for api/getReport.ts using the fixture corpus.
 */
 
 // IMPORTS
@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const {response} = require('./getReport');
+const {response} = require('./getReport.ts');
 
 // SETUP AND TEARDOWN
 

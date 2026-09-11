@@ -1,5 +1,5 @@
 /*
-  getReport.js
+  getReport.ts
   Returns one report.
 */
 
@@ -15,10 +15,10 @@ const {getReport, getReportStats} = require('../util.ts');
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async args => {
+exports.response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'size of the report in bytes': null,
     'full report': null
   };

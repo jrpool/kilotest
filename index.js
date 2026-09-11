@@ -547,7 +547,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service serves a report:
       else if (service === 'getReport') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'getReport'))
+        const responseBody = await require(path.join(__dirname, 'api', 'getReport.ts'))
         .response(specs);
         // Send it.
         setHeaders('application/json', null, 'low');

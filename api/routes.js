@@ -1,6 +1,6 @@
 /*
   routes.js
-  Route metadata for OpenAPI generation. Pairs each Kilotest API operation with its HTTP method, path template, and the request/response schemas from schemas.js. This table supplies the facts that schemas.js cannot express on its own (method, path, path-vs-body placement), mirroring the manual dispatch in index.js and the // GET/POST comments in schemas.js.
+  Route metadata for OpenAPI generation. Pairs each Kilotest API operation with its HTTP method, path template, and the request/response schemas from schemas.ts. This table supplies the facts that schemas.ts cannot express on its own (method, path, path-vs-body placement), mirroring the manual dispatch in index.js and the // GET/POST comments in schemas.ts.
 */
 
 // IMPORTS
@@ -22,7 +22,7 @@ const {
   requestTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema
-} = require('./schemas');
+} = require('./schemas.ts');
 
 // ROUTES
 

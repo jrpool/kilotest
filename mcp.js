@@ -35,7 +35,7 @@ const {
   requestTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema
-} = require('./api/schemas');
+} = require('./api/schemas.ts');
 
 // CONSTANTS
 

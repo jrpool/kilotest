@@ -1,11 +1,16 @@
 /*
-  schemas.js
+  schemas.ts
   Zod input and response schemas shared by mcp.js (MCP tool inputSchema/outputSchema), api/routes.js, and the openapi.yaml generation script (scripts/generate-openapi.js). Descriptions and component ids (.meta({id})) in this file are the single source of truth for parameter documentation and OpenAPI component naming and reuse.
 */
 
 // IMPORTS
 
 const {z} = require('zod');
+
+// TYPES
+
+// A Zod schema of any shape, as accepted by the schema-composing helpers below.
+type ZodTypeAny = import('zod').ZodTypeAny;
 
 // REQUEST SCHEMAS
 
@@ -97,7 +102,7 @@ const requestReferenceSchema = z.object({
 }).meta({id: 'RequestReference'});
 
 // GET endpoints have no 'body'; POST endpoints get a request-specific body schema.
-const thisRequestSchema = (method, bodySchema) => z.object({
+const thisRequestSchema = (method: string, bodySchema?: ZodTypeAny) => z.object({
   description: z.string(),
   method: z.literal(method),
   URL: z.string(),
@@ -106,10 +111,10 @@ const thisRequestSchema = (method, bodySchema) => z.object({
 });
 
 const envelope = (
-  method,
-  responseContentSchema,
-  bodySchema,
-  /** @type {z.ZodType} */ similarWebSchema = similarWebRequestsSchema
+  method: string,
+  responseContentSchema: ZodTypeAny,
+  bodySchema?: ZodTypeAny,
+  similarWebSchema: ZodTypeAny = similarWebRequestsSchema
 ) => z.object({
   'tool collection': toolsFactsSchema,
   'tool name': z.string(),

@@ -1,6 +1,6 @@
 /*
   listDiagnoses.test.js
-  Tests for api/listDiagnoses.js using the fixture corpus, with emphasis on outcome handling.
+  Tests for api/listDiagnoses.ts using the fixture corpus, with emphasis on outcome handling.
 */
 
 // IMPORTS
@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const {response} = require('./listDiagnoses');
+const {response} = require('./listDiagnoses.ts');
 
 // SETUP AND TEARDOWN
 

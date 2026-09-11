@@ -7,7 +7,7 @@
 
 const {
   getJSON, getNowStamp, getRandomString, getRecs, isURL, jobsPath, recsLock
-} = require('../../util');
+} = require('../../util.ts');
 const fs = require('fs/promises');
 const path = require('path');
 

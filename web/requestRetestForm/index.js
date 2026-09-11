@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getAgoString, getDateTimeString, getReportExtracts} = require('../../util');
+const {getAgoString, getDateTimeString, getReportExtracts} = require('../../util.ts');
 const fs = require('fs/promises');
 const path = require('path');
 

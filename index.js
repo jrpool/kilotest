@@ -26,7 +26,7 @@ const {
   jobsPath,
   recsLock,
   reportsPath
-} = require('./util');
+} = require('./util.ts');
 const {handleMCP, mcpPath} = require('./mcp');
 const fs = require('fs/promises');
 const {handleComment} = require('./web/tutorial/index');

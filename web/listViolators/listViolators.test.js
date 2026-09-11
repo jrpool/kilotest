@@ -13,7 +13,7 @@ const {parse} = require('node-html-parser');
 
 // Monkey-patch util functions before requiring index, so that index.js
 // destructures the patched versions.
-const util = require('../../util');
+const util = require('../../util.ts');
 const realGetReport = util.getReport;
 const realGetPageDataStrings = util.getPageDataStrings;
 let getReportCallCount = 0;

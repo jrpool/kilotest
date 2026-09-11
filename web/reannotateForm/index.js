@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {getIssue, getReport, getReportExtracts} = require('../../util');
+const {getIssue, getReport, getReportExtracts} = require('../../util.ts');
 const fs = require('fs/promises');
 const path = require('path');
 

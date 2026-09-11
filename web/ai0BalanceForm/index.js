@@ -7,7 +7,7 @@
 
 const fs = require('fs/promises');
 const path = require('path');
-const {getJSON} = require('../../util');
+const {getJSON} = require('../../util.ts');
 
 // CONSTANTS
 

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-const {isRecommendable, processTestRequest} = require('../../util');
+const {isRecommendable, processTestRequest} = require('../../util.ts');
 
 // FUNCTIONS
 

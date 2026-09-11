@@ -1,6 +1,6 @@
 /*
   util.test.js
-  Tests for util.js data-path injection (Phase 1) and utility functions.
+  Tests for util.ts data-path injection (Phase 1) and utility functions.
 */
 
 // IMPORTS
@@ -52,7 +52,7 @@ const {
   recsPath,
   reportsPath,
   updateRecs
-} = require('./util');
+} = require('./util.ts');
 
 // TESTS
 
@@ -462,7 +462,7 @@ test('getJobNames creates missing job directories and returns empty arrays', asy
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDbDir;
   try {
-    const {getJobNames} = require('./util');
+    const {getJobNames} = require('./util.ts');
     const result = await getJobNames();
     assert.equal(typeof result, 'object');
     assert.deepEqual(result.queue, []);
@@ -490,7 +490,7 @@ test('getJobNames returns an error when a job directory is a file, not a directo
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    const {getJobNames} = require('./util');
+    const {getJobNames} = require('./util.ts');
     const result = await getJobNames();
     assert.equal(typeof result, 'string');
     assert.ok(result.startsWith('ERROR'));
@@ -517,7 +517,7 @@ test('getRecs creates an empty recommendations file and returns an error when it
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {getRecs} = require('./util');
+    const {getRecs} = require('./util.ts');
     const result = await getRecs();
     assert.equal(typeof result, 'string');
     assert.ok(result.startsWith('ERROR'));
@@ -537,7 +537,7 @@ test('getRecs returns an error when the recommendations file is not JSON', async
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {getRecs} = require('./util');
+    const {getRecs} = require('./util.ts');
     const result = await getRecs();
     assert.equal(typeof result, 'string');
     assert.ok(result.startsWith('ERROR'));
@@ -550,7 +550,7 @@ test('getRecs returns an error when the recommendations file is not JSON', async
 
 test('getPOSTData resolves with parsed query for form-urlencoded requests', async () => {
   const {Readable} = require('node:stream');
-  const {getPOSTData} = require('./util');
+  const {getPOSTData} = require('./util.ts');
   const body = 'target=Page&why=Because';
   const req = Object.assign(new Readable({
     read() {
@@ -575,7 +575,7 @@ test('isRecommendable returns "claimed" for a URL in a claimed job', async () =>
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {isRecommendable} = require('./util');
+    const {isRecommendable} = require('./util.ts');
     const result = await isRecommendable('https://example.com/test');
     assert.equal(result, 'claimed');
   }
@@ -597,7 +597,7 @@ test('isRecommendable returns "queued" for a URL in a queued job', async () => {
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {isRecommendable} = require('./util');
+    const {isRecommendable} = require('./util.ts');
     const result = await isRecommendable('https://example.com/test');
     assert.equal(result, 'queued');
   }
@@ -616,7 +616,7 @@ test('isRecommendable returns empty string for a URL with no matching jobs', asy
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {isRecommendable} = require('./util');
+    const {isRecommendable} = require('./util.ts');
     const result = await isRecommendable('https://example.com/no-match');
     assert.equal(result, '');
   }
@@ -644,7 +644,7 @@ test('getReport returns an error for an invalid report', async () => {
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {getReport} = require('./util');
+    const {getReport} = require('./util.ts');
     const result = await getReport('260101T0000', 'bad');
     assert.ok(result.error);
     assert.ok(result.error.includes('invalid'));
@@ -656,7 +656,7 @@ test('getReport returns an error for an invalid report', async () => {
 });
 
 test('getReportData returns an error for a nonexistent report', async () => {
-  const {getReportData} = require('./util');
+  const {getReportData} = require('./util.ts');
   const result = await getReportData('990101T0000', 'xxx');
   assert.ok(result.error);
 });
@@ -685,14 +685,14 @@ test('getIssue returns an issue ID for a variable rule pattern match', () => {
 });
 
 test('getTimeString returns null for an invalid time portion', () => {
-  const {getDateTimeString} = require('./util');
+  const {getDateTimeString} = require('./util.ts');
   const result = getDateTimeString('999999T9999');
   assert.ok(result.includes('null'));
 });
 
 test('getPOSTData resolves with parsed JSON for application/json requests', async () => {
   const {Readable} = require('node:stream');
-  const {getPOSTData} = require('./util');
+  const {getPOSTData} = require('./util.ts');
   const body = JSON.stringify({target: 'Page', why: 'Because'});
   const req = Object.assign(new Readable({
     read() {
@@ -706,7 +706,7 @@ test('getPOSTData resolves with parsed JSON for application/json requests', asyn
 
 test('getPOSTData resolves with parsed query for body-type form-urlencoded requests', async () => {
   const {Readable} = require('node:stream');
-  const {getPOSTData} = require('./util');
+  const {getPOSTData} = require('./util.ts');
   const body = 'target=Page&why=Because';
   const req = Object.assign(new Readable({
     read() {
@@ -721,7 +721,7 @@ test('getPOSTData resolves with parsed query for body-type form-urlencoded reque
 
 test('getPOSTData resolves with null for an unknown content type', async () => {
   const {Readable} = require('node:stream');
-  const {getPOSTData} = require('./util');
+  const {getPOSTData} = require('./util.ts');
   const req = Object.assign(new Readable({
     read() {
       this.push(Buffer.from('data'));
@@ -733,36 +733,36 @@ test('getPOSTData resolves with null for an unknown content type', async () => {
 });
 
 test('getEngineNamesString falls back to the engine ID for an unknown engine', () => {
-  const {getEngineNamesString} = require('./util');
+  const {getEngineNamesString} = require('./util.ts');
   const result = getEngineNamesString(new Set(['unknownEngine']));
   assert.equal(result, 'unknownEngine');
 });
 
 test('getPathID returns the catalog pathID when catalogIndex is truthy', () => {
-  const {getPathID} = require('./util');
+  const {getPathID} = require('./util.ts');
   const catalog = {'0': {pathID: '/html/body/div'}};
   assert.equal(getPathID(catalog, '0', '/fallback'), '/html/body/div');
 });
 
 test('getPathID returns the fallback pathID when catalogIndex is truthy but catalogItem has no pathID', () => {
-  const {getPathID} = require('./util');
+  const {getPathID} = require('./util.ts');
   const catalog = {'0': {tagName: 'div'}};
   assert.equal(getPathID(catalog, '0', '/fallback'), '/fallback');
 });
 
 test('getPathID returns /html when catalogIndex is truthy but catalogItem and pathID are both missing', () => {
-  const {getPathID} = require('./util');
+  const {getPathID} = require('./util.ts');
   const catalog = {};
   assert.equal(getPathID(catalog, '0', null), '/html');
 });
 
 test('getPathID returns /html when catalogIndex is falsy and pathID is null', () => {
-  const {getPathID} = require('./util');
+  const {getPathID} = require('./util.ts');
   assert.equal(getPathID({}, null, null), '/html');
 });
 
 test('isValidReport returns false for a report with a test act using an unknown engine', () => {
-  const {isValidReport} = require('./util');
+  const {isValidReport} = require('./util.ts');
   const report = {
     target: {what: 'Test', url: 'https://example.com'},
     acts: [{type: 'test', which: 'unknownEngine'}],
@@ -773,7 +773,7 @@ test('isValidReport returns false for a report with a test act using an unknown 
 });
 
 test('isValidReport returns true for a report with a non-test act', () => {
-  const {isValidReport} = require('./util');
+  const {isValidReport} = require('./util.ts');
   const report = {
     target: {what: 'Test', url: 'https://example.com'},
     acts: [{type: 'other'}],

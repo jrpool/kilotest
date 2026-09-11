@@ -5,7 +5,7 @@
 */
 
 // ENVIRONMENT (must be set before requiring index.js, because index.js reads
-// TESTARO_WORKERS and AUTH_CODE at module load time, and util.js reads DB_DIR.)
+// TESTARO_WORKERS and AUTH_CODE at module load time, and util.ts reads DB_DIR.)
 
 const path = require('node:path');
 const fixtureDBDir = path.join(__dirname, 'test', 'fixtures', 'db');

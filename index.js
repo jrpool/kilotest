@@ -538,7 +538,7 @@ const requestHandler = async (request, response) => {
       // Otherwise, if the service lists the diagnoses of a violation of an issue in a report:
       else if (service === 'listDiagnoses') {
         // Get the response body.
-        const responseBody = await require(path.join(__dirname, 'api', 'listDiagnoses'))
+        const responseBody = await require(path.join(__dirname, 'api', 'listDiagnoses.ts'))
         .response(specs);
         // Send it.
         setHeaders('application/json', null, 'high');

@@ -1,5 +1,5 @@
 /*
-  listDiagnoses.js
+  listDiagnoses.ts
   Returns details about one violator of one issue in one report and facts about all its diagnoses.
 */
 
@@ -17,10 +17,10 @@ const {getReport} = require('../util.ts');
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async args => {
+exports.response = async (args: string[]) => {
   const [catalogIndex = '', issueID = '', timeStamp = '', jobID = ''] = args;
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'basics about the report': null,
     'basics about the issue': null,
     'basics about the element': null,
@@ -101,15 +101,15 @@ exports.response = async args => {
       // If the issue is non-ignorable and fully classified:
       if (issueSpec) {
         // Initialize data about the diagnoses of the violation of the issue.
-        const diagnoses = [];
+        const diagnoses: any[] = [];
         // For each act in the report:
-        report.acts.forEach(act => {
+        report.acts.forEach((act: any) => {
           const {result, type, which} = act;
           const instances = result?.standardResult?.instances || [];
           // If the act is a test act with a specified rule engine:
           if (type === 'test' && which) {
             // For each standard instance of the act:
-            instances.forEach(instance => {
+            instances.forEach((instance: any) => {
               const {count, ordinalSeverity, outcome, ruleID, what} = instance;
               // If the instance reports a violation of the issue by the violator:
               if (

@@ -9,7 +9,7 @@ const {McpServer} = require('@modelcontextprotocol/sdk/server/mcp.js');
 const {StreamableHTTPServerTransport} = require(
   '@modelcontextprotocol/sdk/server/streamableHttp.js'
 );
-const getReportAPI = require('./api/getReport');
+const getReportAPI = require('./api/getReport.ts');
 const listReportsAPI = require('./api/listReports');
 const listIssuesAPI = require('./api/listIssues');
 const listViolatorsAPI = require('./api/listViolators');

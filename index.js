@@ -869,7 +869,7 @@ const requestHandler = async (request, response) => {
         else if (segments[0] === 'requestRetest') {
           const {reason} = postData;
           // Get the response body.
-          const responseBody = await require(path.join(__dirname, 'api', 'requestRetest'))
+          const responseBody = await require(path.join(__dirname, 'api', 'requestRetest.ts'))
           .response(segments.slice(1).concat(reason));
           // Send it.
           setHeaders('application/json', null, 'ultra');

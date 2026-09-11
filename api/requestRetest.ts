@@ -1,5 +1,5 @@
 /*
-  requestRetest.js
+  requestRetest.ts
   Processes a request to retest a page and returns an acknowledgement.
 */
 
@@ -11,10 +11,10 @@ const {getReportExtracts, getReportExtract} = require('../util.ts');
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async args => {
+exports.response = async (args: string[]) => {
   const [timeStamp = '', jobID = '', reason = ''] = args;
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'details about your request': {},
     'disposition of your request': null
   };
@@ -32,7 +32,7 @@ exports.response = async args => {
   // Otherwise, if the report has been superseded:
   else if (
     (await getReportExtracts(true))
-    .every(extract => extract.timeStamp !== timeStamp || extract.jobID !== jobID)
+    .every((extract: any) => extract.timeStamp !== timeStamp || extract.jobID !== jobID)
   ) {
     // Add this to the response content.
     responseContent['details about your request'] = {

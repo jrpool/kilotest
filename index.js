@@ -859,7 +859,7 @@ const requestHandler = async (request, response) => {
         if (segments[0] === 'requestTest') {
           const {description, URL, reason} = postData;
           // Get the response body.
-          const responseBody = await require(path.join(__dirname, 'api', 'requestTest'))
+          const responseBody = await require(path.join(__dirname, 'api', 'requestTest.ts'))
           .response([description, URL, reason]);
           // Send it.
           setHeaders('application/json', null, 'ultra');

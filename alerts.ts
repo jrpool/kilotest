@@ -7,19 +7,16 @@
 
 const https = require('node:https') as typeof import('node:https');
 
-// CONSTANTS
-
-// Alert configuration.
-const MANAGER_EMAIL = process.env['MANAGER_EMAIL'];
-const ALERT_API_HOST = process.env['ALERT_API_HOST'];
-const ALERT_API_PATH = process.env['ALERT_API_PATH'];
-const ALERT_API_KEY = process.env['ALERT_API_KEY'];
-const ALERT_FROM = process.env['ALERT_FROM'];
-
 // FUNCTIONS
 
 // Sends an email alert to a manager.
 exports.sendAlert = (subject: string, body: string): Promise<void> => new Promise(resolve => {
+  // Alert configuration, read at call time so it is not frozen when this module is loaded.
+  const MANAGER_EMAIL = process.env['MANAGER_EMAIL'];
+  const ALERT_API_HOST = process.env['ALERT_API_HOST'];
+  const ALERT_API_PATH = process.env['ALERT_API_PATH'];
+  const ALERT_API_KEY = process.env['ALERT_API_KEY'];
+  const ALERT_FROM = process.env['ALERT_FROM'];
   // If the alert configuration is complete:
   if (MANAGER_EMAIL && ALERT_API_HOST && ALERT_API_PATH && ALERT_API_KEY && ALERT_FROM) {
     const payload = JSON.stringify({

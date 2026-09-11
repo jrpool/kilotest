@@ -9,6 +9,7 @@ const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const https = require('node:https');
 const {EventEmitter} = require('node:events');
+const {sendAlert} = require('./alerts.ts');
 
 // SETUP AND TEARDOWN
 
@@ -31,8 +32,6 @@ after(() => {
       delete process.env[key];
     }
   }
-  delete require.cache[require.resolve('./alerts.ts')];
-  require('./alerts.ts');
 });
 
 // HELPER
@@ -72,17 +71,10 @@ const clearAlertConfig = () => {
   }
 };
 
-// Loads alerts.ts fresh so it picks up the current env vars and https.request.
-const loadAlerts = () => {
-  delete require.cache[require.resolve('./alerts.ts')];
-  return require('./alerts.ts');
-};
-
 // TESTS
 
 test('sendAlert resolves without sending when configuration is incomplete', async () => {
   clearAlertConfig();
-  const {sendAlert} = loadAlerts();
   await sendAlert('Test', 'Body');
   assert.ok(true);
 });
@@ -94,7 +86,6 @@ test('sendAlert logs success when the API responds with a 2xx status', async () 
     callback(res);
     res.emit('end');
   });
-  const {sendAlert} = loadAlerts();
   await sendAlert('Test Success', 'Body');
   https.request = originalRequest;
   assert.ok(true);
@@ -108,7 +99,6 @@ test('sendAlert logs an error when the API responds with a non-2xx status', asyn
     res.emit('data', 'Server error');
     res.emit('end');
   });
-  const {sendAlert} = loadAlerts();
   await sendAlert('Test Failure', 'Body');
   https.request = originalRequest;
   assert.ok(true);
@@ -119,7 +109,6 @@ test('sendAlert logs an error when the request errors', async () => {
   mockRequest((req) => {
     req.emit('error', new Error('Connection refused'));
   });
-  const {sendAlert} = loadAlerts();
   await sendAlert('Test Error', 'Body');
   https.request = originalRequest;
   assert.ok(true);
@@ -130,7 +119,6 @@ test('sendAlert logs an error when the request times out', async () => {
   mockRequest(() => {
     // Do nothing; the setTimeout mock will fire and call req.destroy().
   });
-  const {sendAlert} = loadAlerts();
   await sendAlert('Test Timeout', 'Body');
   https.request = originalRequest;
   assert.ok(true);

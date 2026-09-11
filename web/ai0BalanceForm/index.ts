@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Serves a form for deleting superseded reports.
 */
 
@@ -16,11 +16,11 @@ const balancePath = path.join(__dirname, '../../ai0Balance.json');
 // FUNCTIONS
 
 // Returns a form for recording the AI service 0 balance.
-exports.answer = async (_, search) => {
+exports.answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const newBalanceString = searchParams?.get('newBalance');
-  let oldBalance;
+  let oldBalance: any;
   // If the form displayed itself:
   if (newBalanceString) {
     // If the authorization code is valid:
@@ -64,7 +64,7 @@ exports.answer = async (_, search) => {
       oldBalance = 'There is no';
     }
   }
-  const query = {oldBalance};
+  const query: Record<string, any> = {oldBalance};
   // Get the order form template.
   let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
   // Replace its placeholders.

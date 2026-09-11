@@ -35,7 +35,7 @@ const https = require('https');
 const path = require('path');
 const {sendAlert} = require('./alerts.ts');
 const answer = {
-  ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
+  ai0BalanceForm: require('./web/ai0BalanceForm/index.ts').answer,
   enqueue: require('./web/enqueue/index.ts').answer,
   enqueueForm: require('./web/enqueueForm/index.ts').answer,
   expungeReportsForm: require('./web/expungeReportsForm/index').answer,

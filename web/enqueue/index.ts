@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Implements a test request approval.
 */
 
@@ -14,7 +14,7 @@ const path = require('path');
 // FUNCTIONS
 
 // Implements a test request approval and returns a revised request page.
-exports.answer = async (url, what, authCode) => {
+exports.answer = async (url: string, what: string, authCode: string) => {
   // If the arguments are valid:
   if (isURL(url) && what && authCode === process.env.AUTH_CODE) {
     // Get the job template.
@@ -29,7 +29,7 @@ exports.answer = async (url, what, authCode) => {
     job.executionTimeStamp = nowStamp;
     job.target.what = what;
     job.target.url = url;
-    const query = {
+    const query: Record<string, string> = {
       target: what,
       jobName
     };

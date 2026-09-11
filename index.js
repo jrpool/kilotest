@@ -36,7 +36,7 @@ const path = require('path');
 const {sendAlert} = require('./alerts.ts');
 const answer = {
   ai0BalanceForm: require('./web/ai0BalanceForm/index').answer,
-  enqueue: require('./web/enqueue/index').answer,
+  enqueue: require('./web/enqueue/index.ts').answer,
   enqueueForm: require('./web/enqueueForm/index.ts').answer,
   expungeReportsForm: require('./web/expungeReportsForm/index').answer,
   hideReportForm: require('./web/hideReportForm/index').answer,
@@ -701,7 +701,7 @@ const requestHandler = async (request, response) => {
             // Set a location header for a response.
             response.setHeader('content-location', pathname);
             // Process the approval and get the answer data about the remaining recommendations.
-            const answerData = await require(path.join(__dirname, 'web', 'enqueue', 'index'))
+            const answerData = await require(path.join(__dirname, 'web', 'enqueue', 'index.ts'))
             .answer(url, what, authCode);
             // If the answer data are valid:
             if (answerData.status === 'ok') {

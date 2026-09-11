@@ -42,7 +42,7 @@ const answer = {
   hideReportForm: require('./web/hideReportForm/index.ts').answer,
   listDiagnoses: require('./web/listDiagnoses/index.ts').answer,
   listIssues: require('./web/listIssues/index').answer,
-  listReports: require('./web/listReports/index').answer,
+  listReports: require('./web/listReports/index.ts').answer,
   listRules: require('./web/listRules/index.ts').answer,
   listTopIssues: require('./web/listTopIssues/index.ts').answer,
   listViolators: require('./web/listViolators/index').answer,

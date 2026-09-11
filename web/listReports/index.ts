@@ -1,5 +1,5 @@
 /*
-  index.js
+  index.ts
   Lists all available reports.
 */
 
@@ -25,10 +25,10 @@ const path = require('path');
 // FUNCTIONS
 
 // Adds parameters to a query for the answer page.
-const populateQuery = async query => {
+const populateQuery = async (query: Record<string, any>) => {
   const margin = ' '.repeat(8);
   // Initialize the classes of lines.
-  const lines = {
+  const lines: Record<string, string[]> = {
     recs: [],
     queue: [],
     claimed: [],
@@ -39,7 +39,7 @@ const populateQuery = async query => {
   // For each recommended URL:
   Object.keys(recs).forEach(url => {
     // For each of its recommendations:
-    recs[url].forEach(rec => {
+    recs[url].forEach((rec: any) => {
       const {what, why} = rec;
       // Add a line.
       lines.recs.push(`${margin}<li><code>${url}</code> (${what}): ${why}</li>`);
@@ -148,7 +148,7 @@ const populateQuery = async query => {
     }
     // Add the status of, and if necessary a question link about, retesting to the lines.
     const status = await isRecommendable(url);
-    let retestString;
+    let retestString: string;
     if (status === 'claimed') {
       retestString = 'Currently being retested';
     }
@@ -168,7 +168,7 @@ const populateQuery = async query => {
 };
 // Returns a page answering the targets question.
 exports.answer = async () => {
-  const query = {};
+  const query: Record<string, any> = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
   // If the query reports an error:

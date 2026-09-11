@@ -5,12 +5,12 @@
 
 // IMPORTS
 
-const https = require('node:https') as typeof import('node:https');
+import https from 'node:https';
 
 // FUNCTIONS
 
 // Sends an email alert to a manager.
-exports.sendAlert = (subject: string, body: string): Promise<void> => new Promise(resolve => {
+export const sendAlert = (subject: string, body: string): Promise<void> => new Promise(resolve => {
   // Alert configuration, read at call time so it is not frozen when this module is loaded.
   const MANAGER_EMAIL = process.env['MANAGER_EMAIL'];
   const ALERT_API_HOST = process.env['ALERT_API_HOST'];

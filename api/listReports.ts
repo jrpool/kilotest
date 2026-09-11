@@ -1,5 +1,5 @@
 /*
-  listReports.js
+  listReports.ts
   Returns basics about all the available reports.
 */
 
@@ -13,13 +13,13 @@ const {getReportExtracts} = require('../util.ts');
 // Returns the response body.
 exports.response = async () => {
   // Initialize the response content.
-  const responseContent = {
+  const responseContent: Record<string, any> = {
     'basics about all available reports': null,
     'how to request that a page with no report be tested': null,
     'how a web user can request that the page be tested': null
   };
   // Initialize an array of basics about the reports.
-  const reportsBasics = [];
+  const reportsBasics: any[] = [];
   // Get extracts of all available reports.
   const reportExtracts = await getReportExtracts();
   // For each report:

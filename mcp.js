@@ -10,7 +10,7 @@ const {StreamableHTTPServerTransport} = require(
   '@modelcontextprotocol/sdk/server/streamableHttp.js'
 );
 const getReportAPI = require('./api/getReport.ts');
-const listReportsAPI = require('./api/listReports');
+const listReportsAPI = require('./api/listReports.ts');
 const listIssuesAPI = require('./api/listIssues');
 const listViolatorsAPI = require('./api/listViolators');
 const listDiagnosesAPI = require('./api/listDiagnoses');

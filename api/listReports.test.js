@@ -1,6 +1,6 @@
 /*
   listReports.test.js
-  Tests for api/listReports.js using the fixture corpus.
+  Tests for api/listReports.ts using the fixture corpus.
 */
 
 // IMPORTS
@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
-const {response} = require('./listReports');
+const {response} = require('./listReports.ts');
 
 // CONSTANTS
 

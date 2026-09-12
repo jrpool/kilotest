@@ -7,8 +7,7 @@
 
 const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const apiUtil = require('./util.ts');
+const apiUtil = require('./util.cts');
 
 // SETUP AND TEARDOWN
 
@@ -16,7 +15,7 @@ const savedDBDir = process.env.DB_DIR;
 let processTestRequestCalls = [];
 
 before(() => {
-  process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../test/dbFixture.cjs').fixtureDBDir;
   // @ts-expect-error: Replacing the real function with a mock for testing.
   apiUtil.processTestRequest = async (testType, what, url, reason) => {
     processTestRequestCalls.push({testType, what, url, reason});
@@ -29,7 +28,7 @@ beforeEach(() => {
 });
 
 // Require requestRetest after the mock is in place, so it captures the mocked processTestRequest.
-const {response} = require('./requestRetest.ts');
+const {response} = require('./requestRetest.cts');
 
 after(() => {
   if (savedDBDir !== undefined) {

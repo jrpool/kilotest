@@ -5,41 +5,44 @@
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, after, mock} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const {parse} = require('node-html-parser');
 
-// Monkey-patch util functions before requiring index, so that index.js
-// destructures the patched versions.
-const util = require('../../util.ts');
-const realIsHidden = util.isHidden;
-const realGetPageDataStrings = util.getPageDataStrings;
+// Mock the util functions called by index.cts before requiring it, so that
+// it imports the mocked versions. Other exports delegate to the real module.
+const realUtil = require('../../util.ts');
 let isHiddenCallCount = 0;
 let forceHiddenOnCall = -1;
 let pageDataStringsOverride = null;
-util.isHidden = async (timeStamp, jobID) => {
-  isHiddenCallCount++;
-  if (isHiddenCallCount === forceHiddenOnCall) {
-    return true;
+mock.module('../../util.ts', {
+  exports: {
+    ...realUtil,
+    isHidden: async (timeStamp, jobID) => {
+      isHiddenCallCount++;
+      if (isHiddenCallCount === forceHiddenOnCall) {
+        return true;
+      }
+      return realUtil.isHidden(timeStamp, jobID);
+    },
+    getPageDataStrings: async (...args) => {
+      if (pageDataStringsOverride !== null) {
+        return pageDataStringsOverride;
+      }
+      return realUtil.getPageDataStrings(...args);
+    }
   }
-  return realIsHidden(timeStamp, jobID);
-};
-util.getPageDataStrings = async (...args) => {
-  if (pageDataStringsOverride !== null) {
-    return pageDataStringsOverride;
-  }
-  return realGetPageDataStrings(...args);
-};
+});
 
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
 });
 
 after(() => {
@@ -160,7 +163,7 @@ test('listIssues shows plural violator count for an issue with multiple violator
 test('listIssues handles acts with no standardResult instances', async () => {
   // Create a temporary report with an act that has no standardResult.
   const fs = require('node:fs/promises');
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportPath = path.join(dbDir, 'reports', '260101T0004-nsi.json');
   const report = {
     id: '260101T0004-nsi',

@@ -13,7 +13,7 @@ const {parse} = require('node-html-parser');
 
 // CONSTANTS
 
-const fixtureDBDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
 const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
 
 // SETUP AND TEARDOWN
@@ -63,7 +63,7 @@ after(async () => {
 
 test('answer returns ok with a populated answer page for a valid retest request', async () => {
   // Require the module after DB_DIR is set.
-  const {answer} = require('./index.ts');
+  const {answer} = require('./index.cts');
   // Use the 260101T0001-ct report (All CantTell Page, https://example.com/canttell).
   const result = await answer('260101T0001/ct', 'Because changes were made');
   assert.equal(result.status, 'ok');
@@ -81,7 +81,7 @@ test('answer returns ok with a populated answer page for a valid retest request'
 });
 
 test('answer throws when the report does not exist', async () => {
-  const {answer} = require('./index.ts');
+  const {answer} = require('./index.cts');
   // Use a nonexistent report timestamp and jobID.
   await assert.rejects(
     () => answer('990101T0000/xxx', 'Because changes were made'),
@@ -90,30 +90,34 @@ test('answer throws when the report does not exist', async () => {
 });
 
 test('answer returns an error for an invalid retest recommendation', async () => {
-  const {answer} = require('./index.ts');
+  const {answer} = require('./index.cts');
   // Use a valid report but a too-short reason.
   const result = await answer('260101T0001/ct', 'why');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');
 });
 
-test('answer returns an error when the report extract has an error', async () => {
-  // Mock getReportExtracts to return an extract with an error.
-  const util = require('../../util.ts');
-  const original = util.getReportExtracts;
-  util.getReportExtracts = async () => [
-    {timeStamp: '260101T0001', jobID: 'ct', error: 'Report data unavailable'}
-  ];
+test('answer returns an error when the report extract has an error', async (t) => {
+  // Mock getReportExtracts to return an extract with an error, delegating other exports.
+  const realUtil = require('../../util.ts');
+  t.mock.module('../../util.ts', {
+    exports: {
+      ...realUtil,
+      getReportExtracts: async () => [
+        {timeStamp: '260101T0001', jobID: 'ct', error: 'Report data unavailable'}
+      ]
+    }
+  });
   try {
-    // Re-require to pick up the mocked function.
-    delete require.cache[require.resolve('./index.ts')];
-    const {answer} = require('./index.ts');
+    // Re-require index.cts so it picks up the mocked module.
+    delete require.cache[require.resolve('./index.cts')];
+    const {answer} = require('./index.cts');
     const result = await answer('260101T0001/ct', 'Because changes were made');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Report data unavailable');
   }
   finally {
-    util.getReportExtracts = original;
-    delete require.cache[require.resolve('./index.ts')];
+    // Drop the mock-bound copy of index.cts so later tests get the real module.
+    delete require.cache[require.resolve('./index.cts')];
   }
 });

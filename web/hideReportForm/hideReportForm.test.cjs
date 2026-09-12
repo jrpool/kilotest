@@ -10,14 +10,14 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('fs/promises');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 const {reportsPath, hiddenReportsPath} = require('../../util.ts');
 
 // SETUP AND TEARDOWN
 
 const savedAuthCode = process.env.AUTH_CODE;
 const savedDBDir = process.env.DB_DIR;
-const fixtureDBDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
 
 before(() => {
   process.env.AUTH_CODE = 'test-auth-code';

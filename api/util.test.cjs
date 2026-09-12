@@ -7,8 +7,7 @@
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} = require('./util.ts');
+const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} = require('./util.cts');
 
 // SETUP
 
@@ -64,7 +63,7 @@ test('getIssueSpec returns null for the ignorable issue ID', () => {
 });
 
 test('getReportBasics returns an error for a nonexistent report', async () => {
-  process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../test/dbFixture.cjs').fixtureDBDir;
   const basics = await getReportBasics('999999T9999', 'xyz');
   assert.ok(basics.error);
   if (savedDBDir !== undefined) {
@@ -76,7 +75,7 @@ test('getReportBasics returns an error for a nonexistent report', async () => {
 });
 
 test('processTestRequest returns an error for a duplicate recommendation', async () => {
-  process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../test/dbFixture.cjs').fixtureDBDir;
   // Submit the same request twice; the second should be a duplicate.
   await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
   const result = await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');

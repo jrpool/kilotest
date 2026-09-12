@@ -10,14 +10,14 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
 });
 
 after(() => {
@@ -46,7 +46,7 @@ test('listTopIssues includes priority headings in the page', async () => {
 });
 
 test('listTopIssues returns an error when a report file is invalid', async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const invalidReportPath = path.join(reportsDir, '260101T9999-bad.json');
   try {
@@ -66,7 +66,7 @@ test('listTopIssues returns an error when a report file is invalid', async () =>
 });
 
 test('listTopIssues handles reports with unclassified issue IDs', async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const reportPath = path.join(reportsDir, '260101T0004-unc.json');
   try {

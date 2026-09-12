@@ -14,7 +14,7 @@ const {parse} = require('node-html-parser');
 
 // CONSTANTS
 
-const fixtureDBDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
 const reportsDir = path.join(fixtureDBDir, 'reports');
 
 // SETUP AND TEARDOWN
@@ -56,7 +56,7 @@ const restoreReports = async backups => {
 // TESTS
 
 test('answer returns an error for an invalid authorization code', async () => {
-  const {answer} = require('./index.ts');
+  const {answer} = require('./index.cts');
   const result = await answer('wrong-code');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid authorization code');
@@ -70,8 +70,8 @@ test('answer returns an error when no reports are available', async () => {
   process.env.DB_DIR = tempDir;
   try {
     // Re-require the module so it picks up the new DB_DIR.
-    delete require.cache[require.resolve('./index.ts')];
-    const {answer} = require('./index.ts');
+    delete require.cache[require.resolve('./index.cts')];
+    const {answer} = require('./index.cts');
     const result = await answer('test-auth-code');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Got data on no available reports');
@@ -104,8 +104,8 @@ test('answer returns an error when a report fails annotation', {timeout: 2000}, 
   };
   await fs.writeFile(badReportPath, JSON.stringify(badReport));
   try {
-    delete require.cache[require.resolve('./index.ts')];
-    const {answer} = require('./index.ts');
+    delete require.cache[require.resolve('./index.cts')];
+    const {answer} = require('./index.cts');
     const result = await answer('test-auth-code');
     assert.equal(result.status, 'error');
     assert.ok(result.message.includes('invalid'), `Expected message about invalid report, got: ${result.message}`);
@@ -126,8 +126,8 @@ test('answer returns ok with an answer page when all reports annotate successful
   // Back up all fixture reports, because annotateReport modifies them in place.
   const backups = await backupReports();
   try {
-    delete require.cache[require.resolve('./index.ts')];
-    const {answer} = require('./index.ts');
+    delete require.cache[require.resolve('./index.cts')];
+    const {answer} = require('./index.cts');
     const result = await answer('test-auth-code');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage, 'answerPage should be present');

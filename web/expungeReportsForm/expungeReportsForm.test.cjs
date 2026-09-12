@@ -10,14 +10,14 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('fs/promises');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 const {reportsPath} = require('../../util.ts');
 
 // SETUP AND TEARDOWN
 
 const savedAuthCode = process.env.AUTH_CODE;
 const savedDBDir = process.env.DB_DIR;
-const fixtureDBDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
 
 before(() => {
   process.env.AUTH_CODE = 'test-auth-code';
@@ -99,8 +99,8 @@ test('expungeReportsForm shows no-deletable message when every URL has at least 
   const savedDBDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    delete require.cache[require.resolve('./index.ts')];
-    const {answer} = require('./index.ts');
+    delete require.cache[require.resolve('./index.cts')];
+    const {answer} = require('./index.cts');
     const result = await answer(null, '');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('no reports to delete'));
@@ -108,7 +108,7 @@ test('expungeReportsForm shows no-deletable message when every URL has at least 
   }
   finally {
     process.env.DB_DIR = savedDBDir;
-    delete require.cache[require.resolve('./index.ts')];
+    delete require.cache[require.resolve('./index.cts')];
     await fs.rm(tmpDir, {recursive: true}).catch(() => {});
   }
 });

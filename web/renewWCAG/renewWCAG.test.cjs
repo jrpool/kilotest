@@ -13,7 +13,7 @@ const {parse} = require('node-html-parser');
 
 // CONSTANTS
 
-const fixtureDBDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
 const wcagMapPath = path.join(__dirname, '..', '..', 'wcagMap.json');
 
 // SETUP AND TEARDOWN
@@ -62,7 +62,7 @@ const mockFetch = (status, body = '') => {
 // TESTS
 
 test('answer returns an error for an invalid authorization code', async () => {
-  const {answer} = require('./index.ts');
+  const {answer} = require('./index.cts');
   const result = await answer('wrong-code');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Authorization code invalid');
@@ -70,8 +70,8 @@ test('answer returns an error for an invalid authorization code', async () => {
 
 test('answer returns an error when the WCAG map source returns a non-200 status', async () => {
   mockFetch(404);
-  delete require.cache[require.resolve('./index.ts')];
-  const {answer} = require('./index.ts');
+  delete require.cache[require.resolve('./index.cts')];
+  const {answer} = require('./index.cts');
   const result = await answer('test-auth-code');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'WCAG map source not retrieved');
@@ -87,8 +87,8 @@ test('answer returns ok and rewrites the WCAG map when the source returns valid 
     '<a href="understanding/target-size-minimum"><span class="secno">2.5.8 </span>'
   ].join('\n');
   mockFetch(200, mockHTML);
-  delete require.cache[require.resolve('./index.ts')];
-  const {answer} = require('./index.ts');
+  delete require.cache[require.resolve('./index.cts')];
+  const {answer} = require('./index.cts');
   const result = await answer('test-auth-code');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage, 'answerPage should be present');
@@ -112,8 +112,8 @@ test('answer returns an error when matchAll returns no entries', async () => {
   };
   mockFetch(200, '<html></html>');
   try {
-    delete require.cache[require.resolve('./index.ts')];
-    const {answer} = require('./index.ts');
+    delete require.cache[require.resolve('./index.cts')];
+    const {answer} = require('./index.cts');
     const result = await answer('test-auth-code');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'No entries found in WCAG map source');

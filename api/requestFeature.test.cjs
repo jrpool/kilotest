@@ -5,30 +5,25 @@
 
 // IMPORTS
 
-const {test, beforeEach, after, mock} = require('node:test');
+const {test, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 
 // SETUP AND TEARDOWN
 
-let sendAlertCalls = [];
+let logged = [];
+const originalLog = console.log;
 
-// Mock the alert sender before requestFeature is required, so it captures the mock.
-mock.module('../alerts.ts', {
-  exports: {
-    sendAlert: async (subject, body) => {
-      sendAlertCalls.push({subject, body});
-    }
-  }
-});
-
-// Reset the call log before each test, so tests do not depend on execution order.
+// Capture console.log so the alert sendAlert emits can be observed. The alert
+// configuration is empty in tests, so sendAlert logs a WARNING instead of sending.
 beforeEach(() => {
-  sendAlertCalls = [];
+  logged = [];
+  console.log = (...args) => logged.push(args.join(' '));
 });
 
-const {response} = require('./requestFeature.ts');
+const {response} = require('./requestFeature.cts');
 
 after(() => {
+  console.log = originalLog;
 });
 
 // TESTS
@@ -37,7 +32,7 @@ test('requestFeature rejects an empty feature request', async () => {
   const body = await response(['']);
   const details = body['response content']['details about your request'];
   assert.ok(details.error);
-  assert.equal(sendAlertCalls.length, 0);
+  assert.ok(!logged.some(line => line.startsWith('WARNING (MCP feature request received)')));
 });
 
 test('requestFeature accepts a non-empty feature request and notifies the manager', async () => {
@@ -46,9 +41,10 @@ test('requestFeature accepts a non-empty feature request and notifies the manage
   assert.equal(details.error, undefined);
   assert.ok(details['date and time received']);
   assert.equal(details.disposition, 'received and logged; manager notified');
-  assert.equal(sendAlertCalls.length, 1);
-  assert.equal(sendAlertCalls[0].subject, 'MCP feature request received');
-  assert.equal(sendAlertCalls[0].body, 'Add a dark mode toggle');
+  assert.ok(logged.some(line =>
+    line.startsWith('WARNING (MCP feature request received)')
+    && line.includes('Add a dark mode toggle')
+  ));
 });
 
 test('requestFeature includes tool name and metadata', async () => {

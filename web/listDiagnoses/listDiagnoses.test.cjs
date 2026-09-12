@@ -5,42 +5,45 @@
 
 // IMPORTS
 
-const {test, before, after} = require('node:test');
+const {test, before, after, mock} = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const {parse} = require('node-html-parser');
 
-// Monkey-patch util functions before requiring index, so that index.js
-// destructures the patched versions.
-const util = require('../../util.ts');
-const realGetReport = util.getReport;
-const realGetPageDataStrings = util.getPageDataStrings;
+// Mock the util functions called by index.cts before requiring it, so that
+// it imports the mocked versions. Other exports delegate to the real module.
+const realUtil = require('../../util.ts');
 let getReportCallCount = 0;
 let failGetReportOnCall = -1;
 let pageDataStringsOverride = null;
-util.getReport = async (...args) => {
-  getReportCallCount++;
-  if (getReportCallCount === failGetReportOnCall) {
-    return {error: 'Report is invalid (test override)'};
+mock.module('../../util.ts', {
+  exports: {
+    ...realUtil,
+    getReport: async (...args) => {
+      getReportCallCount++;
+      if (getReportCallCount === failGetReportOnCall) {
+        return {error: 'Report is invalid (test override)'};
+      }
+      return realUtil.getReport(...args);
+    },
+    getPageDataStrings: async (...args) => {
+      if (pageDataStringsOverride !== null) {
+        return pageDataStringsOverride;
+      }
+      return realUtil.getPageDataStrings(...args);
+    }
   }
-  return realGetReport(...args);
-};
-util.getPageDataStrings = async (...args) => {
-  if (pageDataStringsOverride !== null) {
-    return pageDataStringsOverride;
-  }
-  return realGetPageDataStrings(...args);
-};
+});
 
-const {answer} = require('./index.ts');
+const {answer} = require('./index.cts');
 
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
 });
 
 after(() => {
@@ -111,7 +114,7 @@ test('listDiagnoses returns an error when getReport fails after getPageDataStrin
 });
 
 test('listDiagnoses includes a take-me-there link for a text-linkable catalog item', async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const reportPath = path.join(reportsDir, '260101T0003-tlk.json');
   try {
@@ -193,7 +196,7 @@ test('listDiagnoses returns an error when report facts are not obtained', async 
 
 test('listDiagnoses handles acts with no standardResult instances gracefully', async () => {
   // Create a temporary report where an act has no standardResult.
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportPath = path.join(dbDir, 'reports', '260101T0004-nst.json');
   const report = {
     id: '260101T0004-nst',

@@ -7,8 +7,7 @@
 
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
-const {response} = require('./listReports.ts');
+const {response} = require('./listReports.cts');
 
 // CONSTANTS
 
@@ -29,7 +28,7 @@ const fixtureIds = [
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../test/dbFixture.cjs').fixtureDBDir;
 });
 
 after(() => {

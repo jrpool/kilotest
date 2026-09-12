@@ -1,1 +1,9 @@
-{}
+{
+  "https://example.com/test": [
+    {
+      "timeStamp": "260912T0000",
+      "what": "Test Page",
+      "why": "Because accessibility matters"
+    }
+  ]
+}

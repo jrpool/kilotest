@@ -14,7 +14,7 @@
     "test": "c8 node --require ./test/setup.cjs --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize '**/*.test.cjs'",
     "test:smoke": "node smokeTest.cjs",
     "checkinfo": "node checkinfo.cjs",
-    "generate:openapi": "node scripts/generate-openapi.cjs"
+    "generate:openapi": "node scripts/generate-openapi.ts"
   },
   "repository": {
     "type": "git",

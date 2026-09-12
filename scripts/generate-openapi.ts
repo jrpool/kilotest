@@ -1,34 +1,34 @@
 /*
-  generate-openapi.cjs
+  generate-openapi.ts
   Generates openapi.yaml from the Kilotest API route table (api/routes.ts) and Zod schemas (api/schemas.ts), keeping the OpenAPI document in sync with schemas.ts’s single source of truth.
 */
 
 // IMPORTS
 
-const fs = require('fs');
-const path = require('path');
-const yaml = require('js-yaml');
-const {createDocument} = require('zod-openapi');
-const {license} = require('../package.json');
-const {routes} = require('../api/routes.ts');
-const {version} = require('../api/version.ts');
+import fs from 'node:fs';
+import path from 'node:path';
+import * as yaml from 'js-yaml';
+import {createDocument} from 'zod-openapi';
+import pkg from '../package.json' with {type: 'json'};
+import {routes} from '../api/routes.ts';
+import {version} from '../api/version.ts';
 
 // CONSTANTS
 
-const outputPath = path.join(__dirname, '..', 'openapi.yaml');
+const {license} = pkg;
+const outputPath = path.join(import.meta.dirname, '..', 'openapi.yaml');
 
 // FUNCTIONS
 
 // Builds the paths object for createDocument from the route table.
 const buildPaths = () => {
-  /** @type {import('zod-openapi').ZodOpenApiPathsObject} */
-  const paths = {};
+  const paths: Record<string, any> = {};
   routes.forEach(route => {
     const {method, path: routePath, summary, pathParamsSchema, bodySchema, responseSchema} = route;
     if (!paths[routePath]) {
       paths[routePath] = {};
     }
-    const operation = {
+    const operation: any = {
       operationId: route.operationId,
       summary,
       responses: {

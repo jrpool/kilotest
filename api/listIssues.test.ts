@@ -57,7 +57,7 @@ test('listIssues returns 0 issues for the empty report', async () => {
 
 test('listIssues reports prevented rule engines for the prevented report', async () => {
   const body = await response(['260101T0006', 'prv']);
-  const details = body['response content']['details about the report'];
+  const details = body['response content']['details about the report'] as any;
   const preventions = details['test results']['rule engines that could not test the page'];
   assert.equal(preventions.length, 1);
   assert.equal(preventions[0].name, 'Alfa');
@@ -68,14 +68,16 @@ test('listIssues includes reporter names for each issue in the mixed report', as
   const body = await response(['260101T0000', 'mix']);
   const issues = body['response content']['basics about all issues reported in the report'];
   const linkIssue = issues.find((i: any) => i.identifier === 'linkNoText');
+  assert.ok(linkIssue);
   assert.deepEqual(linkIssue['rule engines with any violations belonging to the issue'], ['Alfa', 'Axe']);
   const allCapsIssue = issues.find((i: any) => i.identifier === 'allCaps');
+  assert.ok(allCapsIssue);
   assert.deepEqual(allCapsIssue['rule engines with any violations belonging to the issue'], ['Alfa']);
 });
 
 test('listIssues counts issues by priority correctly for the mixed report', async () => {
   const body = await response(['260101T0000', 'mix']);
-  const details = body['response content']['details about the report'];
+  const details = body['response content']['details about the report'] as any;
   const counts = details['test results']['counts of issues by priority'];
   // linkNoText weight 4 (highest), allCaps weight 1 (lowest).
   assert.equal(counts.highest, 1);
@@ -86,13 +88,13 @@ test('listIssues counts issues by priority correctly for the mixed report', asyn
 
 test('listIssues reports the superseded status for the mixed report', async () => {
   const body = await response(['260101T0000', 'mix']);
-  const basics = body['response content']['basics about the report'];
+  const basics = body['response content']['basics about the report'] as any;
   assert.equal(basics['whether a later report about the same page exists'], true);
 });
 
 test('listIssues returns an error for a nonexistent report', async () => {
   const body = await response(['999999T9999', 'xyz']);
-  const basics = body['response content']['basics about the report'];
+  const basics = body['response content']['basics about the report'] as any;
   assert.ok(basics.error);
 });
 

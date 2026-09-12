@@ -46,40 +46,40 @@ after(() => {
 
 test('requestTest rejects an empty description', async () => {
   const body = await response(['', 'https://example.com/test', 'A reason that is long enough.']);
-  assert.ok(body['response content']['details about your request'].error);
+  assert.ok((body['response content']['details about your request'] as any).error);
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestTest rejects a description longer than 100 characters', async () => {
   const longWhat = 'x'.repeat(101);
   const body = await response([longWhat, 'https://example.com/test', 'A reason that is long enough.']);
-  assert.ok(body['response content']['details about your request'].error);
+  assert.ok((body['response content']['details about your request'] as any).error);
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestTest rejects a URL shorter than 12 characters', async () => {
   const body = await response(['Test Page', 'short', 'A reason that is long enough.']);
-  assert.ok(body['response content']['details about your request'].error);
+  assert.ok((body['response content']['details about your request'] as any).error);
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestTest rejects a syntactically invalid URL with the correct length', async () => {
   const body = await response(['Test Page', 'not-a-valid-url', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'];
+  const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('invalid URL'));
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestTest rejects an already-tested page', async () => {
   const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'];
+  const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('already been tested'));
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestTest accepts a valid new page request', async () => {
   const body = await response(['Brand New Page', 'https://example.com/brandnew', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'];
+  const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   assert.equal(details['page to be tested'].description, 'Brand New Page');
   assert.ok(logged.some(line =>

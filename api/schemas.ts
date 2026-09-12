@@ -110,9 +110,9 @@ const thisRequestSchema = (method: string, bodySchema?: ZodTypeAny) => z.object(
   'closest ancestor request': requestReferenceSchema.nullable()
 });
 
-const envelope = (
+const envelope = <T extends ZodTypeAny>(
   method: string,
-  responseContentSchema: ZodTypeAny,
+  responseContentSchema: T,
   bodySchema?: ZodTypeAny,
   similarWebSchema: ZodTypeAny = similarWebRequestsSchema
 ) => z.object({
@@ -138,7 +138,7 @@ const responseMetadataSchema = z.object({
 const reportBasicsSchema = z.object({
   identifier: z.string().describe('timeStamp-jobID identifier of the report.'),
   'completion date and time': z.string(),
-  'days since the report was completed': z.number(),
+  'days since the report was completed': z.number().nullable(),
   'tested web page': z.object({description: z.string(), URL: z.string()}),
   'whether a later report about the same page exists': z.boolean()
 }).meta({id: 'ReportBasics'});
@@ -232,7 +232,7 @@ export const listViolatorsResponseSchema = envelope('GET', z.object({
   'details about the issue': z.object({
     'rule engines reporting violations belonging to the issue': z.array(ruleEngineFactsSchema)
   }).nullable(),
-  'basics about all elements reported as exhibiting the issue': z.array(z.object({
+  'basics about all elements exhibiting the issue': z.array(z.object({
     identifier: z.string(),
     'tag name': z.unknown().describe('Copied from the report catalog entry; type not guaranteed.'),
     'inner text': z.unknown().describe('Copied from the report catalog entry; type not guaranteed.'),
@@ -270,27 +270,41 @@ export const getReportResponseSchema = envelope('GET', z.object({
 
 export const requestTestResponseSchema = envelope(
   'POST',
-  z.object({'details about your request': z.union([
-    z.object({error: z.string()}),
-    z.object({
-      'date and time received': z.string(),
-      'page to be tested': z.object({description: z.string(), URL: z.string()}),
-      'reason why the page should be tested': z.string()
-    })
-  ])}),
+  z.object({
+    'details about your request': z.union([
+      z.object({error: z.string()}),
+      z.object({
+        'date and time received': z.string(),
+        'page to be tested': z.object({description: z.string(), URL: z.string()}),
+        'reason why the page should be tested': z.string()
+      })
+    ]),
+    'disposition of your request': z.object({
+      'what happens next': z.string(),
+      'how you can check for completion': z.string(),
+      'how a web user can check for completion': z.string()
+    }).nullable()
+  }),
   z.object(requestTestSchema)
 );
 
 export const requestRetestResponseSchema = envelope(
   'POST',
-  z.object({'details about your request': z.union([
-    z.object({error: z.string()}),
-    z.object({
-      'date and time received': z.string(),
-      'page to be retested': z.object({description: z.string(), URL: z.string()}),
-      'reason why the page should be retested': z.string()
-    })
-  ])}),
+  z.object({
+    'details about your request': z.union([
+      z.object({error: z.string()}),
+      z.object({
+        'date and time received': z.string(),
+        'page to be retested': z.object({description: z.string(), URL: z.string()}),
+        'reason why the page should be retested': z.string()
+      })
+    ]),
+    'disposition of your request': z.object({
+      'what happens next': z.string(),
+      'how you can check for completion': z.string(),
+      'how a web user can check for completion': z.string()
+    }).nullable()
+  }),
   z.object({reason: requestRetestSchema.reason})
 );
 

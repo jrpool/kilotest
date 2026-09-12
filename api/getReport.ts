@@ -5,12 +5,14 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {
   getResponseMetadata,
   getToolsFacts,
   getThisHost
 } from './util.ts';
 import {getReport, getReportStats} from '../util.ts';
+import {getReportResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -19,10 +21,10 @@ export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'size of the report in bytes': null,
     'full report': null
-  };
+  } as unknown as z.infer<typeof getReportResponseSchema>['response content'];
   // Get the report size.
   const reportStats = await getReportStats(timeStamp, jobID);
   // If this failed:

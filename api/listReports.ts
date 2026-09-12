@@ -5,8 +5,10 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {getReportBasics, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {getReportExtracts} from '../util.ts';
+import {listReportsResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -14,11 +16,11 @@ import {getReportExtracts} from '../util.ts';
 export const response = async () => {
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'basics about all available reports': null,
     'how to request that a page with no report be tested': null,
     'how a web user can request that the page be tested': null
-  };
+  } as unknown as z.infer<typeof listReportsResponseSchema>['response content'];
   // Initialize an array of basics about the reports.
   const reportsBasics: any[] = [];
   // Get extracts of all available reports.

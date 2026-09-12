@@ -5,8 +5,10 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {sendAlert} from '../alerts.ts';
+import {requestFeatureResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -15,9 +17,9 @@ export const response = async (args: string[]) => {
   const [feature = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'details about your request': null
-  };
+  } as unknown as z.infer<typeof requestFeatureResponseSchema>['response content'];
   // If the requested feature or improvement is empty:
   if (!feature) {
     // Add this to the response content.

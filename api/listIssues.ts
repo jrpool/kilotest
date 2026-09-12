@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {
   getIssueSpec,
   getReportBasics,
@@ -15,6 +16,7 @@ import {
   getThisHost
 } from './util.ts';
 import {getReport, getReportStats, objectSort} from '../util.ts';
+import {listIssuesResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -23,7 +25,7 @@ export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'basics about the report': null,
     'details about the report': null,
     'how to request that the page be retested': null,
@@ -31,7 +33,7 @@ export const response = async (args: string[]) => {
     'how to get the full report in JSON': null,
     'how a web user can get the full report in JSON': null,
     'basics about all issues reported in the report': null
-  };
+  } as unknown as z.infer<typeof listIssuesResponseSchema>['response content'];
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -187,12 +189,12 @@ export const response = async (args: string[]) => {
         return {
           identifier: id,
           summary,
-          priority: ['lowest', 'low', 'high', 'highest'][weight - 1],
+          priority: ['lowest', 'low', 'high', 'highest'][weight - 1] as 'lowest' | 'low' | 'high' | 'highest',
           'impact on a user': why,
           'rule engines with any violations belonging to the issue': getRuleEnginesFacts(reporterIDs)
           .map((ruleEnginesFact: any) => ruleEnginesFact.name),
           'how to get details about the issue': {
-            method: 'GET',
+            method: 'GET' as const,
             URL: `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`
           },
           'web users can get details about the issue at': `${thisHost}/listViolators.html/${id}/${timeStamp}/${jobID}`

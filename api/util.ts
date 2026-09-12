@@ -1,12 +1,12 @@
 /*
-  util.cts
+  util.ts
   Utilities for API requests.
 */
 
 // IMPORTS
 
-const {sendAlert} = require('../alerts.ts');
-const {
+import {sendAlert} from '../alerts.ts';
+import {
   getAgoDays,
   getReportExtracts,
   getNowStamp,
@@ -17,20 +17,20 @@ const {
   objectSort,
   ruleEngines,
   updateRecs
-} = require('../util.ts');
-const {issues: issueSpecs} = require('testaro-issues');
+} from '../util.ts';
+import {issues as issueSpecs} from 'testaro-issues';
 
 // FUNCTIONS
 
 // Returns the base URL of this Kilotest host.
-const getThisHost = exports.getThisHost = () => process.env.THIS_KILOTEST_HOST;
+export const getThisHost = () => process.env.THIS_KILOTEST_HOST;
 // Returns uniform metadata for every response.
-exports.getResponseMetadata = () => ({
+export const getResponseMetadata = () => ({
   identifier: `${getNowStamp()}-${getRandomString(3)}`,
   'date and time': new Date().toISOString()
 });
 // Returns facts about the tool collection (Kilotest).
-exports.getToolsFacts = () => ({
+export const getToolsFacts = () => ({
   'name': 'Kilotest',
   'description': {
     'what Kilotest does': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against about 1300 rules defined by an ensemble of twelve rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 380 issues. Kilotest makes facts about the issues and the violations retrievable at four levels of granularity.',
@@ -51,7 +51,7 @@ exports.getToolsFacts = () => ({
   'web users can obtain similar functionalities at': getThisHost()
 });
 // Returns the facts about a rule engine.
-const getRuleEngineFacts = exports.getRuleEngineFacts = (ruleEngineID: string) => {
+export const getRuleEngineFacts = (ruleEngineID: string) => {
   const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];
   return {
     identifier: ruleEngineID,
@@ -60,7 +60,7 @@ const getRuleEngineFacts = exports.getRuleEngineFacts = (ruleEngineID: string) =
   };
 };
 // Returns the facts about rule engines.
-exports.getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
+export const getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
   const ruleEnginesFacts = Array.from(ruleEngineIDSet).map(id => getRuleEngineFacts(id));
   objectSort(ruleEnginesFacts, 'name', 'alpha');
   return ruleEnginesFacts;
@@ -69,7 +69,7 @@ exports.getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
 // Accepts an optional precomputed extract to avoid redundant reads when called
 // in a loop over all reports (e.g. by listReports). When the extract comes from
 // getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
-exports.getReportBasics = async (timeStamp: string, jobID: string, extract: any = null) => {
+export const getReportBasics = async (timeStamp: string, jobID: string, extract: any = null) => {
   const extractProvided = !!extract;
   // If an extract was not provided, verify the report exists and read it.
   if (!extractProvided) {
@@ -107,7 +107,7 @@ exports.getReportBasics = async (timeStamp: string, jobID: string, extract: any 
   return basics;
 };
 // Returns the specification of an issue.
-exports.getIssueSpec = (issueID: string) => {
+export const getIssueSpec = (issueID: string) => {
   // Get the issue specification.
   const issueSpec = issueSpecs[issueID];
   // If it exists:
@@ -125,7 +125,7 @@ exports.getIssueSpec = (issueID: string) => {
   return null;
 };
 // Processes a test or retest request.
-exports.processTestRequest = async (testType: string, what: string, url: string, why: string) => {
+export const processTestRequest = async (testType: string, what: string, url: string, why: string) => {
   // Get an email-safe version of the reason.
   const plainWhy = getPlainText(why);
   // Update the waiting recommendations as a transaction.

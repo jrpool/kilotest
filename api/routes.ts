@@ -1,12 +1,12 @@
 /*
-  routes.cts
-  Route metadata for OpenAPI generation. Pairs each Kilotest API operation with its HTTP method, path template, and the request/response schemas from schemas.ts. This table supplies the facts that schemas.ts cannot express on its own (method, path, path-vs-body placement), mirroring the manual dispatch in index.js and the // GET/POST comments in schemas.ts.
+  routes.ts
+  Route metadata for OpenAPI generation. Pairs each Kilotest API operation with its HTTP method, path template, and the request/response schemas from schemas.ts. This table supplies the facts that schemas.ts cannot express on its own (method, path, path-vs-body placement), mirroring the manual dispatch in index.cjs and the // GET/POST comments in schemas.ts.
 */
 
 // IMPORTS
 
-const {z} = require('zod');
-const {
+import {z} from 'zod';
+import {
   listIssuesSchema,
   listViolatorsSchema,
   listDiagnosesSchema,
@@ -22,11 +22,11 @@ const {
   requestTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema
-} = require('./schemas.cts');
+} from './schemas.ts';
 
 // ROUTES
 
-module.exports = [
+export const routes = [
   {
     operationId: 'listReports',
     method: 'get',

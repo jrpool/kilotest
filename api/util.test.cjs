@@ -7,7 +7,7 @@
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} = require('./util.cts');
+const {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} = require('./util.ts');
 
 // SETUP
 

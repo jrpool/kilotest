@@ -1,11 +1,11 @@
 /*
-  schemas.cts
-  Zod input and response schemas shared by mcp.js (MCP tool inputSchema/outputSchema), api/routes.js, and the openapi.yaml generation script (scripts/generate-openapi.js). Descriptions and component ids (.meta({id})) in this file are the single source of truth for parameter documentation and OpenAPI component naming and reuse.
+  schemas.ts
+  Zod input and response schemas shared by mcp.cjs (MCP tool inputSchema/outputSchema), api/routes.ts, and the openapi.yaml generation script (scripts/generate-openapi.cjs). Descriptions and component ids (.meta({id})) in this file are the single source of truth for parameter documentation and OpenAPI component naming and reuse.
 */
 
 // IMPORTS
 
-const {z} = require('zod');
+import {z} from 'zod';
 
 // TYPES
 
@@ -15,20 +15,20 @@ type ZodTypeAny = import('zod').ZodTypeAny;
 // REQUEST SCHEMAS
 
 // listIssues: GET /api/listIssues/{timeStamp}/{jobID}
-exports.listIssuesSchema = {
+export const listIssuesSchema = {
   timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
   jobID: z.string().describe('Job identifier of the report (example: x9z)')
 };
 
 // listViolators: GET /api/listViolators/{issueID}/{timeStamp}/{jobID}
-exports.listViolatorsSchema = {
+export const listViolatorsSchema = {
   issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
   timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
   jobID: z.string().describe('Job identifier of the report (example: x9z)')
 };
 
 // listDiagnoses: GET /api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}
-exports.listDiagnosesSchema = {
+export const listDiagnosesSchema = {
   catalogIndex: z.string().describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'),
   issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
   timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
@@ -36,31 +36,31 @@ exports.listDiagnosesSchema = {
 };
 
 // getReport: GET /api/getReport/{timeStamp}/{jobID}
-exports.getReportSchema = {
+export const getReportSchema = {
   timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
   jobID: z.string().describe('Job identifier of the report (example: x9z)')
 };
 
 // requestTest: POST /api/requestTest
-exports.requestTestSchema = {
+export const requestTestSchema = {
   description: z.string().describe('10- to 100-character description of the page conforming to the naming convention used in the listReports output'),
   URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
 };
 
 // requestRetest: POST /api/requestRetest/{timeStamp}/{jobID}
-exports.requestRetestSchema = {
+export const requestRetestSchema = {
   timeStamp: z.string().describe('Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'),
   jobID: z.string().describe('Job identifier of the latest report about the page (example: x9z)'),
   reason: z.string().describe('20- to 100-character reason why the page should be retested')
 };
 
 // requestFeature: POST /api/requestFeature
-exports.requestFeatureSchema = {
+export const requestFeatureSchema = {
   feature: z.string().describe('description of requested feature improvement or new feature')
 };
 
-// listReports takes no input; omitted (mcp.js already uses inputSchema: {}).
+// listReports takes no input; omitted (mcp.cjs already uses inputSchema: {}).
 
 // RESPONSE SCHEMAS
 
@@ -166,7 +166,7 @@ const issueBasicsOrErrorSchema = z.union([
   z.object({error: z.string()})
 ]).meta({id: 'IssueBasicsOrError'});
 
-exports.listReportsResponseSchema = envelope('GET', z.object({
+export const listReportsResponseSchema = envelope('GET', z.object({
   'basics about all available reports': z.array(reportBasicsSchema.extend({
     'how to get details about the report': z.object({method: z.literal('GET'), URL: z.string()}),
     'web users can get details about the report at': z.string()
@@ -180,7 +180,7 @@ exports.listReportsResponseSchema = envelope('GET', z.object({
   'how a web user can request that the page be tested': z.object({URL: z.string()})
 }));
 
-exports.listIssuesResponseSchema = envelope('GET', z.object({
+export const listIssuesResponseSchema = envelope('GET', z.object({
   'basics about the report': reportBasicsOrErrorSchema,
   'details about the report': z.object({
     'job definition': z.object({
@@ -226,7 +226,7 @@ exports.listIssuesResponseSchema = envelope('GET', z.object({
   }))
 }));
 
-exports.listViolatorsResponseSchema = envelope('GET', z.object({
+export const listViolatorsResponseSchema = envelope('GET', z.object({
   'basics about the report': reportBasicsOrErrorSchema,
   'basics about the issue': issueBasicsOrErrorSchema,
   'details about the issue': z.object({
@@ -242,7 +242,7 @@ exports.listViolatorsResponseSchema = envelope('GET', z.object({
   })).nullable()
 }));
 
-exports.listDiagnosesResponseSchema = envelope('GET', z.object({
+export const listDiagnosesResponseSchema = envelope('GET', z.object({
   'basics about the report': reportBasicsOrErrorSchema,
   'basics about the issue': issueBasicsOrErrorSchema,
   'basics about the element': z.object({
@@ -263,12 +263,12 @@ exports.listDiagnosesResponseSchema = envelope('GET', z.object({
   })).or(z.object({error: z.string()}))
 }));
 
-exports.getReportResponseSchema = envelope('GET', z.object({
+export const getReportResponseSchema = envelope('GET', z.object({
   'size of the report in bytes': z.union([z.number(), z.string()]),
   'full report': z.unknown().describe('The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.')
 }));
 
-exports.requestTestResponseSchema = envelope(
+export const requestTestResponseSchema = envelope(
   'POST',
   z.object({'details about your request': z.union([
     z.object({error: z.string()}),
@@ -278,10 +278,10 @@ exports.requestTestResponseSchema = envelope(
       'reason why the page should be tested': z.string()
     })
   ])}),
-  z.object(exports.requestTestSchema)
+  z.object(requestTestSchema)
 );
 
-exports.requestRetestResponseSchema = envelope(
+export const requestRetestResponseSchema = envelope(
   'POST',
   z.object({'details about your request': z.union([
     z.object({error: z.string()}),
@@ -291,10 +291,10 @@ exports.requestRetestResponseSchema = envelope(
       'reason why the page should be retested': z.string()
     })
   ])}),
-  z.object({reason: exports.requestRetestSchema.reason})
+  z.object({reason: requestRetestSchema.reason})
 );
 
-exports.requestFeatureResponseSchema = envelope(
+export const requestFeatureResponseSchema = envelope(
   'POST',
   z.object({'details about your request': z.union([
     z.object({error: z.string()}),
@@ -303,6 +303,6 @@ exports.requestFeatureResponseSchema = envelope(
       disposition: z.string()
     })
   ])}),
-  z.object(exports.requestFeatureSchema),
+  z.object(requestFeatureSchema),
   z.null()
 );

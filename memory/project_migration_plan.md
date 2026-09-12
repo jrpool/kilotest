@@ -26,12 +26,7 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 6. Convert `.cjs` files to `.ts` (ESM) one at a time.
 7. Rely on the `Report` interface defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts` to complete the migration of code that makes less specific assumptions about the shape of Testaro reports. This includes (A) converting nonconforming reports to the expected shape, and (B) updating code that accesses report properties to use the expected shape.
 8. Discover and utilize remaining opportunities for type enforcements, concern separations, and simplifying refactors.
-
-## Test
-
-Defer report-handling type definitions until Testaro's TypeScript conversion exports a stable `Report` type. Start with modules that don't touch the report schema.
-
-The `Report` interface is defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts`.
+9. Review all instances of exclusions from `c8` coverage reporting to ensure they are still necessary, and also decide whether to abandon `c8` in favor af the `node` built-in experimental coverage reporter.
 
 ## How to Apply
 

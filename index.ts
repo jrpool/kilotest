@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import {
   annotateReport,
   createLock,
+  errorMessage,
   getJobNames,
   getJSON,
   getObject,
@@ -258,7 +259,7 @@ const checkBalancesForAlerts = async (report: any) => {
         }
       }
       catch (error) {
-        console.log(`ERROR managing AI service 0 balance: ${(error as Error).message}`);
+        console.log(`ERROR managing AI service 0 balance: ${errorMessage(error)}`);
       }
     }
   }
@@ -303,7 +304,7 @@ const getWorkerCredentials = () => {
     return JSON.parse(process.env.TESTARO_WORKERS || '{}');
   }
   catch (error) {
-    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${(error as Error).message})`);
+    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${errorMessage(error)})`);
     return {};
   }
 };
@@ -644,7 +645,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
         response.end(styleSheet);
       }
       catch (error) {
-        await serveError({message: (error as Error).message}, response, true);
+        await serveError({message: errorMessage(error)}, response, true);
       }
     }
     // Otherwise, i.e. if it is any other GET request:
@@ -991,7 +992,7 @@ export const startServer = async () => {
 // Runs the server if the module was loaded directly (not required by a test). The starter is a parameter so tests can inject a spy, since ESM module exports cannot be monkey-patched.
 export const runIfMain = (mainModule: any, currentModule: any, starter: () => Promise<any> = startServer) => {
   if (mainModule === currentModule) {
-    starter().catch(error => console.log(error.message));
+    starter().catch(error => console.log(errorMessage(error)));
   }
 };
 

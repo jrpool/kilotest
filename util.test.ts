@@ -20,6 +20,7 @@ import {
   getDateTime,
   getEngineList,
   getIssue,
+  errorMessage,
   getJSON,
   getMultiReportWhats,
   getNowStamp,
@@ -187,6 +188,14 @@ test('getIssue returns an issue ID for a known engine and rule', () => {
 
 test('getIssue returns null for an unknown engine', () => {
   assert.equal(getIssue('nonexistentEngine', 'anyRule'), null);
+});
+
+test('errorMessage returns the message of an Error instance', () => {
+  assert.equal(errorMessage(new Error('something went wrong')), 'something went wrong');
+});
+
+test('errorMessage returns the string representation of a non-Error value', () => {
+  assert.equal(errorMessage('bare string'), 'bare string');
 });
 
 test('getJSON returns a JSON string with a trailing newline', () => {

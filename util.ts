@@ -150,13 +150,13 @@ export const getJobNames = async (): Promise<any> => {
     try {
       fileNames = await fs.readdir(categoryPath);
     }
-    catch(error: any) {
-      if (error.code === 'ENOENT') {
+    catch(error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         await fs.mkdir(categoryPath, {recursive: true});
         fileNames = [];
       }
       else {
-        return `ERROR: Job directory ${category} not readable (${error.message})`;
+        return `ERROR: Job directory ${category} not readable (${errorMessage(error)})`;
       }
     }
     jobNames[category] = fileNames;
@@ -165,20 +165,22 @@ export const getJobNames = async (): Promise<any> => {
 }
 // Returns the JSON stringification of an object, with a final newline.
 export const getJSON = (object: any) => `${JSON.stringify(object, null, 2)}\n`;
+// Returns the message of an error, or its string representation if it is not an Error instance.
+export const errorMessage = (error: unknown) => error instanceof Error ? error.message : String(error);
 // Returns an object from a JSON file.
 export const getObject = async (filePath: string) => {
   let fileContent, object;
   try {
     fileContent = await fs.readFile(filePath, 'utf8');
   }
-  catch(error: any) {
-    return `ERROR: File ${filePath} not readable (${error.message})`;
+  catch(error: unknown) {
+    return `ERROR: File ${filePath} not readable (${errorMessage(error)})`;
   }
   try {
     object = JSON.parse(fileContent);
   }
-  catch(error: any) {
-    return `ERROR: File ${filePath} not JSON (${error.message})`;
+  catch(error: unknown) {
+    return `ERROR: File ${filePath} not JSON (${errorMessage(error)})`;
   }
   return object;
 };
@@ -247,15 +249,15 @@ export const getRecs = async () => {
   try {
     recsJSON = await fs.readFile(recsPath(), 'utf8');
   }
-  catch(error: any) {
+  catch(error: unknown) {
     await fs.writeFile(recsPath(), '{}\n');
-    return `ERROR: recommendations file not readable, so created an empty one (${error.message})`;
+    return `ERROR: recommendations file not readable, so created an empty one (${errorMessage(error)})`;
   }
   try {
     recs = JSON.parse(recsJSON);
   }
-  catch(error: any) {
-    return `ERROR: recommendations file not JSON (${error.message})`;
+  catch(error: unknown) {
+    return `ERROR: recommendations file not JSON (${errorMessage(error)})`;
   }
   return recs;
 };
@@ -481,8 +483,8 @@ export const getReport = async (timeStamp: string, jobID: string) => {
     }
     // Otherwise, i.e. if it is invalid, return this.
     return {error: `Report ${timeStamp}-${jobID} is invalid`};
-  } catch (error: any) {
-    return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${error.message})`};
+  } catch (error: unknown) {
+    return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
   }
 };
 // Adds issue IDs to the standard instances of a report.

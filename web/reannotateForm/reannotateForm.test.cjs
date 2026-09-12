@@ -15,7 +15,7 @@ const {parse} = require('node-html-parser');
 
 // CONSTANTS
 
-const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+const fixtureDBDir = require('../../test/dbFixture.ts').fixtureDBDir;
 const reportsDir = path.join(fixtureDBDir, 'reports');
 const emptyReportName = '260101T0005-emp.json';
 

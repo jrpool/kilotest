@@ -13,7 +13,7 @@ const {parse} = require('node-html-parser');
 
 // CONSTANTS
 
-const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+const fixtureDBDir = require('../../test/dbFixture.ts').fixtureDBDir;
 const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
 
 // SETUP AND TEARDOWN

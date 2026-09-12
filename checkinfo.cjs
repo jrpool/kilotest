@@ -71,7 +71,7 @@ const getMarkdownlintIgnores = () => {
 // Runs the Node test runner with the TAP reporter and parses the test count, so dynamically generated tests (e.g., from for-loops) are counted accurately.
 const getTestCaseCount = () => {
   const output = execSync(
-    "node --require ./test/setup.cjs --experimental-test-module-mocks --test --test-concurrency=1 --test-timeout=100 --test-reporter=tap '**/*.test.cjs'",
+    "node --require ./test/setup.ts --experimental-test-module-mocks --test --test-concurrency=1 --test-timeout=100 --test-reporter=tap '**/*.test.cjs'",
     {cwd: rootDir, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']}
   );
   const match = output.match(/^# tests (\d+)$/m);
@@ -117,7 +117,7 @@ const testFiles = relFiles.filter(rel => /\.test\.cjs$/.test(rel));
 const testCaseCount = getTestCaseCount();
 
 // Smoke-test path counts from the routes table in index.js.
-const {routes} = require('./index.cjs');
+const {routes} = require('./index.ts');
 const smokeGetCount = routes.GET.length;
 const smokePostCount = routes.POST.length;
 const smokeTotal = smokeGetCount + smokePostCount;

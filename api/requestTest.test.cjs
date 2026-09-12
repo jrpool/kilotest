@@ -9,7 +9,7 @@ const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const {fixtureDBDir} = require('../test/dbFixture.cjs');
+const {fixtureDBDir} = require('../test/dbFixture.ts');
 
 // SETUP AND TEARDOWN
 

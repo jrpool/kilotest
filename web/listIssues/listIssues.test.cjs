@@ -42,7 +42,7 @@ const {answer} = require('./index.ts');
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
+  process.env.DB_DIR = require('../../test/dbFixture.ts').fixtureDBDir;
 });
 
 after(() => {
@@ -163,7 +163,7 @@ test('listIssues shows plural violator count for an issue with multiple violator
 test('listIssues handles acts with no standardResult instances', async () => {
   // Create a temporary report with an act that has no standardResult.
   const fs = require('node:fs/promises');
-  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+  const dbDir = require('../../test/dbFixture.ts').fixtureDBDir;
   const reportPath = path.join(dbDir, 'reports', '260101T0004-nsi.json');
   const report = {
     id: '260101T0004-nsi',

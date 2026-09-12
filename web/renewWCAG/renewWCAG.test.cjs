@@ -13,7 +13,7 @@ const {parse} = require('node-html-parser');
 
 // CONSTANTS
 
-const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+const fixtureDBDir = require('../../test/dbFixture.ts').fixtureDBDir;
 const wcagMapPath = path.join(__dirname, '..', '..', 'wcagMap.json');
 
 // SETUP AND TEARDOWN

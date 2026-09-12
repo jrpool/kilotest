@@ -3,18 +3,18 @@
   "version": "46.1.3",
   "description": "Ensemble testing for front-end web quality",
   "type": "module",
-  "main": "index.cjs",
+  "main": "index.ts",
   "engines": {
     "node": ">=24.16.0"
   },
   "scripts": {
-    "start": "node index.cjs",
+    "start": "node index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint && out=$(npx markdownlint-cli2 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$out\"; exit $code; fi",
-    "test": "c8 node --require ./test/setup.cjs --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize '**/*.test.cjs'",
+    "test": "c8 node --require ./test/setup.ts --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize '**/*.test.cjs'",
     "test:smoke": "node smokeTest.cjs",
     "checkinfo": "node checkinfo.cjs",
-    "generate:openapi": "node scripts/generate-openapi.cjs"
+    "generate:openapi": "node scripts/generate-openapi.ts"
   },
   "repository": {
     "type": "git",
@@ -77,8 +77,8 @@
       "html"
     ],
     "include": [
-      "index.cjs",
-      "mcp.cjs",
+      "index.ts",
+      "mcp.ts",
       "alerts.ts",
       "util.ts",
       "api/**/*.{js,ts,cts}",

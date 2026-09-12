@@ -7,7 +7,7 @@
 // ENVIRONMENT (must be set before requiring index.js)
 
 const path = require('node:path');
-const fixtureDBDir = require('./test/dbFixture.cjs').fixtureDBDir;
+const fixtureDBDir = require('./test/dbFixture.ts').fixtureDBDir;
 
 process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';
@@ -17,7 +17,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
-const {serve} = require('./index.cjs');
+const {serve} = require('./index.ts');
 
 // HELPER
 

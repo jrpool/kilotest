@@ -1,16 +1,16 @@
 /*
-  buildFixtures.cjs
+  buildFixtures.ts
   Builds the fixture corpus for Kilotest tests.
 
   Each fixture is a minimal Testaro report in the current format, crafted so that the expected API response can be hand-computed and hard-coded into tests. The fixtures collectively cover the `outcome` property values (`failed`, `cantTell`, and missing/undefined), superseded reports, empty reports, and prevented rule engines.
 
-  Run with: node test/fixtures/buildFixtures.cjs [targetDir]
+  Run with: node test/fixtures/buildFixtures.ts [targetDir]
 */
 
 // IMPORTS
 
-const fs = require('fs/promises');
-const path = require('path');
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // CONSTANTS
 
@@ -30,7 +30,7 @@ const engineIbm = 'ibm';
 // FUNCTIONS
 
 // Returns a minimal catalog item.
-const catalogItem = (tagName, text, pathID = '/html', boxID = '0:0:100:50') => ({
+const catalogItem = (tagName: string, text: string, pathID = '/html', boxID = '0:0:100:50') => ({
   tagName,
   id: '',
   startTag: `<${tagName.toLowerCase()}>`,
@@ -44,7 +44,8 @@ const catalogItem = (tagName, text, pathID = '/html', boxID = '0:0:100:50') => (
 
 // Returns a minimal standard instance.
 const instance = (
-  ruleID, what, outcome, issueID, catalogIndex, ordinalSeverity = 2, count = 1
+  ruleID: string, what: string, outcome: string, issueID: string, catalogIndex: number,
+  ordinalSeverity = 2, count = 1
 ) => ({
   ruleID,
   what,
@@ -57,7 +58,7 @@ const instance = (
 });
 
 // Returns a minimal test act.
-const testAct = (which, instances) => ({
+const testAct = (which: string, instances: any[]) => ({
   type: 'test',
   which,
   startTime: '26-01-01T00:00',
@@ -74,7 +75,7 @@ const testAct = (which, instances) => ({
 });
 
 // Returns a minimal valid report.
-const report = (id, what, url, acts, catalog, endTime = '26-01-01T00:10') => ({
+const report = (id: string, what: string, url: string, acts: any[], catalog: any, endTime = '26-01-01T00:10') => ({
   id,
   what,
   strict: false,
@@ -99,14 +100,14 @@ const report = (id, what, url, acts, catalog, endTime = '26-01-01T00:10') => ({
 });
 
 // Writes a JSON file with a trailing newline.
-const writeJSON = async (filePath, object) => {
+const writeJSON = async (filePath: string, object: any) => {
   await fs.writeFile(filePath, `${JSON.stringify(object, null, 2)}\n`);
 };
 
 // MAIN
 
 const main = async () => {
-  const targetDir = process.argv[2] || path.join(__dirname, 'db');
+  const targetDir = process.argv[2] || path.join(import.meta.dirname, 'db');
   const reportsDir = path.join(targetDir, 'reports');
   await fs.mkdir(reportsDir, {recursive: true});
   await fs.mkdir(path.join(targetDir, 'jobs', 'queue'), {recursive: true});

@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const {requestHandler} = require('./index.cjs');
+const {requestHandler} = require('./index.ts');
 
 // CONSTANTS
 
@@ -20,7 +20,7 @@ const savedDBDir = process.env.DB_DIR;
 let server;
 
 before(async () => {
-  process.env.DB_DIR = require('./test/dbFixture.cjs').fixtureDBDir;
+  process.env.DB_DIR = require('./test/dbFixture.ts').fixtureDBDir;
   server = http.createServer(requestHandler);
   await new Promise(resolve => server.listen(port, () => resolve()));
 });

@@ -1,6 +1,6 @@
 /*
   schemas.ts
-  Zod input and response schemas shared by mcp.cjs (MCP tool inputSchema/outputSchema), api/routes.ts, and the openapi.yaml generation script (scripts/generate-openapi.cjs). Descriptions and component ids (.meta({id})) in this file are the single source of truth for parameter documentation and OpenAPI component naming and reuse.
+  Zod input and response schemas shared by mcp.ts (MCP tool inputSchema/outputSchema), api/routes.ts, and the openapi.yaml generation script (scripts/generate-openapi.cjs). Descriptions and component ids (.meta({id})) in this file are the single source of truth for parameter documentation and OpenAPI component naming and reuse.
 */
 
 // IMPORTS
@@ -60,7 +60,7 @@ export const requestFeatureSchema = {
   feature: z.string().describe('description of requested feature improvement or new feature')
 };
 
-// listReports takes no input; omitted (mcp.cjs already uses inputSchema: {}).
+// listReports takes no input; omitted (mcp.ts already uses inputSchema: {}).
 
 // RESPONSE SCHEMAS
 

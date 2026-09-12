@@ -8,12 +8,12 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const {mcpPath, createMCPServer} = require('./mcp.cjs');
+const {mcpPath, createMCPServer} = require('./mcp.ts');
 
 // CONSTANTS
 
 // Set DB_DIR to the fixture database for all tests.
-process.env.DB_DIR = require('./test/dbFixture.cjs').fixtureDBDir;
+process.env.DB_DIR = require('./test/dbFixture.ts').fixtureDBDir;
 
 // TESTS
 
@@ -195,7 +195,7 @@ const parseSSEResult = body => {
 
 // Helper: starts a local HTTP server with handleMCP and returns it.
 const startMCPServer = () => new Promise(resolve => {
-  const {handleMCP} = require('./mcp.cjs');
+  const {handleMCP} = require('./mcp.ts');
   const server = http.createServer((req, res) => handleMCP(req, res));
   server.listen(0, () => resolve(server));
 });

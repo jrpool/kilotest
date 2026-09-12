@@ -1,21 +1,21 @@
 /*
-  getReport.cts
+  getReport.ts
   Returns one report.
 */
 
 // IMPORTS
 
-const {
+import {
   getResponseMetadata,
   getToolsFacts,
   getThisHost
-} = require('./util.ts');
-const {getReport, getReportStats} = require('../util.ts');
+} from './util.ts';
+import {getReport, getReportStats} from '../util.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args: string[]) => {
+export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.

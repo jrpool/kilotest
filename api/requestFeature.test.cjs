@@ -20,7 +20,7 @@ beforeEach(() => {
   console.log = (...args) => logged.push(args.join(' '));
 });
 
-const {response} = require('./requestFeature.cts');
+const {response} = require('./requestFeature.ts');
 
 after(() => {
   console.log = originalLog;

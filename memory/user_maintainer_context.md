@@ -1,24 +1,24 @@
 ---
 type: user
 name: Kilotest maintainer profile
-description: Maintainer is 84 years old, sole contributor, prioritizes legibility for future maintainers over short-term velocity
+description: Maintainer is the sole contributor until now and assigns a high probability to maintainership passing to others within 3 years, so prioritizes legibility for future maintainers.
 ---
 
-# Kilotest Maintainer Profile
+# Kilotest maintaitenance strategy
 
-## Who
-
-- Age 84, sole contributor; no current collaborators on Kilotest.
-
-## Primary Goal
+## Primary goal
 
 Make the codebase forkable and maintainable by future discoverers who have no prior knowledge of the project. Legibility for a cold reader outweighs any speed or terseness optimization.
 
-## Working Style
+## Working style
 
-- No external deadlines; values learning from the migration exercise.
-- Prefers to do migration work by hand rather than via automated tools, in order to build genuine understanding of each change.
-
-## How to Apply
-
-Explain decisions in terms of what they mean for a future maintainer encountering the code cold. Favor approaches that make the codebase more self-documenting. Do not optimize for speed of migration at the expense of understanding.
+- Major refactorings for architectural improvement are acceptable.
+- Responsibility can be shared between the maintainer and AI agents, with ultimate maintainer responsibility.
+- Delegation of discretion to AI agents is expected to increase gradually as its benefits are demonstrted.
+- Correctness should be promoted by a combination of:
+  - Type constraints
+  - Comprehensive tests
+  - Nonduplication of code
+  - Separation of concerns
+  - Focused purposes of functions and modules
+  - Thorough documentation

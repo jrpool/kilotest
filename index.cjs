@@ -62,14 +62,14 @@ const answer = {
 };
 // Response functions of the API services.
 const apiRespond = {
-  getReport: require('./api/getReport.cts').response,
-  listDiagnoses: require('./api/listDiagnoses.cts').response,
-  listIssues: require('./api/listIssues.cts').response,
-  listReports: require('./api/listReports.cts').response,
-  listViolators: require('./api/listViolators.cts').response,
-  requestFeature: require('./api/requestFeature.cts').response,
-  requestRetest: require('./api/requestRetest.cts').response,
-  requestTest: require('./api/requestTest.cts').response
+  getReport: require('./api/getReport.ts').response,
+  listDiagnoses: require('./api/listDiagnoses.ts').response,
+  listIssues: require('./api/listIssues.ts').response,
+  listReports: require('./api/listReports.ts').response,
+  listViolators: require('./api/listViolators.ts').response,
+  requestFeature: require('./api/requestFeature.ts').response,
+  requestRetest: require('./api/requestRetest.ts').response,
+  requestTest: require('./api/requestTest.ts').response
 };
 
 // CONSTANTS

@@ -1,24 +1,24 @@
 /*
-  listViolators.cts
+  listViolators.ts
   Returns details about one issue in one report and basics about all the violators of the issue.
 */
 
 // IMPORTS
 
-const {
+import {
   getIssueSpec,
   getReportBasics,
   getResponseMetadata,
   getRuleEnginesFacts,
   getToolsFacts,
   getThisHost
-} = require('./util.ts');
-const {getReport} = require('../util.ts');
+} from './util.ts';
+import {getReport} from '../util.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args: string[]) => {
+export const response = async (args: string[]) => {
   const [issueID = '', timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.

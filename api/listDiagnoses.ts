@@ -1,23 +1,23 @@
 /*
-  listDiagnoses.cts
+  listDiagnoses.ts
   Returns details about one violator of one issue in one report and facts about all its diagnoses.
 */
 
 // IMPORTS
 
-const {
+import {
   getIssueSpec,
   getReportBasics,
   getResponseMetadata,
   getToolsFacts,
   getThisHost
-} = require('./util.ts');
-const {getReport} = require('../util.ts');
+} from './util.ts';
+import {getReport} from '../util.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args: string[]) => {
+export const response = async (args: string[]) => {
   const [catalogIndex = '', issueID = '', timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.

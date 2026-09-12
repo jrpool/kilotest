@@ -1,17 +1,17 @@
 /*
-  requestFeature.cts
+  requestFeature.ts
   Processes a request to add or improve a feature and returns an acknowledgement.
 */
 
 // IMPORTS
 
-const {getResponseMetadata, getThisHost, getToolsFacts} = require('./util.ts');
-const {sendAlert} = require('../alerts.ts');
+import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
+import {sendAlert} from '../alerts.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args: string[]) => {
+export const response = async (args: string[]) => {
   const [feature = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.

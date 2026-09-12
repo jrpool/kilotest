@@ -30,7 +30,7 @@ beforeEach(async () => {
   console.log = (...args) => logged.push(args.join(' '));
 });
 
-const {response} = require('./requestTest.cts');
+const {response} = require('./requestTest.ts');
 
 after(() => {
   console.log = originalLog;

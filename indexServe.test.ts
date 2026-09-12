@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   indexServe.test.ts
   Tests for the serve function in index.js, which starts the HTTP or HTTPS

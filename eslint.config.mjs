@@ -3,6 +3,7 @@ import globals from "globals";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
 import css from "@eslint/css";
+import tseslint from "typescript-eslint";
 import {defineConfig} from "eslint/config";
 
 export default defineConfig([
@@ -24,6 +25,32 @@ export default defineConfig([
     },
     rules: {
       "no-control-regex": "off",
+      "rest-spread-spacing": ["error", "never"],
+      "space-unary-ops": [
+        "error",
+        {
+          "words": true,
+          "nonwords": false
+        }
+      ]
+    }
+  },
+  {
+    files: ["**/*.ts"],
+    plugins: {
+      js
+    },
+    extends: ["js/recommended", tseslint.configs.recommended],
+    languageOptions: {
+      globals: globals.node
+    },
+    rules: {
+      "@typescript-eslint/ban-ts-comment": [
+        "error",
+        {"ts-nocheck": "allow-with-description"}
+      ],
+      "no-control-regex": "off",
+      "@typescript-eslint/no-explicit-any": "off",
       "rest-spread-spacing": ["error", "never"],
       "space-unary-ops": [
         "error",

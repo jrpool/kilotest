@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   renewWCAG.test.ts
   Unit tests for web/renewWCAG/index.ts, covering auth, fetch status, and success branches.

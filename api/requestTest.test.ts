@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestTest.test.ts
   Tests for api/requestTest.ts using the fixture corpus.

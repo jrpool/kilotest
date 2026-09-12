@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   util.test.ts
   Tests for util.ts data-path injection (Phase 1) and utility functions.

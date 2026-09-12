@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestTest.test.ts
   Unit tests for web/requestTest/index.ts, covering the success path of answer.

@@ -89,13 +89,16 @@ const eslintIgnores = getEslintIgnores();
 const markdownlintIgnores = getMarkdownlintIgnores();
 
 // ESLint file counts by extension, excluding ignored files.
-const eslintExts = {js: 0, json: 0, md: 0, css: 0};
+const eslintExts = {js: 0, ts: 0, json: 0, md: 0, css: 0};
 for (const rel of relFiles) {
   if (matchesAny(rel, eslintIgnores)) {
     continue;
   }
   if (/\.(js|mjs|cjs)$/.test(rel)) {
     eslintExts.js++;
+  }
+  else if (/\.ts$/.test(rel)) {
+    eslintExts.ts++;
   }
   else if (/\.json$/.test(rel)) {
     eslintExts.json++;
@@ -127,7 +130,7 @@ const smokeTotal = smokeGetCount + smokePostCount;
 
 const parts: [string, string[]][] = [
   ['lint', [
-    `ESLint: ${eslintTotal} files (${eslintExts.js} JS, ${eslintExts.json} JSON, ${eslintExts.md} MD, ${eslintExts.css} CSS)`,
+    `ESLint: ${eslintTotal} files (${eslintExts.js} JS, ${eslintExts.ts} TS, ${eslintExts.json} JSON, ${eslintExts.md} MD, ${eslintExts.css} CSS)`,
     `markdownlint: ${markdownlintCount} files`
   ]],
   ['test', [

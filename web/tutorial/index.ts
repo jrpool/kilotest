@@ -25,7 +25,7 @@ const sanitize = (str: string) => str
 
 // Returns the tutorial page.
 export const answer = async () => {
-  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
+  const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   return {
     status: 'ok',
     answerPage

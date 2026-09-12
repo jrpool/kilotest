@@ -101,7 +101,7 @@ const populateQuery = async (
     query.box = '[not obtained]';
   }
   // Initialize an array of diagnoses.
-  let diagnoses: any[] = [];
+  const diagnoses: any[] = [];
   const testActs = acts.filter((act: any) => act.type === 'test');
   // For each test act:
   testActs.forEach((act: any) => {

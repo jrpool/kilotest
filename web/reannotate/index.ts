@@ -43,7 +43,7 @@ export const answer = async (authCode: string) => {
       };
     }
     // If every annotation succeeded, get the answer page.
-    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
+    const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
     // Return it.
     return {
       status: 'ok',

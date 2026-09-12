@@ -1,36 +1,39 @@
 /*
   requestRetest.test.cjs
-  Tests for api/requestRetest.ts using the fixture corpus, with mocked side effects.
+  Tests for api/requestRetest.ts using the fixture corpus.
 */
 
 // IMPORTS
 
 const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
-const apiUtil = require('./util.cts');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const {fixtureDBDir} = require('../test/dbFixture.cjs');
 
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
-let processTestRequestCalls = [];
+const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
+let logged = [];
+const originalLog = console.log;
 
 before(() => {
-  process.env.DB_DIR = require('../test/dbFixture.cjs').fixtureDBDir;
-  // @ts-expect-error: Replacing the real function with a mock for testing.
-  apiUtil.processTestRequest = async (testType, what, url, reason) => {
-    processTestRequestCalls.push({testType, what, url, reason});
-  };
+  process.env.DB_DIR = fixtureDBDir;
 });
 
-// Reset the call log before each test, so tests do not depend on execution order.
-beforeEach(() => {
-  processTestRequestCalls = [];
+// Reset the recommendations file and capture console.log, so the alert that
+// processTestRequest emits can be observed and tests are order-independent.
+beforeEach(async () => {
+  await fs.writeFile(recsPath, '{}\n');
+  logged = [];
+  console.log = (...args) => logged.push(args.join(' '));
 });
 
-// Require requestRetest after the mock is in place, so it captures the mocked processTestRequest.
 const {response} = require('./requestRetest.cts');
 
 after(() => {
+  console.log = originalLog;
   if (savedDBDir !== undefined) {
     process.env.DB_DIR = savedDBDir;
   }
@@ -44,21 +47,21 @@ after(() => {
 test('requestRetest rejects a nonexistent report', async () => {
   const body = await response(['999999T9999', 'xyz', 'A reason that is long enough.']);
   assert.ok(body['response content']['details about your request'].error);
-  assert.equal(processTestRequestCalls.length, 0);
+  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestRetest rejects a superseded report', async () => {
   const body = await response(['260101T0000', 'mix', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'];
   assert.ok(details.error.includes('later report'));
-  assert.equal(processTestRequestCalls.length, 0);
+  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestRetest rejects a reason shorter than 20 characters', async () => {
   const body = await response(['260101T0001', 'ct', 'short']);
   const details = body['response content']['details about your request'];
   assert.ok(details.error.includes('reason'));
-  assert.equal(processTestRequestCalls.length, 0);
+  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestRetest rejects a reason longer than 100 characters', async () => {
@@ -66,7 +69,7 @@ test('requestRetest rejects a reason longer than 100 characters', async () => {
   const body = await response(['260101T0001', 'ct', longReason]);
   const details = body['response content']['details about your request'];
   assert.ok(details.error.includes('reason'));
-  assert.equal(processTestRequestCalls.length, 0);
+  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestRetest accepts a valid retest request for the latest report of a page', async () => {
@@ -74,6 +77,9 @@ test('requestRetest accepts a valid retest request for the latest report of a pa
   const details = body['response content']['details about your request'];
   assert.equal(details.error, undefined);
   assert.equal(details['page to be retested'].description, 'Mixed Outcomes Page');
-  assert.equal(processTestRequestCalls.length, 1);
-  assert.equal(processTestRequestCalls[0].testType, 'retest');
+  assert.ok(logged.some(line =>
+    line.startsWith('WARNING (Kilotest: new retest recommendation in the API)')
+    && line.includes('Mixed Outcomes Page')
+    && line.includes('https://example.com/mixed')
+  ));
 });

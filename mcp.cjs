@@ -17,7 +17,7 @@ const listDiagnosesAPI = require('./api/listDiagnoses.cts');
 const requestTestAPI = require('./api/requestTest.cts');
 const requestRetestAPI = require('./api/requestRetest.cts');
 const requestFeatureAPI = require('./api/requestFeature.cts');
-const {version} = require('./api/version.cts');
+const {version} = require('./api/version.ts');
 
 const {
   getReportSchema,
@@ -35,7 +35,7 @@ const {
   requestTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema
-} = require('./api/schemas.cts');
+} = require('./api/schemas.ts');
 
 // CONSTANTS
 

@@ -12,7 +12,7 @@ const {
   getRuleEnginesFacts,
   getToolsFacts,
   getThisHost
-} = require('./util.cts');
+} = require('./util.ts');
 const {getReport} = require('../util.ts');
 
 // FUNCTIONS

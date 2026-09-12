@@ -9,7 +9,7 @@ const {
   getResponseMetadata,
   getToolsFacts,
   getThisHost
-} = require('./util.cts');
+} = require('./util.ts');
 const {getReport, getReportStats} = require('../util.ts');
 
 // FUNCTIONS

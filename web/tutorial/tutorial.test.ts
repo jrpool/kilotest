@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   tutorial.test.ts
   Unit tests for web/tutorial/index.ts, covering the answer and handleComment exports.

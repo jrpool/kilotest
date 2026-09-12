@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   ai0BalanceForm.test.ts
   Unit tests for web/ai0BalanceForm/index.ts.

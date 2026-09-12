@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   alerts.test.ts
   Tests for alerts.ts, covering the success, failure, error, timeout, and unconfigured paths.

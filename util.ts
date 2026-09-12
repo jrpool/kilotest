@@ -144,7 +144,7 @@ export const getIssue = (engineID: string, ruleID: string) => {
 // Gets the names and categories of the job files.
 export const getJobNames = async (): Promise<any> => {
   const jobNames: Record<string, string[]> = {};
-  let fileNames: string[] = [];
+  let fileNames: string[];
   for (const category of ['queue', 'claimed', 'failed']) {
     const categoryPath = path.join(jobsPath(), category);
     try {

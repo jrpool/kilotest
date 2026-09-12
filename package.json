@@ -55,6 +55,7 @@
     "markdownlint-cli2": "*",
     "node-html-parser": "*",
     "typescript": "*",
+    "typescript-eslint": "*",
     "zod-openapi": "*"
   },
   "allowScripts": {

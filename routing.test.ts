@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   routing.test.ts
   Integration tests for HTTP routing in index.js, verifying that POST-only API services reject GET requests.

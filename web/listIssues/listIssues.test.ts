@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listIssues.test.ts
   UI tests for web/listIssues/index.ts using the fixture corpus.

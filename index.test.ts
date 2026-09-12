@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   index.test.ts
   Integration tests for index.js requestHandler, covering GET routes, POST routes,

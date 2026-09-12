@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestRetestForm.test.ts
   Unit tests for web/requestRetestForm/index.ts.

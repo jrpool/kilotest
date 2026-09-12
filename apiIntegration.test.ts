@@ -1,5 +1,4 @@
-// Not yet under strict type checking (transitional).
-// @ts-nocheck
+// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   apiIntegration.test.ts
   Minimal HTTP integration tests verifying routing, body parsing, and JSON serialization, using the fixture corpus and a temporary in-process server.

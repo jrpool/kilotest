@@ -62,7 +62,7 @@ const answer = {
 };
 // Response functions of the API services.
 const apiRespond = {
-  getReport: require('./api/getReport.cts').response,
+  getReport: require('./api/getReport.ts').response,
   listDiagnoses: require('./api/listDiagnoses.cts').response,
   listIssues: require('./api/listIssues.cts').response,
   listReports: require('./api/listReports.cts').response,

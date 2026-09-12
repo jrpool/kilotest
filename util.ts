@@ -168,7 +168,7 @@ export const getJSON = (object: any) => `${JSON.stringify(object, null, 2)}\n`;
 // Returns the message of an error, or its string representation if it is not an Error instance.
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : String(error);
 // Returns an object from a JSON file.
-export const getObject = async (filePath: string) => {
+export const getObject = async (filePath: string): Promise<unknown> => {
   let fileContent, object;
   try {
     fileContent = await fs.readFile(filePath, 'utf8');
@@ -305,7 +305,7 @@ export const isRecommendable = async (url: string) => {
   for (const fileName of jobNames.claimed) {
     const job = await getObject(path.join(jobsPath(), 'claimed', fileName));
     // If its URL is that of the recommended target:
-    if (job.target.url === url) {
+    if ((job as {target: {url: string}}).target.url === url) {
       // Return this.
       return 'claimed';
     }
@@ -314,7 +314,7 @@ export const isRecommendable = async (url: string) => {
   for (const fileName of jobNames.queue) {
     const job = await getObject(path.join(jobsPath(), 'queue', fileName));
     // If its URL is that of the recommended target:
-    if (job.target.url === url) {
+    if ((job as {target: {url: string}}).target.url === url) {
       // Return this.
       return 'queued';
     }

@@ -204,13 +204,13 @@ test('getJSON returns a JSON string with a trailing newline', () => {
 
 test('getObject returns the parsed object for a valid JSON file', async () => {
   const result = await getObject(path.join(import.meta.dirname, 'package.json'));
-  assert.ok(typeof result === 'object');
-  assert.equal(result.name, '@jrpool/kilotest');
+  assert.ok(typeof result === 'object' && result !== null);
+  assert.equal((result as {name: unknown}).name, '@jrpool/kilotest');
 });
 
 test('getObject returns an error string for a nonexistent file', async () => {
   const result = await getObject('/tmp/nonexistent-file.json');
-  assert.equal(typeof result, 'string');
+  assert.ok(typeof result === 'string');
   assert.ok(result.startsWith('ERROR'));
 });
 
@@ -514,7 +514,7 @@ test('getObject returns an error for a file that is not valid JSON', async () =>
   const tmpFile = path.join((await import('node:os')).tmpdir(), 'kilotest-test-invalid.json');
   (await import('node:fs')).writeFileSync(tmpFile, 'not json');
   const result = await getObject(tmpFile);
-  assert.equal(typeof result, 'string');
+  assert.ok(typeof result === 'string');
   assert.ok(result.startsWith('ERROR'));
   (await import('node:fs')).unlinkSync(tmpFile);
 });

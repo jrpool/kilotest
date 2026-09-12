@@ -329,7 +329,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
   // For each claimed job:
   for (const jobName of claimedJobNames) {
     const job = await getObject(path.join(jobsPath(), 'claimed', jobName));
-    const {id, sources} = job;
+    const {id, sources} = job as {id: string, sources: {worker: string}};
     const {worker} = sources;
     // If its assignee is the worker:
     if (worker === workerName) {
@@ -352,7 +352,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
     if (queuedJobNames.length) {
       const oldestJobName = queuedJobNames[0];
       // Get the first one.
-      const firstJob = await getObject(path.join(queuePath(), oldestJobName));
+      const firstJob = await getObject(path.join(queuePath(), oldestJobName)) as {id: string, sources: {worker: string}, target: {what: string}};
       // Add the public worker name to the job, in a property Testaro does not read or alter.
       firstJob.sources.worker = workerName;
       console.log(
@@ -843,7 +843,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
               // Get the job the report is from.
               const claimedJob = await getObject(path.join(claimedPath(), `${id}.json`));
               // If the job was actually assigned to this worker:
-              if (typeof claimedJob === 'object' && claimedJob.sources?.worker === workerName) {
+              if (typeof claimedJob === 'object' && claimedJob !== null && (claimedJob as {sources?: {worker?: string}}).sources?.worker === workerName) {
                 console.log(`Testaro report ${id} was received from worker ${workerName}`);
                 // Add the public worker name to the report.
                 report.sources = {...report.sources, worker: workerName};

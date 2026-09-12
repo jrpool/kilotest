@@ -5,11 +5,15 @@
 
 // IMPORTS
 
+/* c8 ignore start */
+// c8 intermittently reports import lines as uncovered due to a range-merge
+// artifact in its remapping of Node's type-stripped source.
 import {sendAlert} from './alerts.ts';
 import {issues as issueSpecs, rules as ruleSpecs} from 'testaro-issues';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import querystring from 'node:querystring';
+/* c8 ignore stop */
 import wcagMap from './wcagMap.json' with {type: 'json'};
 
 // CONSTANTS

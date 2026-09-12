@@ -7,7 +7,6 @@
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
 const http = require('node:http');
 const {mcpPath, createMCPServer} = require('./mcp.cjs');
 

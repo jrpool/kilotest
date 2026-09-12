@@ -7,7 +7,6 @@
 
 const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
-const path = require('node:path');
 const apiUtil = require('./util.cts');
 
 // SETUP AND TEARDOWN

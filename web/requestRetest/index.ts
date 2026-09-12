@@ -1,15 +1,15 @@
 /*
-  index.cts
+  index.ts
   Records a retest request.
 */
 
 // IMPORTS
 
-const {getReportExtracts, processTestRequest} = require('../../util.ts');
+import {getReportExtracts, processTestRequest} from '../../util.ts';
 
 // FUNCTIONS
 
-exports.answer = async (pageArgs: string, why: string) => {
+export const answer = async (pageArgs: string, why: string) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
   const reportExtracts = await getReportExtracts(true);
@@ -27,5 +27,5 @@ exports.answer = async (pageArgs: string, why: string) => {
     };
   }
   // Otherwise, i.e. if it succeeded, process the request.
-  return await processTestRequest('retest', __dirname, what, url, why);
+  return await processTestRequest('retest', import.meta.dirname, what, url, why);
 };

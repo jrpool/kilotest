@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const fs = require('fs/promises');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index.cts');
+const {answer} = require('./index.ts');
 
 // CONSTANTS
 

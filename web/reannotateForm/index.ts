@@ -1,13 +1,13 @@
 /*
-  index.cts
+  index.ts
   Serves a form to reannotate reports.
 */
 
 // IMPORTS
 
-const {getIssue, getReport, getReportExtracts} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+import {getIssue, getReport, getReportExtracts} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
@@ -104,7 +104,7 @@ const populateQuery = async (query: Record<string, any>) => {
   query.reannotateForm = formLines.join('\n');
 };
 // Returns a page disclosing newly classified rules and a form to reannotate reports.
-exports.answer = async () => {
+export const answer = async () => {
   const query: Record<string, any> = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
@@ -117,7 +117,7 @@ exports.answer = async () => {
     };
   }
   // Otherwise, i.e. if the query does not report an error, get the template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

@@ -1,18 +1,18 @@
 /*
-  index.cts
+  index.ts
   Serves a form for requesting a retest.
 */
 
 // IMPORTS
 
-const {getAgoString, getDateTimeString, getReportExtracts} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+import {getAgoString, getDateTimeString, getReportExtracts} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
 // Returns a retest recommendation form.
-exports.answer = async (pageArgs: string) => {
+export const answer = async (pageArgs: string) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   // Get data on the latest available reports.
   const reportExtracts = await getReportExtracts(true);
@@ -40,7 +40,7 @@ exports.answer = async (pageArgs: string) => {
     dateTime: getDateTimeString(timeStamp)
   };
   // Get the recommendation form template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

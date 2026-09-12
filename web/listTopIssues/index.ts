@@ -1,22 +1,22 @@
 /*
-  index.cts
+  index.ts
   Lists the most commonly reported issues in all available latest reports.
 */
 
 // IMPORTS
 
-const {sendAlert} = require('../../alerts.ts');
-const {
+import {sendAlert} from '../../alerts.ts';
+import {
   getEngineNamesString,
   getReportExtracts,
   getReport,
   getWCAGLink,
   getWeightName,
   objectSort,
-} = require('../../util.ts');
-const {issues: issueSpecs} = require('testaro-issues');
-const fs = require('fs/promises');
-const path = require('path');
+} from '../../util.ts';
+import {issues as issueSpecs} from 'testaro-issues';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
@@ -160,7 +160,7 @@ const populateQuery = async (query: Record<string, any>) => {
   query.issues = lines.join('\n');
 };
 // Returns a page answering the issues question.
-exports.answer = async () => {
+export const answer = async () => {
   const query: Record<string, any> = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
@@ -173,7 +173,7 @@ exports.answer = async () => {
     };
   }
   // Otherwise, i.e. if the query does not report an error, get the template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

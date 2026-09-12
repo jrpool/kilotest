@@ -10,7 +10,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const {parse} = require('node-html-parser');
 
-// Mock the util functions called by index.cts before requiring it, so that
+// Mock the util functions called by index.ts before requiring it, so that
 // it imports the mocked versions. Other exports delegate to the real module.
 const realUtil = require('../../util.ts');
 let isHiddenCallCount = 0;
@@ -35,7 +35,7 @@ mock.module('../../util.ts', {
   }
 });
 
-const {answer} = require('./index.cts');
+const {answer} = require('./index.ts');
 
 // SETUP AND TEARDOWN
 

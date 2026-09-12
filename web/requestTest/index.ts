@@ -1,15 +1,15 @@
 /*
-  index.cts
+  index.ts
   Records a test request.
 */
 
 // IMPORTS
 
-const {isRecommendable, processTestRequest} = require('../../util.ts');
+import {isRecommendable, processTestRequest} from '../../util.ts';
 
 // FUNCTIONS
 
-exports.answer = async (what: string, url: string, why: string) => {
+export const answer = async (what: string, url: string, why: string) => {
   const status = await isRecommendable(url);
   // If the target is already claimed or queued and is thus not requestable:
   if (status) {
@@ -20,5 +20,5 @@ exports.answer = async (what: string, url: string, why: string) => {
     };
   }
   // Otherwise, i.e. if it is requestable, process the request.
-  return await processTestRequest('test', __dirname, what, url, why);
+  return await processTestRequest('test', import.meta.dirname, what, url, why);
 };

@@ -1,22 +1,22 @@
 /*
-  index.cts
+  index.ts
   Serves a form for deleting superseded reports.
 */
 
 // IMPORTS
 
-const fs = require('fs/promises');
-const path = require('path');
-const {getJSON} = require('../../util.ts');
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {getJSON} from '../../util.ts';
 
 // CONSTANTS
 
-const balancePath = path.join(__dirname, '../../ai0Balance.json');
+const balancePath = path.join(import.meta.dirname, '../../ai0Balance.json');
 
 // FUNCTIONS
 
 // Returns a form for recording the AI service 0 balance.
-exports.answer = async (_: any, search: string) => {
+export const answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const newBalanceString = searchParams?.get('newBalance');
@@ -66,7 +66,7 @@ exports.answer = async (_: any, search: string) => {
   }
   const query: Record<string, any> = {oldBalance};
   // Get the order form template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

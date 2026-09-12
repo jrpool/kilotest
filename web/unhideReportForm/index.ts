@@ -1,18 +1,18 @@
 /*
-  index.cts
+  index.ts
   Serves a form for unhiding a report.
 */
 
 // IMPORTS
 
-const {hiddenReportsPath, reportsPath} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+import {hiddenReportsPath, reportsPath} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
 // Returns a form for unhiding a report.
-exports.answer = async (_: any, search: string) => {
+export const answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobName = searchParams?.get('report');
@@ -84,7 +84,7 @@ exports.answer = async (_: any, search: string) => {
     reports: lines.join('\n'),
   };
   // Get the unhiding form template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

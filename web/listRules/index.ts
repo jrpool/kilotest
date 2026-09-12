@@ -1,18 +1,18 @@
 /*
-  index.cts
+  index.ts
   List the rules belonging to an issue.
 */
 
 // IMPORTS
 
-const {
+import {
   getWeightName,
   htmlSafe,
   ruleEngines
-} = require('../../util.ts');
-const {issues: issueSpecs, issueRules, rules: ruleSpecs} = require('testaro-issues');
-const fs = require('fs/promises');
-const path = require('path');
+} from '../../util.ts';
+import {issues as issueSpecs, issueRules, rules as ruleSpecs} from 'testaro-issues';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
@@ -50,7 +50,7 @@ const populateQuery = async (issueID: string, query: Record<string, any>) => {
         // Add a list of facts about them.
         lines.push(`${margin}<ul>`);
         rulesByType[typeName].forEach(ruleID => {
-          const {what} = ruleSpecs[engineID][typeName][ruleID];
+          const {what} = (ruleSpecs as any)[engineID][typeName][ruleID];
           if (what === ruleID) {
             lines.push(`${margin}  <li><code>${htmlSafe(ruleID)}</code></li>`);
           }
@@ -66,14 +66,14 @@ const populateQuery = async (issueID: string, query: Record<string, any>) => {
   query.rules = lines.join('\n');
 };
 // Returns a page answering the issue-rules question.
-exports.answer = async (issueID: string) => {
+export const answer = async (issueID: string) => {
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, query);
   // If this succeeded:
   if (query.issue) {
     // Get the template.
-    let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
     // Replace its placeholders.
     Object.keys(query).forEach(param => {
       answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

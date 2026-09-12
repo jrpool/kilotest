@@ -1,18 +1,18 @@
 /*
-  index.cts
+  index.ts
   Serves a form for deleting sole reports.
 */
 
 // IMPORTS
 
-const {getReportData, objectSort, reportsPath} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+import {getReportData, objectSort, reportsPath} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
 // Returns a form for deleting sole reports.
-exports.answer = async (_: any, search: string) => {
+export const answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
@@ -51,7 +51,7 @@ exports.answer = async (_: any, search: string) => {
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
     // Get a summary of it.
-    const reportFacts = await getReportData(timeStamp, jobID);
+    const reportFacts: any = await getReportData(timeStamp, jobID);
     const {error, issueCount, preventedEngineCount, url} = reportFacts;
     // If this failed:
     if (error) {
@@ -104,7 +104,7 @@ exports.answer = async (_: any, search: string) => {
     disabled
   };
   // Get the order form template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

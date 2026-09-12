@@ -1,17 +1,17 @@
 /*
-  listReports.cts
+  listReports.ts
   Returns basics about all the available reports.
 */
 
 // IMPORTS
 
-const {getReportBasics, getResponseMetadata, getThisHost, getToolsFacts} = require('./util.ts');
-const {getReportExtracts} = require('../util.ts');
+import {getReportBasics, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
+import {getReportExtracts} from '../util.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async () => {
+export const response = async () => {
   const thisHost = getThisHost();
   // Initialize the response content.
   const responseContent: Record<string, any> = {
@@ -27,7 +27,7 @@ exports.response = async () => {
   for (const extract of reportExtracts) {
     const {error, jobID, timeStamp} = extract;
     // Get the basics about it (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID, extract);
+    const reportBasics: any = await getReportBasics(timeStamp, jobID, extract);
     // If this succeeded:
     if (!error) {
       // Add instructions for getting details to the basics.

@@ -7,7 +7,7 @@
 
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
-const {response} = require('./listDiagnoses.cts');
+const {response} = require('./listDiagnoses.ts');
 
 // SETUP AND TEARDOWN
 

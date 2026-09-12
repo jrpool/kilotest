@@ -1,11 +1,11 @@
 /*
-  listIssues.cts
+  listIssues.ts
   Returns details about one report and basics about all the issues in it.
 */
 
 // IMPORTS
 
-const {
+import {
   getIssueSpec,
   getReportBasics,
   getResponseMetadata,
@@ -13,13 +13,13 @@ const {
   getRuleEnginesFacts,
   getToolsFacts,
   getThisHost
-} = require('./util.ts');
-const {getReport, getReportStats, objectSort} = require('../util.ts');
+} from './util.ts';
+import {getReport, getReportStats, objectSort} from '../util.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args: string[]) => {
+export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.

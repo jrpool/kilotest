@@ -7,7 +7,7 @@
 
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
-const {response} = require('./listReports.cts');
+const {response} = require('./listReports.ts');
 
 // CONSTANTS
 

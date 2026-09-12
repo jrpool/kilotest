@@ -78,7 +78,7 @@
     ],
     "include": [
       "index.cjs",
-      "mcp.cjs",
+      "mcp.ts",
       "alerts.ts",
       "util.ts",
       "api/**/*.{js,ts,cts}",

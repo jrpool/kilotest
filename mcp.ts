@@ -1,25 +1,24 @@
 /*
-  mcp.cjs
+  mcp.ts
   Handles MCP (Model Context Protocol) requests for Kilotest tools.
 */
 
 // IMPORTS
 
-const {McpServer} = require('@modelcontextprotocol/sdk/server/mcp.js');
-const {StreamableHTTPServerTransport} = require(
-  '@modelcontextprotocol/sdk/server/streamableHttp.js'
-);
-const getReportAPI = require('./api/getReport.ts');
-const listReportsAPI = require('./api/listReports.ts');
-const listIssuesAPI = require('./api/listIssues.ts');
-const listViolatorsAPI = require('./api/listViolators.ts');
-const listDiagnosesAPI = require('./api/listDiagnoses.ts');
-const requestTestAPI = require('./api/requestTest.ts');
-const requestRetestAPI = require('./api/requestRetest.ts');
-const requestFeatureAPI = require('./api/requestFeature.ts');
-const {version} = require('./api/version.ts');
+import type {IncomingMessage, ServerResponse} from 'node:http';
+import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
+import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import * as getReportAPI from './api/getReport.ts';
+import * as listReportsAPI from './api/listReports.ts';
+import * as listIssuesAPI from './api/listIssues.ts';
+import * as listViolatorsAPI from './api/listViolators.ts';
+import * as listDiagnosesAPI from './api/listDiagnoses.ts';
+import * as requestTestAPI from './api/requestTest.ts';
+import * as requestRetestAPI from './api/requestRetest.ts';
+import * as requestFeatureAPI from './api/requestFeature.ts';
+import {version} from './api/version.ts';
 
-const {
+import {
   getReportSchema,
   listIssuesSchema,
   listViolatorsSchema,
@@ -35,16 +34,16 @@ const {
   requestTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema
-} = require('./api/schemas.ts');
+} from './api/schemas.ts';
 
 // CONSTANTS
 
-exports.mcpPath = '/mcp';
+export const mcpPath = '/mcp';
 
 // FUNCTIONS
 
 // Creates and returns an McpServer with Kilotest tools registered.
-exports.createMCPServer = () => {
+export const createMCPServer = () => {
   const server = new McpServer({
     name: 'Kilotest',
     version,
@@ -208,9 +207,9 @@ exports.createMCPServer = () => {
   return server;
 };
 // Handles an MCP request.
-exports.handleMCP = async (request, response) => {
+export const handleMCP = async (request: IncomingMessage, response: ServerResponse) => {
   const transport = new StreamableHTTPServerTransport({sessionIdGenerator: undefined});
-  const server = exports.createMCPServer();
+  const server = createMCPServer();
   await server.connect(transport);
   await transport.handleRequest(request, response);
 };

@@ -8,7 +8,7 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const {mcpPath, createMCPServer} = require('./mcp.cjs');
+const {mcpPath, createMCPServer} = require('./mcp.ts');
 
 // CONSTANTS
 
@@ -195,7 +195,7 @@ const parseSSEResult = body => {
 
 // Helper: starts a local HTTP server with handleMCP and returns it.
 const startMCPServer = () => new Promise(resolve => {
-  const {handleMCP} = require('./mcp.cjs');
+  const {handleMCP} = require('./mcp.ts');
   const server = http.createServer((req, res) => handleMCP(req, res));
   server.listen(0, () => resolve(server));
 });

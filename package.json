@@ -52,7 +52,7 @@
     "eslint": "*",
     "globals": "*",
     "js-yaml": "*",
-    "markdownlint-cli2": "*",
+    "markdownlint-cli2": "^0.23.2",
     "node-html-parser": "*",
     "typescript": "*",
     "typescript-eslint": "*",
@@ -98,5 +98,8 @@
     "statements": 100,
     "functions": 100,
     "branches": 100
+  },
+  "overrides": {
+    "smol-toml": "^1.8.0"
   }
 }

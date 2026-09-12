@@ -17,7 +17,7 @@ const {reportsPath} = require('../../util.ts');
 
 const savedAuthCode = process.env.AUTH_CODE;
 const savedDBDir = process.env.DB_DIR;
-const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+const fixtureDBDir = require('../../test/dbFixture.ts').fixtureDBDir;
 
 before(() => {
   process.env.AUTH_CODE = 'test-auth-code';

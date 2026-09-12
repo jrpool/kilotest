@@ -20,7 +20,7 @@ const savedDBDir = process.env.DB_DIR;
 let server;
 
 before(async () => {
-  process.env.DB_DIR = require('./test/dbFixture.cjs').fixtureDBDir;
+  process.env.DB_DIR = require('./test/dbFixture.ts').fixtureDBDir;
   server = http.createServer(requestHandler);
   await new Promise(resolve => server.listen(port, () => resolve()));
 });

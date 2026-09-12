@@ -15,7 +15,7 @@ const {answer} = require('./index.ts');
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
+  process.env.DB_DIR = require('../../test/dbFixture.ts').fixtureDBDir;
 });
 
 after(() => {

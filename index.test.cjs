@@ -8,7 +8,7 @@
 // process.env at call time, so load order no longer matters.)
 
 const path = require('node:path');
-const fixtureDBDir = require('./test/dbFixture.cjs').fixtureDBDir;
+const fixtureDBDir = require('./test/dbFixture.ts').fixtureDBDir;
 
 process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';

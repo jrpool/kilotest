@@ -43,7 +43,7 @@ const {answer} = require('./index.ts');
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
+  process.env.DB_DIR = require('../../test/dbFixture.ts').fixtureDBDir;
 });
 
 after(() => {
@@ -106,7 +106,7 @@ test('listViolators returns an error when getReport fails after getPageDataStrin
 });
 
 test('listViolators includes take-me-there links for text-linkable violators', async () => {
-  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+  const dbDir = require('../../test/dbFixture.ts').fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const reportPath = path.join(reportsDir, '260101T0003-tlk.json');
   try {
@@ -187,7 +187,7 @@ test('listViolators handles instances with missing catalogIndex and acts with no
   // - An instance with no catalogIndex (covers || '0' on line 85)
   // - A catalog entry with no tagName (covers ?? pathID fallback on lines 87-88)
   // - Multiple violators (covers plural count on line 101)
-  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+  const dbDir = require('../../test/dbFixture.ts').fixtureDBDir;
   const reportPath = path.join(dbDir, 'reports', '260101T0004-nvi.json');
   const report = {
     id: '260101T0004-nvi',
@@ -262,7 +262,7 @@ test('listViolators uses HTML fallback when catalog has no tagName and pathID is
   // Create a report where an instance has no pathID and the catalog
   // entry has no tagName, so the ?? 'HTML' fallback is hit.
   // Also uses a catalogIndex not in the catalog to cover || {} on line 144.
-  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
+  const dbDir = require('../../test/dbFixture.ts').fixtureDBDir;
   const reportPath = path.join(dbDir, 'reports', '260101T0005-htm.json');
   const report = {
     id: '260101T0005-htm',

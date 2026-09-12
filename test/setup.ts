@@ -1,5 +1,5 @@
 /*
-  test/setup.cjs
+  test/setup.ts
   Clears alert configuration env vars before any modules are required,
   so that tests calling sendAlert indirectly never trigger real email alerts.
   This file is loaded via --require before any test file runs.

@@ -11,7 +11,7 @@
     "start": "node index.cjs",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint && out=$(npx markdownlint-cli2 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$out\"; exit $code; fi",
-    "test": "c8 node --require ./test/setup.cjs --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize",
+    "test": "c8 node --require ./test/setup.cjs --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize '**/*.test.cjs'",
     "test:smoke": "node smokeTest.cjs",
     "checkinfo": "node checkinfo.cjs",
     "generate:openapi": "node scripts/generate-openapi.cjs"

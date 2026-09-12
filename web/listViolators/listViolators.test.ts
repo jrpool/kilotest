@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listViolators.test.ts
   UI tests for web/listViolators/index.ts using the fixture corpus.
@@ -17,27 +16,27 @@ import {parse} from 'node-html-parser';
 import * as realUtil from '../../util.ts';
 let getReportCallCount = 0;
 let failGetReportOnCall = -1;
-let pageDataStringsOverride = null;
+let pageDataStringsOverride: any = null;
 mock.module('../../util.ts', {
   exports: {
     ...realUtil,
-    getReport: async (...args) => {
+    getReport: async (...args: any[]) => {
       getReportCallCount++;
       if (getReportCallCount === failGetReportOnCall) {
         return {error: 'Report is invalid (test override)'};
       }
-      return realUtil.getReport(...args);
+      return (realUtil.getReport as any)(...args);
     },
-    getPageDataStrings: async (...args) => {
+    getPageDataStrings: async (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
-      return realUtil.getPageDataStrings(...args);
+      return (realUtil.getPageDataStrings as any)(...args);
     }
   }
-});
+} as any);
 
-const {answer} = await import('./index.ts');
+const {answer} = await import('./index.ts') as any;
 
 // SETUP AND TEARDOWN
 

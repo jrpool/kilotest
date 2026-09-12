@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listIssues.test.ts
   UI tests for web/listIssues/index.ts using the fixture corpus.
@@ -16,27 +15,27 @@ import {parse} from 'node-html-parser';
 import * as realUtil from '../../util.ts';
 let isHiddenCallCount = 0;
 let forceHiddenOnCall = -1;
-let pageDataStringsOverride = null;
+let pageDataStringsOverride: any = null;
 mock.module('../../util.ts', {
   exports: {
     ...realUtil,
-    isHidden: async (timeStamp, jobID) => {
+    isHidden: async (timeStamp: any, jobID: any) => {
       isHiddenCallCount++;
       if (isHiddenCallCount === forceHiddenOnCall) {
         return true;
       }
       return realUtil.isHidden(timeStamp, jobID);
     },
-    getPageDataStrings: async (...args) => {
+    getPageDataStrings: async (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
-      return realUtil.getPageDataStrings(...args);
+      return (realUtil.getPageDataStrings as any)(...args);
     }
   }
-});
+} as any);
 
-const {answer} = await import('./index.ts');
+const {answer} = await import('./index.ts') as any;
 
 // SETUP AND TEARDOWN
 
@@ -76,8 +75,8 @@ test('listIssues includes links to listViolators for issues in the mixed report'
   const violatorLinks = html.querySelectorAll('a[href*="listViolators.html"]');
   assert.ok(violatorLinks.length >= 2);
   const hrefs = violatorLinks.map(a => a.getAttribute('href'));
-  assert.ok(hrefs.some(href => href.includes('linkNoText')));
-  assert.ok(hrefs.some(href => href.includes('allCaps')));
+  assert.ok(hrefs.some(href => href?.includes('linkNoText')));
+  assert.ok(hrefs.some(href => href?.includes('allCaps')));
 });
 
 test('listIssues returns an error status for a hidden report', async () => {

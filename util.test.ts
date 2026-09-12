@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   util.test.ts
   Tests for util.ts data-path injection (Phase 1) and utility functions.
@@ -134,7 +133,7 @@ test('getAgoDays returns null for an invalid string', () => {
 });
 
 test('getAgoDays returns null for a non-string non-Date argument', () => {
-  assert.equal(getAgoDays(42), null);
+  assert.equal(getAgoDays(42 as any), null);
 });
 
 test('getAgoDays returns 0 for the current time', () => {
@@ -369,31 +368,31 @@ test('getPageDataStrings uses provided pageData instead of reading the report', 
 });
 
 test('processTestRequest returns an error for an invalid test type', async () => {
-  const result = await processTestRequest('invalid', requestTestDir, 'Page', 'https://example.com', 'because');
+  const result: any = await processTestRequest('invalid', requestTestDir, 'Page', 'https://example.com', 'because');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');
 });
 
 test('processTestRequest returns an error for an invalid URL', async () => {
-  const result = await processTestRequest('test', requestTestDir, 'Page', 'not-a-url', 'because');
+  const result: any = await processTestRequest('test', requestTestDir, 'Page', 'not-a-url', 'because');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');
 });
 
 test('processTestRequest returns an error for a short reason', async () => {
-  const result = await processTestRequest('test', requestTestDir, 'Page', 'https://example.com', 'abc');
+  const result: any = await processTestRequest('test', requestTestDir, 'Page', 'https://example.com', 'abc');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');
 });
 
 test('processTestRequest returns an error for a missing description', async () => {
-  const result = await processTestRequest('test', requestTestDir, '', 'https://example.com', 'because');
+  const result: any = await processTestRequest('test', requestTestDir, '', 'https://example.com', 'because');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');
 });
 
 test('processTestRequest returns an error for a mismatched directory name', async () => {
-  const result = await processTestRequest('test', '/tmp/wrongDir', 'Page', 'https://example.com', 'because');
+  const result: any = await processTestRequest('test', '/tmp/wrongDir', 'Page', 'https://example.com', 'because');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');
 });
@@ -401,7 +400,7 @@ test('processTestRequest returns an error for a mismatched directory name', asyn
 test('processTestRequest succeeds and populates the template for a valid request', {timeout: 500}, async () => {
   // Reset recs.json to empty before the test.
   await fs.writeFile(recsPath(), '{}\n');
-  const result = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
+  const result: any = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('Example Page'));
   assert.ok(result.answerPage.includes('because accessibility'));
@@ -414,7 +413,7 @@ test('processTestRequest returns a duplicate error for a repeated request', {tim
   await fs.writeFile(recsPath(), '{}\n');
   await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
   // Repeat the same request.
-  const result = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'another reason');
+  const result: any = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'another reason');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Duplicate recommendation');
   // Clean up recs.json.
@@ -559,7 +558,7 @@ test('getPOSTData resolves with parsed query for form-urlencoded requests', asyn
       this.push(null);
     }
   }), {headers: {'content-type': 'application/x-www-form-urlencoded'}});
-  const result = await getPOSTData(req);
+  const result: any = await getPOSTData(req as any);
   assert.equal(result.target, 'Page');
   assert.equal(result.why, 'Because');
 });
@@ -658,7 +657,7 @@ test('getReport returns an error for an invalid report', async () => {
 
 test('getReportData returns an error for a nonexistent report', async () => {
   const {getReportData} = await import('./util.ts');
-  const result = await getReportData('990101T0000', 'xxx');
+  const result: any = await getReportData('990101T0000', 'xxx');
   assert.ok(result.error);
 });
 
@@ -701,7 +700,7 @@ test('getPOSTData resolves with parsed JSON for application/json requests', asyn
       this.push(null);
     }
   }), {headers: {'content-type': 'application/json'}});
-  const result = await getPOSTData(req);
+  const result: any = await getPOSTData(req as any);
   assert.equal(result.target, 'Page');
 });
 
@@ -715,7 +714,7 @@ test('getPOSTData resolves with parsed query for body-type form-urlencoded reque
       this.push(null);
     }
   }), {headers: {'body-type': 'application/x-www-form-urlencoded'}});
-  const result = await getPOSTData(req);
+  const result: any = await getPOSTData(req as any);
   assert.equal(result.target, 'Page');
   assert.equal(result.why, 'Because');
 });
@@ -729,7 +728,7 @@ test('getPOSTData resolves with null for an unknown content type', async () => {
       this.push(null);
     }
   }), {headers: {}});
-  const result = await getPOSTData(req);
+  const result: any = await getPOSTData(req as any);
   assert.equal(result, null);
 });
 
@@ -754,12 +753,12 @@ test('getPathID returns the fallback pathID when catalogIndex is truthy but cata
 test('getPathID returns /html when catalogIndex is truthy but catalogItem and pathID are both missing', async () => {
   const {getPathID} = await import('./util.ts');
   const catalog = {};
-  assert.equal(getPathID(catalog, '0', null), '/html');
+  assert.equal(getPathID(catalog, '0', null as any), '/html');
 });
 
 test('getPathID returns /html when catalogIndex is falsy and pathID is null', async () => {
   const {getPathID} = await import('./util.ts');
-  assert.equal(getPathID({}, null, null), '/html');
+  assert.equal(getPathID({}, null as any, null as any), '/html');
 });
 
 test('isValidReport returns false for a report with a test act using an unknown engine', async () => {
@@ -839,7 +838,7 @@ test('annotateReport handles a test act with no standardResult', async () => {
 
 test('createLock returns a function that runs tasks sequentially', async () => {
   const lock = createLock();
-  const order = [];
+  const order: string[] = [];
   const p1 = lock(async () => {
     order.push('start 1');
     await new Promise(r => setTimeout(r, 10));
@@ -913,6 +912,7 @@ test('getReportPath returns the path of a report file', () => {
 
 test('getReportStats returns reportTime and reportSize for a valid report', async () => {
   const stats = await getReportStats('260101T0000', 'mix');
+  assert.ok(stats);
   assert.ok(stats.reportTime instanceof Date);
   assert.equal(typeof stats.reportSize, 'number');
   assert.ok(stats.reportSize > 0);

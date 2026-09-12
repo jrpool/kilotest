@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listTopIssues.test.ts
   UI tests for web/listTopIssues/index.ts using the fixture corpus.
@@ -33,7 +32,7 @@ after(() => {
 // TESTS
 
 test('listTopIssues returns an ok status with valid HTML', async () => {
-  const result = await answer();
+  const result: any = await answer();
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -41,7 +40,7 @@ test('listTopIssues returns an ok status with valid HTML', async () => {
 });
 
 test('listTopIssues includes priority headings in the page', async () => {
-  const result = await answer();
+  const result: any = await answer();
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('priority'));
 });
@@ -57,7 +56,7 @@ test('listTopIssues returns an error when a report file is invalid', async () =>
       jobData: {endTime: '26-01-01T00:10'}
     };
     await fs.writeFile(invalidReportPath, JSON.stringify(invalidReport, null, 2));
-    const result = await answer();
+    const result: any = await answer();
     assert.equal(result.status, 'error');
     assert.ok(result.message);
   }
@@ -116,7 +115,7 @@ test('listTopIssues handles reports with unclassified issue IDs', async () => {
       checkpoints: []
     };
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
-    const result = await answer();
+    const result: any = await answer();
     // The unclassified issue is skipped, but the page should still render successfully.
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage);

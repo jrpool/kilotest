@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listDiagnoses.test.ts
   Tests for api/listDiagnoses.ts using the fixture corpus, with emphasis on outcome handling.
@@ -33,10 +32,10 @@ test('listDiagnoses returns 2 diagnoses for catalogIndex 0, linkNoText, in the m
   const body = await response(['0', 'linkNoText', '260101T0000', 'mix']);
   const diagnoses = body['response content']['diagnoses of how the element exhibited the issue'];
   assert.equal(diagnoses.length, 2);
-  const rules = diagnoses.map(d => d['identifier of the violated rule']).sort();
+  const rules = diagnoses.map((d: any) => d['identifier of the violated rule']).sort();
   assert.deepEqual(rules, ['r11', 'r11']);
-  const descriptions = diagnoses.map(d => d['description of the violation']);
-  assert.ok(descriptions.every(d => d === 'The link does not have an accessible name'));
+  const descriptions = diagnoses.map((d: any) => d['description of the violation']);
+  assert.ok(descriptions.every((d: any) => d === 'The link does not have an accessible name'));
 });
 
 test('listDiagnoses returns 0 diagnoses when all instances are cantTell', async () => {
@@ -104,7 +103,7 @@ test('listDiagnoses returns null tag name and inner text for a catalog item miss
 test('listDiagnoses returns null rule ID when ruleID equals what', async () => {
   const body = await response(['0', 'duplicateID', '260101T0009', 'brd']);
   const diagnoses = body['response content']['diagnoses of how the element exhibited the issue'];
-  const axeDiagnosis = diagnoses.find(d => d['description of the violation'] === 'r99');
+  const axeDiagnosis = diagnoses.find((d: any) => d['description of the violation'] === 'r99');
   assert.ok(axeDiagnosis);
   assert.equal(axeDiagnosis['identifier of the violated rule'], null);
 });
@@ -112,7 +111,7 @@ test('listDiagnoses returns null rule ID when ruleID equals what', async () => {
 test('listDiagnoses defaults count to 1 when count is missing', async () => {
   const body = await response(['1', 'duplicateID', '260101T0009', 'brd']);
   const diagnoses = body['response content']['diagnoses of how the element exhibited the issue'];
-  const ibmDiagnosis = diagnoses.find(d => d['description of the violation'] === 'Element has no role');
+  const ibmDiagnosis = diagnoses.find((d: any) => d['description of the violation'] === 'Element has no role');
   assert.ok(ibmDiagnosis);
   assert.equal(ibmDiagnosis['count of violations of the rule by the element'], 1);
 });

@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   reannotate.test.ts
   Unit tests for web/reannotate/index.ts, covering the reannotation logic branches.
@@ -40,7 +39,7 @@ after(async () => {
 // Backs up all report files and returns a map of fileName to content.
 const backupReports = async () => {
   const reportFiles = await fs.readdir(reportsDir);
-  const backups = {};
+  const backups: Record<string, string> = {};
   for (const file of reportFiles) {
     backups[file] = await fs.readFile(path.join(reportsDir, file), 'utf8');
   }
@@ -48,7 +47,7 @@ const backupReports = async () => {
 };
 
 // Restores all report files from a backup map.
-const restoreReports = async backups => {
+const restoreReports = async (backups: Record<string, string>) => {
   for (const [file, content] of Object.entries(backups)) {
     await fs.writeFile(path.join(reportsDir, file), content);
   }

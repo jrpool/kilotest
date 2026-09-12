@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestFeature.test.ts
   Tests for api/requestFeature.ts with mocked side effects.
@@ -11,7 +10,7 @@ import assert from 'node:assert/strict';
 
 // SETUP AND TEARDOWN
 
-let logged = [];
+let logged: any[] = [];
 const originalLog = console.log;
 
 // Capture console.log so the alert sendAlert emits can be observed. The alert

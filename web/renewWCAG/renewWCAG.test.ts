@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   renewWCAG.test.ts
   Unit tests for web/renewWCAG/index.ts, covering auth, fetch status, and success branches.
@@ -24,8 +23,8 @@ before(async () => {
   process.env.AUTH_CODE = 'test-auth-code';
 });
 
-let originalFetch;
-let wcagMapBackup;
+let originalFetch: any;
+let wcagMapBackup: any;
 
 afterEach(async () => {
   // Restore the original fetch after each test.
@@ -51,7 +50,7 @@ after(async () => {
 // HELPER
 
 // Replaces global.fetch with a mock that returns the given status and body.
-const mockFetch = (status, body = '') => {
+const mockFetch = (status: number, body = '') => {
   originalFetch = global.fetch;
   // @ts-expect-error: Replacing the real function with a mock for testing.
   global.fetch = async () => ({
@@ -106,7 +105,7 @@ test('answer returns ok and rewrites the WCAG map when the source returns valid 
 test('answer returns an error when matchAll returns no entries', async () => {
   // Mock matchAll to return null, covering the dead else branch on lines 48-55.
   const originalMatchAll = String.prototype.matchAll;
-  String.prototype.matchAll = function() {
+  String.prototype.matchAll = function(): any {
     return null;
   };
   mockFetch(200, '<html></html>');

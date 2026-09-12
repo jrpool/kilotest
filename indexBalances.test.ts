@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   indexBalances.test.ts
   Tests for checkBalancesForAlerts in index.js, which requires balance-related
@@ -37,8 +36,8 @@ const jobPath = path.join(claimedDir, `${jobID}.json`);
 
 // SETUP AND TEARDOWN
 
-let server;
-let originalBalance;
+let server: http.Server;
+let originalBalance: any;
 
 before(async () => {
   originalBalance = await fs.readFile(balancePath, 'utf8').catch(() => null);
@@ -47,12 +46,12 @@ before(async () => {
     await fs.mkdir(path.join(fixtureDBDir, 'jobs', sub), {recursive: true});
   }
   server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, () => resolve()));
+  await new Promise<void>(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
   server.closeAllConnections?.();
-  await new Promise(resolve => {
+  await new Promise<void>(resolve => {
     const timer = setTimeout(() => {
       server.closeAllConnections?.();
       resolve();
@@ -75,7 +74,7 @@ after(async () => {
 
 // HELPERS
 
-const request = (method, requestPath, body = null, headers = {}) => new Promise((resolve, reject) => {
+const request = (method: string, requestPath: string, body: any = null, headers: any = {}): Promise<any> => new Promise((resolve, reject) => {
   const options = {method, host: 'localhost', port, path: requestPath, headers: {...headers}};
   let bodyData = '';
   if (body) {
@@ -84,7 +83,7 @@ const request = (method, requestPath, body = null, headers = {}) => new Promise(
     options.headers['content-length'] = Buffer.byteLength(bodyData);
   }
   const req = http.request(options, response => {
-    const chunks = [];
+    const chunks: Buffer[] = [];
     response.on('data', chunk => chunks.push(chunk));
     response.on('end', () => {
       resolve({statusCode: response.statusCode, headers: response.headers, body: Buffer.concat(chunks).toString()});
@@ -94,7 +93,7 @@ const request = (method, requestPath, body = null, headers = {}) => new Promise(
   req.end(bodyData || '');
 });
 
-const jsonBody = res => {
+const jsonBody = (res: any) => {
   try {
     return JSON.parse(res.body);
   }
@@ -103,7 +102,7 @@ const jsonBody = res => {
   }
 };
 
-const submitReport = async (acts, balanceFileContent) => {
+const submitReport = async (acts: any, balanceFileContent: any) => {
   if (balanceFileContent !== undefined) {
     if (balanceFileContent === null) {
       await fs.unlink(balancePath).catch(() => {});

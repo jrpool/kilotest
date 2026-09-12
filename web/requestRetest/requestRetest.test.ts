@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestRetest.test.ts
   Unit tests for web/requestRetest/index.ts, covering the success path of answer.
@@ -66,7 +65,7 @@ test('answer returns ok with a populated answer page for a valid retest request'
   // Require the module after DB_DIR is set.
   const {answer} = await import('./index.ts');
   // Use the 260101T0001-ct report (All CantTell Page, https://example.com/canttell).
-  const result = await answer('260101T0001/ct', 'Because changes were made');
+  const result: any = await answer('260101T0001/ct', 'Because changes were made');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage, 'answerPage should be present');
   // Verify the placeholders were replaced with the report target.
@@ -108,11 +107,11 @@ test('answer returns an error when the report extract has an error', async (t) =
         {timeStamp: '260101T0001', jobID: 'ct', error: 'Report data unavailable'}
       ]
     }
-  });
+  } as any);
   // Import a fresh instance of index.ts so it binds to the mocked module.
   // The query string makes the specifier unique, bypassing the module cache.
-  const {answer} = await import('./index.ts?mockExtractError');
-  const result = await answer('260101T0001/ct', 'Because changes were made');
+  const {answer} = await import('./index.ts?mockExtractError' as any);
+  const result: any = await answer('260101T0001/ct', 'Because changes were made');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Report data unavailable');
 });

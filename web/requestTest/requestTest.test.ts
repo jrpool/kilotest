@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestTest.test.ts
   Unit tests for web/requestTest/index.ts, covering the success path of answer.
@@ -65,7 +64,7 @@ after(async () => {
 test('answer returns ok with a populated answer page for a valid test request', {timeout: 500}, async () => {
   // Require the module after DB_DIR is set.
   const {answer} = await import('./index.ts');
-  const result = await answer(
+  const result: any = await answer(
     'Test Page', 'https://example.com/test-success', 'Because accessibility'
   );
   assert.equal(result.status, 'ok');
@@ -92,7 +91,7 @@ test('answer returns an error when the URL is already queued', {timeout: 500}, a
     target: {what: 'Queued Page', url: 'https://example.com/queued'}
   }));
   try {
-    const result = await answer(
+    const result: any = await answer(
       'Queued Page', 'https://example.com/queued', 'Because accessibility'
     );
     assert.equal(result.status, 'error');
@@ -110,7 +109,7 @@ test('answer returns an error when the URL is already queued', {timeout: 500}, a
 
 test('answer returns an error for an invalid recommendation', {timeout: 500}, async () => {
   const {answer} = await import('./index.ts');
-  const result = await answer('', 'not-a-url', 'why');
+  const result: any = await answer('', 'not-a-url', 'why');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid recommendation');
 });

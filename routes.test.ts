@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   routes.test.ts
   Tests for the centralized routes table exported from index.js.

@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   hideReportForm.test.ts
   Unit tests for web/hideReportForm/index.ts.
@@ -46,7 +45,7 @@ after(async () => {
 // TESTS
 
 test('hideReportForm displays a list of reports when no submission', async () => {
-  const result = await answer(null, '');
+  const result: any = await answer(null, '');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -55,7 +54,7 @@ test('hideReportForm displays a list of reports when no submission', async () =>
 });
 
 test('hideReportForm returns an error for an invalid auth code', async () => {
-  const result = await answer(null, 'authCode=wrong&report=260101T0009-brd');
+  const result: any = await answer(null, 'authCode=wrong&report=260101T0009-brd');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid authorization code');
 });
@@ -70,14 +69,14 @@ test('hideReportForm hides a report with valid auth code', async () => {
   catch {
     // Report may already be in reports.
   }
-  const result = await answer(null, 'authCode=test-auth-code&report=260101T0009-brd');
+  const result: any = await answer(null, 'authCode=test-auth-code&report=260101T0009-brd');
   assert.equal(result.status, 'ok');
   // The report should now be in the hidden directory.
   await fs.access(hiddenPath);
 });
 
 test('hideReportForm returns an error when hiding a nonexistent report', async () => {
-  const result = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope');
+  const result: any = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope');
   assert.equal(result.status, 'error');
   assert.ok(result.message.includes('Hiding report'));
 });

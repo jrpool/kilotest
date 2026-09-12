@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   index.test.ts
   Integration tests for index.js requestHandler, covering GET routes, POST routes,
@@ -33,11 +32,11 @@ const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
 
 // SETUP AND TEARDOWN
 
-let server;
+let server: http.Server;
 
 before(async () => {
   server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, () => resolve()));
+  await new Promise<void>(resolve => server.listen(port, () => resolve()));
 });
 
 // Restore recs.json and clean job directories before each test, so tests do not depend on execution order.
@@ -56,7 +55,7 @@ beforeEach(async () => {
 after(async () => {
   // Close all idle connections, then close the server with a timeout.
   server.closeAllConnections?.();
-  await new Promise(resolve => {
+  await new Promise<void>(resolve => {
     const timer = setTimeout(() => {
       server.closeAllConnections?.();
       resolve();
@@ -84,7 +83,7 @@ const uniqueStamp = Date.now();
 
 // HELPERS
 
-const request = (method, requestPath, body = null, headers = {}) => new Promise((resolve, reject) => {
+const request = (method: string, requestPath: string, body: any = null, headers: any = {}): Promise<any> => new Promise((resolve, reject) => {
   const options = {method, host: 'localhost', port, path: requestPath, headers: {...headers}};
   let bodyData = '';
   if (body) {
@@ -98,7 +97,7 @@ const request = (method, requestPath, body = null, headers = {}) => new Promise(
     options.headers['content-length'] = Buffer.byteLength(bodyData);
   }
   const req = http.request(options, response => {
-    const chunks = [];
+    const chunks: Buffer[] = [];
     response.on('data', chunk => chunks.push(chunk));
     response.on('end', () => {
       resolve({statusCode: response.statusCode, headers: response.headers, body: Buffer.concat(chunks).toString()});
@@ -108,7 +107,7 @@ const request = (method, requestPath, body = null, headers = {}) => new Promise(
   req.end(bodyData || '');
 });
 
-const formRequest = (method, requestPath, formData, headers = {}) => new Promise((resolve, reject) => {
+const formRequest = (method: string, requestPath: string, formData: any, headers: any = {}): Promise<any> => new Promise((resolve, reject) => {
   const body = new URLSearchParams(formData).toString();
   const options = {
     method,
@@ -122,7 +121,7 @@ const formRequest = (method, requestPath, formData, headers = {}) => new Promise
     }
   };
   const req = http.request(options, response => {
-    const chunks = [];
+    const chunks: Buffer[] = [];
     response.on('data', chunk => chunks.push(chunk));
     response.on('end', () => {
       resolve({statusCode: response.statusCode, headers: response.headers, body: Buffer.concat(chunks).toString()});
@@ -132,7 +131,7 @@ const formRequest = (method, requestPath, formData, headers = {}) => new Promise
   req.end(body);
 });
 
-const jsonBody = res => {
+const jsonBody = (res: any) => {
   try {
     return JSON.parse(res.body);
   }
@@ -629,7 +628,7 @@ test('POST /reannotate.html with valid auth code serves the answer page', async 
   // Back up all fixture reports, because annotateReport modifies them in place.
   const reportsDir = path.join(fixtureDBDir, 'reports');
   const reportFiles = await fs.readdir(reportsDir);
-  const backups = {};
+  const backups: Record<string, string> = {};
   for (const file of reportFiles) {
     backups[file] = await fs.readFile(path.join(reportsDir, file), 'utf8');
   }
@@ -774,7 +773,7 @@ test('POST /worker/job with a claimed job assigned to the worker returns an erro
   const body = jsonBody(res);
   assert.ok(body.error.message.includes('has not completed job'));
   // Wait for the async rename to complete.
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise<void>(resolve => setTimeout(resolve, 100));
   // The job should have been moved to failed.
   const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
   assert.ok(failedExists, 'Job should be moved to failed directory');
@@ -809,7 +808,7 @@ test('POST /worker/job with a queued job assigns it to the worker', {timeout: 50
   assert.equal(body.id, '260101T0000-mix');
   assert.equal(body.sources.worker, 'Worker One');
   // Wait for the async unlink to complete.
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise<void>(resolve => setTimeout(resolve, 100));
   // The job should have been moved from queue to claimed.
   const queueExists = await fs.access(path.join(queueDir, jobFile)).then(() => true).catch(() => false);
   assert.equal(queueExists, false, 'Job should be removed from queue');
@@ -1037,22 +1036,22 @@ test('POST /recAction.html with valid auth code and approval of an invalid URL r
 
 // UNIT TESTS FOR serveError
 
-const mockRes = () => {
-  const state = {statusCode: null, headers: {}, body: null, writableEnded: false};
+const mockRes = (): any => {
+  const state: any = {statusCode: null, headers: {}, body: null, writableEnded: false};
   return {
     get statusCode() {return state.statusCode;},
-    set statusCode(value) {state.statusCode = value;},
-    setHeader(name, value) {state.headers[name] = value;},
-    end(data) {state.body = data; state.writableEnded = true;},
+    set statusCode(value: any) {state.statusCode = value;},
+    setHeader(name: any, value: any) {state.headers[name] = value;},
+    end(data: any) {state.body = data; state.writableEnded = true;},
     _state: state
   };
 };
 
 test('serveError does not write to a response that has already ended', async () => {
   let wrote = false;
-  const mockResponse = {
+  const mockResponse: any = {
     writableEnded: true,
-    set statusCode(value) {
+    set statusCode(value: any) {
       wrote = true;
     },
     setHeader() {
@@ -1094,7 +1093,7 @@ test('getAbuseError uses unknown IP when no forwarding header or remote address'
     headers: {},
     socket: {remoteAddress: undefined}
   };
-  const result = getAbuseError(mockRequest, 'test reason');
+  const result = getAbuseError(mockRequest as any, 'test reason');
   assert.equal(result['IP address'], 'unknown');
   assert.equal(result.reason, 'test reason');
 });
@@ -1121,16 +1120,16 @@ test('startServer starts an HTTP server when protocol is http', {timeout: 500}, 
     assert.equal(typeof server.listen, 'function');
     // Verify the server is listening by making a request.
     const address = server.address();
-    assert.ok(typeof address === 'object' && address.port > 0);
+    assert.ok(typeof address === 'object' && address !== null && address.port > 0);
   }
   finally {
-    server.closeAllConnections?.();
-    await new Promise(resolve => {
+    server?.closeAllConnections?.();
+    await new Promise<void>(resolve => {
       const timer = setTimeout(() => {
-        server.closeAllConnections?.();
+        server?.closeAllConnections?.();
         resolve();
       }, 1000);
-      server.close(() => {
+      server?.close(() => {
         clearTimeout(timer);
         resolve();
       });
@@ -1147,12 +1146,12 @@ test('serve uses the default port 3000 when PORT is not set', {timeout: 500}, as
   delete process.env.PORT;
   try {
     const server = await indexModule.serve(http, {});
-    let bindError = null;
+    let bindError: any = null;
     server.on('error', error => {
       bindError = error;
     });
     // Wait briefly for either successful binding or an EADDRINUSE error.
-    await new Promise(resolve => {
+    await new Promise<void>(resolve => {
       const timer = setTimeout(resolve, 200);
       server.on('listening', () => {
         clearTimeout(timer);
@@ -1164,10 +1163,10 @@ test('serve uses the default port 3000 when PORT is not set', {timeout: 500}, as
     }
     else {
       const address = server.address();
-      assert.ok(typeof address === 'object' && address.port === 3000);
+      assert.ok(typeof address === 'object' && address !== null && address.port === 3000);
     }
     server.closeAllConnections?.();
-    await new Promise(resolve => {
+    await new Promise<void>(resolve => {
       const timer = setTimeout(() => {
         server.closeAllConnections?.();
         resolve();
@@ -1215,9 +1214,9 @@ test('startServer starts an HTTPS server when protocol is https', {timeout: 2000
     assert.ok(server);
     assert.equal(typeof server.listen, 'function');
     const address = server.address();
-    assert.ok(typeof address === 'object' && address.port > 0);
+    assert.ok(typeof address === 'object' && address !== null && address.port > 0);
     server.closeAllConnections?.();
-    await new Promise(resolve => {
+    await new Promise<void>(resolve => {
       const timer = setTimeout(() => {
         server.closeAllConnections?.();
         resolve();
@@ -1267,7 +1266,7 @@ test('runIfMain calls startServer when mainModule matches currentModule', async 
   const fakeModule = {};
   runIfMain(fakeModule, fakeModule, starter);
   // Wait for the microtask queue to flush the promise.
-  await new Promise(resolve => setImmediate(resolve));
+  await new Promise<void>(resolve => setImmediate(resolve));
   assert.equal(called, true);
 });
 
@@ -1278,6 +1277,6 @@ test('runIfMain does not call startServer when mainModule differs from currentMo
     return null;
   };
   runIfMain({}, {}, starter);
-  await new Promise(resolve => setImmediate(resolve));
+  await new Promise<void>(resolve => setImmediate(resolve));
   assert.equal(called, false);
 });

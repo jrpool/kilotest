@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestRetestForm.test.ts
   Unit tests for web/requestRetestForm/index.ts.
@@ -35,15 +34,15 @@ test('requestRetestForm returns ok with the page name for a valid report', async
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
-  const title = html.querySelector('title').text;
-  assert.ok(title.includes('Mixed Outcomes Page'));
+  const title = html.querySelector('title')?.text;
+  assert.ok(title?.includes('Mixed Outcomes Page'));
 });
 
 test('requestRetestForm populates the form action with the timeStamp and jobID', async () => {
   const result = await answer('260202T0000/new');
   const html = parse(result.answerPage);
   const form = html.querySelector('form');
-  assert.equal(form.getAttribute('action'), '/requestRetest.html/260202T0000/new');
+  assert.equal(form?.getAttribute('action'), '/requestRetest.html/260202T0000/new');
 });
 
 test('requestRetestForm shows the fallback message for a nonexistent report', async () => {

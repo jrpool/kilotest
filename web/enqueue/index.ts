@@ -41,7 +41,7 @@ export const answer = async (url: string, what: string, authCode: string) => {
     // Isolate this revision.
     await recsLock(async () => {
       // Get the recommendations.
-      const recs = await getRecs();
+      const recs = await getRecs() as Record<string, unknown>;
       // Delete the recommendations to test the target.
       delete recs[url];
       // Save the revised recommendations.

@@ -761,7 +761,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
             // Isolate this revision.
             await recsLock(async () => {
               // Get the recommendations.
-              const recs = await getRecs();
+              const recs = await getRecs() as Record<string, unknown>;
               // Delete the rejected URL.
               delete recs[url];
               // Save the revised recommendations.

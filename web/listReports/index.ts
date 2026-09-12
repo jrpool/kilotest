@@ -35,7 +35,7 @@ const populateQuery = async (query: Record<string, any>) => {
     tested: []
   };
   // Get the recommendations.
-  const recs = await getRecs();
+  const recs = await getRecs() as Record<string, {what: string, why: string}[]>;
   // For each recommended URL:
   Object.keys(recs).forEach(url => {
     // For each of its recommendations:

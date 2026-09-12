@@ -243,7 +243,7 @@ export const getPOSTData = (request: import('node:http').IncomingMessage) => new
   });
 });
 // Returns the waiting test and retest recommendations.
-export const getRecs = async () => {
+export const getRecs = async (): Promise<unknown> => {
   let recs;
   let recsJSON;
   try {
@@ -417,7 +417,7 @@ export const recsLock = createLock();
 // Updates the test recommendations as a transaction.
 export const updateRecs = (what: string, url: string, why: string) => recsLock(async (): Promise<{error?: string}> => {
   // Get the data on waiting recommendations.
-  const recs = await getRecs();
+  const recs = await getRecs() as Record<string, {what: string, why: string, timeStamp: string}[]>;
   recs[url] ??= [];
   // If any recommendation has the same description and URL:
   if (recs[url].some((rec: any) => rec.what === what)) {

@@ -528,7 +528,7 @@ test('getRecs creates an empty recommendations file and returns an error when it
   try {
     const {getRecs} = await import('./util.ts');
     const result = await getRecs();
-    assert.equal(typeof result, 'string');
+    assert.ok(typeof result === 'string');
     assert.ok(result.startsWith('ERROR'));
     // Verify the empty file was created.
     assert.ok(fsSync.existsSync(tmpDir + '/jobs/recs.json'));
@@ -548,7 +548,7 @@ test('getRecs returns an error when the recommendations file is not JSON', async
   try {
     const {getRecs} = await import('./util.ts');
     const result = await getRecs();
-    assert.equal(typeof result, 'string');
+    assert.ok(typeof result === 'string');
     assert.ok(result.startsWith('ERROR'));
   }
   finally {

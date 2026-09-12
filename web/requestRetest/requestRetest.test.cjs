@@ -63,7 +63,7 @@ after(async () => {
 
 test('answer returns ok with a populated answer page for a valid retest request', async () => {
   // Require the module after DB_DIR is set.
-  const {answer} = require('./index.cts');
+  const {answer} = require('./index.ts');
   // Use the 260101T0001-ct report (All CantTell Page, https://example.com/canttell).
   const result = await answer('260101T0001/ct', 'Because changes were made');
   assert.equal(result.status, 'ok');
@@ -81,7 +81,7 @@ test('answer returns ok with a populated answer page for a valid retest request'
 });
 
 test('answer throws when the report does not exist', async () => {
-  const {answer} = require('./index.cts');
+  const {answer} = require('./index.ts');
   // Use a nonexistent report timestamp and jobID.
   await assert.rejects(
     () => answer('990101T0000/xxx', 'Because changes were made'),
@@ -90,7 +90,7 @@ test('answer throws when the report does not exist', async () => {
 });
 
 test('answer returns an error for an invalid retest recommendation', async () => {
-  const {answer} = require('./index.cts');
+  const {answer} = require('./index.ts');
   // Use a valid report but a too-short reason.
   const result = await answer('260101T0001/ct', 'why');
   assert.equal(result.status, 'error');
@@ -108,16 +108,10 @@ test('answer returns an error when the report extract has an error', async (t) =
       ]
     }
   });
-  try {
-    // Re-require index.cts so it picks up the mocked module.
-    delete require.cache[require.resolve('./index.cts')];
-    const {answer} = require('./index.cts');
-    const result = await answer('260101T0001/ct', 'Because changes were made');
-    assert.equal(result.status, 'error');
-    assert.equal(result.message, 'Report data unavailable');
-  }
-  finally {
-    // Drop the mock-bound copy of index.cts so later tests get the real module.
-    delete require.cache[require.resolve('./index.cts')];
-  }
+  // Import a fresh instance of index.ts so it binds to the mocked module.
+  // The query string makes the specifier unique, bypassing the module cache.
+  const {answer} = await import('./index.ts?mockExtractError');
+  const result = await answer('260101T0001/ct', 'Because changes were made');
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'Report data unavailable');
 });

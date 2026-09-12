@@ -1,18 +1,18 @@
 /*
-  index.cts
+  index.ts
   Serves the tutorial and saves tutorial comments.
 */
 
 // IMPORTS
 
-const {sendAlert} = require('../../alerts.ts');
-const {getJSON, getNowStamp} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+import {sendAlert} from '../../alerts.ts';
+import {getJSON, getNowStamp} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // CONSTANTS
 
-const commentsPath = path.join(__dirname, 'comments.json');
+const commentsPath = path.join(import.meta.dirname, 'comments.json');
 
 // FUNCTIONS
 
@@ -24,15 +24,15 @@ const sanitize = (str: string) => str
   .slice(0, 500);
 
 // Returns the tutorial page.
-exports.answer = async () => {
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+export const answer = async () => {
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   return {
     status: 'ok',
     answerPage
   };
 };
 // Sanitizes and saves a tutorial comment to comments.json.
-exports.handleComment = async (content: any) => {
+export const handleComment = async (content: any) => {
   if (!content || typeof content !== 'string') {
     return {status: 'error', message: 'No content provided'};
   }

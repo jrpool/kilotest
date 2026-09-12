@@ -1,11 +1,11 @@
 /*
-  index.cts
+  index.ts
   List the issues in a report.
 */
 
 // IMPORTS
 
-const {
+import {
   getPageData,
   getPageDataStrings,
   getReport,
@@ -17,10 +17,10 @@ const {
   isValidReport,
   objectSort,
   ruleEngines
-} = require('../../util.ts');
-const {issues: issueSpecs} = require('testaro-issues');
-const fs = require('fs/promises');
-const path = require('path');
+} from '../../util.ts';
+import {issues as issueSpecs} from 'testaro-issues';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
@@ -272,7 +272,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   });
 };
 // Returns a page answering the target-issues question.
-exports.answer = async (pageArgs: string) => {
+export const answer = async (pageArgs: string) => {
   const [timeStamp, jobID] = pageArgs.split('/');
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
@@ -296,7 +296,7 @@ exports.answer = async (pageArgs: string) => {
   // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
     // Get the template.
-    let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
     // Replace its placeholders.
     Object.keys(query).forEach(param => {
       answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const {parse} = require('node-html-parser');
-const {answer} = require('./index.cts');
+const {answer} = require('./index.ts');
 
 // SETUP AND TEARDOWN
 

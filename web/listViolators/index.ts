@@ -1,11 +1,11 @@
 /*
-  index.cts
+  index.ts
   Lists the violators of an issue in a report.
 */
 
 // IMPORTS
 
-const {
+import {
   getPageDataStrings,
   getPathID,
   getReport,
@@ -16,10 +16,10 @@ const {
   htmlSafe,
   isHidden,
   makeBreakable,
-} = require('../../util.ts');
-const {issues: issueSpecs} = require('testaro-issues');
-const fs = require('fs/promises');
-const path = require('path');
+} from '../../util.ts';
+import {issues as issueSpecs} from 'testaro-issues';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
@@ -174,7 +174,7 @@ const populateQuery = async (
   }
 };
 // Returns a page answering the violators question.
-exports.answer = async (pageArgs: string) => {
+export const answer = async (pageArgs: string) => {
   const [issueID, timeStamp, jobID] = pageArgs.split('/');
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
@@ -198,7 +198,7 @@ exports.answer = async (pageArgs: string) => {
   // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
     // Get the template.
-    let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
     // Replace its placeholders.
     Object.keys(query).forEach(param => {
       answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

@@ -25,12 +25,8 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 5. Rename unconverted files to `.cjs`, then flip `"type": "module"` in `package.json`.
 6. Convert `.cjs` files to `.ts` (ESM) one at a time.
 7. Rely on the `Report` interface defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts` to complete the migration of code that makes less specific assumptions about the shape of Testaro reports. This includes (A) converting nonconforming reports to the expected shape, and (B) updating code that accesses report properties to use the expected shape.
-
-## Test
-
-Defer report-handling type definitions until Testaro's TypeScript conversion exports a stable `Report` type. Start with modules that don't touch the report schema.
-
-The `Report` interface is defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts`.
+8. Discover and utilize remaining opportunities for type enforcements, concern separations, and simplifying refactors.
+9. Review all instances of exclusions from `c8` coverage reporting to ensure they are still necessary, and also decide whether to abandon `c8` in favor af the `node` built-in experimental coverage reporter.
 
 ## How to Apply
 
@@ -38,4 +34,5 @@ When helping with any Kilotest work, assume this migration is the active project
 
 ## Later work
 
-Add observability of request metrics.
+- Add observability of request metrics.
+- Investigate a dual-package hazard in the imports from `testaro-issues`. Statement by SWE-2 about this: “The dual-package hazard will bite again in the other direction once index.cjs/mcp.cjs (still CommonJS, using the .cjs build) and the converted .ts modules (using the .mjs build) hold separate copies of its state. Harmless here since testaro-issues is read-only static data, but the pattern matters if a dual-format dependency ever carries mutable state.”

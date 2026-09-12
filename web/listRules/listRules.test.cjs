@@ -5,18 +5,18 @@
 
 // IMPORTS
 
-const {test} = require('node:test');
+const {test, mock} = require('node:test');
 const assert = require('node:assert/strict');
 const {parse} = require('node-html-parser');
 
-// Monkey-patch testaro-issues to add a rule with what === ruleID,
+// Mock testaro-issues with an added rule having what === ruleID,
 // covering the dead branch on line 55 of listRules/index.ts.
 const testaroIssues = require('testaro-issues');
 const originalRules = testaroIssues.rules;
 const patchEngine = Object.keys(originalRules)[0];
 const patchType = Object.keys(originalRules[patchEngine])[0];
 const patchRuleID = '__testWhatEqualsID__';
-testaroIssues.rules = {
+const patchedRules = {
   ...originalRules,
   [patchEngine]: {
     ...originalRules[patchEngine],
@@ -27,9 +27,9 @@ testaroIssues.rules = {
   }
 };
 // Add the patched rule to an existing issue's rule list.
-const patchIssueID = Object.keys(testaroIssues.issueRules)[0];
 const originalIssueRules = testaroIssues.issueRules;
-testaroIssues.issueRules = {
+const patchIssueID = Object.keys(originalIssueRules)[0];
+const patchedIssueRules = {
   ...originalIssueRules,
   [patchIssueID]: {
     ...originalIssueRules[patchIssueID],
@@ -42,8 +42,15 @@ testaroIssues.issueRules = {
     }
   }
 };
+mock.module('testaro-issues', {
+  exports: {
+    ...testaroIssues,
+    rules: patchedRules,
+    issueRules: patchedIssueRules
+  }
+});
 
-const {answer} = require('./index.cts');
+const {answer} = require('./index.ts');
 
 // TESTS
 

@@ -1,18 +1,18 @@
 /*
-  index.cts
+  index.ts
   Serves a form for approving or rejecting a test request.
 */
 
 // IMPORTS
 
-const {getRecs} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+import {getRecs} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
 // Returns a test order form.
-exports.answer = async () => {
+export const answer = async () => {
   const recs = await getRecs();
   const urls = Object.keys(recs);
   const margin = ' '.repeat(12);
@@ -36,7 +36,7 @@ exports.answer = async () => {
     disabled: urls.length ? '' : ' disabled'
   };
   // Get the order form template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

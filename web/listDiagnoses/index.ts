@@ -1,11 +1,11 @@
 /*
-  index.cts
+  index.ts
   Lists the diagnoses of a violator of an issue in a report.
 */
 
 // IMPORTS
 
-const {
+import {
   getPageDataStrings,
   getReport,
   getTextFragmentHref,
@@ -14,10 +14,10 @@ const {
   htmlSafe,
   isHidden,
   ruleEngines
-} = require('../../util.ts');
-const {issues: issueSpecs} = require('testaro-issues');
-const fs = require('fs/promises');
-const path = require('path');
+} from '../../util.ts';
+import {issues as issueSpecs} from 'testaro-issues';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
@@ -137,7 +137,7 @@ const populateQuery = async (
   query.diagnoses = lines.join('\n');
 };
 // Returns a page answering the diagnoses question.
-exports.answer = async (pageArgs: string, search: string) => {
+export const answer = async (pageArgs: string, search: string) => {
   const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/');
   const reportIsHidden = await isHidden(timeStamp, jobID);
   // If the report is not available:
@@ -163,7 +163,7 @@ exports.answer = async (pageArgs: string, search: string) => {
   // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
     // Get the template.
-    let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
     // Replace its placeholders.
     Object.keys(query).forEach(param => {
       answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

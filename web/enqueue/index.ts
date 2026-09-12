@@ -1,24 +1,24 @@
 /*
-  index.cts
+  index.ts
   Implements a test request approval.
 */
 
 // IMPORTS
 
-const {
+import {
   getJSON, getNowStamp, getRandomString, getRecs, isURL, jobsPath, recsLock
-} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
 // Implements a test request approval and returns a revised request page.
-exports.answer = async (url: string, what: string, authCode: string) => {
+export const answer = async (url: string, what: string, authCode: string) => {
   // If the arguments are valid:
   if (isURL(url) && what && authCode === process.env.AUTH_CODE) {
     // Get the job template.
-    const jobTemplateJSON = await fs.readFile(path.join(__dirname, '..', '..', 'job.json'), 'utf8');
+    const jobTemplateJSON = await fs.readFile(path.join(import.meta.dirname, '..', '..', 'job.json'), 'utf8');
     const job = JSON.parse(jobTemplateJSON);
     const nowStamp = getNowStamp();
     // Populate the template with job properties.
@@ -48,7 +48,7 @@ exports.answer = async (url: string, what: string, authCode: string) => {
       await fs.writeFile(path.join(jobsPath(), 'recs.json'), getJSON(recs));
     });
     // Get the answer template.
-    let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
     // Replace its placeholders.
     Object.keys(query).forEach(param => {
       answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

@@ -1,18 +1,18 @@
 /*
-  index.cts
+  index.ts
   Renews the WCAG map.
 */
 
 // IMPORTS
 
-const fs = require('fs/promises');
-const path = require('path');
-const {getJSON} = require('../../util.ts');
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {getJSON} from '../../util.ts';
 
 // FUNCTIONS
 
 // Renews the WCAG map and serves an acknowledgment.
-exports.answer = async (authCode: string) => {
+export const answer = async (authCode: string) => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get the map source response.
@@ -36,9 +36,9 @@ exports.answer = async (authCode: string) => {
           wcagMap[entry[2]] = entry[1];
         }
         // Save the map, replacing any existing one.
-        await fs.writeFile(path.join(__dirname, '..', '..', 'wcagMap.json'), getJSON(wcagMap));
+        await fs.writeFile(path.join(import.meta.dirname, '..', '..', 'wcagMap.json'), getJSON(wcagMap));
         // Get the acknowledgment page.
-        const answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+        const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
         // Return it.
         return {
           status: 'ok',

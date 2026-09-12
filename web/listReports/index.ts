@@ -1,11 +1,11 @@
 /*
-  index.cts
+  index.ts
   Lists all available reports.
 */
 
 // IMPORTS
 
-const {
+import {
   getAgoDays,
   getCountString,
   getJobNames,
@@ -18,9 +18,9 @@ const {
   isRecommendable,
   jobsPath,
   objectSort
-} = require('../../util.ts');
-const fs = require('fs/promises');
-const path = require('path');
+} from '../../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // FUNCTIONS
 
@@ -86,7 +86,7 @@ const populateQuery = async (query: Record<string, any>) => {
   for (const extract of sortedExtracts) {
     const {jobID, timeStamp, url, what} = extract;
     // Get data about it.
-    const reportData = await getReportData(timeStamp, jobID);
+    const reportData: any = await getReportData(timeStamp, jobID);
     const {
       error,
       issueCount,
@@ -108,7 +108,7 @@ const populateQuery = async (query: Record<string, any>) => {
     lines.tested.push(`${margin}<details>`);
     const daysAgo = getAgoDays(timeStamp);
     const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
-    const {urlLink, testInfo} = pageDataStrings;
+    const {urlLink, testInfo}: any = pageDataStrings;
     const testText = multiReportWhats.includes(what) ? ` (${testInfo.toLowerCase()})` : '';
     lines.tested.push(`${margin}  <summary>${what}${testText}</summary>`);
     lines.tested.push(`${margin}  <ul>`);
@@ -167,7 +167,7 @@ const populateQuery = async (query: Record<string, any>) => {
   query.testedPages = lines.tested.join('\n');
 };
 // Returns a page answering the targets question.
-exports.answer = async () => {
+export const answer = async () => {
   const query: Record<string, any> = {};
   // Create a query to replace placeholders.
   await populateQuery(query);
@@ -180,7 +180,7 @@ exports.answer = async () => {
     };
   }
   // Otherwise, i.e. if it does not report an error, get the template.
-  let answerPage = await fs.readFile(path.join(__dirname, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);

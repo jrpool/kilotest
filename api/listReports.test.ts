@@ -87,6 +87,8 @@ test('listReports marks the superseded report correctly', async () => {
   const reportsBasics = body['response content']['basics about all available reports'];
   const mix = reportsBasics.find((b: any) => b.identifier === '260101T0000-mix');
   const newer = reportsBasics.find((b: any) => b.identifier === '260202T0000-new');
+  assert.ok(mix);
+  assert.ok(newer);
   assert.equal(mix['whether a later report about the same page exists'], true);
   assert.equal(newer['whether a later report about the same page exists'], false);
 });

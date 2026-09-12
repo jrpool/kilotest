@@ -32,8 +32,8 @@ test('getReport returns the full report for a valid report', async () => {
   const body = await response(['260101T0000', 'mix']);
   const content = body['response content'];
   assert.equal(typeof content['size of the report in bytes'], 'number');
-  assert.ok(content['size of the report in bytes'] > 0);
-  const report = content['full report'];
+  assert.ok((content['size of the report in bytes'] as number) > 0);
+  const report = content['full report'] as any;
   assert.equal(report.id, '260101T0000-mix');
   assert.equal(report.target.what, 'Mixed Outcomes Page');
   assert.equal(report.target.url, 'https://example.com/mixed');

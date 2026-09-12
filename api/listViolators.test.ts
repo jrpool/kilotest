@@ -30,7 +30,7 @@ after(() => {
 
 test('listViolators returns 1 violator for linkNoText in the mixed report, excluding cantTell', async () => {
   const body = await response(['linkNoText', '260101T0000', 'mix']);
-  const violators = body['response content']['basics about all elements exhibiting the issue'];
+  const violators = body['response content']['basics about all elements exhibiting the issue'] as any;
   assert.equal(violators.length, 1);
   assert.equal(violators[0].identifier, '0');
   assert.equal(violators[0]['tag name'], 'A');
@@ -40,32 +40,32 @@ test('listViolators returns 1 violator for linkNoText in the mixed report, exclu
 
 test('listViolators returns 0 violators for an issue when all instances are cantTell', async () => {
   const body = await response(['focusIndicationBad', '260101T0001', 'ct']);
-  const violators = body['response content']['basics about all elements exhibiting the issue'];
+  const violators = body['response content']['basics about all elements exhibiting the issue'] as any;
   assert.equal(violators.length, 0);
 });
 
 test('listViolators treats missing outcome as a violation', async () => {
   const body = await response(['linkNoText', '260101T0002', 'no']);
-  const violators = body['response content']['basics about all elements exhibiting the issue'];
+  const violators = body['response content']['basics about all elements exhibiting the issue'] as any;
   assert.equal(violators.length, 1);
   assert.equal(violators[0].identifier, '0');
 });
 
 test('listViolators returns an error for an unknown issue ID', async () => {
   const body = await response(['nonexistentIssue', '260101T0000', 'mix']);
-  const basics = body['response content']['basics about the issue'];
+  const basics = body['response content']['basics about the issue'] as any;
   assert.ok(basics.error);
 });
 
 test('listViolators returns an error for a nonexistent report', async () => {
   const body = await response(['linkNoText', '999999T9999', 'xyz']);
-  const basics = body['response content']['basics about the report'];
+  const basics = body['response content']['basics about the report'] as any;
   assert.ok(basics.error);
 });
 
 test('listViolators includes reporter facts for the issue', async () => {
   const body = await response(['linkNoText', '260101T0000', 'mix']);
-  const details = body['response content']['details about the issue'];
+  const details = body['response content']['details about the issue'] as any;
   const reporters = details['rule engines reporting violations belonging to the issue'];
   const names = reporters.map((r: any) => r.name).sort();
   assert.deepEqual(names, ['Alfa', 'Axe']);
@@ -73,7 +73,7 @@ test('listViolators includes reporter facts for the issue', async () => {
 
 test('listViolators sorts by catalogIndex when two violators have the same reporter count', async () => {
   const body = await response(['linkNoText', '260101T0008', 'mul']);
-  const violators = body['response content']['basics about all elements exhibiting the issue'];
+  const violators = body['response content']['basics about all elements exhibiting the issue'] as any;
   assert.equal(violators.length, 3);
   // The violator with 2 reporters (catalogIndex 2) sorts first.
   assert.equal(violators[0].identifier, '2');
@@ -87,13 +87,13 @@ test('listViolators sorts by catalogIndex when two violators have the same repor
 
 test('listViolators returns guideline layer for an issue with a short WCAG code', async () => {
   const body = await response(['duplicateID', '260101T0009', 'brd']);
-  const issueBasics = body['response content']['basics about the issue'];
+  const issueBasics = body['response content']['basics about the issue'] as any;
   assert.equal(issueBasics['related WCAG standard'].layer, 'guideline');
 });
 
 test('listViolators returns null tag name and text for a violator not in the catalog', async () => {
   const body = await response(['duplicateID', '260101T0009', 'brd']);
-  const violators = body['response content']['basics about all elements exhibiting the issue'];
+  const violators = body['response content']['basics about all elements exhibiting the issue'] as any;
   const orphan = violators.find((v: any) => v.identifier === '3');
   assert.ok(orphan);
   assert.equal(orphan['tag name'], null);
@@ -102,6 +102,6 @@ test('listViolators returns null tag name and text for a violator not in the cat
 
 test('listViolators returns an error for a falsy issue ID', async () => {
   const body = await response(['', '260101T0009', 'brd']);
-  const issueBasics = body['response content']['basics about the issue'];
+  const issueBasics = body['response content']['basics about the issue'] as any;
   assert.ok(issueBasics.error);
 });

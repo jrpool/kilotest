@@ -5,8 +5,10 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} from './util.ts';
 import {getReportExtracts, isURL} from '../util.ts';
+import {requestTestResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -15,10 +17,10 @@ export const response = async (args: string[]) => {
   const [what = '', url = '', reason = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'details about your request': {},
     'disposition of your request': null
-  };
+  } as z.infer<typeof requestTestResponseSchema>['response content'];
   const whatLength = what.length;
   // If the description is empty or too long:
   if (!whatLength || whatLength > 100) {

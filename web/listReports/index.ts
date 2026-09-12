@@ -35,7 +35,7 @@ const populateQuery = async (query: Record<string, any>) => {
     tested: []
   };
   // Get the recommendations.
-  const recs = await getRecs();
+  const recs = await getRecs() as Record<string, {what: string, why: string}[]>;
   // For each recommended URL:
   Object.keys(recs).forEach(url => {
     // For each of its recommendations:
@@ -54,13 +54,13 @@ const populateQuery = async (query: Record<string, any>) => {
   ? 'Kilotest managers can <a href="enqueueForm.html">approve or reject a recommendation</a>.'
   : 'No recommendations await approval now.';
   // Get the file names of all queued and claimed jobs.
-  const jobFileNames = await getJobNames();
+  const jobFileNames = await getJobNames() as Record<string, string[]>;
   // For each job category:
   for (const category of ['queue', 'claimed']) {
     // For each job in the category:
     for (const fileName of jobFileNames[category]) {
       // Get the job.
-      const job = await getObject(path.join(jobsPath(), category, fileName));
+      const job = await getObject(path.join(jobsPath(), category, fileName)) as {target: {url: string, what: string}};
       // Add a line.
       lines[category].push(`${margin}<li><code>${job.target.url}</code> (${job.target.what})</li>`);
     }

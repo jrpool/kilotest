@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {
   getIssueSpec,
   getReportBasics,
@@ -13,6 +14,7 @@ import {
   getThisHost
 } from './util.ts';
 import {getReport} from '../util.ts';
+import {listDiagnosesResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -21,13 +23,13 @@ export const response = async (args: string[]) => {
   const [catalogIndex = '', issueID = '', timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'basics about the report': null,
     'basics about the issue': null,
     'basics about the element': null,
     'details about the element': null,
     'diagnoses of how the element exhibited the issue': null
-  };
+  } as unknown as z.infer<typeof listDiagnosesResponseSchema>['response content'];
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -63,10 +65,10 @@ export const response = async (args: string[]) => {
       summary,
       'impact on a user': why,
       'related WCAG standard': {
-        'layer': (wcag.length > 4 ? 'success criterion' : 'guideline'),
+        'layer': (wcag.length > 4 ? 'success criterion' : 'guideline') as 'success criterion' | 'guideline',
         'identifier': wcag
       },
-      priority: ['lowest', 'low', 'high', 'highest'][weight - 1]
+      priority: ['lowest', 'low', 'high', 'highest'][weight - 1] as 'lowest' | 'low' | 'high' | 'highest'
     };
     // Add them to the response content.
     responseContent['basics about the issue'] = issueBasics;

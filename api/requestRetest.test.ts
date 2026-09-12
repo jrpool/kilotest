@@ -46,20 +46,20 @@ after(() => {
 
 test('requestRetest rejects a nonexistent report', async () => {
   const body = await response(['999999T9999', 'xyz', 'A reason that is long enough.']);
-  assert.ok(body['response content']['details about your request'].error);
+  assert.ok((body['response content']['details about your request'] as any).error);
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestRetest rejects a superseded report', async () => {
   const body = await response(['260101T0000', 'mix', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'];
+  const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('later report'));
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestRetest rejects a reason shorter than 20 characters', async () => {
   const body = await response(['260101T0001', 'ct', 'short']);
-  const details = body['response content']['details about your request'];
+  const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
@@ -67,14 +67,14 @@ test('requestRetest rejects a reason shorter than 20 characters', async () => {
 test('requestRetest rejects a reason longer than 100 characters', async () => {
   const longReason = 'x'.repeat(101);
   const body = await response(['260101T0001', 'ct', longReason]);
-  const details = body['response content']['details about your request'];
+  const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
   assert.ok(!logged.some(line => line.includes('recommendation in the API')));
 });
 
 test('requestRetest accepts a valid retest request for the latest report of a page', async () => {
   const body = await response(['260202T0000', 'new', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'];
+  const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   assert.equal(details['page to be retested'].description, 'Mixed Outcomes Page');
   assert.ok(logged.some(line =>

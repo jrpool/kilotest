@@ -5,8 +5,10 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} from './util.ts';
 import {getReportExtracts, getReportExtract} from '../util.ts';
+import {requestRetestResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -15,10 +17,10 @@ export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = '', reason = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'details about your request': {},
     'disposition of your request': null
-  };
+  } as z.infer<typeof requestRetestResponseSchema>['response content'];
   const reasonLength = reason.length;
   // Get data on the report.
   const reportExtract = await getReportExtract(timeStamp, jobID);

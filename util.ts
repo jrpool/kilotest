@@ -19,15 +19,15 @@ import wcagMap from './wcagMap.json' with {type: 'json'};
 // CONSTANTS
 
 // Path of the data directory. Read afresh on every call (rather than cached at module load) so that tests can point Kilotest at a fixture directory via the DB_DIR environment variable.
-export const dbPath = () => process.env.DB_DIR || path.join(import.meta.dirname, 'db');
+export const dbPath = (): string => process.env.DB_DIR || path.join(import.meta.dirname, 'db');
 // Path of the jobs directory.
-export const jobsPath = () => path.join(dbPath(), 'jobs');
+export const jobsPath = (): string => path.join(dbPath(), 'jobs');
 // Path of the recommendations file.
-export const recsPath = () => path.join(jobsPath(), 'recs.json');
+export const recsPath = (): string => path.join(jobsPath(), 'recs.json');
 // Path of the reports directory.
-export const reportsPath = () => path.join(dbPath(), 'reports');
+export const reportsPath = (): string => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
-export const hiddenReportsPath = () => path.join(dbPath(), 'hiddenReports');
+export const hiddenReportsPath = (): string => path.join(dbPath(), 'hiddenReports');
 // IDs, names, and sponsors of Testaro rule engines.
 const ruleEngines: Record<string, [string, string]> = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -70,7 +70,7 @@ const fragmentEncode = (string: string) => {
   return encodeURIComponent(string).replace(/-/g, '%2D');
 };
 // Returns the time in days since a Date or time stamp, or null if the argument is invalid.
-export const getAgoDays = (timeArg: string | Date) => {
+export const getAgoDays = (timeArg: string | Date): number | null => {
   let dateTime;
   // If the argument is a string:
   if (typeof timeArg === 'string') {
@@ -96,14 +96,14 @@ export const getAgoDays = (timeArg: string | Date) => {
   return Math.round((Date.now() - dateTime.getTime()) / (1000 * 60 * 60 * 24));
 };
 // Returns a string describing the time in days since a time stamp.
-export const getAgoString = (timeStamp: string) => {
+export const getAgoString = (timeStamp: string): string => {
   const agoDays = getAgoDays(timeStamp);
   return agoDays === 1 ? '1 day' : `${agoDays} days`;
 };
 // Returns a string describing a count.
-export const getCountString = (count: number, singular: string, plural: string) => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
+export const getCountString = (count: number, singular: string, plural: string): string => count === 1 ? `1 ${singular}` : `${count} ${plural}`;
 // Returns a date string from a time stamp.
-export const getDateString = (timeStamp: string) => {
+export const getDateString = (timeStamp: string): string => {
   const dateString = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
   // If the date part of the time stamp is valid:
   if (Date.parse(dateString)) {
@@ -114,14 +114,14 @@ export const getDateString = (timeStamp: string) => {
   return '';
 };
 // Returns the date and time represented by a time stamp.
-export const getDateTime = (timeStamp: string) => {
+export const getDateTime = (timeStamp: string): Date | null => {
   const dateString
   = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}T${timeStamp.slice(7,9)}:${timeStamp.slice(9,11)}Z`;
   const dateTime = new Date(dateString);
   return dateTime.toString() === 'Invalid Date' ? null : dateTime;
 };
 // Returns the issue that a rule belongs to, or null if none.
-export const getIssue = (engineID: string, ruleID: string) => {
+export const getIssue = (engineID: string, ruleID: string): string | null => {
   const engineRules = ruleSpecs[engineID];
   // If the rule engine has no rule specifications:
   if (!engineRules) {
@@ -142,7 +142,7 @@ export const getIssue = (engineID: string, ruleID: string) => {
   return variableRuleID ? variable[variableRuleID].issueID : null;
 };
 // Gets the names and categories of the job files.
-export const getJobNames = async (): Promise<any> => {
+export const getJobNames = async (): Promise<Record<string, string[]> | string> => {
   const jobNames: Record<string, string[]> = {};
   let fileNames: string[];
   for (const category of ['queue', 'claimed', 'failed']) {
@@ -150,13 +150,13 @@ export const getJobNames = async (): Promise<any> => {
     try {
       fileNames = await fs.readdir(categoryPath);
     }
-    catch(error: any) {
-      if (error.code === 'ENOENT') {
+    catch(error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         await fs.mkdir(categoryPath, {recursive: true});
         fileNames = [];
       }
       else {
-        return `ERROR: Job directory ${category} not readable (${error.message})`;
+        return `ERROR: Job directory ${category} not readable (${errorMessage(error)})`;
       }
     }
     jobNames[category] = fileNames;
@@ -164,26 +164,28 @@ export const getJobNames = async (): Promise<any> => {
   return jobNames;
 }
 // Returns the JSON stringification of an object, with a final newline.
-export const getJSON = (object: any) => `${JSON.stringify(object, null, 2)}\n`;
+export const getJSON = (object: any): string => `${JSON.stringify(object, null, 2)}\n`;
+// Returns the message of an error, or its string representation if it is not an Error instance.
+export const errorMessage = (error: unknown): string => error instanceof Error ? error.message : String(error);
 // Returns an object from a JSON file.
-export const getObject = async (filePath: string) => {
+export const getObject = async (filePath: string): Promise<unknown> => {
   let fileContent, object;
   try {
     fileContent = await fs.readFile(filePath, 'utf8');
   }
-  catch(error: any) {
-    return `ERROR: File ${filePath} not readable (${error.message})`;
+  catch(error: unknown) {
+    return `ERROR: File ${filePath} not readable (${errorMessage(error)})`;
   }
   try {
     object = JSON.parse(fileContent);
   }
-  catch(error: any) {
-    return `ERROR: File ${filePath} not JSON (${error.message})`;
+  catch(error: unknown) {
+    return `ERROR: File ${filePath} not JSON (${errorMessage(error)})`;
   }
   return object;
 };
 // Returns a random string.
-export const getRandomString = (length: number) => {
+export const getRandomString = (length: number): string => {
   let result = '';
   while (result.length < length) {
     result += Math.floor(Math.random() * 36).toString(36);
@@ -191,12 +193,12 @@ export const getRandomString = (length: number) => {
   return result;
 };
 // Returns a time stamp from a date.
-export const getTimeStamp = (date: Date) => {
+export const getTimeStamp = (date: Date): string => {
   const timeStamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
   return timeStamp;
 };
 // Returns a time stamp for now.
-export const getNowStamp = () => {
+export const getNowStamp = (): string => {
   return getTimeStamp(new Date());
 };
 // Returns a time string from a time stamp.
@@ -206,18 +208,18 @@ const getTimeString = (timeStamp: string) => {
   return (Date.parse(`2000-01-01T${timeString}Z`)) ? timeString : null;
 };
 // Returns a date-and-time string.
-export const getDateTimeString = (timeStamp: string) => {
+export const getDateTimeString = (timeStamp: string): string => {
   const dateString = getDateString(timeStamp);
   const timeString = getTimeString(timeStamp);
   const dateTimeString = `${dateString} at ${timeString}`;
   return dateTimeString;
 }
 // Converts a string to a plain-text 1-line ASCII string.
-export const getPlainText = (string: string) => string
+export const getPlainText = (string: string): string => string
 .replace(/&/g, '+')
 .replace(/[<>"'&]/g, ' ');
 // Returns the data from a POST request.
-export const getPOSTData = (request: import('node:http').IncomingMessage) => new Promise(resolve => {
+export const getPOSTData = (request: import('node:http').IncomingMessage): Promise<unknown> => new Promise(resolve => {
   const bodyParts: Buffer[] = [];
   request.on('data', chunk => {
     bodyParts.push(chunk);
@@ -241,26 +243,26 @@ export const getPOSTData = (request: import('node:http').IncomingMessage) => new
   });
 });
 // Returns the waiting test and retest recommendations.
-export const getRecs = async () => {
+export const getRecs = async (): Promise<unknown> => {
   let recs;
   let recsJSON;
   try {
     recsJSON = await fs.readFile(recsPath(), 'utf8');
   }
-  catch(error: any) {
+  catch(error: unknown) {
     await fs.writeFile(recsPath(), '{}\n');
-    return `ERROR: recommendations file not readable, so created an empty one (${error.message})`;
+    return `ERROR: recommendations file not readable, so created an empty one (${errorMessage(error)})`;
   }
   try {
     recs = JSON.parse(recsJSON);
   }
-  catch(error: any) {
-    return `ERROR: recommendations file not JSON (${error.message})`;
+  catch(error: unknown) {
+    return `ERROR: recommendations file not JSON (${errorMessage(error)})`;
   }
   return recs;
 };
 // Converts a catalog item text to a text-fragment link destination.
-export const getTextFragmentHref = (text: string, url: string) => {
+export const getTextFragmentHref = (text: string, url: string): string => {
   const fragmentList = text
   .split('\n')
   .map(fragment => fragmentEncode(fragment))
@@ -269,23 +271,23 @@ export const getTextFragmentHref = (text: string, url: string) => {
   return `${url}#:~:text=${fragmentList}`;
 };
 // Returns a +-delimited list of sorted names of rule engines.
-export const getEngineList = (engineIDs: Iterable<string>) => Array.from(engineIDs)
+export const getEngineList = (engineIDs: Iterable<string>): string => Array.from(engineIDs)
 .map(engineID => ruleEngines[engineID][0])
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');
 // Returns a string of names of rule engines.
-export const getEngineNamesString = (engineIDSet: Iterable<string>) => alphaSort(
+export const getEngineNamesString = (engineIDSet: Iterable<string>): string => alphaSort(
   Array.from(engineIDSet).map(engineID => ruleEngines[engineID]?.[0] || engineID)
 ).join(' + ');
 // Gets the WCAG Understanding link for a numeric WCAG standard identifier.
-export const getWCAGLink = (numericID: string) => {
+export const getWCAGLink = (numericID: string): string => {
   // Return the link.
   return `https://www.w3.org/WAI/WCAG22/Understanding/${(wcagMap as Record<string, string>)[numericID]}`;
 };
 // Gets the name of an issue weight.
-export const getWeightName = (weight: number) => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
+export const getWeightName = (weight: number): string => ['lowest', 'low', 'high', 'highest'][weight - 1] ?? 'unknown';
 // Makes a string HTML-safe.
-export const htmlSafe = (string: string) => string ? string
+export const htmlSafe = (string: string): string => string ? string
 .replace(/&/g, '&amp;')
 .replace(/</g, '&lt;')
 .replace(/>/g, '&gt;')
@@ -293,17 +295,17 @@ export const htmlSafe = (string: string) => string ? string
 .replace(/'/g, '&apos;')
 : '';
 // Returns whether a string is a job ID.
-export const isJobID = (string: string) => {
+export const isJobID = (string: string): boolean => {
   return /^[a-z0-9]{3}$/.test(string);
 };
 // Returns whether a job to test a target is eligible for a recommendation.
-export const isRecommendable = async (url: string) => {
-  const jobNames = await getJobNames();
+export const isRecommendable = async (url: string): Promise<string> => {
+  const jobNames = await getJobNames() as Record<string, string[]>;
   // For each claimed job:
   for (const fileName of jobNames.claimed) {
     const job = await getObject(path.join(jobsPath(), 'claimed', fileName));
     // If its URL is that of the recommended target:
-    if (job.target.url === url) {
+    if ((job as {target: {url: string}}).target.url === url) {
       // Return this.
       return 'claimed';
     }
@@ -312,7 +314,7 @@ export const isRecommendable = async (url: string) => {
   for (const fileName of jobNames.queue) {
     const job = await getObject(path.join(jobsPath(), 'queue', fileName));
     // If its URL is that of the recommended target:
-    if (job.target.url === url) {
+    if ((job as {target: {url: string}}).target.url === url) {
       // Return this.
       return 'queued';
     }
@@ -321,7 +323,7 @@ export const isRecommendable = async (url: string) => {
   return '';
 };
 // Returns whether a string is a time stamp.
-export const isTimeStamp = (string: string) => {
+export const isTimeStamp = (string: string): boolean => {
   return !!getDateString(string);
 };
 // Returns whether a string is a URL.
@@ -333,9 +335,9 @@ export const isURL = (string: string) => {
   }
 };
 // Makes a string breakable before non-initial slashes.
-export const makeBreakable = (string: string) => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
+export const makeBreakable = (string: string): string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');
 // Minifies a URL for duplicate detection.
-export const minifyURL = (url: string) => url.replace(/www\.|\/$/g, '').toLowerCase();
+export const minifyURL = (url: string): string => url.replace(/www\.|\/$/g, '').toLowerCase();
 // Sorts objects by a property value and returns the sorted array.
 export const objectSort = (objects: any[], property: string, sortType: string) => objects
 .sort((a, b) => {
@@ -358,7 +360,7 @@ export const objectSort = (objects: any[], property: string, sortType: string) =
   return 0;
 });
 // Processes a test or retest request in the UI.
-export const processTestRequest = async (testType: string, dirName: string, what: string, url: string, why: string) => {
+export const processTestRequest = async (testType: string, dirName: string, what: string, url: string, why: string): Promise<{status: string, message?: string, answerPage?: string}> => {
   // If the recommendation is valid:
   if (
     ['test', 'retest'].includes(testType)
@@ -415,7 +417,7 @@ export const recsLock = createLock();
 // Updates the test recommendations as a transaction.
 export const updateRecs = (what: string, url: string, why: string) => recsLock(async (): Promise<{error?: string}> => {
   // Get the data on waiting recommendations.
-  const recs = await getRecs();
+  const recs = await getRecs() as Record<string, {what: string, why: string, timeStamp: string}[]>;
   recs[url] ??= [];
   // If any recommendation has the same description and URL:
   if (recs[url].some((rec: any) => rec.what === what)) {
@@ -450,10 +452,10 @@ export const getPathID = (catalog: Record<string, any>, catalogIndex: string, pa
   return pathID ?? '/html';
 };
 // Returns the path of an available report file.
-export const getReportPath = (timeStamp: string, jobID: string) => path
+export const getReportPath = (timeStamp: string, jobID: string): string => path
 .join(reportsPath(), `${timeStamp}-${jobID}.json`);
 // Returns whether a report is valid.
-export const isValidReport = (report: any) => {
+export const isValidReport = (report: any): boolean => {
   // Return whether it has the type and properties required by Kilotest:
   return typeof report === 'object'
   && typeof report.target?.what === 'string'
@@ -481,8 +483,8 @@ export const getReport = async (timeStamp: string, jobID: string) => {
     }
     // Otherwise, i.e. if it is invalid, return this.
     return {error: `Report ${timeStamp}-${jobID} is invalid`};
-  } catch (error: any) {
-    return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${error.message})`};
+  } catch (error: unknown) {
+    return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
   }
 };
 // Adds issue IDs to the standard instances of a report.
@@ -671,7 +673,7 @@ export const getReportStats = async (timeStamp: string, jobID: string) => {
   return {reportTime, reportSize};
 };
 // Returns whether a report is hidden.
-export const isHidden = async (timeStamp: string, jobID: string) => {
+export const isHidden = async (timeStamp: string, jobID: string): Promise<boolean> => {
   await fs.mkdir(hiddenReportsPath(), {recursive: true});
   // Get the names of the hidden report files.
   const hiddenReportFileNames = await fs.readdir(hiddenReportsPath());
@@ -734,7 +736,7 @@ export const getReportExtracts = async (onlyLatest: boolean = false) => {
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
 // Returns whether a report with a description or URL is available.
-export const isReportAvailable = async (what: string, url: string) => {
+export const isReportAvailable = async (what: string, url: string): Promise<boolean> => {
   const reportExtracts = await getReportExtracts();
   const whats = reportExtracts.map(reportExtract => reportExtract.what);
   const miniURLs = reportExtracts.map(reportExtract => minifyURL(reportExtract.url));

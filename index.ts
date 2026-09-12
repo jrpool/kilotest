@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import {
   annotateReport,
   createLock,
+  errorMessage,
   getJobNames,
   getJSON,
   getObject,
@@ -164,12 +165,12 @@ const matchPath = (pattern: string, pathname: string) => {
   return regex.test(pathname);
 };
 // Returns whether a pathname is authorized for a method.
-export const isPathAllowed = (method: string, pathname: string) => {
+export const isPathAllowed = (method: string, pathname: string): boolean => {
   const patterns = (routes as Record<string, string[]>)[method] || [];
   return patterns.some(pattern => matchPath(pattern, pathname));
 };
 // Serves or sends an error message.
-export const serveError = async (error: any, response: ServerResponse, isHumanUser = true, statusCode = 400) => {
+export const serveError = async (error: Record<string, unknown>, response: ServerResponse, isHumanUser = true, statusCode = 400): Promise<void> => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   const errorSummary = errorLines.join('\n') || 'ERROR';
   console.log(errorSummary);
@@ -183,7 +184,7 @@ export const serveError = async (error: any, response: ServerResponse, isHumanUs
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3000');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
-      const errorMessage = error.message || 'ERROR';
+      const errorMessage = typeof error.message === 'string' ? error.message : 'ERROR';
       const errorPage = errorTemplate.replace(/__error__/, errorMessage);
       response.end(errorPage);
     }
@@ -258,7 +259,7 @@ const checkBalancesForAlerts = async (report: any) => {
         }
       }
       catch (error) {
-        console.log(`ERROR managing AI service 0 balance: ${(error as Error).message}`);
+        console.log(`ERROR managing AI service 0 balance: ${errorMessage(error)}`);
       }
     }
   }
@@ -303,7 +304,7 @@ const getWorkerCredentials = () => {
     return JSON.parse(process.env.TESTARO_WORKERS || '{}');
   }
   catch (error) {
-    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${(error as Error).message})`);
+    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${errorMessage(error)})`);
     return {};
   }
 };
@@ -323,12 +324,12 @@ const getAuthorizedWorkerName = (request: IncomingMessage) => {
 const processJobRequest = async (request: IncomingMessage, response: ServerResponse, workerName: string) => jobLock(async () => {
   let clean = true;
   const messageStart = `Testaro worker ${workerName} requested a job, `;
-  const jobNames = await getJobNames();
+  const jobNames = await getJobNames() as Record<string, string[]>;
   const claimedJobNames = jobNames.claimed;
   // For each claimed job:
   for (const jobName of claimedJobNames) {
     const job = await getObject(path.join(jobsPath(), 'claimed', jobName));
-    const {id, sources} = job;
+    const {id, sources} = job as {id: string, sources: {worker: string}};
     const {worker} = sources;
     // If its assignee is the worker:
     if (worker === workerName) {
@@ -351,7 +352,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
     if (queuedJobNames.length) {
       const oldestJobName = queuedJobNames[0];
       // Get the first one.
-      const firstJob = await getObject(path.join(queuePath(), oldestJobName));
+      const firstJob = await getObject(path.join(queuePath(), oldestJobName)) as {id: string, sources: {worker: string}, target: {what: string}};
       // Add the public worker name to the job, in a property Testaro does not read or alter.
       firstJob.sources.worker = workerName;
       console.log(
@@ -644,7 +645,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
         response.end(styleSheet);
       }
       catch (error) {
-        await serveError({message: (error as Error).message}, response, true);
+        await serveError({message: errorMessage(error)}, response, true);
       }
     }
     // Otherwise, i.e. if it is any other GET request:
@@ -760,7 +761,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
             // Isolate this revision.
             await recsLock(async () => {
               // Get the recommendations.
-              const recs = await getRecs();
+              const recs = await getRecs() as Record<string, unknown>;
               // Delete the rejected URL.
               delete recs[url];
               // Save the revised recommendations.
@@ -842,7 +843,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
               // Get the job the report is from.
               const claimedJob = await getObject(path.join(claimedPath(), `${id}.json`));
               // If the job was actually assigned to this worker:
-              if (typeof claimedJob === 'object' && claimedJob.sources?.worker === workerName) {
+              if (typeof claimedJob === 'object' && claimedJob !== null && (claimedJob as {sources?: {worker?: string}}).sources?.worker === workerName) {
                 console.log(`Testaro report ${id} was received from worker ${workerName}`);
                 // Add the public worker name to the report.
                 report.sources = {...report.sources, worker: workerName};
@@ -955,7 +956,7 @@ export {requestHandler};
 
 // SERVER
 
-const serve = async (protocolModule: any, options: any) => {
+const serve = async (protocolModule: typeof http | typeof https, options: {key?: string; cert?: string}) => {
   // Create any missing directories.
   for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
     await fs.mkdir(path, {recursive: true});
@@ -989,9 +990,9 @@ export const startServer = async () => {
 };
 
 // Runs the server if the module was loaded directly (not required by a test). The starter is a parameter so tests can inject a spy, since ESM module exports cannot be monkey-patched.
-export const runIfMain = (mainModule: any, currentModule: any, starter: () => Promise<any> = startServer) => {
+export const runIfMain = (mainModule: unknown, currentModule: unknown, starter: () => Promise<unknown> = startServer) => {
   if (mainModule === currentModule) {
-    starter().catch(error => console.log(error.message));
+    starter().catch(error => console.log(errorMessage(error)));
   }
 };
 

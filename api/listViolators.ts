@@ -5,6 +5,7 @@
 
 // IMPORTS
 
+import {z} from 'zod';
 import {
   getIssueSpec,
   getReportBasics,
@@ -14,6 +15,7 @@ import {
   getThisHost
 } from './util.ts';
 import {getReport} from '../util.ts';
+import {listViolatorsResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
 
@@ -22,12 +24,12 @@ export const response = async (args: string[]) => {
   const [issueID = '', timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent: Record<string, any> = {
+  const responseContent = {
     'basics about the report': null,
     'basics about the issue': null,
     'details about the issue': null,
     'basics about all elements exhibiting the issue': null
-  };
+  } as unknown as z.infer<typeof listViolatorsResponseSchema>['response content'];
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -60,10 +62,10 @@ export const response = async (args: string[]) => {
       summary,
       'impact on a user': why,
       'related WCAG standard': {
-        'layer': (wcag.length > 4 ? 'success criterion' : 'guideline'),
+        'layer': (wcag.length > 4 ? 'success criterion' : 'guideline') as 'success criterion' | 'guideline',
         'identifier': wcag
       },
-      priority: ['lowest', 'low', 'high', 'highest'][weight - 1]
+      priority: ['lowest', 'low', 'high', 'highest'][weight - 1] as 'lowest' | 'low' | 'high' | 'highest'
     };
     // Add the basics about the issue to the response content.
     responseContent['basics about the issue'] = issueBasics;
@@ -132,7 +134,7 @@ export const response = async (args: string[]) => {
           'count of rule engines reporting that the element exhibited the issue': reporters.size,
           'how to get details about the element': {
             URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
-            'request method': 'GET'
+            'request method': 'GET' as const
           },
           'web users can get details about the element at': `${thisHost}/listDiagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
         };

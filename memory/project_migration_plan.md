@@ -26,9 +26,10 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 6. Convert `.cjs` files to `.ts` (ESM) one at a time.
 7. Restore ESLint coverage. Add typescript-eslint and a **/*.ts config block; expect it to surface findings (the codebase leans on any in transitional code).
 8. Bring test files under typecheck strict (~520 errors at last count, mostly unknown catch vars and mock shapes).
-9. Rely on the `Report` interface defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts` to complete the migration of code that makes less specific assumptions about the shape of Testaro reports. This includes (A) converting nonconforming reports to the expected shape, and (B) updating code that accesses report properties to use the expected shape.
-10. Discover and utilize remaining opportunities for type enforcements, concern separations, and simplifying refactors.
-11. Review all instances of exclusions from `c8` coverage reporting to ensure they are still necessary, and also decide whether to abandon `c8` in favor af the `node` built-in experimental coverage reporter.
+9. Narrow unnecessarily wide type annotations, including explicit `any`.
+10. Rely on the `Report` interface defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts` to complete the migration of code that makes less specific assumptions about the shape of Testaro reports. This includes (A) converting nonconforming reports to the expected shape, and (B) updating code that accesses report properties to use the expected shape.
+11. Discover and utilize remaining opportunities for type enforcements, concern separations, and simplifying refactors.
+12. Review all instances of exclusions from `c8` coverage reporting to ensure they are still necessary, and also decide whether to abandon `c8` in favor af the `node` built-in experimental coverage reporter.
 
 ## How to Apply
 

@@ -13,7 +13,7 @@ import path from 'node:path';
 
 // Returns a test order form.
 export const answer = async () => {
-  const recs = await getRecs();
+  const recs = await getRecs() as Record<string, {what: string}[]>;
   const urls = Object.keys(recs);
   const margin = ' '.repeat(12);
   const lines: string[] = [];

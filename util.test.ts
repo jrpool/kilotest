@@ -20,6 +20,7 @@ import {
   getDateTime,
   getEngineList,
   getIssue,
+  errorMessage,
   getJSON,
   getMultiReportWhats,
   getNowStamp,
@@ -189,19 +190,27 @@ test('getIssue returns null for an unknown engine', () => {
   assert.equal(getIssue('nonexistentEngine', 'anyRule'), null);
 });
 
+test('errorMessage returns the message of an Error instance', () => {
+  assert.equal(errorMessage(new Error('something went wrong')), 'something went wrong');
+});
+
+test('errorMessage returns the string representation of a non-Error value', () => {
+  assert.equal(errorMessage('bare string'), 'bare string');
+});
+
 test('getJSON returns a JSON string with a trailing newline', () => {
   assert.equal(getJSON({a: 1}), '{\n  "a": 1\n}\n');
 });
 
 test('getObject returns the parsed object for a valid JSON file', async () => {
   const result = await getObject(path.join(import.meta.dirname, 'package.json'));
-  assert.ok(typeof result === 'object');
-  assert.equal(result.name, '@jrpool/kilotest');
+  assert.ok(typeof result === 'object' && result !== null);
+  assert.equal((result as {name: unknown}).name, '@jrpool/kilotest');
 });
 
 test('getObject returns an error string for a nonexistent file', async () => {
   const result = await getObject('/tmp/nonexistent-file.json');
-  assert.equal(typeof result, 'string');
+  assert.ok(typeof result === 'string');
   assert.ok(result.startsWith('ERROR'));
 });
 
@@ -464,10 +473,11 @@ test('getJobNames creates missing job directories and returns empty arrays', asy
   try {
     const {getJobNames} = await import('./util.ts');
     const result = await getJobNames();
-    assert.equal(typeof result, 'object');
-    assert.deepEqual(result.queue, []);
-    assert.deepEqual(result.claimed, []);
-    assert.deepEqual(result.failed, []);
+    assert.ok(typeof result === 'object' && result !== null);
+    const jobNames = result as Record<string, string[]>;
+    assert.deepEqual(jobNames.queue, []);
+    assert.deepEqual(jobNames.claimed, []);
+    assert.deepEqual(jobNames.failed, []);
     // Verify the directories were created.
     for (const category of ['queue', 'claimed', 'failed']) {
       const stat = await fs.stat(path.join(tmpDbDir, 'jobs', category));
@@ -492,7 +502,7 @@ test('getJobNames returns an error when a job directory is a file, not a directo
   try {
     const {getJobNames} = await import('./util.ts');
     const result = await getJobNames();
-    assert.equal(typeof result, 'string');
+    assert.ok(typeof result === 'string');
     assert.ok(result.startsWith('ERROR'));
   }
   finally {
@@ -505,7 +515,7 @@ test('getObject returns an error for a file that is not valid JSON', async () =>
   const tmpFile = path.join((await import('node:os')).tmpdir(), 'kilotest-test-invalid.json');
   (await import('node:fs')).writeFileSync(tmpFile, 'not json');
   const result = await getObject(tmpFile);
-  assert.equal(typeof result, 'string');
+  assert.ok(typeof result === 'string');
   assert.ok(result.startsWith('ERROR'));
   (await import('node:fs')).unlinkSync(tmpFile);
 });
@@ -519,7 +529,7 @@ test('getRecs creates an empty recommendations file and returns an error when it
   try {
     const {getRecs} = await import('./util.ts');
     const result = await getRecs();
-    assert.equal(typeof result, 'string');
+    assert.ok(typeof result === 'string');
     assert.ok(result.startsWith('ERROR'));
     // Verify the empty file was created.
     assert.ok(fsSync.existsSync(tmpDir + '/jobs/recs.json'));
@@ -539,7 +549,7 @@ test('getRecs returns an error when the recommendations file is not JSON', async
   try {
     const {getRecs} = await import('./util.ts');
     const result = await getRecs();
-    assert.equal(typeof result, 'string');
+    assert.ok(typeof result === 'string');
     assert.ok(result.startsWith('ERROR'));
   }
   finally {

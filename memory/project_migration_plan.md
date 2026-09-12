@@ -24,18 +24,18 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 4. Write a static module registry to replace the dynamic `require()` in `index.js`.
 5. Rename unconverted files to `.cjs`, then flip `"type": "module"` in `package.json`.
 6. Convert `.cjs` files to `.ts` (ESM) one at a time.
-7. After migration: add observability for web UI and API usage.
+7. Rely on the `Report` interface defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts` to complete the migration of code that makes less specific assumptions about the shape of Testaro reports. This includes (A) converting nonconforming reports to the expected shape, and (B) updating code that accesses report properties to use the expected shape.
 
-## Testaro Dependency
+## Test
 
 Defer report-handling type definitions until Testaro's TypeScript conversion exports a stable `Report` type. Start with modules that don't touch the report schema.
 
 The `Report` interface is defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts`.
 
-## Report Normalization
-
-Plan a one-time subproject to normalize old reports to the new Testaro-defined shape. After normalization, defensive runtime checks that accommodate historical variation in report structure can be removed.
-
 ## How to Apply
 
 When helping with any Kilotest work, assume this migration is the active project. Prefer hand-written types over automated inference to preserve learning value. Each step should be independently mergeable with no degradation of existing behavior.
+
+## Later work
+
+Add observability of request metrics.

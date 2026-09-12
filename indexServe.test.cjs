@@ -17,7 +17,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
-const {serve} = require('./index.cjs');
+const {serve} = require('./index.ts');
 
 // HELPER
 

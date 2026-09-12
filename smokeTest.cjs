@@ -6,7 +6,7 @@
 // IMPORTS
 
 const https = require('https');
-const {routes} = require('./index.cjs');
+const {routes} = require('./index.ts');
 
 // CONSTANTS
 

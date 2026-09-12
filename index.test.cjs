@@ -22,7 +22,7 @@ const {test, before, beforeEach, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
 const fs = require('node:fs/promises');
-const indexModule = require('./index.cjs');
+const indexModule = require('./index.ts');
 const {requestHandler, routes, serveError, startServer, runIfMain, isPathAllowed, getAbuseError} = indexModule;
 
 // CONSTANTS
@@ -1258,37 +1258,25 @@ test('startServer starts an HTTPS server when protocol is https', {timeout: 2000
 
 test('runIfMain calls startServer when mainModule matches currentModule', async () => {
   let called = false;
-  const originalStartServer = indexModule.startServer;
-  indexModule.startServer = async () => {
+  const starter = async () => {
     called = true;
     return null;
   };
-  try {
-    // Pass the same object for both arguments so the guard is true.
-    const fakeModule = {};
-    runIfMain(fakeModule, fakeModule);
-    // Wait for the microtask queue to flush the promise.
-    await new Promise(resolve => setImmediate(resolve));
-    assert.equal(called, true);
-  }
-  finally {
-    indexModule.startServer = originalStartServer;
-  }
+  // Pass the same object for both arguments so the guard is true.
+  const fakeModule = {};
+  runIfMain(fakeModule, fakeModule, starter);
+  // Wait for the microtask queue to flush the promise.
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(called, true);
 });
 
 test('runIfMain does not call startServer when mainModule differs from currentModule', async () => {
   let called = false;
-  const originalStartServer = indexModule.startServer;
-  indexModule.startServer = async () => {
+  const starter = async () => {
     called = true;
     return null;
   };
-  try {
-    runIfMain({}, {});
-    await new Promise(resolve => setImmediate(resolve));
-    assert.equal(called, false);
-  }
-  finally {
-    indexModule.startServer = originalStartServer;
-  }
+  runIfMain({}, {}, starter);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(called, false);
 });

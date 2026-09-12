@@ -7,7 +7,7 @@
 
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {routes} = require('./index.cjs');
+const {routes} = require('./index.ts');
 
 // TESTS
 

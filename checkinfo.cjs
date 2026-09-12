@@ -117,7 +117,7 @@ const testFiles = relFiles.filter(rel => /\.test\.cjs$/.test(rel));
 const testCaseCount = getTestCaseCount();
 
 // Smoke-test path counts from the routes table in index.js.
-const {routes} = require('./index.cjs');
+const {routes} = require('./index.ts');
 const smokeGetCount = routes.GET.length;
 const smokePostCount = routes.POST.length;
 const smokeTotal = smokeGetCount + smokePostCount;

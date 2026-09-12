@@ -8,7 +8,7 @@
 const {test, before, after} = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const {requestHandler} = require('./index.cjs');
+const {requestHandler} = require('./index.ts');
 
 // CONSTANTS
 

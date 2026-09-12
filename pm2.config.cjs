@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'kilotest',
-      script: 'index.cjs',
+      script: 'index.ts',
       instances: 1,
       autorestart: true,
       watch: false,

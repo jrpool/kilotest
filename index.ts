@@ -1,14 +1,12 @@
 /*
-  index.cjs
+  index.ts
   Manages Kilotest.
 */
 
-// ENVIRONMENT
-
-require('dotenv').config({quiet: true});
-
 // IMPORTS
-const {
+
+import dotenv from 'dotenv';
+import {
   annotateReport,
   createLock,
   getJobNames,
@@ -26,56 +24,95 @@ const {
   jobsPath,
   recsLock,
   reportsPath
-} = require('./util.ts');
-const {handleMCP, mcpPath} = require('./mcp.ts');
-const fs = require('fs/promises');
-const {handleComment} = require('./web/tutorial/index.ts');
-const http = require('http');
-const https = require('https');
-const path = require('path');
-const {sendAlert} = require('./alerts.ts');
-const answer = {
-  ai0BalanceForm: require('./web/ai0BalanceForm/index.ts').answer,
-  enqueue: require('./web/enqueue/index.ts').answer,
-  enqueueForm: require('./web/enqueueForm/index.ts').answer,
-  expungeReportsForm: require('./web/expungeReportsForm/index.ts').answer,
-  hideReportForm: require('./web/hideReportForm/index.ts').answer,
-  listDiagnoses: require('./web/listDiagnoses/index.ts').answer,
-  listIssues: require('./web/listIssues/index.ts').answer,
-  listReports: require('./web/listReports/index.ts').answer,
-  listRules: require('./web/listRules/index.ts').answer,
-  listTopIssues: require('./web/listTopIssues/index.ts').answer,
-  listViolators: require('./web/listViolators/index.ts').answer,
-  manage: require('./web/manage/index.ts').answer,
-  pruneReportsForm: require('./web/pruneReportsForm/index.ts').answer,
-  reannotate: require('./web/reannotate/index.ts').answer,
-  reannotateForm: require('./web/reannotateForm/index.ts').answer,
-  renewWCAG: require('./web/renewWCAG/index.ts').answer,
-  renewWCAGForm: require('./web/renewWCAGForm/index.ts').answer,
-  requestRetest: require('./web/requestRetest/index.ts').answer,
-  requestRetestForm: require('./web/requestRetestForm/index.ts').answer,
-  requestTest: require('./web/requestTest/index.ts').answer,
-  requestTestForm: require('./web/requestTestForm/index.ts').answer,
-  rewindReportsForm: require('./web/rewindReportsForm/index.ts').answer,
-  unhideReportForm: require('./web/unhideReportForm/index.ts').answer,
-  tutorial: require('./web/tutorial/index.ts').answer
+} from './util.ts';
+import {handleMCP, mcpPath} from './mcp.ts';
+import fs from 'node:fs/promises';
+import {handleComment} from './web/tutorial/index.ts';
+import http, {type IncomingMessage, type ServerResponse} from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
+import {sendAlert} from './alerts.ts';
+import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
+import {answer as enqueue} from './web/enqueue/index.ts';
+import {answer as enqueueForm} from './web/enqueueForm/index.ts';
+import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';
+import {answer as hideReportForm} from './web/hideReportForm/index.ts';
+import {answer as listDiagnosesPage} from './web/listDiagnoses/index.ts';
+import {answer as listIssuesPage} from './web/listIssues/index.ts';
+import {answer as listReportsPage} from './web/listReports/index.ts';
+import {answer as listRules} from './web/listRules/index.ts';
+import {answer as listTopIssues} from './web/listTopIssues/index.ts';
+import {answer as listViolatorsPage} from './web/listViolators/index.ts';
+import {answer as manage} from './web/manage/index.ts';
+import {answer as pruneReportsForm} from './web/pruneReportsForm/index.ts';
+import {answer as reannotate} from './web/reannotate/index.ts';
+import {answer as reannotateForm} from './web/reannotateForm/index.ts';
+import {answer as renewWCAG} from './web/renewWCAG/index.ts';
+import {answer as renewWCAGForm} from './web/renewWCAGForm/index.ts';
+import {answer as requestRetestPage} from './web/requestRetest/index.ts';
+import {answer as requestRetestForm} from './web/requestRetestForm/index.ts';
+import {answer as requestTestPage} from './web/requestTest/index.ts';
+import {answer as requestTestForm} from './web/requestTestForm/index.ts';
+import {answer as rewindReportsForm} from './web/rewindReportsForm/index.ts';
+import {answer as unhideReportForm} from './web/unhideReportForm/index.ts';
+import {answer as tutorial} from './web/tutorial/index.ts';
+import {response as getReportAPI} from './api/getReport.ts';
+import {response as listDiagnosesAPI} from './api/listDiagnoses.ts';
+import {response as listIssuesAPI} from './api/listIssues.ts';
+import {response as listReportsAPI} from './api/listReports.ts';
+import {response as listViolatorsAPI} from './api/listViolators.ts';
+import {response as requestFeatureAPI} from './api/requestFeature.ts';
+import {response as requestRetestAPI} from './api/requestRetest.ts';
+import {response as requestTestAPI} from './api/requestTest.ts';
+
+// ENVIRONMENT
+
+dotenv.config({quiet: true});
+
+// CONSTANTS
+
+const answer: Record<string, any> = {
+  ai0BalanceForm,
+  enqueue,
+  enqueueForm,
+  expungeReportsForm,
+  hideReportForm,
+  listDiagnoses: listDiagnosesPage,
+  listIssues: listIssuesPage,
+  listReports: listReportsPage,
+  listRules,
+  listTopIssues,
+  listViolators: listViolatorsPage,
+  manage,
+  pruneReportsForm,
+  reannotate,
+  reannotateForm,
+  renewWCAG,
+  renewWCAGForm,
+  requestRetest: requestRetestPage,
+  requestRetestForm,
+  requestTest: requestTestPage,
+  requestTestForm,
+  rewindReportsForm,
+  unhideReportForm,
+  tutorial
 };
 // Response functions of the API services.
 const apiRespond = {
-  getReport: require('./api/getReport.ts').response,
-  listDiagnoses: require('./api/listDiagnoses.ts').response,
-  listIssues: require('./api/listIssues.ts').response,
-  listReports: require('./api/listReports.ts').response,
-  listViolators: require('./api/listViolators.ts').response,
-  requestFeature: require('./api/requestFeature.ts').response,
-  requestRetest: require('./api/requestRetest.ts').response,
-  requestTest: require('./api/requestTest.ts').response
+  getReport: getReportAPI,
+  listDiagnoses: listDiagnosesAPI,
+  listIssues: listIssuesAPI,
+  listReports: listReportsAPI,
+  listViolators: listViolatorsAPI,
+  requestFeature: requestFeatureAPI,
+  requestRetest: requestRetestAPI,
+  requestTest: requestTestAPI
 };
 
 // CONSTANTS
 
 // Paths that the application is authorized to handle, by method, as glob-style patterns where * matches any sequence of characters.
-const routes = exports.routes = {
+export const routes = {
   GET: [
     '*.html*',
     '/',
@@ -111,7 +148,7 @@ const routes = exports.routes = {
   ]
 };
 // Values that may require alerts.
-const balancePath = path.join(__dirname, 'ai0Balance.json');
+const balancePath = path.join(import.meta.dirname, 'ai0Balance.json');
 const jobLock = createLock();
 
 // FUNCTIONS
@@ -120,19 +157,19 @@ const queuePath = () => path.join(jobsPath(), 'queue');
 const claimedPath = () => path.join(jobsPath(), 'claimed');
 const failedPath = () => path.join(jobsPath(), 'failed');
 // Returns whether a pathname matches a glob-style pattern.
-const matchPath = (pattern, pathname) => {
+const matchPath = (pattern: string, pathname: string) => {
   const regex = new RegExp(
     '^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$'
   );
   return regex.test(pathname);
 };
 // Returns whether a pathname is authorized for a method.
-const isPathAllowed = exports.isPathAllowed = (method, pathname) => {
-  const patterns = routes[method] || [];
+export const isPathAllowed = (method: string, pathname: string) => {
+  const patterns = (routes as Record<string, string[]>)[method] || [];
   return patterns.some(pattern => matchPath(pattern, pathname));
 };
 // Serves or sends an error message.
-const serveError = exports.serveError = async (error, response, isHumanUser = true, statusCode = 400) => {
+export const serveError = async (error: any, response: ServerResponse, isHumanUser = true, statusCode = 400) => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   const errorSummary = errorLines.join('\n') || 'ERROR';
   console.log(errorSummary);
@@ -162,7 +199,7 @@ const serveError = exports.serveError = async (error, response, isHumanUser = tr
   }
 };
 // Checks a report for balances nearing exhaustion.
-const checkBalancesForAlerts = async report => {
+const checkBalancesForAlerts = async (report: any) => {
   // Get the alert thresholds and prices from the environment.
   const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
   const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
@@ -171,7 +208,7 @@ const checkBalancesForAlerts = async report => {
   // If the variables to be monitored for alerts are defined:
   if (WAVE_THRESHOLD && AI_SERVICE0_THRESHOLD && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE) {
     // WAVE.
-    const waveAct = report.acts.find(act => act.type === 'test' && act.which === 'wave');
+    const waveAct = report.acts.find((act: any) => act.type === 'test' && act.which === 'wave');
     const creditsRemaining = waveAct?.data?.creditsRemaining;
     // If a WAVE balance nearing exhaustion is reported:
     if (typeof creditsRemaining === 'number' && creditsRemaining < WAVE_THRESHOLD) {
@@ -181,7 +218,7 @@ const checkBalancesForAlerts = async report => {
         `Only ${creditsRemaining} WAVE credits remain (3 used per job)`
       );
     }
-    const testaroAct = report.acts.find(act => act.type === 'test' && act.which === 'testaro');
+    const testaroAct = report.acts.find((act: any) => act.type === 'test' && act.which === 'testaro');
     // Get the AI model token usage for the testaro allCaps test.
     const usage = testaroAct?.data?.ruleData?.allCaps?.aiModelUsage;
     let balanceJSON = null;
@@ -221,13 +258,13 @@ const checkBalancesForAlerts = async report => {
         }
       }
       catch (error) {
-        console.log(`ERROR managing AI service 0 balance: ${error.message}`);
+        console.log(`ERROR managing AI service 0 balance: ${(error as Error).message}`);
       }
     }
   }
 };
 // Creates an error object about a suspicious request.
-const getAbuseError = exports.getAbuseError = (request, reason) => {
+export const getAbuseError = (request: IncomingMessage, reason: string) => {
   const {method, url, headers} = request;
   const forwardedFor = headers['x-forwarded-for'];
   const remoteAddress = request.socket.remoteAddress;
@@ -245,7 +282,7 @@ const getAbuseError = exports.getAbuseError = (request, reason) => {
 };
 // Gets the ID and secret from a request's HTTP Basic Authorization header, or null if the header
 // is absent or malformed.
-const getBasicAuth = request => {
+const getBasicAuth = (request: IncomingMessage) => {
   const header = request.headers['authorization'] || '';
   const match = header.match(/^Basic\s+(\S+)$/i);
   if (!match) {
@@ -266,12 +303,12 @@ const getWorkerCredentials = () => {
     return JSON.parse(process.env.TESTARO_WORKERS || '{}');
   }
   catch (error) {
-    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${error.message})`);
+    console.error(`ERROR: TESTARO_WORKERS is not valid JSON (${(error as Error).message})`);
     return {};
   }
 };
 // Gets the published name of a Testaro worker or null if not authenticated.
-const getAuthorizedWorkerName = request => {
+const getAuthorizedWorkerName = (request: IncomingMessage) => {
   const credentials = getBasicAuth(request);
   if (credentials) {
     const workerCredentials = getWorkerCredentials();
@@ -283,7 +320,7 @@ const getAuthorizedWorkerName = request => {
   return null;
 };
 // Processes a job request from a Testaro worker.
-const processJobRequest = async (request, response, workerName) => jobLock(async () => {
+const processJobRequest = async (request: IncomingMessage, response: ServerResponse, workerName: string) => jobLock(async () => {
   let clean = true;
   const messageStart = `Testaro worker ${workerName} requested a job, `;
   const jobNames = await getJobNames();
@@ -348,15 +385,15 @@ const processJobRequest = async (request, response, workerName) => jobLock(async
   }
 });
 // Handles a request.
-const requestHandler = async (request, response) => {
+const requestHandler = async (request: IncomingMessage, response: ServerResponse) => {
   // Sets response headers.
-  const setHeaders = (contentType, location, volatility = 'high') => {
+  const setHeaders = (contentType: string, location: string | null, volatility: string = 'high') => {
     response.setHeader('content-type', `${contentType}; charset=utf-8`);
     if (location) {
       response.setHeader('content-location', location);
     }
     response.setHeader('Access-Control-Allow-Origin', '*');
-    const lives = {
+    const lives: Record<string, number[]> = {
       ultra: [3, 30],
       high: [300, 3000],
       medium: [1000, 10000],
@@ -368,7 +405,7 @@ const requestHandler = async (request, response) => {
     );
   };
   const {method, url} = request;
-  const requestURL = new URL(url, 'https://localhost:3000');
+  const requestURL = new URL(url as string, 'https://localhost:3000');
   const {pathname, search} = requestURL;
   const pageName = pathname.split('/')[1];
   const pathTail = pathname.split('/').slice(2).join('/');
@@ -523,7 +560,7 @@ const requestHandler = async (request, response) => {
       // If the service lists the available reports:
       if (service === 'listReports') {
         // Get the response body.
-        const responseBody = await apiRespond.listReports(specs);
+        const responseBody = await apiRespond.listReports();
         // Send it.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
@@ -569,11 +606,11 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for a tutorial image:
     else if (pathname.startsWith('/tutorial/images/')) {
       const imgFile = pathname.slice('/tutorial/images/'.length);
-      const imgPath = path.join(__dirname, 'web', 'tutorial', 'images', imgFile);
+      const imgPath = path.join(import.meta.dirname, 'web', 'tutorial', 'images', imgFile);
       try {
         const img = await fs.readFile(imgPath);
         const ext = path.extname(imgFile).toLowerCase();
-        const mimeTypes = {
+        const mimeTypes: Record<string, string> = {
           '.png': 'image/png',
           '.jpg': 'image/jpeg',
           '.jpeg': 'image/jpeg',
@@ -592,7 +629,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, if it is for the application icon:
     else if (pathname.includes('favicon.')) {
       // Get the site icon.
-      const icon = await fs.readFile(path.join(__dirname, 'favicon.ico'));
+      const icon = await fs.readFile(path.join(import.meta.dirname, 'favicon.ico'));
       // Serve it.
       setHeaders('image/x-icon', null, 'low');
       response.write(icon, 'binary');
@@ -607,7 +644,7 @@ const requestHandler = async (request, response) => {
         response.end(styleSheet);
       }
       catch (error) {
-        await serveError({message: error.message}, response, true);
+        await serveError({message: (error as Error).message}, response, true);
       }
     }
     // Otherwise, i.e. if it is any other GET request:
@@ -631,7 +668,7 @@ const requestHandler = async (request, response) => {
     // Otherwise, i.e. if it is not for the MCP server:
     else {
       // Get the data from the request body.
-      const postData = await getPOSTData(request);
+      const postData: any = await getPOSTData(request);
       // If the request is a test recommendation:
       if (pageName === 'requestTest.html') {
         const {what, url, why} = postData;
@@ -914,11 +951,11 @@ const requestHandler = async (request, response) => {
 
 // EXPORTS
 
-exports.requestHandler = requestHandler;
+export {requestHandler};
 
 // SERVER
 
-const serve = async (protocolModule, options) => {
+const serve = async (protocolModule: any, options: any) => {
   // Create any missing directories.
   for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
     await fs.mkdir(path, {recursive: true});
@@ -934,10 +971,10 @@ const serve = async (protocolModule, options) => {
   return server;
 };
 
-exports.serve = serve;
+export {serve};
 
 // Starts the server using the configured protocol and credentials.
-exports.startServer = async () => {
+export const startServer = async () => {
   const startProtocol = process.env.PROTOCOL || 'http';
   if (startProtocol === 'http') {
     console.log('Starting HTTP server');
@@ -945,19 +982,19 @@ exports.startServer = async () => {
   }
   else if (startProtocol === 'https') {
     console.log('Starting HTTPS server');
-    const key = await fs.readFile(process.env.KEY, 'utf8');
-    const cert = await fs.readFile(process.env.CERT, 'utf8');
+    const key = await fs.readFile(process.env.KEY as string, 'utf8');
+    const cert = await fs.readFile(process.env.CERT as string, 'utf8');
     return serve(https, {key, cert});
   }
 };
 
-// Runs the server if the module was loaded directly (not required by a test).
-exports.runIfMain = (mainModule, currentModule) => {
+// Runs the server if the module was loaded directly (not required by a test). The starter is a parameter so tests can inject a spy, since ESM module exports cannot be monkey-patched.
+export const runIfMain = (mainModule: any, currentModule: any, starter = startServer) => {
   if (mainModule === currentModule) {
-    exports.startServer().catch(error => console.log(error.message));
+    starter().catch(error => console.log(error.message));
   }
 };
 
 // EXECUTION
 
-exports.runIfMain(require.main, module);
+runIfMain(import.meta.main, true);

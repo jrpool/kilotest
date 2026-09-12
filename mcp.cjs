@@ -14,9 +14,9 @@ const listReportsAPI = require('./api/listReports.ts');
 const listIssuesAPI = require('./api/listIssues.ts');
 const listViolatorsAPI = require('./api/listViolators.ts');
 const listDiagnosesAPI = require('./api/listDiagnoses.ts');
-const requestTestAPI = require('./api/requestTest.cts');
-const requestRetestAPI = require('./api/requestRetest.cts');
-const requestFeatureAPI = require('./api/requestFeature.cts');
+const requestTestAPI = require('./api/requestTest.ts');
+const requestRetestAPI = require('./api/requestRetest.ts');
+const requestFeatureAPI = require('./api/requestFeature.ts');
 const {version} = require('./api/version.ts');
 
 const {

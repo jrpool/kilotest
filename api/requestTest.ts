@@ -1,17 +1,17 @@
 /*
-  requestTest.cts
+  requestTest.ts
   Processes a request to test an untested page and returns an acknowledgement.
 */
 
 // IMPORTS
 
-const {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} = require('./util.ts');
-const {getReportExtracts, isURL} = require('../util.ts');
+import {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} from './util.ts';
+import {getReportExtracts, isURL} from '../util.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args: string[]) => {
+export const response = async (args: string[]) => {
   const [what = '', url = '', reason = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.

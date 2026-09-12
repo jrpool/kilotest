@@ -1,17 +1,17 @@
 /*
-  requestRetest.cts
+  requestRetest.ts
   Processes a request to retest a page and returns an acknowledgement.
 */
 
 // IMPORTS
 
-const {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} = require('./util.ts');
-const {getReportExtracts, getReportExtract} = require('../util.ts');
+import {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} from './util.ts';
+import {getReportExtracts, getReportExtract} from '../util.ts';
 
 // FUNCTIONS
 
 // Returns the response body.
-exports.response = async (args: string[]) => {
+export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = '', reason = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.

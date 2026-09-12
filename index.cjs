@@ -67,9 +67,9 @@ const apiRespond = {
   listIssues: require('./api/listIssues.ts').response,
   listReports: require('./api/listReports.ts').response,
   listViolators: require('./api/listViolators.ts').response,
-  requestFeature: require('./api/requestFeature.cts').response,
-  requestRetest: require('./api/requestRetest.cts').response,
-  requestTest: require('./api/requestTest.cts').response
+  requestFeature: require('./api/requestFeature.ts').response,
+  requestRetest: require('./api/requestRetest.ts').response,
+  requestTest: require('./api/requestTest.ts').response
 };
 
 // CONSTANTS

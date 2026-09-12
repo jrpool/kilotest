@@ -1,17 +1,17 @@
 /*
-  smokeTest.cjs
+  smokeTest.ts
   Sends requests to all valid GET and POST paths on the deployed server and verifies that Caddy forwards them to Kilotest (i.e., the response is not a bare Caddy 404).
 */
 
 // IMPORTS
 
-const https = require('https');
-const {routes} = require('./index.ts');
+import https from 'node:https';
+import {routes} from './index.ts';
 
 // CONSTANTS
 
 // Concrete paths matching each wildcard pattern in the routes table, for smoke testing.
-const concretePaths = {
+const concretePaths: Record<string, Record<string, string>> = {
   GET: {
     '*.html*': '/listReports.html',
     '/': '/',
@@ -47,7 +47,7 @@ const concretePaths = {
   }
 };
 // Minimal POST bodies for paths that require them.
-const postBodies = {
+const postBodies: Record<string, object> = {
   '/api/requestFeature': {feature: 'smoke test'},
   '/mcp': {},
   '/reannotate.html': {authCode: 'invalid'},
@@ -65,33 +65,35 @@ const postBodies = {
 // FUNCTIONS
 
 // Sends an HTTPS request and returns the status code and body length.
-const sendRequest = (method, requestPath) => new Promise((resolve, reject) => {
-  const body = method === 'POST' ? JSON.stringify(postBodies[requestPath] || {}) : null;
-  const headers = {'x-kilotest-smoke': '1'};
-  if (body) {
-    headers['content-type'] = 'application/json; charset=utf-8';
-    headers['content-length'] = Buffer.byteLength(body);
-  }
-  const options = {
-    method,
-    host: process.env.SMOKE_HOST || 'kilotest.com',
-    path: requestPath,
-    headers
-  };
-  const req = https.request(options, response => {
-    const chunks = [];
-    response.on('data', chunk => chunks.push(chunk));
-    response.on('end', () => {
-      const responseBody = chunks.join('');
-      resolve({statusCode: response.statusCode, bodyLength: responseBody.length});
+const sendRequest = (method: string, requestPath: string) =>
+  new Promise<{statusCode: number | undefined, bodyLength: number}>((resolve, reject) => {
+    const body = method === 'POST' ? JSON.stringify(postBodies[requestPath] || {}) : null;
+    const headers: Record<string, string | number> = {'x-kilotest-smoke': '1'};
+    if (body) {
+      headers['content-type'] = 'application/json; charset=utf-8';
+      headers['content-length'] = Buffer.byteLength(body);
+    }
+    const options = {
+      method,
+      host: process.env.SMOKE_HOST || 'kilotest.com',
+      path: requestPath,
+      headers
+    };
+    const req = https.request(options, response => {
+      const chunks: Buffer[] = [];
+      response.on('data', chunk => chunks.push(chunk));
+      response.on('end', () => {
+        const responseBody = chunks.join('');
+        resolve({statusCode: response.statusCode, bodyLength: responseBody.length});
+      });
     });
+    req.on('error', reject);
+    req.end(body || '');
   });
-  req.on('error', reject);
-  req.end(body || '');
-});
 
 // Returns whether a response is a bare Caddy 404 (the failure this test detects).
-const isCaddy404 = result => result.statusCode === 404 && result.bodyLength === 0;
+const isCaddy404 = (result: {statusCode: number | undefined, bodyLength: number}) =>
+  result.statusCode === 404 && result.bodyLength === 0;
 
 // EXECUTION
 
@@ -99,7 +101,7 @@ const isCaddy404 = result => result.statusCode === 404 && result.bodyLength === 
   let failures = 0;
   for (const method of ['GET', 'POST']) {
     console.log(`\n=== ${method} paths ===`);
-    for (const pattern of routes[method]) {
+    for (const pattern of routes[method as 'GET' | 'POST']) {
       const requestPath = concretePaths[method][pattern];
       if (!requestPath) {
         console.log(`FAIL: no concrete path defined for pattern ${pattern}`);
@@ -117,7 +119,8 @@ const isCaddy404 = result => result.statusCode === 404 && result.bodyLength === 
         }
       }
       catch (error) {
-        console.log(`FAIL: ${method} ${requestPath} -> error: ${error.message}`);
+        const message = error instanceof Error ? error.message : String(error);
+        console.log(`FAIL: ${method} ${requestPath} -> error: ${message}`);
         failures++;
       }
     }

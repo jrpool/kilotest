@@ -1,24 +1,25 @@
 /*
-  checkinfo.cjs
+  checkinfo.ts
   Summarizes the validation scope of the lint, test, and test:smoke scripts by deriving file and test-case counts from their actual configurations, so the summary stays accurate as the codebase changes.
 */
 
 // IMPORTS
 
-const fs = require('fs');
-const path = require('path');
-const {execSync} = require('child_process');
+import fs from 'node:fs';
+import path from 'node:path';
+import {execSync} from 'node:child_process';
+import {routes} from './index.ts';
 
 // CONSTANTS
 
-const rootDir = __dirname;
+const rootDir = import.meta.dirname;
 const excludeDirs = new Set(['node_modules', '.git', 'coverage']);
 
 // FUNCTIONS
 
 // Recursively collects all files under a directory, skipping excluded directories.
-const collectFiles = dir => {
-  const results = [];
+const collectFiles = (dir: string): string[] => {
+  const results: string[] = [];
   for (const entry of fs.readdirSync(dir, {withFileTypes: true})) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
@@ -35,7 +36,7 @@ const collectFiles = dir => {
 
 // Converts a glob pattern to a RegExp for matching relative paths.
 // Supports * (non-segment), ** (any), and literal characters.
-const globToRegExp = pattern => {
+const globToRegExp = (pattern: string): RegExp => {
   const escaped = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
     .replace(/\*\*/g, '\x00')
@@ -45,10 +46,11 @@ const globToRegExp = pattern => {
 };
 
 // Returns whether a relative path matches any pattern in a list.
-const matchesAny = (relPath, patterns) => patterns.some(p => globToRegExp(p).test(relPath));
+const matchesAny = (relPath: string, patterns: string[]) =>
+  patterns.some(p => globToRegExp(p).test(relPath));
 
 // Extracts the top-level ignores array from eslint.config.mjs.
-const getEslintIgnores = () => {
+const getEslintIgnores = (): string[] => {
   const content = fs.readFileSync(path.join(rootDir, 'eslint.config.mjs'), 'utf8');
   const match = content.match(/ignores:\s*\[([\s\S]*?)\]/);
   if (!match) {
@@ -58,7 +60,7 @@ const getEslintIgnores = () => {
 };
 
 // Parses .markdownlint-cli2.jsonc and returns its ignores array.
-const getMarkdownlintIgnores = () => {
+const getMarkdownlintIgnores = (): string[] => {
   const content = fs.readFileSync(path.join(rootDir, '.markdownlint-cli2.jsonc'), 'utf8');
   const stripped = content.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
   const match = stripped.match(/"ignores"\s*:\s*\[([\s\S]*?)\]/);
@@ -116,15 +118,14 @@ const markdownlintCount = relFiles.filter(
 const testFiles = relFiles.filter(rel => /\.test\.cjs$/.test(rel));
 const testCaseCount = getTestCaseCount();
 
-// Smoke-test path counts from the routes table in index.js.
-const {routes} = require('./index.ts');
+// Smoke-test path counts from the routes table in index.ts.
 const smokeGetCount = routes.GET.length;
 const smokePostCount = routes.POST.length;
 const smokeTotal = smokeGetCount + smokePostCount;
 
 // OUTPUT
 
-const parts = [
+const parts: [string, string[]][] = [
   ['lint', [
     `ESLint: ${eslintTotal} files (${eslintExts.js} JS, ${eslintExts.json} JSON, ${eslintExts.md} MD, ${eslintExts.css} CSS)`,
     `markdownlint: ${markdownlintCount} files`

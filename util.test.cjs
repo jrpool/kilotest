@@ -306,7 +306,7 @@ test('objectSort sorts objects numerically descending', () => {
 // TESTS FOR processTestRequest, annotateReport, AND isReportAvailable
 
 // These tests use the fixture database directory and the real web/requestTest template.
-const fixtureDbDir = path.join(__dirname, 'test', 'fixtures', 'db');
+const fixtureDbDir = require('./test/dbFixture.cjs').fixtureDBDir;
 const requestTestDir = path.join(__dirname, 'web', 'requestTest');
 const savedDbDir = process.env.DB_DIR;
 

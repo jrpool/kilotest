@@ -15,7 +15,7 @@ const {response} = require('./listViolators.cts');
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = path.join(__dirname, '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../test/dbFixture.cjs').fixtureDBDir;
 });
 
 after(() => {

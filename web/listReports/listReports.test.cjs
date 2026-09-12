@@ -17,7 +17,7 @@ const {answer} = require('./index.cts');
 const savedDBDir = process.env.DB_DIR;
 
 before(async () => {
-  process.env.DB_DIR = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
   // Ensure job subdirectories exist (they are empty and not tracked by Git).
   for (const sub of ['queue', 'claimed', 'failed']) {
     await fs.mkdir(path.join(process.env.DB_DIR, 'jobs', sub), {recursive: true});
@@ -89,7 +89,7 @@ test('listReports includes a link to request testing a new page', async () => {
 });
 
 test('listReports shows recommendations when recs.json has entries', {timeout: 500}, async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const recsPath = path.join(dbDir, 'jobs', 'recs.json');
   const originalRecs = await fs.readFile(recsPath, 'utf8');
   try {
@@ -110,7 +110,7 @@ test('listReports shows recommendations when recs.json has entries', {timeout: 5
 });
 
 test('listReports shows queued and claimed jobs when they exist', async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const queueDir = path.join(dbDir, 'jobs', 'queue');
   const claimedDir = path.join(dbDir, 'jobs', 'claimed');
   const queueFile = path.join(queueDir, 'queuedJob.json');
@@ -138,7 +138,7 @@ test('listReports shows queued and claimed jobs when they exist', async () => {
 });
 
 test('listReports shows claimed retest status for a report with a matching claimed job', async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const claimedDir = path.join(dbDir, 'jobs', 'claimed');
   const claimedFile = path.join(claimedDir, 'claimedRetest.json');
   try {
@@ -156,7 +156,7 @@ test('listReports shows claimed retest status for a report with a matching claim
 });
 
 test('listReports shows queued retest status for a report with a matching queued job', async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const queueDir = path.join(dbDir, 'jobs', 'queue');
   const queueFile = path.join(queueDir, 'queuedRetest.json');
   try {
@@ -174,7 +174,7 @@ test('listReports shows queued retest status for a report with a matching queued
 });
 
 test('listReports returns an error when a report file is invalid', {timeout: 500}, async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const invalidReportPath = path.join(reportsDir, '260101T9999-bad.json');
   try {

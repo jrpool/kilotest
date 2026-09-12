@@ -14,7 +14,7 @@ const {mcpPath, createMCPServer} = require('./mcp.cjs');
 // CONSTANTS
 
 // Set DB_DIR to the fixture database for all tests.
-process.env.DB_DIR = path.join(__dirname, 'test', 'fixtures', 'db');
+process.env.DB_DIR = require('./test/dbFixture.cjs').fixtureDBDir;
 
 // TESTS
 

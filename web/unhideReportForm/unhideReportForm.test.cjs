@@ -21,7 +21,7 @@ const hiddenFile = '260101T0007-hid.json';
 
 const savedAuthCode = process.env.AUTH_CODE;
 const savedDBDir = process.env.DB_DIR;
-const fixtureDBDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+const fixtureDBDir = require('../../test/dbFixture.cjs').fixtureDBDir;
 
 const getPaths = () => ({
   hidden: path.join(hiddenReportsPath(), hiddenFile),

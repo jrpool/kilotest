@@ -43,7 +43,7 @@ const {answer} = require('./index.cts');
 const savedDBDir = process.env.DB_DIR;
 
 before(() => {
-  process.env.DB_DIR = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  process.env.DB_DIR = require('../../test/dbFixture.cjs').fixtureDBDir;
 });
 
 after(() => {
@@ -114,7 +114,7 @@ test('listDiagnoses returns an error when getReport fails after getPageDataStrin
 });
 
 test('listDiagnoses includes a take-me-there link for a text-linkable catalog item', async () => {
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const reportPath = path.join(reportsDir, '260101T0003-tlk.json');
   try {
@@ -196,7 +196,7 @@ test('listDiagnoses returns an error when report facts are not obtained', async 
 
 test('listDiagnoses handles acts with no standardResult instances gracefully', async () => {
   // Create a temporary report where an act has no standardResult.
-  const dbDir = path.join(__dirname, '..', '..', 'test', 'fixtures', 'db');
+  const dbDir = require('../../test/dbFixture.cjs').fixtureDBDir;
   const reportPath = path.join(dbDir, 'reports', '260101T0004-nst.json');
   const report = {
     id: '260101T0004-nst',

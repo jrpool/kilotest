@@ -54,6 +54,7 @@
     "js-yaml": "*",
     "markdownlint-cli2": "^0.23.2",
     "node-html-parser": "*",
+    "testaro": "*",
     "typescript": "*",
     "typescript-eslint": "*",
     "zod-openapi": "*"

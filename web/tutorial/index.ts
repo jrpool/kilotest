@@ -32,7 +32,7 @@ export const answer = async () => {
   };
 };
 // Sanitizes and saves a tutorial comment to comments.json.
-export const handleComment = async (content: any) => {
+export const handleComment = async (content: unknown) => {
   if (!content || typeof content !== 'string') {
     return {status: 'error', message: 'No content provided'};
   }

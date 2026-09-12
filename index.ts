@@ -170,7 +170,7 @@ export const isPathAllowed = (method: string, pathname: string): boolean => {
   return patterns.some(pattern => matchPath(pattern, pathname));
 };
 // Serves or sends an error message.
-export const serveError = async (error: any, response: ServerResponse, isHumanUser = true, statusCode = 400): Promise<void> => {
+export const serveError = async (error: Record<string, unknown>, response: ServerResponse, isHumanUser = true, statusCode = 400): Promise<void> => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   const errorSummary = errorLines.join('\n') || 'ERROR';
   console.log(errorSummary);
@@ -184,7 +184,7 @@ export const serveError = async (error: any, response: ServerResponse, isHumanUs
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3000');
       const errorTemplate = await fs.readFile('error.html', 'utf8');
-      const errorMessage = error.message || 'ERROR';
+      const errorMessage = typeof error.message === 'string' ? error.message : 'ERROR';
       const errorPage = errorTemplate.replace(/__error__/, errorMessage);
       response.end(errorPage);
     }
@@ -956,7 +956,7 @@ export {requestHandler};
 
 // SERVER
 
-const serve = async (protocolModule: any, options: any) => {
+const serve = async (protocolModule: typeof http | typeof https, options: {key?: string; cert?: string}) => {
   // Create any missing directories.
   for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
     await fs.mkdir(path, {recursive: true});
@@ -990,7 +990,7 @@ export const startServer = async () => {
 };
 
 // Runs the server if the module was loaded directly (not required by a test). The starter is a parameter so tests can inject a spy, since ESM module exports cannot be monkey-patched.
-export const runIfMain = (mainModule: any, currentModule: any, starter: () => Promise<any> = startServer) => {
+export const runIfMain = (mainModule: unknown, currentModule: unknown, starter: () => Promise<unknown> = startServer) => {
   if (mainModule === currentModule) {
     starter().catch(error => console.log(errorMessage(error)));
   }

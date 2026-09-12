@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   routes.test.ts
   Tests for api/routes.ts, verifying the structure and completeness of the OpenAPI route metadata.

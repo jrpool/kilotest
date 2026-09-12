@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   rewindReportsForm.test.ts
   Unit tests for web/rewindReportsForm/index.ts.

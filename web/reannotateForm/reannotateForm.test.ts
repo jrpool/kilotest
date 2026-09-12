@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   reannotateForm.test.ts
   Unit tests for web/reannotateForm/index.ts, covering error, no-reclassified,

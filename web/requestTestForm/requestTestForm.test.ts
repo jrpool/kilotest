@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestTestForm.test.ts
   Unit tests for web/requestTestForm/index.ts.
@@ -18,7 +17,7 @@ test('requestTestForm returns an ok status with valid HTML', async () => {
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
-  assert.equal(html.querySelector('title').text, 'Test recommendation | Kilotest');
+  assert.equal(html.querySelector('title')?.text, 'Test recommendation | Kilotest');
 });
 
 test('requestTestForm includes a form that posts to /requestTest.html', async () => {

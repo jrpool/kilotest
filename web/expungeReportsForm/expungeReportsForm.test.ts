@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   expungeReportsForm.test.ts
   Unit tests for web/expungeReportsForm/index.ts.
@@ -37,7 +36,7 @@ after(async () => {
 // TESTS
 
 test('expungeReportsForm displays a list of reports when no submission', async () => {
-  const result = await answer(null, '');
+  const result: any = await answer(null, '');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -45,13 +44,13 @@ test('expungeReportsForm displays a list of reports when no submission', async (
 });
 
 test('expungeReportsForm returns an error for an invalid auth code', async () => {
-  const result = await answer(null, 'authCode=wrong&report=260101T0001-ct');
+  const result: any = await answer(null, 'authCode=wrong&report=260101T0001-ct');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid authorization code');
 });
 
 test('expungeReportsForm returns an error when deleting a nonexistent report', async () => {
-  const result = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope');
+  const result: any = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope');
   assert.equal(result.status, 'error');
   assert.ok(result.message.includes('Deleting sole reports'));
 });
@@ -61,7 +60,7 @@ test('expungeReportsForm deletes a sole report with valid auth code', async () =
   const reportPath = path.join(reportsPath(), '260101T0001-ct.json');
   const backup = await fs.readFile(reportPath, 'utf8');
   try {
-    const result = await answer(null, 'authCode=test-auth-code&report=260101T0001-ct');
+    const result: any = await answer(null, 'authCode=test-auth-code&report=260101T0001-ct');
     assert.equal(result.status, 'ok');
     await fs.access(reportPath).then(
       () => {throw new Error('Report should have been deleted');},
@@ -78,7 +77,7 @@ test('expungeReportsForm returns an error when a report file is corrupt', async 
   const backup = await fs.readFile(reportPath, 'utf8');
   try {
     await fs.writeFile(reportPath, 'not valid json');
-    const result = await answer(null, '');
+    const result: any = await answer(null, '');
     assert.equal(result.status, 'error');
   }
   finally {
@@ -101,7 +100,7 @@ test('expungeReportsForm shows no-deletable message when every URL has at least 
   process.env.DB_DIR = tmpDir;
   try {
     const {answer} = await import('./index.ts');
-    const result = await answer(null, '');
+    const result: any = await answer(null, '');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('no reports to delete'));
     assert.ok(result.answerPage.includes('disabled'));

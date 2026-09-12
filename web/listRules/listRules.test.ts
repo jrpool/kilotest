@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listRules.test.ts
   Unit tests for web/listRules/index.ts.
@@ -15,14 +14,14 @@ import {parse} from 'node-html-parser';
 import * as testaroIssues from 'testaro-issues';
 const originalRules = testaroIssues.rules;
 const patchEngine = Object.keys(originalRules)[0];
-const patchType = Object.keys(originalRules[patchEngine])[0];
+const patchType = Object.keys((originalRules as any)[patchEngine])[0];
 const patchRuleID = '__testWhatEqualsID__';
 const patchedRules = {
   ...originalRules,
   [patchEngine]: {
-    ...originalRules[patchEngine],
+    ...(originalRules as any)[patchEngine],
     [patchType]: {
-      ...originalRules[patchEngine][patchType],
+      ...(originalRules as any)[patchEngine][patchType],
       [patchRuleID]: {what: patchRuleID}
     }
   }
@@ -33,11 +32,11 @@ const patchIssueID = Object.keys(originalIssueRules)[0];
 const patchedIssueRules = {
   ...originalIssueRules,
   [patchIssueID]: {
-    ...originalIssueRules[patchIssueID],
+    ...(originalIssueRules as any)[patchIssueID],
     [patchEngine]: {
-      ...originalIssueRules[patchIssueID][patchEngine],
+      ...(originalIssueRules as any)[patchIssueID][patchEngine],
       [patchType]: [
-        ...originalIssueRules[patchIssueID][patchEngine][patchType],
+        ...(originalIssueRules as any)[patchIssueID][patchEngine][patchType],
         patchRuleID
       ]
     }
@@ -49,9 +48,9 @@ mock.module('testaro-issues', {
     rules: patchedRules,
     issueRules: patchedIssueRules
   }
-});
+} as any);
 
-const {answer} = await import('./index.ts');
+const {answer} = await import('./index.ts') as any;
 
 // TESTS
 

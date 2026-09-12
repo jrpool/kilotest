@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   requestRetest.test.ts
   Tests for api/requestRetest.ts using the fixture corpus.
@@ -16,7 +15,7 @@ import {fixtureDBDir} from '../test/dbFixture.ts';
 
 const savedDBDir = process.env.DB_DIR;
 const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
-let logged = [];
+let logged: any[] = [];
 const originalLog = console.log;
 
 before(() => {

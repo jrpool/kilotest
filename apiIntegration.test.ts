@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   apiIntegration.test.ts
   Minimal HTTP integration tests verifying routing, body parsing, and JSON serialization, using the fixture corpus and a temporary in-process server.
@@ -18,12 +17,12 @@ const port = 3998;
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
-let server;
+let server: http.Server;
 
 before(async () => {
   process.env.DB_DIR = (await import('./test/dbFixture.ts')).fixtureDBDir;
   server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, () => resolve()));
+  await new Promise<void>(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
@@ -34,7 +33,7 @@ after(async () => {
     delete process.env.DB_DIR;
   }
   server.closeAllConnections?.();
-  await new Promise(resolve => {
+  await new Promise<void>(resolve => {
     const timer = setTimeout(() => {
       server.closeAllConnections?.();
       resolve();
@@ -49,8 +48,8 @@ after(async () => {
 // HELPERS
 
 // Sends an HTTP request and returns the parsed JSON response body.
-const request = (method, requestPath, body = null) => new Promise((resolve, reject) => {
-  const options = {method, host: 'localhost', port, path: requestPath};
+const request = (method: string, requestPath: string, body: any = null): Promise<any> => new Promise((resolve, reject) => {
+  const options: any = {method, host: 'localhost', port, path: requestPath};
   if (body) {
     const bodyJSON = JSON.stringify(body);
     options.headers = {
@@ -59,7 +58,7 @@ const request = (method, requestPath, body = null) => new Promise((resolve, reje
     };
   }
   const req = http.request(options, response => {
-    const chunks = [];
+    const chunks: any[] = [];
     response.on('data', chunk => chunks.push(chunk));
     response.on('end', () => {
       const bodyString = chunks.join('');

@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   indexServe.test.ts
   Tests for the serve function in index.js, which starts the HTTP or HTTPS
@@ -22,7 +21,7 @@ import {serve} from './index.ts';
 
 // HELPER
 
-const closeServer = server => new Promise(resolve => {
+const closeServer = (server: any) => new Promise<void>(resolve => {
   if (!server) {
     resolve();
     return;

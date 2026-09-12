@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   routing.test.ts
   Integration tests for HTTP routing in index.js, verifying that POST-only API services reject GET requests.
@@ -18,12 +17,12 @@ const port = 3999;
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
-let server;
+let server: http.Server;
 
 before(async () => {
   process.env.DB_DIR = (await import('./test/dbFixture.ts')).fixtureDBDir;
   server = http.createServer(requestHandler);
-  await new Promise(resolve => server.listen(port, () => resolve()));
+  await new Promise<void>(resolve => server.listen(port, () => resolve()));
 });
 
 after(async () => {
@@ -34,7 +33,7 @@ after(async () => {
     delete process.env.DB_DIR;
   }
   server.closeAllConnections?.();
-  await new Promise(resolve => {
+  await new Promise<void>(resolve => {
     const timer = setTimeout(() => {
       server.closeAllConnections?.();
       resolve();
@@ -49,9 +48,9 @@ after(async () => {
 // HELPERS
 
 // Sends a GET request and returns the response body as a string.
-const get = requestPath => new Promise((resolve, reject) => {
+const get = (requestPath: string): Promise<any> => new Promise((resolve, reject) => {
   http.request({method: 'GET', host: 'localhost', port, path: requestPath}, response => {
-    const chunks = [];
+    const chunks: any[] = [];
     response.on('data', chunk => chunks.push(chunk));
     response.on('end', () => {
       resolve({statusCode: response.statusCode, body: chunks.join('')});

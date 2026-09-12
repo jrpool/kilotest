@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   tutorial.test.ts
   Unit tests for web/tutorial/index.ts, covering the answer and handleComment exports.
@@ -18,7 +17,7 @@ const commentsPath = path.join(import.meta.dirname, 'comments.json');
 
 // SETUP AND TEARDOWN
 
-let originalComments;
+let originalComments: any;
 
 before(async () => {
   originalComments = await fs.readFile(commentsPath, 'utf8').catch(() => null);

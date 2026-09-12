@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listViolators.test.ts
   Tests for api/listViolators.ts using the fixture corpus, with emphasis on outcome handling.
@@ -68,7 +67,7 @@ test('listViolators includes reporter facts for the issue', async () => {
   const body = await response(['linkNoText', '260101T0000', 'mix']);
   const details = body['response content']['details about the issue'];
   const reporters = details['rule engines reporting violations belonging to the issue'];
-  const names = reporters.map(r => r.name).sort();
+  const names = reporters.map((r: any) => r.name).sort();
   assert.deepEqual(names, ['Alfa', 'Axe']);
 });
 
@@ -95,7 +94,7 @@ test('listViolators returns guideline layer for an issue with a short WCAG code'
 test('listViolators returns null tag name and text for a violator not in the catalog', async () => {
   const body = await response(['duplicateID', '260101T0009', 'brd']);
   const violators = body['response content']['basics about all elements exhibiting the issue'];
-  const orphan = violators.find(v => v.identifier === '3');
+  const orphan = violators.find((v: any) => v.identifier === '3');
   assert.ok(orphan);
   assert.equal(orphan['tag name'], null);
   assert.equal(orphan['inner text'], null);

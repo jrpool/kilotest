@@ -989,7 +989,7 @@ export const startServer = async () => {
 };
 
 // Runs the server if the module was loaded directly (not required by a test). The starter is a parameter so tests can inject a spy, since ESM module exports cannot be monkey-patched.
-export const runIfMain = (mainModule: any, currentModule: any, starter = startServer) => {
+export const runIfMain = (mainModule: any, currentModule: any, starter: () => Promise<any> = startServer) => {
   if (mainModule === currentModule) {
     starter().catch(error => console.log(error.message));
   }

@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listReports.test.ts
   UI tests for web/listReports/index.ts using the fixture corpus.
@@ -37,22 +36,22 @@ after(() => {
 // TESTS
 
 test('listReports returns an ok status with valid HTML', async () => {
-  const result = await answer();
+  const result: any = await answer();
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
-  assert.equal(html.querySelector('title').text, 'Pages tested | Kilotest');
+  assert.equal(html.querySelector('title')?.text, 'Pages tested | Kilotest');
 });
 
 test('listReports includes the 8 non-hidden fixture reports as details elements', async () => {
-  const result = await answer();
+  const result: any = await answer();
   const html = parse(result.answerPage);
   const details = html.querySelectorAll('details');
   assert.equal(details.length, 8);
 });
 
 test('listReports includes the page descriptions in summary elements', async () => {
-  const result = await answer();
+  const result: any = await answer();
   const html = parse(result.answerPage);
   const summaries = html.querySelectorAll('details > summary').map(s => s.text);
   assert.ok(summaries.some(s => s.startsWith('Mixed Outcomes Page')));
@@ -63,27 +62,27 @@ test('listReports includes the page descriptions in summary elements', async () 
 });
 
 test('listReports does not include the hidden report', async () => {
-  const result = await answer();
+  const result: any = await answer();
   assert.ok(!result.answerPage.includes('Hidden Page'));
 });
 
 test('listReports includes links to listIssues for reports with issues', async () => {
-  const result = await answer();
+  const result: any = await answer();
   const html = parse(result.answerPage);
   const issueLinks = html.querySelectorAll('a[href*="listIssues.html"]');
   assert.ok(issueLinks.length > 0);
   const hrefs = issueLinks.map(a => a.getAttribute('href'));
-  assert.ok(hrefs.some(href => href.includes('260101T0000/mix')));
+  assert.ok(hrefs.some(href => href?.includes('260101T0000/mix')));
 });
 
 test('listReports includes the page URLs in the report details', async () => {
-  const result = await answer();
+  const result: any = await answer();
   assert.ok(result.answerPage.includes('https://example.com/mixed'));
   assert.ok(result.answerPage.includes('https://example.com/canttell'));
 });
 
 test('listReports includes a link to request testing a new page', async () => {
-  const result = await answer();
+  const result: any = await answer();
   const html = parse(result.answerPage);
   const testLink = html.querySelector('a[href="requestTestForm.html"]');
   assert.ok(testLink);
@@ -100,7 +99,7 @@ test('listReports shows recommendations when recs.json has entries', {timeout: 5
       ]
     };
     await fs.writeFile(recsPath, JSON.stringify(testRecs, null, 2));
-    const result = await answer();
+    const result: any = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('https://example.com/mixed'));
     assert.ok(result.answerPage.includes('Needs retesting for accessibility'));
@@ -125,7 +124,7 @@ test('listReports shows queued and claimed jobs when they exist', async () => {
     };
     await fs.writeFile(queueFile, JSON.stringify(queuedJob, null, 2));
     await fs.writeFile(claimedFile, JSON.stringify(claimedJob, null, 2));
-    const result = await answer();
+    const result: any = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('https://example.com/queued'));
     assert.ok(result.answerPage.includes('Queued Page'));
@@ -147,7 +146,7 @@ test('listReports shows claimed retest status for a report with a matching claim
       target: {url: 'https://example.com/mixed', what: 'Mixed Outcomes Page'}
     };
     await fs.writeFile(claimedFile, JSON.stringify(claimedJob, null, 2));
-    const result = await answer();
+    const result: any = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('Currently being retested'));
   }
@@ -165,7 +164,7 @@ test('listReports shows queued retest status for a report with a matching queued
       target: {url: 'https://example.com/mixed', what: 'Mixed Outcomes Page'}
     };
     await fs.writeFile(queueFile, JSON.stringify(queuedJob, null, 2));
-    const result = await answer();
+    const result: any = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('Currently in the queue for retesting'));
   }
@@ -185,7 +184,7 @@ test('listReports returns an error when a report file is invalid', {timeout: 500
       jobData: {endTime: '26-01-01T00:10'}
     };
     await fs.writeFile(invalidReportPath, JSON.stringify(invalidReport, null, 2));
-    const result = await answer();
+    const result: any = await answer();
     assert.equal(result.status, 'error');
     assert.ok(result.message);
   }
@@ -207,7 +206,7 @@ test('listReports shows no-reports message when the database is empty', async ()
   process.env.DB_DIR = tmpDir;
   try {
     const {answer} = await import('./index.ts');
-    const result = await answer();
+    const result: any = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('no'));
     assert.ok(result.answerPage.includes(' a '));

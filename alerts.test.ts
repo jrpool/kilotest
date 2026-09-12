@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   alerts.test.ts
   Tests for alerts.ts, covering the success, failure, error, timeout, and unconfigured paths.
@@ -15,7 +14,7 @@ import {sendAlert} from './alerts.ts';
 // SETUP AND TEARDOWN
 
 const originalRequest = https.request;
-const savedEnv = {};
+const savedEnv: Record<string, any> = {};
 
 before(() => {
   for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
@@ -38,22 +37,22 @@ after(() => {
 // HELPER
 
 // Replaces https.request with a function that returns a fake request and invokes the callback with a fake response. The mockHandler is called on next tick so that event listeners are attached first.
-const mockRequest = mockHandler => {
-  https.request = (options, callback) => {
-    const req = new EventEmitter();
+const mockRequest = (mockHandler: any) => {
+  https.request = ((options: any, callback: any) => {
+    const req: any = new EventEmitter();
     req.write = () => {};
     req.end = () => {};
     req.destroy = () => {
       req.emit('error', new Error('Socket destroyed'));
     };
-    req.setTimeout = (ms, fn) => {
+    req.setTimeout = (ms: any, fn: any) => {
       process.nextTick(fn);
     };
-    const res = new EventEmitter();
+    const res: any = new EventEmitter();
     res.statusCode = 200;
     process.nextTick(() => mockHandler(req, res, callback));
     return req;
-  };
+  }) as any;
 };
 
 // Sets the alert configuration env vars so that sendAlert enters the configured path.
@@ -82,7 +81,7 @@ test('sendAlert resolves without sending when configuration is incomplete', asyn
 
 test('sendAlert logs success when the API responds with a 2xx status', async () => {
   setAlertConfig();
-  mockRequest((req, res, callback) => {
+  mockRequest((req: any, res: any, callback: any) => {
     res.statusCode = 200;
     callback(res);
     res.emit('end');
@@ -94,7 +93,7 @@ test('sendAlert logs success when the API responds with a 2xx status', async () 
 
 test('sendAlert logs an error when the API responds with a non-2xx status', async () => {
   setAlertConfig();
-  mockRequest((req, res, callback) => {
+  mockRequest((req: any, res: any, callback: any) => {
     res.statusCode = 500;
     callback(res);
     res.emit('data', 'Server error');
@@ -107,7 +106,7 @@ test('sendAlert logs an error when the API responds with a non-2xx status', asyn
 
 test('sendAlert logs an error when the request errors', async () => {
   setAlertConfig();
-  mockRequest((req) => {
+  mockRequest((req: any) => {
     req.emit('error', new Error('Connection refused'));
   });
   await sendAlert('Test Error', 'Body');

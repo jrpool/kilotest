@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   pruneReportsForm.test.ts
   Unit tests for web/pruneReportsForm/index.ts.

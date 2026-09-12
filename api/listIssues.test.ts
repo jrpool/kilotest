@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listIssues.test.ts
   Tests for api/listIssues.ts using the fixture corpus, with emphasis on outcome handling.
@@ -33,7 +32,7 @@ test('listIssues returns 2 issues for the mixed-outcomes report, excluding cantT
   const body = await response(['260101T0000', 'mix']);
   const issues = body['response content']['basics about all issues reported in the report'];
   assert.equal(issues.length, 2);
-  const summaries = issues.map(i => i.summary).sort();
+  const summaries = issues.map((i: any) => i.summary).sort();
   assert.deepEqual(summaries, ['all-capital text', 'link not named']);
 });
 
@@ -68,9 +67,9 @@ test('listIssues reports prevented rule engines for the prevented report', async
 test('listIssues includes reporter names for each issue in the mixed report', async () => {
   const body = await response(['260101T0000', 'mix']);
   const issues = body['response content']['basics about all issues reported in the report'];
-  const linkIssue = issues.find(i => i.identifier === 'linkNoText');
+  const linkIssue = issues.find((i: any) => i.identifier === 'linkNoText');
   assert.deepEqual(linkIssue['rule engines with any violations belonging to the issue'], ['Alfa', 'Axe']);
-  const allCapsIssue = issues.find(i => i.identifier === 'allCaps');
+  const allCapsIssue = issues.find((i: any) => i.identifier === 'allCaps');
   assert.deepEqual(allCapsIssue['rule engines with any violations belonging to the issue'], ['Alfa']);
 });
 
@@ -103,6 +102,6 @@ test('listIssues handles instances with missing issueID and null instances witho
   // The brd fixture has one instance with duplicateID (a valid issue) and one with no issueID (skipped).
   // The alfa act has no instances array, so it should be handled as empty.
   assert.ok(issues.length >= 1);
-  const ids = issues.map(i => i.identifier);
+  const ids = issues.map((i: any) => i.identifier);
   assert.ok(ids.includes('duplicateID'));
 });

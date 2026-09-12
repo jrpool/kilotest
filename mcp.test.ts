@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   mcp.test.ts
   Tests for mcp.js, covering tool registration and handler behavior.
@@ -24,7 +23,7 @@ test('mcpPath is /mcp', () => {
 
 test('createMCPServer registers all 8 tools', () => {
   const server = createMCPServer();
-  const toolNames = Object.keys(server._registeredTools);
+  const toolNames = Object.keys((server as any)._registeredTools);
   assert.equal(toolNames.length, 8);
   assert.deepEqual(toolNames, [
     'listReports',
@@ -40,8 +39,8 @@ test('createMCPServer registers all 8 tools', () => {
 
 test('each tool has a description and a handler function', () => {
   const server = createMCPServer();
-  const tools = server._registeredTools;
-  for (const [name, tool] of Object.entries(tools)) {
+  const tools = (server as any)._registeredTools;
+  for (const [name, tool] of Object.entries(tools) as [string, any][]) {
     assert.ok(tool.description, `${name} has a description`);
     assert.equal(typeof tool.handler, 'function', `${name} has a handler function`);
   }
@@ -49,7 +48,7 @@ test('each tool has a description and a handler function', () => {
 
 test('listReports handler returns content and structuredContent', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.listReports.handler({});
+  const result = await (server as any)._registeredTools.listReports.handler({});
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
@@ -57,7 +56,7 @@ test('listReports handler returns content and structuredContent', async () => {
 
 test('listIssues handler returns content and structuredContent for a valid report', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.listIssues.handler({
+  const result = await (server as any)._registeredTools.listIssues.handler({
     timeStamp: '260101T0000',
     jobID: 'mix'
   });
@@ -68,7 +67,7 @@ test('listIssues handler returns content and structuredContent for a valid repor
 
 test('listViolators handler returns content and structuredContent for a valid issue', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.listViolators.handler({
+  const result = await (server as any)._registeredTools.listViolators.handler({
     issueID: 'linkNoText',
     timeStamp: '260101T0000',
     jobID: 'mix'
@@ -80,7 +79,7 @@ test('listViolators handler returns content and structuredContent for a valid is
 
 test('listDiagnoses handler returns content and structuredContent for a valid diagnosis', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.listDiagnoses.handler({
+  const result = await (server as any)._registeredTools.listDiagnoses.handler({
     catalogIndex: '0',
     issueID: 'linkNoText',
     timeStamp: '260101T0000',
@@ -93,7 +92,7 @@ test('listDiagnoses handler returns content and structuredContent for a valid di
 
 test('getReport handler returns content and structuredContent for a valid report', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.getReport.handler({
+  const result = await (server as any)._registeredTools.getReport.handler({
     timeStamp: '260101T0000',
     jobID: 'mix'
   });
@@ -104,7 +103,7 @@ test('getReport handler returns content and structuredContent for a valid report
 
 test('requestTest handler returns content and structuredContent', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.requestTest.handler({
+  const result = await (server as any)._registeredTools.requestTest.handler({
     description: 'Test Page',
     URL: 'https://example.com/test',
     reason: 'Because accessibility matters'
@@ -116,7 +115,7 @@ test('requestTest handler returns content and structuredContent', async () => {
 
 test('requestRetest handler returns content and structuredContent for a valid report', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.requestRetest.handler({
+  const result = await (server as any)._registeredTools.requestRetest.handler({
     timeStamp: '260101T0000',
     jobID: 'mix',
     reason: 'Because the report is obsolete'
@@ -128,7 +127,7 @@ test('requestRetest handler returns content and structuredContent for a valid re
 
 test('requestFeature handler returns content and structuredContent', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.requestFeature.handler({
+  const result = await (server as any)._registeredTools.requestFeature.handler({
     feature: 'A new feature idea'
   });
   assert.ok(result.content);
@@ -138,7 +137,7 @@ test('requestFeature handler returns content and structuredContent', async () =>
 
 test('listIssues handler returns an error for a nonexistent report', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.listIssues.handler({
+  const result = await (server as any)._registeredTools.listIssues.handler({
     timeStamp: '990101T0000',
     jobID: 'xxx'
   });
@@ -148,7 +147,7 @@ test('listIssues handler returns an error for a nonexistent report', async () =>
 
 test('listViolators handler returns an error for an unknown issue', async () => {
   const server = createMCPServer();
-  const result = await server._registeredTools.listViolators.handler({
+  const result = await (server as any)._registeredTools.listViolators.handler({
     issueID: 'nonexistentIssue',
     timeStamp: '260101T0000',
     jobID: 'mix'
@@ -160,7 +159,7 @@ test('listViolators handler returns an error for an unknown issue', async () => 
 // INTEGRATION TESTS FOR handleMCP
 
 // Helper: sends a single MCP JSON-RPC request to a local server and returns the parsed SSE response.
-const sendMCPRequest = (port, method, params, id) => new Promise((resolve, reject) => {
+const sendMCPRequest = (port: number, method: string, params: any, id: any): Promise<any> => new Promise((resolve, reject) => {
   const body = JSON.stringify({jsonrpc: '2.0', method, params, id});
   const req = http.request({
     port,
@@ -186,7 +185,7 @@ const sendMCPRequest = (port, method, params, id) => new Promise((resolve, rejec
 });
 
 // Helper: parses the JSON-RPC result from an SSE response body.
-const parseSSEResult = body => {
+const parseSSEResult = (body: string) => {
   const jsonLine = body.split('\n').find(line => line.startsWith('data: '));
   if (!jsonLine) {
     throw new Error('No data line in SSE response');
@@ -195,13 +194,13 @@ const parseSSEResult = body => {
 };
 
 // Helper: starts a local HTTP server with handleMCP and returns it.
-const startMCPServer = () => new Promise(resolve => {
+const startMCPServer = (): Promise<any> => new Promise(resolve => {
   const server = http.createServer((req, res) => handleMCP(req, res));
   server.listen(0, () => resolve(server));
 });
 
 // Helper: closes a server with a timeout fallback.
-const closeMCPServer = server => new Promise(resolve => {
+const closeMCPServer = (server: any) => new Promise<void>(resolve => {
   if (!server) {
     resolve();
     return;
@@ -243,7 +242,7 @@ test('handleMCP lists all 8 tools via tools/list', async () => {
     const res = await sendMCPRequest(port, 'tools/list', {}, 2);
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);
-    const toolNames = result.result.tools.map(t => t.name);
+    const toolNames = result.result.tools.map((t: any) => t.name);
     assert.equal(toolNames.length, 8);
     assert.deepEqual(toolNames, [
       'listReports',

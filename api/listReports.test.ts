@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   listReports.test.ts
   Tests for api/listReports.ts using the fixture corpus.
@@ -47,7 +46,7 @@ test('listReports returns basics about all 8 non-hidden reports', async () => {
   const body = await response();
   const reportsBasics = body['response content']['basics about all available reports'];
   assert.equal(reportsBasics.length, 8);
-  const ids = reportsBasics.map(b => b.identifier).sort();
+  const ids = reportsBasics.map((b: any) => b.identifier).sort();
   const expectedIds = fixtureIds.map(([ts, jid]) => `${ts}-${jid}`).sort();
   assert.deepEqual(ids, expectedIds);
 });
@@ -55,14 +54,14 @@ test('listReports returns basics about all 8 non-hidden reports', async () => {
 test('listReports does not include the hidden report', async () => {
   const body = await response();
   const reportsBasics = body['response content']['basics about all available reports'];
-  const ids = reportsBasics.map(b => b.identifier);
+  const ids = reportsBasics.map((b: any) => b.identifier);
   assert.ok(!ids.includes('260101T0007-hid'), 'hidden report must not appear in listReports');
 });
 
 test('listReports sorts reports by page description and then by completion time', async () => {
   const body = await response();
   const reportsBasics = body['response content']['basics about all available reports'];
-  const descriptions = reportsBasics.map(b => b['tested web page'].description);
+  const descriptions = reportsBasics.map((b: any) => b['tested web page'].description);
   // All CantTell Page, Empty Results Page, Mixed Outcomes Page, Mixed Outcomes Page, No Outcomes Page, Prevented Page.
   assert.deepEqual(
     descriptions,
@@ -78,7 +77,7 @@ test('listReports sorts reports by page description and then by completion time'
     ]
   );
   // The two Mixed Outcomes Page reports should be sorted by completion time (older first).
-  const mixedReports = reportsBasics.filter(b => b['tested web page'].description === 'Mixed Outcomes Page');
+  const mixedReports = reportsBasics.filter((b: any) => b['tested web page'].description === 'Mixed Outcomes Page');
   assert.equal(mixedReports[0].identifier, '260101T0000-mix');
   assert.equal(mixedReports[1].identifier, '260202T0000-new');
 });
@@ -86,8 +85,8 @@ test('listReports sorts reports by page description and then by completion time'
 test('listReports marks the superseded report correctly', async () => {
   const body = await response();
   const reportsBasics = body['response content']['basics about all available reports'];
-  const mix = reportsBasics.find(b => b.identifier === '260101T0000-mix');
-  const newer = reportsBasics.find(b => b.identifier === '260202T0000-new');
+  const mix = reportsBasics.find((b: any) => b.identifier === '260101T0000-mix');
+  const newer = reportsBasics.find((b: any) => b.identifier === '260202T0000-new');
   assert.equal(mix['whether a later report about the same page exists'], true);
   assert.equal(newer['whether a later report about the same page exists'], false);
 });

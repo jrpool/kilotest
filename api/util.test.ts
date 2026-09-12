@@ -1,4 +1,3 @@
-// @ts-nocheck: transitional (not yet under strict type checking).
 /*
   util.test.ts
   Tests for api/util.ts.
@@ -65,7 +64,7 @@ test('getIssueSpec returns null for the ignorable issue ID', () => {
 
 test('getReportBasics returns an error for a nonexistent report', async () => {
   process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
-  const basics = await getReportBasics('999999T9999', 'xyz');
+  const basics: any = await getReportBasics('999999T9999', 'xyz');
   assert.ok(basics.error);
   if (savedDBDir !== undefined) {
     process.env.DB_DIR = savedDBDir;
@@ -79,7 +78,7 @@ test('processTestRequest returns an error for a duplicate recommendation', async
   process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
   // Submit the same request twice; the second should be a duplicate.
   await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
-  const result = await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
+  const result: any = await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Duplicate request');
   if (savedDBDir !== undefined) {

@@ -43,7 +43,7 @@ export const mcpPath = '/mcp';
 // FUNCTIONS
 
 // Creates and returns an McpServer with Kilotest tools registered.
-export const createMCPServer = () => {
+export const createMCPServer = (): McpServer => {
   const server = new McpServer({
     name: 'Kilotest',
     version,
@@ -207,7 +207,7 @@ export const createMCPServer = () => {
   return server;
 };
 // Handles an MCP request.
-export const handleMCP = async (request: IncomingMessage, response: ServerResponse) => {
+export const handleMCP = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
   const transport = new StreamableHTTPServerTransport({sessionIdGenerator: undefined});
   const server = createMCPServer();
   await server.connect(transport);

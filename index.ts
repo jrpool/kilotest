@@ -165,12 +165,12 @@ const matchPath = (pattern: string, pathname: string) => {
   return regex.test(pathname);
 };
 // Returns whether a pathname is authorized for a method.
-export const isPathAllowed = (method: string, pathname: string) => {
+export const isPathAllowed = (method: string, pathname: string): boolean => {
   const patterns = (routes as Record<string, string[]>)[method] || [];
   return patterns.some(pattern => matchPath(pattern, pathname));
 };
 // Serves or sends an error message.
-export const serveError = async (error: any, response: ServerResponse, isHumanUser = true, statusCode = 400) => {
+export const serveError = async (error: any, response: ServerResponse, isHumanUser = true, statusCode = 400): Promise<void> => {
   const errorLines = Object.entries(error).map(pair => `${pair[0]}: ${pair[1]}`);
   const errorSummary = errorLines.join('\n') || 'ERROR';
   console.log(errorSummary);
@@ -324,7 +324,7 @@ const getAuthorizedWorkerName = (request: IncomingMessage) => {
 const processJobRequest = async (request: IncomingMessage, response: ServerResponse, workerName: string) => jobLock(async () => {
   let clean = true;
   const messageStart = `Testaro worker ${workerName} requested a job, `;
-  const jobNames = await getJobNames();
+  const jobNames = await getJobNames() as Record<string, string[]>;
   const claimedJobNames = jobNames.claimed;
   // For each claimed job:
   for (const jobName of claimedJobNames) {

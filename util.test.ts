@@ -473,10 +473,11 @@ test('getJobNames creates missing job directories and returns empty arrays', asy
   try {
     const {getJobNames} = await import('./util.ts');
     const result = await getJobNames();
-    assert.equal(typeof result, 'object');
-    assert.deepEqual(result.queue, []);
-    assert.deepEqual(result.claimed, []);
-    assert.deepEqual(result.failed, []);
+    assert.ok(typeof result === 'object' && result !== null);
+    const jobNames = result as Record<string, string[]>;
+    assert.deepEqual(jobNames.queue, []);
+    assert.deepEqual(jobNames.claimed, []);
+    assert.deepEqual(jobNames.failed, []);
     // Verify the directories were created.
     for (const category of ['queue', 'claimed', 'failed']) {
       const stat = await fs.stat(path.join(tmpDbDir, 'jobs', category));
@@ -501,7 +502,7 @@ test('getJobNames returns an error when a job directory is a file, not a directo
   try {
     const {getJobNames} = await import('./util.ts');
     const result = await getJobNames();
-    assert.equal(typeof result, 'string');
+    assert.ok(typeof result === 'string');
     assert.ok(result.startsWith('ERROR'));
   }
   finally {

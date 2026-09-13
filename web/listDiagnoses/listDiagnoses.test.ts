@@ -80,6 +80,12 @@ test('listDiagnoses includes diagnosis descriptions from the rule engines', asyn
   assert.ok(result.answerPage.includes('The link does not have an accessible name'));
 });
 
+test('listDiagnoses excludes cantTell instances from the diagnoses list', async () => {
+  const result = await answer('focusIndicationBad/260101T0000/mix/0');
+  assert.equal(result.status, 'ok');
+  assert.ok(!result.answerPage.includes('Focus Visible'));
+});
+
 test('listDiagnoses returns an error status for a hidden report', async () => {
   const result = await answer('linkNoText/260101T0007/hid/0');
   assert.equal(result.status, 'error');

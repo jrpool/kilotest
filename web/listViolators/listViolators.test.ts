@@ -77,6 +77,13 @@ test('listViolators includes links to listDiagnoses for violators', async () => 
   assert.ok(diagnosisLinks.length > 0);
 });
 
+test('listViolators excludes cantTell instances from the violator count', async () => {
+  const result = await answer('focusIndicationBad/260101T0000/mix');
+  assert.equal(result.status, 'ok');
+  assert.ok(result.answerPage.includes('0 violators were'));
+  assert.ok(!result.answerPage.includes('<h3>Element'));
+});
+
 test('listViolators returns an error status for a hidden report', async () => {
   const result = await answer('linkNoText/260101T0007/hid');
   assert.equal(result.status, 'error');

@@ -43,8 +43,8 @@ const getIssuesSummary = async () => {
       summary.error = report.error;
       continue;
     }
-    // For each standard instance of each test act in it:
-    getTestActInstances(report).forEach(({act, instance}) => {
+    // For each violating standard instance of each test act in it:
+    getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
       const {count, issueID} = instance;
       // If the instance has a non-ignorable issue ID:
       if (issueID && issueID !== 'ignorable') {

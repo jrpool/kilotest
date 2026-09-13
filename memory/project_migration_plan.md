@@ -31,7 +31,9 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 11. Discover and utilize remaining opportunities for type enforcements, concern separations, and simplifying refactors.
 12. Review all instances of exclusions from `c8` coverage reporting to ensure they are still necessary, and also decide whether to abandon `c8` in favor af the `node` built-in experimental coverage reporter.
 13. Ensure that standard instances with `outcome` set to `cantTell` are consistently excluded as violations.
-14. Consider whether the pattern of diverse-type function return values, with error conditions and normal conditions causing return values of different types, can be replaced with some other pattern, such as a return value with only the normal type and errors throwing instead, and, if so, whether that would simplify the code. But consider that some abnormal conditions are mere disqualifications (such as a report with no catalog image being disqualified from any operation that requires that image), while others are errors that should never occur (such as a report that is not valid JSON).
+14. Consider whether the pattern of functions returning diverse-type values, with error conditions and normal conditions causing return values of different types, can be replaced with some other pattern, such as a return value with only the normal type and errors throwing instead, and, if so, whether that would simplify the code. But consider that some abnormal conditions are mere disqualifications (such as a report with no catalog image being disqualified from any operation that requires that image), while others are errors that should never occur (such as a report that is not valid JSON).
+15. Review all work and make corrections and improvements.
+16. Extract still-useful explanations from the migration plan into code-adjacent comments or terse decision documents, as appropriate, decide where the `## Later work` backlog should live once this document is gone, and then retire the migration plan (i.e. delete it, once it is obsolete).
 
 ## How to Apply
 
@@ -47,7 +49,19 @@ When helping with any Kilotest work, assume this migration is the active project
 
 Here are proposed details for the current step.
 
-The current step is step 11.
+The current step is step 12.
+
+Step 12 has two parts.
+
+1. **Review all `c8` exclusions for continued necessity.** There is exactly one in the codebase: the `/* c8 ignore start */` … `/* c8 ignore stop */` block wrapping the import statements at the top of `util.ts`, justified by a comment claiming c8 intermittently misreports import lines as uncovered. Verified empirically: temporarily removing the ignore block and running `npm test` reproduced the failure (two import lines reported uncovered, dropping lines/statements/branches to 99.77-99.96% and failing the 100% threshold), with the installed `c8` version against the current Node version. The exclusion is still necessary; no change to it is proposed.
+2. **Decide whether to abandon `c8` for Node's built-in coverage.** Proposed decision: **keep `c8`**, for now. Reasoning:
+   - Node's coverage support is invoked via `--experimental-test-coverage`, and is documented as experimental (no stability guarantee) as of the installed Node version (v26.8.2 in this environment; `package.json` requires `>=24.16.0`).
+   - It does not honor `/* c8 ignore ... */` comments; it needs its own, differently-spelled syntax (`/* node:coverage ignore next [n] */`, `/* node:coverage disable */` / `enable`).
+   - Whether switching would even remove the existing `util.ts` import-block exclusion is unclear (a full-suite native run reported that file at 100/100/100, suggesting it might not be needed, but an alternate invocation using `--test-coverage-include` produced inconsistent results, so this is not fully trusted).
+   - More importantly, switching was tested and found to introduce a *new*, and worse-placed, need for an exclusion: `web/requestRetest/index.ts` is 100% under `c8` today, but under native coverage it reproducibly reports 90.32% lines / 66.67% branches / 50% funcs, with its success-path lines (28-30) marked uncovered, despite a passing test that exercises exactly that path. Isolating the cause: the gap appears only once a later test in the same file that uses `t.mock.module()` plus a query-string re-import (`import('./index.ts?mockNoExtracts')`) also runs; removing that later test makes the success path register as covered. This matches a known, actively-tracked family of Node core bugs where `mock.module()` combined with `--experimental-test-coverage` corrupts coverage accounting (nodejs/node#59112, #61709, #58119); five test files in this codebase use `t.mock.module`, but the gap manifested in only one of the five runs, so the failure mode is inconsistent and hard to audit for.
+   - This sharpens, rather than moots, the relevance of the separate open Node core bug (nodejs/node#61586) where `node:coverage` ignore comments suppress line coverage but not branch coverage for the same lines: the exclusion the switch would actually require is not a trivial import block but a real, exercised branch (`requestRetest`'s success path), and #61586 says the standard ignore-comment workaround does not fully suppress branch coverage for exactly that kind of case. So the switch would trade one well-understood, narrowly-scoped exclusion for a new, less predictable one sitting on real logic, for which the standard workaround is documented not to work.
+   - `c8` has none of these issues for this codebase's use case today and remains a stable, unmaintained-risk-free dependency choice.
+   - Revisit this decision once `--experimental-test-coverage` stabilizes and the mock-module coverage-accounting bugs and the branch-coverage/ignore-comment bug are resolved upstream.
 
 Here are step 11 work items.
 

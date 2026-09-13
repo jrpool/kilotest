@@ -18,7 +18,7 @@ import {
   getCountString,
   getDateString,
   getDateTime,
-  getEngineList,
+  getEngineNamesString,
   getIssue,
   errorMessage,
   getJSON,
@@ -811,6 +811,19 @@ test('getPOSTData resolves with null for an unknown content type', async () => {
   assert.equal(result, null);
 });
 
+test('getPOSTData resolves with null for a malformed JSON body', async () => {
+  const {Readable} = await import('node:stream');
+  const {getPOSTData} = await import('./util.ts');
+  const req = Object.assign(new Readable({
+    read() {
+      this.push(Buffer.from('{not valid json'));
+      this.push(null);
+    }
+  }), {headers: {'content-type': 'application/json'}});
+  const result: any = await getPOSTData(req as any);
+  assert.equal(result, null);
+});
+
 test('getEngineNamesString falls back to the engine ID for an unknown engine', async () => {
   const {getEngineNamesString} = await import('./util.ts');
   const result = getEngineNamesString(new Set(['unknownEngine']));
@@ -819,13 +832,13 @@ test('getEngineNamesString falls back to the engine ID for an unknown engine', a
 
 test('getPathID returns the catalog pathID when catalogIndex is truthy', async () => {
   const {getPathID} = await import('./util.ts');
-  const catalog = {'0': {pathID: '/html/body/div'}};
+  const catalog = {'0': {tagName: 'div', pathID: '/html/body/div'}};
   assert.equal(getPathID(catalog, '0', '/fallback'), '/html/body/div');
 });
 
 test('getPathID returns the fallback pathID when catalogIndex is truthy but catalogItem has no pathID', async () => {
   const {getPathID} = await import('./util.ts');
-  const catalog = {'0': {tagName: 'div'}};
+  const catalog = {'0': {tagName: 'div', pathID: ''}};
   assert.equal(getPathID(catalog, '0', '/fallback'), '/fallback');
 });
 
@@ -903,15 +916,15 @@ test('getTimeStamp returns an 11-character stamp from a Date', () => {
   assert.equal(stamp.slice(7), '1430');
 });
 
-test('getEngineList returns a sorted +-delimited list of engine names', () => {
-  const result = getEngineList(new Set(['axe', 'wave', 'nuVal']));
+test('getEngineNamesString returns a sorted +-delimited list of engine names', () => {
+  const result = getEngineNamesString(new Set(['axe', 'wave', 'nuVal']));
   const names = result.split(' + ');
   assert.ok(names.length === 3);
   assert.ok(names.includes('WAVE'));
 });
 
-test('getEngineList falls back to the ID for an unknown engine', () => {
-  assert.equal(getEngineList(new Set(['unknownEngine'])), 'unknownEngine');
+test('getEngineNamesString falls back to the ID for an unknown engine', () => {
+  assert.equal(getEngineNamesString(new Set(['unknownEngine'])), 'unknownEngine');
 });
 
 test('recsLock is a function (the lock returned by createLock)', () => {

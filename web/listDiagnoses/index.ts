@@ -118,9 +118,9 @@ const populateQuery = async (
     const {engineID, ruleID, what} = diagnosis;
     // Add lines.
     lines.push(`${margin}<li>${htmlSafe(what)}`);
-    lines.push(
-      `${margin}  <p>Rule engine: ${ruleEngines[engineID][0]} (${ruleEngines[engineID][1]})</p>`
-    );
+    // engineID is act.which, guaranteed by isUsableReport to be a key in ruleEngines.
+    const [engineName, engineOrg] = ruleEngines[engineID];
+    lines.push(`${margin}  <p>Rule engine: ${engineName} (${engineOrg})</p>`);
     if (ruleID !== what) {
       lines.push(`${margin}  <p>Rule: <code>${ruleID}</code></p>`);
     }

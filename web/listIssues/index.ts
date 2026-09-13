@@ -9,7 +9,7 @@ import {
   getPageData,
   getPageDataStrings,
   getReport,
-  getEngineList,
+  getEngineNamesString,
   getTestActInstances,
   getWCAGLink,
   getWeightName,
@@ -90,7 +90,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       }
     });
     // Finish populating the final data.
-    final.reporterList = getEngineList(temp.reporters);
+    final.reporterList = getEngineNamesString(temp.reporters);
     final.reporterCount = temp.reporters.size;
     final.violatorCount = temp.violators.size;
     Object.values(temp.issues).forEach(issue => {
@@ -102,7 +102,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
         why,
         weight
       };
-      finalIssue.reporterList = getEngineList(issue.reporters);
+      finalIssue.reporterList = getEngineNamesString(issue.reporters);
       finalIssue.reporterCount = issue.reporters.size;
       finalIssue.violatorCount = issue.violators.size;
       final.issues[issue.weight].push(finalIssue);

@@ -641,7 +641,8 @@ export const isReportError = (r: UsableReport | {error: string}): r is {error: s
 // writing it.
 export const annotateReportObject = async (report: UsableReport): Promise<void> => {
   const unclassifiableRules = new Set<string>();
-  // For each standard instance of each of its test acts:
+  // For each standard instance of each of its test acts (all outcomes, including cantTell —
+  // classification maps rules to issues regardless of outcome):
   for (const {act, instance} of getTestActInstances(report)) {
     const {ruleID} = instance;
     // Classify its rule.
@@ -800,7 +801,12 @@ export const getReportStats = async (timeStamp: string, jobID: string) => {
   const reportSize = reportStat.size;
   return {reportTime, reportSize};
 };
-// Returns whether a report is hidden.
+// Returns whether a report is hidden. This function is redundant: hidden reports are moved
+// into hiddenReportsPath() by the hide operation (and back by unhide), so getReport already
+// fails identically for a hidden report and a nonexistent one without the extra readdir call.
+// Removing it would collapse the hidden-report case into generic getReport-failure handling.
+// Call sites: the fullReport.json route and listViolators, listDiagnoses, and listIssues (the
+// last of which calls it twice per request) in index.ts and the respective web handlers.
 export const isHidden = async (timeStamp: string, jobID: string): Promise<boolean> => {
   await fs.mkdir(hiddenReportsPath(), {recursive: true});
   // Get the names of the hidden report files.

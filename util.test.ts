@@ -208,10 +208,8 @@ test('getObject returns the parsed object for a valid JSON file', async () => {
   assert.equal((result as {name: unknown}).name, '@jrpool/kilotest');
 });
 
-test('getObject returns an error string for a nonexistent file', async () => {
-  const result = await getObject('/tmp/nonexistent-file.json');
-  assert.ok(typeof result === 'string');
-  assert.ok(result.startsWith('ERROR'));
+test('getObject throws for a nonexistent file', async () => {
+  await assert.rejects(getObject('/tmp/nonexistent-file.json'), /not readable/);
 });
 
 test('getNowStamp returns an 11-character time stamp', () => {
@@ -488,7 +486,7 @@ test('getJobNames creates missing job directories and returns empty arrays', asy
   }
 });
 
-test('getJobNames returns an error when a job directory is a file, not a directory', async () => {
+test('getJobNames throws when a job directory is a file, not a directory', async () => {
   const os = await import('node:os');
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-jobnames-err-'));
   const tmpJobsDir = path.join(tmpRoot, 'db', 'jobs');
@@ -499,9 +497,7 @@ test('getJobNames returns an error when a job directory is a file, not a directo
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
     const {getJobNames} = await import('./util.ts');
-    const result = await getJobNames();
-    assert.ok(typeof result === 'string');
-    assert.ok(result.startsWith('ERROR'));
+    await assert.rejects(getJobNames(), /not readable/);
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -509,16 +505,18 @@ test('getJobNames returns an error when a job directory is a file, not a directo
   }
 });
 
-test('getObject returns an error for a file that is not valid JSON', async () => {
+test('getObject throws for a file that is not valid JSON', async () => {
   const tmpFile = path.join((await import('node:os')).tmpdir(), 'kilotest-test-invalid.json');
   (await import('node:fs')).writeFileSync(tmpFile, 'not json');
-  const result = await getObject(tmpFile);
-  assert.ok(typeof result === 'string');
-  assert.ok(result.startsWith('ERROR'));
-  (await import('node:fs')).unlinkSync(tmpFile);
+  try {
+    await assert.rejects(getObject(tmpFile), /not JSON/);
+  }
+  finally {
+    (await import('node:fs')).unlinkSync(tmpFile);
+  }
 });
 
-test('getRecs creates an empty recommendations file and returns an error when it is missing', async () => {
+test('getRecs creates and returns an empty recommendations object when the file is missing', async () => {
   const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-recs-test';
   const fsSync = await import('node:fs');
   fsSync.mkdirSync(tmpDir + '/jobs', {recursive: true});
@@ -527,8 +525,7 @@ test('getRecs creates an empty recommendations file and returns an error when it
   try {
     const {getRecs} = await import('./util.ts');
     const result = await getRecs();
-    assert.ok(typeof result === 'string');
-    assert.ok(result.startsWith('ERROR'));
+    assert.deepEqual(result, {});
     // Verify the empty file was created.
     assert.ok(fsSync.existsSync(tmpDir + '/jobs/recs.json'));
   }
@@ -538,7 +535,24 @@ test('getRecs creates an empty recommendations file and returns an error when it
   }
 });
 
-test('getRecs returns an error when the recommendations file is not JSON', async () => {
+test('getRecs throws when the recommendations file is not readable for a reason other than being missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recs-unreadable-test';
+  const fsSync = await import('node:fs');
+  // Create a directory where the recommendations file should be, causing EISDIR rather than ENOENT.
+  fsSync.mkdirSync(tmpDir + '/jobs/recs.json', {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {getRecs} = await import('./util.ts');
+    await assert.rejects(getRecs(), /not readable/);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('getRecs throws when the recommendations file is not JSON', async () => {
   const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recs-test';
   (await import('node:fs')).mkdirSync(tmpDir + '/jobs', {recursive: true});
   (await import('node:fs')).writeFileSync(tmpDir + '/jobs/recs.json', 'not json');
@@ -546,9 +560,7 @@ test('getRecs returns an error when the recommendations file is not JSON', async
   process.env.DB_DIR = tmpDir;
   try {
     const {getRecs} = await import('./util.ts');
-    const result = await getRecs();
-    assert.ok(typeof result === 'string');
-    assert.ok(result.startsWith('ERROR'));
+    await assert.rejects(getRecs(), /not JSON/);
   }
   finally {
     process.env.DB_DIR = savedDbDir;

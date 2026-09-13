@@ -23,9 +23,11 @@ import {
   isReportAvailable,
   isTimeStamp,
   isJobID,
+  isUsableReport,
   jobsPath,
   reportsPath
 } from './util.ts';
+import {sendAlert} from './alerts.ts';
 import {checkBalancesForAlerts} from './balances.ts';
 import type {Report} from 'testaro';
 import {handleMCP, mcpPath} from './mcp.ts';
@@ -263,7 +265,7 @@ const getAuthorizedWorkerName = (request: IncomingMessage) => {
 const processJobRequest = async (request: IncomingMessage, response: ServerResponse, workerName: string) => jobLock(async () => {
   let clean = true;
   const messageStart = `Testaro worker ${workerName} requested a job, `;
-  const jobNames = await getJobNames() as Record<string, string[]>;
+  const jobNames = await getJobNames();
   const claimedJobNames = jobNames.claimed;
   // For each claimed job:
   for (const jobName of claimedJobNames) {
@@ -325,7 +327,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
   }
 });
 // Handles a request.
-const requestHandler = async (request: IncomingMessage, response: ServerResponse) => {
+const handleRequest = async (request: IncomingMessage, response: ServerResponse) => {
   // Sets response headers.
   const setHeaders = (contentType: string, location: string | null, volatility: string = 'high') => {
     response.setHeader('content-type', `${contentType}; charset=utf-8`);
@@ -444,12 +446,20 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
           const report = await getReport(timeStamp, jobID);
           // If this failed:
           if (isReportError(report)) {
-            // Report this as suspected abuse.
-            await serveError(
-              getAbuseError(request, `Nonexistent report ${timeStamp}-${jobID} requested`),
-              response,
-              true
+            // This is not necessarily abuse: the link may have been generated (e.g. by
+            // listIssues.html) before the report was pruned, hidden, or rewound, or the
+            // stored report may have become unreadable or unusable, none of which is the
+            // requester's fault. So tell the requester only that the request was invalid,
+            // without accusing them, but alert a manager with the real reason, since a
+            // syntactically valid, non-hidden report ID should otherwise always be usable.
+            console.error(
+              `Full report ${timeStamp}-${jobID} requested but unavailable (${report.error})`
             );
+            await sendAlert(
+              'Kilotest: requested full report unavailable',
+              `Full report ${timeStamp}-${jobID} was requested but could not be retrieved: ${report.error}`
+            );
+            await serveError({message: 'ERROR: Invalid request'}, response, true);
           }
           // Otherwise, i.e. if it succeeded:
           else {
@@ -771,29 +781,59 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
             // If the request is syntactically valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
-              // Get the job the report is from.
-              const claimedJob = await getObject(path.join(claimedPath(), `${id}.json`));
+              // Get the job the report is from. A missing claimed-job file (the job was
+              // never claimed, or was already completed) is a normal outcome, handled below
+              // as if the job were not assigned to this worker; any other failure to read it
+              // should never occur and is left to propagate.
+              let claimedJob: unknown = null;
+              try {
+                claimedJob = await getObject(path.join(claimedPath(), `${id}.json`));
+              }
+              catch (error: unknown) {
+                if (!(error instanceof Error && (error.cause as NodeJS.ErrnoException | undefined)?.code === 'ENOENT')) {
+                  throw error;
+                }
+              }
               // If the job was actually assigned to this worker:
               if (typeof claimedJob === 'object' && claimedJob !== null && (claimedJob as {sources?: {worker?: string}}).sources?.worker === workerName) {
-                console.log(`Testaro report ${id} was received from worker ${workerName}`);
-                // Add the public worker name to the report.
-                report!.sources = {...report!.sources, worker: workerName};
-                // Save the report.
-                await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-                // Annotate the report.
-                await annotateReport(timeStamp, jobID);
-                console.log(`Testaro report ${id} was annotated, saved, and indexed`);
-                // Check the monetary balances and send alerts if nearing exhaustion.
-                await checkBalancesForAlerts(report!);
-                // Delete the job.
-                await fs.unlink(path.join(claimedPath(), `${id}.json`));
-                console.log(`Completed job ${id} deleted`);
-                // Acknowledge receipt.
-                response.setHeader('content-type', 'application/json; charset=utf-8');
-                response.end(JSON.stringify({status: 'ok'}));
-                console.log(
-                  `Testaro report ${id} was received from Testaro worker ${workerName}`
-                );
+                // If the report is usable by Kilotest (as any report of an assigned job should be):
+                if (isUsableReport(reportObj)) {
+                  console.log(`Testaro report ${id} was received from worker ${workerName}`);
+                  // Add the public worker name to the report.
+                  report!.sources = {...report!.sources, worker: workerName};
+                  // Save the report.
+                  await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
+                  // Annotate the report.
+                  await annotateReport(timeStamp, jobID);
+                  console.log(`Testaro report ${id} was annotated, saved, and indexed`);
+                  // Check the monetary balances and send alerts if nearing exhaustion.
+                  await checkBalancesForAlerts(report!);
+                  // Delete the job.
+                  await fs.unlink(path.join(claimedPath(), `${id}.json`));
+                  console.log(`Completed job ${id} deleted`);
+                  // Acknowledge receipt.
+                  response.setHeader('content-type', 'application/json; charset=utf-8');
+                  response.end(JSON.stringify({status: 'ok'}));
+                  console.log(
+                    `Testaro report ${id} was received from Testaro worker ${workerName}`
+                  );
+                }
+                // Otherwise, i.e. if the report is not usable by Kilotest:
+                else {
+                  console.error(`ERROR: Report ${id} from worker ${workerName} is not usable`);
+                  // Alert a manager, since an assigned job should never produce an unusable report.
+                  await sendAlert(
+                    'Kilotest: unusable report received',
+                    `Job ${id} from worker ${workerName} produced a report that Kilotest cannot use. The job was reclassified as failed instead of being recorded.`
+                  );
+                  // Reclassify the job as failed, instead of recording the unusable report or
+                  // leaving the job claimed indefinitely.
+                  await fs.rename(
+                    path.join(claimedPath(), `${id}.json`), path.join(failedPath(), `${id}.json`)
+                  );
+                  // Report the error.
+                  await serveError({message: `ERROR: Report ${id} is not usable`}, response, false);
+                }
               }
               // Otherwise, i.e. if the job was not assigned to this worker:
               else {
@@ -878,6 +918,18 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
   else {
     // Report its invalidity. (Caddy handles OPTIONS requests.)
     await serveError({message: 'ERROR: Invalid request method'}, response, true);
+  }
+};
+// Handles a request, converting any error not already handled by handleRequest (i.e. one
+// that should never occur, such as a job or report file becoming unreadable or corrupt)
+// into a safe response instead of letting it crash the process as an unhandled rejection.
+const requestHandler = async (request: IncomingMessage, response: ServerResponse) => {
+  try {
+    await handleRequest(request, response);
+  }
+  catch (error: unknown) {
+    console.error(`ERROR: Unhandled request error (${errorMessage(error)})`);
+    await serveError({message: 'ERROR: Internal server error'}, response, false, 500);
   }
 };
 

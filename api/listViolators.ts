@@ -14,7 +14,7 @@ import {
   getToolsFacts,
   getThisHost
 } from './util.ts';
-import {getReport} from '../util.ts';
+import {getReport, isReportError} from '../util.ts';
 import {listViolatorsResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
@@ -33,7 +33,7 @@ export const response = async (args: string[]) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Add this to the response content.
     responseContent['basics about the report'] = report;
   }
@@ -70,7 +70,7 @@ export const response = async (args: string[]) => {
     // Add the basics about the issue to the response content.
     responseContent['basics about the issue'] = issueBasics;
     // If the report is available:
-    if (!report.error) {
+    if (!isReportError(report)) {
       // Initialize data about the instances of the issue.
       const reporterIDs: Set<string> = new Set();
       const violators: Record<string, any> = {};

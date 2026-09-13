@@ -15,7 +15,7 @@ import {
   getToolsFacts,
   getThisHost
 } from './util.ts';
-import {getReport, getReportStats, objectSort} from '../util.ts';
+import {getReport, getReportStats, isReportError, objectSort} from '../util.ts';
 import {listIssuesResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
@@ -37,7 +37,7 @@ export const response = async (args: string[]) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Add this to the response content.
     responseContent['basics about the report'] = report;
   }
@@ -58,8 +58,8 @@ export const response = async (args: string[]) => {
       // Get details about the job definition.
       const jobDefinitionDetails = {
         'whether the job prohibited redirection': strict,
-        'whether the native results of rule engines are reported': ['also', 'no'].includes(standard),
-        'whether standardized results are reported': ['also', 'only'].includes(standard),
+        'whether the native results of rule engines are reported': ['also', 'no'].includes(standard as string),
+        'whether standardized results are reported': ['also', 'only'].includes(standard as string),
         'device emulated by the job': device,
         'browser type used by the job': browserID
       };

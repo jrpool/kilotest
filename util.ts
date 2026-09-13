@@ -10,6 +10,7 @@
 // artifact in its remapping of Node's type-stripped source.
 import {sendAlert} from './alerts.ts';
 import {issues as issueSpecs, rules as ruleSpecs} from 'testaro-issues';
+import type {Act, Catalog, Report, StandardInstance} from 'testaro';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import querystring from 'node:querystring';
@@ -440,6 +441,38 @@ export const updateRecs = (what: string, url: string, why: string) => recsLock(a
 
 // REPORT FUNCTIONS
 
+// TYPES
+
+// A StandardInstance extended with the issueID that Kilotest's annotateReport adds.
+export interface AnnotatedInstance extends StandardInstance {
+  issueID?: string;
+}
+
+// An Act whose standardResult instances (if any) are AnnotatedInstances.
+type AnnotatedAct = Omit<Act, 'result'> & {
+  result?: {
+    nativeResult?: unknown;
+    standardResult?: {
+      instances?: AnnotatedInstance[];
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
+
+// The shape of a Report that has passed isUsableReport: optional fields that
+// the guard verifies are narrowed to their required/non-null forms.
+// error?: never is a discriminant: UsableReport.error is always undefined/never (falsy),
+// so if (report.error) narrows a UsableReport | {error: string} union to {error: string},
+// and the else/after-return branch is narrowed to UsableReport.
+export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts'> & {
+  error?: never;
+  target: {what: string; url: string};
+  catalog: Catalog;
+  jobData: NonNullable<Report['jobData']> & {endTime: string; issuelessRules?: string[]};
+  acts: AnnotatedAct[];
+};
+
 // Returns the path ID of the element of a standard instance.
 export const getPathID = (catalog: Record<string, any>, catalogIndex: string, pathID?: string) => {
   if (catalogIndex) {
@@ -454,60 +487,71 @@ export const getPathID = (catalog: Record<string, any>, catalogIndex: string, pa
 // Returns the path of an available report file.
 export const getReportPath = (timeStamp: string, jobID: string): string => path
 .join(reportsPath(), `${timeStamp}-${jobID}.json`);
-// Returns whether a report is valid.
-export const isValidReport = (report: any): boolean => {
+// Returns whether a report is usable by Kilotest.
+export const isUsableReport = (report: unknown): report is UsableReport => {
+  // Cast to any for the property checks inside the guard — this is appropriate
+  // for a type predicate that validates an unknown value at runtime.
+  const r = report as any;
   // Return whether it has the type and properties required by Kilotest:
-  return typeof report === 'object'
-  && typeof report.target?.what === 'string'
-  && typeof report.target?.url === 'string'
-  && Array.isArray(report.acts)
-  && report.acts.every((act: any) =>
+  return typeof r === 'object'
+  && r !== null
+  && typeof r.target?.what === 'string'
+  && typeof r.target?.url === 'string'
+  && Array.isArray(r.acts)
+  && r.acts.every((act: any) =>
     typeof act === 'object'
     && typeof act.type === 'string'
     && act.type === 'test' ? Object.keys(ruleEngines).includes(act.which) : true
   )
-  && typeof report.jobData === 'object'
-  && report.jobData.endTime
-  && !isNaN(new Date(`20${report.jobData.endTime}Z`).getTime())
-  && typeof report.catalog === 'object';
+  && typeof r.jobData === 'object'
+  && r.jobData.endTime
+  && !isNaN(new Date(`20${r.jobData.endTime}Z`).getTime())
+  && typeof r.catalog === 'object';
 };
 // Returns a report.
-export const getReport = async (timeStamp: string, jobID: string) => {
+export const getReport = async (timeStamp: string, jobID: string): Promise<UsableReport | {error: string}> => {
   try {
     const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
     const report = JSON.parse(reportJSON);
     // If it is valid:
-    if (isValidReport(report)) {
+    if (isUsableReport(report)) {
       // Return it.
       return report;
     }
     // Otherwise, i.e. if it is invalid, return this.
-    return {error: `Report ${timeStamp}-${jobID} is invalid`};
+    return {error: `Report ${timeStamp}-${jobID} is not usable`};
   } catch (error: unknown) {
     return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
   }
+};
+// Returns whether a getReport result is an error (rather than a usable report).
+// A type predicate is used instead of `if (report.error)` because UsableReport
+// inherits [key: string]: unknown from Report, making report.error type unknown
+// and preventing TypeScript from narrowing based on truthiness.
+export const isReportError = (r: UsableReport | {error: string}): r is {error: string} => {
+  return typeof (r as any).error === 'string';
 };
 // Adds issue IDs to the standard instances of a report.
 export const annotateReport = async (timeStamp: string, jobID: string) => {
   // Get a copy of the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Return why.
     return report.error;
   }
   // Otherwise, i.e. if it succeeded:
   const unclassifiableRules = new Set<string>();
   // For each of its acts:
-  for (const act of report.acts) {
+  for (const act of report.acts as any[]) {
     const {result, type, which} = act;
     // If it is a test act:
     if (type === 'test') {
       // For each standard instance of the result:
-      for (const instance of result?.standardResult?.instances ?? []) {
-        const {ruleID} = instance;
+      for (const instance of (result?.standardResult?.instances ?? []) as any[]) {
+        const ruleID = instance.ruleID as string;
         // Classify its rule.
-        const issueID = getIssue(which, ruleID);
+        const issueID = getIssue(which!, ruleID);
         // If the rule was classifiable:
         if (issueID) {
           // Add the issue ID to the instance.
@@ -516,7 +560,7 @@ export const annotateReport = async (timeStamp: string, jobID: string) => {
         // Otherwise, i.e. if it was not classifiable:
         else {
           // Add it to the set of unclassifiable rules.
-          unclassifiableRules.add(`${which}:${ruleID}`);
+          unclassifiableRules.add(`${which!}:${ruleID}`);
           // Remove any existing issue ID from the instance.
           delete instance.issueID;
         }
@@ -544,7 +588,7 @@ export const getReportData = async (timeStamp: string, jobID: string) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Return why.
     return {error: report.error};
   }
@@ -569,26 +613,26 @@ export const getReportData = async (timeStamp: string, jobID: string) => {
   const reporterIDSet = new Set<string>();
   const violatorIndexSet = new Set<string>();
   // For each act of the report:
-  report.acts.forEach((act: any) => {
+  (report.acts as any[]).forEach((act) => {
     // If it is a test act:
     if (act.type === 'test') {
       const {result, which} = act;
       // Ensure that the rule engine is in the temporary data.
-      engineNameSet.add(ruleEngines[which][0]);
-      const instances = result?.standardResult?.instances ?? [];
+      engineNameSet.add(ruleEngines[which!][0]);
+      const instances = (result?.standardResult?.instances ?? []) as any[];
       // For each standard instance of the act:
-      instances.forEach((instance: any) => {
+      instances.forEach((instance) => {
         const {catalogIndex, issueID, outcome} = instance;
         // If it reports a violation and has a non-ignorable classified issue ID:
         if (outcome !== 'cantTell' && issueID && issueSpecs[issueID] && issueID !== 'ignorable') {
           // Ensure that the rule engine is in the temporary data.
-          reporterIDSet.add(which);
+          reporterIDSet.add(which!);
           // Ensure that the issue is in the temporary data.
           issueIDSet.add(issueID);
           // If the violator has a catalog index:
           if (catalogIndex) {
             // Ensure that the violator is in the temporary data.
-            violatorIndexSet.add(catalogIndex);
+            violatorIndexSet.add(String(catalogIndex));
           }
         }
       });
@@ -619,7 +663,7 @@ export const getPageData = async (timeStamp: string, jobID: string) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Return why.
     return report;
   }
@@ -681,7 +725,7 @@ export const isHidden = async (timeStamp: string, jobID: string): Promise<boolea
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
 // Returns an extract of an available report, or an error object if it cannot be read or parsed.
-export const getReportExtract = async (timeStamp: string, jobID: string) => {
+export const getReportExtract = async (timeStamp: string, jobID: string): Promise<{timeStamp: string; jobID: string; what: string; url: string; reportTime: string} | {error: string}> => {
   try {
     // Get the report.
     const reportJSON = await fs.readFile(
@@ -710,13 +754,13 @@ export const getReportExtracts = async (onlyLatest: boolean = false) => {
   // Get the names of the available report files.
   const reportFileNames = await fs.readdir(reportsPath());
   // Initialize an array of extracts.
-  const extracts: any[] = [];
+  const extracts: {timeStamp: string; jobID: string; what: string; url: string; reportTime: string; superseded?: boolean}[] = [];
   // For each one:
   for (const reportFileName of reportFileNames) {
     const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
     // Get an extract of it.
     const extract = await getReportExtract(timeStamp, jobID);
-    if (!extract.error) {
+    if (!('error' in extract)) {
       // Add the extract to the array.
       extracts.push(extract);
     }

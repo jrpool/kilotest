@@ -15,6 +15,7 @@ import {
   getWeightName,
   htmlSafe,
   isHidden,
+  isReportError,
   makeBreakable,
 } from '../../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -64,14 +65,14 @@ const populateQuery = async (
   let violators: any = {};
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  const {acts, catalog} = report;
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Populate the query with the reason.
     query.error = report.error;
     // Stop populating the query.
     return;
   }
+  const {acts, catalog} = report;
   // Otherwise, i.e. if it succeeded, get the test acts of the report.
   const testActs = acts.filter((act: any) => act.type === 'test');
   // For each test act:
@@ -148,7 +149,7 @@ const populateQuery = async (
       const catalogItem = catalog[catalogIndex] || {};
       if (catalogItem.textLinkable) {
         takeMeAdviceNeeded = true;
-        const href = getTextFragmentHref(catalogItem.text, url);
+        const href = getTextFragmentHref(catalogItem.text as string, url);
         const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
         const takeMeLink = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
         lines.push(`${margin}    <li>${takeMeLink}</li>`);

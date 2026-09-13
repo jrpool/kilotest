@@ -333,14 +333,14 @@ after(() => {
 });
 
 test('getPageData returns page data for a valid report', async () => {
-  const data = await getPageData('260101T0000', 'mix');
+  const data = await getPageData('260101T0000', 'mix') as any;
   assert.equal(data.what, 'Mixed Outcomes Page');
   assert.equal(data.url, 'https://example.com/mixed');
   assert.equal(typeof data.daysAgo, 'number');
 });
 
 test('getPageData returns an error for a nonexistent report', async () => {
-  const data = await getPageData('999999T9999', 'xxx');
+  const data = await getPageData('999999T9999', 'xxx') as any;
   assert.ok(data.error);
 });
 
@@ -655,9 +655,9 @@ test('getReport returns an error for an invalid report', async () => {
   process.env.DB_DIR = tmpDir;
   try {
     const {getReport} = await import('./util.ts');
-    const result = await getReport('260101T0000', 'bad');
+    const result = await getReport('260101T0000', 'bad') as any;
     assert.ok(result.error);
-    assert.ok(result.error.includes('invalid'));
+    assert.ok(result.error.includes('not usable'));
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -771,26 +771,26 @@ test('getPathID returns /html when catalogIndex is falsy and pathID is null', as
   assert.equal(getPathID({}, null as any, null as any), '/html');
 });
 
-test('isValidReport returns false for a report with a test act using an unknown engine', async () => {
-  const {isValidReport} = await import('./util.ts');
+test('isUsableReport returns false for a report with a test act using an unknown engine', async () => {
+  const {isUsableReport} = await import('./util.ts');
   const report = {
     target: {what: 'Test', url: 'https://example.com'},
     acts: [{type: 'test', which: 'unknownEngine'}],
     jobData: {endTime: '26-01-01T00:00'},
     catalog: {}
   };
-  assert.equal(isValidReport(report), false);
+  assert.equal(isUsableReport(report), false);
 });
 
-test('isValidReport returns true for a report with a non-test act', async () => {
-  const {isValidReport} = await import('./util.ts');
+test('isUsableReport returns true for a report with a non-test act', async () => {
+  const {isUsableReport} = await import('./util.ts');
   const report = {
     target: {what: 'Test', url: 'https://example.com'},
     acts: [{type: 'other'}],
     jobData: {endTime: '26-01-01T00:00'},
     catalog: {}
   };
-  assert.equal(isValidReport(report), true);
+  assert.equal(isUsableReport(report), true);
 });
 
 test('annotateReport handles a test act with no standardResult instances', async () => {
@@ -944,7 +944,7 @@ test('isHidden returns true for a hidden report', async () => {
 });
 
 test('getReportExtract returns an extract for a valid report', async () => {
-  const extract = await getReportExtract('260101T0000', 'mix');
+  const extract = await getReportExtract('260101T0000', 'mix') as any;
   assert.equal(extract.timeStamp, '260101T0000');
   assert.equal(extract.jobID, 'mix');
   assert.equal(extract.what, 'Mixed Outcomes Page');
@@ -953,7 +953,7 @@ test('getReportExtract returns an extract for a valid report', async () => {
 });
 
 test('getReportExtract returns an error for a nonexistent report', async () => {
-  const extract = await getReportExtract('999999T9999', 'xxx');
+  const extract = await getReportExtract('999999T9999', 'xxx') as any;
   assert.ok(extract.error);
 });
 

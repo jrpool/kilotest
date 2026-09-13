@@ -106,7 +106,7 @@ test('answer returns an error when a report fails annotation', {timeout: 2000}, 
     const {answer} = await import('./index.ts');
     const result = await answer('test-auth-code');
     assert.equal(result.status, 'error');
-    assert.ok(result.message.includes('invalid'), `Expected message about invalid report, got: ${result.message}`);
+    assert.ok(result.message?.includes('not usable'), `Expected message about unusable report, got: ${result.message}`);
   }
   finally {
     try {

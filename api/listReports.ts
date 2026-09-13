@@ -27,20 +27,17 @@ export const response = async () => {
   const reportExtracts = await getReportExtracts();
   // For each report:
   for (const extract of reportExtracts) {
-    const {error, jobID, timeStamp} = extract;
+    const {jobID, timeStamp} = extract;
     // Get the basics about it (which may be only an error message).
     const reportBasics: any = await getReportBasics(timeStamp, jobID, extract);
-    // If this succeeded:
-    if (!error) {
-      // Add instructions for getting details to the basics.
-      reportBasics['how to get details about the report'] = {
-        method: 'GET',
-        URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
-      };
-      reportBasics['web users can get details about the report at'] = `${thisHost}/listIssues.html/${timeStamp}/${jobID}`;
-      // Add the basics to the array.
-      reportsBasics.push(reportBasics);
-    }
+    // Add instructions for getting details to the basics.
+    reportBasics['how to get details about the report'] = {
+      method: 'GET',
+      URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
+    };
+    reportBasics['web users can get details about the report at'] = `${thisHost}/listIssues.html/${timeStamp}/${jobID}`;
+    // Add the basics to the array.
+    reportsBasics.push(reportBasics);
   }
   // Sort the array by page description and secondarily by completion recency.
   reportsBasics.sort((a, b) => {

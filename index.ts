@@ -15,6 +15,7 @@ import {
   getObject,
   getPOSTData,
   getReport,
+  isReportError,
   getRecs,
   getReportPath,
   hiddenReportsPath,
@@ -504,7 +505,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
           // Get it.
           const report = await getReport(timeStamp, jobID);
           // If this failed:
-          if (report.error) {
+          if (isReportError(report)) {
             // Report this as suspected abuse.
             await serveError(
               getAbuseError(request, `Nonexistent report ${timeStamp}-${jobID} requested`),

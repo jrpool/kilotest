@@ -178,7 +178,7 @@ test('listReports returns an error when a report file is invalid', {timeout: 500
   const reportsDir = path.join(dbDir, 'reports');
   const invalidReportPath = path.join(reportsDir, '260101T9999-bad.json');
   try {
-    // Valid for getReportExtract (has target and jobData.endTime) but invalid for isValidReport (no acts or catalog).
+    // Valid for getReportExtract (has target and jobData.endTime) but not usable by isUsableReport (no acts or catalog).
     const invalidReport = {
       target: {what: 'Invalid Report', url: 'https://example.com/invalid'},
       jobData: {endTime: '26-01-01T00:10'}

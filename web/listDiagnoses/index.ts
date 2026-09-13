@@ -13,6 +13,7 @@ import {
   getWeightName,
   htmlSafe,
   isHidden,
+  isReportError,
   ruleEngines
 } from '../../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -42,14 +43,14 @@ const populateQuery = async (
   const {testInfo, url, urlLink, what} = pageDataStrings;
   // Otherwise, i.e. if it succeeded, get the report.
   const report = await getReport(timeStamp, jobID);
-  const {acts, catalog} = report;
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Populate the query with the reason.
     query.error = report.error;
     // Stop populating the query.
     return;
   }
+  const {acts, catalog} = report;
   // Otherwise, i.e. if it succeeded, get the catalog item of the specified violator.
   const catalogItem = catalog[catalogIndex] ?? {};
   const {boxID, startTag, tagName, text} = catalogItem;
@@ -57,7 +58,7 @@ const populateQuery = async (
   const lines: string[] = [];
   const margin = ' '.repeat(6);
   if (catalogIndex && catalogItem.textLinkable) {
-    const href = getTextFragmentHref(text, url);
+    const href = getTextFragmentHref(text as string, url);
     const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
     const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
     query.takeMeThere = `${margin}    <p>${link}</p>`;
@@ -91,7 +92,7 @@ const populateQuery = async (
   else {
     query.text = '[not applicable]';
   }
-  query.startTag = htmlSafe(startTag) || '[not obtained]';
+  query.startTag = htmlSafe(startTag ?? '') || '[not obtained]';
   query.pathID = pathID || '[not obtained]';
   if (boxID) {
     const dims = boxID.split(':');

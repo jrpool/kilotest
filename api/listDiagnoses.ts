@@ -13,7 +13,7 @@ import {
   getToolsFacts,
   getThisHost
 } from './util.ts';
-import {getReport} from '../util.ts';
+import {getReport, isReportError} from '../util.ts';
 import {listDiagnosesResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
@@ -33,7 +33,7 @@ export const response = async (args: string[]) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (report.error) {
+  if (isReportError(report)) {
     // Add this to the response content.
     responseContent['basics about the report'] = report;
   }
@@ -73,8 +73,8 @@ export const response = async (args: string[]) => {
     // Add them to the response content.
     responseContent['basics about the issue'] = issueBasics;
   }
-  // If the report and its catalog exist:
-  if (report.catalog) {
+  // If the report was retrieved successfully:
+  if (!isReportError(report)) {
     const catalogItem = report.catalog[catalogIndex];
     // If the violator is not in it:
     if (!catalogItem) {

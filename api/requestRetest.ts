@@ -24,9 +24,11 @@ export const response = async (args: string[]) => {
   const reasonLength = reason.length;
   // Get data on the report.
   const reportExtract = await getReportExtract(timeStamp, jobID);
-  const {what, url} = reportExtract.error ? {} : reportExtract;
+  const extractFailed = 'error' in reportExtract;
+  const what = extractFailed ? '' : (reportExtract as {what: string; url: string}).what;
+  const url = extractFailed ? '' : (reportExtract as {what: string; url: string}).url;
   // If this failed:
-  if (reportExtract.error) {
+  if (extractFailed) {
     // Add this to the response content.
     responseContent['details about your request'] = {
       error: 'request invalid: the specified existing report is not an available report'

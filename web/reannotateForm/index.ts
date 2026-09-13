@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-import {getIssue, getReport, getReportExtracts} from '../../util.ts';
+import {getIssue, getReport, getReportExtracts, isReportError} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -23,14 +23,15 @@ const populateQuery = async (query: Record<string, any>) => {
     const {jobID, timeStamp} = reportExtract;
     // Get it.
     const report = await getReport(timeStamp, jobID);
-    const {acts = [], error, id} = report;
     // If this failed:
-    if (error) {
+    if (isReportError(report)) {
       // Populate the query with the reason.
-      query.error = error;
+      query.error = report.error;
       // Stop populating the query.
       return;
     }
+    const acts = report.acts;
+    const id = report.id as string;
     // Otherwise, i.e. if it succeeded, for each act in the report:
     acts.forEach((act: any) => {
       const {result, type, which} = act;

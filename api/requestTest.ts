@@ -10,36 +10,36 @@ import {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} fro
 import {getReportExtracts, isURL} from '../util.ts';
 import {requestTestResponseSchema} from './schemas.ts';
 
+// TYPES
+
+// The response content defined by the response schema.
+type ResponseContent = z.infer<typeof requestTestResponseSchema>['response content'];
+
 // FUNCTIONS
 
 // Returns the response body.
 export const response = async (args: string[]) => {
   const [what = '', url = '', reason = ''] = args;
   const thisHost = getThisHost();
-  // Initialize the response content.
-  const responseContent = {
-    'details about your request': {},
-    'disposition of your request': null
-  } as z.infer<typeof requestTestResponseSchema>['response content'];
+  // Initialize the response-content properties.
+  let requestDetails: ResponseContent['details about your request'];
+  let requestDisposition: ResponseContent['disposition of your request'] = null;
   const whatLength = what.length;
   // If the description is empty or too long:
   if (!whatLength || whatLength > 100) {
-    // Add this to the response content.
-    responseContent['details about your request'] = {
+    requestDetails = {
       error: 'request invalid: your description of the page is not between 1 and 100 characters long'
     };
   }
   // Otherwise, i.e. if the URL is too short or too long::
   else if (url.length < 12 || url.length > 300) {
-    // Add this to the response content.
-    responseContent['details about your request'] = {
+    requestDetails = {
       error: 'request invalid: you specified a URL for the page that is not between 12 and 300 characters long'
     };
   }
   // Otherwise, i.e. if the URL is invalid:
   else if (!isURL(url)) {
-    // Add this to the response content.
-    responseContent['details about your request'] = {
+    requestDetails = {
       error: 'request invalid: you specified an invalid URL for the page'
     };
   }
@@ -49,10 +49,9 @@ export const response = async (args: string[]) => {
     const reportExtracts = await getReportExtracts();
     // If any report is on a page with the specified description and URL:
     if (
-      reportExtracts.some((extract: any) => extract.what === what && extract.url === url)
+      reportExtracts.some(extract => extract.what === what && extract.url === url)
     ) {
-      // Add this to the response content.
-      responseContent['details about your request'] = {
+      requestDetails = {
         error: 'request invalid: the page has already been tested and its report is available'
       };
     }
@@ -60,8 +59,8 @@ export const response = async (args: string[]) => {
     else {
       // Process the request.
       await processTestRequest('test', what, url, reason);
-      // Add details about the request to the response content.
-      responseContent['details about your request'] = {
+      // Add details about the request.
+      requestDetails = {
         'date and time received': new Date().toISOString(),
         'page to be tested': {
           description: what,
@@ -69,14 +68,19 @@ export const response = async (args: string[]) => {
         },
         'reason why the page should be tested': reason
       };
-      // Add information about the disposition of the request to the response content.
-      responseContent['disposition of your request'] = {
+      // Add information about the disposition of the request.
+      requestDisposition = {
         'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
         'how you can check for completion': 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
         'how a web user can check for completion': `A web user can visit ${thisHost}/listReports.html to learn whether the page has been tested and a report is available.`
       };
     }
   }
+  // Create the response content.
+  const responseContent: ResponseContent = {
+    'details about your request': requestDetails,
+    'disposition of your request': requestDisposition
+  };
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),

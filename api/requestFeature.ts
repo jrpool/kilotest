@@ -10,6 +10,11 @@ import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {sendAlert} from '../alerts.ts';
 import {requestFeatureResponseSchema} from './schemas.ts';
 
+// TYPES
+
+// The response content defined by the response schema.
+type ResponseContent = z.infer<typeof requestFeatureResponseSchema>['response content'];
+
 // FUNCTIONS
 
 // Returns the response body.
@@ -17,18 +22,13 @@ export const response = async (args: string[]) => {
   const [feature = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response content.
-  const responseContent = {
-    'details about your request': null
-  } as unknown as z.infer<typeof requestFeatureResponseSchema>['response content'];
-  // If the requested feature or improvement is empty:
-  if (!feature) {
-    // Add this to the response content.
-    responseContent['details about your request'] = {
+  const responseContent: ResponseContent = {
+    'details about your request': {
       error: 'request invalid: request is empty'
-    };
-  }
-  // Otherwise, i.e. if it exists:
-  else {
+    }
+  };
+  // If the requested feature or improvement exists:
+  if (feature) {
     // Notify the manager.
     await sendAlert('MCP feature request received', feature);
     // Add the disposition to the response content.

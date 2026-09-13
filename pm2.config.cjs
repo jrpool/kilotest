@@ -1,3 +1,10 @@
+/*
+  pm2.config.cjs
+  PM2 process configuration for Kilotest. The .cjs extension is required: PM2
+  loads configuration files with require() (Common.parseConfig in pm2's
+  lib/Common.js), which cannot load ES modules. A .js or .mjs name would fail
+  with ERR_REQUIRE_ESM in this type:module package.
+*/
 module.exports = {
   apps: [
     {

@@ -69,7 +69,9 @@ paths:
                             completion date and time:
                               type: string
                             days since the report was completed:
-                              type: number
+                              type:
+                                - number
+                                - 'null'
                             tested web page:
                               type: object
                               properties:
@@ -372,50 +374,54 @@ paths:
                             additionalProperties: false
                           - type: 'null'
                       basics about all issues reported in the report:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            identifier:
-                              type: string
-                            summary:
-                              type: string
-                            impact on a user:
-                              type: string
-                            priority:
-                              type: string
-                              enum:
-                                - lowest
-                                - low
-                                - high
-                                - highest
-                            rule engines with any violations belonging to the issue:
-                              type: array
-                              items:
-                                type: string
-                            how to get details about the issue:
+                        anyOf:
+                          - type: array
+                            items:
                               type: object
                               properties:
-                                method:
+                                identifier:
                                   type: string
-                                  const: GET
-                                URL:
+                                summary:
+                                  type: string
+                                impact on a user:
+                                  type: string
+                                priority:
+                                  type: string
+                                  enum:
+                                    - lowest
+                                    - low
+                                    - high
+                                    - highest
+                                rule engines with any violations belonging to the issue:
+                                  type: array
+                                  items:
+                                    type:
+                                      - string
+                                      - 'null'
+                                how to get details about the issue:
+                                  type: object
+                                  properties:
+                                    method:
+                                      type: string
+                                      const: GET
+                                    URL:
+                                      type: string
+                                  required:
+                                    - method
+                                    - URL
+                                  additionalProperties: false
+                                web users can get details about the issue at:
                                   type: string
                               required:
-                                - method
-                                - URL
+                                - identifier
+                                - summary
+                                - impact on a user
+                                - priority
+                                - rule engines with any violations belonging to the issue
+                                - how to get details about the issue
+                                - web users can get details about the issue at
                               additionalProperties: false
-                            web users can get details about the issue at:
-                              type: string
-                          required:
-                            - identifier
-                            - summary
-                            - impact on a user
-                            - priority
-                            - rule engines with any violations belonging to the issue
-                            - how to get details about the issue
-                            - web users can get details about the issue at
-                          additionalProperties: false
+                          - type: 'null'
                     required:
                       - basics about the report
                       - details about the report
@@ -514,14 +520,17 @@ paths:
                               - rule engines reporting violations belonging to the issue
                             additionalProperties: false
                           - type: 'null'
-                      basics about all elements reported as exhibiting the issue:
+                      basics about all elements exhibiting the issue:
                         anyOf:
                           - type: array
                             items:
                               type: object
                               properties:
                                 identifier:
-                                  type: string
+                                  description: Catalog index of the element in the report; a string or number, copied verbatim.
+                                  type:
+                                    - string
+                                    - number
                                 tag name:
                                   description: Copied from the report catalog entry; type not guaranteed.
                                 inner text:
@@ -555,7 +564,7 @@ paths:
                       - basics about the report
                       - basics about the issue
                       - details about the issue
-                      - basics about all elements reported as exhibiting the issue
+                      - basics about all elements exhibiting the issue
                     additionalProperties: false
                 required:
                   - tool collection
@@ -683,31 +692,33 @@ paths:
                           - type: 'null'
                       diagnoses of how the element exhibited the issue:
                         anyOf:
-                          - type: array
-                            items:
-                              type: object
-                              properties:
-                                identifier of the violated rule:
-                                  description: Copied from the report instance (ruleID); type not guaranteed.
-                                description of the violation:
-                                  description: Copied from the report instance (what); type not guaranteed.
-                                severity of the violation on a 0-to-3 scale:
-                                  description: Copied from the report instance (ordinalSeverity); type not guaranteed.
-                                count of violations of the rule by the element:
-                                  type: number
-                              required:
-                                - identifier of the violated rule
-                                - description of the violation
-                                - severity of the violation on a 0-to-3 scale
-                                - count of violations of the rule by the element
-                              additionalProperties: false
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
+                          - anyOf:
+                              - type: array
+                                items:
+                                  type: object
+                                  properties:
+                                    identifier of the violated rule:
+                                      description: Copied from the report instance (ruleID); type not guaranteed.
+                                    description of the violation:
+                                      description: Copied from the report instance (what); type not guaranteed.
+                                    severity of the violation on a 0-to-3 scale:
+                                      description: Copied from the report instance (ordinalSeverity); type not guaranteed.
+                                    count of violations of the rule by the element:
+                                      type: number
+                                  required:
+                                    - identifier of the violated rule
+                                    - description of the violation
+                                    - severity of the violation on a 0-to-3 scale
+                                    - count of violations of the rule by the element
+                                  additionalProperties: false
+                              - type: object
+                                properties:
+                                  error:
+                                    type: string
+                                required:
+                                  - error
+                                additionalProperties: false
+                          - type: 'null'
                     required:
                       - basics about the report
                       - basics about the issue
@@ -910,8 +921,25 @@ paths:
                               - page to be tested
                               - reason why the page should be tested
                             additionalProperties: false
+                      disposition of your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              what happens next:
+                                type: string
+                              how you can check for completion:
+                                type: string
+                              how a web user can check for completion:
+                                type: string
+                            required:
+                              - what happens next
+                              - how you can check for completion
+                              - how a web user can check for completion
+                            additionalProperties: false
+                          - type: 'null'
                     required:
                       - details about your request
+                      - disposition of your request
                     additionalProperties: false
                 required:
                   - tool collection
@@ -1031,8 +1059,25 @@ paths:
                               - page to be retested
                               - reason why the page should be retested
                             additionalProperties: false
+                      disposition of your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              what happens next:
+                                type: string
+                              how you can check for completion:
+                                type: string
+                              how a web user can check for completion:
+                                type: string
+                            required:
+                              - what happens next
+                              - how you can check for completion
+                              - how a web user can check for completion
+                            additionalProperties: false
+                          - type: 'null'
                     required:
                       - details about your request
+                      - disposition of your request
                     additionalProperties: false
                 required:
                   - tool collection
@@ -1263,7 +1308,9 @@ components:
         completion date and time:
           type: string
         days since the report was completed:
-          type: number
+          type:
+            - number
+            - 'null'
         tested web page:
           type: object
           properties:

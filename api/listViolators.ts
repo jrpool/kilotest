@@ -17,47 +17,35 @@ import {
 import {getReport, getTestActInstances, isReportError} from '../util.ts';
 import {listViolatorsResponseSchema} from './schemas.ts';
 
+// TYPES
+
+// The response content defined by the response schema.
+type ResponseContent = z.infer<typeof listViolatorsResponseSchema>['response content'];
+
 // FUNCTIONS
 
 // Returns the response body.
 export const response = async (args: string[]) => {
   const [issueID = '', timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
-  // Initialize the response content.
-  const responseContent = {
-    'basics about the report': null,
-    'basics about the issue': null,
-    'details about the issue': null,
-    'basics about all elements exhibiting the issue': null
-  } as unknown as z.infer<typeof listViolatorsResponseSchema>['response content'];
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Add this to the response content.
-    responseContent['basics about the report'] = report;
-  }
-  // Otherwise, i.e. if it succeeded:
-  else {
-    // Get the basics about the report (which may be only an error message).
-    const reportBasics = await getReportBasics(timeStamp, jobID);
-    // Add them to the response content.
-    responseContent['basics about the report'] = reportBasics;
-  }
+  // Initialize the response content.
+  const responseContent: ResponseContent = {
+    'basics about the report': isReportError(report) ? report : await getReportBasics(timeStamp, jobID),
+    'basics about the issue': {
+      'error': 'No information about the specified issue is available'
+    },
+    'details about the issue': null,
+    'basics about all elements exhibiting the issue': null
+  };
   // Get the specification of the issue.
   const issueSpec = issueID ? getIssueSpec(issueID) : null;
-  // If the issue is ignorable or not fully classified:
-  if (!issueSpec) {
-    // Add this to the response content.
-    responseContent['basics about the issue'] = {
-      'error': 'No information about the specified issue is available'
-    };
-  }
-  // Otherwise, i.e. if it is non-ignorable and fully classified:
-  else {
+  // If the issue is non-ignorable and fully classified:
+  if (issueSpec) {
     const {summary, wcag, weight, why} = issueSpec;
-    // Initialize the basics and details about it.
-    const issueBasics = {
+    // Add the basics about it to the response content.
+    responseContent['basics about the issue'] = {
       'identifier': issueID,
       summary,
       'impact on a user': why,
@@ -67,13 +55,11 @@ export const response = async (args: string[]) => {
       },
       priority: ['lowest', 'low', 'high', 'highest'][weight - 1] as 'lowest' | 'low' | 'high' | 'highest'
     };
-    // Add the basics about the issue to the response content.
-    responseContent['basics about the issue'] = issueBasics;
     // If the report is available:
     if (!isReportError(report)) {
       // Initialize data about the instances of the issue.
       const reporterIDs: Set<string> = new Set();
-      const violators: Record<string, any> = {};
+      const violators: Record<string, {catalogIndex: string | number; reporters: Set<string>}> = {};
       // For each violating standard instance of the issue in the report:
       getTestActInstances(report, {violationsOnly: true, issueID}).forEach(({act, instance}) => {
         const {catalogIndex} = instance;

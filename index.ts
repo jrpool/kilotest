@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import {
   annotateReport,
   createLock,
+  deleteRec,
   errorMessage,
   getJobNames,
   getJSON,
@@ -16,7 +17,6 @@ import {
   getPOSTData,
   getReport,
   isReportError,
-  getRecs,
   getReportPath,
   hiddenReportsPath,
   isHidden,
@@ -24,16 +24,16 @@ import {
   isTimeStamp,
   isJobID,
   jobsPath,
-  recsLock,
   reportsPath
 } from './util.ts';
+import {checkBalancesForAlerts} from './balances.ts';
+import type {Report} from 'testaro';
 import {handleMCP, mcpPath} from './mcp.ts';
 import fs from 'node:fs/promises';
 import {handleComment} from './web/tutorial/index.ts';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
-import {sendAlert} from './alerts.ts';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
 import {answer as enqueueForm} from './web/enqueueForm/index.ts';
@@ -73,7 +73,12 @@ dotenv.config({quiet: true});
 
 // CONSTANTS
 
-const answer: Record<string, any> = {
+// The data returned by a page-answering handler.
+type AnswerData = {status: string; message?: string; answerPage?: string};
+// A page-answering handler, whose parameters vary by topic.
+type PageHandler = (...args: any[]) => Promise<AnswerData>;
+
+const answer: Record<string, PageHandler> = {
   ai0BalanceForm,
   enqueue,
   enqueueForm,
@@ -100,7 +105,7 @@ const answer: Record<string, any> = {
   tutorial
 };
 // Response functions of the API services.
-const apiRespond = {
+const apiRespond: Record<string, (args: string[]) => Promise<unknown>> = {
   getReport: getReportAPI,
   listDiagnoses: listDiagnosesAPI,
   listIssues: listIssuesAPI,
@@ -149,8 +154,6 @@ export const routes = {
     '/worker/report'
   ]
 };
-// Values that may require alerts.
-const balancePath = path.join(import.meta.dirname, 'ai0Balance.json');
 const jobLock = createLock();
 
 // FUNCTIONS
@@ -200,73 +203,8 @@ export const serveError = async (error: Record<string, unknown>, response: Serve
     console.log('Cannot send error response because the response has ended.');
   }
 };
-// Checks a report for balances nearing exhaustion.
-const checkBalancesForAlerts = async (report: any) => {
-  // Get the alert thresholds and prices from the environment.
-  const WAVE_THRESHOLD = Number(process.env.WAVE_BALANCE_THRESHOLD);
-  const AI_SERVICE0_THRESHOLD = Number(process.env.AI_SERVICE0_BALANCE_THRESHOLD);
-  const AI_MODEL0_INPUT_PRICE = Number(process.env.AI_MODEL0_INPUT_PRICE);
-  const AI_MODEL0_OUTPUT_PRICE = Number(process.env.AI_MODEL0_OUTPUT_PRICE);
-  // If the variables to be monitored for alerts are defined:
-  if (WAVE_THRESHOLD && AI_SERVICE0_THRESHOLD && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE) {
-    // WAVE.
-    const waveAct = report.acts.find((act: any) => act.type === 'test' && act.which === 'wave');
-    const creditsRemaining = waveAct?.data?.creditsRemaining;
-    // If a WAVE balance nearing exhaustion is reported:
-    if (typeof creditsRemaining === 'number' && creditsRemaining < WAVE_THRESHOLD) {
-      // Alert a manager.
-      await sendAlert(
-        'Kilotest: WAVE balance low',
-        `Only ${creditsRemaining} WAVE credits remain (3 used per job)`
-      );
-    }
-    const testaroAct = report.acts.find((act: any) => act.type === 'test' && act.which === 'testaro');
-    // Get the AI model token usage for the testaro allCaps test.
-    const usage = testaroAct?.data?.ruleData?.allCaps?.aiModelUsage;
-    let balanceJSON = null;
-    try {
-      // Get the recorded AI service 0 balance.
-      balanceJSON = await fs.readFile(balancePath, 'utf8');
-    }
-    catch {
-      console.error('ERROR: AI service 0 balance file missing');
-    }
-    // If the variables required for an AI service 0 balance alert are defined:
-    if (usage && AI_MODEL0_INPUT_PRICE && AI_MODEL0_OUTPUT_PRICE && balanceJSON) {
-      const inputCost = AI_MODEL0_INPUT_PRICE * usage.inputTokens;
-      const outputCost = AI_MODEL0_OUTPUT_PRICE * usage.outputTokens;
-      const cost = inputCost + outputCost;
-      // If any cost was incurred:
-      if (cost > 0) {
-        // Warn about this.
-        console.log(
-          'This job has made the production AI service 0 balance record wrong. Update it.'
-        );
-      }
-      try {
-        const balanceData = JSON.parse(balanceJSON);
-        // Get an estimate of the balance after this job.
-        const newBalance = balanceData.balance - cost;
-        // Update the recorded balance.
-        await fs.writeFile(balancePath, getJSON({balance: newBalance}));
-        console.log(`Estimated new AI Service 0 balance: $${newBalance.toFixed(2)}`);
-        // If it is nearing exhaustion:
-        if (newBalance < AI_SERVICE0_THRESHOLD) {
-          // Alert a manager.
-          await sendAlert(
-            'Kilotest: AI service 0 balance low',
-            `Balance of AI service 0 account (https://console.anthropic.com) only about $${newBalance.toFixed(2)} (about $0.01 used per job)`
-          );
-        }
-      }
-      catch (error) {
-        console.log(`ERROR managing AI service 0 balance: ${errorMessage(error)}`);
-      }
-    }
-  }
-};
 // Creates an error object about a suspicious request.
-export const getAbuseError = (request: IncomingMessage, reason: string) => {
+export const getAbuseError = (request: IncomingMessage, reason: string | undefined) => {
   const {method, url, headers} = request;
   const forwardedFor = headers['x-forwarded-for'];
   const remoteAddress = request.socket.remoteAddress;
@@ -562,7 +500,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
       // If the service lists the available reports:
       if (service === 'listReports') {
         // Get the response body.
-        const responseBody = await apiRespond.listReports();
+        const responseBody = await apiRespond.listReports([]);
         // Send it.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
@@ -670,10 +608,10 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
     // Otherwise, i.e. if it is not for the MCP server:
     else {
       // Get the data from the request body.
-      const postData: any = await getPOSTData(request);
+      const postData = await getPOSTData(request);
       // If the request is a test recommendation:
       if (pageName === 'requestTest.html') {
-        const {what, url, why} = postData;
+        const {what, url, why} = postData as {what?: string; url: string; why?: string};
         // If the request is valid:
         if (what && url.startsWith('https://') && why) {
           // If a report on the page is already available:
@@ -707,7 +645,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
       }
       // Otherwise, if it is a retest recommendation:
       else if (pageName === 'requestRetest.html') {
-        const {why} = postData;
+        const {why} = postData as {why?: string};
         const [timeStamp, jobID] = pathTail.split('/');
         // If the request is valid:
         if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
@@ -734,7 +672,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
       }
       // Otherwise, if it is an approval or rejection of a test request:
       else if (pageName === 'recAction.html') {
-        const {target, authCode} = postData;
+        const {target, authCode} = postData as {target: string; authCode?: string};
         const [url, what] = target.split('\t');
         // If the request is valid:
         if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
@@ -759,15 +697,8 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
           }
           // Otherwise, i.e. if it is a rejection:
           else {
-            // Isolate this revision.
-            await recsLock(async () => {
-              // Get the recommendations.
-              const recs = await getRecs() as Record<string, unknown>;
-              // Delete the rejected URL.
-              delete recs[url];
-              // Save the revised recommendations.
-              await fs.writeFile(path.join(jobsPath(), 'recs.json'), getJSON(recs));
-            });
+            // Delete the recommendations to test the URL.
+            await deleteRec(url);
             // Set a location header for a response.
             response.setHeader('content-location', '/enqueueForm.html');
             // Get the answer data.
@@ -784,7 +715,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
       }
       // Otherwise, if it is a reannotation order:
       else if (pageName === 'reannotate.html') {
-        const {authCode} = postData;
+        const {authCode} = postData as {authCode?: string};
         // Set headers for a response.
         setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
@@ -802,7 +733,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
       }
       // Otherwise, if it is a WCAG map renewal:
       else if (pageName === 'renewWCAG.html') {
-        const {authCode} = postData;
+        const {authCode} = postData as {authCode?: string};
         // Set headers for a response.
         setHeaders('text/html', pathname, 'low');
         // Get the answer data.
@@ -833,28 +764,27 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
           }
           // Otherwise, if it is report acquisition:
           else if (service === 'report') {
-            const {report} = postData;
-            const reportObj = report || {};
+            const {report} = postData as {report?: Report};
+            const reportObj: Partial<Report> = report ?? {};
             const {id, target} = reportObj;
-            const {what, url} = target || {};
+            const {what, url} = (target ?? {}) as Partial<NonNullable<Report['target']>>;
             const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
             // If the request is syntactically valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
-              const [timeStamp, jobID] = id.split('-');
               // Get the job the report is from.
               const claimedJob = await getObject(path.join(claimedPath(), `${id}.json`));
               // If the job was actually assigned to this worker:
               if (typeof claimedJob === 'object' && claimedJob !== null && (claimedJob as {sources?: {worker?: string}}).sources?.worker === workerName) {
                 console.log(`Testaro report ${id} was received from worker ${workerName}`);
                 // Add the public worker name to the report.
-                report.sources = {...report.sources, worker: workerName};
+                report!.sources = {...report!.sources, worker: workerName};
                 // Save the report.
                 await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
                 // Annotate the report.
                 await annotateReport(timeStamp, jobID);
                 console.log(`Testaro report ${id} was annotated, saved, and indexed`);
                 // Check the monetary balances and send alerts if nearing exhaustion.
-                await checkBalancesForAlerts(report);
+                await checkBalancesForAlerts(report!);
                 // Delete the job.
                 await fs.unlink(path.join(claimedPath(), `${id}.json`));
                 console.log(`Completed job ${id} deleted`);
@@ -897,7 +827,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
         const segments = pathTail.split('/');
         // If the service is to receive a test request:
         if (segments[0] === 'requestTest') {
-          const {description, URL, reason} = postData;
+          const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
           // Get the response body.
           const responseBody = await apiRespond.requestTest([description, URL, reason]);
           // Send it.
@@ -906,7 +836,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
         }
         // Otherwise, if the service is to receive a retest request:
         else if (segments[0] === 'requestRetest') {
-          const {reason} = postData;
+          const {reason} = postData as {reason: string};
           // Get the response body.
           const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason));
           // Send it.
@@ -915,7 +845,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
         }
         // Otherwise, if the service is to receive a feature request:
         else if (segments[0] === 'requestFeature') {
-          const {feature} = postData;
+          const {feature} = postData as {feature: string};
           // Get the response body.
           const responseBody = await apiRespond.requestFeature([feature]);
           // Send it.
@@ -931,7 +861,7 @@ const requestHandler = async (request: IncomingMessage, response: ServerResponse
       }
       // Otherwise, if it is a tutorial comment:
       else if (pageName === 'tutorialComment.html') {
-        const {content} = postData;
+        const {content} = postData as {content?: unknown};
         setHeaders('application/json', null, 'low');
         const answerData = await handleComment(content);
         if (answerData.status === 'ok') {

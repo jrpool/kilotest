@@ -17,9 +17,9 @@ import {
   getReportExtracts,
   isRecommendable,
   jobsPath,
-  objectSort
+  objectSort,
+  populateTemplate
 } from '../../util.ts';
-import fs from 'node:fs/promises';
 import path from 'node:path';
 
 // FUNCTIONS
@@ -86,9 +86,16 @@ const populateQuery = async (query: Record<string, any>) => {
   for (const extract of sortedExtracts) {
     const {jobID, timeStamp, url, what} = extract;
     // Get data about it.
-    const reportData: any = await getReportData(timeStamp, jobID);
+    const reportData = await getReportData(timeStamp, jobID);
+    // If this failed:
+    if (reportData.error !== undefined) {
+      console.error(reportData.error);
+      // Populate the query with the reason.
+      query.error = reportData.error;
+      // Stop populating the query.
+      return;
+    }
     const {
-      error,
       issueCount,
       preventedEngineCount,
       preventedEngineNames,
@@ -96,14 +103,6 @@ const populateQuery = async (query: Record<string, any>) => {
       reporterCount,
       violatorCount
     } = reportData;
-    // If this failed:
-    if (error) {
-      console.error(error);
-      // Populate the query with the reason.
-      query.error = error;
-      // Stop populating the query.
-      return;
-    }
     // Otherwise, i.e. if it succeeded, add lines about the report.
     lines.tested.push(`${margin}<details>`);
     const daysAgo = getAgoDays(timeStamp);
@@ -125,7 +124,7 @@ const populateQuery = async (query: Record<string, any>) => {
       );
     }
     // Add facts about the test results to the lines.
-     let reporterString = `${getCountString(reporterCount, 'rule engine', 'rule engines')} reported issues`;
+    let reporterString = `${getCountString(reporterCount, 'rule engine', 'rule engines')} reported issues`;
     if (reporterCount) {
       const reporterNamesString = reporterNames.join(' + ');
       reporterString = `${reporterString} (${reporterNamesString})`;
@@ -180,11 +179,7 @@ export const answer = async () => {
     };
   }
   // Otherwise, i.e. if it does not report an error, get the template.
-  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
+  const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.
   return {
     status: 'ok',

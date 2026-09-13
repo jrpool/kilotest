@@ -272,10 +272,8 @@ test('isTimeStamp returns false for an invalid time stamp', () => {
   assert.equal(isTimeStamp('invalid'), false);
 });
 
-test('isURL returns a URL object for a valid HTTPS URL', () => {
-  const result = isURL('https://example.com/page');
-  assert.ok(result instanceof URL);
-  assert.equal(result.hostname, 'example.com');
+test('isURL returns true for a valid HTTPS URL', () => {
+  assert.equal(isURL('https://example.com/page'), true);
 });
 
 test('isURL returns false for a non-HTTPS URL', () => {
@@ -345,7 +343,7 @@ test('getPageData returns an error for a nonexistent report', async () => {
 });
 
 test('getPageDataStrings returns HTML strings for a valid report', async () => {
-  const strings = await getPageDataStrings('260101T0000', 'mix');
+  const strings = await getPageDataStrings('260101T0000', 'mix') as any;
   assert.equal(strings.what, 'Mixed Outcomes Page');
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
@@ -354,7 +352,7 @@ test('getPageDataStrings returns HTML strings for a valid report', async () => {
 });
 
 test('getPageDataStrings returns different testInfo for a different timeStamp', async () => {
-  const strings = await getPageDataStrings('260101T0001', 'ct');
+  const strings = await getPageDataStrings('260101T0001', 'ct') as any;
   assert.equal(strings.what, 'All CantTell Page');
   assert.ok(strings.testInfo.includes('by job <code>ct</code>'));
   assert.ok(strings.testInfo.includes('2026-01-01 at 00:01'));
@@ -370,7 +368,7 @@ test('getPageDataStrings uses provided pageData instead of reading the report', 
     what: 'Custom Page',
     url: 'https://custom.com',
     daysAgo: 1
-  });
+  }) as any;
   assert.equal(strings.what, 'Custom Page');
   assert.equal(strings.url, 'https://custom.com');
   assert.ok(strings.testInfo.includes('1 day ago'));
@@ -642,7 +640,7 @@ test('isURL returns false for a malformed URL', () => {
 
 test('objectSort returns 0 for an unknown sort type', () => {
   const items = [{name: 'a'}, {name: 'b'}];
-  const sorted = objectSort(items, 'name', 'unknownType');
+  const sorted = objectSort(items, 'name', 'unknownType' as any);
   assert.equal(sorted.length, 2);
 });
 
@@ -671,6 +669,22 @@ test('getReportData returns an error for a nonexistent report', async () => {
   assert.ok(result.error);
 });
 
+test('getReportData falls back to the engine ID for an unknown prevented engine', async () => {
+  const {getReportData} = await import('./util.ts');
+  const prvJSON = await fs.readFile(path.join(reportsPath(), '260101T0006-prv.json'), 'utf8');
+  const report = JSON.parse(prvJSON);
+  report.jobData.preventions.unknownEngine = 'mystery failure';
+  const reportPath = path.join(reportsPath(), '260103T0000-unk.json');
+  await fs.writeFile(reportPath, JSON.stringify(report));
+  try {
+    const result: any = await getReportData('260103T0000', 'unk');
+    assert.ok(result.preventedEngineNames.includes('unknownEngine'));
+  }
+  finally {
+    await fs.unlink(reportPath);
+  }
+});
+
 // TESTS FOR REMAINING BRANCH COVERAGE IN util.js
 
 test('getAgoDays returns null for an invalid Date object', () => {
@@ -694,10 +708,10 @@ test('getIssue returns an issue ID for a variable rule pattern match', () => {
   assert.equal(result, 'duplicateAttribute');
 });
 
-test('getTimeString returns null for an invalid time portion', async () => {
+test('getDateTimeString describes an invalid time stamp as unknown', async () => {
   const {getDateTimeString} = await import('./util.ts');
   const result = getDateTimeString('999999T9999');
-  assert.ok(result.includes('null'));
+  assert.equal(result, 'an unknown date at an unknown time');
 });
 
 test('getPOSTData resolves with parsed JSON for application/json requests', async () => {
@@ -890,6 +904,10 @@ test('getEngineList returns a sorted +-delimited list of engine names', () => {
   const names = result.split(' + ');
   assert.ok(names.length === 3);
   assert.ok(names.includes('WAVE'));
+});
+
+test('getEngineList falls back to the ID for an unknown engine', () => {
+  assert.equal(getEngineList(new Set(['unknownEngine'])), 'unknownEngine');
 });
 
 test('recsLock is a function (the lock returned by createLock)', () => {

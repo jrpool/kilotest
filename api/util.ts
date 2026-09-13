@@ -18,6 +18,7 @@ import {
   ruleEngines,
   updateRecs
 } from '../util.ts';
+import type {ReportExtract} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // FUNCTIONS
@@ -69,10 +70,10 @@ export const getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
 // Accepts an optional precomputed extract to avoid redundant reads when called
 // in a loop over all reports (e.g. by listReports). When the extract comes from
 // getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
-export const getReportBasics = async (timeStamp: string, jobID: string, extract: any = null) => {
+export const getReportBasics = async (timeStamp: string, jobID: string, extract: ReportExtract | null = null) => {
   const extractProvided = !!extract;
   // If an extract was not provided, verify the report exists and read it.
-  if (!extractProvided) {
+  if (!extract) {
     // Get the creation time of the report.
     const reportStats = await getReportStats(timeStamp, jobID);
     // If the  report does not exist:
@@ -84,14 +85,19 @@ export const getReportBasics = async (timeStamp: string, jobID: string, extract:
       };
     }
     // Otherwise, i.e. if it exists, get an extract of the report.
-    extract = await getReportExtract(timeStamp, jobID);
+    const fetchedExtract = await getReportExtract(timeStamp, jobID);
+    // If this failed, return why.
+    if ('error' in fetchedExtract) {
+      return fetchedExtract;
+    }
+    extract = fetchedExtract;
   }
   const {url, what, reportTime} = extract;
   // Get whether this report has been superseded.
   const isSuperseded = extractProvided
     ? extract.superseded === true
     : (await getReportExtracts(true))
-      .every((ex: any) => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
+      .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
   // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
@@ -124,8 +130,8 @@ export const getIssueSpec = (issueID: string) => {
   // Otherwise, i.e. if it does not exist, return this.
   return null;
 };
-// Processes a test or retest request.
-export const processTestRequest = async (testType: string, what: string, url: string, why: string) => {
+// Processes a test or retest request from the API.
+export const processTestRequest = async (testType: string, what: string, url: string, why: string): Promise<{status: string; message: string} | undefined> => {
   // Get an email-safe version of the reason.
   const plainWhy = getPlainText(why);
   // Update the waiting recommendations as a transaction.

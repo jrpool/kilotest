@@ -52,7 +52,7 @@ test('pruneReportsForm returns an error for an invalid auth code', async () => {
 test('pruneReportsForm returns an error when deleting a nonexistent report', async () => {
   const result = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope');
   assert.equal(result.status, 'error');
-  assert.ok(result.message.includes('Deleting superseded reports'));
+  assert.ok(result.message?.includes('Deleting superseded reports'));
 });
 
 test('pruneReportsForm deletes a superseded report with valid auth code', async () => {

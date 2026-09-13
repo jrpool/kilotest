@@ -14,7 +14,7 @@ import {
   getToolsFacts,
   getThisHost
 } from './util.ts';
-import {getReport, isReportError} from '../util.ts';
+import {getReport, getTestActInstances, isReportError} from '../util.ts';
 import {listViolatorsResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
@@ -74,34 +74,20 @@ export const response = async (args: string[]) => {
       // Initialize data about the instances of the issue.
       const reporterIDs: Set<string> = new Set();
       const violators: Record<string, any> = {};
-      // For each act in the report:
-      report.acts.forEach((act: any) => {
-        const {result, type, which} = act;
-        const instances = result?.standardResult?.instances || [];
-        // If the act is a test act with a specified rule engine:
-        if (type === 'test' && which) {
-          // For each standard instance of the act:
-          instances.forEach((instance: any) => {
-            // If the instance has the issue ID:
-            if (instance.issueID === issueID) {
-              const {catalogIndex, outcome} = instance;
-              // If the instance reports a violation:
-              if (outcome !== 'cantTell') {
-                // Ensure the rule-engine ID is in the reporters data.
-                reporterIDs.add(which);
-                // If the instance has a catalog index:
-                if (catalogIndex) {
-                  // Ensure the catalog index is in the violators data.
-                  violators[catalogIndex] ??= {
-                    catalogIndex,
-                    reporters: new Set()
-                  };
-                  // Ensure the reporter ID is in the data about the violator.
-                  violators[catalogIndex].reporters.add(which);
-                }
-              }
-            }
-          });
+      // For each violating standard instance of the issue in the report:
+      getTestActInstances(report, {violationsOnly: true, issueID}).forEach(({act, instance}) => {
+        const {catalogIndex} = instance;
+        // Ensure the rule-engine ID is in the reporters data.
+        reporterIDs.add(act.which!);
+        // If the instance has a catalog index:
+        if (catalogIndex) {
+          // Ensure the catalog index is in the violators data.
+          violators[catalogIndex] ??= {
+            catalogIndex,
+            reporters: new Set()
+          };
+          // Ensure the reporter ID is in the data about the violator.
+          violators[catalogIndex].reporters.add(act.which!);
         }
       });
       // Get details about the reporters of the issue.

@@ -5,9 +5,7 @@
 
 // IMPORTS
 
-import {getAgoString, getDateTimeString, getReportExtracts} from '../../util.ts';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import {getAgoString, getDateTimeString, getReportExtracts, populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -40,11 +38,7 @@ export const answer = async (pageArgs: string) => {
     dateTime: getDateTimeString(timeStamp)
   };
   // Get the recommendation form template.
-  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
+  const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.
   return {
     status: 'ok',

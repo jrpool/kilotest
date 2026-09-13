@@ -5,9 +5,9 @@
 
 // IMPORTS
 
-import {getIssue, getReport, getReportExtracts, isReportError} from '../../util.ts';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import {
+  getIssue, getReport, getReportExtracts, getTestActInstances, isReportError, populateTemplate
+} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -30,33 +30,26 @@ const populateQuery = async (query: Record<string, any>) => {
       // Stop populating the query.
       return;
     }
-    const acts = report.acts;
     const id = report.id as string;
-    // Otherwise, i.e. if it succeeded, for each act in the report:
-    acts.forEach((act: any) => {
-      const {result, type, which} = act;
-      // If it is a test act with standard instances:
-      if (type === 'test' && result?.standardResult?.instances?.length) {
-        // For each standard instance:
-        result.standardResult.instances.forEach((instance: any) => {
-          const {ruleID} = instance;
-          // Get the issue ID of the rule, or null if none.
-          const issueID = getIssue(which, ruleID);
-          // If the issue ID of the instance differs from that of the rule:
-          if ((instance.issueID || null) !== issueID) {
-            // Add the rule and the report to the rules with changed issue IDs.
-            reClassified[which] ??= {};
-            reClassified[which][ruleID] ??= new Set();
-            reClassified[which][ruleID].add(id);
-          }
-          // Otherwise, if the instance and the rule both have no issue ID:
-          else if (!issueID){
-            // Add the rule and the report to the rules that are still unclassified.
-            stillUnclassified[which] ??= {};
-            stillUnclassified[which][ruleID] ??= new Set();
-            stillUnclassified[which][ruleID].add(id);
-          }
-        });
+    // Otherwise, i.e. if it succeeded, for each standard instance of each test act:
+    getTestActInstances(report).forEach(({act, instance}) => {
+      const {ruleID} = instance;
+      const which = act.which!;
+      // Get the issue ID of the rule, or null if none.
+      const issueID = getIssue(which, ruleID);
+      // If the issue ID of the instance differs from that of the rule:
+      if ((instance.issueID || null) !== issueID) {
+        // Add the rule and the report to the rules with changed issue IDs.
+        reClassified[which] ??= {};
+        reClassified[which][ruleID] ??= new Set();
+        reClassified[which][ruleID].add(id);
+      }
+      // Otherwise, if the instance and the rule both have no issue ID:
+      else if (!issueID){
+        // Add the rule and the report to the rules that are still unclassified.
+        stillUnclassified[which] ??= {};
+        stillUnclassified[which][ruleID] ??= new Set();
+        stillUnclassified[which][ruleID].add(id);
       }
     });
   };
@@ -117,12 +110,8 @@ export const answer = async () => {
       message: query.error
     };
   }
-  // Otherwise, i.e. if the query does not report an error, get the template.
-  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
+  // Otherwise, i.e. if the query does not report an error, get the populated template.
+  const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.
   return {
     status: 'ok',

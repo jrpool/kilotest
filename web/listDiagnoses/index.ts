@@ -8,17 +8,17 @@
 import {
   getPageDataStrings,
   getReport,
+  getTestActInstances,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
   htmlSafe,
   isHidden,
   isReportError,
+  populateTemplate,
   ruleEngines
 } from '../../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 // FUNCTIONS
 
@@ -34,7 +34,7 @@ const populateQuery = async (
   // Get descriptions of the page facts.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   // If this failed:
-  if (pageDataStrings.error) {
+  if (pageDataStrings.error !== undefined) {
     // Populate the query with the reason.
     query.error = pageDataStrings.error;
     // Stop populating the query.
@@ -50,7 +50,7 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  const {acts, catalog} = report;
+  const {catalog} = report;
   // Otherwise, i.e. if it succeeded, get the catalog item of the specified violator.
   const catalogItem = catalog[catalogIndex] ?? {};
   const {boxID, startTag, tagName, text} = catalogItem;
@@ -103,22 +103,14 @@ const populateQuery = async (
   }
   // Initialize an array of diagnoses.
   const diagnoses: any[] = [];
-  const testActs = acts.filter((act: any) => act.type === 'test');
-  // For each test act:
-  testActs.forEach((act: any) => {
-    const {result, which} = act;
-    const caseInstances = result?.standardResult?.instances?.filter(
-      (instance: any) => instance.issueID === issueID && instance.catalogIndex === catalogIndex
-    ) ?? [];
-    // For each standard instance that pertains to this combination of issue and violator:
-    caseInstances.forEach((instance: any) => {
-      const {ruleID, what} = instance;
-      // Add lines for it to the array.
-      diagnoses.push({
-        engineID: which,
-        ruleID,
-        what
-      });
+  // For each standard instance that pertains to this combination of issue and violator:
+  getTestActInstances(report, {issueID, catalogIndex}).forEach(({act, instance}) => {
+    const {ruleID, what} = instance;
+    // Add lines for it to the array.
+    diagnoses.push({
+      engineID: act.which,
+      ruleID,
+      what
     });
   });
   // For each diagnosis:
@@ -163,12 +155,8 @@ export const answer = async (pageArgs: string, search: string) => {
   }
   // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
-    // Get the template.
-    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-    // Replace its placeholders.
-    Object.keys(query).forEach(param => {
-      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-    });
+    // Get the populated template.
+    const answerPage = await populateTemplate(import.meta.dirname, query);
     // Return the populated page.
     return {
       status: 'ok',

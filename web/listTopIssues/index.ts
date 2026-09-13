@@ -10,14 +10,14 @@ import {
   getEngineNamesString,
   getReportExtracts,
   getReport,
+  getTestActInstances,
   getWCAGLink,
   getWeightName,
   isReportError,
   objectSort,
+  populateTemplate,
 } from '../../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 // FUNCTIONS
 
@@ -43,26 +43,18 @@ const getIssuesSummary = async () => {
       summary.error = report.error;
       continue;
     }
-    // For each act in it:
-    report.acts.forEach((act) => {
-      // If it is a test act:
-      if (act.type === 'test') {
-        const {result, which} = act;
-        const instances = result?.standardResult?.instances ?? [];
-        // For each of its standard instances:
-        instances.forEach((instance: any) => {
-          const {count, issueID} = instance;
-          // If the instance has a non-ignorable issue ID:
-          if (issueID && issueID !== 'ignorable') {
-            issuesData[issueID] ??= {
-              count: 0,
-              reporters: new Set()
-            };
-            // Increment the data with the count and reporter of the instance.
-            issuesData[issueID].count += count ?? 1;
-            issuesData[issueID].reporters.add(which);
-          }
-        });
+    // For each standard instance of each test act in it:
+    getTestActInstances(report).forEach(({act, instance}) => {
+      const {count, issueID} = instance;
+      // If the instance has a non-ignorable issue ID:
+      if (issueID && issueID !== 'ignorable') {
+        issuesData[issueID] ??= {
+          count: 0,
+          reporters: new Set()
+        };
+        // Increment the data with the count and reporter of the instance.
+        issuesData[issueID].count += count ?? 1;
+        issuesData[issueID].reporters.add(act.which);
       }
     });
   }
@@ -173,12 +165,8 @@ export const answer = async () => {
       message: query.error
     };
   }
-  // Otherwise, i.e. if the query does not report an error, get the template.
-  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
+  // Otherwise, i.e. if the query does not report an error, get the populated template.
+  const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.
   return {
     status: 'ok',

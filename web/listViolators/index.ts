@@ -10,6 +10,7 @@ import {
   getPathID,
   getReport,
   getEngineNamesString,
+  getTestActInstances,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
@@ -17,10 +18,9 @@ import {
   isHidden,
   isReportError,
   makeBreakable,
+  populateTemplate,
 } from '../../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 // FUNCTIONS
 
@@ -34,7 +34,7 @@ const populateQuery = async (
   // Get descriptions of the page facts.
   const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
   // If this failed:
-  if (pageDataStrings.error) {
+  if (pageDataStrings.error !== undefined) {
     // Populate the query with the reason.
     query.error = pageDataStrings.error;
     // Stop populating the query.
@@ -72,39 +72,26 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  const {acts, catalog} = report;
-  // Otherwise, i.e. if it succeeded, get the test acts of the report.
-  const testActs = acts.filter((act: any) => act.type === 'test');
-  // For each test act:
-  testActs.forEach((act: any) => {
-    const {result, which} = act;
-    const issueInstances = result?.standardResult?.instances?.filter(
-      (instance: any) => instance.issueID === issueID
-    ) ?? [];
-    // If the rule of any of its standard instances belongs to the issue:
-    if (issueInstances.length) {
-      query.reporters.add(which);
-    }
-    // For each standard instance whose rule belongs to the issue:
-    issueInstances.forEach((instance: any) => {
-      const pathID = instance.pathID || '/html';
-      const catalogIndex = instance.catalogIndex || '0';
-      const tagName = catalog[catalogIndex]?.tagName
-      ?? pathID.split('/').pop().replace(/\[.+$/, '').toUpperCase();
-      violators[catalogIndex] ??= {
-        pathID: getPathID(catalog, catalogIndex, pathID),
-        tagName,
-        text: catalog[catalogIndex]?.text ?? '',
-        reporters: new Set()
-      };
-      // Ensure that the rule engine is in the sets of reporters of the violator and the issue.
-      violators[catalogIndex].reporters.add(which);
-      query.reporters.add(which);
-    });
-    // Populate the violator count.
-    const violatorCount = Object.keys(violators).length;
-    query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
+  const {catalog} = report;
+  // Otherwise, i.e. if it succeeded, for each standard instance of the issue:
+  getTestActInstances(report, {issueID}).forEach(({act, instance}) => {
+    const pathID = instance.pathID || '/html';
+    const catalogIndex = String(instance.catalogIndex || '0');
+    const tagName = catalog[catalogIndex]?.tagName
+    ?? pathID.split('/').pop()!.replace(/\[.+$/, '').toUpperCase();
+    violators[catalogIndex] ??= {
+      pathID: getPathID(catalog, catalogIndex, pathID),
+      tagName,
+      text: catalog[catalogIndex]?.text ?? '',
+      reporters: new Set()
+    };
+    // Ensure that the rule engine is in the sets of reporters of the violator and the issue.
+    violators[catalogIndex].reporters.add(act.which);
+    query.reporters.add(act.which);
   });
+  // Populate the violator count.
+  const violatorCount = Object.keys(violators).length;
+  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
   // For each violator:
   Object.values(violators).forEach((violatorData: any) => {
     // Convert the set of its reporters to a string.
@@ -198,12 +185,8 @@ export const answer = async (pageArgs: string) => {
   }
   // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
-    // Get the template.
-    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-    // Replace its placeholders.
-    Object.keys(query).forEach(param => {
-      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-    });
+    // Get the populated template.
+    const answerPage = await populateTemplate(import.meta.dirname, query);
     // Return the populated page.
     return {
       status: 'ok',

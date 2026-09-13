@@ -74,6 +74,27 @@ test('getReportBasics returns an error for a nonexistent report', async () => {
   }
 });
 
+test('getReportBasics returns an error for a report whose extract cannot be read', async () => {
+  process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const reportPath = path.join(process.env.DB_DIR, 'reports', '888888T8888-bad.json');
+  await fs.writeFile(reportPath, '{"malformed": true}\n');
+  try {
+    const basics: any = await getReportBasics('888888T8888', 'bad');
+    assert.ok(basics.error);
+  }
+  finally {
+    await fs.unlink(reportPath);
+    if (savedDBDir !== undefined) {
+      process.env.DB_DIR = savedDBDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+  }
+});
+
 test('processTestRequest returns an error for a duplicate recommendation', async () => {
   process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
   // Submit the same request twice; the second should be a duplicate.

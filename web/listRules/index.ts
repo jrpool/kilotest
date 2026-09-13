@@ -8,11 +8,10 @@
 import {
   getWeightName,
   htmlSafe,
+  populateTemplate,
   ruleEngines
 } from '../../util.ts';
 import {issues as issueSpecs, issueRules, rules as ruleSpecs} from 'testaro-issues';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 // FUNCTIONS
 
@@ -72,12 +71,8 @@ export const answer = async (issueID: string) => {
   await populateQuery(issueID, query);
   // If this succeeded:
   if (query.issue) {
-    // Get the template.
-    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-    // Replace its placeholders.
-    Object.keys(query).forEach(param => {
-      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-    });
+    // Get the populated template.
+    const answerPage = await populateTemplate(import.meta.dirname, query);
     // Return the populated page.
     return {
       status: 'ok',

@@ -6,7 +6,7 @@
 // IMPORTS
 
 import {
-  getJSON, getNowStamp, getRandomString, getRecs, isURL, jobsPath, recsLock
+  deleteRec, getJSON, getNowStamp, getRandomString, isURL, jobsPath, populateTemplate
 } from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -38,21 +38,10 @@ export const answer = async (url: string, what: string, authCode: string) => {
       path.join(jobsPath(), 'queue', `${jobName}.json`), getJSON(job)
     );
     console.log(`Retest queued for ${what} as job ${jobName}`);
-    // Isolate this revision.
-    await recsLock(async () => {
-      // Get the recommendations.
-      const recs = await getRecs() as Record<string, unknown>;
-      // Delete the recommendations to test the target.
-      delete recs[url];
-      // Save the revised recommendations.
-      await fs.writeFile(path.join(jobsPath(), 'recs.json'), getJSON(recs));
-    });
-    // Get the answer template.
-    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-    // Replace its placeholders.
-    Object.keys(query).forEach(param => {
-      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-    });
+    // Delete the recommendations to test the target.
+    await deleteRec(url);
+    // Get the populated answer template.
+    const answerPage = await populateTemplate(import.meta.dirname, query);
     // Return the populated page.
     return {
       status: 'ok',

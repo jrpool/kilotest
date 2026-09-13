@@ -82,6 +82,7 @@
       "index.ts",
       "mcp.ts",
       "alerts.ts",
+      "balances.ts",
       "util.ts",
       "api/**/*.{js,ts,cts}",
       "web/**/*.{js,ts,cts}"

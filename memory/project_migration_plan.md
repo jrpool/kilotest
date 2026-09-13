@@ -41,6 +41,7 @@ When helping with any Kilotest work, assume this migration is the active project
 
 - Add observability of request metrics.
 - Investigate a dual-package hazard in the imports from `testaro-issues`. Statement by SWE-2 about this: “The dual-package hazard will bite again in the other direction once index.cjs/mcp.cjs (still CommonJS, using the .cjs build) and the converted .ts modules (using the .mjs build) hold separate copies of its state. Harmless here since testaro-issues is read-only static data, but the pattern matters if a dual-format dependency ever carries mutable state.”
+- Continue web and API terminology alignment by renaming test and retest recommendations in the web UI requests, as in the API, in code comments, text outputs to users, and identifier names.
 
 ## Details
 
@@ -62,7 +63,7 @@ Items marked done were implemented as described; items still open say so explici
 
 1. **Use `AnnotatedAct` instead of `any` for act iteration.** (Done.) `AnnotatedAct` was exported from `util.ts`, and the existing exported `AnnotatedInstance` is the named type for `result?.standardResult?.instances` elements. Note: `Omit<Act, 'result'>` collapses `Act`'s string index signature and erases its named properties (`act.which` became `unknown`), so `AnnotatedAct` is defined as an intersection with `Act` instead.
 
-2. **Replace `as unknown as z.infer<...>` response-content casts with typed builders.** (Open.) All six API handlers initialize `responseContent` as a partial object and double-cast it through `as unknown as z.infer<typeof ...ResponseSchema>['response content']` (e.g., `api/listIssues.ts`, and the same pattern in `api/listViolators.ts`, `api/listDiagnoses.ts`, `api/listReports.ts`, `api/getReport.ts`, and `api/requestFeature.ts`). This defeats the schema-derived types. Building the content as a `Partial<...>` of the inferred type, or constructing it branch by branch with the full type, would let the compiler catch missing or misspelled keys.
+2. **Replace `as unknown as z.infer<...>` response-content casts with typed builders.** (Done.) All eight API handlers now declare `responseContent` as `z.infer<typeof ...ResponseSchema>['response content']` and populate it without casts; `requestTest` and `requestRetest` (which used single `as` casts on `{}` placeholders) were converted the same way. Removing the casts exposed four places where the schemas disagreed with emitted output — real latent MCP output-validation failures, since the SDK validates `structuredContent` against `outputSchema` at runtime. The schemas were corrected to match actual output: `listIssues`' issues array and reporter names became nullable (`null` is emitted when report basics fail, and engine names can be `null`), `listViolators`' violator `identifier` became `string | number` (it is a `catalogIndex`), and `listDiagnoses`' diagnoses became nullable. `getReportBasics` gained overloads: with an `extract` provided it cannot fail, so it returns `ReportBasics` rather than the error union. `openapi.yaml` was regenerated, which also repaired pre-existing drift (a stale property name and a missing `disposition of your request` property).
 
 3. **Add explicit return types to inferred utility functions.** (Done.) `getReportExtracts`, `getReportData`, `getPageData`, `getMultiReportWhats`, and `getPageDataStrings` in `util.ts`, and `processTestRequest` in `api/util.ts`, now have explicit return types.
 
@@ -106,4 +107,4 @@ Items marked done were implemented as described; items still open say so explici
 
 23. **Add the missing semicolon after the `forEach` in `getReportExtracts`.** (Done.) This was a style-consistency fix, not an ASI hazard: the next statement was a comment followed by `return`, so no ASI trap existed.
 
-24. **Decide whether `pm2.config.cjs` should remain `.cjs`.** (Open.) It is the only `.cjs` file left after step 6 (`pm2.config.cjs`). If pm2 supports ESM config, it could be converted to `.mjs` or `.ts`; if not, a comment explaining why it stays would prevent future confusion.
+24. **Decide whether `pm2.config.cjs` should remain `.cjs`.** (Done — it stays.) PM2 loads configuration files with `require()` (`Common.parseConfig` in pm2's `lib/Common.js`), which cannot load ES modules; a `.js` or `.mjs` name would fail with `ERR_REQUIRE_ESM` in this `type: module` package. An explanatory header comment was added to `pm2.config.cjs`, and `docs/SERVICE.md` was updated (it still showed `pm2.config.js` with `script: 'index.js'`).

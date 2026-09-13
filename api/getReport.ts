@@ -14,34 +14,30 @@ import {
 import {getReport, getReportStats} from '../util.ts';
 import {getReportResponseSchema} from './schemas.ts';
 
+// TYPES
+
+// The response content defined by the response schema.
+type ResponseContent = z.infer<typeof getReportResponseSchema>['response content'];
+
 // FUNCTIONS
 
 // Returns the response body.
 export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
-  // Initialize the response content.
-  const responseContent = {
-    'size of the report in bytes': null,
-    'full report': null
-  } as unknown as z.infer<typeof getReportResponseSchema>['response content'];
   // Get the report size.
   const reportStats = await getReportStats(timeStamp, jobID);
-  // If this failed:
-  if (!reportStats) {
-    // Add this to the response content.
-    responseContent['size of the report in bytes'] = 'Error: The report could not be accessed for an unknown reason.';
-  }
-  // Otherwise, i.e. if it succeeded:
-  else {
-    const {reportSize} = reportStats;
-    // Add the size to the response content.
-    responseContent['size of the report in bytes'] = reportSize;
+  // Create the response content.
+  const responseContent: ResponseContent = reportStats
+  ? {
+    'size of the report in bytes': reportStats.reportSize,
     // Get the report (which may be only an error message).
-    const report = await getReport(timeStamp, jobID);
-    // Add it to the response content.
-    responseContent['full report'] = report;
+    'full report': await getReport(timeStamp, jobID)
   }
+  : {
+    'size of the report in bytes': 'Error: The report could not be accessed for an unknown reason.',
+    'full report': null
+  };
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),

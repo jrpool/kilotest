@@ -21,6 +21,17 @@ import {
 import type {ReportExtract} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
+// TYPES
+
+// The basics about a report, as returned by getReportBasics.
+export type ReportBasics = {
+  identifier: string;
+  'completion date and time': string;
+  'days since the report was completed': number | null;
+  'tested web page': {description: string; URL: string};
+  'whether a later report about the same page exists': boolean;
+};
+
 // FUNCTIONS
 
 // Returns the base URL of this Kilotest host.
@@ -70,7 +81,17 @@ export const getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
 // Accepts an optional precomputed extract to avoid redundant reads when called
 // in a loop over all reports (e.g. by listReports). When the extract comes from
 // getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
-export const getReportBasics = async (timeStamp: string, jobID: string, extract: ReportExtract | null = null) => {
+// With an extract provided, failure is impossible, so the return type narrows
+// to ReportBasics; without one, an error object may be returned.
+export function getReportBasics(
+  timeStamp: string, jobID: string, extract: ReportExtract
+): Promise<ReportBasics>;
+export function getReportBasics(
+  timeStamp: string, jobID: string, extract?: ReportExtract | null
+): Promise<ReportBasics | {error: string}>;
+export async function getReportBasics(
+  timeStamp: string, jobID: string, extract: ReportExtract | null = null
+): Promise<ReportBasics | {error: string}> {
   const extractProvided = !!extract;
   // If an extract was not provided, verify the report exists and read it.
   if (!extract) {
@@ -111,7 +132,7 @@ export const getReportBasics = async (timeStamp: string, jobID: string, extract:
   };
   // Return them.
   return basics;
-};
+}
 // Returns the specification of an issue.
 export const getIssueSpec = (issueID: string) => {
   // Get the issue specification.

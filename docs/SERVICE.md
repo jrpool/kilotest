@@ -22,18 +22,19 @@ Any other application `xyz` can be installed at `/opt/jpdev/xyz` on the server.
 
 ### Process manager
 
-Kilotest is managed with [PM2](https://pm2.keymetrics.io) on the server (not on the local development host). The PM2 configuration is specified in the repository as `pm2.config.js`:
+Kilotest is managed with [PM2](https://pm2.keymetrics.io) on the server (not on the local development host). The PM2 configuration is specified in the repository as `pm2.config.cjs` (CommonJS is required because PM2 loads configuration files with `require()`, which cannot load ES modules):
 
 ```javascript
 module.exports = {
   apps: [
     {
       name: 'kilotest',
-      script: 'index.js',
+      script: 'index.ts',
       instances: 1,
       autorestart: true,
       watch: false,
       max_memory_restart: '500M',
+      time: true,
       env: {
         NODE_ENV: 'production',
         BASE_PATH: '/',

@@ -10,34 +10,34 @@ import {getReportBasics, getResponseMetadata, getThisHost, getToolsFacts} from '
 import {getReportExtracts} from '../util.ts';
 import {listReportsResponseSchema} from './schemas.ts';
 
+// TYPES
+
+// The response content defined by the response schema.
+type ResponseContent = z.infer<typeof listReportsResponseSchema>['response content'];
+
 // FUNCTIONS
 
 // Returns the response body.
 export const response = async () => {
   const thisHost = getThisHost();
-  // Initialize the response content.
-  const responseContent = {
-    'basics about all available reports': null,
-    'how to request that a page with no report be tested': null,
-    'how a web user can request that the page be tested': null
-  } as unknown as z.infer<typeof listReportsResponseSchema>['response content'];
   // Initialize an array of basics about the reports.
-  const reportsBasics: any[] = [];
+  const reportsBasics: ResponseContent['basics about all available reports'] = [];
   // Get extracts of all available reports.
   const reportExtracts = await getReportExtracts();
   // For each report:
   for (const extract of reportExtracts) {
     const {jobID, timeStamp} = extract;
-    // Get the basics about it (which may be only an error message).
-    const reportBasics: any = await getReportBasics(timeStamp, jobID, extract);
-    // Add instructions for getting details to the basics.
-    reportBasics['how to get details about the report'] = {
-      method: 'GET',
-      URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
-    };
-    reportBasics['web users can get details about the report at'] = `${thisHost}/listIssues.html/${timeStamp}/${jobID}`;
-    // Add the basics to the array.
-    reportsBasics.push(reportBasics);
+    // Get the basics about it.
+    const reportBasics = await getReportBasics(timeStamp, jobID, extract);
+    // Add the basics, with instructions for getting details, to the array.
+    reportsBasics.push({
+      ...reportBasics,
+      'how to get details about the report': {
+        method: 'GET',
+        URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
+      },
+      'web users can get details about the report at': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
+    });
   }
   // Sort the array by page description and secondarily by completion recency.
   reportsBasics.sort((a, b) => {
@@ -48,22 +48,22 @@ export const response = async () => {
     }
     return a['completion date and time'].localeCompare(b['completion date and time']);
   });
-  // Add the sorted basics about the reports to the response content.
-  responseContent['basics about all available reports'] = reportsBasics;
-  // Add instructions for requesting a test to the response content.
-  responseContent['how to request that a page with no report be tested'] = {
-    method: 'POST',
-    URL: `${thisHost}/api/requestTest`,
-    'request body': {
-      description: '10- to 100-character description of the page conforming to the naming convention used in this list of reports',
-      URL: '12- to 300-character URL of the page, including the https:// scheme and any query',
-      reason: '20- to 100-character reason why the page should be tested'
+  // Create the response content.
+  const responseContent: ResponseContent = {
+    'basics about all available reports': reportsBasics,
+    'how to request that a page with no report be tested': {
+      method: 'POST',
+      URL: `${thisHost}/api/requestTest`,
+      'request body': {
+        description: '10- to 100-character description of the page conforming to the naming convention used in this list of reports',
+        URL: '12- to 300-character URL of the page, including the https:// scheme and any query',
+        reason: '20- to 100-character reason why the page should be tested'
+      },
+      'how to check whether the request has been fulfilled': 'use this listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
     },
-    'how to check whether the request has been fulfilled': 'use this listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
-  };
-  // Add instructions for a web user to request a test to the response content.
-  responseContent['how a web user can request that the page be tested'] = {
-    URL: `${thisHost}/requestTestForm.html`
+    'how a web user can request that the page be tested': {
+      URL: `${thisHost}/requestTestForm.html`
+    }
   };
   // Create a response body.
   const body = {

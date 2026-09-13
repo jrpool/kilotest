@@ -220,10 +220,10 @@ export const listIssuesResponseSchema = envelope('GET', z.object({
   }).nullable(),
   'how a web user can get the full report in JSON': z.object({URL: z.string()}).nullable(),
   'basics about all issues reported in the report': z.array(issueBasicsSchema.extend({
-    'rule engines with any violations belonging to the issue': z.array(z.string()),
+    'rule engines with any violations belonging to the issue': z.array(z.string().nullable()),
     'how to get details about the issue': z.object({method: z.literal('GET'), URL: z.string()}),
     'web users can get details about the issue at': z.string()
-  }))
+  })).nullable()
 }));
 
 export const listViolatorsResponseSchema = envelope('GET', z.object({
@@ -233,7 +233,7 @@ export const listViolatorsResponseSchema = envelope('GET', z.object({
     'rule engines reporting violations belonging to the issue': z.array(ruleEngineFactsSchema)
   }).nullable(),
   'basics about all elements exhibiting the issue': z.array(z.object({
-    identifier: z.string(),
+    identifier: z.union([z.string(), z.number()]).describe('Catalog index of the element in the report; a string or number, copied verbatim.'),
     'tag name': z.unknown().describe('Copied from the report catalog entry; type not guaranteed.'),
     'inner text': z.unknown().describe('Copied from the report catalog entry; type not guaranteed.'),
     'count of rule engines reporting that the element exhibited the issue': z.number(),
@@ -260,7 +260,7 @@ export const listDiagnosesResponseSchema = envelope('GET', z.object({
     'description of the violation': z.unknown().describe('Copied from the report instance (what); type not guaranteed.'),
     'severity of the violation on a 0-to-3 scale': z.unknown().describe('Copied from the report instance (ordinalSeverity); type not guaranteed.'),
     'count of violations of the rule by the element': z.number()
-  })).or(z.object({error: z.string()}))
+  })).or(z.object({error: z.string()})).nullable()
 }));
 
 export const getReportResponseSchema = envelope('GET', z.object({

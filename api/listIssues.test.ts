@@ -31,6 +31,7 @@ after(() => {
 test('listIssues returns 2 issues for the mixed-outcomes report, excluding cantTell', async () => {
   const body = await response(['260101T0000', 'mix']);
   const issues = body['response content']['basics about all issues reported in the report'];
+  assert.ok(issues);
   assert.equal(issues.length, 2);
   const summaries = issues.map((i: any) => i.summary).sort();
   assert.deepEqual(summaries, ['all-capital text', 'link not named']);
@@ -39,12 +40,14 @@ test('listIssues returns 2 issues for the mixed-outcomes report, excluding cantT
 test('listIssues returns 0 issues for the all-cantTell report', async () => {
   const body = await response(['260101T0001', 'ct']);
   const issues = body['response content']['basics about all issues reported in the report'];
+  assert.ok(issues);
   assert.equal(issues.length, 0);
 });
 
 test('listIssues treats missing outcome as a violation, not cantTell', async () => {
   const body = await response(['260101T0002', 'no']);
   const issues = body['response content']['basics about all issues reported in the report'];
+  assert.ok(issues);
   assert.equal(issues.length, 1);
   assert.equal(issues[0].identifier, 'linkNoText');
 });
@@ -52,6 +55,7 @@ test('listIssues treats missing outcome as a violation, not cantTell', async () 
 test('listIssues returns 0 issues for the empty report', async () => {
   const body = await response(['260101T0005', 'emp']);
   const issues = body['response content']['basics about all issues reported in the report'];
+  assert.ok(issues);
   assert.equal(issues.length, 0);
 });
 
@@ -67,10 +71,11 @@ test('listIssues reports prevented rule engines for the prevented report', async
 test('listIssues includes reporter names for each issue in the mixed report', async () => {
   const body = await response(['260101T0000', 'mix']);
   const issues = body['response content']['basics about all issues reported in the report'];
-  const linkIssue = issues.find((i: any) => i.identifier === 'linkNoText');
+  assert.ok(issues);
+  const linkIssue = issues.find(i => i.identifier === 'linkNoText');
   assert.ok(linkIssue);
   assert.deepEqual(linkIssue['rule engines with any violations belonging to the issue'], ['Alfa', 'Axe']);
-  const allCapsIssue = issues.find((i: any) => i.identifier === 'allCaps');
+  const allCapsIssue = issues.find(i => i.identifier === 'allCaps');
   assert.ok(allCapsIssue);
   assert.deepEqual(allCapsIssue['rule engines with any violations belonging to the issue'], ['Alfa']);
 });
@@ -103,7 +108,8 @@ test('listIssues handles instances with missing issueID and null instances witho
   const issues = body['response content']['basics about all issues reported in the report'];
   // The brd fixture has one instance with duplicateID (a valid issue) and one with no issueID (skipped).
   // The alfa act has no instances array, so it should be handled as empty.
+  assert.ok(issues);
   assert.ok(issues.length >= 1);
-  const ids = issues.map((i: any) => i.identifier);
+  const ids = issues.map(i => i.identifier);
   assert.ok(ids.includes('duplicateID'));
 });

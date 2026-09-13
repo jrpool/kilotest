@@ -20,37 +20,35 @@ import {
 } from '../util.ts';
 import {listIssuesResponseSchema} from './schemas.ts';
 
+// TYPES
+
+// The response content defined by the response schema.
+type ResponseContent = z.infer<typeof listIssuesResponseSchema>['response content'];
+
 // FUNCTIONS
 
 // Returns the response body.
 export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
+  // Get the basics about the report (which may be only an error message).
+  const reportBasics = isReportError(report) ? report : await getReportBasics(timeStamp, jobID);
   // Initialize the response content.
-  const responseContent = {
-    'basics about the report': null,
+  const responseContent: ResponseContent = {
+    'basics about the report': reportBasics,
     'details about the report': null,
     'how to request that the page be retested': null,
     'how a web user can request that the page be retested': null,
     'how to get the full report in JSON': null,
     'how a web user can get the full report in JSON': null,
     'basics about all issues reported in the report': null
-  } as unknown as z.infer<typeof listIssuesResponseSchema>['response content'];
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Add this to the response content.
-    responseContent['basics about the report'] = report;
-  }
-  // Otherwise, i.e. if it succeeded:
-  else {
-    // Get the basics about the report (which may be only an error message).
-    const reportBasics: any = await getReportBasics(timeStamp, jobID);
-    // Add them to the response content.
-    responseContent['basics about the report'] = reportBasics;
-    // If the basics about the report were obtained:
-    if (!reportBasics.error) {
+  };
+  // If the report was retrieved:
+  if (!isReportError(report)) {
+    // If its basics were computed:
+    if (!('error' in reportBasics)) {
       const {
         strict = null,
         standard = null,
@@ -69,7 +67,13 @@ export const response = async (args: string[]) => {
       const ruleEngineIDs: Set<string> = new Set();
       const reporterIDs: Set<string> = new Set();
       const violatorIndexes: Set<string> = new Set();
-      const issuesData: Record<string, any> = {};
+      const issuesData: Record<string, {
+        id: string;
+        summary: string;
+        weight: number;
+        why: string;
+        reporterIDs: Set<string>;
+      }> = {};
       // For each test act in the report:
       getTestActs(report).forEach(act => {
         // Ensure its rule engine is in the results data.
@@ -121,7 +125,7 @@ export const response = async (args: string[]) => {
         'rule engines that tried to test the page': getRuleEnginesFacts(ruleEngineIDs),
         'rule engines that could not test the page': sortedPreventionFacts,
         'names of rule engines that reported rule violations': getRuleEnginesFacts(reporterIDs)
-        .map((facts: any) => facts.name),
+        .map(facts => facts.name),
         'counts of issues by priority': {
           'highest': weightCounts[3],
           'high': weightCounts[2],
@@ -178,7 +182,7 @@ export const response = async (args: string[]) => {
       // Sort the data about issues by summary.
       const sortedIssuesData = objectSort(Object.values(issuesData), 'summary', 'alpha');
       // Get the basics about the issues.
-      const issuesBasics = sortedIssuesData.map((issueData: any) => {
+      const issuesBasics = sortedIssuesData.map(issueData => {
         const {id, summary, weight, why, reporterIDs} = issueData;
         return {
           identifier: id,
@@ -186,7 +190,7 @@ export const response = async (args: string[]) => {
           priority: ['lowest', 'low', 'high', 'highest'][weight - 1] as 'lowest' | 'low' | 'high' | 'highest',
           'impact on a user': why,
           'rule engines with any violations belonging to the issue': getRuleEnginesFacts(reporterIDs)
-          .map((ruleEnginesFact: any) => ruleEnginesFact.name),
+          .map(ruleEnginesFact => ruleEnginesFact.name),
           'how to get details about the issue': {
             method: 'GET' as const,
             URL: `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`

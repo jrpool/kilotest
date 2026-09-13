@@ -34,7 +34,7 @@ export const answer = async (authCode: string) => {
         }
       }
     }
-    // Otherwis, i.e. if it failed:
+    // Otherwise, i.e. if it failed:
     else {
       // Return an error page.
       return {

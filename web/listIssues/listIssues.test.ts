@@ -125,6 +125,23 @@ test('listIssues includes prevention notices for the prevented report', async ()
   assert.ok(result.answerPage.includes('page timed out'));
 });
 
+test('listIssues falls back to the engine ID for an unknown prevented engine', async () => {
+  const fs = await import('node:fs/promises');
+  const prvJSON = await fs.readFile(path.join(realUtil.reportsPath(), '260101T0006-prv.json'), 'utf8');
+  const report = JSON.parse(prvJSON);
+  report.jobData.preventions.unknownEngine = 'mystery failure';
+  const reportPath = path.join(realUtil.reportsPath(), '260103T0000-unk.json');
+  await fs.writeFile(reportPath, JSON.stringify(report));
+  try {
+    const result = await answer('260103T0000/unk');
+    assert.equal(result.status, 'ok');
+    assert.ok(result.answerPage.includes('unknownEngine (unknown sponsor)'));
+  }
+  finally {
+    await fs.unlink(reportPath);
+  }
+});
+
 test('listIssues returns an error when getPageDataStrings fails after getData succeeds', async () => {
   pageDataStringsOverride = {error: 'Page data strings error'};
   try {

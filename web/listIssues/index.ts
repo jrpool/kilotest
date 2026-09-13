@@ -10,17 +10,17 @@ import {
   getPageDataStrings,
   getReport,
   getEngineList,
+  getTestActInstances,
   getWCAGLink,
   getWeightName,
   htmlSafe,
   isHidden,
   isUsableReport,
   objectSort,
+  populateTemplate,
   ruleEngines
 } from '../../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 
 // FUNCTIONS
 
@@ -56,44 +56,37 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       },
       issueCount: 0
     };
-    // For each act in the report:
-    report.acts.forEach((act: any) => {
-      // If it is a test act:
-      if (act.type === 'test') {
-        const {result, which} = act;
-        const instances = result?.standardResult?.instances ?? [];
-        // For each of its standard instances:
-        instances.forEach((instance: any) => {
-          const {catalogIndex, issueID, outcome} = instance;
-          // If the instance reports a violation and identifies a non-ignorable issue:
-          if (outcome !== 'cantTell' && issueID && issueID !== 'ignorable') {
-            const issueClassification = issueSpecs[issueID];
-            // If the issue has a current weighted classification:
-            if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {
-              const {summary, wcag, weight, why} = issueClassification;
-              // Initialize the temporary data on the issue if necessary.
-              temp.issues[issueID] ??= {
-                issueID,
-                summary,
-                wcag,
-                why,
-                weight,
-                reporters: new Set(),
-                reporterList: '',
-                violators: new Set()
-              };
-              // Ensure the rule engine is in the temporary data.
-              temp.issues[issueID].reporters.add(which);
-              temp.reporters.add(which);
-              // If the instance has a catalog index:
-              if (catalogIndex) {
-                // Ensure the violator is in the temporary data.
-                temp.issues[issueID].violators.add(catalogIndex);
-                temp.violators.add(catalogIndex);
-              }
-            }
+    // For each violating standard instance of each test act:
+    getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
+      const {catalogIndex, issueID} = instance;
+      const which = act.which!;
+      // If it identifies a non-ignorable issue:
+      if (issueID && issueID !== 'ignorable') {
+        const issueClassification = issueSpecs[issueID];
+        // If the issue has a current weighted classification:
+        if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {
+          const {summary, wcag, weight, why} = issueClassification;
+          // Initialize the temporary data on the issue if necessary.
+          temp.issues[issueID] ??= {
+            issueID,
+            summary,
+            wcag,
+            why,
+            weight,
+            reporters: new Set(),
+            reporterList: '',
+            violators: new Set()
+          };
+          // Ensure the rule engine is in the temporary data.
+          temp.issues[issueID].reporters.add(which);
+          temp.reporters.add(which);
+          // If the instance has a catalog index:
+          if (catalogIndex) {
+            // Ensure the violator is in the temporary data.
+            temp.issues[issueID].violators.add(catalogIndex);
+            temp.violators.add(String(catalogIndex));
           }
-        });
+        }
       }
     });
     // Finish populating the final data.
@@ -160,14 +153,14 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   }
   // Otherwise, i.e. if it succeeded, get fact descriptions for the target.
   const pageInfo = await getPageDataStrings(timeStamp, jobID, pageData);
-  const {testInfo, urlLink, what} = pageInfo;
   // If this failed:
-  if (pageInfo.error) {
+  if (pageInfo.error !== undefined) {
     // Populate the query with the reason.
     query.error = pageInfo.error;
     // Stop populating the query.
     return;
   }
+  const {testInfo, urlLink, what} = pageInfo;
   // Otherwise, i.e. if it succeeded, add target data to the query.
   query.target = what;
   query.urlLink = urlLink;
@@ -184,8 +177,8 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   const preventionStrings: string[] = [];
   const margin = ' '.repeat(6);
   Object.keys(preventions).forEach(preventedEngineID => {
-    const engineName = ruleEngines[preventedEngineID];
-    const engineNameString = `${engineName[0]} (${engineName[1]})`;
+    const [engineName, engineSponsor] = ruleEngines[preventedEngineID] ?? [preventedEngineID, 'unknown sponsor'];
+    const engineNameString = `${engineName} (${engineSponsor})`;
     const causeString = htmlSafe(preventions[preventedEngineID]);
     const preventionString = `${margin}<li>Page not testable by ${engineNameString}: ${causeString}</li>`;
     preventionStrings.push(preventionString);
@@ -295,12 +288,8 @@ export const answer = async (pageArgs: string) => {
   }
   // Otherwise, if it succeeded and the report facts were obtained:
   if (query.testInfo) {
-    // Get the template.
-    let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-    // Replace its placeholders.
-    Object.keys(query).forEach(param => {
-      answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-    });
+    // Get the populated template.
+    const answerPage = await populateTemplate(import.meta.dirname, query);
     // Return the populated page.
     return {
       status: 'ok',

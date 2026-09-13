@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-import {hiddenReportsPath, reportsPath} from '../../util.ts';
+import {hiddenReportsPath, populateTemplate, reportsPath} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -83,12 +83,8 @@ export const answer = async (_: any, search: string) => {
   const query: Record<string, string> = {
     reports: lines.join('\n'),
   };
-  // Get the unhiding form template.
-  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
+  // Get the populated unhiding form template.
+  const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.
   return {
     status: 'ok',

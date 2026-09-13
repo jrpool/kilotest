@@ -47,9 +47,6 @@ const ruleEngines: Record<string, [string, string]> = {
   wax: ['WallyAX', 'Wally']
 };
 export {ruleEngines};
-export const researchAgents = {
-  'research-agent': 'Internal Research Agent'
-}
 
 // MISCELLANEOUS FUNCTIONS
 
@@ -165,7 +162,7 @@ export const getJobNames = async (): Promise<Record<string, string[]> | string> 
   return jobNames;
 }
 // Returns the JSON stringification of an object, with a final newline.
-export const getJSON = (object: any): string => `${JSON.stringify(object, null, 2)}\n`;
+export const getJSON = (object: unknown): string => `${JSON.stringify(object, null, 2)}\n`;
 // Returns the message of an error, or its string representation if it is not an Error instance.
 export const errorMessage = (error: unknown): string => error instanceof Error ? error.message : String(error);
 // Returns an object from a JSON file.
@@ -210,15 +207,26 @@ const getTimeString = (timeStamp: string) => {
 };
 // Returns a date-and-time string.
 export const getDateTimeString = (timeStamp: string): string => {
-  const dateString = getDateString(timeStamp);
-  const timeString = getTimeString(timeStamp);
+  const dateString = getDateString(timeStamp) || 'an unknown date';
+  const timeString = getTimeString(timeStamp) || 'an unknown time';
   const dateTimeString = `${dateString} at ${timeString}`;
   return dateTimeString;
 }
 // Converts a string to a plain-text 1-line ASCII string.
 export const getPlainText = (string: string): string => string
 .replace(/&/g, '+')
-.replace(/[<>"'&]/g, ' ');
+.replace(/[<>"']/g, ' ');
+// Populates an index.html template in a directory with named values.
+export const populateTemplate = async (dirName: string, query: Record<string, string>): Promise<string> => {
+  // Get the template.
+  let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
+  // Replace its placeholders.
+  Object.keys(query).forEach(param => {
+    // A replacer function keeps $-patterns in a value from being interpreted.
+    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), () => query[param]);
+  });
+  return answerPage;
+};
 // Returns the data from a POST request.
 export const getPOSTData = (request: import('node:http').IncomingMessage): Promise<unknown> => new Promise(resolve => {
   const bodyParts: Buffer[] = [];
@@ -273,7 +281,7 @@ export const getTextFragmentHref = (text: string, url: string): string => {
 };
 // Returns a +-delimited list of sorted names of rule engines.
 export const getEngineList = (engineIDs: Iterable<string>): string => Array.from(engineIDs)
-.map(engineID => ruleEngines[engineID][0])
+.map(engineID => ruleEngines[engineID]?.[0] || engineID)
 .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
 .join(' + ');
 // Returns a string of names of rule engines.
@@ -328,9 +336,9 @@ export const isTimeStamp = (string: string): boolean => {
   return !!getDateString(string);
 };
 // Returns whether a string is a URL.
-export const isURL = (string: string) => {
+export const isURL = (string: string): boolean => {
   try {
-    return string.startsWith('https://') && new URL(string);
+    return string.startsWith('https://') && !!new URL(string);
   } catch {
     return false;
   }
@@ -340,22 +348,26 @@ export const makeBreakable = (string: string): string => string.replace(/\//g, '
 // Minifies a URL for duplicate detection.
 export const minifyURL = (url: string): string => url.replace(/www\.|\/$/g, '').toLowerCase();
 // Sorts objects by a property value and returns the sorted array.
-export const objectSort = (objects: any[], property: string, sortType: string) => objects
+export const objectSort = <T extends Record<string, unknown>>(
+  objects: T[],
+  property: string,
+  sortType: 'numericUp' | 'numericDown' | 'alpha'
+): T[] => objects
 .sort((a, b) => {
   // If the property values are numbers to be sorted in increasing order:
   if (sortType === 'numericUp') {
     // Sort by increasing numeric value.
-    return a[property] - b[property];
+    return Number(a[property]) - Number(b[property]);
   }
   // Otherwise, if they are numbers to be sorted in decreasing order:
   else if (sortType === 'numericDown') {
     // Sort by decreasing numeric value.
-    return b[property] - a[property];
+    return Number(b[property]) - Number(a[property]);
   }
   // Otherwise, if they are strings to be sorted alphabetically:
   else if (sortType === 'alpha') {
     // Sort alphabetically.
-    return alphaCompare(a[property], b[property]);
+    return alphaCompare(String(a[property]), String(b[property]));
   }
   // Otherwise, do not sort.
   return 0;
@@ -391,15 +403,10 @@ export const processTestRequest = async (testType: string, dirName: string, what
         `Kilotest: new ${testType} recommendation in the UI`,
         `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
       );
-      // Get the template.
-      let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
-      const query: Record<string, string> = {
+      // Get the populated template.
+      const answerPage = await populateTemplate(dirName, {
         target: what,
         why: plainWhy
-      };
-      // Replace its placeholders.
-      Object.keys(query).forEach(param => {
-        answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
       });
       // Return the populated page.
       return {
@@ -438,6 +445,15 @@ export const updateRecs = (what: string, url: string, why: string) => recsLock(a
   // Return success.
   return {};
 });
+// Deletes the recommendations for a URL as a transaction.
+export const deleteRec = (url: string) => recsLock(async (): Promise<void> => {
+  // Get the recommendations.
+  const recs = await getRecs() as Record<string, unknown>;
+  // Delete the recommendations to test the URL.
+  delete recs[url];
+  // Save the revised recommendations.
+  await fs.writeFile(recsPath(), getJSON(recs));
+});
 
 // REPORT FUNCTIONS
 
@@ -449,7 +465,9 @@ export interface AnnotatedInstance extends StandardInstance {
 }
 
 // An Act whose standardResult instances (if any) are AnnotatedInstances.
-type AnnotatedAct = Omit<Act, 'result'> & {
+// An intersection is used because Omit<Act, 'result'> would collapse Act's
+// string index signature and lose its named properties.
+export type AnnotatedAct = Act & {
   result?: {
     nativeResult?: unknown;
     standardResult?: {
@@ -473,6 +491,79 @@ export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts
   acts: AnnotatedAct[];
 };
 
+// An extract of an available report.
+export type ReportExtract = {
+  timeStamp: string;
+  jobID: string;
+  what: string;
+  url: string;
+  reportTime: string;
+  superseded?: boolean;
+};
+
+// Page data from an available report.
+export type PageData = {
+  what: string;
+  url: string;
+  daysAgo: number | null;
+  error?: never;
+};
+
+// HTML strings describing the page data of an available report.
+export type PageDataStrings = {
+  what: string;
+  url: string;
+  urlLink: string;
+  testInfo: string;
+  error?: never;
+};
+
+// Basics about an available report.
+export type ReportData = {
+  what: string;
+  url: string;
+  jobName: unknown;
+  creationDate: Date | null;
+  daysAgo: number | null;
+  issueCount: number;
+  engineNames: string[];
+  engineCount: number;
+  reporterNames: string[];
+  reporterCount: number;
+  violatorCount: number;
+  preventedEngineNames: string[];
+  preventedEngineCount: number;
+  error?: never;
+};
+
+// Returns the test acts of a report.
+export const getTestActs = (report: UsableReport): AnnotatedAct[] =>
+  report.acts.filter(act => act.type === 'test');
+// Returns the standard instances of a report's test acts, optionally filtered.
+export const getTestActInstances = (
+  report: UsableReport,
+  filter: {violationsOnly?: boolean; issueID?: string; catalogIndex?: string | number} = {}
+): {act: AnnotatedAct; instance: AnnotatedInstance}[] => {
+  const pairs: {act: AnnotatedAct; instance: AnnotatedInstance}[] = [];
+  // For each act of the report:
+  for (const act of report.acts) {
+    // If it is a test act:
+    if (act.type === 'test') {
+      // For each standard instance of its result:
+      for (const instance of act.result?.standardResult?.instances ?? []) {
+        if (
+          (filter.violationsOnly && instance.outcome === 'cantTell')
+          || (filter.issueID !== undefined && instance.issueID !== filter.issueID)
+          || (filter.catalogIndex !== undefined && instance.catalogIndex !== filter.catalogIndex)
+        ) {
+          continue;
+        }
+        pairs.push({act, instance});
+      }
+    }
+  }
+  return pairs;
+};
 // Returns the path ID of the element of a standard instance.
 export const getPathID = (catalog: Record<string, any>, catalogIndex: string, pathID?: string) => {
   if (catalogIndex) {
@@ -542,29 +633,22 @@ export const annotateReport = async (timeStamp: string, jobID: string) => {
   }
   // Otherwise, i.e. if it succeeded:
   const unclassifiableRules = new Set<string>();
-  // For each of its acts:
-  for (const act of report.acts as any[]) {
-    const {result, type, which} = act;
-    // If it is a test act:
-    if (type === 'test') {
-      // For each standard instance of the result:
-      for (const instance of (result?.standardResult?.instances ?? []) as any[]) {
-        const ruleID = instance.ruleID as string;
-        // Classify its rule.
-        const issueID = getIssue(which!, ruleID);
-        // If the rule was classifiable:
-        if (issueID) {
-          // Add the issue ID to the instance.
-          instance.issueID = issueID;
-        }
-        // Otherwise, i.e. if it was not classifiable:
-        else {
-          // Add it to the set of unclassifiable rules.
-          unclassifiableRules.add(`${which!}:${ruleID}`);
-          // Remove any existing issue ID from the instance.
-          delete instance.issueID;
-        }
-      }
+  // For each standard instance of each of its test acts:
+  for (const {act, instance} of getTestActInstances(report)) {
+    const {ruleID} = instance;
+    // Classify its rule.
+    const issueID = getIssue(act.which!, ruleID);
+    // If the rule was classifiable:
+    if (issueID) {
+      // Add the issue ID to the instance.
+      instance.issueID = issueID;
+    }
+    // Otherwise, i.e. if it was not classifiable:
+    else {
+      // Add it to the set of unclassifiable rules.
+      unclassifiableRules.add(`${act.which!}:${ruleID}`);
+      // Remove any existing issue ID from the instance.
+      delete instance.issueID;
     }
   }
   const issuelessRules = Array.from(unclassifiableRules).sort();
@@ -584,7 +668,7 @@ export const annotateReport = async (timeStamp: string, jobID: string) => {
   return '';
 };
 // Returns basics about an available report.
-export const getReportData = async (timeStamp: string, jobID: string) => {
+export const getReportData = async (timeStamp: string, jobID: string): Promise<ReportData | {error: string}> => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -612,30 +696,25 @@ export const getReportData = async (timeStamp: string, jobID: string) => {
   const engineNameSet = new Set<string>();
   const reporterIDSet = new Set<string>();
   const violatorIndexSet = new Set<string>();
-  // For each act of the report:
-  (report.acts as any[]).forEach((act) => {
-    // If it is a test act:
-    if (act.type === 'test') {
-      const {result, which} = act;
+  // For each test act of the report:
+  getTestActs(report).forEach(act => {
+    // Ensure that the rule engine is in the temporary data.
+    engineNameSet.add(ruleEngines[act.which!][0]);
+  });
+  // For each violating standard instance of each test act:
+  getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
+    const {catalogIndex, issueID} = instance;
+    // If it has a non-ignorable classified issue ID:
+    if (issueID && issueSpecs[issueID] && issueID !== 'ignorable') {
       // Ensure that the rule engine is in the temporary data.
-      engineNameSet.add(ruleEngines[which!][0]);
-      const instances = (result?.standardResult?.instances ?? []) as any[];
-      // For each standard instance of the act:
-      instances.forEach((instance) => {
-        const {catalogIndex, issueID, outcome} = instance;
-        // If it reports a violation and has a non-ignorable classified issue ID:
-        if (outcome !== 'cantTell' && issueID && issueSpecs[issueID] && issueID !== 'ignorable') {
-          // Ensure that the rule engine is in the temporary data.
-          reporterIDSet.add(which!);
-          // Ensure that the issue is in the temporary data.
-          issueIDSet.add(issueID);
-          // If the violator has a catalog index:
-          if (catalogIndex) {
-            // Ensure that the violator is in the temporary data.
-            violatorIndexSet.add(String(catalogIndex));
-          }
-        }
-      });
+      reporterIDSet.add(act.which!);
+      // Ensure that the issue is in the temporary data.
+      issueIDSet.add(issueID);
+      // If the violator has a catalog index:
+      if (catalogIndex) {
+        // Ensure that the violator is in the temporary data.
+        violatorIndexSet.add(String(catalogIndex));
+      }
     }
   });
   // Populate the data with the act data.
@@ -652,14 +731,14 @@ export const getReportData = async (timeStamp: string, jobID: string) => {
   data.violatorCount = violatorIndexSet.size;
   // Add the names of any prevented rule engines to the data.
   data.preventedEngineNames = Object.keys(report.jobData?.preventions || {})
-  .map(engineID => ruleEngines[engineID][0])
+  .map(engineID => ruleEngines[engineID]?.[0] || engineID)
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.preventedEngineCount = data.preventedEngineNames.length;
   // Return the data.
   return data;
 }
 // Returns page data from an available report.
-export const getPageData = async (timeStamp: string, jobID: string) => {
+export const getPageData = async (timeStamp: string, jobID: string): Promise<PageData | {error: string}> => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -679,20 +758,21 @@ export const getPageData = async (timeStamp: string, jobID: string) => {
   };
 };
 // Gets HTML strings for page data from a report.
-export const getPageDataStrings = async (timeStamp: string, jobID: string, pageData?: any) => {
-  // If the page data were not specified:
-  if (!pageData) {
-    // Get them.
-    pageData = await getPageData(timeStamp, jobID);
-  }
-  const {daysAgo, error, url, what} = pageData;
+export const getPageDataStrings = async (
+  timeStamp: string,
+  jobID: string,
+  pageData?: PageData | {error: string}
+): Promise<PageDataStrings | {error: string}> => {
+  // Get the page data if they were not specified.
+  const data = pageData ?? await getPageData(timeStamp, jobID);
   // If the page data are invalid:
-  if (error) {
+  if (data.error !== undefined) {
     // Return why.
     return {
-      error
+      error: data.error
     };
   }
+  const {daysAgo, url, what} = data;
   // Otherwise, i.e. if they are valid, get a description of the timestamp.
   const when = getDateTimeString(timeStamp);
   // Return the HTML strings.
@@ -725,7 +805,7 @@ export const isHidden = async (timeStamp: string, jobID: string): Promise<boolea
   return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
 };
 // Returns an extract of an available report, or an error object if it cannot be read or parsed.
-export const getReportExtract = async (timeStamp: string, jobID: string): Promise<{timeStamp: string; jobID: string; what: string; url: string; reportTime: string} | {error: string}> => {
+export const getReportExtract = async (timeStamp: string, jobID: string): Promise<ReportExtract | {error: string}> => {
   try {
     // Get the report.
     const reportJSON = await fs.readFile(
@@ -750,11 +830,11 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
   }
 };
 // Returns extracts of all available reports.
-export const getReportExtracts = async (onlyLatest: boolean = false) => {
+export const getReportExtracts = async (onlyLatest: boolean = false): Promise<ReportExtract[]> => {
   // Get the names of the available report files.
   const reportFileNames = await fs.readdir(reportsPath());
   // Initialize an array of extracts.
-  const extracts: {timeStamp: string; jobID: string; what: string; url: string; reportTime: string; superseded?: boolean}[] = [];
+  const extracts: ReportExtract[] = [];
   // For each one:
   for (const reportFileName of reportFileNames) {
     const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
@@ -775,7 +855,7 @@ export const getReportExtracts = async (onlyLatest: boolean = false) => {
       // Mark it as such.
       extract.superseded = true;
     }
-  })
+  });
   // Return the array, excluding extracts of superseded reports if so specified.
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
@@ -787,7 +867,7 @@ export const isReportAvailable = async (what: string, url: string): Promise<bool
   return whats.includes(what) || miniURLs.includes(minifyURL(url));
 };
 // Gets the descriptions of multi-report pages.
-export const getMultiReportWhats = async () => {
+export const getMultiReportWhats = async (): Promise<string[]> => {
   const reportExtracts = await getReportExtracts();
   const sortedWhats = reportExtracts.map(extract => extract.what).sort();
   const multiReportWhats = sortedWhats.filter(

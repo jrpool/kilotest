@@ -13,7 +13,7 @@ import {
   getToolsFacts,
   getThisHost
 } from './util.ts';
-import {getReport, isReportError} from '../util.ts';
+import {getReport, getTestActInstances, isReportError} from '../util.ts';
 import {listDiagnosesResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
@@ -105,32 +105,18 @@ export const response = async (args: string[]) => {
       if (issueSpec) {
         // Initialize data about the diagnoses of the violation of the issue.
         const diagnoses: any[] = [];
-        // For each act in the report:
-        report.acts.forEach((act: any) => {
-          const {result, type, which} = act;
-          const instances = result?.standardResult?.instances || [];
-          // If the act is a test act with a specified rule engine:
-          if (type === 'test' && which) {
-            // For each standard instance of the act:
-            instances.forEach((instance: any) => {
-              const {count, ordinalSeverity, outcome, ruleID, what} = instance;
-              // If the instance reports a violation of the issue by the violator:
-              if (
-                outcome !== 'cantTell'
-                &&  instance.issueID === issueID
-                &&  instance.catalogIndex === catalogIndex
-              ) {
-                // Get the diagnosis.
-                const diagnosis = {
-                  'identifier of the violated rule': ruleID !== what ? ruleID : null,
-                  'description of the violation': what,
-                  'severity of the violation on a 0-to-3 scale': ordinalSeverity,
-                  'count of violations of the rule by the element': count ?? 1
-                }
-                diagnoses.push(diagnosis);
-              }
-            });
+        // For each instance reporting a violation of the issue by the violator:
+        getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex})
+        .forEach(({instance}) => {
+          const {count, ordinalSeverity, ruleID, what} = instance;
+          // Get the diagnosis.
+          const diagnosis = {
+            'identifier of the violated rule': ruleID !== what ? ruleID : null,
+            'description of the violation': what,
+            'severity of the violation on a 0-to-3 scale': ordinalSeverity,
+            'count of violations of the rule by the element': count ?? 1
           }
+          diagnoses.push(diagnosis);
         });
         // Add the diagnoses to the response content.
         responseContent['diagnoses of how the element exhibited the issue'] = diagnoses;

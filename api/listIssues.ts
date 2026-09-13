@@ -15,7 +15,9 @@ import {
   getToolsFacts,
   getThisHost
 } from './util.ts';
-import {getReport, getReportStats, isReportError, objectSort} from '../util.ts';
+import {
+  getReport, getReportStats, getTestActInstances, getTestActs, isReportError, objectSort
+} from '../util.ts';
 import {listIssuesResponseSchema} from './schemas.ts';
 
 // FUNCTIONS
@@ -68,44 +70,36 @@ export const response = async (args: string[]) => {
       const reporterIDs: Set<string> = new Set();
       const violatorIndexes: Set<string> = new Set();
       const issuesData: Record<string, any> = {};
-      // For each act in the report:
-      report.acts.forEach((act: any) => {
-        const {result, type, which} = act;
-        // If the act is a test act with a specified rule engine:
-        if (type === 'test' && which) {
-          // Ensure its rule engine is in the results data.
-          ruleEngineIDs.add(which);
-          const instances = result?.standardResult?.instances ?? [];
-          // For each standard instance of the act:
-          instances.forEach((instance: any) => {
-            const {catalogIndex, issueID, outcome} = instance;
-            // If the instance reports a violation:
-            if (outcome !== 'cantTell') {
-              // Get the specification of its issue.
-              const issueSpec = issueID ? getIssueSpec(issueID) : null;
-              // If the instance has a non-ignorable and fully classified issue:
-              if (issueSpec) {
-                const {summary, weight, why} = issueSpec;
-                // Ensure the rule-engine ID is in the reporters data.
-                reporterIDs.add(which);
-                // If the instance has a catalog index:
-                if (catalogIndex) {
-                  // Ensure the index of the violator is in the results data.
-                  violatorIndexes.add(catalogIndex);
-                }
-                // Ensure the data about the issue are in the results data.
-                issuesData[issueID] ??= {
-                  id: issueID,
-                  summary,
-                  weight,
-                  why,
-                  reporterIDs: new Set()
-                };
-                // Ensure the reporter ID is in the data about the issue.
-                issuesData[issueID].reporterIDs.add(which);
-              }
-            }
-          });
+      // For each test act in the report:
+      getTestActs(report).forEach(act => {
+        // Ensure its rule engine is in the results data.
+        ruleEngineIDs.add(act.which!);
+      });
+      // For each violating standard instance of each test act:
+      getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
+        const {catalogIndex, issueID} = instance;
+        // Get the specification of its issue.
+        const issueSpec = issueID ? getIssueSpec(issueID) : null;
+        // If the instance has a non-ignorable and fully classified issue:
+        if (issueSpec) {
+          const {summary, weight, why} = issueSpec;
+          // Ensure the rule-engine ID is in the reporters data.
+          reporterIDs.add(act.which!);
+          // If the instance has a catalog index:
+          if (catalogIndex) {
+            // Ensure the index of the violator is in the results data.
+            violatorIndexes.add(String(catalogIndex));
+          }
+          // Ensure the data about the issue are in the results data.
+          issuesData[issueID!] ??= {
+            id: issueID!,
+            summary,
+            weight,
+            why,
+            reporterIDs: new Set()
+          };
+          // Ensure the reporter ID is in the data about the issue.
+          issuesData[issueID!].reporterIDs.add(act.which!);
         }
       });
       const {preventions} = report.jobData;

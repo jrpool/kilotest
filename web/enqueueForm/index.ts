@@ -5,9 +5,7 @@
 
 // IMPORTS
 
-import {getRecs} from '../../util.ts';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import {getRecs, populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -35,12 +33,8 @@ export const answer = async () => {
     noRecs: urls.length ? '' : 'No recommendations exist now.',
     disabled: urls.length ? '' : ' disabled'
   };
-  // Get the order form template.
-  let answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
-  // Replace its placeholders.
-  Object.keys(query).forEach(param => {
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), query[param]);
-  });
+  // Get the populated order form template.
+  const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.
   return {
     status: 'ok',

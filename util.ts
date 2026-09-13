@@ -236,7 +236,8 @@ export const populateTemplate = async (dirName: string, query: Record<string, st
   });
   return answerPage;
 };
-// Returns the data from a POST request.
+// Returns the data from a POST request. Resolves null for an unrecognized content-type or a
+// malformed JSON body; callers treat null as an unreadable request.
 export const getPOSTData = (request: import('node:http').IncomingMessage): Promise<unknown> => new Promise(resolve => {
   const bodyParts: Buffer[] = [];
   request.on('data', chunk => {

@@ -12,6 +12,7 @@ import {
   getReport,
   getWCAGLink,
   getWeightName,
+  isReportError,
   objectSort,
 } from '../../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -36,14 +37,14 @@ const getIssuesSummary = async () => {
     const {timeStamp, jobID} = reportExtract;
     // Get the corresponding report.
     const report = await getReport(timeStamp, jobID);
-    const {acts = [], error} = report;
     // If this failed:
-    if (error) {
+    if (isReportError(report)) {
       // Populate the summary with the reason.
-      summary.error = error;
+      summary.error = report.error;
+      continue;
     }
-    // For each act in it (none if the report retrieval failed):
-    acts.forEach((act: any) => {
+    // For each act in it:
+    report.acts.forEach((act) => {
       // If it is a test act:
       if (act.type === 'test') {
         const {result, which} = act;

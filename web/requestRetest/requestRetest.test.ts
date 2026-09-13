@@ -80,13 +80,12 @@ test('answer returns ok with a populated answer page for a valid retest request'
   assert.ok(h1.textContent.includes('All CantTell Page'));
 });
 
-test('answer throws when the report does not exist', async () => {
+test('answer returns an error when the report does not exist', async () => {
   const {answer} = await import('./index.ts');
   // Use a nonexistent report timestamp and jobID.
-  await assert.rejects(
-    () => answer('990101T0000/xxx', 'Because changes were made'),
-    /Cannot destructure property 'error'/
-  );
+  const result: any = await answer('990101T0000/xxx', 'Because changes were made');
+  assert.equal(result.status, 'error');
+  assert.ok(result.message?.includes('No report found'), `Expected no-report-found message, got: ${result.message}`);
 });
 
 test('answer returns an error for an invalid retest recommendation', async () => {
@@ -97,21 +96,21 @@ test('answer returns an error for an invalid retest recommendation', async () =>
   assert.equal(result.message, 'Invalid recommendation');
 });
 
-test('answer returns an error when the report extract has an error', async (t) => {
-  // Mock getReportExtracts to return an extract with an error, delegating other exports.
+test('answer returns an error when no extracts are available for the report', async (t) => {
+  // Mock getReportExtracts to return an empty array, delegating other exports.
+  // (getReportExtracts no longer returns error objects; reports not in the list
+  // are treated as not found.)
   const realUtil = await import('../../util.ts');
   t.mock.module('../../util.ts', {
     exports: {
       ...realUtil,
-      getReportExtracts: async () => [
-        {timeStamp: '260101T0001', jobID: 'ct', error: 'Report data unavailable'}
-      ]
+      getReportExtracts: async () => []
     }
   } as any);
   // Import a fresh instance of index.ts so it binds to the mocked module.
   // The query string makes the specifier unique, bypassing the module cache.
-  const {answer} = await import('./index.ts?mockExtractError' as any);
+  const {answer} = await import('./index.ts?mockNoExtracts' as any);
   const result: any = await answer('260101T0001/ct', 'Because changes were made');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Report data unavailable');
+  assert.ok(result.message?.includes('No report found'), `Expected no-report-found message, got: ${result.message}`);
 });

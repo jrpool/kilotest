@@ -15,17 +15,17 @@ export const answer = async (pageArgs: string, why: string) => {
   const reportExtracts = await getReportExtracts(true);
   // Get data on the report whose page is to be retested.
   const reportExtract = reportExtracts.find(
-    (reportExtract: any) => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
+    (extract) => extract.timeStamp === timeStamp && extract.jobID === jobID
   );
-  const {error, url, what} = reportExtract;
-  // If this failed:
-  if (error) {
+  // If no matching report was found:
+  if (!reportExtract) {
     // Return why.
     return {
       status: 'error',
-      message: error
+      message: `No report found for ${timeStamp}-${jobID}`
     };
   }
+  const {url, what} = reportExtract;
   // Otherwise, i.e. if it succeeded, process the request.
   return await processTestRequest('retest', import.meta.dirname, what, url, why);
 };

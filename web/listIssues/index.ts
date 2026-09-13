@@ -14,7 +14,7 @@ import {
   getWeightName,
   htmlSafe,
   isHidden,
-  isValidReport,
+  isUsableReport,
   objectSort,
   ruleEngines
 } from '../../util.ts';
@@ -34,7 +34,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
     return {error: 'Report is not available'}
   }
   // Otherwise, if it exists and is valid:
-  if (isValidReport(report)) {
+  if (isUsableReport(report)) {
     // Initialize the temporary data.
     const temp = {
       issues: {} as Record<string, any>,
@@ -132,7 +132,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
 const getData = async (timeStamp: string, jobID: string) => {
   const pageData = await getPageData(timeStamp, jobID);
   const issuesData: any = await getIssuesData(timeStamp, jobID);
-  const pageError = pageData.error || '';
+  const pageError = ('error' in pageData ? pageData.error : '');
   const issuesError = issuesData.error || '';
   const errors = [pageError, issuesError].filter(Boolean).join('; ');
   // If the data of either type are missing or invalid:

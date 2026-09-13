@@ -5,7 +5,14 @@
 
 // IMPORTS
 
-import {annotateReport, getReportExtracts} from '../../util.ts';
+import {
+  annotateReportObject,
+  getJSON,
+  getReport,
+  getReportPath,
+  isReportError,
+  reportsPath
+} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -15,23 +22,28 @@ import path from 'node:path';
 export const answer = async (authCode: string) => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
-    // Get data on the available reports.
-    const reportExtracts = await getReportExtracts();
+    // Get the names of the stored report files.
+    const reportFileNames = (await fs.readdir(reportsPath()))
+    .filter(fileName => fileName.endsWith('.json'));
     // If any exist:
-    if (reportExtracts.length) {
-      // For each report:
-      for (const reportExtract of reportExtracts) {
-        const {timeStamp, jobID} = reportExtract;
-        // Reannotate it.
-        const annotationError = await annotateReport(timeStamp, jobID);
+    if (reportFileNames.length) {
+      // For each report file:
+      for (const reportFileName of reportFileNames) {
+        const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
+        // Get the report.
+        const report = await getReport(timeStamp, jobID);
         // If this failed:
-        if (annotationError) {
+        if (isReportError(report)) {
           // Return an error page.
           return {
             status: 'error',
-            message: annotationError
+            message: report.error
           };
         }
+        // Otherwise, i.e. if it succeeded, reannotate it in place.
+        await annotateReportObject(report);
+        // Save the reannotated report.
+        await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
       }
     }
     // Otherwise, i.e. if it failed:

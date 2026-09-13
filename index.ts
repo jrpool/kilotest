@@ -7,7 +7,7 @@
 
 import dotenv from 'dotenv';
 import {
-  annotateReport,
+  annotateReportObject,
   createLock,
   deleteRec,
   errorMessage,
@@ -801,11 +801,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
                   console.log(`Testaro report ${id} was received from worker ${workerName}`);
                   // Add the public worker name to the report.
                   report!.sources = {...report!.sources, worker: workerName};
-                  // Save the report.
+                  // Annotate the report before it is ever written, rather than writing it,
+                  // reading it back, annotating that copy, and writing it again: the read-back
+                  // could fail even though the just-written report is fine.
+                  await annotateReportObject(reportObj);
+                  // Save the annotated report.
                   await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-                  // Annotate the report.
-                  await annotateReport(timeStamp, jobID);
-                  console.log(`Testaro report ${id} was annotated, saved, and indexed`);
+                  console.log(`Testaro report ${id} was annotated and saved`);
                   // Check the monetary balances and send alerts if nearing exhaustion.
                   await checkBalancesForAlerts(report!);
                   // Delete the job.

@@ -156,7 +156,7 @@ export const getJobNames = async (): Promise<Record<string, string[]>> => {
         fileNames = [];
       }
       else {
-        throw new Error(`Job directory ${category} not readable (${errorMessage(error)})`);
+        throw new Error(`Job directory ${category} not readable (${errorMessage(error)})`, {cause: error});
       }
     }
     jobNames[category] = fileNames;
@@ -270,13 +270,13 @@ export const getRecs = async (): Promise<unknown> => {
       await fs.writeFile(recsPath(), '{}\n');
       return {};
     }
-    throw new Error(`Recommendations file not readable (${errorMessage(error)})`);
+    throw new Error(`Recommendations file not readable (${errorMessage(error)})`, {cause: error});
   }
   try {
     return JSON.parse(recsJSON);
   }
   catch(error: unknown) {
-    throw new Error(`Recommendations file not JSON (${errorMessage(error)})`);
+    throw new Error(`Recommendations file not JSON (${errorMessage(error)})`, {cause: error});
   }
 };
 // Converts a catalog item text to a text-fragment link destination.
@@ -468,7 +468,7 @@ export const deleteRec = (url: string) => recsLock(async (): Promise<void> => {
 
 // TYPES
 
-// A StandardInstance extended with the issueID that Kilotest's annotateReport adds.
+// A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
 export interface AnnotatedInstance extends StandardInstance {
   issueID?: string;
 }
@@ -631,16 +631,13 @@ export const getReport = async (timeStamp: string, jobID: string): Promise<Usabl
 export const isReportError = (r: UsableReport | {error: string}): r is {error: string} => {
   return typeof (r as any).error === 'string';
 };
-// Adds issue IDs to the standard instances of a report.
-export const annotateReport = async (timeStamp: string, jobID: string) => {
-  // Get a copy of the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Return why.
-    return report.error;
-  }
-  // Otherwise, i.e. if it succeeded:
+// Adds issue IDs to the standard instances of a report object, in place, and alerts a
+// manager about any rules that could not be classified into an issue. Operates on an
+// already-obtained report; a caller that has one only by identifier (e.g. one already
+// stored) should read it with getReport first, while a caller that has a report object
+// directly (e.g. one just received and not yet stored) can annotate it before ever
+// writing it.
+export const annotateReportObject = async (report: UsableReport): Promise<void> => {
   const unclassifiableRules = new Set<string>();
   // For each standard instance of each of its test acts:
   for (const {act, instance} of getTestActInstances(report)) {
@@ -668,13 +665,9 @@ export const annotateReport = async (timeStamp: string, jobID: string) => {
     // Alert a manager about them.
     await sendAlert(
       'Kilotest: unclassified rules violated',
-      `Job ${timeStamp}-${jobID}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
+      `Report ${report.id}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
     );
   }
-  // Save the annotated report.
-  await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-  // Return success.
-  return '';
 };
 // Returns basics about an available report.
 export const getReportData = async (timeStamp: string, jobID: string): Promise<ReportData | {error: string}> => {

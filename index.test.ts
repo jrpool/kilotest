@@ -645,7 +645,7 @@ test('POST /reannotate.html with invalid auth code returns an error page', async
 });
 
 test('POST /reannotate.html with valid auth code serves the answer page', async () => {
-  // Back up all fixture reports, because annotateReport modifies them in place.
+  // Back up all fixture reports, because reannotation modifies them in place.
   const reportsDir = path.join(fixtureDBDir, 'reports');
   const reportFiles = await fs.readdir(reportsDir);
   const backups: Record<string, string> = {};

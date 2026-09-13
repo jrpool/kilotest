@@ -544,6 +544,26 @@ test('PUT / returns an invalid method error', async () => {
   assert.ok(res.body.includes('Invalid request method'));
 });
 
+// TESTS: requestHandler catch boundary
+
+test('GET /listReports.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
+  // Corrupt recs.json so that getRecs throws, an error that should never occur in normal
+  // operation and so is not handled by handleRequest itself, only by requestHandler's
+  // outer catch boundary.
+  const backup = await fs.readFile(recsPath, 'utf8');
+  await fs.writeFile(recsPath, 'not valid json');
+  try {
+    const res = await request('GET', '/listReports.html');
+    assert.equal(res.statusCode, 500);
+    assert.ok(res.headers['content-type'].includes('application/json'));
+    const body = jsonBody(res);
+    assert.ok(body.error);
+  }
+  finally {
+    await fs.writeFile(recsPath, backup);
+  }
+});
+
 // TESTS: serveError behavior
 
 test('serveError sends JSON for agent requests (isHumanUser = false)', async () => {
@@ -625,7 +645,7 @@ test('POST /reannotate.html with invalid auth code returns an error page', async
 });
 
 test('POST /reannotate.html with valid auth code serves the answer page', async () => {
-  // Back up all fixture reports, because annotateReport modifies them in place.
+  // Back up all fixture reports, because reannotation modifies them in place.
   const reportsDir = path.join(fixtureDBDir, 'reports');
   const reportFiles = await fs.readdir(reportsDir);
   const backups: Record<string, string> = {};
@@ -717,6 +737,31 @@ test('POST /worker/report with valid authentication and wrong worker returns an 
   assert.equal(res.statusCode, 400);
   const body = jsonBody(res);
   assert.ok(body.error);
+});
+
+test('POST /worker/report with a claimed job file that is not valid JSON returns a 500 error', {timeout: 500}, async () => {
+  // A corrupt claimed-job file is not the normal "no such claim" outcome (ENOENT), so it
+  // should propagate as an unexpected error rather than being treated as an unassigned job.
+  const jobID = '990101T0002-bad';
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const jobPath = path.join(claimedDir, `${jobID}.json`);
+  await fs.writeFile(jobPath, 'not valid json');
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  const report = {
+    id: jobID,
+    target: {what: 'Test', url: 'https://example.com/test'}
+  };
+  try {
+    const res = await request('POST', '/worker/report', {report}, {
+      authorization: `Basic ${auth}`
+    });
+    assert.equal(res.statusCode, 500);
+    const body = jsonBody(res);
+    assert.ok(body.error);
+  }
+  finally {
+    await fs.unlink(jobPath).catch(() => {});
+  }
 });
 
 test('POST /worker/job with wrong secret returns 401', async () => {
@@ -851,6 +896,51 @@ test('POST /worker/report with valid authentication and valid claimed job proces
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body.status, 'ok');
+});
+
+test('POST /worker/report with a claimed job but an unusable report returns an error and reclassifies the job', {timeout: 500}, async () => {
+  // Use a unique job ID that does not conflict with existing fixtures.
+  const jobID = '990101T0001-unu';
+  const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  const jobFile = `${jobID}.json`;
+  const claimedJobPath = path.join(claimedDir, jobFile);
+  const failedJobPath = path.join(failedDir, jobFile);
+  // Clean up any leftover files.
+  await fs.unlink(reportPath).catch(() => {});
+  await fs.unlink(failedJobPath).catch(() => {});
+  // Create a claimed job assigned to Worker One.
+  await fs.writeFile(claimedJobPath, JSON.stringify({
+    id: jobID,
+    target: {what: 'Test', url: 'https://example.com/test'},
+    sources: {worker: 'Worker One'}
+  }));
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  // A report that is syntactically valid (has id, target.what, target.url) but is not
+  // usable by Kilotest, because it has no acts, jobData, or catalog.
+  const report = {
+    id: jobID,
+    target: {what: 'Test', url: 'https://example.com/test'}
+  };
+  const res = await request('POST', '/worker/report', {report}, {
+    authorization: `Basic ${auth}`
+  });
+  assert.equal(res.statusCode, 400);
+  const body = jsonBody(res);
+  assert.ok(body.error.message.includes('not usable'));
+  // The report should not have been recorded.
+  const reportExists = await fs.access(reportPath).then(() => true).catch(() => false);
+  assert.equal(reportExists, false, 'Unusable report should not be saved');
+  // Wait for the async rename to complete.
+  await new Promise<void>(resolve => setTimeout(resolve, 100));
+  // The job should have been reclassified as failed rather than left claimed.
+  const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+  assert.ok(failedExists, 'Job should be moved to the failed directory');
+  const claimedExists = await fs.access(claimedJobPath).then(() => true).catch(() => false);
+  assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
+  // Clean up.
+  await fs.unlink(failedJobPath).catch(() => {});
 });
 
 // TESTS: remaining error branches and web pages

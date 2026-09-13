@@ -54,7 +54,7 @@ const populateQuery = async (query: Record<string, any>) => {
   ? 'Kilotest managers can <a href="enqueueForm.html">approve or reject a recommendation</a>.'
   : 'No recommendations await approval now.';
   // Get the file names of all queued and claimed jobs.
-  const jobFileNames = await getJobNames() as Record<string, string[]>;
+  const jobFileNames = await getJobNames();
   // For each job category:
   for (const category of ['queue', 'claimed']) {
     // For each job in the category:

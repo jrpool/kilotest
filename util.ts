@@ -139,8 +139,10 @@ export const getIssue = (engineID: string, ruleID: string): string | null => {
   // Return the issue ID if a pattern matched, or a failure result otherwise.
   return variableRuleID ? variable[variableRuleID].issueID : null;
 };
-// Gets the names and categories of the job files.
-export const getJobNames = async (): Promise<Record<string, string[]> | string> => {
+// Gets the names and categories of the job files. Missing job directories are a normal,
+// recoverable condition (e.g. on first run) and are created empty; any other failure to
+// read a job directory should never occur, so it is thrown rather than returned.
+export const getJobNames = async (): Promise<Record<string, string[]>> => {
   const jobNames: Record<string, string[]> = {};
   let fileNames: string[];
   for (const category of ['queue', 'claimed', 'failed']) {
@@ -154,7 +156,7 @@ export const getJobNames = async (): Promise<Record<string, string[]> | string> 
         fileNames = [];
       }
       else {
-        return `ERROR: Job directory ${category} not readable (${errorMessage(error)})`;
+        throw new Error(`Job directory ${category} not readable (${errorMessage(error)})`, {cause: error});
       }
     }
     jobNames[category] = fileNames;
@@ -165,22 +167,26 @@ export const getJobNames = async (): Promise<Record<string, string[]> | string> 
 export const getJSON = (object: unknown): string => `${JSON.stringify(object, null, 2)}\n`;
 // Returns the message of an error, or its string representation if it is not an Error instance.
 export const errorMessage = (error: unknown): string => error instanceof Error ? error.message : String(error);
-// Returns an object from a JSON file.
+// Returns an object from a JSON file. A missing, unreadable, or non-JSON file should never
+// occur for the files this is called on (job and report files Kilotest itself wrote), so
+// failure is thrown rather than returned.
 export const getObject = async (filePath: string): Promise<unknown> => {
-  let fileContent, object;
+  let fileContent;
   try {
     fileContent = await fs.readFile(filePath, 'utf8');
   }
   catch(error: unknown) {
-    return `ERROR: File ${filePath} not readable (${errorMessage(error)})`;
+    // The cause is preserved so that a caller for whom a missing file is a normal,
+    // expected outcome (rather than one that should never occur) can distinguish it,
+    // by its code, from any other (thrown) read failure.
+    throw new Error(`File ${filePath} not readable (${errorMessage(error)})`, {cause: error});
   }
   try {
-    object = JSON.parse(fileContent);
+    return JSON.parse(fileContent);
   }
   catch(error: unknown) {
-    return `ERROR: File ${filePath} not JSON (${errorMessage(error)})`;
+    throw new Error(`File ${filePath} not JSON (${errorMessage(error)})`, {cause: error});
   }
-  return object;
 };
 // Returns a random string.
 export const getRandomString = (length: number): string => {
@@ -251,24 +257,27 @@ export const getPOSTData = (request: import('node:http').IncomingMessage): Promi
     }
   });
 });
-// Returns the waiting test and retest recommendations.
+// Returns the waiting test and retest recommendations. A missing recommendations file is a
+// normal, recoverable condition (e.g. on first run) and is replaced with an empty one; a
+// present but unreadable or non-JSON file should never occur, so that failure is thrown.
 export const getRecs = async (): Promise<unknown> => {
-  let recs;
   let recsJSON;
   try {
     recsJSON = await fs.readFile(recsPath(), 'utf8');
   }
   catch(error: unknown) {
-    await fs.writeFile(recsPath(), '{}\n');
-    return `ERROR: recommendations file not readable, so created an empty one (${errorMessage(error)})`;
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      await fs.writeFile(recsPath(), '{}\n');
+      return {};
+    }
+    throw new Error(`Recommendations file not readable (${errorMessage(error)})`, {cause: error});
   }
   try {
-    recs = JSON.parse(recsJSON);
+    return JSON.parse(recsJSON);
   }
   catch(error: unknown) {
-    return `ERROR: recommendations file not JSON (${errorMessage(error)})`;
+    throw new Error(`Recommendations file not JSON (${errorMessage(error)})`, {cause: error});
   }
-  return recs;
 };
 // Converts a catalog item text to a text-fragment link destination.
 export const getTextFragmentHref = (text: string, url: string): string => {
@@ -309,7 +318,7 @@ export const isJobID = (string: string): boolean => {
 };
 // Returns whether a job to test a target is eligible for a recommendation.
 export const isRecommendable = async (url: string): Promise<string> => {
-  const jobNames = await getJobNames() as Record<string, string[]>;
+  const jobNames = await getJobNames();
   // For each claimed job:
   for (const fileName of jobNames.claimed) {
     const job = await getObject(path.join(jobsPath(), 'claimed', fileName));
@@ -459,7 +468,7 @@ export const deleteRec = (url: string) => recsLock(async (): Promise<void> => {
 
 // TYPES
 
-// A StandardInstance extended with the issueID that Kilotest's annotateReport adds.
+// A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
 export interface AnnotatedInstance extends StandardInstance {
   issueID?: string;
 }
@@ -604,12 +613,12 @@ export const getReport = async (timeStamp: string, jobID: string): Promise<Usabl
   try {
     const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
     const report = JSON.parse(reportJSON);
-    // If it is valid:
+    // If it is usable:
     if (isUsableReport(report)) {
       // Return it.
       return report;
     }
-    // Otherwise, i.e. if it is invalid, return this.
+    // Otherwise, i.e. if it is unusable, return this.
     return {error: `Report ${timeStamp}-${jobID} is not usable`};
   } catch (error: unknown) {
     return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
@@ -622,16 +631,13 @@ export const getReport = async (timeStamp: string, jobID: string): Promise<Usabl
 export const isReportError = (r: UsableReport | {error: string}): r is {error: string} => {
   return typeof (r as any).error === 'string';
 };
-// Adds issue IDs to the standard instances of a report.
-export const annotateReport = async (timeStamp: string, jobID: string) => {
-  // Get a copy of the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Return why.
-    return report.error;
-  }
-  // Otherwise, i.e. if it succeeded:
+// Adds issue IDs to the standard instances of a report object, in place, and alerts a
+// manager about any rules that could not be classified into an issue. Operates on an
+// already-obtained report; a caller that has one only by identifier (e.g. one already
+// stored) should read it with getReport first, while a caller that has a report object
+// directly (e.g. one just received and not yet stored) can annotate it before ever
+// writing it.
+export const annotateReportObject = async (report: UsableReport): Promise<void> => {
   const unclassifiableRules = new Set<string>();
   // For each standard instance of each of its test acts:
   for (const {act, instance} of getTestActInstances(report)) {
@@ -659,13 +665,9 @@ export const annotateReport = async (timeStamp: string, jobID: string) => {
     // Alert a manager about them.
     await sendAlert(
       'Kilotest: unclassified rules violated',
-      `Job ${timeStamp}-${jobID}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
+      `Report ${report.id}: Violated rules in no issues:\n${issuelessRules.join('\n')}`
     );
   }
-  // Save the annotated report.
-  await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
-  // Return success.
-  return '';
 };
 // Returns basics about an available report.
 export const getReportData = async (timeStamp: string, jobID: string): Promise<ReportData | {error: string}> => {

@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {
-  annotateReport,
+  annotateReportObject,
   createLock,
   dbPath,
   getAgoDays,
@@ -208,10 +208,8 @@ test('getObject returns the parsed object for a valid JSON file', async () => {
   assert.equal((result as {name: unknown}).name, '@jrpool/kilotest');
 });
 
-test('getObject returns an error string for a nonexistent file', async () => {
-  const result = await getObject('/tmp/nonexistent-file.json');
-  assert.ok(typeof result === 'string');
-  assert.ok(result.startsWith('ERROR'));
+test('getObject throws for a nonexistent file', async () => {
+  await assert.rejects(getObject('/tmp/nonexistent-file.json'), /not readable/);
 });
 
 test('getNowStamp returns an 11-character time stamp', () => {
@@ -310,7 +308,7 @@ test('objectSort sorts objects numerically descending', () => {
   assert.deepEqual(sorted.map(i => i.count), [3, 2, 1]);
 });
 
-// TESTS FOR processTestRequest, annotateReport, AND isReportAvailable
+// TESTS FOR processTestRequest AND isReportAvailable
 
 // These tests use the fixture database directory and the real web/requestTest template.
 import {fixtureDBDir as fixtureDbDir} from './test/dbFixture.ts';
@@ -427,22 +425,65 @@ test('processTestRequest returns a duplicate error for a repeated request', {tim
   await fs.writeFile(recsPath(), '{}\n');
 });
 
-test('annotateReport returns an error for a nonexistent report', async () => {
-  const result = await annotateReport('990101T0000', 'xxx');
-  assert.ok(typeof result === 'string');
-  assert.ok(result.includes('missing'));
+test('annotateReportObject annotates a report object in place without reading or writing a file', async () => {
+  // A report object that was never written to disk (e.g. one just received from a worker,
+  // as in index.ts's worker/report handler, which annotates before the first write).
+  const report: any = {
+    id: '990101T0099-obj',
+    target: {what: 'Object Page', url: 'https://example.com/object'},
+    acts: [
+      {
+        type: 'test',
+        which: 'alfa',
+        result: {
+          standardResult: {
+            instances: [
+              // A classifiable rule.
+              {ruleID: 'r11', what: 'The link does not have an accessible name', outcome: 'failed', catalogIndex: '0'},
+              // An unclassifiable rule.
+              {ruleID: 'unknownRule123', what: 'Unknown', outcome: 'failed', catalogIndex: '0'}
+            ]
+          }
+        }
+      }
+    ],
+    jobData: {endTime: '26-01-01T00:00'},
+    catalog: {}
+  };
+  await annotateReportObject(report);
+  const instances = report.acts[0].result.standardResult.instances;
+  assert.equal(instances[0].issueID, 'linkNoText');
+  assert.equal(instances[1].issueID, undefined);
+  assert.deepEqual(report.jobData.issuelessRules, ['alfa:unknownRule123']);
 });
 
-test('annotateReport annotates a valid report and returns an empty string', async () => {
-  const reportPath = path.join(fixtureDbDir, 'reports', '260101T0000-mix.json');
-  const original = await fs.readFile(reportPath, 'utf8');
-  try {
-    const result = await annotateReport('260101T0000', 'mix');
-    assert.equal(result, '');
-  }
-  finally {
-    await fs.writeFile(reportPath, original);
-  }
+test('annotateReportObject handles a test act with no standardResult instances', async () => {
+  const report: any = {
+    id: '990101T0098-ni',
+    target: {what: 'Test', url: 'https://example.com'},
+    acts: [
+      {type: 'test', which: 'axe', result: {standardResult: {instances: []}}},
+      {type: 'other'}
+    ],
+    jobData: {endTime: '26-01-01T00:00'},
+    catalog: {}
+  };
+  await annotateReportObject(report);
+  assert.deepEqual(report.jobData.issuelessRules, []);
+});
+
+test('annotateReportObject handles a test act with no standardResult', async () => {
+  const report: any = {
+    id: '990101T0097-ns',
+    target: {what: 'Test', url: 'https://example.com'},
+    acts: [
+      {type: 'test', which: 'axe', result: {}}
+    ],
+    jobData: {endTime: '26-01-01T00:00'},
+    catalog: {}
+  };
+  await annotateReportObject(report);
+  assert.deepEqual(report.jobData.issuelessRules, []);
 });
 
 test('isReportAvailable returns true for a known page description', async () => {
@@ -488,7 +529,7 @@ test('getJobNames creates missing job directories and returns empty arrays', asy
   }
 });
 
-test('getJobNames returns an error when a job directory is a file, not a directory', async () => {
+test('getJobNames throws when a job directory is a file, not a directory', async () => {
   const os = await import('node:os');
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-jobnames-err-'));
   const tmpJobsDir = path.join(tmpRoot, 'db', 'jobs');
@@ -499,9 +540,7 @@ test('getJobNames returns an error when a job directory is a file, not a directo
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
     const {getJobNames} = await import('./util.ts');
-    const result = await getJobNames();
-    assert.ok(typeof result === 'string');
-    assert.ok(result.startsWith('ERROR'));
+    await assert.rejects(getJobNames(), /not readable/);
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -509,16 +548,18 @@ test('getJobNames returns an error when a job directory is a file, not a directo
   }
 });
 
-test('getObject returns an error for a file that is not valid JSON', async () => {
+test('getObject throws for a file that is not valid JSON', async () => {
   const tmpFile = path.join((await import('node:os')).tmpdir(), 'kilotest-test-invalid.json');
   (await import('node:fs')).writeFileSync(tmpFile, 'not json');
-  const result = await getObject(tmpFile);
-  assert.ok(typeof result === 'string');
-  assert.ok(result.startsWith('ERROR'));
-  (await import('node:fs')).unlinkSync(tmpFile);
+  try {
+    await assert.rejects(getObject(tmpFile), /not JSON/);
+  }
+  finally {
+    (await import('node:fs')).unlinkSync(tmpFile);
+  }
 });
 
-test('getRecs creates an empty recommendations file and returns an error when it is missing', async () => {
+test('getRecs creates and returns an empty recommendations object when the file is missing', async () => {
   const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-recs-test';
   const fsSync = await import('node:fs');
   fsSync.mkdirSync(tmpDir + '/jobs', {recursive: true});
@@ -527,8 +568,7 @@ test('getRecs creates an empty recommendations file and returns an error when it
   try {
     const {getRecs} = await import('./util.ts');
     const result = await getRecs();
-    assert.ok(typeof result === 'string');
-    assert.ok(result.startsWith('ERROR'));
+    assert.deepEqual(result, {});
     // Verify the empty file was created.
     assert.ok(fsSync.existsSync(tmpDir + '/jobs/recs.json'));
   }
@@ -538,7 +578,24 @@ test('getRecs creates an empty recommendations file and returns an error when it
   }
 });
 
-test('getRecs returns an error when the recommendations file is not JSON', async () => {
+test('getRecs throws when the recommendations file is not readable for a reason other than being missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recs-unreadable-test';
+  const fsSync = await import('node:fs');
+  // Create a directory where the recommendations file should be, causing EISDIR rather than ENOENT.
+  fsSync.mkdirSync(tmpDir + '/jobs/recs.json', {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {getRecs} = await import('./util.ts');
+    await assert.rejects(getRecs(), /not readable/);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('getRecs throws when the recommendations file is not JSON', async () => {
   const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recs-test';
   (await import('node:fs')).mkdirSync(tmpDir + '/jobs', {recursive: true});
   (await import('node:fs')).writeFileSync(tmpDir + '/jobs/recs.json', 'not json');
@@ -546,9 +603,7 @@ test('getRecs returns an error when the recommendations file is not JSON', async
   process.env.DB_DIR = tmpDir;
   try {
     const {getRecs} = await import('./util.ts');
-    const result = await getRecs();
-    assert.ok(typeof result === 'string');
-    assert.ok(result.startsWith('ERROR'));
+    await assert.rejects(getRecs(), /not JSON/);
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -805,57 +860,6 @@ test('isUsableReport returns true for a report with a non-test act', async () =>
     catalog: {}
   };
   assert.equal(isUsableReport(report), true);
-});
-
-test('annotateReport handles a test act with no standardResult instances', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-no-instances-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/reports', {recursive: true});
-  const report = {
-    target: {what: 'Test', url: 'https://example.com'},
-    acts: [
-      {type: 'test', which: 'axe', result: {standardResult: {instances: []}}},
-      {type: 'other'}
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  fsSync.writeFileSync(tmpDir + '/reports/260101T0000-ni.json', JSON.stringify(report));
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const result = await annotateReport('260101T0000', 'ni');
-    assert.equal(result, '');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
-test('annotateReport handles a test act with no standardResult', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-no-standard-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/reports', {recursive: true});
-  const report = {
-    target: {what: 'Test', url: 'https://example.com'},
-    acts: [
-      {type: 'test', which: 'axe', result: {}}
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  fsSync.writeFileSync(tmpDir + '/reports/260101T0000-ns.json', JSON.stringify(report));
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const result = await annotateReport('260101T0000', 'ns');
-    assert.equal(result, '');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
 });
 
 // UNIT TESTS FOR PREVIOUSLY UNTESTED EXPORTED FUNCTIONS

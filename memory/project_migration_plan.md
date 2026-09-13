@@ -41,6 +41,7 @@ When helping with any Kilotest work, assume this migration is the active project
 
 ## Later work
 
+- Remove isHidden and its call sites. It is redundant: hidden reports are moved out of reportsPath() into hiddenReportsPath() (and back on unhide) rather than flagged in place, so getReport/isReportError already fails identically for a hidden report and a nonexistent one, without the extra fs.readdir(hiddenReportsPath()) call. Call sites: index.ts's fullReport.json route, `web/listViolators`, `web/listDiagnoses`, and `web/listIssues` (which calls it twice in one request, in both `getIssuesData` and `answer`). Removing it should let the hidden-report case collapse into the same generic getReport-failure handling already used elsewhere (see the fullReport.json fix that stopped treating that failure as "suspected abuse").
 - Add observability of request metrics.
 - Investigate a dual-package hazard in the imports from `testaro-issues`. Statement by SWE-2 about this: “The dual-package hazard will bite again in the other direction once index.cjs/mcp.cjs (still CommonJS, using the .cjs build) and the converted .ts modules (using the .mjs build) hold separate copies of its state. Harmless here since testaro-issues is read-only static data, but the pattern matters if a dual-format dependency ever carries mutable state.”
 - Continue web and API terminology alignment by renaming test and retest recommendations in the web UI requests, as in the API, in code comments, text outputs to users, and identifier names.

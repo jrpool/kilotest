@@ -73,8 +73,8 @@ const populateQuery = async (
     return;
   }
   const {catalog} = report;
-  // Otherwise, i.e. if it succeeded, for each standard instance of the issue:
-  getTestActInstances(report, {issueID}).forEach(({act, instance}) => {
+  // Otherwise, i.e. if it succeeded, for each violating standard instance of the issue:
+  getTestActInstances(report, {violationsOnly: true, issueID}).forEach(({act, instance}) => {
     const pathID = instance.pathID || '/html';
     const catalogIndex = String(instance.catalogIndex || '0');
     const tagName = catalog[catalogIndex]?.tagName

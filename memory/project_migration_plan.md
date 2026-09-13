@@ -30,10 +30,10 @@ Maintainer (age 84) has decided to migrate Kilotest to TypeScript + ESM to match
 10. Rely on the `Report` interface defined at `https://github.com/YRA-Tech/testaro/blob/main/types.ts` to complete the migration of code that makes less specific assumptions about the shape of Testaro reports. This entails updating code that accesses report properties to use the expected shape.
 11. Discover and utilize remaining opportunities for type enforcements, concern separations, and simplifying refactors.
 12. Review all instances of exclusions from `c8` coverage reporting to ensure they are still necessary, and also decide whether to abandon `c8` in favor af the `node` built-in experimental coverage reporter.
-13. Ensure that standard instances with `outcome` set to `cantTell` are consistently excluded as violations.
+13. Ensure that standard instances of Testaro reports with `outcome` set to `cantTell` are consistently excluded as violations.
 14. Consider whether the pattern of functions returning diverse-type values, with error conditions and normal conditions causing return values of different types, can be replaced with some other pattern, such as a return value with only the normal type and errors throwing instead, and, if so, whether that would simplify the code. But consider that some abnormal conditions are mere disqualifications (such as a report with no catalog image being disqualified from any operation that requires that image), while others are errors that should never occur (such as a report that is not valid JSON).
 15. Review all work and make corrections and improvements.
-16. Extract still-useful explanations from the migration plan into code-adjacent comments or terse decision documents, as appropriate, decide where the `## Later work` backlog should live once this document is gone, and then retire the migration plan (i.e. delete it, once it is obsolete).
+16. Extract still-useful explanations from the migration plan (including details below) into code-adjacent comments or terse decision documents, as appropriate, decide where the `## Later work` backlog should live once this document is gone, and then retire the migration plan (i.e. delete it, once it is obsolete).
 
 ## How to Apply
 
@@ -47,11 +47,19 @@ When helping with any Kilotest work, assume this migration is the active project
 
 ## Details
 
-Here are proposed details for the current step.
+Here are details for the current and completed steps, insofar as their complexity requires documentation of details.
 
-The current step is step 12.
+Step 13 audited every call to `getTestActInstances` (the shared "iterate test-act instances" helper from step 11) for consistent exclusion of `cantTell`-outcome instances from violation counts and listings. Three call sites counted or listed violations without passing `violationsOnly: true`, inconsistently with their API counterparts or their own stated purpose, and were corrected:
 
-Step 12 has two parts.
+- `web/listViolators/index.ts`'s `populateQuery` (listed violators of an issue): now passes `violationsOnly: true`, matching `api/listViolators.ts`.
+- `web/listDiagnoses/index.ts`'s `populateQuery` (listed diagnoses of a violator): now passes `violationsOnly: true`, matching `api/listDiagnoses.ts`.
+- `web/listTopIssues/index.ts`'s `getIssuesSummary` (aggregates issue counts and percentages, labeled "violations" in its own output): now passes `violationsOnly: true`. It has no API counterpart, but its output text ("Share of violations", "Violations reported by") makes the omission the same kind of bug as the other two.
+
+Two other call sites remain unfiltered, correctly: `util.ts`'s `annotateReport` and `web/reannotateForm/index.ts` iterate every instance (including `cantTell` ones) to (re)classify rules into issue IDs, which is not a violation count and must cover all outcomes to keep annotations complete.
+
+Tests were added for each of the three fixes, using the `focusIndicationBad` issue in the `260101T0000-mix` fixture report (reported there only with outcome `cantTell`) to confirm it is excluded from `listViolators`' violator count, `listDiagnoses`' diagnosis list, and `listTopIssues`' summary.
+
+Step 12 had two parts.
 
 1. **Review all `c8` exclusions for continued necessity.** There is exactly one in the codebase: the `/* c8 ignore start */` … `/* c8 ignore stop */` block wrapping the import statements at the top of `util.ts`, justified by a comment claiming c8 intermittently misreports import lines as uncovered. Verified empirically: temporarily removing the ignore block and running `npm test` reproduced the failure (two import lines reported uncovered, dropping lines/statements/branches to 99.77-99.96% and failing the 100% threshold), with the installed `c8` version against the current Node version. The exclusion is still necessary; no change to it is proposed.
 2. **Decide whether to abandon `c8` for Node's built-in coverage.** Proposed decision: **keep `c8`**, for now. Reasoning:
@@ -63,7 +71,7 @@ Step 12 has two parts.
    - `c8` has none of these issues for this codebase's use case today and remains a stable, unmaintained-risk-free dependency choice.
    - Revisit this decision once `--experimental-test-coverage` stabilizes and the mock-module coverage-accounting bugs and the branch-coverage/ignore-comment bug are resolved upstream.
 
-Here are step 11 work items.
+Here were step 11 work items.
 
 - Items 1 through 10 deal with type enforcement.
 - Items 11 through 15 deal with concern separation.
@@ -95,7 +103,7 @@ Items marked done were implemented as described; items still open say so explici
 
 10. **Handle `null` from `getTimeString` in `getDateTimeString`.** (Done.) `getDateTimeString` now falls back to `an unknown date at an unknown time` instead of interpolating `null`; the test was updated to expect the fallback.
 
-11. **Extract a shared "iterate test-act instances" helper.** (Done.) `getTestActs(report)` and `getTestActInstances(report, {violationsOnly?, issueID?, catalogIndex?})` in `util.ts` now centralize the traversal. All listed consumers were converted: `annotateReport` and `getReportData` in `util.ts`, `api/listIssues.ts`, `api/listViolators.ts`, `api/listDiagnoses.ts`, `web/listIssues/index.ts`, `web/listViolators/index.ts`, `web/listDiagnoses/index.ts`, `web/reannotateForm/index.ts`, and `web/listTopIssues/index.ts`. Note for step 13: the web `listViolators` and `listDiagnoses` handlers did not exclude `cantTell` instances while the parallel API handlers did; the shared helper preserves each site's original filter behavior, so that inconsistency remains to be adjudicated.
+11. **Extract a shared "iterate test-act instances" helper.** (Done.) `getTestActs(report)` and `getTestActInstances(report, {violationsOnly?, issueID?, catalogIndex?})` in `util.ts` now centralize the traversal. All listed consumers were converted: `annotateReport` and `getReportData` in `util.ts`, `api/listIssues.ts`, `api/listViolators.ts`, `api/listDiagnoses.ts`, `web/listIssues/index.ts`, `web/listViolators/index.ts`, `web/listDiagnoses/index.ts`, `web/reannotateForm/index.ts`, and `web/listTopIssues/index.ts`. Note for step 13: the web `listViolators` and `listDiagnoses` handlers did not exclude `cantTell` instances while the parallel API handlers did; the shared helper preserves each site's original filter behavior. See step 13 for the resolution.
 
 12. **Extract a shared template-population helper.** (Done.) `populateTemplate(dirName, query)` in `util.ts` replaces the boilerplate in all listed web handlers, all form handlers, and `util.ts`'s own `processTestRequest`. It uses a replacer function (`() => value`) so that `$&`, `$'`, and `` $` `` in user-provided values are not interpreted as replacement patterns. Query bags typed `Record<string, string>` were left as-is; `web/listViolators` still needs `Record<string, any>` because its query carries a `Set` and a number.
 

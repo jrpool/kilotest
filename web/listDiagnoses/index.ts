@@ -103,8 +103,8 @@ const populateQuery = async (
   }
   // Initialize an array of diagnoses.
   const diagnoses: any[] = [];
-  // For each standard instance that pertains to this combination of issue and violator:
-  getTestActInstances(report, {issueID, catalogIndex}).forEach(({act, instance}) => {
+  // For each violating standard instance that pertains to this combination of issue and violator:
+  getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex}).forEach(({act, instance}) => {
     const {ruleID, what} = instance;
     // Add lines for it to the array.
     diagnoses.push({

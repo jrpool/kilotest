@@ -45,6 +45,15 @@ test('listTopIssues includes priority headings in the page', async () => {
   assert.ok(result.answerPage.includes('priority'));
 });
 
+test('listTopIssues excludes cantTell instances from issue counts', async () => {
+  // In the fixture corpus, focusIndicationBad is reported only with a cantTell outcome
+  // (in the mixed and all-cantTell reports), never as a violation, so it should not
+  // appear in the summary.
+  const result: any = await answer();
+  assert.equal(result.status, 'ok');
+  assert.ok(!result.answerPage.includes('focus indication poor'));
+});
+
 test('listTopIssues returns an error when a report file is invalid', async () => {
   const dbDir = (await import('../../test/dbFixture.ts')).fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');

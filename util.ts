@@ -96,6 +96,9 @@ export const getAgoDays = (timeArg: string | Date): number | null => {
 // Returns a string describing the time in days since a time stamp.
 export const getAgoString = (timeStamp: string): string => {
   const agoDays = getAgoDays(timeStamp);
+  if (agoDays === null) {
+    return 'an unknown number of days';
+  }
   return agoDays === 1 ? '1 day' : `${agoDays} days`;
 };
 // Returns a string describing a count.
@@ -104,7 +107,7 @@ export const getCountString = (count: number, singular: string, plural: string):
 export const getDateString = (timeStamp: string): string => {
   const dateString = `20${timeStamp.slice(0, 2)}-${timeStamp.slice(2, 4)}-${timeStamp.slice(4,6)}`;
   // If the date part of the time stamp is valid:
-  if (Date.parse(dateString)) {
+  if (!isNaN(Date.parse(dateString))) {
     // Return a date string from it.
     return dateString;
   }
@@ -208,8 +211,8 @@ export const getNowStamp = (): string => {
 // Returns a time string from a time stamp.
 const getTimeString = (timeStamp: string) => {
   const timeString = `${timeStamp.slice(7, 9)}:${timeStamp.slice(9, 11)}`;
-  // Return a time string from it.
-  return (Date.parse(`2000-01-01T${timeString}Z`)) ? timeString : null;
+  // Return the time string if valid, or null if not.
+  return (!isNaN(Date.parse(`2000-01-01T${timeString}Z`))) ? timeString : null;
 };
 // Returns a date-and-time string.
 export const getDateTimeString = (timeStamp: string): string => {
@@ -244,8 +247,12 @@ export const getPOSTData = (request: import('node:http').IncomingMessage): Promi
     const contentType = String(headers['content-type'] || headers['body-type'] || '');
     if (contentType.startsWith('application/json')) {
       const bodyJSON = bodyParts.join('');
-      const body = JSON.parse(bodyJSON);
-      resolve(body);
+      try {
+        resolve(JSON.parse(bodyJSON));
+      }
+      catch {
+        resolve(null);
+      }
     }
     else if (contentType.startsWith('application/x-www-form-urlencoded')) {
       const body = bodyParts.join('');
@@ -289,11 +296,6 @@ export const getTextFragmentHref = (text: string, url: string): string => {
   return `${url}#:~:text=${fragmentList}`;
 };
 // Returns a +-delimited list of sorted names of rule engines.
-export const getEngineList = (engineIDs: Iterable<string>): string => Array.from(engineIDs)
-.map(engineID => ruleEngines[engineID]?.[0] || engineID)
-.sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}))
-.join(' + ');
-// Returns a string of names of rule engines.
 export const getEngineNamesString = (engineIDSet: Iterable<string>): string => alphaSort(
   Array.from(engineIDSet).map(engineID => ruleEngines[engineID]?.[0] || engineID)
 ).join(' + ');
@@ -437,7 +439,7 @@ export const updateRecs = (what: string, url: string, why: string) => recsLock(a
   const recs = await getRecs() as Record<string, {what: string, why: string, timeStamp: string}[]>;
   recs[url] ??= [];
   // If any recommendation has the same description and URL:
-  if (recs[url].some((rec: any) => rec.what === what)) {
+  if (recs[url].some(rec => rec.what === what)) {
     // Return this.
     return {
       error: 'duplicate'
@@ -574,13 +576,12 @@ export const getTestActInstances = (
   return pairs;
 };
 // Returns the path ID of the element of a standard instance.
-export const getPathID = (catalog: Record<string, any>, catalogIndex: string, pathID?: string) => {
+export const getPathID = (catalog: Catalog, catalogIndex: string, pathID?: string) => {
   if (catalogIndex) {
-    const catalogItem = catalog[catalogIndex] || {};
-    if (catalogItem.pathID) {
-      return catalogItem.pathID;
+    const pathIDFromCatalog = (catalog[catalogIndex] || {}).pathID;
+    if (pathIDFromCatalog) {
+      return pathIDFromCatalog;
     }
-    return pathID ?? '/html';
   }
   return pathID ?? '/html';
 };

@@ -394,6 +394,12 @@ test('POST /requestTest.html with invalid data returns an error', async () => {
   assert.ok(res.body.includes('Invalid test recommendation'));
 });
 
+test('POST /requestTest.html with an unreadable body returns an error', async () => {
+  const res = await request('POST', '/requestTest.html', 'rawbody', {'content-type': 'text/plain'});
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('Unreadable request body'));
+});
+
 test('POST /requestRetest.html/260202T0000/new with valid data returns HTML', async () => {
   // Reset recs.json to avoid duplicate-recommendation errors from prior tests.
   await fs.writeFile(recsPath, '{}\n');

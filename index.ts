@@ -619,8 +619,12 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     else {
       // Get the data from the request body.
       const postData = await getPOSTData(request);
+      // If the body could not be parsed (unknown content-type or malformed JSON):
+      if (postData === null) {
+        await serveError({message: 'ERROR: Unreadable request body'}, response, true);
+      }
       // If the request is a test recommendation:
-      if (pageName === 'requestTest.html') {
+      else if (pageName === 'requestTest.html') {
         const {what, url, why} = postData as {what?: string; url: string; why?: string};
         // If the request is valid:
         if (what && url.startsWith('https://') && why) {

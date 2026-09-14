@@ -6,7 +6,17 @@ Engineering tasks and risks that are not yet scheduled.
 
 The `jrpool/qai` repository is independent of this `jrpool/kilotest` repository, and they are published as two distict packages. That separation is due to an organizational requirement that no longer exists. Since the QAI application is a tutorial showing users how to use Kilotest, and the tutorial of Kilotest also shows users how to use Kilotest, it is appropriate to convert QAI to a part of the Kilotest codebase. QAI is currently deployed with the URL `https://kilotest.com/qai`, and that would not need to change. `Caddyfile` would be simplified (see the copy in `docs/SERVICE.md`). The QAI code would need to be copied into Kilotest. Any architectural incompatibilities would need to be discovered and resolved. Locally, `qai` is a sibling repository of `kilotest` on this host. Note that QAI health is currently monitored by UptimeRobot, and periodic health monitoring of Kilotest is proposed as the next backlog item after this one, so health monitoring should be handled in such a way that it will be appropriate after both backlog items are completed.
 
-### Details
+## Implement periodic smoke-test session
+
+Smoke tests validate that the deployed Kilotest service is functioning correctly end-to-end. They were removed from the CI workflow because code changes often require corresponding infrastructure updates (e.g., reverse proxy configuration), and blocking merges on infrastructure drift is counterproductive. Instead, implement a periodic GitHub Actions workflow (similar to UptimeRobot health checks) that runs smoke tests on a schedule (e.g., hourly or daily) against the deployed service. This allows code and infrastructure to be deployed together, then validated by the periodic check independently. The `smokeTest.ts` file remains in the codebase for this purpose.
+
+## Add observability of request metrics
+
+Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
+
+## Details
+
+### QAI integration details
 
 #### Context
 
@@ -116,11 +126,3 @@ The steps below are sequential, but not each individually required to pass Kilot
 - Run `npm start` locally, then manually visit the new tutorial path and submit a test comment; confirm it is appended to the new `comments.json` and, with alert env vars set, triggers `sendAlert`.
 - Run `node smokeTest.ts` against a local instance (or the deployed one, post-deploy) to confirm the new paths are both allowlisted in `routes` and reachable.
 - After deploying: visit the old `https://kilotest.com/qai` and `https://kilotest.com/qai/comments` URLs directly and confirm each returns a 301 redirect to `/qaiTutorial.html` and `/qaiComment.html` respectively, per the redirect added in step 4, rather than a bare 404, now that Caddy’s separate `/qai` proxy block is gone.
-
-## Implement periodic smoke-test session
-
-Smoke tests validate that the deployed Kilotest service is functioning correctly end-to-end. They were removed from the CI workflow because code changes often require corresponding infrastructure updates (e.g., reverse proxy configuration), and blocking merges on infrastructure drift is counterproductive. Instead, implement a periodic GitHub Actions workflow (similar to UptimeRobot health checks) that runs smoke tests on a schedule (e.g., hourly or daily) against the deployed service. This allows code and infrastructure to be deployed together, then validated by the periodic check independently. The `smokeTest.ts` file remains in the codebase for this purpose.
-
-## Add observability of request metrics
-
-Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.

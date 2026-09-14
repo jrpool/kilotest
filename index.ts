@@ -32,6 +32,8 @@ import type {Report} from 'testaro';
 import {handleMCP, mcpPath} from './mcp.ts';
 import fs from 'node:fs/promises';
 import {handleComment} from './web/tutorial/index.ts';
+import {answer as qaiTutorial} from './web/qaiTutorial/index.ts';
+import {answer as qaiComment, handleComment as handleQaiComment} from './web/qaiComment/index.ts';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
@@ -93,6 +95,8 @@ const answer: {
   listViolators: PageHandler;
   manage: PageHandler;
   pruneReportsForm: PageHandler;
+  qaiComment: PageHandler;
+  qaiTutorial: PageHandler;
   reannotate: PageHandler;
   reannotateForm: PageHandler;
   renewWCAG: PageHandler;
@@ -119,6 +123,8 @@ const answer: {
   listViolators: listViolatorsPage,
   manage,
   pruneReportsForm,
+  qaiComment,
+  qaiTutorial,
   reannotate,
   reannotateForm,
   renewWCAG,
@@ -171,6 +177,8 @@ export const routes = {
     '/mcp',
     '/openapi.json',
     '/openapi.yaml',
+    '/qai',
+    '/qai/comments',
     '/robots.txt',
     '/sitemap.xml',
     '/style.css',
@@ -181,6 +189,7 @@ export const routes = {
   POST: [
     '/api/*',
     '/mcp',
+    '/qaiComment.html',
     '/reannotate.html',
     '/requestAction.html',
     '/renewWCAG.html',
@@ -429,6 +438,18 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     else if (['openapi.json', 'swagger.yaml', 'swagger.json', 'api-docs'].includes(pageName)) {
       // Redirect the client permanently to where the specification is.
       response.writeHead(301, {Location: '/openapi.yaml'});
+      response.end();
+    }
+    // Otherwise, if it is for the old QAI comments path:
+    else if (pathname === '/qai/comments') {
+      // Redirect the client permanently to the new comments form path.
+      response.writeHead(301, {Location: '/qaiComment.html'});
+      response.end();
+    }
+    // Otherwise, if it is for the old QAI root path:
+    else if (pathname === '/qai') {
+      // Redirect the client permanently to the new tutorial path.
+      response.writeHead(301, {Location: '/qaiTutorial.html'});
       response.end();
     }
     // Otherwise, if it is for the large-language-model summary guide:
@@ -931,6 +952,19 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const {content} = postData as {content?: unknown};
         setHeaders('application/json', null, 'low');
         const answerData = await handleComment(content);
+        if (answerData.status === 'ok') {
+          response.end(JSON.stringify({status: 'ok'}));
+        }
+        else {
+          response.statusCode = 400;
+          response.end(JSON.stringify({status: 'error', message: answerData.message}));
+        }
+      }
+      // Otherwise, if it is a QAI comment:
+      else if (pageName === 'qaiComment.html') {
+        const {content} = postData as {content?: unknown};
+        setHeaders('application/json', null, 'low');
+        const answerData = await handleQaiComment(content);
         if (answerData.status === 'ok') {
           response.end(JSON.stringify({status: 'ok'}));
         }

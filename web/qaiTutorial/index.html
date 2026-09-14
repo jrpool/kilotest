@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="publisher" content="Jonathan Robert Pool">
+    <meta name="creator" content="Jonathan Robert Pool">
+    <meta name="keywords" content="large language models,tools,model context protocol">
+    <meta name="description" content="Kilotest tutorial: how to connect an AI platform to Kilotest for technical analysis">
+    <title>Tutorial: Connect an AI Platform | Kilotest</title>
+    <link rel="icon" href="/favicon.ico">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main>
+      <h1>Connect an AI Platform to Kilotest</h1>
+      <h2>What you can do here</h2>
+      <ul>
+        <li>Do you ask questions to artificial intelligence (AI) assistants?</li>
+        <li>Do some of your questions ask for technical information?</li>
+      </ul>
+      <p>If you answered both of these questions with <q>yes</q>, this tutorial is designed for you.</p>
+      <h2>AI needs your help</h2>
+      <p>When you get AI help, you use AI platforms to interact with large language models (LLMs). LLMs are superb at understanding your questions, fetching information for you, and formulating answers from that information. But LLMs are <strong>not</strong> good at performing technical tasks to produce the accurate information they need. For those tasks, LLMs use <em>tools</em>. If you ask an LLM a question that requires a tool, you <strong>cannot assume</strong> that the LLM will know how to discover that tool. Typically, the LLM will try to answer you without the tool and will give you an inferior answer: superficial, vague, incomplete, inaccurate, or even fabricated. To ensure that the LLM uses the right tool, you can tell the AI platform to make the tool available to its LLMs.</p>
+      <p>This tutorial shows you how to do that.</p>
+      <h2>Let us begin with a concrete example</h2>
+      <p>Suppose the AI platform you want to use is Claude, and you will use it in a web browser.</p>
+      <p>Also suppose you will be asking an LLM on that platform to give you technical details about software quality: specifically, about the quality of a particular web page.</p>
+      <p>For that task, the LLM will need a tool that can test a web page to discover quality defects and report those defects to the LLM.</p>
+      <p>Finally, suppose you know about a tool that has that capability: Kilotest. You also know the URL that Kilotest makes available to LLMs: <code>https://kilotest.com/mcp</code>.</p>
+      <h2>What to do</h2>
+      <p>You can solve this problem with two steps.</p>
+      <h3>Step 1: Become a user</h3>
+      <p>If you are not already a user of the Claude AI platform, register yourself on it as a user. You can do this for free. Navigate to <a href="https://claude.ai/login">https://claude.ai/login</a> and use either Google or your email address to create an account. After you proceed through the substeps of creating a <q>Free plan</q> account, you are on the <a href="https://claude.ai/new">home page of a new task</a>.</p>
+      <h3>Step 2: Add a connector</h3>
+      <p>Now you are ready to add a connector to the Claude AI platform.</p>
+      <p>The page has a toolbar on the left side. Click it to expand it, so you can see labels, not only icons.</p>
+      <p>Now click the <q>Customize</q> tool.</p>
+      <p>A dialog opens. In the <q>Customize</q> list, click <q>Connectors</q>.</p>
+      <p>The dialog changes to a <q>Connectors</q> view.</p>
+      <p>In the <q>Add</q> dropdown list, click <q>Add custom connector</q>.</p>
+      <p>A subdialog opens, titled <q>Add custom connector</q>. It contains 4 inputs.</p>
+      <ul>
+        <li>Enter <q>Kilotest</q> into the <q>Name</q> input.</li>
+        <li>Enter <q>https://kilotest.com/mcp</q> into the <q>Remote MCP server URL</q> input.</li>
+        <li>Leave the OAuth inputs empty.</li>
+        <li>Submit the form by clicking the <q>Add</q> button.</li>
+      </ul>
+      <p>The dialog changes to a tool permissions view for the Kilotest connector. You can decide whether an LLM needs your approval to use each of the tools that Kilotest makes available.</p>
+      <p>Close the dialog by clicking the <code>x</code> button in the top-right corner or by pressing the <code>Escape</code> key.</p>
+      <h2>Finished!</h2>
+      <p>Now the platform will make the connector available to its LLMs.</p>
+      <p>Here is a simple test for you to verify that your configuration works:</p>
+      <ul>
+        <li>In the <q>How can I help you today?</q> input, choose which model you want to use.</li>
+        <li>Enter the question: <q>What quality issues exist on the World Wide Web Consortium home page?</q></li>
+        <li>Click the <q>Send message</q> up-arrow button or press the <code>Enter</code> key to submit your question.</li>
+        <li>From the answer that you get, determine whether the model used any Kilotest tools for this task.</li>
+      </ul>
+      <h2>Did this work?</h2>
+      <p>If the model used any Kilotest tools, congratulations! You know how to add tool power to the LLMs on one of the major AI platforms.</p>
+      <p>But what if it did <strong>not</strong> work? If an LLM fails to use the Kilotest connector when it should, or if you need to explicitly tell the LLM to use the connector, something is wrong, and we want to know about your experience. Please use the <a href="qaiComment.html">comment form</a> to tell us about it.</p>
+      <p>You can also submit an issue on the <a href="https://github.com/jrpool/kilotest/issues">Kilotest GitHub repository</a>.</p>
+    </main>
+  </body>
+</html>

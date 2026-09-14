@@ -1,12 +1,12 @@
 /*
   index.ts
-  Serves the tutorial and saves tutorial comments.
+  Serves the QAI comments form and saves QAI comments.
 */
 
 // IMPORTS
 
 import {sendAlert} from '../../alerts.ts';
-import {checkCommentDuplicate, checkCommentLength, getJSON, getNowStamp} from '../../util.ts';
+import {checkCommentLength, getJSON} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -23,7 +23,7 @@ const sanitize = (str: string) => str
   .trim()
   .slice(0, 1000);
 
-// Returns the tutorial page.
+// Returns the QAI comment form.
 export const answer = async () => {
   const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   return {
@@ -31,45 +31,47 @@ export const answer = async () => {
     answerPage
   };
 };
-// Sanitizes and saves a tutorial comment to comments.json.
+
+// Sanitizes and saves a QAI comment to comments.json.
 export const handleComment = async (content: unknown) => {
   if (!content || typeof content !== 'string') {
     return {status: 'error', message: 'No content provided'};
   }
-  // If the raw comment's length is invalid:
+  // Check length on the raw content.
   const lengthCheck = checkCommentLength(content);
   if (lengthCheck.status === 'error') {
-    // Report this.
     return lengthCheck;
   }
   let comments: any[] = [];
   try {
-    // Get the existing comments.
     const existing = await fs.readFile(commentsPath, 'utf8');
     comments = JSON.parse(existing);
   }
-  // If there are none:
   catch {
-    // Initialize a comments array.
+    // Initialize empty comments array.
   }
   const sanitized = sanitize(content);
   if (!sanitized) {
     return {status: 'error', message: 'Comment is empty after sanitization'};
   }
-  // If the sanitized comment duplicates one recently stored:
-  const duplicateCheck = checkCommentDuplicate(comments, sanitized);
-  if (duplicateCheck.status === 'error') {
-    // Report this.
-    return duplicateCheck;
+  // Check for duplicate submissions within the last 1000 seconds.
+  const duplicates = comments
+  .filter(comment => new Date(comment.dateTime).getTime() > Date.now() - 1000000)
+  .filter(comment => comment.content === sanitized);
+  if (duplicates.length) {
+    return {
+      status: 'error',
+      message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+    };
   }
-  // Add the comment to the existing ones.
+  // Add the comment to the existing ones, using dateTime format to match QAI's convention.
   comments.push({
-    timeStamp: getNowStamp(),
+    dateTime: new Date().toISOString(),
     content: sanitized
   });
   // Save the revised comments.
   await fs.writeFile(commentsPath, getJSON(comments));
   // Send an alert to the manager.
-  await sendAlert('New tutorial comment received', 'A new tutorial comment has been received.');
+  await sendAlert('New QAI comment received', 'A new QAI comment has been received.');
   return {status: 'ok'};
 };

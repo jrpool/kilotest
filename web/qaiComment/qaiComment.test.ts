@@ -1,6 +1,6 @@
 /*
-  tutorial.test.ts
-  Unit tests for web/tutorial/index.ts, covering the answer and handleComment exports.
+  qaiComment.test.ts
+  Unit tests for web/qaiComment/index.ts, covering the answer and handleComment exports.
 */
 
 // IMPORTS
@@ -34,7 +34,7 @@ after(async () => {
 
 // TESTS
 
-test('answer returns the tutorial page with status ok', async () => {
+test('answer returns the QAI comment form with status ok', async () => {
   const result = await answer();
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
@@ -54,8 +54,6 @@ test('handleComment returns an error for non-string content', async () => {
 });
 
 test('handleComment returns an error for content that is empty after sanitization', async () => {
-  // Padded with spaces (stripped by sanitize's trim) to clear the 20-character length check
-  // on the raw content, isolating the empty-after-sanitization path from the length check.
   const result = await handleComment(`${' '.repeat(10)}<script></script>${' '.repeat(10)}`);
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Comment is empty after sanitization');
@@ -87,14 +85,13 @@ test('handleComment returns an error for a comment repeating one submitted withi
 });
 
 test('handleComment saves a sanitized comment and returns ok', {timeout: 500}, async () => {
-  // Replace comments with an empty array for a clean test.
   await fs.writeFile(commentsPath, '[]\n');
   const result = await handleComment('This is a <b>test</b> comment.');
   assert.equal(result.status, 'ok');
   const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
   assert.equal(comments.length, 1);
   assert.equal(comments[0].content, 'This is a test comment.');
-  assert.ok(comments[0].timeStamp);
+  assert.ok(comments[0].dateTime);
 });
 
 test('handleComment strips HTML tags and control characters', {timeout: 500}, async () => {
@@ -105,13 +102,12 @@ test('handleComment strips HTML tags and control characters', {timeout: 500}, as
   assert.equal(comments[0].content, 'Hello');
 });
 
-test('handleComment accepts a comment of exactly 1000 characters', {timeout: 500}, async () => {
+test('handleComment rejects content exactly 1001 characters', {timeout: 500}, async () => {
   await fs.writeFile(commentsPath, '[]\n');
-  const maxComment = 'x'.repeat(1000);
-  const result = await handleComment(maxComment);
-  assert.equal(result.status, 'ok');
-  const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
-  assert.equal(comments[0].content.length, 1000);
+  const longComment = 'x'.repeat(1001);
+  const result = await handleComment(longComment);
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'Your comment was longer than 1000 characters');
 });
 
 test('handleComment creates comments.json when it does not exist', {timeout: 500}, async () => {

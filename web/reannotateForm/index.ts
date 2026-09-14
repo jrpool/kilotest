@@ -31,7 +31,8 @@ const populateQuery = async (query: Record<string, any>) => {
       return;
     }
     const id = report.id as string;
-    // Otherwise, i.e. if it succeeded, for each standard instance of each test act:
+    // Otherwise, i.e. if it succeeded, for each standard instance of each test act
+    // (all outcomes, including cantTell — classification maps rules to issues regardless of outcome):
     getTestActInstances(report).forEach(({act, instance}) => {
       const {ruleID} = instance;
       const which = act.which!;

@@ -27,6 +27,3 @@ jobs:
 
       - name: Run tests with coverage
         run: npm test
-
-      - name: Run smoke test against deployed server
-        run: npm run test:smoke

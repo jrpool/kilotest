@@ -622,7 +622,7 @@ test('POST /tutorialComment.html with content returns JSON', async () => {
 
 // TESTS: additional branch coverage
 
-test('GET /fullReport.json/260101T0007/hid returns an abuse error for a hidden report', async () => {
+test('GET /fullReport.json/260101T0007/hid returns an error for an unavailable report', async () => {
   const res = await request('GET', '/fullReport.json/260101T0007/hid');
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Invalid request'));

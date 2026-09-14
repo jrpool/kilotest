@@ -13,7 +13,6 @@ import {
   getWCAGLink,
   getWeightName,
   htmlSafe,
-  isHidden,
   isReportError,
   populateTemplate,
   ruleEngines
@@ -132,14 +131,6 @@ const populateQuery = async (
 // Returns a page answering the diagnoses question.
 export const answer = async (pageArgs: string, search: string) => {
   const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/');
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report is not available:
-  if (reportIsHidden) {
-    return {
-      status: 'error',
-      message: 'Report not available'
-    };
-  }
   const params = new URLSearchParams(search);
   const pathID = params.get('pathID');
   const query: Record<string, any> = {};

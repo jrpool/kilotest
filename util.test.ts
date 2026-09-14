@@ -39,7 +39,6 @@ import {
   getWeightName,
   hiddenReportsPath,
   htmlSafe,
-  isHidden,
   isJobID,
   isReportAvailable,
   isTimeStamp,
@@ -968,15 +967,6 @@ test('getReportStats returns null for a nonexistent report', async () => {
   assert.equal(stats, null);
 });
 
-test('isHidden returns false for a non-hidden report', async () => {
-  const result = await isHidden('260101T0000', 'mix');
-  assert.equal(result, false);
-});
-
-test('isHidden returns true for a hidden report', async () => {
-  const result = await isHidden('260101T0007', 'hid');
-  assert.equal(result, true);
-});
 
 test('getReportExtract returns an extract for a valid report', async () => {
   const extract = await getReportExtract('260101T0000', 'mix') as any;

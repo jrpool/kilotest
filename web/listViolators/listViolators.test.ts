@@ -84,10 +84,6 @@ test('listViolators excludes cantTell instances from the violator count', async 
   assert.ok(!result.answerPage.includes('<h3>Element'));
 });
 
-test('listViolators returns an error status for a hidden report', async () => {
-  const result = await answer('linkNoText/260101T0007/hid');
-  assert.equal(result.status, 'error');
-});
 
 test('listViolators returns an error status for a nonexistent report', async () => {
   const result = await answer('linkNoText/999999T9999/xyz');

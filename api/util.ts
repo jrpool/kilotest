@@ -16,7 +16,7 @@ import {
   getReportStats,
   objectSort,
   ruleEngines,
-  updateRecs
+  addTestRequest
 } from '../util.ts';
 import type {ReportExtract} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -113,7 +113,7 @@ export async function getReportBasics(
     }
     extract = fetchedExtract;
   }
-  const {url, what, reportTime} = extract;
+  const {url, description, reportTime} = extract;
   // Get whether this report has been superseded.
   const isSuperseded = extractProvided
     ? extract.superseded === true
@@ -125,7 +125,7 @@ export async function getReportBasics(
     'completion date and time': reportTime,
     'days since the report was completed': getAgoDays(new Date(reportTime)),
     'tested web page': {
-      description: what,
+      description,
       URL: url
     },
     'whether a later report about the same page exists': isSuperseded
@@ -152,12 +152,12 @@ export const getIssueSpec = (issueID: string) => {
   return null;
 };
 // Processes a test or retest request from the API.
-export const processTestRequest = async (testType: string, what: string, url: string, why: string): Promise<{status: string; message: string} | undefined> => {
+export const processTestRequest = async (testType: string, description: string, url: string, why: string): Promise<{status: string; message: string} | undefined> => {
   // Get an email-safe version of the reason.
   const plainWhy = getPlainText(why);
-  // Update the waiting recommendations as a transaction.
-  const updateResult = await updateRecs(what, url, plainWhy);
-  // If the recommendation was a duplicate:
+  // Add the test request as a transaction.
+  const updateResult = await addTestRequest(description, url, plainWhy);
+  // If the request was a duplicate:
   if (updateResult.error === 'duplicate') {
     // Return this.
     return {
@@ -167,7 +167,7 @@ export const processTestRequest = async (testType: string, what: string, url: st
   }
   // Otherwise, i.e. if it was not a duplicate, alert a manager about it.
   await sendAlert(
-    `Kilotest: new ${testType} recommendation in the API`,
-    `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
+    `Kilotest: new ${testType} request in the API`,
+    `Target: ${description}\nURL: ${url}\nReason: ${plainWhy}`
   );
 };

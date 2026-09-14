@@ -39,7 +39,7 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  const {testInfo, url, urlLink, what} = pageDataStrings;
+  const {testInfo, url, urlLink, description} = pageDataStrings;
   // Otherwise, i.e. if it succeeded, get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
@@ -69,7 +69,7 @@ const populateQuery = async (
     query.takeMeThere = '';
   }
   // Add facts about the issue to the query.
-  query.target = what;
+  query.target = description;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
   query.issue = issueSpecs[issueID]?.summary;

@@ -317,8 +317,8 @@ const main = async () => {
   delete brdReport.jobData.preventions;
   await writeJSON(path.join(reportsDir, '260101T0009-brd.json'), brdReport);
 
-  // Write an empty recs.json so getRecs does not try to create one.
-  await writeJSON(path.join(targetDir, 'jobs', 'recs.json'), {});
+  // Write an empty testRequests.json so getTestRequests does not try to create one.
+  await writeJSON(path.join(targetDir, 'jobs', 'testRequests.json'), {});
 
   console.log(`Fixtures built in ${targetDir}`);
 };

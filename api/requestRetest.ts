@@ -51,12 +51,12 @@ export const response = async (args: string[]) => {
   // Otherwise, i.e. if getting the report succeeded and the request is valid:
   else {
     // Process the request.
-    await processTestRequest('retest', reportExtract.what, reportExtract.url, reason);
+    await processTestRequest('retest', reportExtract.description, reportExtract.url, reason);
     // Add details about the request.
     requestDetails = {
       'date and time received': new Date().toISOString(),
       'page to be retested': {
-        'description': reportExtract.what,
+        'description': reportExtract.description,
         'URL': reportExtract.url
       },
       'reason why the page should be retested': reason

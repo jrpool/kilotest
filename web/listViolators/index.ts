@@ -48,9 +48,9 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  const {testInfo, url, urlLink, what} = pageDataStrings;
+  const {testInfo, url, urlLink, description} = pageDataStrings;
   // Add page facts to the query.
-  query.target = what;
+  query.target = description;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
   const issue = issueSpecs[issueID]!;

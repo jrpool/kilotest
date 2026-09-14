@@ -5,12 +5,12 @@
 
 // IMPORTS
 
-import {isRecommendable, processTestRequest} from '../../util.ts';
+import {getRequestability, processTestRequest} from '../../util.ts';
 
 // FUNCTIONS
 
-export const answer = async (what: string, url: string, why: string) => {
-  const status = await isRecommendable(url);
+export const answer = async (description: string, url: string, why: string) => {
+  const status = await getRequestability(url);
   // If the target is already claimed or queued and is thus not requestable:
   if (status) {
     // Return an answer reporting this.
@@ -20,5 +20,5 @@ export const answer = async (what: string, url: string, why: string) => {
     };
   }
   // Otherwise, i.e. if it is requestable, process the request.
-  return await processTestRequest('test', import.meta.dirname, what, url, why);
+  return await processTestRequest('test', import.meta.dirname, description, url, why);
 };

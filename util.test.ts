@@ -48,10 +48,10 @@ import {
   minifyURL,
   objectSort,
   processTestRequest,
-  recsLock,
-  recsPath,
+  testRequestsLock,
+  testRequestsPath,
   reportsPath,
-  updateRecs
+  addTestRequest
 } from './util.ts';
 
 // TESTS
@@ -85,12 +85,12 @@ test('dbPath honors DB_DIR when it is set', () => {
   }
 });
 
-test('jobsPath, recsPath, reportsPath, and hiddenReportsPath derive from DB_DIR', () => {
+test('jobsPath, testRequestsPath, reportsPath, and hiddenReportsPath derive from DB_DIR', () => {
   const saved = process.env.DB_DIR;
   process.env.DB_DIR = '/tmp/kilotest-fixtures';
   try {
     assert.equal(jobsPath(), path.join('/tmp/kilotest-fixtures', 'jobs'));
-    assert.equal(recsPath(), path.join('/tmp/kilotest-fixtures', 'jobs', 'recs.json'));
+    assert.equal(testRequestsPath(), path.join('/tmp/kilotest-fixtures', 'jobs', 'testRequests.json'));
     assert.equal(reportsPath(), path.join('/tmp/kilotest-fixtures', 'reports'));
     assert.equal(hiddenReportsPath(), path.join('/tmp/kilotest-fixtures', 'hiddenReports'));
   }
@@ -329,7 +329,7 @@ after(() => {
 
 test('getPageData returns page data for a valid report', async () => {
   const data = await getPageData('260101T0000', 'mix') as any;
-  assert.equal(data.what, 'Mixed Outcomes Page');
+  assert.equal(data.description, 'Mixed Outcomes Page');
   assert.equal(data.url, 'https://example.com/mixed');
   assert.equal(typeof data.daysAgo, 'number');
 });
@@ -341,7 +341,7 @@ test('getPageData returns an error for a nonexistent report', async () => {
 
 test('getPageDataStrings returns HTML strings for a valid report', async () => {
   const strings = await getPageDataStrings('260101T0000', 'mix') as any;
-  assert.equal(strings.what, 'Mixed Outcomes Page');
+  assert.equal(strings.description, 'Mixed Outcomes Page');
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
   assert.ok(strings.testInfo.includes('by job <code>mix</code>'));
@@ -350,7 +350,7 @@ test('getPageDataStrings returns HTML strings for a valid report', async () => {
 
 test('getPageDataStrings returns different testInfo for a different timeStamp', async () => {
   const strings = await getPageDataStrings('260101T0001', 'ct') as any;
-  assert.equal(strings.what, 'All CantTell Page');
+  assert.equal(strings.description, 'All CantTell Page');
   assert.ok(strings.testInfo.includes('by job <code>ct</code>'));
   assert.ok(strings.testInfo.includes('2026-01-01 at 00:01'));
 });
@@ -362,11 +362,11 @@ test('getPageDataStrings returns an error for a nonexistent report', async () =>
 
 test('getPageDataStrings uses provided pageData instead of reading the report', async () => {
   const strings = await getPageDataStrings('260101T0000', 'mix', {
-    what: 'Custom Page',
+    description: 'Custom Page',
     url: 'https://custom.com',
     daysAgo: 1
   }) as any;
-  assert.equal(strings.what, 'Custom Page');
+  assert.equal(strings.description, 'Custom Page');
   assert.equal(strings.url, 'https://custom.com');
   assert.ok(strings.testInfo.includes('1 day ago'));
 });
@@ -374,54 +374,55 @@ test('getPageDataStrings uses provided pageData instead of reading the report', 
 test('processTestRequest returns an error for an invalid test type', async () => {
   const result: any = await processTestRequest('invalid', requestTestDir, 'Page', 'https://example.com', 'because');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid recommendation');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('processTestRequest returns an error for an invalid URL', async () => {
   const result: any = await processTestRequest('test', requestTestDir, 'Page', 'not-a-url', 'because');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid recommendation');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('processTestRequest returns an error for a short reason', async () => {
   const result: any = await processTestRequest('test', requestTestDir, 'Page', 'https://example.com', 'abc');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid recommendation');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('processTestRequest returns an error for a missing description', async () => {
   const result: any = await processTestRequest('test', requestTestDir, '', 'https://example.com', 'because');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid recommendation');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('processTestRequest returns an error for a mismatched directory name', async () => {
   const result: any = await processTestRequest('test', '/tmp/wrongDir', 'Page', 'https://example.com', 'because');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid recommendation');
+  assert.equal(result.message, 'Invalid request');
 });
 
+
 test('processTestRequest succeeds and populates the template for a valid request', {timeout: 500}, async () => {
-  // Reset recs.json to empty before the test.
-  await fs.writeFile(recsPath(), '{}\n');
+  // Reset testRequests.json to empty before the test.
+  await fs.writeFile(testRequestsPath(), '{}\n');
   const result: any = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('Example Page'));
   assert.ok(result.answerPage.includes('because accessibility'));
-  // Clean up recs.json.
-  await fs.writeFile(recsPath(), '{}\n');
+  // Clean up testRequests.json.
+  await fs.writeFile(testRequestsPath(), '{}\n');
 });
 
 test('processTestRequest returns a duplicate error for a repeated request', {timeout: 500}, async () => {
-  // Reset recs.json to empty, then make a successful request.
-  await fs.writeFile(recsPath(), '{}\n');
+  // Reset testRequests.json to empty, then make a successful request.
+  await fs.writeFile(testRequestsPath(), '{}\n');
   await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
   // Repeat the same request.
   const result: any = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'another reason');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Duplicate recommendation');
-  // Clean up recs.json.
-  await fs.writeFile(recsPath(), '{}\n');
+  assert.equal(result.message, 'Duplicate request');
+  // Clean up testRequests.json.
+  await fs.writeFile(testRequestsPath(), '{}\n');
 });
 
 test('annotateReportObject annotates a report object in place without reading or writing a file', async () => {
@@ -558,18 +559,18 @@ test('getObject throws for a file that is not valid JSON', async () => {
   }
 });
 
-test('getRecs creates and returns an empty recommendations object when the file is missing', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-recs-test';
+test('getTestRequests creates and returns an empty test-requests object when the file is missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-testrequests-test';
   const fsSync = await import('node:fs');
   fsSync.mkdirSync(tmpDir + '/jobs', {recursive: true});
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {getRecs} = await import('./util.ts');
-    const result = await getRecs();
+    const {getTestRequests} = await import('./util.ts');
+    const result = await getTestRequests();
     assert.deepEqual(result, {});
     // Verify the empty file was created.
-    assert.ok(fsSync.existsSync(tmpDir + '/jobs/recs.json'));
+    assert.ok(fsSync.existsSync(tmpDir + '/jobs/testRequests.json'));
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -577,16 +578,16 @@ test('getRecs creates and returns an empty recommendations object when the file 
   }
 });
 
-test('getRecs throws when the recommendations file is not readable for a reason other than being missing', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recs-unreadable-test';
+test('getTestRequests throws when the test-requests file is not readable for a reason other than being missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-testrequests-unreadable-test';
   const fsSync = await import('node:fs');
-  // Create a directory where the recommendations file should be, causing EISDIR rather than ENOENT.
-  fsSync.mkdirSync(tmpDir + '/jobs/recs.json', {recursive: true});
+  // Create a directory where the test-requests file should be, causing EISDIR rather than ENOENT.
+  fsSync.mkdirSync(tmpDir + '/jobs/testRequests.json', {recursive: true});
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {getRecs} = await import('./util.ts');
-    await assert.rejects(getRecs(), /not readable/);
+    const {getTestRequests} = await import('./util.ts');
+    await assert.rejects(getTestRequests(), /not readable/);
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -594,15 +595,15 @@ test('getRecs throws when the recommendations file is not readable for a reason 
   }
 });
 
-test('getRecs throws when the recommendations file is not JSON', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recs-test';
+test('getTestRequests throws when the test-requests file is not JSON', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-testrequests-test';
   (await import('node:fs')).mkdirSync(tmpDir + '/jobs', {recursive: true});
-  (await import('node:fs')).writeFileSync(tmpDir + '/jobs/recs.json', 'not json');
+  (await import('node:fs')).writeFileSync(tmpDir + '/jobs/testRequests.json', 'not json');
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {getRecs} = await import('./util.ts');
-    await assert.rejects(getRecs(), /not JSON/);
+    const {getTestRequests} = await import('./util.ts');
+    await assert.rejects(getTestRequests(), /not JSON/);
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -625,8 +626,8 @@ test('getPOSTData resolves with parsed query for form-urlencoded requests', asyn
   assert.equal(result.why, 'Because');
 });
 
-test('isRecommendable returns "claimed" for a URL in a claimed job', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recommendable-test';
+test('getRequestability returns "claimed" for a URL in a claimed job', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
   const fsSync = await import('node:fs');
   fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
   fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
@@ -637,8 +638,8 @@ test('isRecommendable returns "claimed" for a URL in a claimed job', async () =>
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {isRecommendable} = await import('./util.ts');
-    const result = await isRecommendable('https://example.com/test');
+    const {getRequestability} = await import('./util.ts');
+    const result = await getRequestability('https://example.com/test');
     assert.equal(result, 'claimed');
   }
   finally {
@@ -647,8 +648,8 @@ test('isRecommendable returns "claimed" for a URL in a claimed job', async () =>
   }
 });
 
-test('isRecommendable returns "queued" for a URL in a queued job', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recommendable-test';
+test('getRequestability returns "queued" for a URL in a queued job', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
   const fsSync = await import('node:fs');
   fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
   fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
@@ -659,8 +660,8 @@ test('isRecommendable returns "queued" for a URL in a queued job', async () => {
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {isRecommendable} = await import('./util.ts');
-    const result = await isRecommendable('https://example.com/test');
+    const {getRequestability} = await import('./util.ts');
+    const result = await getRequestability('https://example.com/test');
     assert.equal(result, 'queued');
   }
   finally {
@@ -669,8 +670,8 @@ test('isRecommendable returns "queued" for a URL in a queued job', async () => {
   }
 });
 
-test('isRecommendable returns empty string for a URL with no matching jobs', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-recommendable-test';
+test('getRequestability returns empty string for a URL with no matching jobs', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
   const fsSync = await import('node:fs');
   fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
   fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
@@ -678,8 +679,8 @@ test('isRecommendable returns empty string for a URL with no matching jobs', asy
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {
-    const {isRecommendable} = await import('./util.ts');
-    const result = await isRecommendable('https://example.com/no-match');
+    const {getRequestability} = await import('./util.ts');
+    const result = await getRequestability('https://example.com/no-match');
     assert.equal(result, '');
   }
   finally {
@@ -926,27 +927,27 @@ test('getEngineNamesString falls back to the ID for an unknown engine', () => {
   assert.equal(getEngineNamesString(new Set(['unknownEngine'])), 'unknownEngine');
 });
 
-test('recsLock is a function (the lock returned by createLock)', () => {
-  assert.equal(typeof recsLock, 'function');
+test('testRequestsLock is a function (the lock returned by createLock)', () => {
+  assert.equal(typeof testRequestsLock, 'function');
 });
 
-test('updateRecs adds a recommendation and returns success', async () => {
-  await fs.writeFile(recsPath(), '{}\n');
-  const result = await updateRecs('Test Page', 'https://example.com/test', 'because');
+test('addTestRequest adds a request and returns success', async () => {
+  await fs.writeFile(testRequestsPath(), '{}\n');
+  const result = await addTestRequest('Test Page', 'https://example.com/test', 'because');
   assert.equal(result.error, undefined);
-  const recs = JSON.parse(await fs.readFile(recsPath(), 'utf8'));
-  assert.ok(recs['https://example.com/test']);
-  assert.equal(recs['https://example.com/test'].length, 1);
-  assert.equal(recs['https://example.com/test'][0].what, 'Test Page');
-  await fs.writeFile(recsPath(), '{}\n');
+  const testRequests = JSON.parse(await fs.readFile(testRequestsPath(), 'utf8'));
+  assert.ok(testRequests['https://example.com/test']);
+  assert.equal(testRequests['https://example.com/test'].length, 1);
+  assert.equal(testRequests['https://example.com/test'][0].description, 'Test Page');
+  await fs.writeFile(testRequestsPath(), '{}\n');
 });
 
-test('updateRecs returns a duplicate error for a repeated recommendation', async () => {
-  await fs.writeFile(recsPath(), '{}\n');
-  await updateRecs('Test Page', 'https://example.com/test', 'because');
-  const result = await updateRecs('Test Page', 'https://example.com/test', 'another reason');
+test('addTestRequest returns a duplicate error for a repeated request', async () => {
+  await fs.writeFile(testRequestsPath(), '{}\n');
+  await addTestRequest('Test Page', 'https://example.com/test', 'because');
+  const result = await addTestRequest('Test Page', 'https://example.com/test', 'another reason');
   assert.equal(result.error, 'duplicate');
-  await fs.writeFile(recsPath(), '{}\n');
+  await fs.writeFile(testRequestsPath(), '{}\n');
 });
 
 test('getReportPath returns the path of a report file', () => {
@@ -972,7 +973,7 @@ test('getReportExtract returns an extract for a valid report', async () => {
   const extract = await getReportExtract('260101T0000', 'mix') as any;
   assert.equal(extract.timeStamp, '260101T0000');
   assert.equal(extract.jobID, 'mix');
-  assert.equal(extract.what, 'Mixed Outcomes Page');
+  assert.equal(extract.description, 'Mixed Outcomes Page');
   assert.equal(extract.url, 'https://example.com/mixed');
   assert.ok(extract.reportTime);
 });
@@ -992,7 +993,7 @@ test('getReportExtracts returns extracts of all available reports', async () => 
 
 test('getReportExtracts with onlyLatest returns only the latest report for each page', async () => {
   const latest = await getReportExtracts(true);
-  const mixReports = latest.filter(e => e.what === 'Mixed Outcomes Page');
+  const mixReports = latest.filter(e => e.description === 'Mixed Outcomes Page');
   assert.equal(mixReports.length, 1);
   assert.equal(mixReports[0]!.timeStamp, '260202T0000');
 });

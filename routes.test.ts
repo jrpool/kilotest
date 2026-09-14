@@ -43,7 +43,7 @@ test('routes POST includes all known POST paths', () => {
   const required = [
     '/mcp',
     '/requestTest.html',
-    '/recAction.html',
+    '/requestAction.html',
     '/reannotate.html',
     '/renewWCAG.html',
     '/worker/job',

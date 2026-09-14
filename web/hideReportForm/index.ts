@@ -49,27 +49,27 @@ export const answer = async (_: any, search: string) => {
   const reportExtracts = await getReportExtracts();
   // For each report:
   for (const reportExtract of reportExtracts) {
-    const {jobID, timeStamp, what} = reportExtract;
+    const {jobID, timeStamp, description} = reportExtract;
     // Add the report to the array.
     reportSpecs.push({
-      what,
+      description,
       timeStamp,
       jobID
     });
   }
   // Sort the data by page name and then by time stamp.
   reportSpecs.sort((a, b) => {
-    if (a.what === b.what) {
+    if (a.description === b.description) {
       return a.timeStamp.localeCompare(b.timeStamp);
     }
-    return a.what.localeCompare(b.what);
+    return a.description.localeCompare(b.description);
   });
   const lines: string[] = [];
   const margin = ' '.repeat(12);
   // For each available report:
   reportSpecs.forEach(spec => {
-    const {jobID, timeStamp, what} = spec;
-    const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
+    const {jobID, timeStamp, description} = spec;
+    const specString = `${description} (job <code>${jobID}</code> at ${timeStamp})`;
     // Add a line with a radio button to hide it.
     lines.push(
       `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`

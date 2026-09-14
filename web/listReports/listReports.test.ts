@@ -88,24 +88,24 @@ test('listReports includes a link to request testing a new page', async () => {
   assert.ok(testLink);
 });
 
-test('listReports shows recommendations when recs.json has entries', {timeout: 500}, async () => {
+test('listReports shows requests when testRequests.json has entries', {timeout: 500}, async () => {
   const dbDir = (await import('../../test/dbFixture.ts')).fixtureDBDir;
-  const recsPath = path.join(dbDir, 'jobs', 'recs.json');
-  const originalRecs = await fs.readFile(recsPath, 'utf8');
+  const testRequestsPath = path.join(dbDir, 'jobs', 'testRequests.json');
+  const originalTestRequests = await fs.readFile(testRequestsPath, 'utf8');
   try {
-    const testRecs = {
+    const testRequests = {
       'https://example.com/mixed': [
-        {what: 'Mixed Outcomes Page', why: 'Needs retesting for accessibility'}
+        {description: 'Mixed Outcomes Page', why: 'Needs retesting for accessibility'}
       ]
     };
-    await fs.writeFile(recsPath, JSON.stringify(testRecs, null, 2));
+    await fs.writeFile(testRequestsPath, JSON.stringify(testRequests, null, 2));
     const result: any = await answer();
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('https://example.com/mixed'));
     assert.ok(result.answerPage.includes('Needs retesting for accessibility'));
   }
   finally {
-    await fs.writeFile(recsPath, originalRecs);
+    await fs.writeFile(testRequestsPath, originalTestRequests);
   }
 });
 
@@ -201,7 +201,7 @@ test('listReports shows no-reports message when the database is empty', async ()
   await fs.mkdir(path.join(tmpDir, 'jobs', 'queue'), {recursive: true});
   await fs.mkdir(path.join(tmpDir, 'jobs', 'claimed'), {recursive: true});
   await fs.mkdir(path.join(tmpDir, 'jobs', 'failed'), {recursive: true});
-  await fs.writeFile(path.join(tmpDir, 'jobs', 'recs.json'), '{}\n');
+  await fs.writeFile(path.join(tmpDir, 'jobs', 'testRequests.json'), '{}\n');
   const savedDBDir = process.env.DB_DIR;
   process.env.DB_DIR = tmpDir;
   try {

@@ -14,7 +14,7 @@ import {parse} from 'node-html-parser';
 // CONSTANTS
 
 import {fixtureDBDir} from '../../test/dbFixture.ts';
-const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
+const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
 
 // SETUP AND TEARDOWN
 
@@ -24,8 +24,8 @@ before(async () => {
 });
 
 beforeEach(async () => {
-  // Reset recs.json and clean job directories before each test.
-  await fs.writeFile(recsPath, '{}\n');
+  // Reset testRequests.json and clean job directories before each test.
+  await fs.writeFile(testRequestsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
     await fs.mkdir(dir, {recursive: true});
@@ -42,8 +42,8 @@ beforeEach(async () => {
 });
 
 after(async () => {
-  // Restore recs.json and clean job directories after all tests.
-  await fs.writeFile(recsPath, '{}\n');
+  // Restore testRequests.json and clean job directories after all tests.
+  await fs.writeFile(testRequestsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
     await fs.mkdir(dir, {recursive: true});
@@ -88,12 +88,12 @@ test('answer returns an error when the report does not exist', async () => {
   assert.ok(result.message?.includes('No report found'), `Expected no-report-found message, got: ${result.message}`);
 });
 
-test('answer returns an error for an invalid retest recommendation', async () => {
+test('answer returns an error for an invalid retest request', async () => {
   const {answer} = await import('./index.ts');
   // Use a valid report but a too-short reason.
   const result = await answer('260101T0001/ct', 'why');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid recommendation');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('answer returns an error when no extracts are available for the report', async (t) => {

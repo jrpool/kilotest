@@ -28,7 +28,7 @@ const {requestHandler, routes, serveError, startServer, runIfMain, isPathAllowed
 // CONSTANTS
 
 const port = 3997;
-const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
+const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
 
 // SETUP AND TEARDOWN
 
@@ -39,9 +39,9 @@ before(async () => {
   await new Promise<void>(resolve => server.listen(port, () => resolve()));
 });
 
-// Restore recs.json and clean job directories before each test, so tests do not depend on execution order.
+// Restore testRequests.json and clean job directories before each test, so tests do not depend on execution order.
 beforeEach(async () => {
-  await fs.writeFile(recsPath, '{}\n');
+  await fs.writeFile(testRequestsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
     await fs.mkdir(dir, {recursive: true});
@@ -65,8 +65,8 @@ after(async () => {
       resolve();
     });
   });
-  // Restore recs.json and clean job directories after running.
-  await fs.writeFile(recsPath, '{}\n');
+  // Restore testRequests.json and clean job directories after running.
+  await fs.writeFile(testRequestsPath, '{}\n');
   for (const sub of ['claimed', 'queue', 'failed']) {
     const dir = path.join(fixtureDBDir, 'jobs', sub);
     await fs.mkdir(dir, {recursive: true});
@@ -366,7 +366,7 @@ test('GET /forbidden-path returns an invalid GET request error', async () => {
 
 test('POST /requestTest.html with valid data returns an HTML page', async () => {
   const res = await formRequest('POST', '/requestTest.html', {
-    what: `Unique Test Page ${uniqueStamp}`,
+    description: `Unique Test Page ${uniqueStamp}`,
     url: `https://example.com/unique-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
@@ -376,7 +376,7 @@ test('POST /requestTest.html with valid data returns an HTML page', async () => 
 
 test('POST /requestTest.html with an already-tested URL returns an error', async () => {
   const res = await formRequest('POST', '/requestTest.html', {
-    what: 'Mixed Outcomes Page',
+    description: 'Mixed Outcomes Page',
     url: 'https://example.com/mixed',
     why: 'Because accessibility matters'
   });
@@ -386,12 +386,12 @@ test('POST /requestTest.html with an already-tested URL returns an error', async
 
 test('POST /requestTest.html with invalid data returns an error', async () => {
   const res = await formRequest('POST', '/requestTest.html', {
-    what: '',
+    description: '',
     url: 'not-a-url',
     why: ''
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Invalid test recommendation'));
+  assert.ok(res.body.includes('Invalid test request'));
 });
 
 test('POST /requestTest.html with an unreadable body returns an error', async () => {
@@ -401,8 +401,8 @@ test('POST /requestTest.html with an unreadable body returns an error', async ()
 });
 
 test('POST /requestRetest.html/260202T0000/new with valid data returns HTML', async () => {
-  // Reset recs.json to avoid duplicate-recommendation errors from prior tests.
-  await fs.writeFile(recsPath, '{}\n');
+  // Reset testRequests.json to avoid duplicate-request errors from prior tests.
+  await fs.writeFile(testRequestsPath, '{}\n');
   const res = await formRequest('POST', '/requestRetest.html/260202T0000/new', {
     why: 'Because the report is obsolete and needs refreshing'
   });
@@ -415,7 +415,7 @@ test('POST /requestRetest.html/invalid/invalid with invalid data returns an erro
     why: 'Because'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Invalid retest recommendation'));
+  assert.ok(res.body.includes('Invalid retest request'));
 });
 
 test('POST /api/requestTest with valid JSON returns a JSON response', {timeout: 500}, async () => {
@@ -553,11 +553,11 @@ test('PUT / returns an invalid method error', async () => {
 // TESTS: requestHandler catch boundary
 
 test('GET /listReports.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
-  // Corrupt recs.json so that getRecs throws, an error that should never occur in normal
+  // Corrupt testRequests.json so that getTestRequests throws, an error that should never occur in normal
   // operation and so is not handled by handleRequest itself, only by requestHandler's
   // outer catch boundary.
-  const backup = await fs.readFile(recsPath, 'utf8');
-  await fs.writeFile(recsPath, 'not valid json');
+  const backup = await fs.readFile(testRequestsPath, 'utf8');
+  await fs.writeFile(testRequestsPath, 'not valid json');
   try {
     const res = await request('GET', '/listReports.html');
     assert.equal(res.statusCode, 500);
@@ -566,7 +566,7 @@ test('GET /listReports.html returns a 500 error when an unexpected internal erro
     assert.ok(body.error);
   }
   finally {
-    await fs.writeFile(recsPath, backup);
+    await fs.writeFile(testRequestsPath, backup);
   }
 });
 
@@ -586,10 +586,10 @@ test('serveError sends HTML for human requests (isHumanUser = true)', async () =
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-// TESTS: recAction.html
+// TESTS: requestAction.html
 
-test('POST /recAction.html with invalid auth code returns an error', {timeout: 500}, async () => {
-  const res = await formRequest('POST', '/recAction.html', {
+test('POST /requestAction.html with invalid auth code returns an error', {timeout: 500}, async () => {
+  const res = await formRequest('POST', '/requestAction.html', {
     target: 'https://example.com\tTest Page',
     authCode: 'wrong-code'
   });
@@ -597,13 +597,13 @@ test('POST /recAction.html with invalid auth code returns an error', {timeout: 5
   assert.ok(res.body.includes('Invalid test order'));
 });
 
-test('POST /recAction.html with valid auth code and rejection (no what) returns HTML', async () => {
+test('POST /requestAction.html with valid auth code and rejection (no description) returns HTML', async () => {
   await formRequest('POST', '/requestTest.html', {
-    what: `Reject Test Page ${uniqueStamp}`,
+    description: `Reject Test Page ${uniqueStamp}`,
     url: `https://example.com/reject-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
-  const res = await formRequest('POST', '/recAction.html', {
+  const res = await formRequest('POST', '/requestAction.html', {
     target: `https://example.com/reject-${uniqueStamp}`,
     authCode: 'test-auth-code'
   });
@@ -628,14 +628,14 @@ test('GET /fullReport.json/260101T0007/hid returns an error for an unavailable r
   assert.ok(res.body.includes('Invalid request'));
 });
 
-test('POST /recAction.html with valid auth code and approval returns HTML', {timeout: 500}, async () => {
-  await fs.writeFile(recsPath, '{}\n');
+test('POST /requestAction.html with valid auth code and approval returns HTML', {timeout: 500}, async () => {
+  await fs.writeFile(testRequestsPath, '{}\n');
   await formRequest('POST', '/requestTest.html', {
-    what: `Approval Test Page ${uniqueStamp}`,
+    description: `Approval Test Page ${uniqueStamp}`,
     url: `https://example.com/approval-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
-  const res = await formRequest('POST', '/recAction.html', {
+  const res = await formRequest('POST', '/requestAction.html', {
     target: `https://example.com/approval-${uniqueStamp}\tApproval Test Page ${uniqueStamp}`,
     authCode: 'test-auth-code'
   });
@@ -714,12 +714,12 @@ test('POST /tutorialComment.html with empty content returns a JSON error', {time
 
 test('POST /requestTest.html with non-https URL returns an error', async () => {
   const res = await formRequest('POST', '/requestTest.html', {
-    what: 'Test Page',
+    description: 'Test Page',
     url: 'http://example.com',
     why: 'Because accessibility matters'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Invalid test recommendation'));
+  assert.ok(res.body.includes('Invalid test request'));
 });
 
 test('POST /requestRetest.html/260202T0000/new with missing why returns an error', async () => {
@@ -727,7 +727,7 @@ test('POST /requestRetest.html/260202T0000/new with missing why returns an error
     why: ''
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Invalid retest recommendation'));
+  assert.ok(res.body.includes('Invalid retest request'));
 });
 
 test('POST /worker/report with valid authentication and wrong worker returns an error', async () => {
@@ -1009,10 +1009,10 @@ for (const pagePath of htmlPagePaths) {
   });
 }
 
-test('GET /enqueueForm.html shows recommendations when recs.json has entries', async () => {
-  await fs.writeFile(recsPath, JSON.stringify({
+test('GET /enqueueForm.html shows requests when testRequests.json has entries', async () => {
+  await fs.writeFile(testRequestsPath, JSON.stringify({
     'https://example.com/enqueue-test': [
-      {what: 'Enqueue Test Page', why: 'Needs testing for accessibility'}
+      {description: 'Enqueue Test Page', why: 'Needs testing for accessibility'}
     ]
   }));
   const res = await request('GET', '/enqueueForm.html');
@@ -1062,25 +1062,25 @@ test('POST /mcp returns a response from the MCP handler', async () => {
 // TESTS: answer error branches
 
 test('POST /requestTest.html with valid format but duplicate URL returns an answer error', {timeout: 500}, async () => {
-  await fs.writeFile(recsPath, '{}\n');
-  // First request to create the recommendation.
+  await fs.writeFile(testRequestsPath, '{}\n');
+  // First request to create the request.
   await formRequest('POST', '/requestTest.html', {
-    what: `Dup Test Page ${uniqueStamp}`,
+    description: `Dup Test Page ${uniqueStamp}`,
     url: `https://example.com/dup-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
   // Second request with the same URL should get a duplicate error.
   const res = await formRequest('POST', '/requestTest.html', {
-    what: `Dup Test Page ${uniqueStamp}`,
+    description: `Dup Test Page ${uniqueStamp}`,
     url: `https://example.com/dup-${uniqueStamp}`,
     why: 'Because accessibility matters again'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Duplicate recommendation'));
+  assert.ok(res.body.includes('Duplicate request'));
 });
 
 test('POST /requestRetest.html with valid format but duplicate retest returns an answer error', {timeout: 500}, async () => {
-  await fs.writeFile(recsPath, '{}\n');
+  await fs.writeFile(testRequestsPath, '{}\n');
   // First retest to create the recommendation.
   await formRequest('POST', '/requestRetest.html/260202T0000/new', {
     why: 'Because the report is obsolete and needs refreshing'
@@ -1090,26 +1090,26 @@ test('POST /requestRetest.html with valid format but duplicate retest returns an
     why: 'Because the report is obsolete and needs refreshing again'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Duplicate recommendation'));
+  assert.ok(res.body.includes('Duplicate request'));
 });
 
-test('POST /recAction.html with valid auth code and approval of a duplicate returns an error', {timeout: 500}, async () => {
-  await fs.writeFile(recsPath, '{}\n');
-  // Create a recommendation.
+test('POST /requestAction.html with valid auth code and approval of a duplicate returns an error', {timeout: 500}, async () => {
+  await fs.writeFile(testRequestsPath, '{}\n');
+  // Create a request.
   await formRequest('POST', '/requestTest.html', {
-    what: `Action Dup Page ${uniqueStamp}`,
+    description: `Action Dup Page ${uniqueStamp}`,
     url: `https://example.com/action-dup-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
   // Approve it once.
-  await formRequest('POST', '/recAction.html', {
+  await formRequest('POST', '/requestAction.html', {
     target: `https://example.com/action-dup-${uniqueStamp}\tAction Dup Page ${uniqueStamp}`,
     authCode: 'test-auth-code',
     what: 'yes'
   });
-  // Approve it again (the recs may have been cleared, so this may succeed or fail).
-  // This test covers the recAction answer error branch.
-  const res = await formRequest('POST', '/recAction.html', {
+  // Approve it again (the requests may have been cleared, so this may succeed or fail).
+  // This test covers the requestAction answer error branch.
+  const res = await formRequest('POST', '/requestAction.html', {
     target: `https://example.com/action-dup-${uniqueStamp}\tAction Dup Page ${uniqueStamp}`,
     authCode: 'test-auth-code',
     what: 'yes'
@@ -1118,10 +1118,10 @@ test('POST /recAction.html with valid auth code and approval of a duplicate retu
   assert.ok(res.statusCode === 200 || res.statusCode === 400);
 });
 
-test('POST /recAction.html with valid auth code and approval of an invalid URL returns an error', async () => {
+test('POST /requestAction.html with valid auth code and approval of an invalid URL returns an error', async () => {
   // A URL that starts with https:// but is not a valid URL causes
   // enqueue.answer to return status error.
-  const res = await formRequest('POST', '/recAction.html', {
+  const res = await formRequest('POST', '/requestAction.html', {
     target: 'https://\tTest Page',
     authCode: 'test-auth-code',
     what: 'yes'

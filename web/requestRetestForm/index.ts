@@ -23,7 +23,7 @@ export const answer = async (pageArgs: string) => {
   // If getting the data succeeded:
   if (reportExtract) {
     // Update the page description.
-    target = reportExtract.what;
+    target = reportExtract.description;
   }
   // Otherwise, i.e. if it failed:
   else {

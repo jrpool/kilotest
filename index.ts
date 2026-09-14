@@ -19,7 +19,6 @@ import {
   isReportError,
   getReportPath,
   hiddenReportsPath,
-  isHidden,
   isReportAvailable,
   isTimeStamp,
   isJobID,
@@ -429,48 +428,34 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       const [timeStamp, jobID] = pathTail.split('/');
       // If the request is syntactically valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {
-        const reportHidden = await isHidden(timeStamp, jobID);
-        // If the report exists and is hidden:
-        if (reportHidden) {
-          console.error(`Hidden report ${timeStamp}-${jobID} requested`);
-          // Report this as suspected abuse.
-          await serveError(
-            getAbuseError(request, `Hidden report ${timeStamp}-${jobID} requested`),
-            response,
-            true
+        // Get it.
+        const report = await getReport(timeStamp, jobID);
+        // If this failed:
+        if (isReportError(report)) {
+          // This is not necessarily abuse: the link may have been generated (e.g. by
+          // listIssues.html) before the report was pruned or rewound, or the stored report
+          // may have become unreadable or unusable, none of which is the requester's fault.
+          // So tell the requester only that the request was invalid, without accusing them,
+          // but alert a manager with the real reason, since a syntactically valid report ID
+          // should otherwise always be usable.
+          console.error(
+            `Full report ${timeStamp}-${jobID} requested but unavailable (${report.error})`
           );
+          await sendAlert(
+            'Kilotest: requested full report unavailable',
+            `Full report ${timeStamp}-${jobID} was requested but could not be retrieved: ${report.error}`
+          );
+          await serveError({message: 'ERROR: Invalid request'}, response, true);
         }
-        // Otherwise, i.e. if the report is not hidden:
+        // Otherwise, i.e. if it succeeded:
         else {
-          // Get it.
-          const report = await getReport(timeStamp, jobID);
-          // If this failed:
-          if (isReportError(report)) {
-            // This is not necessarily abuse: the link may have been generated (e.g. by
-            // listIssues.html) before the report was pruned, hidden, or rewound, or the
-            // stored report may have become unreadable or unusable, none of which is the
-            // requester's fault. So tell the requester only that the request was invalid,
-            // without accusing them, but alert a manager with the real reason, since a
-            // syntactically valid, non-hidden report ID should otherwise always be usable.
-            console.error(
-              `Full report ${timeStamp}-${jobID} requested but unavailable (${report.error})`
-            );
-            await sendAlert(
-              'Kilotest: requested full report unavailable',
-              `Full report ${timeStamp}-${jobID} was requested but could not be retrieved: ${report.error}`
-            );
-            await serveError({message: 'ERROR: Invalid request'}, response, true);
-          }
-          // Otherwise, i.e. if it succeeded:
-          else {
-            // Serve response headers for a JSON download.
-            setHeaders('application/json', null, 'low');
-            response.setHeader(
-              'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
-            );
-            // Download the report.
-            response.end(getJSON(report));
-          }
+          // Serve response headers for a JSON download.
+          setHeaders('application/json', null, 'low');
+          response.setHeader(
+            'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
+          );
+          // Download the report.
+          response.end(getJSON(report));
         }
       }
       // Otherwise, i.e. if the request is syntactically invalid:

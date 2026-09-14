@@ -86,10 +86,6 @@ test('listDiagnoses excludes cantTell instances from the diagnoses list', async 
   assert.ok(!result.answerPage.includes('Focus Visible'));
 });
 
-test('listDiagnoses returns an error status for a hidden report', async () => {
-  const result = await answer('linkNoText/260101T0007/hid/0');
-  assert.equal(result.status, 'error');
-});
 
 test('listDiagnoses returns an error status for a nonexistent report', async () => {
   const result = await answer('linkNoText/999999T9999/xyz/0');

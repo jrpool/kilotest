@@ -15,7 +15,6 @@ import {
   getWCAGLink,
   getWeightName,
   htmlSafe,
-  isHidden,
   isReportError,
   makeBreakable,
   populateTemplate,
@@ -164,14 +163,6 @@ const populateQuery = async (
 // Returns a page answering the violators question.
 export const answer = async (pageArgs: string) => {
   const [issueID, timeStamp, jobID] = pageArgs.split('/');
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report is not available:
-  if (reportIsHidden) {
-    return {
-      status: 'error',
-      message: 'Report not available'
-    };
-  }
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, query);

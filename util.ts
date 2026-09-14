@@ -801,19 +801,7 @@ export const getReportStats = async (timeStamp: string, jobID: string) => {
   const reportSize = reportStat.size;
   return {reportTime, reportSize};
 };
-// Returns whether a report is hidden. This function is redundant: hidden reports are moved
-// into hiddenReportsPath() by the hide operation (and back by unhide), so getReport already
-// fails identically for a hidden report and a nonexistent one without the extra readdir call.
-// Removing it would collapse the hidden-report case into generic getReport-failure handling.
-// Call sites: the fullReport.json route and listViolators, listDiagnoses, and listIssues (the
-// last of which calls it twice per request) in index.ts and the respective web handlers.
-export const isHidden = async (timeStamp: string, jobID: string): Promise<boolean> => {
-  await fs.mkdir(hiddenReportsPath(), {recursive: true});
-  // Get the names of the hidden report files.
-  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath());
-  // Return whether the report is among them.
-  return hiddenReportFileNames.includes(`${timeStamp}-${jobID}.json`);
-};
+
 // Returns an extract of an available report, or an error object if it cannot be read or parsed.
 export const getReportExtract = async (timeStamp: string, jobID: string): Promise<ReportExtract | {error: string}> => {
   try {

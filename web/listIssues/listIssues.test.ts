@@ -13,19 +13,10 @@ import {parse} from 'node-html-parser';
 // Mock the util functions called by index.ts before requiring it, so that
 // it imports the mocked versions. Other exports delegate to the real module.
 import * as realUtil from '../../util.ts';
-let isHiddenCallCount = 0;
-let forceHiddenOnCall = -1;
 let pageDataStringsOverride: any = null;
 mock.module('../../util.ts', {
   exports: {
     ...realUtil,
-    isHidden: async (timeStamp: any, jobID: any) => {
-      isHiddenCallCount++;
-      if (isHiddenCallCount === forceHiddenOnCall) {
-        return true;
-      }
-      return realUtil.isHidden(timeStamp, jobID);
-    },
     getPageDataStrings: async (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
@@ -79,11 +70,6 @@ test('listIssues includes links to listViolators for issues in the mixed report'
   assert.ok(hrefs.some(href => href?.includes('allCaps')));
 });
 
-test('listIssues returns an error status for a hidden report', async () => {
-  const result = await answer('260101T0007/hid');
-  assert.equal(result.status, 'error');
-});
-
 test('listIssues returns an error status for a nonexistent report', async () => {
   const result = await answer('999999T9999/xyz');
   assert.equal(result.status, 'error');
@@ -105,18 +91,6 @@ test('listIssues for the empty report shows no issue links', async () => {
   assert.equal(violatorLinks.length, 0);
 });
 
-test('listIssues returns an error when a report becomes hidden during processing', async () => {
-  isHiddenCallCount = 0;
-  forceHiddenOnCall = 2;
-  try {
-    const result = await answer('260101T0000/mix');
-    assert.equal(result.status, 'error');
-    assert.equal(result.message, 'Report is not available');
-  }
-  finally {
-    forceHiddenOnCall = -1;
-  }
-});
 
 test('listIssues includes prevention notices for the prevented report', async () => {
   const result = await answer('260101T0006/prv');

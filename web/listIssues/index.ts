@@ -14,7 +14,6 @@ import {
   getWCAGLink,
   getWeightName,
   htmlSafe,
-  isHidden,
   isUsableReport,
   objectSort,
   populateTemplate,
@@ -28,12 +27,7 @@ import {issues as issueSpecs} from 'testaro-issues';
 const getIssuesData = async (timeStamp: string, jobID: string) => {
   // Get the report.
   const report = await getReport(timeStamp, jobID);
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If it exists and is hidden:
-  if (reportIsHidden) {
-    return {error: 'Report is not available'}
-  }
-  // Otherwise, if it exists and is valid:
+  // If it exists and is valid:
   if (isUsableReport(report)) {
     // Initialize the temporary data.
     const temp = {
@@ -267,14 +261,6 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
 // Returns a page answering the target-issues question.
 export const answer = async (pageArgs: string) => {
   const [timeStamp, jobID] = pageArgs.split('/');
-  const reportIsHidden = await isHidden(timeStamp, jobID);
-  // If the report is not available:
-  if (reportIsHidden) {
-    return {
-      status: 'error',
-      message: 'Report not available'
-    };
-  }
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(timeStamp, jobID, query);

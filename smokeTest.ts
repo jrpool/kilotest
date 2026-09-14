@@ -102,7 +102,7 @@ const isCaddy404 = (result: {statusCode: number | undefined, bodyLength: number}
   for (const method of ['GET', 'POST']) {
     console.log(`\n=== ${method} paths ===`);
     for (const pattern of routes[method as 'GET' | 'POST']) {
-      const requestPath = concretePaths[method][pattern];
+      const requestPath = concretePaths[method]![pattern];
       if (!requestPath) {
         console.log(`FAIL: no concrete path defined for pattern ${pattern}`);
         failures++;

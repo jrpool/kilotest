@@ -669,7 +669,7 @@ test('POST /reannotate.html with valid auth code serves the answer page', async 
   finally {
     // Restore all fixture reports.
     for (const file of reportFiles) {
-      await fs.writeFile(path.join(reportsDir, file), backups[file]);
+      await fs.writeFile(path.join(reportsDir, file), backups[file]!);
     }
   }
 });

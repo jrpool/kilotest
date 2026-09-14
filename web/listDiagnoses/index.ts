@@ -51,12 +51,15 @@ const populateQuery = async (
   }
   const {catalog} = report;
   // Otherwise, i.e. if it succeeded, get the catalog item of the specified violator.
-  const catalogItem = catalog[catalogIndex] ?? {};
-  const {boxID, startTag, tagName, text} = catalogItem;
+  const catalogItem = catalog[catalogIndex];
+  const boxID = catalogItem?.boxID;
+  const startTag = catalogItem?.startTag;
+  const tagName = catalogItem?.tagName;
+  const text = catalogItem?.text;
   query.catalogIndex = catalogIndex;
   const lines: string[] = [];
   const margin = ' '.repeat(6);
-  if (catalogIndex && catalogItem.textLinkable) {
+  if (catalogIndex && catalogItem?.textLinkable) {
     const href = getTextFragmentHref(text as string, url);
     const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
     const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
@@ -78,13 +81,13 @@ const populateQuery = async (
     return;
   }
   // Otherwise, i.e. if it succeeded, get the issue details.
-  const issue = issueSpecs[issueID];
+  const issue = issueSpecs[issueID]!;
   const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
   query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
   query.tagName = tagName || 'HTML';
-  if (text && !['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName)) {
+  if (text && !['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName as string)) {
     const textString = text.split('\n').join(' … ');
     query.text = `<q>${htmlSafe(textString)}</q>`;
   }
@@ -118,7 +121,7 @@ const populateQuery = async (
     // Add lines.
     lines.push(`${margin}<li>${htmlSafe(what)}`);
     // engineID is act.which, guaranteed by isUsableReport to be a key in ruleEngines.
-    const [engineName, engineOrg] = ruleEngines[engineID];
+    const [engineName, engineOrg] = ruleEngines[engineID]!;
     lines.push(`${margin}  <p>Rule engine: ${engineName} (${engineOrg})</p>`);
     if (ruleID !== what) {
       lines.push(`${margin}  <p>Rule: <code>${ruleID}</code></p>`);
@@ -130,7 +133,7 @@ const populateQuery = async (
 };
 // Returns a page answering the diagnoses question.
 export const answer = async (pageArgs: string, search: string) => {
-  const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/');
+  const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/') as [string, string, string, string];
   const params = new URLSearchParams(search);
   const pathID = params.get('pathID');
   const query: Record<string, any> = {};

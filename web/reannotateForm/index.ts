@@ -60,8 +60,8 @@ const populateQuery = async (query: Record<string, any>) => {
   // For each rule engine reporting any violations of still unclassified rules:
   Object.keys(stillUnclassified).forEach(engineID => {
     // For each such rule:
-    Object.keys(stillUnclassified[engineID]).forEach(ruleID => {
-      const reportIDs = Array.from(stillUnclassified[engineID][ruleID]);
+    Object.keys(stillUnclassified[engineID]!).forEach(ruleID => {
+      const reportIDs = Array.from(stillUnclassified[engineID]![ruleID]!);
       // Add a line to the lines on the rule.
       stillUnclassifiedLines.push(
         `${margin}<li>${engineID}: ${ruleID} (${reportIDs.join(', ')})</li>`
@@ -73,8 +73,8 @@ const populateQuery = async (query: Record<string, any>) => {
   // For each rule engine reporting any discrepancies in rule classification:
   Object.keys(reClassified).forEach(engineID => {
     // For each such rule:
-    Object.keys(reClassified[engineID]).forEach(ruleID => {
-      const reportIDs = Array.from(reClassified[engineID][ruleID]);
+    Object.keys(reClassified[engineID]!).forEach(ruleID => {
+      const reportIDs = Array.from(reClassified[engineID]![ruleID]!);
       // Add a line to the lines on the rule.
       reClassifiedLines.push(
         `${margin}<li>${engineID}: ${ruleID} (${reportIDs.join(', ')})</li>`

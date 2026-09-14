@@ -53,7 +53,7 @@ const populateQuery = async (
   query.target = what;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
-  const issue = issueSpecs[issueID];
+  const issue = issueSpecs[issueID]!;
   const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
@@ -132,8 +132,8 @@ const populateQuery = async (
     lines.push(`${margin}  </ul>`);
     lines.push(`${margin}  <ul class="nav">`);
     if (catalogIndex) {
-      const catalogItem = catalog[catalogIndex] || {};
-      if (catalogItem.textLinkable) {
+      const catalogItem = catalog[catalogIndex];
+      if (catalogItem?.textLinkable) {
         takeMeAdviceNeeded = true;
         const href = getTextFragmentHref(catalogItem.text as string, url);
         const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
@@ -162,7 +162,7 @@ const populateQuery = async (
 };
 // Returns a page answering the violators question.
 export const answer = async (pageArgs: string) => {
-  const [issueID, timeStamp, jobID] = pageArgs.split('/');
+  const [issueID, timeStamp, jobID] = pageArgs.split('/') as [string, string, string];
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
   await populateQuery(issueID, timeStamp, jobID, query);

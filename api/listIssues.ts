@@ -103,7 +103,7 @@ export const response = async (args: string[]) => {
             reporterIDs: new Set()
           };
           // Ensure the reporter ID is in the data about the issue.
-          issuesData[issueID!].reporterIDs.add(act.which!);
+          issuesData[issueID!]!.reporterIDs.add(act.which!);
         }
       });
       const {preventions} = report.jobData;
@@ -118,7 +118,7 @@ export const response = async (args: string[]) => {
       // For each issue:
       Object.values(issuesData).forEach(issueData => {
         // Increment the count of issues with its weight.
-        weightCounts[issueData.weight - 1]++;
+        weightCounts[issueData.weight - 1]!++;
       });
       // Get details about the test results.
       const resultDetails = {
@@ -127,10 +127,10 @@ export const response = async (args: string[]) => {
         'names of rule engines that reported rule violations': getRuleEnginesFacts(reporterIDs)
         .map(facts => facts.name),
         'counts of issues by priority': {
-          'highest': weightCounts[3],
-          'high': weightCounts[2],
-          'low': weightCounts[1],
-          'lowest': weightCounts[0]
+          'highest': weightCounts[3]!,
+          'high': weightCounts[2]!,
+          'low': weightCounts[1]!,
+          'lowest': weightCounts[0]!
         },
         'number of elements reported as violators': violatorIndexes.size
       };

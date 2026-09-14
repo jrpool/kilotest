@@ -78,8 +78,8 @@ test('listReports sorts reports by page description and then by completion time'
   );
   // The two Mixed Outcomes Page reports should be sorted by completion time (older first).
   const mixedReports = reportsBasics.filter((b: any) => b['tested web page'].description === 'Mixed Outcomes Page');
-  assert.equal(mixedReports[0].identifier, '260101T0000-mix');
-  assert.equal(mixedReports[1].identifier, '260202T0000-new');
+  assert.equal(mixedReports[0]!.identifier, '260101T0000-mix');
+  assert.equal(mixedReports[1]!.identifier, '260202T0000-new');
 });
 
 test('listReports marks the superseded report correctly', async () => {

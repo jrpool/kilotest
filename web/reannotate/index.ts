@@ -29,7 +29,7 @@ export const answer = async (authCode: string) => {
     if (reportFileNames.length) {
       // For each report file:
       for (const reportFileName of reportFileNames) {
-        const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
+        const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-') as [string, string];
         // Get the report.
         const report = await getReport(timeStamp, jobID);
         // If this failed:

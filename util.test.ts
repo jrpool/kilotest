@@ -994,7 +994,7 @@ test('getReportExtracts with onlyLatest returns only the latest report for each 
   const latest = await getReportExtracts(true);
   const mixReports = latest.filter(e => e.what === 'Mixed Outcomes Page');
   assert.equal(mixReports.length, 1);
-  assert.equal(mixReports[0].timeStamp, '260202T0000');
+  assert.equal(mixReports[0]!.timeStamp, '260202T0000');
 });
 
 test('getMultiReportWhats returns descriptions that have multiple reports', async () => {

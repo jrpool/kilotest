@@ -14,5 +14,5 @@ export const answer = async (_: any, search: string) => reportDeletionForm(impor
   intro: 'Choose the sole reports to delete.',
   emptyIntro: 'Each target has at least 2 reports, so there are no reports to delete.',
   failurePrefix: 'Deleting sole reports failed',
-  isDeletable: (specs, index) => specs[index - 1]?.url !== specs[index].url && specs[index + 1]?.url !== specs[index].url
+  isDeletable: (specs, index) => specs[index - 1]?.url !== specs[index]?.url && specs[index + 1]?.url !== specs[index]?.url
 });

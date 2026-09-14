@@ -140,15 +140,19 @@ export const getIssue = (engineID: string, ruleID: string): string | null => {
   .keys(variable)
   .find(pattern => new RegExp(`^${pattern}$`).test(ruleID));
   // Return the issue ID if a pattern matched, or a failure result otherwise.
-  return variableRuleID ? variable[variableRuleID].issueID : null;
+  return variableRuleID ? variable[variableRuleID]!.issueID : null;
 };
 // Gets the names and categories of the job files. Missing job directories are a normal,
 // recoverable condition (e.g. on first run) and are created empty; any other failure to
 // read a job directory should never occur, so it is thrown rather than returned.
-export const getJobNames = async (): Promise<Record<string, string[]>> => {
-  const jobNames: Record<string, string[]> = {};
+export const getJobNames = async (): Promise<{queue: string[], claimed: string[], failed: string[]}> => {
+  const jobNames: {queue: string[], claimed: string[], failed: string[]} = {
+    queue: [],
+    claimed: [],
+    failed: []
+  };
   let fileNames: string[];
-  for (const category of ['queue', 'claimed', 'failed']) {
+  for (const category of ['queue', 'claimed', 'failed'] as const) {
     const categoryPath = path.join(jobsPath(), category);
     try {
       fileNames = await fs.readdir(categoryPath);
@@ -232,7 +236,7 @@ export const populateTemplate = async (dirName: string, query: Record<string, st
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     // A replacer function keeps $-patterns in a value from being interpreted.
-    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), () => query[param]);
+    answerPage = answerPage.replace(new RegExp(`__${param}__`, 'g'), () => query[param]!);
   });
   return answerPage;
 };
@@ -704,7 +708,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   // For each test act of the report:
   getTestActs(report).forEach(act => {
     // Ensure that the rule engine is in the temporary data.
-    engineNameSet.add(ruleEngines[act.which!][0]);
+    engineNameSet.add(ruleEngines[act.which!]![0]);
   });
   // For each violating standard instance of each test act:
   getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
@@ -730,7 +734,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   data.engineCount = engineNameSet.size;
   data.reporterNames = Array
   .from(reporterIDSet)
-  .map(id => ruleEngines[id][0])
+  .map(id => ruleEngines[id]![0])
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.reporterCount = data.reporterNames.length;
   data.violatorCount = violatorIndexSet.size;
@@ -835,7 +839,7 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   const extracts: ReportExtract[] = [];
   // For each one:
   for (const reportFileName of reportFileNames) {
-    const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-');
+    const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-') as [string, string];
     // Get an extract of it.
     const extract = await getReportExtract(timeStamp, jobID);
     if (!('error' in extract)) {

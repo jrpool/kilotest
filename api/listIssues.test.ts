@@ -49,7 +49,7 @@ test('listIssues treats missing outcome as a violation, not cantTell', async () 
   const issues = body['response content']['basics about all issues reported in the report'];
   assert.ok(issues);
   assert.equal(issues.length, 1);
-  assert.equal(issues[0].identifier, 'linkNoText');
+  assert.equal(issues[0]!.identifier, 'linkNoText');
 });
 
 test('listIssues returns 0 issues for the empty report', async () => {

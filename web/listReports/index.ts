@@ -28,7 +28,7 @@ import path from 'node:path';
 const populateQuery = async (query: Record<string, any>) => {
   const margin = ' '.repeat(8);
   // Initialize the classes of lines.
-  const lines: Record<string, string[]> = {
+  const lines: {recs: string[], queue: string[], claimed: string[], tested: string[]} = {
     recs: [],
     queue: [],
     claimed: [],
@@ -39,7 +39,7 @@ const populateQuery = async (query: Record<string, any>) => {
   // For each recommended URL:
   Object.keys(recs).forEach(url => {
     // For each of its recommendations:
-    recs[url].forEach((rec: any) => {
+    recs[url]!.forEach((rec: any) => {
       const {what, why} = rec;
       // Add a line.
       lines.recs.push(`${margin}<li><code>${url}</code> (${what}): ${why}</li>`);
@@ -56,7 +56,7 @@ const populateQuery = async (query: Record<string, any>) => {
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
   // For each job category:
-  for (const category of ['queue', 'claimed']) {
+  for (const category of ['queue', 'claimed'] as const) {
     // For each job in the category:
     for (const fileName of jobFileNames[category]) {
       // Get the job.

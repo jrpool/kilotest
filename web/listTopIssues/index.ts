@@ -122,7 +122,7 @@ const populateQuery = async (query: Record<string, any>) => {
       if (reportedIssue.weight === weight && percentage >= 2) {
         existsIssue = true;
         // Get the data on it from the issue classification.
-        const issue = issueSpecs[issueID];
+        const issue = issueSpecs[issueID]!;
         const {summary, wcag, why} = issue;
         const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
         // Add a description of it to the lines.

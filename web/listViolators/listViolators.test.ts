@@ -263,8 +263,9 @@ test('listViolators handles instances with missing catalogIndex and acts with no
 
 test('listViolators uses HTML fallback when catalog has no tagName and pathID is missing', async () => {
   // Create a report where an instance has no pathID and the catalog
-  // entry has no tagName, so the ?? 'HTML' fallback is hit.
-  // Also uses a catalogIndex not in the catalog to cover || {} on line 144.
+  // entry has no tagName, so the ?? 'HTML' tagName fallback is hit.
+  // Also uses a catalogIndex not in the catalog, so catalogItem is undefined
+  // and catalogItem?.textLinkable is falsy (no take-me-there link is added).
   const dbDir = (await import('../../test/dbFixture.ts')).fixtureDBDir;
   const reportPath = path.join(dbDir, 'reports', '260101T0005-htm.json');
   const report = {

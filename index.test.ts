@@ -50,6 +50,9 @@ beforeEach(async () => {
       await fs.unlink(path.join(dir, file)).catch(() => {});
     }
   }
+  // Clear comment files so tests start with a clean slate.
+  await fs.writeFile('web/tutorial/comments.json', '[]\n').catch(() => {});
+  await fs.writeFile('web/qaiTutorial/comments.json', '[]\n').catch(() => {});
 });
 
 after(async () => {

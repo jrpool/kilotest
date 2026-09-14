@@ -12,6 +12,7 @@ node_modules/
 results/
 ai0Balance.json
 web/tutorial/comments.json
+web/qaiTutorial/comments.json
 
 # Test coverage reports
 coverage/

@@ -11,6 +11,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import {
   annotateReportObject,
+  checkCommentSubmission,
   createLock,
   dbPath,
   getAgoDays,
@@ -55,6 +56,61 @@ import {
 } from './util.ts';
 
 // TESTS
+
+test('checkCommentSubmission accepts a comment of valid length with no duplicate', () => {
+  const result = checkCommentSubmission([], 'a'.repeat(20));
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentSubmission rejects a comment shorter than 20 characters', () => {
+  const result = checkCommentSubmission([], 'a'.repeat(19));
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'Your comment was shorter than 20 characters'
+  });
+});
+
+test('checkCommentSubmission rejects a comment longer than 1000 characters', () => {
+  const result = checkCommentSubmission([], 'a'.repeat(1001));
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'Your comment was longer than 1000 characters'
+  });
+});
+
+test('checkCommentSubmission accepts a comment of exactly 20 characters', () => {
+  const result = checkCommentSubmission([], 'a'.repeat(20));
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentSubmission accepts a comment of exactly 1000 characters', () => {
+  const result = checkCommentSubmission([], 'a'.repeat(1000));
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentSubmission rejects a comment repeating one submitted within the last 1000 seconds', () => {
+  const content = 'a'.repeat(20);
+  const comments = [{dateTime: new Date().toISOString(), content}];
+  const result = checkCommentSubmission(comments, content);
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+  });
+});
+
+test('checkCommentSubmission accepts a comment repeating one submitted more than 1000 seconds ago', () => {
+  const content = 'a'.repeat(20);
+  const oldDateTime = new Date(Date.now() - 1000001).toISOString();
+  const comments = [{dateTime: oldDateTime, content}];
+  const result = checkCommentSubmission(comments, content);
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentSubmission accepts a comment that differs from a recent one', () => {
+  const comments = [{dateTime: new Date().toISOString(), content: 'a'.repeat(20)}];
+  const result = checkCommentSubmission(comments, 'b'.repeat(20));
+  assert.deepEqual(result, {status: 'ok'});
+});
 
 test('dbPath defaults to the project db directory when DB_DIR is unset', () => {
   const saved = process.env.DB_DIR;

@@ -54,6 +54,36 @@ export {ruleEngines};
 const alphaCompare = (a: string, b: string) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = (strings: string[]) => strings.sort((a, b) => alphaCompare(a, b));
+// Returns whether a submitted comment is valid: long enough, short enough, and not a
+// repeat of a comment with the same content submitted within the last 1000 seconds.
+export const checkCommentSubmission = (
+  comments: {dateTime: string; content: string}[], content: string
+): {status: 'ok'} | {status: 'error'; message: string} => {
+  const contentLength = content.length;
+  // If the length is invalid:
+  if (contentLength < 20 || contentLength > 1000) {
+    // Return the applicable error message.
+    const messageSpec = contentLength < 20 ? 'shorter than 20' : 'longer than 1000';
+    return {
+      status: 'error',
+      message: `Your comment was ${messageSpec} characters`
+    };
+  }
+  // Get the comments submitted within the last 1000 seconds with the same content.
+  const duplicates = comments
+  .filter(comment => new Date(comment.dateTime).getTime() > Date.now() - 1000000)
+  .filter(comment => comment.content === content);
+  // If the comment duplicates a recent one:
+  if (duplicates.length) {
+    // Return this.
+    return {
+      status: 'error',
+      message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+    };
+  }
+  // Otherwise, the comment is valid.
+  return {status: 'ok'};
+};
 // Returns a function that executes a function sequentially.
 export const createLock = (): (<T>(fn: () => T | Promise<T>) => Promise<T>) => {
   let queue: Promise<void> = Promise.resolve();

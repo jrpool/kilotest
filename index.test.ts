@@ -615,9 +615,10 @@ test('POST /requestAction.html with valid auth code and rejection (no descriptio
 
 test('POST /tutorialComment.html with content returns JSON', async () => {
   const res = await request('POST', '/tutorialComment.html', {
-    content: 'This is a test comment'
+    content: `This is a test comment ${uniqueStamp}`
   });
   assert.ok(res.headers['content-type'].includes('application/json'));
+  assert.deepEqual(JSON.parse(res.body), {status: 'ok'});
 });
 
 // TESTS: additional branch coverage

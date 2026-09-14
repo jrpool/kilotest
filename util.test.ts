@@ -11,7 +11,8 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import {
   annotateReportObject,
-  checkCommentSubmission,
+  checkCommentDuplicate,
+  checkCommentLength,
   createLock,
   dbPath,
   getAgoDays,
@@ -57,58 +58,58 @@ import {
 
 // TESTS
 
-test('checkCommentSubmission accepts a comment of valid length with no duplicate', () => {
-  const result = checkCommentSubmission([], 'a'.repeat(20));
+test('checkCommentLength accepts a comment of exactly 20 characters', () => {
+  const result = checkCommentLength('a'.repeat(20));
   assert.deepEqual(result, {status: 'ok'});
 });
 
-test('checkCommentSubmission rejects a comment shorter than 20 characters', () => {
-  const result = checkCommentSubmission([], 'a'.repeat(19));
+test('checkCommentLength accepts a comment of exactly 1000 characters', () => {
+  const result = checkCommentLength('a'.repeat(1000));
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentLength rejects a comment shorter than 20 characters', () => {
+  const result = checkCommentLength('a'.repeat(19));
   assert.deepEqual(result, {
     status: 'error',
     message: 'Your comment was shorter than 20 characters'
   });
 });
 
-test('checkCommentSubmission rejects a comment longer than 1000 characters', () => {
-  const result = checkCommentSubmission([], 'a'.repeat(1001));
+test('checkCommentLength rejects a comment longer than 1000 characters', () => {
+  const result = checkCommentLength('a'.repeat(1001));
   assert.deepEqual(result, {
     status: 'error',
     message: 'Your comment was longer than 1000 characters'
   });
 });
 
-test('checkCommentSubmission accepts a comment of exactly 20 characters', () => {
-  const result = checkCommentSubmission([], 'a'.repeat(20));
+test('checkCommentDuplicate accepts a comment with no existing comments', () => {
+  const result = checkCommentDuplicate([], 'a'.repeat(20));
   assert.deepEqual(result, {status: 'ok'});
 });
 
-test('checkCommentSubmission accepts a comment of exactly 1000 characters', () => {
-  const result = checkCommentSubmission([], 'a'.repeat(1000));
-  assert.deepEqual(result, {status: 'ok'});
-});
-
-test('checkCommentSubmission rejects a comment repeating one submitted within the last 1000 seconds', () => {
+test('checkCommentDuplicate rejects a comment repeating one submitted within the last 1000 seconds', () => {
   const content = 'a'.repeat(20);
-  const comments = [{dateTime: new Date().toISOString(), content}];
-  const result = checkCommentSubmission(comments, content);
+  const comments = [{timeStamp: getNowStamp(), content}];
+  const result = checkCommentDuplicate(comments, content);
   assert.deepEqual(result, {
     status: 'error',
     message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
   });
 });
 
-test('checkCommentSubmission accepts a comment repeating one submitted more than 1000 seconds ago', () => {
+test('checkCommentDuplicate accepts a comment repeating one submitted more than 1000 seconds ago', () => {
   const content = 'a'.repeat(20);
-  const oldDateTime = new Date(Date.now() - 1000001).toISOString();
-  const comments = [{dateTime: oldDateTime, content}];
-  const result = checkCommentSubmission(comments, content);
+  const oldTimeStamp = getTimeStamp(new Date(Date.now() - 2000000));
+  const comments = [{timeStamp: oldTimeStamp, content}];
+  const result = checkCommentDuplicate(comments, content);
   assert.deepEqual(result, {status: 'ok'});
 });
 
-test('checkCommentSubmission accepts a comment that differs from a recent one', () => {
-  const comments = [{dateTime: new Date().toISOString(), content: 'a'.repeat(20)}];
-  const result = checkCommentSubmission(comments, 'b'.repeat(20));
+test('checkCommentDuplicate accepts a comment that differs from a recent one', () => {
+  const comments = [{timeStamp: getNowStamp(), content: 'a'.repeat(20)}];
+  const result = checkCommentDuplicate(comments, 'b'.repeat(20));
   assert.deepEqual(result, {status: 'ok'});
 });
 

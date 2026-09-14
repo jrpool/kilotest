@@ -54,9 +54,36 @@ test('handleComment returns an error for non-string content', async () => {
 });
 
 test('handleComment returns an error for content that is empty after sanitization', async () => {
-  const result = await handleComment('<script></script>');
+  // Padded with spaces (stripped by sanitize's trim) to clear the 20-character length check
+  // on the raw content, isolating the empty-after-sanitization path from the length check.
+  const result = await handleComment(`${' '.repeat(10)}<script></script>${' '.repeat(10)}`);
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Comment is empty after sanitization');
+});
+
+test('handleComment returns an error for a comment shorter than 20 characters', async () => {
+  const result = await handleComment('short');
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'Your comment was shorter than 20 characters');
+});
+
+test('handleComment returns an error for a comment longer than 1000 characters', async () => {
+  const result = await handleComment('x'.repeat(1001));
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'Your comment was longer than 1000 characters');
+});
+
+test('handleComment returns an error for a comment repeating one submitted within the last 1000 seconds', {timeout: 500}, async () => {
+  await fs.writeFile(commentsPath, '[]\n');
+  const content = 'This is a duplicate comment.';
+  const firstResult = await handleComment(content);
+  assert.equal(firstResult.status, 'ok');
+  const secondResult = await handleComment(content);
+  assert.equal(secondResult.status, 'error');
+  assert.equal(
+    secondResult.message,
+    'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+  );
 });
 
 test('handleComment saves a sanitized comment and returns ok', {timeout: 500}, async () => {

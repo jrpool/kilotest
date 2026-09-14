@@ -6,7 +6,7 @@
 // IMPORTS
 
 import {sendAlert} from '../../alerts.ts';
-import {getJSON, getNowStamp} from '../../util.ts';
+import {checkCommentDuplicate, checkCommentLength, getJSON, getNowStamp} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -36,9 +36,11 @@ export const handleComment = async (content: unknown) => {
   if (!content || typeof content !== 'string') {
     return {status: 'error', message: 'No content provided'};
   }
-  const sanitized = sanitize(content);
-  if (!sanitized) {
-    return {status: 'error', message: 'Comment is empty after sanitization'};
+  // If the raw comment's length is invalid:
+  const lengthCheck = checkCommentLength(content);
+  if (lengthCheck.status === 'error') {
+    // Report this.
+    return lengthCheck;
   }
   let comments: any[] = [];
   try {
@@ -49,6 +51,16 @@ export const handleComment = async (content: unknown) => {
   // If there are none:
   catch {
     // Initialize a comments array.
+  }
+  const sanitized = sanitize(content);
+  if (!sanitized) {
+    return {status: 'error', message: 'Comment is empty after sanitization'};
+  }
+  // If the sanitized comment duplicates one recently stored:
+  const duplicateCheck = checkCommentDuplicate(comments, sanitized);
+  if (duplicateCheck.status === 'error') {
+    // Report this.
+    return duplicateCheck;
   }
   // Add the comment to the existing ones.
   comments.push({

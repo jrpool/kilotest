@@ -54,10 +54,9 @@ export {ruleEngines};
 const alphaCompare = (a: string, b: string) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = (strings: string[]) => strings.sort((a, b) => alphaCompare(a, b));
-// Returns whether a submitted comment is valid: long enough, short enough, and not a
-// repeat of a comment with the same content submitted within the last 1000 seconds.
-export const checkCommentSubmission = (
-  comments: {dateTime: string; content: string}[], content: string
+// Returns whether a comment's raw length is within the 20-to-1000-character bounds.
+export const checkCommentLength = (
+  content: string
 ): {status: 'ok'} | {status: 'error'; message: string} => {
   const contentLength = content.length;
   // If the length is invalid:
@@ -69,9 +68,22 @@ export const checkCommentSubmission = (
       message: `Your comment was ${messageSpec} characters`
     };
   }
+  return {status: 'ok'};
+};
+// Returns whether a comment repeats, verbatim, one of the given comments submitted
+// within the last 1000 seconds. Comment time stamps use Kilotest's own timeStamp
+// format (see getTimeStamp), not an ISO date-time string, so this integrates with
+// the same comments.json shape that web/tutorial/index.ts already uses. The content
+// passed in should be the content as it will be stored (e.g. after sanitization),
+// so that it is compared on the same basis as the stored comments.
+export const checkCommentDuplicate = (
+  comments: {timeStamp: string; content: string}[], content: string
+): {status: 'ok'} | {status: 'error'; message: string} => {
   // Get the comments submitted within the last 1000 seconds with the same content.
+  // Comment time stamps are always valid, because this codebase is the sole writer
+  // of comments.json.
   const duplicates = comments
-  .filter(comment => new Date(comment.dateTime).getTime() > Date.now() - 1000000)
+  .filter(comment => getDateTime(comment.timeStamp)!.getTime() > Date.now() - 1000000)
   .filter(comment => comment.content === content);
   // If the comment duplicates a recent one:
   if (duplicates.length) {
@@ -81,7 +93,7 @@ export const checkCommentSubmission = (
       message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
     };
   }
-  // Otherwise, the comment is valid.
+  // Otherwise, the comment is not a duplicate.
   return {status: 'ok'};
 };
 // Returns a function that executes a function sequentially.

@@ -9,27 +9,28 @@ import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+
+// ENVIRONMENT
+
+const testDir = path.join(import.meta.dirname, '../../test/fixtures/comments');
+process.env.TUTORIAL_COMMENTS_PATH = path.join(testDir, 'tutorial.json');
+
 import {answer, handleComment} from './index.ts';
 
 // CONSTANTS
 
-const commentsPath = path.join(import.meta.dirname, 'comments.json');
+const getCommentsPath = () => process.env.TUTORIAL_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
 
 // SETUP AND TEARDOWN
 
-let originalComments: any;
-
 before(async () => {
-  originalComments = await fs.readFile(commentsPath, 'utf8').catch(() => null);
+  await fs.mkdir(testDir, {recursive: true});
+  await fs.writeFile(getCommentsPath(), '[]\n');
 });
 
 after(async () => {
-  if (originalComments !== null) {
-    await fs.writeFile(commentsPath, originalComments);
-  }
-  else {
-    await fs.unlink(commentsPath).catch(() => {});
-  }
+  // Clean up test fixture directory.
+  await fs.rm(testDir, {recursive: true, force: true});
 });
 
 // TESTS
@@ -74,7 +75,7 @@ test('handleComment returns an error for a comment longer than 1000 characters',
 });
 
 test('handleComment returns an error for a comment repeating one submitted within the last 1000 seconds', {timeout: 500}, async () => {
-  await fs.writeFile(commentsPath, '[]\n');
+  await fs.writeFile(getCommentsPath(), '[]\n');
   const content = 'This is a duplicate comment.';
   const firstResult = await handleComment(content);
   assert.equal(firstResult.status, 'ok');
@@ -88,37 +89,37 @@ test('handleComment returns an error for a comment repeating one submitted withi
 
 test('handleComment saves a sanitized comment and returns ok', {timeout: 500}, async () => {
   // Replace comments with an empty array for a clean test.
-  await fs.writeFile(commentsPath, '[]\n');
+  await fs.writeFile(getCommentsPath(), '[]\n');
   const result = await handleComment('This is a <b>test</b> comment.');
   assert.equal(result.status, 'ok');
-  const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
+  const comments = JSON.parse(await fs.readFile(getCommentsPath(), 'utf8'));
   assert.equal(comments.length, 1);
   assert.equal(comments[0].content, 'This is a test comment.');
   assert.ok(comments[0].timeStamp);
 });
 
 test('handleComment strips HTML tags and control characters', {timeout: 500}, async () => {
-  await fs.writeFile(commentsPath, '[]\n');
+  await fs.writeFile(getCommentsPath(), '[]\n');
   const result = await handleComment('<img src=x onerror=alert(1)>\x00\x07Hello');
   assert.equal(result.status, 'ok');
-  const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
+  const comments = JSON.parse(await fs.readFile(getCommentsPath(), 'utf8'));
   assert.equal(comments[0].content, 'Hello');
 });
 
 test('handleComment accepts a comment of exactly 1000 characters', {timeout: 500}, async () => {
-  await fs.writeFile(commentsPath, '[]\n');
+  await fs.writeFile(getCommentsPath(), '[]\n');
   const maxComment = 'x'.repeat(1000);
   const result = await handleComment(maxComment);
   assert.equal(result.status, 'ok');
-  const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
+  const comments = JSON.parse(await fs.readFile(getCommentsPath(), 'utf8'));
   assert.equal(comments[0].content.length, 1000);
 });
 
 test('handleComment creates comments.json when it does not exist', {timeout: 500}, async () => {
-  await fs.unlink(commentsPath).catch(() => {});
+  await fs.unlink(getCommentsPath()).catch(() => {});
   const result = await handleComment('Test comment for missing file');
   assert.equal(result.status, 'ok');
-  const comments = JSON.parse(await fs.readFile(commentsPath, 'utf8'));
+  const comments = JSON.parse(await fs.readFile(getCommentsPath(), 'utf8'));
   assert.equal(comments.length, 1);
   assert.equal(comments[0].content, 'Test comment for missing file');
 });

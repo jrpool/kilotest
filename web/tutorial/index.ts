@@ -10,9 +10,9 @@ import {checkCommentDuplicate, checkCommentLength, getJSON, getNowStamp} from '.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// CONSTANTS
+// FUNCTIONS (helpers)
 
-const commentsPath = path.join(import.meta.dirname, 'comments.json');
+const getCommentsPath = () => process.env.TUTORIAL_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
 
 // FUNCTIONS
 
@@ -42,6 +42,7 @@ export const handleComment = async (content: unknown) => {
     // Report this.
     return lengthCheck;
   }
+  const commentsPath = getCommentsPath();
   let comments: any[] = [];
   try {
     // Get the existing comments.

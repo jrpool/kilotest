@@ -10,9 +10,9 @@ import {checkCommentLength, getJSON} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// CONSTANTS
+// FUNCTIONS (helpers)
 
-const commentsPath = path.join(import.meta.dirname, 'comments.json');
+const getCommentsPath = () => process.env.QAI_TUTORIAL_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
 
 // FUNCTIONS
 
@@ -42,6 +42,7 @@ export const handleComment = async (content: unknown) => {
   if (lengthCheck.status === 'error') {
     return lengthCheck;
   }
+  const commentsPath = getCommentsPath();
   let comments: any[] = [];
   try {
     const existing = await fs.readFile(commentsPath, 'utf8');

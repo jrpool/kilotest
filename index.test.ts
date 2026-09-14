@@ -10,8 +10,11 @@
 import path from 'node:path';
 import {fixtureDBDir} from './test/dbFixture.ts';
 
+const testCommentsDir = path.join(import.meta.dirname, 'test/fixtures/comments');
 process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';
+process.env.TUTORIAL_COMMENTS_PATH = path.join(testCommentsDir, 'tutorial.json');
+process.env.QAI_TUTORIAL_COMMENTS_PATH = path.join(testCommentsDir, 'qaiTutorial.json');
 process.env.TESTARO_WORKERS = JSON.stringify({
   worker1: {secret: 'secret1', name: 'Worker One'}
 });
@@ -50,9 +53,10 @@ beforeEach(async () => {
       await fs.unlink(path.join(dir, file)).catch(() => {});
     }
   }
-  // Clear comment files so tests start with a clean slate.
-  await fs.writeFile('web/tutorial/comments.json', '[]\n').catch(() => {});
-  await fs.writeFile('web/qaiTutorial/comments.json', '[]\n').catch(() => {});
+  // Create test comments directory and reset test comment files so tests start clean.
+  await fs.mkdir(testCommentsDir, {recursive: true});
+  await fs.writeFile(path.join(testCommentsDir, 'tutorial.json'), '[]\n');
+  await fs.writeFile(path.join(testCommentsDir, 'qaiTutorial.json'), '[]\n');
 });
 
 after(async () => {

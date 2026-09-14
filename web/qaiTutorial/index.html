@@ -61,6 +61,124 @@
       <p>If the model used any Kilotest tools, congratulations! You know how to add tool power to the LLMs on one of the major AI platforms.</p>
       <p>But what if it did <strong>not</strong> work? If an LLM fails to use the Kilotest connector when it should, or if you need to explicitly tell the LLM to use the connector, something is wrong, and we want to know about your experience. Please use the <a href="qaiComment.html">comment form</a> to tell us about it.</p>
       <p>You can also submit an issue on the <a href="https://github.com/jrpool/kilotest/issues">Kilotest GitHub repository</a>.</p>
+      <section id="suggest-improvement" class="main">
+        <h2>Suggest improvements</h2>
+        <p>Please submit suggestions for improving this tutorial below. The Kilotest managers will review them.</p>
+        <form id="comment-form" novalidate>
+          <p id="comment-label">Your suggestions (20–1000 characters):</p>
+          <textarea
+            id="comment-text"
+            name="content"
+            maxlength="1000"
+            minlength="20"
+            rows="5"
+            autocomplete="off"
+            aria-labelledby="comment-label"
+            aria-describedby="char-count-msg"
+          ></textarea>
+          <p class="char-count" id="char-count-msg"><span id="char-remaining">1000</span> characters remaining</p>
+          <button type="submit" id="comment-submit">Submit suggestions</button>
+        </form>
+        <div role="status" id="comment-diagnosis" aria-live="polite" aria-atomic="true" class="comment-diagnosis"></div>
+      </section>
     </main>
+    <script>
+      const commentText = document.getElementById('comment-text');
+      const charRemaining = document.getElementById('char-remaining');
+      const charCountMsg = document.getElementById('char-count-msg');
+      const commentFeedback = document.getElementById('comment-diagnosis');
+      const commentSubmit = document.getElementById('comment-submit');
+
+      commentText.addEventListener('input', function () {
+        const remaining = 1000 - this.value.length;
+        charRemaining.textContent = remaining;
+        charCountMsg.className = remaining <= 100 ? 'char-count low' : 'char-count';
+      });
+
+      document.getElementById('comment-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const content = commentText.value.trim();
+        commentFeedback.className = 'comment-diagnosis';
+        commentFeedback.textContent = '';
+        if (!content) {
+          commentFeedback.className = 'comment-diagnosis error';
+          commentFeedback.textContent = 'Please enter your feedback before submitting.';
+          return;
+        }
+        commentSubmit.disabled = true;
+        try {
+          const response = await fetch('/qaiTutorialComment.html', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({content})
+          });
+          const data = await response.json();
+          if (data.status === 'ok') {
+            commentFeedback.className = 'comment-diagnosis success';
+            commentFeedback.textContent =
+              'Thank you! Your suggestion has been saved and will be reviewed by the tutorial authors.';
+            this.reset();
+            charRemaining.textContent = '1000';
+            charCountMsg.className = 'char-count';
+          } else {
+            commentFeedback.className = 'comment-diagnosis error';
+            commentFeedback.textContent =
+              data.message || 'Your suggestion could not be saved. Please try again later.';
+            commentSubmit.disabled = false;
+          }
+        } catch (_) {
+          commentFeedback.className = 'comment-diagnosis error';
+          commentFeedback.textContent =
+            'A connection error occurred. Please check your connection and try again.';
+          commentSubmit.disabled = false;
+        }
+      });
+    </script>
+    <style>
+      #suggest-improvement {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: solid 1px #ccc;
+      }
+      #comment-form {
+        margin: 1rem 0;
+      }
+      #comment-form p {
+        margin: 0.5rem 0;
+      }
+      #comment-text {
+        width: 100%;
+        padding: 0.5rem;
+        border: solid 1px #ccc;
+        border-radius: 0.25rem;
+        font-family: system-ui, sans-serif;
+        font-size: 1rem;
+      }
+      .char-count {
+        font-size: 0.875rem;
+        color: #666;
+        margin: 0.25rem 0;
+      }
+      .char-count.low {
+        color: #c80;
+        font-weight: 700;
+      }
+      .comment-diagnosis {
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+        min-height: 1.5rem;
+      }
+      .comment-diagnosis.error {
+        background: #fdecea;
+        border-left: solid 4px #c0392b;
+        color: #5a1a1a;
+      }
+      .comment-diagnosis.success {
+        background: #e6f4ea;
+        border-left: solid 4px #2d7a2d;
+        color: #1a4a1a;
+      }
+    </style>
   </body>
 </html>

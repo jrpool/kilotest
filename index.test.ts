@@ -713,22 +713,7 @@ test('POST /tutorialComment.html with empty content returns a JSON error', {time
   assert.ok(res.headers['content-type'].includes('application/json'));
 });
 
-// TESTS: qaiComment
-
-test('POST /qaiComment.html with content returns JSON', async () => {
-  const res = await request('POST', '/qaiComment.html', {
-    content: `This is a test QAI comment ${uniqueStamp}`
-  });
-  assert.ok(res.headers['content-type'].includes('application/json'));
-  assert.deepEqual(JSON.parse(res.body), {status: 'ok'});
-});
-
-test('POST /qaiComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
-  const res = await request('POST', '/qaiComment.html', {
-    content: ''
-  });
-  assert.ok(res.headers['content-type'].includes('application/json'));
-});
+// TESTS: qaiTutorial
 
 test('GET /qaiTutorial.html returns HTML', async () => {
   const res = await request('GET', '/qaiTutorial.html');
@@ -736,10 +721,19 @@ test('GET /qaiTutorial.html returns HTML', async () => {
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('GET /qaiComment.html returns HTML', async () => {
-  const res = await request('GET', '/qaiComment.html');
-  assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('text/html'));
+test('POST /qaiTutorialComment.html with content returns JSON', async () => {
+  const res = await request('POST', '/qaiTutorialComment.html', {
+    content: `This is a test QAI tutorial comment ${uniqueStamp}`
+  });
+  assert.ok(res.headers['content-type'].includes('application/json'));
+  assert.deepEqual(JSON.parse(res.body), {status: 'ok'});
+});
+
+test('POST /qaiTutorialComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
+  const res = await request('POST', '/qaiTutorialComment.html', {
+    content: ''
+  });
+  assert.ok(res.headers['content-type'].includes('application/json'));
 });
 
 test('GET /qai redirects to /qaiTutorial.html', async () => {
@@ -748,10 +742,10 @@ test('GET /qai redirects to /qaiTutorial.html', async () => {
   assert.equal(res.headers['location'], '/qaiTutorial.html');
 });
 
-test('GET /qai/comments redirects to /qaiComment.html', async () => {
+test('GET /qai/comments redirects to /qaiTutorial.html', async () => {
   const res = await request('GET', '/qai/comments', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/qaiComment.html');
+  assert.equal(res.headers['location'], '/qaiTutorial.html');
 });
 
 test('POST /requestTest.html with non-https URL returns an error', async () => {

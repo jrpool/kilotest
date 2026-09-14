@@ -32,8 +32,7 @@ import type {Report} from 'testaro';
 import {handleMCP, mcpPath} from './mcp.ts';
 import fs from 'node:fs/promises';
 import {handleComment} from './web/tutorial/index.ts';
-import {answer as qaiTutorial} from './web/qaiTutorial/index.ts';
-import {answer as qaiComment, handleComment as handleQaiComment} from './web/qaiComment/index.ts';
+import {answer as qaiTutorial, handleComment as handleQaiTutorialComment} from './web/qaiTutorial/index.ts';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
@@ -95,7 +94,6 @@ const answer: {
   listViolators: PageHandler;
   manage: PageHandler;
   pruneReportsForm: PageHandler;
-  qaiComment: PageHandler;
   qaiTutorial: PageHandler;
   reannotate: PageHandler;
   reannotateForm: PageHandler;
@@ -123,7 +121,6 @@ const answer: {
   listViolators: listViolatorsPage,
   manage,
   pruneReportsForm,
-  qaiComment,
   qaiTutorial,
   reannotate,
   reannotateForm,
@@ -189,7 +186,7 @@ export const routes = {
   POST: [
     '/api/*',
     '/mcp',
-    '/qaiComment.html',
+    '/qaiTutorialComment.html',
     '/reannotate.html',
     '/requestAction.html',
     '/renewWCAG.html',
@@ -442,8 +439,8 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for the old QAI comments path:
     else if (pathname === '/qai/comments') {
-      // Redirect the client permanently to the new comments form path.
-      response.writeHead(301, {Location: '/qaiComment.html'});
+      // Redirect the client permanently to the new tutorial path (comments are now integrated).
+      response.writeHead(301, {Location: '/qaiTutorial.html'});
       response.end();
     }
     // Otherwise, if it is for the old QAI root path:
@@ -960,11 +957,11 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           response.end(JSON.stringify({status: 'error', message: answerData.message}));
         }
       }
-      // Otherwise, if it is a QAI comment:
-      else if (pageName === 'qaiComment.html') {
+      // Otherwise, if it is a QAI tutorial comment:
+      else if (pageName === 'qaiTutorialComment.html') {
         const {content} = postData as {content?: unknown};
         setHeaders('application/json', null, 'low');
-        const answerData = await handleQaiComment(content);
+        const answerData = await handleQaiTutorialComment(content);
         if (answerData.status === 'ok') {
           response.end(JSON.stringify({status: 'ok'}));
         }

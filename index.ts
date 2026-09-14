@@ -79,7 +79,33 @@ type AnswerData = {status: string; message?: string; answerPage?: string};
 // A page-answering handler, whose parameters vary by topic.
 type PageHandler = (...args: any[]) => Promise<AnswerData>;
 
-const answer: Record<string, PageHandler> = {
+const answer: {
+  ai0BalanceForm: PageHandler;
+  enqueue: PageHandler;
+  enqueueForm: PageHandler;
+  expungeReportsForm: PageHandler;
+  hideReportForm: PageHandler;
+  listDiagnoses: PageHandler;
+  listIssues: PageHandler;
+  listReports: PageHandler;
+  listRules: PageHandler;
+  listTopIssues: PageHandler;
+  listViolators: PageHandler;
+  manage: PageHandler;
+  pruneReportsForm: PageHandler;
+  reannotate: PageHandler;
+  reannotateForm: PageHandler;
+  renewWCAG: PageHandler;
+  renewWCAGForm: PageHandler;
+  requestRetest: PageHandler;
+  requestRetestForm: PageHandler;
+  requestTest: PageHandler;
+  requestTestForm: PageHandler;
+  rewindReportsForm: PageHandler;
+  unhideReportForm: PageHandler;
+  tutorial: PageHandler;
+  [key: string]: PageHandler | undefined;
+} = {
   ai0BalanceForm,
   enqueue,
   enqueueForm,
@@ -106,7 +132,17 @@ const answer: Record<string, PageHandler> = {
   tutorial
 };
 // Response functions of the API services.
-const apiRespond: Record<string, (args: string[]) => Promise<unknown>> = {
+type ApiResponder = (args: string[]) => Promise<unknown>;
+const apiRespond: {
+  getReport: ApiResponder;
+  listDiagnoses: ApiResponder;
+  listIssues: ApiResponder;
+  listReports: ApiResponder;
+  listViolators: ApiResponder;
+  requestFeature: ApiResponder;
+  requestRetest: ApiResponder;
+  requestTest: ApiResponder;
+} = {
   getReport: getReportAPI,
   listDiagnoses: listDiagnosesAPI,
   listIssues: listIssuesAPI,
@@ -229,7 +265,7 @@ const getBasicAuth = (request: IncomingMessage) => {
   if (!match) {
     return null;
   }
-  const decoded = Buffer.from(match[1], 'base64').toString('utf8');
+  const decoded = Buffer.from(match[1]!, 'base64').toString('utf8');
   const sepIndex = decoded.indexOf(':');
   if (sepIndex === -1) {
     return null;
@@ -290,7 +326,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
     const queuedJobNames = jobNames.queue;
     // If any jobs are queued:
     if (queuedJobNames.length) {
-      const oldestJobName = queuedJobNames[0];
+      const oldestJobName = queuedJobNames[0]!;
       // Get the first one.
       const firstJob = await getObject(path.join(queuePath(), oldestJobName)) as {id: string, sources: {worker: string}, target: {what: string}};
       // Add the public worker name to the job, in a property Testaro does not read or alter.
@@ -342,13 +378,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     };
     response.setHeader(
       'Cache-Control',
-      `public, max-age=${lives[volatility][0]}, stale-while-revalidate=${lives[volatility][1]}`
+      `public, max-age=${lives[volatility]![0]}, stale-while-revalidate=${lives[volatility]![1]}`
     );
   };
   const {method, url} = request;
   const requestURL = new URL(url as string, 'https://localhost:3000');
   const {pathname, search} = requestURL;
-  const pageName = pathname.split('/')[1];
+  const pageName = pathname.split('/')[1]!;
   const pathTail = pathname.split('/').slice(2).join('/');
   // If the request is a smoke-test probe, respond perfunctorily without executing a handler.
   if (request.headers['x-kilotest-smoke']) {
@@ -425,7 +461,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
-      const [timeStamp, jobID] = pathTail.split('/');
+      const [timeStamp, jobID] = pathTail.split('/') as [string, string, ...string[]];
       // If the request is syntactically valid:
       if (isTimeStamp(timeStamp) && isJobID(jobID)) {
         // Get it.
@@ -645,7 +681,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       // Otherwise, if it is a retest recommendation:
       else if (pageName === 'requestRetest.html') {
         const {why} = postData as {why?: string};
-        const [timeStamp, jobID] = pathTail.split('/');
+        const [timeStamp, jobID] = pathTail.split('/') as [string, string, ...string[]];
         // If the request is valid:
         if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
           // Serve response headers.
@@ -672,7 +708,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       // Otherwise, if it is an approval or rejection of a test request:
       else if (pageName === 'recAction.html') {
         const {target, authCode} = postData as {target: string; authCode?: string};
-        const [url, what] = target.split('\t');
+        const [url, what] = target.split('\t') as [string, string];
         // If the request is valid:
         if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
           // Set the non-location headers for a response.
@@ -767,7 +803,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             const reportObj: Partial<Report> = report ?? {};
             const {id, target} = reportObj;
             const {what, url} = (target ?? {}) as Partial<NonNullable<Report['target']>>;
-            const [timeStamp, jobID] = id?.split('-') ?? ['', ''];
+            const [timeStamp, jobID] = (id?.split('-') ?? ['', '']) as [string, string];
             // If the request is syntactically valid:
             if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
               // Get the job the report is from. A missing claimed-job file (the job was

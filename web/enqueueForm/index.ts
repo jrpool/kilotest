@@ -20,7 +20,7 @@ export const answer = async () => {
     // Add a radio button and its URL to the lines.
     lines.push(`${margin}<h2><input type="radio" name="target" value="${url}" required> ${url}</h2>`);
     // Get the recommended target names for the page.
-    const targetNames = new Set(recs[url].map((rec: any) => rec.what));
+    const targetNames = new Set(recs[url]!.map((rec: any) => rec.what));
     // For each recommended target name:
     targetNames.forEach(what => {
       const radio = `<input type="radio" name="target" value="${url}\t${what}" required>`;

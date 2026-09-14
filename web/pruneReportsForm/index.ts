@@ -14,5 +14,5 @@ export const answer = async (_: any, search: string) => reportDeletionForm(impor
   intro: 'Choose the superseded reports to delete.',
   emptyIntro: 'Each target has only 1 report, so there are no superseded reports to delete.',
   failurePrefix: 'Deleting superseded reports failed',
-  isDeletable: (specs, index) => specs[index + 1]?.url === specs[index].url
+  isDeletable: (specs, index) => specs[index + 1]?.url === specs[index]?.url
 });

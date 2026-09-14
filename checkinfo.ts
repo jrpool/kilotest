@@ -56,7 +56,7 @@ const getEslintIgnores = (): string[] => {
   if (!match) {
     return [];
   }
-  return [...match[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  return [...match[1]!.matchAll(/"([^"]+)"/g)].map(m => m[1]!);
 };
 
 // Parses .markdownlint-cli2.jsonc and returns its ignores array.
@@ -67,7 +67,7 @@ const getMarkdownlintIgnores = (): string[] => {
   if (!match) {
     return [];
   }
-  return [...match[1].matchAll(/"([^"]+)"/g)].map(m => m[1]);
+  return [...match[1]!.matchAll(/"([^"]+)"/g)].map(m => m[1]!);
 };
 
 // Runs the Node test runner with the TAP reporter and parses the test count, so dynamically generated tests (e.g., from for-loops) are counted accurately.

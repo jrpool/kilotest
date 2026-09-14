@@ -13,8 +13,8 @@ import {parse} from 'node-html-parser';
 // covering the dead branch on line 55 of listRules/index.ts.
 import * as testaroIssues from 'testaro-issues';
 const originalRules = testaroIssues.rules;
-const patchEngine = Object.keys(originalRules)[0];
-const patchType = Object.keys((originalRules as any)[patchEngine])[0];
+const patchEngine = Object.keys(originalRules)[0]!;
+const patchType = Object.keys((originalRules as any)[patchEngine])[0]!;
 const patchRuleID = '__testWhatEqualsID__';
 const patchedRules = {
   ...originalRules,
@@ -28,7 +28,7 @@ const patchedRules = {
 };
 // Add the patched rule to an existing issue's rule list.
 const originalIssueRules = testaroIssues.issueRules;
-const patchIssueID = Object.keys(originalIssueRules)[0];
+const patchIssueID = Object.keys(originalIssueRules)[0]!;
 const patchedIssueRules = {
   ...originalIssueRules,
   [patchIssueID]: {

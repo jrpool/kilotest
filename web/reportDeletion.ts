@@ -76,7 +76,7 @@ export const reportDeletionForm = async (
   const reportSpecs: ReportSpec[] = [];
   // For each report:
   for (const reportName of reportNames) {
-    const [timeStamp, jobID] = reportName.slice(0, -5).split('-');
+    const [timeStamp, jobID] = reportName.slice(0, -5).split('-') as [string, string];
     // Get a summary of it.
     const reportFacts = await getReportData(timeStamp, jobID);
     // If this failed:

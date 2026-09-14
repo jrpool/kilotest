@@ -23,7 +23,7 @@ const populateQuery = async (issueID: string, query: Record<string, any>) => {
     query.error = 'Issue not found';
     return;
   }
-  const issue = issueSpecs[issueID];
+  const issue = issueSpecs[issueID]!;
   const {wcag, weight, why} = issue;
   query.why = why;
   query.priority = getWeightName(weight);
@@ -34,8 +34,8 @@ const populateQuery = async (issueID: string, query: Record<string, any>) => {
   // For each rule engine with any rules belonging to the issue:
   Object.keys(issueRules[issueID] ?? {}).forEach(engineID => {
     // Add a heading for the rules of the rule engine.
-    lines.push(`${margin}<h3>${ruleEngines[engineID][0]} rules</h3>`);
-    const {invariant, variable} = issueRules[issueID][engineID];
+    lines.push(`${margin}<h3>${ruleEngines[engineID]![0]} rules</h3>`);
+    const {invariant, variable} = issueRules[issueID]![engineID]!;
     const rulesByType: Record<string, any[]> = {
       invariant,
       variable
@@ -43,12 +43,12 @@ const populateQuery = async (issueID: string, query: Record<string, any>) => {
     // For each rule variability:
     Object.keys(rulesByType).forEach(typeName => {
       // If any rules of the rule engine belonging to the issue have it:
-      if (rulesByType[typeName].length) {
+      if (rulesByType[typeName]!.length) {
         // Add a heading for them.
         lines.push(`${margin}<h4>${typeName} rules</h4>`);
         // Add a list of facts about them.
         lines.push(`${margin}<ul>`);
-        rulesByType[typeName].forEach(ruleID => {
+        rulesByType[typeName]!.forEach(ruleID => {
           const {what} = (ruleSpecs as any)[engineID][typeName][ruleID];
           if (what === ruleID) {
             lines.push(`${margin}  <li><code>${htmlSafe(ruleID)}</code></li>`);

@@ -33,7 +33,7 @@ export const answer = async (authCode: string) => {
         // For each entry:
         for (const entry of mapEntries) {
           // Add it to the map.
-          wcagMap[entry[2]] = entry[1];
+          wcagMap[entry[2]!] = entry[1]!;
         }
         // Save the map, replacing any existing one.
         await fs.writeFile(path.join(import.meta.dirname, '..', '..', 'wcagMap.json'), getJSON(wcagMap));

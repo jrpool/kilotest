@@ -11,7 +11,7 @@ import {getAgoString, getDateTimeString, getReportExtracts, populateTemplate} fr
 
 // Returns a retest recommendation form.
 export const answer = async (pageArgs: string) => {
-  const [timeStamp, jobID] = pageArgs.split('/');
+  const [timeStamp, jobID] = pageArgs.split('/') as [string, string];
   // Get data on the latest available reports.
   const reportExtracts = await getReportExtracts(true);
   // Get data on the report whose page is to be retested.

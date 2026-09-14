@@ -154,9 +154,9 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
     // Stop populating the query.
     return;
   }
-  const {testInfo, urlLink, what} = pageInfo;
+  const {testInfo, urlLink, description} = pageInfo;
   // Otherwise, i.e. if it succeeded, add target data to the query.
-  query.target = what;
+  query.target = description;
   query.urlLink = urlLink;
   query.testInfo = testInfo;
   const {
@@ -238,7 +238,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
         // Add the start of a link list to the lines.
         detailsLines.push(`${margin}    <ul class="nav">`);
         const whereQuestionString = 'Where was the issue found?';
-        const labelString = `Where was the ${summary} issue found on the ${what} page?`;
+        const labelString = `Where was the ${summary} issue found on the ${description} page?`;
         const href = `href="/listViolators.html/${issueID}/${timeStamp}/${jobID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;

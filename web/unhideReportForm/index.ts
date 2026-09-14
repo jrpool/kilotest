@@ -54,27 +54,27 @@ export const answer = async (_: any, search: string) => {
     const report = JSON.parse(reportJSON);
     const {id, target} = report;
     const [timeStamp, jobID] = id.split('-');
-    const {what} = target;
+    const {what: description} = target;
     // Add its data to the array.
     reportsData.push({
-      what,
+      description,
       timeStamp,
       jobID
     });
   }
   // Sort the data by page name and then by time stamp.
   reportsData.sort((a, b) => {
-    if (a.what === b.what) {
+    if (a.description === b.description) {
       return a.timeStamp.localeCompare(b.timeStamp);
     }
-    return a.what.localeCompare(b.what, 'en', {sensitivity: 'base'});
+    return a.description.localeCompare(b.description, 'en', {sensitivity: 'base'});
   });
   const lines: string[] = [];
   const margin = ' '.repeat(12);
   // For each report:
   reportsData.forEach(data => {
-    const {jobID, timeStamp, what} = data;
-    const specString = `${what} (job <code>${jobID}</code> at ${timeStamp})`;
+    const {jobID, timeStamp, description} = data;
+    const specString = `${description} (job <code>${jobID}</code> at ${timeStamp})`;
     // Add a line with a radio button to unhide it.
     lines.push(
       `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`

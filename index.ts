@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 import {
   annotateReportObject,
   createLock,
-  deleteRec,
+  deleteTestRequests,
   errorMessage,
   getJobNames,
   getJSON,
@@ -182,7 +182,7 @@ export const routes = {
     '/api/*',
     '/mcp',
     '/reannotate.html',
-    '/recAction.html',
+    '/requestAction.html',
     '/renewWCAG.html',
     '/requestRetest.html/*',
     '/requestTest.html',
@@ -644,13 +644,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       if (postData === null) {
         await serveError({message: 'ERROR: Unreadable request body'}, response, true);
       }
-      // If the request is a test recommendation:
+      // If the request is a test request:
       else if (pageName === 'requestTest.html') {
-        const {what, url, why} = postData as {what?: string; url: string; why?: string};
+        const {description, url, why} = postData as {description?: string; url: string; why?: string};
         // If the request is valid:
-        if (what && url.startsWith('https://') && why) {
+        if (description && url.startsWith('https://') && why) {
           // If a report on the page is already available:
-          if (await isReportAvailable(what, url)) {
+          if (await isReportAvailable(description, url)) {
             // Report the error.
             await serveError({message: 'ERROR: Page has already been tested'}, response, true);
           }
@@ -659,7 +659,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             // Serve headers for a response.
             setHeaders('text/html', pathname, 'ultra');
             // Get the answer data.
-            const answerData = await answer.requestTest(what, url, why);
+            const answerData = await answer.requestTest(description, url, why);
             // If they are valid:
             if (answerData.status === 'ok') {
               // Serve the answer page.
@@ -675,10 +675,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // Otherwise, i.e. if the request is invalid:
         else {
           // Report the error.
-          await serveError({message: 'ERROR: Invalid test recommendation'}, response, true);
+          await serveError({message: 'ERROR: Invalid test request'}, response, true);
         }
       }
-      // Otherwise, if it is a retest recommendation:
+      // Otherwise, if it is a retest request:
       else if (pageName === 'requestRetest.html') {
         const {why} = postData as {why?: string};
         const [timeStamp, jobID] = pathTail.split('/') as [string, string, ...string[]];
@@ -702,23 +702,23 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // Otherwise, i.e. if the request is invalid:
         else {
           // Report the error.
-          await serveError({message: 'ERROR: Invalid retest recommendation'}, response, true);
+          await serveError({message: 'ERROR: Invalid retest request'}, response, true);
         }
       }
       // Otherwise, if it is an approval or rejection of a test request:
-      else if (pageName === 'recAction.html') {
+      else if (pageName === 'requestAction.html') {
         const {target, authCode} = postData as {target: string; authCode?: string};
-        const [url, what] = target.split('\t') as [string, string];
+        const [url, description] = target.split('\t') as [string, string];
         // If the request is valid:
         if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
           // Set the non-location headers for a response.
           setHeaders('text/html', null, 'ultra');
           // If the request is an approval:
-          if (what) {
+          if (description) {
             // Set a location header for a response.
             response.setHeader('content-location', pathname);
-            // Process the approval and get the answer data about the remaining recommendations.
-            const answerData = await answer.enqueue(url, what, authCode);
+            // Process the approval and get the answer data about the remaining requests.
+            const answerData = await answer.enqueue(url, description, authCode);
             // If the answer data are valid:
             if (answerData.status === 'ok') {
               // Serve the test-order page with the remaining recommendations.
@@ -732,8 +732,8 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           }
           // Otherwise, i.e. if it is a rejection:
           else {
-            // Delete the recommendations to test the URL.
-            await deleteRec(url);
+            // Delete the test requests for the URL.
+            await deleteTestRequests(url);
             // Set a location header for a response.
             response.setHeader('content-location', '/enqueueForm.html');
             // Get the answer data.
@@ -802,10 +802,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             const {report} = postData as {report?: Report};
             const reportObj: Partial<Report> = report ?? {};
             const {id, target} = reportObj;
-            const {what, url} = (target ?? {}) as Partial<NonNullable<Report['target']>>;
+            const {what: description, url} = (target ?? {}) as Partial<NonNullable<Report['target']>>;
             const [timeStamp, jobID] = (id?.split('-') ?? ['', '']) as [string, string];
             // If the request is syntactically valid:
-            if (id && isTimeStamp(timeStamp) && isJobID(jobID) && what && url) {
+            if (id && isTimeStamp(timeStamp) && isJobID(jobID) && description && url) {
               // Get the job the report is from. A missing claimed-job file (the job was
               // never claimed, or was already completed) is a normal outcome, handled below
               // as if the job were not assigned to this worker; any other failure to read it

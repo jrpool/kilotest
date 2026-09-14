@@ -6,21 +6,21 @@
     <meta name="publisher" content="Jonathan Robert Pool">
     <meta name="creator" content="Jonathan Robert Pool">
     <meta name="keywords" content="report,accessibility,a11y">
-    <title>Recommendation approval or rejection | Kilotest</title>
+    <title>Request approval or rejection | Kilotest</title>
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
     <main>
-      <h1><a href="/">Kilotest</a>: Recommendation approval or rejection</h1>
-      <p>To approve a test or retest recommendation, check its recommended page name.</p>
-      <p>To approve testing a page that is not yet recommended, first <a href="listReports.html">recommend it</a>.</p>
-      <p>To reject all recommendations for a page, check the radio button of its URL.</p>
-      <form action="/recAction.html" method="post">
+      <h1><a href="/">Kilotest</a>: Request approval or rejection</h1>
+      <p>To approve a test or retest request, check its requested page name.</p>
+      <p>To approve testing a page that has not yet been requested, first <a href="listReports.html">request it</a>.</p>
+      <p>To reject all requests for a page, check the radio button of its URL.</p>
+      <form action="/requestAction.html" method="post">
         <fieldset>
-          <legend>Recommendations</legend>
-          __recs__
-          <p>__noRecs__</p>
+          <legend>Requests</legend>
+          __requests__
+          <p>__noRequests__</p>
         </fieldset>
         <p><label>
           Authorization code:

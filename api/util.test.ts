@@ -95,7 +95,7 @@ test('getReportBasics returns an error for a report whose extract cannot be read
   }
 });
 
-test('processTestRequest returns an error for a duplicate recommendation', async () => {
+test('processTestRequest returns an error for a duplicate request', async () => {
   process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
   // Submit the same request twice; the second should be a duplicate.
   await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');

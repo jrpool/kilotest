@@ -23,8 +23,8 @@ import wcagMap from './wcagMap.json' with {type: 'json'};
 export const dbPath = (): string => process.env.DB_DIR || path.join(import.meta.dirname, 'db');
 // Path of the jobs directory.
 export const jobsPath = (): string => path.join(dbPath(), 'jobs');
-// Path of the recommendations file.
-export const recsPath = (): string => path.join(jobsPath(), 'recs.json');
+// Path of the test requests file.
+export const testRequestsPath = (): string => path.join(jobsPath(), 'testRequests.json');
 // Path of the reports directory.
 export const reportsPath = (): string => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
@@ -269,26 +269,26 @@ export const getPOSTData = (request: import('node:http').IncomingMessage): Promi
     }
   });
 });
-// Returns the waiting test and retest recommendations. A missing recommendations file is a
+// Returns the waiting test and retest requests. A missing test-requests file is a
 // normal, recoverable condition (e.g. on first run) and is replaced with an empty one; a
 // present but unreadable or non-JSON file should never occur, so that failure is thrown.
-export const getRecs = async (): Promise<unknown> => {
-  let recsJSON;
+export const getTestRequests = async (): Promise<unknown> => {
+  let testRequestsJSON;
   try {
-    recsJSON = await fs.readFile(recsPath(), 'utf8');
+    testRequestsJSON = await fs.readFile(testRequestsPath(), 'utf8');
   }
   catch(error: unknown) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      await fs.writeFile(recsPath(), '{}\n');
+      await fs.writeFile(testRequestsPath(), '{}\n');
       return {};
     }
-    throw new Error(`Recommendations file not readable (${errorMessage(error)})`, {cause: error});
+    throw new Error(`Test-requests file not readable (${errorMessage(error)})`, {cause: error});
   }
   try {
-    return JSON.parse(recsJSON);
+    return JSON.parse(testRequestsJSON);
   }
   catch(error: unknown) {
-    throw new Error(`Recommendations file not JSON (${errorMessage(error)})`, {cause: error});
+    throw new Error(`Test-requests file not JSON (${errorMessage(error)})`, {cause: error});
   }
 };
 // Converts a catalog item text to a text-fragment link destination.
@@ -323,13 +323,13 @@ export const htmlSafe = (string: string): string => string ? string
 export const isJobID = (string: string): boolean => {
   return /^[a-z0-9]{3}$/.test(string);
 };
-// Returns whether a job to test a target is eligible for a recommendation.
-export const isRecommendable = async (url: string): Promise<string> => {
+// Returns whether a job to test a target is eligible for a request.
+export const getRequestability = async (url: string): Promise<string> => {
   const jobNames = await getJobNames();
   // For each claimed job:
   for (const fileName of jobNames.claimed) {
     const job = await getObject(path.join(jobsPath(), 'claimed', fileName));
-    // If its URL is that of the recommended target:
+    // If its URL is that of the requested target:
     if ((job as {target: {url: string}}).target.url === url) {
       // Return this.
       return 'claimed';
@@ -338,7 +338,7 @@ export const isRecommendable = async (url: string): Promise<string> => {
   // If no claimed job has the URL of the target, for each queued job:
   for (const fileName of jobNames.queue) {
     const job = await getObject(path.join(jobsPath(), 'queue', fileName));
-    // If its URL is that of the recommended target:
+    // If its URL is that of the requested target:
     if ((job as {target: {url: string}}).target.url === url) {
       // Return this.
       return 'queued';
@@ -389,39 +389,39 @@ export const objectSort = <T extends Record<string, unknown>>(
   return 0;
 });
 // Processes a test or retest request in the UI.
-export const processTestRequest = async (testType: string, dirName: string, what: string, url: string, why: string): Promise<{status: string, message?: string, answerPage?: string}> => {
-  // If the recommendation is valid:
+export const processTestRequest = async (testType: string, dirName: string, description: string, url: string, why: string): Promise<{status: string, message?: string, answerPage?: string}> => {
+  // If the request is valid:
   if (
     ['test', 'retest'].includes(testType)
     && ['Test', 'Retest'].some(end => dirName.endsWith(end))
-    && what
+    && description
     && isURL(url)
     && why.length > 4
   ) {
     // Make the reason display-safe.
     const plainWhy = getPlainText(why);
-    // Update the waiting recommendations as a transaction.
-    const updateResult = await updateRecs(what, url, plainWhy);
-    // If the recommendation was a duplicate:
+    // Update the waiting test requests as a transaction.
+    const updateResult = await addTestRequest(description, url, plainWhy);
+    // If the request was a duplicate:
     if (updateResult.error === 'duplicate') {
       // Return this.
       return {
         status: 'error',
-        message: 'Duplicate recommendation'
+        message: 'Duplicate request'
       };
     }
     // Otherwise, i.e. if it was not a duplicate:
     else {
-      // Log the recommendation.
-      console.log(`Test recommendation received for ${what}: ${plainWhy}`);
+      // Log the request.
+      console.log(`Test request received for ${description}: ${plainWhy}`);
       // Alert a manager about it.
       await sendAlert(
-        `Kilotest: new ${testType} recommendation in the UI`,
-        `Target: ${what}\nURL: ${url}\nReason: ${plainWhy}`
+        `Kilotest: new ${testType} request in the UI`,
+        `Target: ${description}\nURL: ${url}\nReason: ${plainWhy}`
       );
       // Get the populated template.
       const answerPage = await populateTemplate(dirName, {
-        target: what,
+        target: description,
         why: plainWhy
       });
       // Return the populated page.
@@ -433,42 +433,42 @@ export const processTestRequest = async (testType: string, dirName: string, what
   }
   return {
     status: 'error',
-    message: 'Invalid recommendation'
+    message: 'Invalid request'
   };
 };
-// Concurrency lock for the `recs.json` file.
-export const recsLock = createLock();
-// Updates the test recommendations as a transaction.
-export const updateRecs = (what: string, url: string, why: string) => recsLock(async (): Promise<{error?: string}> => {
-  // Get the data on waiting recommendations.
-  const recs = await getRecs() as Record<string, {what: string, why: string, timeStamp: string}[]>;
-  recs[url] ??= [];
-  // If any recommendation has the same description and URL:
-  if (recs[url].some(rec => rec.what === what)) {
+// Concurrency lock for the `testRequests.json` file.
+export const testRequestsLock = createLock();
+// Adds a test request as a transaction.
+export const addTestRequest = (description: string, url: string, why: string) => testRequestsLock(async (): Promise<{error?: string}> => {
+  // Get the data on waiting test requests.
+  const testRequests = await getTestRequests() as Record<string, {description: string, why: string, timeStamp: string}[]>;
+  testRequests[url] ??= [];
+  // If any request has the same description and URL:
+  if (testRequests[url].some(req => req.description === description)) {
     // Return this.
     return {
       error: 'duplicate'
     };
   }
-  // Otherwise, i.e. if the recommendation is not a duplicate, add it to those for the target.
-  recs[url].push({
+  // Otherwise, i.e. if the request is not a duplicate, add it to those for the target.
+  testRequests[url].push({
     timeStamp: getNowStamp(),
-    what,
+    description,
     why
   });
-  // Save the revised recommendations.
-  await fs.writeFile(recsPath(), getJSON(recs));
+  // Save the revised test requests.
+  await fs.writeFile(testRequestsPath(), getJSON(testRequests));
   // Return success.
   return {};
 });
-// Deletes the recommendations for a URL as a transaction.
-export const deleteRec = (url: string) => recsLock(async (): Promise<void> => {
-  // Get the recommendations.
-  const recs = await getRecs() as Record<string, unknown>;
-  // Delete the recommendations to test the URL.
-  delete recs[url];
-  // Save the revised recommendations.
-  await fs.writeFile(recsPath(), getJSON(recs));
+// Deletes the test requests for a URL as a transaction.
+export const deleteTestRequests = (url: string) => testRequestsLock(async (): Promise<void> => {
+  // Get the test requests.
+  const testRequests = await getTestRequests() as Record<string, unknown>;
+  // Delete the requests to test the URL.
+  delete testRequests[url];
+  // Save the revised test requests.
+  await fs.writeFile(testRequestsPath(), getJSON(testRequests));
 });
 
 // REPORT FUNCTIONS
@@ -511,7 +511,7 @@ export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts
 export type ReportExtract = {
   timeStamp: string;
   jobID: string;
-  what: string;
+  description: string;
   url: string;
   reportTime: string;
   superseded?: boolean;
@@ -519,7 +519,7 @@ export type ReportExtract = {
 
 // Page data from an available report.
 export type PageData = {
-  what: string;
+  description: string;
   url: string;
   daysAgo: number | null;
   error?: never;
@@ -527,7 +527,7 @@ export type PageData = {
 
 // HTML strings describing the page data of an available report.
 export type PageDataStrings = {
-  what: string;
+  description: string;
   url: string;
   urlLink: string;
   testInfo: string;
@@ -536,7 +536,7 @@ export type PageDataStrings = {
 
 // Basics about an available report.
 export type ReportData = {
-  what: string;
+  description: string;
   url: string;
   jobName: unknown;
   creationDate: Date | null;
@@ -687,7 +687,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   }
   // Otherwise, i.e. if it succeeded, initialize the data.
   const data = {
-    what: report.target.what,
+    description: report.target.what,
     url: report.target.url,
     jobName: report.id,
     creationDate: getDateTime(timeStamp),
@@ -755,13 +755,13 @@ export const getPageData = async (timeStamp: string, jobID: string): Promise<Pag
     // Return why.
     return report;
   }
-  const {url, what} = report.target;
+  const {what: description, url} = report.target;
   // Get the elapsed time in days since the report was completed, using the
   // report content rather than the file system birth time.
   const daysAgo = getAgoDays(new Date(`20${report.jobData.endTime}Z`));
   // Return the data.
   return {
-    what,
+    description,
     url,
     daysAgo
   };
@@ -781,12 +781,12 @@ export const getPageDataStrings = async (
       error: data.error
     };
   }
-  const {daysAgo, url, what} = data;
+  const {daysAgo, url, description} = data;
   // Otherwise, i.e. if they are valid, get a description of the timestamp.
   const when = getDateTimeString(timeStamp);
   // Return the HTML strings.
   return {
-    what,
+    description,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
     testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago by job <code>${jobID}</code> on ${when}`
@@ -815,12 +815,12 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
     );
     const report = JSON.parse(reportJSON);
     const {target, jobData} = report;
-    const {what, url} = target;
+    const {what: description, url} = target;
     // Return an extract of it.
     return {
       timeStamp,
       jobID,
-      what,
+      description,
       url,
       reportTime: new Date(`20${jobData.endTime}Z`).toISOString()
     };
@@ -849,11 +849,11 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   }
   // Sort the extracts by page description and, secondarily, completion time.
   objectSort(extracts, 'reportTime', 'alpha');
-  objectSort(extracts, 'what', 'alpha');
+  objectSort(extracts, 'description', 'alpha');
   // For each extract:
   extracts.forEach((extract, index) => {
     // If it is superseded:
-    if (extract.what === extracts[index + 1]?.what) {
+    if (extract.description === extracts[index + 1]?.description) {
       // Mark it as such.
       extract.superseded = true;
     }
@@ -862,18 +862,18 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
 // Returns whether a report with a description or URL is available.
-export const isReportAvailable = async (what: string, url: string): Promise<boolean> => {
+export const isReportAvailable = async (description: string, url: string): Promise<boolean> => {
   const reportExtracts = await getReportExtracts();
-  const whats = reportExtracts.map(reportExtract => reportExtract.what);
+  const descriptions = reportExtracts.map(reportExtract => reportExtract.description);
   const miniURLs = reportExtracts.map(reportExtract => minifyURL(reportExtract.url));
-  return whats.includes(what) || miniURLs.includes(minifyURL(url));
+  return descriptions.includes(description) || miniURLs.includes(minifyURL(url));
 };
 // Gets the descriptions of multi-report pages.
 export const getMultiReportWhats = async (): Promise<string[]> => {
   const reportExtracts = await getReportExtracts();
-  const sortedWhats = reportExtracts.map(extract => extract.what).sort();
-  const multiReportWhats = sortedWhats.filter(
-    (what, index) => what !== sortedWhats[index - 1] && what === sortedWhats[index + 1]
+  const sortedDescriptions = reportExtracts.map(extract => extract.description).sort();
+  const multiReportDescriptions = sortedDescriptions.filter(
+    (description, index) => description !== sortedDescriptions[index - 1] && description === sortedDescriptions[index + 1]
   );
-  return multiReportWhats;
+  return multiReportDescriptions;
 };

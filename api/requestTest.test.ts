@@ -14,7 +14,7 @@ import {fixtureDBDir} from '../test/dbFixture.ts';
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
-const recsPath = path.join(fixtureDBDir, 'jobs', 'recs.json');
+const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
 let logged: any[] = [];
 const originalLog = console.log;
 
@@ -22,10 +22,10 @@ before(() => {
   process.env.DB_DIR = fixtureDBDir;
 });
 
-// Reset the recommendations file and capture console.log, so the alert that
+// Reset the test-requests file and capture console.log, so the alert that
 // processTestRequest emits can be observed and tests are order-independent.
 beforeEach(async () => {
-  await fs.writeFile(recsPath, '{}\n');
+  await fs.writeFile(testRequestsPath, '{}\n');
   logged = [];
   console.log = (...args) => logged.push(args.join(' '));
 });
@@ -47,34 +47,34 @@ after(() => {
 test('requestTest rejects an empty description', async () => {
   const body = await response(['', 'https://example.com/test', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
+  assert.ok(!logged.some(line => line.includes('request in the API')));
 });
 
 test('requestTest rejects a description longer than 100 characters', async () => {
   const longWhat = 'x'.repeat(101);
   const body = await response([longWhat, 'https://example.com/test', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
+  assert.ok(!logged.some(line => line.includes('request in the API')));
 });
 
 test('requestTest rejects a URL shorter than 12 characters', async () => {
   const body = await response(['Test Page', 'short', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
+  assert.ok(!logged.some(line => line.includes('request in the API')));
 });
 
 test('requestTest rejects a syntactically invalid URL with the correct length', async () => {
   const body = await response(['Test Page', 'not-a-valid-url', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('invalid URL'));
-  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
+  assert.ok(!logged.some(line => line.includes('request in the API')));
 });
 
 test('requestTest rejects an already-tested page', async () => {
   const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('already been tested'));
-  assert.ok(!logged.some(line => line.includes('recommendation in the API')));
+  assert.ok(!logged.some(line => line.includes('request in the API')));
 });
 
 test('requestTest accepts a valid new page request', async () => {
@@ -83,7 +83,7 @@ test('requestTest accepts a valid new page request', async () => {
   assert.equal(details.error, undefined);
   assert.equal(details['page to be tested'].description, 'Brand New Page');
   assert.ok(logged.some(line =>
-    line.startsWith('WARNING (Kilotest: new test recommendation in the API)')
+    line.startsWith('WARNING (Kilotest: new test request in the API)')
     && line.includes('Brand New Page')
     && line.includes('https://example.com/brandnew')
   ));

@@ -25,7 +25,7 @@ export const answer = async (pageArgs: string, why: string) => {
       message: `No report found for ${timeStamp}-${jobID}`
     };
   }
-  const {url, what} = reportExtract;
+  const {url, description} = reportExtract;
   // Otherwise, i.e. if it succeeded, process the request.
-  return await processTestRequest('retest', import.meta.dirname, what, url, why);
+  return await processTestRequest('retest', import.meta.dirname, description, url, why);
 };

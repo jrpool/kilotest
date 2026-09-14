@@ -12,10 +12,10 @@ import {
   getMultiReportWhats,
   getObject,
   getPageDataStrings,
-  getRecs,
+  getTestRequests,
   getReportData,
   getReportExtracts,
-  isRecommendable,
+  getRequestability,
   jobsPath,
   objectSort,
   populateTemplate
@@ -28,31 +28,31 @@ import path from 'node:path';
 const populateQuery = async (query: Record<string, any>) => {
   const margin = ' '.repeat(8);
   // Initialize the classes of lines.
-  const lines: {recs: string[], queue: string[], claimed: string[], tested: string[]} = {
-    recs: [],
+  const lines: {requests: string[], queue: string[], claimed: string[], tested: string[]} = {
+    requests: [],
     queue: [],
     claimed: [],
     tested: []
   };
-  // Get the recommendations.
-  const recs = await getRecs() as Record<string, {what: string, why: string}[]>;
-  // For each recommended URL:
-  Object.keys(recs).forEach(url => {
-    // For each of its recommendations:
-    recs[url]!.forEach((rec: any) => {
-      const {what, why} = rec;
+  // Get the test requests.
+  const testRequests = await getTestRequests() as Record<string, {description: string, why: string}[]>;
+  // For each requested URL:
+  Object.keys(testRequests).forEach(url => {
+    // For each of its requests:
+    testRequests[url]!.forEach((req: any) => {
+      const {description, why} = req;
       // Add a line.
-      lines.recs.push(`${margin}<li><code>${url}</code> (${what}): ${why}</li>`);
+      lines.requests.push(`${margin}<li><code>${url}</code> (${description}): ${why}</li>`);
     });
   });
   // Sort the lines in alphabetical order by URL and secondarily by proposed name.
-  lines.recs.sort();
+  lines.requests.sort();
   // Add the lines to the query.
-  query.recs = lines.recs.join('\n');
-  // Add a no-recommendations message, if applicable, to the query.
-  query.noRecs = lines.recs.length
-  ? 'Kilotest managers can <a href="enqueueForm.html">approve or reject a recommendation</a>.'
-  : 'No recommendations await approval now.';
+  query.requests = lines.requests.join('\n');
+  // Add a no-requests message, if applicable, to the query.
+  query.noRequests = lines.requests.length
+  ? 'Kilotest managers can <a href="enqueueForm.html">approve or reject a request</a>.'
+  : 'No requests await approval now.';
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
   // For each job category:
@@ -81,10 +81,10 @@ const populateQuery = async (query: Record<string, any>) => {
   const multiReportWhats = await getMultiReportWhats();
   // Sort them primarily by page description and secondarily by completion time.
   let sortedExtracts = objectSort(reportExtracts, 'reportTime', 'alpha');
-  sortedExtracts = objectSort(sortedExtracts, 'what', 'alpha');
+  sortedExtracts = objectSort(sortedExtracts, 'description', 'alpha');
   // For each report:
   for (const extract of sortedExtracts) {
-    const {jobID, timeStamp, url, what} = extract;
+    const {jobID, timeStamp, url, description} = extract;
     // Get data about it.
     const reportData = await getReportData(timeStamp, jobID);
     // If this failed:
@@ -106,10 +106,10 @@ const populateQuery = async (query: Record<string, any>) => {
     // Otherwise, i.e. if it succeeded, add lines about the report.
     lines.tested.push(`${margin}<details>`);
     const daysAgo = getAgoDays(timeStamp);
-    const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {what, url, daysAgo});
+    const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {description, url, daysAgo});
     const {urlLink, testInfo}: any = pageDataStrings;
-    const testText = multiReportWhats.includes(what) ? ` (${testInfo.toLowerCase()})` : '';
-    lines.tested.push(`${margin}  <summary>${what}${testText}</summary>`);
+    const testText = multiReportWhats.includes(description) ? ` (${testInfo.toLowerCase()})` : '';
+    lines.tested.push(`${margin}  <summary>${description}${testText}</summary>`);
     lines.tested.push(`${margin}  <ul>`);
     // Add the URL of the target to the lines.
     lines.tested.push(`${margin}    <li>URL: ${urlLink}</li>`);
@@ -140,13 +140,13 @@ const populateQuery = async (query: Record<string, any>) => {
     if (issueCount) {
       // Add a question link about the reported issues to the lines.
       const href = `href="listIssues.html/${timeStamp}/${jobID}"`;
-      const label = `aria-label="What ${issueCountString} reported for the ${what} page?"`;
+      const label = `aria-label="What ${issueCountString} reported for the ${description} page?"`;
       const questionString = issueCount === 1 ? 'was the issue' : 'were the issues';
       const link = `<a ${href} ${label}>What ${questionString}?</a>`;
       lines.tested.push(`${margin}    <li>${link}</li>`);
     }
     // Add the status of, and if necessary a question link about, retesting to the lines.
-    const status = await isRecommendable(url);
+    const status = await getRequestability(url);
     let retestString: string;
     if (status === 'claimed') {
       retestString = 'Currently being retested';

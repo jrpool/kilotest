@@ -37,7 +37,7 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/api/*': '/api/requestFeature',
     '/mcp': '/mcp',
     '/reannotate.html': '/reannotate.html',
-    '/recAction.html': '/recAction.html',
+    '/requestAction.html': '/requestAction.html',
     '/renewWCAG.html': '/renewWCAG.html',
     '/requestRetest.html/*': '/requestRetest.html/260101T0001/ct',
     '/requestTest.html': '/requestTest.html',
@@ -51,12 +51,12 @@ const postBodies: Record<string, object> = {
   '/api/requestFeature': {feature: 'smoke test'},
   '/mcp': {},
   '/reannotate.html': {authCode: 'invalid'},
-  '/recAction.html': {
+  '/requestAction.html': {
     target: 'https://smoketest.example.com\tSmoke Test Page', authCode: 'invalid'
   },
   '/renewWCAG.html': {authCode: 'invalid'},
   '/requestRetest.html/260101T0001/ct': {why: 'smoke test'},
-  '/requestTest.html': {what: 'Smoke Test Page', url: 'https://smoketest.example.com', why: 'smoke test'},
+  '/requestTest.html': {description: 'Smoke Test Page', url: 'https://smoketest.example.com', why: 'smoke test'},
   '/tutorialComment.html': {content: 'smoke test'},
   '/worker/job': {},
   '/worker/report': {}

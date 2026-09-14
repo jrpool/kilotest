@@ -19,14 +19,14 @@ type ResponseContent = z.infer<typeof requestTestResponseSchema>['response conte
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [what = '', url = '', reason = ''] = args;
+  const [description = '', url = '', reason = ''] = args;
   const thisHost = getThisHost();
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your request'];
   let requestDisposition: ResponseContent['disposition of your request'] = null;
-  const whatLength = what.length;
+  const descriptionLength = description.length;
   // If the description is empty or too long:
-  if (!whatLength || whatLength > 100) {
+  if (!descriptionLength || descriptionLength > 100) {
     requestDetails = {
       error: 'request invalid: your description of the page is not between 1 and 100 characters long'
     };
@@ -49,7 +49,7 @@ export const response = async (args: string[]) => {
     const reportExtracts = await getReportExtracts();
     // If any report is on a page with the specified description and URL:
     if (
-      reportExtracts.some(extract => extract.what === what && extract.url === url)
+      reportExtracts.some(extract => extract.description === description && extract.url === url)
     ) {
       requestDetails = {
         error: 'request invalid: the page has already been tested and its report is available'
@@ -58,12 +58,12 @@ export const response = async (args: string[]) => {
     // Otherwise, i.e. if none is on the page:
     else {
       // Process the request.
-      await processTestRequest('test', what, url, reason);
+      await processTestRequest('test', description, url, reason);
       // Add details about the request.
       requestDetails = {
         'date and time received': new Date().toISOString(),
         'page to be tested': {
-          description: what,
+          description,
           URL: url
         },
         'reason why the page should be tested': reason
@@ -90,7 +90,7 @@ export const response = async (args: string[]) => {
       method: 'POST',
       URL: `${thisHost}/api/requestTest`,
       body: {
-        description: what,
+        description,
         URL: url,
         reason
       },

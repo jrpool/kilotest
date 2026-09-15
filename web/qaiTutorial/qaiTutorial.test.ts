@@ -120,3 +120,21 @@ test('handleComment creates comments.json when it does not exist', {timeout: 500
   assert.equal(comments.length, 1);
   assert.equal(comments[0].content, 'Test comment for missing file');
 });
+
+test('getCommentsPath uses environment variable when set', {timeout: 500}, async () => {
+  const envValue = process.env.QAI_TUTORIAL_COMMENTS_PATH;
+  assert.ok(envValue);
+  assert.ok(getCommentsPath().includes('test/fixtures/comments'));
+});
+
+test('getCommentsPath falls back to default path when environment variable is not set', {timeout: 500}, async () => {
+  const savedEnv = process.env.QAI_TUTORIAL_COMMENTS_PATH;
+  delete process.env.QAI_TUTORIAL_COMMENTS_PATH;
+  try {
+    const path = getCommentsPath();
+    assert.ok(path.includes('comments.json'));
+    assert.ok(path.includes('web/qaiTutorial'));
+  } finally {
+    process.env.QAI_TUTORIAL_COMMENTS_PATH = savedEnv;
+  }
+});

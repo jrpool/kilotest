@@ -197,9 +197,10 @@ The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`. Lea
 kilotest.com {
   # Enable Zstandard and Gzip compression of responses.
   encode zstd gzip
-  # Specify the only paths of forwardable requests.
+  # Specify the only paths of forwardable requests. HEAD is allowed along with
+  # GET because health monitors (e.g. UptimeRobot) check availability with HEAD.
   @allowedGET {
-    method GET
+    method GET HEAD
     path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorialWeb/images/* /tutorialAI/images/* /qai /qai/comments /favicon.* /style.css /sitemap.xml
   }
   @allowedPOST {
@@ -277,7 +278,7 @@ When a pull request adds a new route to `index.js`, the Caddyfile at `/etc/caddy
 1. The smoke test workflow runs and verifies that all paths, including the new one, are forwarded by Caddy.
 1. If the Caddyfile was not updated, the smoke test reports a bare 404 for the new path, the required status check fails, and the pull request cannot merge.
 
-## Periodic monitoring
+## Smoke testing
 
 A periodic GitHub Actions workflow runs smoke tests daily against the deployed service. This workflow is defined in `.github/workflows/periodic-smoke-tests.yml` and runs on a daily schedule at 14:14 UTC. It can also be triggered manually from the GitHub Actions interface.
 
@@ -285,14 +286,16 @@ The periodic smoke tests validate that the deployed Kilotest service is function
 
 The workflow checks all valid GET and POST paths by running `smokeTest.ts` against the deployed service at `kilotest.com`, verifying that Caddy forwards each path to Kilotest rather than returning a bare 404.
 
-### Health monitoring
+## Health monitoring
 
-The deployment is monitored for external health and availability using [UptimeRobot](https://dashboard.uptimerobot.com/). The monitoring target is the site root `/`. UptimeRobot checks this target at regular intervals and sends an email alert to the maintainer in either of two cases:
+The deployment is monitored for external health and availability using [UptimeRobot](https://dashboard.uptimerobot.com/). The monitoring target is the site root `/`. UptimeRobot checks this target hourly with a `HEAD` request and sends an email alert to the maintainer in either of two cases:
 
 - The response status code is 502 (Bad Gateway). This typically indicates that Caddy cannot reach the Kilotest application on `localhost:3000`, suggesting the application process has crashed or become unresponsive.
 - The request times out (connection timeout). This suggests a network issue, a host down, or a severely degraded application.
 
 UptimeRobot also sends a recovery message when the service recovers and a subsequent check succeeds after a prior failure.
+
+This monitoring service requires `Caddyfile` to permit `HEAD` requests, not only `GET` requests, to the root path.
 
 ## Performance
 

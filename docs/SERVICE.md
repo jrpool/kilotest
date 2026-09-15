@@ -216,7 +216,7 @@ kilotest.com {
   }
   @allowedPOST {
     method POST
-    path /mcp /requestRetest.html/* /requestTest.html /recAction.html /reannotate.html /renewWCAG.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
+    path /mcp /requestRetest.html/* /requestTest.html /requestAction.html /reannotate.html /renewWCAG.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
   }
   # Respond to OPTIONS requests.
   @allowedOPTIONS method OPTIONS

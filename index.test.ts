@@ -1106,28 +1106,75 @@ test('GET /test.html.bak matches isPathAllowed but falls through to catch-all', 
   assert.ok(res.body.includes('Invalid GET request'));
 });
 
-test('GET /mcp returns a response from the MCP handler', async () => {
-  const res = await request('GET', '/mcp');
-  // The MCP handler responds to GET requests, typically with an error
-  // about acceptable content types or a similar MCP protocol message.
-  assert.ok(res.statusCode >= 400);
+test('GET /mcp returns a JSON-RPC 405 error instead of opening an SSE stream', async () => {
+  for (const accept of ['text/html', 'application/json, text/event-stream']) {
+    const res = await request('GET', '/mcp', null, {accept});
+    assert.equal(res.statusCode, 405);
+    const body = jsonBody(res);
+    assert.equal(body.jsonrpc, '2.0');
+    assert.equal(body.error.code, -32000);
+  }
 });
 
-test('POST /mcp returns a response from the MCP handler', async () => {
+test('POST /mcp without an SSE-capable Accept header returns a JSON-RPC 406 error', async () => {
+  const res = await request('POST', '/mcp', {jsonrpc: '2.0', method: 'initialize', id: 1, params: {}});
+  assert.equal(res.statusCode, 406);
+  assert.equal(jsonBody(res).error.code, -32000);
+});
+
+test('POST /mcp with malformed JSON returns a JSON-RPC 400 parse error', async () => {
+  const res = await request('POST', '/mcp', '{not json', {
+    'content-type': 'application/json',
+    accept: 'application/json, text/event-stream'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.equal(jsonBody(res).error.code, -32700);
+});
+
+test('POST /mcp with a non-JSON-RPC body returns a JSON-RPC 400 error', async () => {
+  const res = await request('POST', '/mcp', {foo: 'bar'}, {accept: 'application/json, text/event-stream'});
+  assert.equal(res.statusCode, 400);
+  assert.equal(jsonBody(res).error.code, -32700);
+});
+
+test('POST /mcp with a non-JSON content type returns a JSON-RPC 415 error', async () => {
+  const res = await request('POST', '/mcp', 'x=1', {
+    'content-type': 'application/x-www-form-urlencoded',
+    accept: 'application/json, text/event-stream'
+  });
+  assert.equal(res.statusCode, 415);
+  assert.equal(jsonBody(res).error.code, -32000);
+});
+
+test('POST /mcp with an unknown JSON-RPC method returns a -32601 error', async () => {
+  const res = await request('POST', '/mcp', {jsonrpc: '2.0', method: 'bogus/method', id: 9}, {
+    accept: 'application/json, text/event-stream'
+  });
+  assert.equal(res.statusCode, 200);
+  const dataLine = res.body.split('\n').find((line: string) => line.startsWith('data: '));
+  assert.ok(dataLine);
+  const message = JSON.parse(dataLine.slice(6));
+  assert.equal(message.error.code, -32601);
+});
+
+test('POST /mcp with a valid initialize request returns server info via SSE', async () => {
   const res = await request('POST', '/mcp', {
     jsonrpc: '2.0',
     method: 'initialize',
     id: 1,
     params: {
-      protocolVersion: '2024-11-05',
+      protocolVersion: '2025-06-18',
       capabilities: {},
       clientInfo: {name: 'test-client', version: '1.0'}
     }
   }, {
     accept: 'application/json, text/event-stream'
   });
-  // The MCP handler should process the initialize request.
-  assert.ok(res.statusCode === 200 || res.statusCode >= 400);
+  assert.equal(res.statusCode, 200);
+  const dataLine = res.body.split('\n').find((line: string) => line.startsWith('data: '));
+  assert.ok(dataLine);
+  const message = JSON.parse(dataLine.slice(6));
+  assert.equal(message.result.serverInfo.name, 'Kilotest');
 });
 
 // TESTS: answer error branches

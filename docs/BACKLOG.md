@@ -4,6 +4,18 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed are preserved for about 2 weeks in case of production bugs.
 
+## Deploy revisions
+
+Deploy the revisions to the codebase.
+
+This requires:
+
+- Update the configuration of UptimeRobot to monitor Kilotest as a whole via the site root. Use the UptimeRobot console to reconfigure the existing monitor from `https://kilotest.com/qai` to the Kilotest path `https://kilotest.com/`, so that it continues monitoring service health after the QAI integration is deployed and verified live.
+- Merge the changes to `main`.
+- Pull the new `main` branch to the server.
+- Update the actual server copy of `/etc/caddy/Caddyfile` and run `systemctl reload caddy`.
+- Restart Kilotest in PM2.
+
 ## Add observability of request metrics
 
 Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.

@@ -106,7 +106,6 @@ const answer: {
   requestTestForm: PageHandler;
   rewindReportsForm: PageHandler;
   unhideReportForm: PageHandler;
-  tutorial: PageHandler;
   [key: string]: PageHandler | undefined;
 } = {
   ai0BalanceForm,

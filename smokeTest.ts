@@ -1,12 +1,13 @@
 /*
   smokeTest.ts
-  Sends requests to all valid GET and POST paths on the deployed server and verifies that Caddy forwards them to Kilotest (i.e., the response is not a bare Caddy 404).
+  Sends requests to all valid GET and POST paths on the deployed server and verifies that Caddy forwards them to Kilotest (i.e., the response is not a bare Caddy 404), then sends a real MCP initialize request to verify end-to-end MCP delivery through the proxy.
 */
 
 // IMPORTS
 
 import https from 'node:https';
 import {routes} from './index.ts';
+import {mcpPath} from './mcp.ts';
 
 // CONSTANTS
 
@@ -66,6 +67,17 @@ const postBodies: Record<string, object> = {
   '/worker/job': {},
   '/worker/report': {}
 };
+// The JSON-RPC initialize request sent by the positive MCP probe.
+const mcpInitialize = {
+  jsonrpc: '2.0',
+  method: 'initialize',
+  id: 'smoke',
+  params: {
+    protocolVersion: '2025-06-18',
+    capabilities: {},
+    clientInfo: {name: 'kilotest-smoke', version: '1.0'}
+  }
+};
 
 // FUNCTIONS
 
@@ -100,6 +112,60 @@ const sendRequest = (method: string, requestPath: string) =>
 const isCaddy404 = (result: {statusCode: number | undefined, bodyLength: number}) =>
   result.statusCode === 404 && result.bodyLength === 0;
 
+// Sends a request to the MCP endpoint without the smoke header and returns the status code and body.
+const sendMCPRequest = (method: string, accept: string, body: object | null = null) =>
+  new Promise<{statusCode: number | undefined, body: string}>((resolve, reject) => {
+    const bodyData = body ? JSON.stringify(body) : null;
+    const headers: Record<string, string | number> = {accept};
+    if (bodyData) {
+      headers['content-type'] = 'application/json';
+      headers['content-length'] = Buffer.byteLength(bodyData);
+    }
+    const req = https.request({
+      method,
+      host: process.env.SMOKE_HOST || 'kilotest.com',
+      path: mcpPath,
+      headers
+    }, response => {
+      const chunks: Buffer[] = [];
+      response.on('data', chunk => chunks.push(chunk));
+      response.on('end', () => {
+        resolve({statusCode: response.statusCode, body: chunks.join('')});
+      });
+    });
+    req.on('error', reject);
+    req.end(bodyData || '');
+  });
+
+// Returns whether an MCP probe response is a valid initialize result from Kilotest.
+const isValidMCPResponse = (result: {statusCode: number | undefined, body: string}) => {
+  if (result.statusCode !== 200) {
+    return false;
+  }
+  try {
+    const dataLine = result.body.split('\n').find(line => line.startsWith('data: '));
+    const message = JSON.parse(dataLine ? dataLine.slice(6) : result.body);
+    return message?.result?.serverInfo?.name === 'Kilotest';
+  }
+  catch {
+    return false;
+  }
+};
+
+// Returns whether a response is a JSON-RPC protocol error, the expected rejection of an invalid MCP request.
+const isMCPErrorResponse = (result: {statusCode: number | undefined, body: string}) => {
+  if (result.statusCode === undefined || result.statusCode < 400 || result.statusCode >= 500) {
+    return false;
+  }
+  try {
+    const message = JSON.parse(result.body);
+    return message?.jsonrpc === '2.0' && typeof message?.error?.code === 'number';
+  }
+  catch {
+    return false;
+  }
+};
+
 // EXECUTION
 
 (async () => {
@@ -130,6 +196,39 @@ const isCaddy404 = (result: {statusCode: number | undefined, bodyLength: number}
       }
     }
   }
-  console.log(`\n=== ${failures === 0 ? 'All paths forwarded' : `${failures} failure(s)`} ===`);
+  // Send a real MCP initialize request to verify routing, header forwarding, and SSE delivery.
+  console.log('\n=== MCP probes ===');
+  try {
+    const probe = await sendMCPRequest('POST', 'application/json, text/event-stream', mcpInitialize);
+    if (isValidMCPResponse(probe)) {
+      console.log(`PASS: POST ${mcpPath} initialize -> ${probe.statusCode} (valid MCP response)`);
+    }
+    else {
+      console.log(`FAIL: POST ${mcpPath} initialize -> ${probe.statusCode} (body: ${probe.body.slice(0, 120)})`);
+      failures++;
+    }
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`FAIL: POST ${mcpPath} initialize -> error: ${message}`);
+    failures++;
+  }
+  // Send a browser-style GET to verify that invalid MCP requests get JSON-RPC errors end-to-end.
+  try {
+    const probe = await sendMCPRequest('GET', 'text/html');
+    if (isMCPErrorResponse(probe)) {
+      console.log(`PASS: GET ${mcpPath} browser -> ${probe.statusCode} (JSON-RPC error)`);
+    }
+    else {
+      console.log(`FAIL: GET ${mcpPath} browser -> ${probe.statusCode} (body: ${probe.body.slice(0, 120)})`);
+      failures++;
+    }
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`FAIL: GET ${mcpPath} browser -> error: ${message}`);
+    failures++;
+  }
+  console.log(`\n=== ${failures === 0 ? 'All checks passed' : `${failures} failure(s)`} ===`);
   process.exit(failures === 0 ? 0 : 1);
 })();

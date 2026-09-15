@@ -208,6 +208,16 @@ export const createMCPServer = (): McpServer => {
 };
 // Handles an MCP request.
 export const handleMCP = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
+  // If the request is not a POST request: reject it, because this stateless server has no sessions for GET-opened SSE streams or DELETE requests to act on, and leaving such streams open would leak resources.
+  if (request.method !== 'POST') {
+    response.writeHead(405, {allow: 'POST', 'content-type': 'application/json'});
+    response.end(JSON.stringify({
+      jsonrpc: '2.0',
+      error: {code: -32000, message: 'Method Not Allowed: only POST requests are accepted'},
+      id: null
+    }));
+    return;
+  }
   const transport = new StreamableHTTPServerTransport({sessionIdGenerator: undefined});
   const server = createMCPServer();
   await server.connect(transport);

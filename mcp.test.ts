@@ -277,3 +277,32 @@ test('handleMCP executes listReports tool via tools/call', async () => {
     await closeMCPServer(server);
   }
 });
+
+test('handleMCP rejects a GET request with a 405 JSON-RPC error', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    const res = await new Promise<any>((resolve, reject) => {
+      const req = http.request({
+        port,
+        method: 'GET',
+        path: '/mcp',
+        headers: {accept: 'application/json, text/event-stream'}
+      }, response => {
+        let data = '';
+        response.on('data', chunk => {
+          data += chunk;
+        });
+        response.on('end', () => resolve({statusCode: response.statusCode, body: data}));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    assert.equal(res.statusCode, 405);
+    const message = JSON.parse(res.body);
+    assert.equal(message.error.code, -32000);
+  }
+  finally {
+    await closeMCPServer(server);
+  }
+});

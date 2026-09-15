@@ -16,6 +16,10 @@ This requires:
 - Update the actual server copy of `/etc/caddy/Caddyfile` (as root) and run `sudo systemctl reload caddy`.
 - Restart Kilotest in PM2.
 
+## Serve explanation page for human MCP requests
+
+When the `/mcp` path is requested without a `text/event-stream` accept header, serve an HTML page explaining that the endpoint is for AI agents and providing a link to the AI tutorial.
+
 ## Add observability of request metrics
 
 Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.

@@ -13,7 +13,7 @@ This requires:
 - Update the configuration of [UptimeRobot](https://dashboard.uptimerobot.com/) to monitor Kilotest as a whole via the site root. Reconfigure the existing monitor from `https://kilotest.com/qai` to the Kilotest path `https://kilotest.com/`, so that it continues monitoring service health.
 - Merge the changes to `main`.
 - Pull the new `main` branch to the server.
-- Update the actual server copy of `/etc/caddy/Caddyfile` and run `systemctl reload caddy`.
+- Update the actual server copy of `/etc/caddy/Caddyfile` (as root) and run `sudo systemctl reload caddy`.
 - Restart Kilotest in PM2.
 
 ## Add observability of request metrics

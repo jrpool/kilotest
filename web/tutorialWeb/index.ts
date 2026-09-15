@@ -12,7 +12,7 @@ import path from 'node:path';
 
 // FUNCTIONS (helpers)
 
-const getCommentsPath = () => process.env.TUTORIAL_WEB_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
+const getCommentsPath = () => process.env.TUTORIAL_WEB_COMMENTS_PATH || path.join(import.meta.dirname, '../../db/comments/tutorialWeb.json');
 
 // FUNCTIONS
 

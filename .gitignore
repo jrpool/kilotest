@@ -11,8 +11,6 @@ node_modules/
 /db/
 results/
 ai0Balance.json
-web/tutorialWeb/comments.json
-web/tutorialAI/comments.json
 test/fixtures/comments/
 
 # Test coverage reports

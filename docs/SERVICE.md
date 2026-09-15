@@ -279,7 +279,7 @@ When a pull request adds a new route to `index.js`, the Caddyfile at `/etc/caddy
 
 ## Periodic monitoring
 
-In addition to the smoke test that runs before each pull request merge, a periodic GitHub Actions workflow runs smoke tests daily against the deployed service. This workflow is defined in `.github/workflows/periodic-smoke-tests.yml` and runs on a daily schedule at 12:00 PM UTC (noon). It can also be triggered manually from the GitHub Actions interface.
+A periodic GitHub Actions workflow runs smoke tests daily against the deployed service. This workflow is defined in `.github/workflows/periodic-smoke-tests.yml` and runs on a daily schedule at 14:14 UTC. It can also be triggered manually from the GitHub Actions interface.
 
 The periodic smoke tests validate that the deployed Kilotest service is functioning correctly end-to-end, independent of code deployments. Code and infrastructure are deployed together, and this periodic check validates them independently. If a deployment introduces a regression—for example, a missing Caddyfile update or a broken route—the periodic tests will detect it within 24 hours.
 
@@ -287,7 +287,7 @@ The workflow checks all valid GET and POST paths by running `smokeTest.ts` again
 
 ### Health monitoring
 
-The deployment is monitored for external health and availability using UptimeRobot. The monitoring target should be a path on the deployed service (for example, the site root `/` or a new `qaiTutorial.html` page) rather than any individual application. Once the QAI integration is deployed and verified live, reconfigure the UptimeRobot monitor to track Kilotest's health as a whole via one of its public paths, rather than the previous separate monitor for the now-integrated QAI service.
+The deployment is monitored for external health and availability using UptimeRobot. The monitoring target should be a path on the deployed service that returns an HTTP 2xx or 3xx status code when the service is healthy (for example, the site root `/`). UptimeRobot checks this target at regular intervals; any response with a 4xx or 5xx status code, or a connection failure, is reported as an outage.
 
 ## Performance
 

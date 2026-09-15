@@ -23,7 +23,7 @@ const sanitize = (str: string) => str
   .trim()
   .slice(0, 1000);
 
-// Returns the QAI tutorial page.
+// Returns the AI tutorial page.
 export const answer = async () => {
   const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
   return {
@@ -32,7 +32,7 @@ export const answer = async () => {
   };
 };
 
-// Sanitizes and saves a QAI tutorial comment to comments.json.
+// Sanitizes and saves an AI tutorial comment to comments.json.
 export const handleComment = async (content: unknown) => {
   if (!content || typeof content !== 'string') {
     return {status: 'error', message: 'No content provided'};
@@ -73,6 +73,6 @@ export const handleComment = async (content: unknown) => {
   // Save the revised comments.
   await fs.writeFile(commentsPath, getJSON(comments));
   // Send an alert to the manager.
-  await sendAlert('New QAI tutorial comment received', 'A new QAI tutorial comment has been received.');
+  await sendAlert('New AI tutorial comment received', 'A new AI tutorial comment has been received.');
   return {status: 'ok'};
 };

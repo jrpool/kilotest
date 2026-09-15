@@ -138,3 +138,40 @@ test('getCommentsPath falls back to default path when environment variable is no
     process.env.QAI_TUTORIAL_COMMENTS_PATH = savedEnv;
   }
 });
+
+test('handleComment uses fallback path when environment variable is not set', {timeout: 500}, async () => {
+  const savedEnv = process.env.QAI_TUTORIAL_COMMENTS_PATH;
+  const defaultPath = path.join(import.meta.dirname, 'comments.json');
+  const backupPath = defaultPath + '.backup';
+
+  // Backup the default comments file if it exists.
+  let hadDefault = false;
+  try {
+    const content = await fs.readFile(defaultPath, 'utf8');
+    await fs.writeFile(backupPath, content);
+    hadDefault = true;
+  } catch {
+    // File doesn't exist, that's fine.
+  }
+
+  delete process.env.QAI_TUTORIAL_COMMENTS_PATH;
+  try {
+    // Write a test file to the default location.
+    await fs.writeFile(defaultPath, '[]\n');
+    const result = await handleComment('Test with fallback path');
+    assert.equal(result.status, 'ok');
+    const comments = JSON.parse(await fs.readFile(defaultPath, 'utf8'));
+    assert.equal(comments.length, 1);
+    assert.equal(comments[0].content, 'Test with fallback path');
+  } finally {
+    // Restore the original state.
+    if (hadDefault) {
+      const backup = await fs.readFile(backupPath, 'utf8');
+      await fs.writeFile(defaultPath, backup);
+      await fs.unlink(backupPath);
+    } else {
+      await fs.unlink(defaultPath).catch(() => {});
+    }
+    process.env.QAI_TUTORIAL_COMMENTS_PATH = savedEnv;
+  }
+});

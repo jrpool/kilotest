@@ -123,6 +123,21 @@ test('handleComment creates comments.json when it does not exist', {timeout: 500
   assert.equal(comments[0].content, 'Test comment for missing file');
 });
 
+test('handleComment creates the comments directory when it does not exist', {timeout: 500}, async () => {
+  const savedEnv = process.env.TUTORIAL_WEB_COMMENTS_PATH;
+  const missingDirPath = path.join(testDir, 'new-subdir', 'tutorialWeb.json');
+  process.env.TUTORIAL_WEB_COMMENTS_PATH = missingDirPath;
+  try {
+    const result = await handleComment('Test comment for missing directory');
+    assert.equal(result.status, 'ok');
+    const comments = JSON.parse(await fs.readFile(missingDirPath, 'utf8'));
+    assert.equal(comments[0].content, 'Test comment for missing directory');
+  } finally {
+    process.env.TUTORIAL_WEB_COMMENTS_PATH = savedEnv;
+    await fs.rm(path.dirname(missingDirPath), {recursive: true, force: true});
+  }
+});
+
 test('getCommentsPath uses environment variable when set', {timeout: 500}, async () => {
   const envValue = process.env.TUTORIAL_WEB_COMMENTS_PATH;
   assert.ok(envValue);
@@ -134,8 +149,8 @@ test('getCommentsPath falls back to default path when environment variable is no
   delete process.env.TUTORIAL_WEB_COMMENTS_PATH;
   try {
     const path = getCommentsPath();
-    assert.ok(path.includes('comments.json'));
-    assert.ok(path.includes('web/tutorial'));
+    assert.ok(path.includes('db/comments'));
+    assert.ok(path.includes('tutorialWeb.json'));
   } finally {
     process.env.TUTORIAL_WEB_COMMENTS_PATH = savedEnv;
   }
@@ -143,7 +158,7 @@ test('getCommentsPath falls back to default path when environment variable is no
 
 test('handleComment uses fallback path when environment variable is not set', {timeout: 500}, async () => {
   const savedEnv = process.env.TUTORIAL_WEB_COMMENTS_PATH;
-  const defaultPath = path.join(import.meta.dirname, 'comments.json');
+  const defaultPath = path.join(import.meta.dirname, '../../db/comments/tutorialWeb.json');
   const backupPath = defaultPath + '.backup';
 
   // Backup the default comments file if it exists.
@@ -159,6 +174,7 @@ test('handleComment uses fallback path when environment variable is not set', {t
   delete process.env.TUTORIAL_WEB_COMMENTS_PATH;
   try {
     // Write a test file to the default location.
+    await fs.mkdir(path.dirname(defaultPath), {recursive: true});
     await fs.writeFile(defaultPath, '[]\n');
     const result = await handleComment('Test with fallback path');
     assert.equal(result.status, 'ok');

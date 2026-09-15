@@ -70,6 +70,8 @@ export const handleComment = async (content: unknown) => {
     dateTime: new Date().toISOString(),
     content: sanitized
   });
+  // Ensure the comments directory exists.
+  await fs.mkdir(path.dirname(commentsPath), {recursive: true});
   // Save the revised comments.
   await fs.writeFile(commentsPath, getJSON(comments));
   // Send an alert to the manager.

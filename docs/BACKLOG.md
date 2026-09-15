@@ -2,11 +2,17 @@
 
 Engineering tasks and risks that are not yet scheduled.
 
-## QAI integration
+Items marked completed are preserved for about 2 weeks in case of production bugs.
+
+## Add observability of request metrics
+
+Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
+
+## QAI integration (completed)
 
 The `jrpool/qai` repository is independent of this `jrpool/kilotest` repository, and they are published as two distict packages. That separation is due to an organizational requirement that no longer exists. Since the QAI application is a tutorial showing users how to use Kilotest, and the tutorial of Kilotest also shows users how to use Kilotest, it is appropriate to convert QAI to a part of the Kilotest codebase. QAI is currently deployed with the URL `https://kilotest.com/qai`, and that would not need to change. `Caddyfile` would be simplified (see the copy in `docs/SERVICE.md`). The QAI code would need to be copied into Kilotest. Any architectural incompatibilities would need to be discovered and resolved. Locally, `qai` is a sibling repository of `kilotest` on this host. Note that QAI health is currently monitored by UptimeRobot, and periodic health monitoring of Kilotest is proposed as the next backlog item after this one, so health monitoring should be handled in such a way that it will be appropriate after both backlog items are completed.
 
-## Implement periodic monitoring
+## Implement periodic monitoring (completed)
 
 Status: Implementation complete; UptimeRobot reconfiguration remains.
 
@@ -16,13 +22,9 @@ Documentation for the periodic monitoring workflow has been added to `docs/SERVI
 
 Remaining task: update the configuration of UptimeRobot to monitor Kilotest as a whole via the site root. Use the UptimeRobot console to reconfigure the existing monitor from `https://kilotest.com/qai` to the Kilotest path `https://kilotest.com/`, so that it continues monitoring service health after the QAI integration is deployed and verified live.
 
-## Add observability of request metrics
-
-Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
-
 ## Details
 
-### QAI integration details
+### QAI integration details (completed)
 
 #### Context
 

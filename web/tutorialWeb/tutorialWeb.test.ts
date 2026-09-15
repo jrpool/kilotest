@@ -29,8 +29,7 @@ before(async () => {
 });
 
 after(async () => {
-  // Clean up test fixture directory.
-  await fs.rm(testDir, {recursive: true, force: true});
+  // Cleanup is handled by index.test.ts since multiple test files use this shared directory.
 });
 
 // TESTS

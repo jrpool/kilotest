@@ -314,7 +314,7 @@
           <p>We shall look for this single issue on a single web page. It is the home page of a JavaScript-rendered WordPress site belonging to a nonprofit organization. It was tested in May 2026.</p>
           <p>The page contains a form for requesting a guide published by the organization. This form is not present in the raw HTML that the server delivers, but is injected into the page by a JavaScript plugin after the browser has loaded and executed the page scripts. The form contains one visible user-facing input field. Here is a screenshot of the form:</p>
           <img
-            src="/tutorial/images/newsletter-form.png"
+            src="/tutorialWeb/images/newsletter-form.png"
             alt="Career-guide request form containing an input with placeholder text Enter your email and a button labelled Get the career guide"
             width="602"
             height="57"
@@ -611,7 +611,7 @@
         }
         commentSubmit.disabled = true;
         try {
-          const response = await fetch('/tutorialComment.html', {
+          const response = await fetch('/tutorialWebComment.html', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({content})

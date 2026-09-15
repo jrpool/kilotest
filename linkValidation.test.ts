@@ -117,22 +117,48 @@ const findHtmlFiles = (dir: string): string[] => {
 const htmlFiles = findHtmlFiles(projectRoot);
 
 test('All internal links in HTML files point to valid paths', () => {
-  const brokenLinks: Array<{file: string; href: string}> = [];
+  const brokenLinks: Array<{file: string; href: string; type: string}> = [];
 
   for (const htmlFile of htmlFiles) {
     const content = fs.readFileSync(htmlFile, 'utf-8');
     const relativePath = path.relative(projectRoot, htmlFile);
 
-    // Use regex to find all href attributes (simple approach, not DOM parsing)
+    // Find all href attributes
     const hrefRegex = /href=["']([^"']+)["']/g;
     let match: RegExpExecArray | null;
-
     while ((match = hrefRegex.exec(content)) !== null) {
       const href = match[1];
       if (href && !isValidPath(href)) {
         brokenLinks.push({
           file: relativePath,
-          href
+          href,
+          type: 'href'
+        });
+      }
+    }
+
+    // Find all src attributes (images, scripts, etc.)
+    const srcRegex = /src=["']([^"']+)["']/g;
+    while ((match = srcRegex.exec(content)) !== null) {
+      const src = match[1];
+      if (src && !src.includes('://') && !isValidPath(src)) {
+        brokenLinks.push({
+          file: relativePath,
+          href: src,
+          type: 'src'
+        });
+      }
+    }
+
+    // Find all fetch paths (JavaScript: fetch('/path', ...))
+    const fetchRegex = /fetch\s*\(\s*["']([^"']+)["']/g;
+    while ((match = fetchRegex.exec(content)) !== null) {
+      const fetchPath = match[1];
+      if (fetchPath && !fetchPath.includes('://') && !isValidPath(fetchPath)) {
+        brokenLinks.push({
+          file: relativePath,
+          href: fetchPath,
+          type: 'fetch'
         });
       }
     }
@@ -140,7 +166,7 @@ test('All internal links in HTML files point to valid paths', () => {
 
   if (brokenLinks.length > 0) {
     const message = brokenLinks
-      .map(link => `${link.file}: <a href="${link.href}"> (invalid path)`)
+      .map(link => `${link.file}: ${link.type}="${link.href}" (invalid path)`)
       .join('\n');
     assert.fail(`Found ${brokenLinks.length} broken links:\n${message}`);
   }

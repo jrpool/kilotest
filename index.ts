@@ -181,7 +181,8 @@ export const routes = {
     '/style.css',
     '/swagger.json',
     '/swagger.yaml',
-    '/tutorial/images/*'
+    '/tutorialWeb/images/*',
+    '/tutorialAI/images/*'
   ],
   POST: [
     '/api/*',
@@ -593,9 +594,18 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       }
     }
     // Otherwise, if it is for a tutorial image:
-    else if (pathname.startsWith('/tutorial/images/')) {
-      const imgFile = pathname.slice('/tutorial/images/'.length);
-      const imgPath = path.join(import.meta.dirname, 'web', 'tutorialWeb', 'images', imgFile);
+    else if (pathname.startsWith('/tutorialWeb/images/') || pathname.startsWith('/tutorialAI/images/')) {
+      let imgFile: string;
+      let tutorialDir: string;
+      if (pathname.startsWith('/tutorialWeb/images/')) {
+        imgFile = pathname.slice('/tutorialWeb/images/'.length);
+        tutorialDir = 'tutorialWeb';
+      }
+      else {
+        imgFile = pathname.slice('/tutorialAI/images/'.length);
+        tutorialDir = 'tutorialAI';
+      }
+      const imgPath = path.join(import.meta.dirname, 'web', tutorialDir, 'images', imgFile);
       try {
         const img = await fs.readFile(imgPath);
         const ext = path.extname(imgFile).toLowerCase();

@@ -16,7 +16,7 @@ Connection to the host is made with `ssh linuxuser@kilotest.com`. Periodically t
 
 Kilotest is installed at `/opt/jpdev/kilotest` on the server.
 
-Any other application `xyz` can be installed at `/opt/jpdev/xyz` on the server.
+Any other application `xyz` can be installed at `/opt/jpdev/xyz` on the server. (Previously, the QAI tutorial application was deployed as a separate service at `/opt/jpdev/qai`; it has been integrated into Kilotest itself and no longer runs as a separate process, though the documentation structure remains generic to accommodate future independent applications should they be needed.)
 
 ## Process management
 
@@ -200,11 +200,11 @@ kilotest.com {
   # Specify the only paths of forwardable requests.
   @allowedGET {
     method GET
-    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorial/images/* /favicon.* /style.css /sitemap.xml
+    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorialWeb/images/* /tutorialAI/images/* /qai /qai/comments /favicon.* /style.css /sitemap.xml
   }
   @allowedPOST {
     method POST
-    path /mcp /requestRetest.html/* /requestTest.html /recAction.html /reannotate.html /renewWCAG.html /api/* /tutorialComment.html /worker/job /worker/report
+    path /mcp /requestRetest.html/* /requestTest.html /recAction.html /reannotate.html /renewWCAG.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
   }
   # Respond to OPTIONS requests.
   @allowedOPTIONS method OPTIONS
@@ -215,13 +215,6 @@ kilotest.com {
       Access-Control-Allow-Headers Content-Type,Authorization
     }
     respond 204
-  }
-  # Redirect any /qai request to /qai/.
-  redir /qai /qai/ 301
-  # Truncate any initial /qai from the forwarded path.
-  handle_path /qai* {
-    # Forward any QAI request to port 3001.
-    reverse_proxy localhost:3001
   }
   # Forward any other GET, POST, or OPTIONS request, if allowed, to port 3000.
   handle @allowedGET {

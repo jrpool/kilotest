@@ -331,18 +331,18 @@ test('GET /fullReport.json/990101T0000/xxx returns an abuse error for a nonexist
   assert.ok(res.body.includes('Invalid request'));
 });
 
-test('GET /tutorial/images/newsletter-form.png serves the image', async () => {
-  const res = await request('GET', '/tutorial/images/newsletter-form.png');
+test('GET /tutorialWeb/images/newsletter-form.png serves the image', async () => {
+  const res = await request('GET', '/tutorialWeb/images/newsletter-form.png');
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('image/png'));
 });
 
-test('GET /tutorial/images with an unknown extension serves octet-stream', async () => {
+test('GET /tutorialWeb/images with an unknown extension serves octet-stream', async () => {
   // Create a temporary image file with an unknown extension.
   const imgPath = path.join(import.meta.dirname, 'web', 'tutorialWeb', 'images', 'test.bmp');
   await fs.writeFile(imgPath, 'fake bitmap data');
   try {
-    const res = await request('GET', '/tutorial/images/test.bmp');
+    const res = await request('GET', '/tutorialWeb/images/test.bmp');
     assert.equal(res.statusCode, 200);
     assert.ok(res.headers['content-type'].includes('application/octet-stream'));
   }
@@ -351,8 +351,29 @@ test('GET /tutorial/images with an unknown extension serves octet-stream', async
   }
 });
 
-test('GET /tutorial/images/nonexistent.png returns an error page', async () => {
-  const res = await request('GET', '/tutorial/images/nonexistent.png');
+test('GET /tutorialWeb/images/nonexistent.png returns an error page', async () => {
+  const res = await request('GET', '/tutorialWeb/images/nonexistent.png');
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('Image not found'));
+});
+
+test('GET /tutorialAI/images/test.png serves the image', async () => {
+  // Create a temporary image file in tutorialAI.
+  const imgPath = path.join(import.meta.dirname, 'web', 'tutorialAI', 'images', 'test.png');
+  await fs.mkdir(path.dirname(imgPath), {recursive: true});
+  await fs.writeFile(imgPath, 'fake png data');
+  try {
+    const res = await request('GET', '/tutorialAI/images/test.png');
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('image/png'));
+  }
+  finally {
+    await fs.unlink(imgPath).catch(() => {});
+  }
+});
+
+test('GET /tutorialAI/images/nonexistent.png returns an error page', async () => {
+  const res = await request('GET', '/tutorialAI/images/nonexistent.png');
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Image not found'));
 });

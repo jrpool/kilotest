@@ -58,7 +58,8 @@ test('routes POST includes all known POST paths', () => {
 test('routes GET includes wildcard patterns for dynamic paths', () => {
   assert.ok(routes.GET.some(p => p.includes('fullReport.json')));
   assert.ok(routes.GET.some(p => p.includes('/api/')));
-  assert.ok(routes.GET.some(p => p.includes('tutorial/images')));
+  assert.ok(routes.GET.some(p => p.includes('tutorialWeb/images')));
+  assert.ok(routes.GET.some(p => p.includes('tutorialAI/images')));
   assert.ok(routes.GET.some(p => p.includes('favicon')));
   assert.ok(routes.GET.some(p => p.includes('.html')));
 });

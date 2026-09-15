@@ -10,7 +10,7 @@ Deploy the revisions to the codebase.
 
 This requires:
 
-- Update the configuration of UptimeRobot to monitor Kilotest as a whole via the site root. Use the UptimeRobot console to reconfigure the existing monitor from `https://kilotest.com/qai` to the Kilotest path `https://kilotest.com/`, so that it continues monitoring service health after the QAI integration is deployed and verified live.
+- Update the configuration of [UptimeRobot](https://dashboard.uptimerobot.com/) to monitor Kilotest as a whole via the site root. Reconfigure the existing monitor from `https://kilotest.com/qai` to the Kilotest path `https://kilotest.com/`, so that it continues monitoring service health.
 - Merge the changes to `main`.
 - Pull the new `main` branch to the server.
 - Update the actual server copy of `/etc/caddy/Caddyfile` and run `systemctl reload caddy`.

@@ -1,6 +1,6 @@
 /*
-  qaiTutorial.test.ts
-  Unit tests for web/qaiTutorial/index.ts, covering the answer and handleComment exports.
+  tutorialAI.test.ts
+  Unit tests for web/tutorialAI/index.ts, covering the answer and handleComment exports.
 */
 
 // IMPORTS
@@ -34,7 +34,7 @@ after(async () => {
 
 // TESTS
 
-test('answer returns the QAI tutorial page with status ok', async () => {
+test('answer returns the AI tutorial page with status ok', async () => {
   const result = await answer();
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);

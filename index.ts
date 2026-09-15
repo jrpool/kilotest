@@ -31,8 +31,9 @@ import {checkBalancesForAlerts} from './balances.ts';
 import type {Report} from 'testaro';
 import {handleMCP, mcpPath} from './mcp.ts';
 import fs from 'node:fs/promises';
-import {handleComment} from './web/tutorial/index.ts';
-import {answer as qaiTutorial, handleComment as handleQaiTutorialComment} from './web/qaiTutorial/index.ts';
+import {handleComment as handleTutorialWebComment} from './web/tutorialWeb/index.ts';
+import {answer as tutorialWeb} from './web/tutorialWeb/index.ts';
+import {answer as tutorialAI, handleComment as handleTutorialAIComment} from './web/tutorialAI/index.ts';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
@@ -59,7 +60,6 @@ import {answer as requestTestPage} from './web/requestTest/index.ts';
 import {answer as requestTestForm} from './web/requestTestForm/index.ts';
 import {answer as rewindReportsForm} from './web/rewindReportsForm/index.ts';
 import {answer as unhideReportForm} from './web/unhideReportForm/index.ts';
-import {answer as tutorial} from './web/tutorial/index.ts';
 import {response as getReportAPI} from './api/getReport.ts';
 import {response as listDiagnosesAPI} from './api/listDiagnoses.ts';
 import {response as listIssuesAPI} from './api/listIssues.ts';
@@ -94,7 +94,8 @@ const answer: {
   listViolators: PageHandler;
   manage: PageHandler;
   pruneReportsForm: PageHandler;
-  qaiTutorial: PageHandler;
+  tutorialWeb: PageHandler;
+  tutorialAI: PageHandler;
   reannotate: PageHandler;
   reannotateForm: PageHandler;
   renewWCAG: PageHandler;
@@ -121,7 +122,8 @@ const answer: {
   listViolators: listViolatorsPage,
   manage,
   pruneReportsForm,
-  qaiTutorial,
+  tutorialWeb,
+  tutorialAI,
   reannotate,
   reannotateForm,
   renewWCAG,
@@ -131,8 +133,7 @@ const answer: {
   requestTest: requestTestPage,
   requestTestForm,
   rewindReportsForm,
-  unhideReportForm,
-  tutorial
+  unhideReportForm
 };
 // Response functions of the API services.
 type ApiResponder = (args: string[]) => Promise<unknown>;
@@ -186,13 +187,13 @@ export const routes = {
   POST: [
     '/api/*',
     '/mcp',
-    '/qaiTutorialComment.html',
+    '/tutorialAIComment.html',
     '/reannotate.html',
     '/requestAction.html',
     '/renewWCAG.html',
     '/requestRetest.html/*',
     '/requestTest.html',
-    '/tutorialComment.html',
+    '/tutorialWebComment.html',
     '/worker/job',
     '/worker/report'
   ]
@@ -440,13 +441,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for the old QAI comments path:
     else if (pathname === '/qai/comments') {
       // Redirect the client permanently to the new tutorial path (comments are now integrated).
-      response.writeHead(301, {Location: '/qaiTutorial.html'});
+      response.writeHead(301, {Location: '/tutorialAI.html'});
       response.end();
     }
     // Otherwise, if it is for the old QAI root path:
     else if (pathname === '/qai') {
       // Redirect the client permanently to the new tutorial path.
-      response.writeHead(301, {Location: '/qaiTutorial.html'});
+      response.writeHead(301, {Location: '/tutorialAI.html'});
       response.end();
     }
     // Otherwise, if it is for the large-language-model summary guide:
@@ -595,7 +596,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for a tutorial image:
     else if (pathname.startsWith('/tutorial/images/')) {
       const imgFile = pathname.slice('/tutorial/images/'.length);
-      const imgPath = path.join(import.meta.dirname, 'web', 'tutorial', 'images', imgFile);
+      const imgPath = path.join(import.meta.dirname, 'web', 'tutorialWeb', 'images', imgFile);
       try {
         const img = await fs.readFile(imgPath);
         const ext = path.extname(imgFile).toLowerCase();
@@ -945,10 +946,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         }
       }
       // Otherwise, if it is a tutorial comment:
-      else if (pageName === 'tutorialComment.html') {
+      else if (pageName === 'tutorialWebComment.html') {
         const {content} = postData as {content?: unknown};
         setHeaders('application/json', null, 'low');
-        const answerData = await handleComment(content);
+        const answerData = await handleTutorialWebComment(content);
         if (answerData.status === 'ok') {
           response.end(JSON.stringify({status: 'ok'}));
         }
@@ -957,11 +958,11 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           response.end(JSON.stringify({status: 'error', message: answerData.message}));
         }
       }
-      // Otherwise, if it is a QAI tutorial comment:
-      else if (pageName === 'qaiTutorialComment.html') {
+      // Otherwise, if it is an AI tutorial comment:
+      else if (pageName === 'tutorialAIComment.html') {
         const {content} = postData as {content?: unknown};
         setHeaders('application/json', null, 'low');
-        const answerData = await handleQaiTutorialComment(content);
+        const answerData = await handleTutorialAIComment(content);
         if (answerData.status === 'ok') {
           response.end(JSON.stringify({status: 'ok'}));
         }

@@ -1,6 +1,6 @@
 /*
   index.ts
-  Serves the QAI (Connect an AI Platform to Kilotest) tutorial and saves QAI tutorial comments.
+  Serves the AI agent tutorial (Connect an AI Platform to Kilotest) and saves AI tutorial comments.
 */
 
 // IMPORTS
@@ -12,7 +12,7 @@ import path from 'node:path';
 
 // FUNCTIONS (helpers)
 
-const getCommentsPath = () => process.env.QAI_TUTORIAL_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
+const getCommentsPath = () => process.env.TUTORIAL_AI_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
 
 // FUNCTIONS
 

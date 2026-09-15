@@ -48,7 +48,7 @@ test('routes POST includes all known POST paths', () => {
     '/renewWCAG.html',
     '/worker/job',
     '/worker/report',
-    '/tutorialComment.html'
+    '/tutorialWebComment.html'
   ];
   for (const path of required) {
     assert.ok(routes.POST.includes(path), `routes.POST missing ${path}`);

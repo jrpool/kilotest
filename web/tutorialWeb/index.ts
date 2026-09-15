@@ -1,6 +1,6 @@
 /*
   index.ts
-  Serves the tutorial and saves tutorial comments.
+  Serves the web tutorial and saves web tutorial comments.
 */
 
 // IMPORTS
@@ -12,7 +12,7 @@ import path from 'node:path';
 
 // FUNCTIONS (helpers)
 
-const getCommentsPath = () => process.env.TUTORIAL_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
+const getCommentsPath = () => process.env.TUTORIAL_WEB_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
 
 // FUNCTIONS
 

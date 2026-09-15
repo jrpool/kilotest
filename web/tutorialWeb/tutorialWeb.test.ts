@@ -13,13 +13,13 @@ import path from 'node:path';
 // ENVIRONMENT
 
 const testDir = path.join(import.meta.dirname, '../../test/fixtures/comments');
-process.env.TUTORIAL_COMMENTS_PATH = path.join(testDir, 'tutorial.json');
+process.env.TUTORIAL_WEB_COMMENTS_PATH = path.join(testDir, 'tutorialWeb.json');
 
 import {answer, handleComment} from './index.ts';
 
 // CONSTANTS
 
-const getCommentsPath = () => process.env.TUTORIAL_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
+const getCommentsPath = () => process.env.TUTORIAL_WEB_COMMENTS_PATH || path.join(import.meta.dirname, 'comments.json');
 
 // SETUP AND TEARDOWN
 
@@ -125,25 +125,25 @@ test('handleComment creates comments.json when it does not exist', {timeout: 500
 });
 
 test('getCommentsPath uses environment variable when set', {timeout: 500}, async () => {
-  const envValue = process.env.TUTORIAL_COMMENTS_PATH;
+  const envValue = process.env.TUTORIAL_WEB_COMMENTS_PATH;
   assert.ok(envValue);
   assert.ok(getCommentsPath().includes('test/fixtures/comments'));
 });
 
 test('getCommentsPath falls back to default path when environment variable is not set', {timeout: 500}, async () => {
-  const savedEnv = process.env.TUTORIAL_COMMENTS_PATH;
-  delete process.env.TUTORIAL_COMMENTS_PATH;
+  const savedEnv = process.env.TUTORIAL_WEB_COMMENTS_PATH;
+  delete process.env.TUTORIAL_WEB_COMMENTS_PATH;
   try {
     const path = getCommentsPath();
     assert.ok(path.includes('comments.json'));
     assert.ok(path.includes('web/tutorial'));
   } finally {
-    process.env.TUTORIAL_COMMENTS_PATH = savedEnv;
+    process.env.TUTORIAL_WEB_COMMENTS_PATH = savedEnv;
   }
 });
 
 test('handleComment uses fallback path when environment variable is not set', {timeout: 500}, async () => {
-  const savedEnv = process.env.TUTORIAL_COMMENTS_PATH;
+  const savedEnv = process.env.TUTORIAL_WEB_COMMENTS_PATH;
   const defaultPath = path.join(import.meta.dirname, 'comments.json');
   const backupPath = defaultPath + '.backup';
 
@@ -157,7 +157,7 @@ test('handleComment uses fallback path when environment variable is not set', {t
     // File doesn't exist, that's fine.
   }
 
-  delete process.env.TUTORIAL_COMMENTS_PATH;
+  delete process.env.TUTORIAL_WEB_COMMENTS_PATH;
   try {
     // Write a test file to the default location.
     await fs.writeFile(defaultPath, '[]\n');
@@ -175,6 +175,6 @@ test('handleComment uses fallback path when environment variable is not set', {t
     } else {
       await fs.unlink(defaultPath).catch(() => {});
     }
-    process.env.TUTORIAL_COMMENTS_PATH = savedEnv;
+    process.env.TUTORIAL_WEB_COMMENTS_PATH = savedEnv;
   }
 });

@@ -13,8 +13,8 @@ import {fixtureDBDir} from './test/dbFixture.ts';
 const testCommentsDir = path.join(import.meta.dirname, 'test/fixtures/comments');
 process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';
-process.env.TUTORIAL_COMMENTS_PATH = path.join(testCommentsDir, 'tutorial.json');
-process.env.QAI_TUTORIAL_COMMENTS_PATH = path.join(testCommentsDir, 'qaiTutorial.json');
+process.env.TUTORIAL_WEB_COMMENTS_PATH = path.join(testCommentsDir, 'tutorialWeb.json');
+process.env.TUTORIAL_AI_COMMENTS_PATH = path.join(testCommentsDir, 'tutorialAI.json');
 process.env.TESTARO_WORKERS = JSON.stringify({
   worker1: {secret: 'secret1', name: 'Worker One'}
 });
@@ -55,8 +55,8 @@ beforeEach(async () => {
   }
   // Create test comments directory and reset test comment files so tests start clean.
   await fs.mkdir(testCommentsDir, {recursive: true});
-  await fs.writeFile(path.join(testCommentsDir, 'tutorial.json'), '[]\n');
-  await fs.writeFile(path.join(testCommentsDir, 'qaiTutorial.json'), '[]\n');
+  await fs.writeFile(path.join(testCommentsDir, 'tutorialWeb.json'), '[]\n');
+  await fs.writeFile(path.join(testCommentsDir, 'tutorialAI.json'), '[]\n');
 });
 
 after(async () => {
@@ -339,7 +339,7 @@ test('GET /tutorial/images/newsletter-form.png serves the image', async () => {
 
 test('GET /tutorial/images with an unknown extension serves octet-stream', async () => {
   // Create a temporary image file with an unknown extension.
-  const imgPath = path.join(import.meta.dirname, 'web', 'tutorial', 'images', 'test.bmp');
+  const imgPath = path.join(import.meta.dirname, 'web', 'tutorialWeb', 'images', 'test.bmp');
   await fs.writeFile(imgPath, 'fake bitmap data');
   try {
     const res = await request('GET', '/tutorial/images/test.bmp');
@@ -618,10 +618,16 @@ test('POST /requestAction.html with valid auth code and rejection (no descriptio
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-// TESTS: tutorialComment
+// TESTS: tutorialWeb (web user tutorial)
 
-test('POST /tutorialComment.html with content returns JSON', async () => {
-  const res = await request('POST', '/tutorialComment.html', {
+test('GET /tutorialWeb.html returns HTML', async () => {
+  const res = await request('GET', '/tutorialWeb.html');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('text/html'));
+});
+
+test('POST /tutorialWebComment.html with content returns JSON', async () => {
+  const res = await request('POST', '/tutorialWebComment.html', {
     content: `This is a test comment ${uniqueStamp}`
   });
   assert.ok(res.headers['content-type'].includes('application/json'));
@@ -713,46 +719,46 @@ test('POST /renewWCAG.html with valid auth code serves the answer page', async (
   }
 });
 
-test('POST /tutorialComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
-  const res = await request('POST', '/tutorialComment.html', {
+test('POST /tutorialWebComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
+  const res = await request('POST', '/tutorialWebComment.html', {
     content: ''
   });
   assert.ok(res.headers['content-type'].includes('application/json'));
 });
 
-// TESTS: qaiTutorial
+// TESTS: tutorialAI (AI agent configuration tutorial)
 
-test('GET /qaiTutorial.html returns HTML', async () => {
-  const res = await request('GET', '/qaiTutorial.html');
+test('GET /tutorialAI.html returns HTML', async () => {
+  const res = await request('GET', '/tutorialAI.html');
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('POST /qaiTutorialComment.html with content returns JSON', async () => {
-  const res = await request('POST', '/qaiTutorialComment.html', {
-    content: `This is a test QAI tutorial comment ${uniqueStamp}`
+test('POST /tutorialAIComment.html with content returns JSON', async () => {
+  const res = await request('POST', '/tutorialAIComment.html', {
+    content: `This is a test AI tutorial comment ${uniqueStamp}`
   });
   assert.ok(res.headers['content-type'].includes('application/json'));
   assert.deepEqual(JSON.parse(res.body), {status: 'ok'});
 });
 
-test('POST /qaiTutorialComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
-  const res = await request('POST', '/qaiTutorialComment.html', {
+test('POST /tutorialAIComment.html with empty content returns a JSON error', {timeout: 500}, async () => {
+  const res = await request('POST', '/tutorialAIComment.html', {
     content: ''
   });
   assert.ok(res.headers['content-type'].includes('application/json'));
 });
 
-test('GET /qai redirects to /qaiTutorial.html', async () => {
+test('GET /qai redirects to /tutorialAI.html', async () => {
   const res = await request('GET', '/qai', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/qaiTutorial.html');
+  assert.equal(res.headers['location'], '/tutorialAI.html');
 });
 
-test('GET /qai/comments redirects to /qaiTutorial.html', async () => {
+test('GET /qai/comments redirects to /tutorialAI.html', async () => {
   const res = await request('GET', '/qai/comments', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/qaiTutorial.html');
+  assert.equal(res.headers['location'], '/tutorialAI.html');
 });
 
 test('POST /requestTest.html with non-https URL returns an error', async () => {
@@ -1032,7 +1038,8 @@ const htmlPagePaths = [
   '/listDiagnoses.html/linkNoText/260101T0000/mix/0',
   '/enqueueForm.html',
   '/manage.html',
-  '/tutorial.html',
+  '/tutorialWeb.html',
+  '/tutorialAI.html',
   '/listTopIssues.html',
   '/reannotateForm.html',
   '/renewWCAGForm.html',

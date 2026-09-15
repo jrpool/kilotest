@@ -111,10 +111,11 @@ The steps below are sequential, but not each individually required to pass Kilot
 
 7. **Update `smokeTest.ts`**: add `concretePaths.GET`/`.POST` entries for the new page names (`tutorialAI.html`, `tutorialAIComment.html`) and for the `/qai`/`/qai/comments` redirect aliases, and a `postBodies` entry if the comment POST needs a sample body.
 
-8. **Update the Caddyfile** (`/etc/caddy/Caddyfile` on the server, tracked as a copy in `docs/SERVICE.md`):
+8. **Update the Caddyfile copy** (`/etc/caddy/Caddyfile` on the server is tracked as a copy in `docs/SERVICE.md`):
    - Remove the `redir /qai /qai/ 301` and `handle_path /qai* { reverse_proxy localhost:3001 }` blocks, since QAI no longer runs as a separate process; the old `/qai` and `/qai/comments` paths are now redirected at the application layer instead (see step 5), so Caddy needs no special-case handling for them beyond forwarding them like any other allowed GET path.
    - Add the new page path(s), including `/qai` and `/qai/comments`, to the `@allowedGET`/`@allowedPOST` matchers.
    - Update `docs/SERVICE.md`’s copy of the Caddyfile to match, and note in that doc that QAI is no longer a separately-deployed application (the `docs/SERVICE.md` “Applications” section currently implies other apps like QAI could live at `/opt/jpdev/xyz`; leave that generic note as is, and just remove the QAI-specific proxy config).
+   - The user will update the actual server copy and run `systemctl reload caddy` just before restarting Kilotest in PM2 after pulling a version containing the QAI integration.
 
 9. **Tests**: The test files are already in place from step 4 (`web/tutorialWeb/tutorialWeb.test.ts` and `web/tutorialAI/tutorialAI.test.ts`), mirroring the structure and unit-testing both `answer()` and `handleComment()` directly. Rely on the existing `index.test.ts` integration tests to exercise the renamed routes once wired into `index.ts`’s dispatch (adding assertions there for the new paths and POST handler). Confirm 100% coverage is maintained per the `c8` config in `package.json` (branches, functions, lines, and statements all at 100%).
 

@@ -59,7 +59,7 @@
       </ul>
       <h2>Did this work?</h2>
       <p>If the model used any Kilotest tools, congratulations! You know how to add tool power to the LLMs on one of the major AI platforms.</p>
-      <p>But what if it did <strong>not</strong> work? If an LLM fails to use the Kilotest connector when it should, or if you need to explicitly tell the LLM to use the connector, something is wrong, and we want to know about your experience. Please use the <a href="qaiComment.html">comment form</a> to tell us about it.</p>
+      <p>But what if it did <strong>not</strong> work? If an LLM fails to use the Kilotest connector when it should, or if you need to explicitly tell the LLM to use the connector, something is wrong, and we want to know about your experience. Please use the <a href="tutorialAIComment.html">comment form</a> to tell us about it.</p>
       <p>You can also submit an issue on the <a href="https://github.com/jrpool/kilotest/issues">Kilotest GitHub repository</a>.</p>
       <section id="suggest-improvement" class="main">
         <h2>Suggest improvements</h2>
@@ -107,7 +107,7 @@
         }
         commentSubmit.disabled = true;
         try {
-          const response = await fetch('/qaiTutorialComment.html', {
+          const response = await fetch('/tutorialAIComment.html', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({content})

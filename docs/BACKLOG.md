@@ -6,9 +6,15 @@ Engineering tasks and risks that are not yet scheduled.
 
 The `jrpool/qai` repository is independent of this `jrpool/kilotest` repository, and they are published as two distict packages. That separation is due to an organizational requirement that no longer exists. Since the QAI application is a tutorial showing users how to use Kilotest, and the tutorial of Kilotest also shows users how to use Kilotest, it is appropriate to convert QAI to a part of the Kilotest codebase. QAI is currently deployed with the URL `https://kilotest.com/qai`, and that would not need to change. `Caddyfile` would be simplified (see the copy in `docs/SERVICE.md`). The QAI code would need to be copied into Kilotest. Any architectural incompatibilities would need to be discovered and resolved. Locally, `qai` is a sibling repository of `kilotest` on this host. Note that QAI health is currently monitored by UptimeRobot, and periodic health monitoring of Kilotest is proposed as the next backlog item after this one, so health monitoring should be handled in such a way that it will be appropriate after both backlog items are completed.
 
-## Implement periodic smoke-test session
+## Implement periodic monitoring
 
-Smoke tests validate that the deployed Kilotest service is functioning correctly end-to-end. They were removed from the CI workflow because code changes often require corresponding infrastructure updates (e.g., reverse proxy configuration), and blocking merges on infrastructure drift is counterproductive. Instead, implement a periodic GitHub Actions workflow (similar to UptimeRobot health checks) that runs smoke tests on a schedule (e.g., hourly or daily) against the deployed service. This allows code and infrastructure to be deployed together, then validated by the periodic check independently. The `smokeTest.ts` file remains in the codebase for this purpose.
+Status: Implementation complete; UptimeRobot reconfiguration remains.
+
+A periodic GitHub Actions workflow has been implemented in `.github/workflows/periodic-smoke-tests.yml`, configured to run daily at 12:00 PM UTC (noon). The workflow runs `smokeTest.ts` against the deployed service at `kilotest.com`, validating that all public GET and POST paths are reachable and forwarded by Caddy (i.e., not returning bare 404 errors). This allows code and infrastructure to be deployed together, then validated by the periodic check independently. The workflow can also be triggered manually from the GitHub Actions interface.
+
+Documentation for the periodic monitoring workflow has been added to `docs/SERVICE.md` in a new “Periodic monitoring” section, including notes on UptimeRobot health monitoring.
+
+Remaining task: update the configuration of UptimeRobot to monitor Kilotest as a whole (via any public path, for example the site root or a tutorial page) rather than the (now integrated) QAI service. Use the UptimeRobot console to reconfigure the existing monitor from `https://kilotest.com/qai` to a Kilotest path, such as `https://kilotest.com/` or `https://kilotest.com/tutorialAI.html`, so that it continues monitoring service health after the QAI integration is deployed and verified live.
 
 ## Add observability of request metrics
 
@@ -119,7 +125,7 @@ The steps below are sequential, but not each individually required to pass Kilot
 
 9. **Tests**: The test files are already in place from step 4 (`web/tutorialWeb/tutorialWeb.test.ts` and `web/tutorialAI/tutorialAI.test.ts`), mirroring the structure and unit-testing both `answer()` and `handleComment()` directly. Rely on the existing `index.test.ts` integration tests to exercise the renamed routes once wired into `index.ts`’s dispatch (adding assertions there for the new paths and POST handler). Confirm 100% coverage is maintained per the `c8` config in `package.json` (branches, functions, lines, and statements all at 100%).
 
-10. **Retire the QAI repo**: This is inline text, but that does not help:
+10. **Retire the QAI repo**:
     - Confirm with the user whether `jrpool/qai` on GitHub should be archived, left as read-only history, or deleted, once the port is verified working in Kilotest. This plan does not delete anything in `/Users/pool/Documents/Topics/repos/a11yTesting/qai`; that is a separate, explicit decision for the user to make after the merge lands and is verified in production.
     - Do not remove QAI’s existing UptimeRobot monitor. Instead, once the new `qaiTutorial.html`/`qaiComment.html` paths are live, reconfigure that monitor’s target so it continues watching a Kilotest path (for example the site root, or the new tutorial path) rather than the now-defunct `https://kilotest.com/qai`, effectively expanding its existing scope from monitoring QAI’s health specifically to monitoring Kilotest’s health as a whole. This closes the monitoring gap the original backlog note flagged, and does so by extending a monitor that already works rather than waiting on a new one (Kilotest’s own health-monitoring backlog item, or the “periodic smoke-test session” item, can still be pursued separately and later, but neither is a precondition for this reconfiguration).
 

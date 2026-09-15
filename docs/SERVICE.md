@@ -277,6 +277,18 @@ When a pull request adds a new route to `index.js`, the Caddyfile at `/etc/caddy
 1. The smoke test workflow runs and verifies that all paths, including the new one, are forwarded by Caddy.
 1. If the Caddyfile was not updated, the smoke test reports a bare 404 for the new path, the required status check fails, and the pull request cannot merge.
 
+## Periodic monitoring
+
+In addition to the smoke test that runs before each pull request merge, a periodic GitHub Actions workflow runs smoke tests daily against the deployed service. This workflow is defined in `.github/workflows/periodic-smoke-tests.yml` and runs on a daily schedule at 12:00 PM UTC (noon). It can also be triggered manually from the GitHub Actions interface.
+
+The periodic smoke tests validate that the deployed Kilotest service is functioning correctly end-to-end, independent of code deployments. Code and infrastructure are deployed together, and this periodic check validates them independently. If a deployment introduces a regression—for example, a missing Caddyfile update or a broken route—the periodic tests will detect it within 24 hours.
+
+The workflow checks all valid GET and POST paths by running `smokeTest.ts` against the deployed service at `kilotest.com`, verifying that Caddy forwards each path to Kilotest rather than returning a bare 404.
+
+### Health monitoring
+
+The deployment is monitored for external health and availability using UptimeRobot. The monitoring target should be a path on the deployed service (for example, the site root `/` or a new `qaiTutorial.html` page) rather than any individual application. Once the QAI integration is deployed and verified live, reconfigure the UptimeRobot monitor to track Kilotest's health as a whole via one of its public paths, rather than the previous separate monitor for the now-integrated QAI service.
+
 ## Performance
 
 The Cloud Compute host, in initial testing, took about 2.5 as long to process an example job as an Apple M2 Pro MacBook Pro with 16GB of memory. After tuning, the ratio was reduced to about 1.7.

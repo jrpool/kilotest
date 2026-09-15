@@ -287,10 +287,10 @@ The workflow checks all valid GET and POST paths by running `smokeTest.ts` again
 
 ### Health monitoring
 
-The deployment is monitored for external health and availability using [UptimeRobot](https://dashboard.uptimerobot.com/). The monitoring target should be a path on the deployed service that returns a successful HTTP response when the service is healthy (for example, the site root `/`). UptimeRobot checks this target at regular intervals and sends an email alert to the maintainer in either of two cases:
+The deployment is monitored for external health and availability using [UptimeRobot](https://dashboard.uptimerobot.com/). The monitoring target is the site root `/`. UptimeRobot checks this target at regular intervals and sends an email alert to the maintainer in either of two cases:
 
 - The response status code is 502 (Bad Gateway). This typically indicates that Caddy cannot reach the Kilotest application on `localhost:3000`, suggesting the application process has crashed or become unresponsive.
-- The request times out (connection timeout). This suggests a network issue or the application is severely degraded.
+- The request times out (connection timeout). This suggests a network issue, a host down, or a severely degraded application.
 
 UptimeRobot also sends a recovery message when the service recovers and a subsequent check succeeds after a prior failure.
 

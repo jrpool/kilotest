@@ -2,8 +2,8 @@ name: Periodic Smoke Tests
 
 on:
   schedule:
-    # Run daily at 12:00 PM UTC
-    - cron: '0 12 * * *'
+    # Run daily at 14:14 UTC
+    - cron: '14 14   * * *'
   workflow_dispatch: # Allow manual triggering
 
 jobs:

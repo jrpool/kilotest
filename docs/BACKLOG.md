@@ -14,7 +14,7 @@ A periodic GitHub Actions workflow has been implemented in `.github/workflows/pe
 
 Documentation for the periodic monitoring workflow has been added to `docs/SERVICE.md` in a new “Periodic monitoring” section, including notes on UptimeRobot health monitoring.
 
-Remaining task: update the configuration of UptimeRobot to monitor Kilotest as a whole (via any public path, for example the site root or a tutorial page) rather than the (now integrated) QAI service. Use the UptimeRobot console to reconfigure the existing monitor from `https://kilotest.com/qai` to a Kilotest path, such as `https://kilotest.com/` or `https://kilotest.com/tutorialAI.html`, so that it continues monitoring service health after the QAI integration is deployed and verified live.
+Remaining task: update the configuration of UptimeRobot to monitor Kilotest as a whole via the site root. Use the UptimeRobot console to reconfigure the existing monitor from `https://kilotest.com/qai` to the Kilotest path `https://kilotest.com/`, so that it continues monitoring service health after the QAI integration is deployed and verified live.
 
 ## Add observability of request metrics
 

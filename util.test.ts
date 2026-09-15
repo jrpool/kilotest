@@ -11,6 +11,8 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import {
   annotateReportObject,
+  checkCommentDuplicate,
+  checkCommentLength,
   createLock,
   dbPath,
   getAgoDays,
@@ -55,6 +57,61 @@ import {
 } from './util.ts';
 
 // TESTS
+
+test('checkCommentLength accepts a comment of exactly 20 characters', () => {
+  const result = checkCommentLength('a'.repeat(20));
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentLength accepts a comment of exactly 1000 characters', () => {
+  const result = checkCommentLength('a'.repeat(1000));
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentLength rejects a comment shorter than 20 characters', () => {
+  const result = checkCommentLength('a'.repeat(19));
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'Your comment was shorter than 20 characters'
+  });
+});
+
+test('checkCommentLength rejects a comment longer than 1000 characters', () => {
+  const result = checkCommentLength('a'.repeat(1001));
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'Your comment was longer than 1000 characters'
+  });
+});
+
+test('checkCommentDuplicate accepts a comment with no existing comments', () => {
+  const result = checkCommentDuplicate([], 'a'.repeat(20));
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentDuplicate rejects a comment repeating one submitted within the last 1000 seconds', () => {
+  const content = 'a'.repeat(20);
+  const comments = [{timeStamp: getNowStamp(), content}];
+  const result = checkCommentDuplicate(comments, content);
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+  });
+});
+
+test('checkCommentDuplicate accepts a comment repeating one submitted more than 1000 seconds ago', () => {
+  const content = 'a'.repeat(20);
+  const oldTimeStamp = getTimeStamp(new Date(Date.now() - 2000000));
+  const comments = [{timeStamp: oldTimeStamp, content}];
+  const result = checkCommentDuplicate(comments, content);
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkCommentDuplicate accepts a comment that differs from a recent one', () => {
+  const comments = [{timeStamp: getNowStamp(), content: 'a'.repeat(20)}];
+  const result = checkCommentDuplicate(comments, 'b'.repeat(20));
+  assert.deepEqual(result, {status: 'ok'});
+});
 
 test('dbPath defaults to the project db directory when DB_DIR is unset', () => {
   const saved = process.env.DB_DIR;

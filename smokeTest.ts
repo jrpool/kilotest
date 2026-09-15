@@ -26,12 +26,15 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/mcp': '/mcp',
     '/openapi.json': '/openapi.json',
     '/openapi.yaml': '/openapi.yaml',
+    '/qai': '/qai',
+    '/qai/comments': '/qai/comments',
     '/robots.txt': '/robots.txt',
     '/sitemap.xml': '/sitemap.xml',
     '/style.css': '/style.css',
     '/swagger.json': '/swagger.json',
     '/swagger.yaml': '/swagger.yaml',
-    '/tutorial/images/*': '/tutorial/images/diagram.png'
+    '/tutorialAI/images/*': '/tutorialAI/images/example.png',
+    '/tutorialWeb/images/*': '/tutorialWeb/images/newsletter-form.png'
   },
   POST: {
     '/api/*': '/api/requestFeature',
@@ -41,7 +44,8 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/renewWCAG.html': '/renewWCAG.html',
     '/requestRetest.html/*': '/requestRetest.html/260101T0001/ct',
     '/requestTest.html': '/requestTest.html',
-    '/tutorialComment.html': '/tutorialComment.html',
+    '/tutorialAIComment.html': '/tutorialAIComment.html',
+    '/tutorialWebComment.html': '/tutorialWebComment.html',
     '/worker/job': '/worker/job',
     '/worker/report': '/worker/report'
   }
@@ -57,7 +61,8 @@ const postBodies: Record<string, object> = {
   '/renewWCAG.html': {authCode: 'invalid'},
   '/requestRetest.html/260101T0001/ct': {why: 'smoke test'},
   '/requestTest.html': {description: 'Smoke Test Page', url: 'https://smoketest.example.com', why: 'smoke test'},
-  '/tutorialComment.html': {content: 'smoke test'},
+  '/tutorialAIComment.html': {content: 'smoke test'},
+  '/tutorialWebComment.html': {content: 'smoke test'},
   '/worker/job': {},
   '/worker/report': {}
 };

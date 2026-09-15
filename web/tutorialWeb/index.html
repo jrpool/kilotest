@@ -314,7 +314,7 @@
           <p>We shall look for this single issue on a single web page. It is the home page of a JavaScript-rendered WordPress site belonging to a nonprofit organization. It was tested in May 2026.</p>
           <p>The page contains a form for requesting a guide published by the organization. This form is not present in the raw HTML that the server delivers, but is injected into the page by a JavaScript plugin after the browser has loaded and executed the page scripts. The form contains one visible user-facing input field. Here is a screenshot of the form:</p>
           <img
-            src="/tutorial/images/newsletter-form.png"
+            src="/tutorialWeb/images/newsletter-form.png"
             alt="Career-guide request form containing an input with placeholder text Enter your email and a button labelled Get the career guide"
             width="602"
             height="57"
@@ -444,17 +444,18 @@
         <h2>Suggest improvements</h2>
         <p>Please submit suggestions for improving this tutorial below. The Kilotest managers will review them.</p>
         <form id="comment-form" novalidate>
-          <p id="comment-label">Your suggestions (up to 500 characters):</p>
+          <p id="comment-label">Your suggestions (20–1000 characters):</p>
           <textarea
             id="comment-text"
             name="content"
-            maxlength="500"
+            maxlength="1000"
+            minlength="20"
             rows="5"
             autocomplete="off"
             aria-labelledby="comment-label"
             aria-describedby="char-count-msg"
           ></textarea>
-          <p class="char-count" id="char-count-msg"><span id="char-remaining">500</span> characters remaining</p>
+          <p class="char-count" id="char-count-msg"><span id="char-remaining">1000</span> characters remaining</p>
           <button type="submit" id="comment-submit">Submit suggestions</button>
         </form>
         <div role="status" id="comment-diagnosis" aria-live="polite" aria-atomic="true" class="comment-diagnosis"></div>
@@ -593,9 +594,9 @@
       const commentSubmit = document.getElementById('comment-submit');
 
       commentText.addEventListener('input', function () {
-        const remaining = 500 - this.value.length;
+        const remaining = 1000 - this.value.length;
         charRemaining.textContent = remaining;
-        charCountMsg.className = remaining <= 50 ? 'char-count low' : 'char-count';
+        charCountMsg.className = remaining <= 100 ? 'char-count low' : 'char-count';
       });
 
       document.getElementById('comment-form').addEventListener('submit', async function (e) {
@@ -610,7 +611,7 @@
         }
         commentSubmit.disabled = true;
         try {
-          const response = await fetch('/tutorialComment.html', {
+          const response = await fetch('/tutorialWebComment.html', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({content})
@@ -621,7 +622,7 @@
             commentFeedback.textContent =
               'Thank you! Your suggestion has been saved and will be reviewed by the tutorial authors.';
             this.reset();
-            charRemaining.textContent = '500';
+            charRemaining.textContent = '1000';
             charCountMsg.className = 'char-count';
           } else {
             commentFeedback.className = 'comment-diagnosis error';

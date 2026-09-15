@@ -33,7 +33,7 @@ The internal features that make Kilotest a collection of tools for language mode
 - A `sitemap.xml` file.
 - Documentation in the `README.md` file.
 - This `AI-TOOLS.md` file.
-- A [tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/).
+- A [tutorial on authorizing language models to use Kilotest](https://kilotest.com/tutorialAI.html).
 
 ## External features
 

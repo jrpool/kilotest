@@ -29,7 +29,11 @@ module.exports = {
   apps: [
     {
       name: 'kilotest',
-      script: 'index.ts',
+      // index.ts cannot be the PM2 script: its autostart guard (import.meta.main) is
+      // false inside PM2's process container, so the server would never start.
+      script: 'serve.ts',
+      // PM2 maps the .ts extension to the bun interpreter, so node must be specified explicitly.
+      interpreter: 'node',
       instances: 1,
       autorestart: true,
       watch: false,
@@ -49,6 +53,14 @@ When the PM2 configuration or environment is changed, restart PM2 with:
 
 ```text
 pm2 restart kilotest --time --update-env
+pm2 save
+```
+
+If the `script` entry point itself has changed, `pm2 restart` reuses the stored path and cannot pick up the new one; delete and recreate the process instead:
+
+```text
+pm2 delete kilotest
+pm2 start pm2.config.cjs
 pm2 save
 ```
 
@@ -197,8 +209,7 @@ The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`. Lea
 kilotest.com {
   # Enable Zstandard and Gzip compression of responses.
   encode zstd gzip
-  # Specify the only paths of forwardable requests. HEAD is allowed along with
-  # GET because health monitors (e.g. UptimeRobot) check availability with HEAD.
+  # Specify the only paths of forwardable requests. UptimeRobet uses HEAD.
   @allowedGET {
     method GET HEAD
     path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorialWeb/images/* /tutorialAI/images/* /qai /qai/comments /favicon.* /style.css /sitemap.xml
@@ -212,7 +223,7 @@ kilotest.com {
   handle @allowedOPTIONS {
     header {
       Access-Control-Allow-Origin *
-      Access-Control-Allow-Methods GET,POST,OPTIONS
+      Access-Control-Allow-Methods GET,HEAD,POST,OPTIONS
       Access-Control-Allow-Headers Content-Type,Authorization
     }
     respond 204

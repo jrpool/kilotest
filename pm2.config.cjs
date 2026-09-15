@@ -9,7 +9,11 @@ module.exports = {
   apps: [
     {
       name: 'kilotest',
-      script: 'index.ts',
+      // index.ts cannot be the PM2 script: its autostart guard (import.meta.main) is
+      // false inside PM2's process container, so the server would never start.
+      script: 'serve.ts',
+      // PM2 maps the .ts extension to the bun interpreter, so node must be specified explicitly.
+      interpreter: 'node',
       instances: 1,
       autorestart: true,
       watch: false,

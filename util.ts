@@ -513,9 +513,7 @@ export const deleteTestRequests = (url: string) => testRequestsLock(async (): Pr
   await fs.writeFile(testRequestsPath(), getJSON(testRequests));
 });
 
-// REPORT FUNCTIONS
-
-// TYPES
+// REPORT TYPES
 
 // A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
 export interface AnnotatedInstance extends StandardInstance {
@@ -593,6 +591,8 @@ export type ReportData = {
   preventedEngineCount: number;
   error?: never;
 };
+
+// REPORT FUNCTIONS
 
 // Returns the test acts of a report.
 export const getTestActs = (report: UsableReport): AnnotatedAct[] =>

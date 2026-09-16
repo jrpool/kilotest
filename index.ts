@@ -407,8 +407,19 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // If it is for the model context protocol server:
     else if (pathname === mcpPath) {
-      // Handle the MCP request.
-      await handleMCP(request, response);
+      // If the request does not identify itself as capable of an SSE stream: it is a human
+      // browsing to the endpoint directly, not an MCP client, so explain what the endpoint is
+      // for instead of handing it a bare protocol-level rejection.
+      if (!request.headers.accept?.includes('text/event-stream')) {
+        await serveError({
+          message: 'This endpoint is for AI agents, not for direct browsing. See the <a href="/tutorialAI.html">tutorial on connecting an AI platform to Kilotest</a>.'
+        }, response);
+      }
+      // Otherwise, i.e. if it identifies itself as capable of an SSE stream:
+      else {
+        // Handle the MCP request.
+        await handleMCP(request, response);
+      }
     }
     // Otherwise, if it is for the home page:
     else if (['/', '/index.html'].includes(pathname)) {

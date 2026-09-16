@@ -1106,14 +1106,19 @@ test('GET /test.html.bak matches isPathAllowed but falls through to catch-all', 
   assert.ok(res.body.includes('Invalid GET request'));
 });
 
-test('GET /mcp returns a JSON-RPC 405 error instead of opening an SSE stream', async () => {
-  for (const accept of ['text/html', 'application/json, text/event-stream']) {
-    const res = await request('GET', '/mcp', null, {accept});
-    assert.equal(res.statusCode, 405);
-    const body = jsonBody(res);
-    assert.equal(body.jsonrpc, '2.0');
-    assert.equal(body.error.code, -32000);
-  }
+test('GET /mcp with an SSE-capable Accept header returns a JSON-RPC 405 error instead of opening an SSE stream', async () => {
+  const res = await request('GET', '/mcp', null, {accept: 'application/json, text/event-stream'});
+  assert.equal(res.statusCode, 405);
+  const body = jsonBody(res);
+  assert.equal(body.jsonrpc, '2.0');
+  assert.equal(body.error.code, -32000);
+});
+
+test('GET /mcp without an SSE-capable Accept header serves an HTML explanation page instead of the MCP protocol response', async () => {
+  const res = await request('GET', '/mcp', null, {accept: 'text/html'});
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.ok(res.body.includes('/tutorialAI.html'));
 });
 
 test('POST /mcp without an SSE-capable Accept header returns a JSON-RPC 406 error', async () => {

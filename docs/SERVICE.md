@@ -145,6 +145,26 @@ The DNS records for `kilotest.com` are configured as follows. In each case, `TTL
    - **Host**: _acme-challenge.kilotest.com
    - **Answers**: validation tokens provided by Porkbun ACME client
 
+6. **TXT** (SPF for Porkbun-handled mail)
+   - **Host**: kilotest.com
+   - **Answer**: `v=spf1 include:_spf.porkbun.com ~all`
+
+7. **MX and TXT** (Resend MAIL FROM domain; provides SPF alignment for Resend mail)
+   - **Host**: send.kilotest.com
+   - **Answers**: MX `feedback-smtp.us-east-1.amazonses.com` (priority 10); TXT `v=spf1 include:amazonses.com ~all`
+
+8. **TXT** (Resend DKIM public key)
+   - **Host**: resend._domainkey.kilotest.com
+   - **Answer**: an RSA public key in `p=...` form, issued by Resend
+
+9. **TXT** (DMARC policy)
+   - **Host**: _dmarc.kilotest.com
+   - **Answer**: `v=DMARC1; p=none;`
+
+10. **TXT** (site verification)
+    - **Host**: kilotest.com
+    - **Answers**: `google-site-verification=...` and `smithery-verification=...` tokens issued by Google and Smithery
+
 The DNS configuration as CSV:
 
 ```csv
@@ -153,7 +173,13 @@ kilotest.com,kilotest.com,A,149.28.208.106,3600,0
 kilotest.com,www.kilotest.com,CNAME,kilotest.com,3600,0
 kilotest.com,kilotest.com,MX,fwd1.porkbun.com,3600,10
 kilotest.com,kilotest.com,MX,fwd2.porkbun.com,3600,20
+kilotest.com,send.kilotest.com,MX,feedback-smtp.us-east-1.amazonses.com,3600,10
 kilotest.com,kilotest.com,TXT,"v=spf1 include:_spf.porkbun.com ~all",3600,0
+kilotest.com,send.kilotest.com,TXT,"v=spf1 include:amazonses.com ~all",3600,0
+kilotest.com,resend._domainkey.kilotest.com,TXT,"p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDWjPkYLQ+xYcmMRODdXoXl7QTXK5TkhNQXjl5HcPvk1D5A5eqtjuw17lgZOQy1wiUq8BGId+Iq3BWO32kYTJo+lWMQJ8/Me4M0xQ0qaYPmtTJ9cQ8oyrFUuheu7T0MqTYEwYRbHwE74WkQSQTHnCx0Uy98pcXqOaucA3n1v3YkjQIDAQAB",3600,0
+kilotest.com,_dmarc.kilotest.com,TXT,"v=DMARC1; p=none;",3600,0
+kilotest.com,kilotest.com,TXT,google-site-verification=EnNe2chUyUaV645ENd3c6pHs1PZ_Zb3u5516HSirvrA,3600,0
+kilotest.com,kilotest.com,TXT,smithery-verification=6a3a2327c26bc478be748041f340e14fa50c4386eea3b2692eeffda703b8b3f9,3600,0
 kilotest.com,_acme-challenge.kilotest.com,TXT,GIzAHOFW416fHp7cuTkg4gvJDsyuPZvsPlSsnyViFLQ,3600,0
 kilotest.com,_acme-challenge.kilotest.com,TXT,qQdIIiUSC76PvYuku-AxPsRPY-fJV7T7i3b8fimlFjU,3600,0
 ```
@@ -356,7 +382,7 @@ Kilotest uses [Resend](https://resend.com/) as its transactional email delivery 
 
 ### DNS configuration for Resend
 
-Resend authenticates outgoing mail using DKIM, and mail receivers additionally consult SPF and DMARC records for the sending domain. The `kilotest.com` DNS zone (managed at [porkbun.com](https://porkbun.com/); see the DNS Configuration section above for the full record set) currently contains the following records relevant to Resend, confirmed live on 2026-09-16 by querying DNS directly:
+Resend authenticates outgoing mail using DKIM, and mail receivers additionally consult SPF and DMARC records for the sending domain. The `kilotest.com` DNS zone (managed at [porkbun.com](https://porkbun.com/); see the DNS Configuration section above for the full record set) currently contains the following records relevant to Resend, confirmed live on 2026-09-17 by querying DNS directly and by inspecting the full headers of a delivered alert message:
 
 1. **DKIM (DomainKeys Identified Mail)**
    - **Record type**: TXT (not a CNAME)
@@ -364,10 +390,10 @@ Resend authenticates outgoing mail using DKIM, and mail receivers additionally c
    - **Value**: an RSA public key in `p=...` form, issued by Resend for this domain.
 
 2. **SPF (Sender Policy Framework)**
-   - **Record type**: TXT
-   - **Host**: `kilotest.com` (the root domain)
-   - **Value**: `v=spf1 include:_spf.porkbun.com ~all`
-   - This record does **not** include `include:resend.com` or any other Resend-related mechanism. Whether Resend's deliverability for this domain depends on that inclusion, or relies on DKIM alignment alone under the current relaxed DMARC policy (see below), has not been confirmed; this is worth confirming against the Resend dashboard's domain-verification status rather than assuming either way.
+   - **Record types**: MX and TXT
+   - **Host**: `send.kilotest.com` (a dedicated MAIL FROM subdomain, not the root domain)
+   - **Values**: MX `feedback-smtp.us-east-1.amazonses.com` (priority 10) and TXT `v=spf1 include:amazonses.com ~all`
+   - This pair is what Resend’s “Enable SPF” option creates. It makes Resend send with a MAIL FROM on `send.kilotest.com`, which aligns with the `kilotest.com` From domain under relaxed DMARC alignment. Because Resend sends through Amazon SES, the include target is `amazonses.com`, not `resend.com`. The separate root-domain TXT record `v=spf1 include:_spf.porkbun.com ~all` authorizes Porkbun’s servers for mail sent as `@kilotest.com` through Porkbun; SPF is evaluated against the MAIL FROM domain, so the root record plays no role in Resend authentication and needs no Resend mechanism.
 
 3. **DMARC (Domain-based Message Authentication, Reporting and Conformance)**
    - **Record type**: TXT
@@ -375,7 +401,7 @@ Resend authenticates outgoing mail using DKIM, and mail receivers additionally c
    - **Value**: `v=DMARC1; p=none;`
    - The `p=none` policy is monitoring-only: it asks receivers to take no special action on mail that fails alignment, rather than quarantining or rejecting it. No `rua=` reporting address is configured, so no aggregate DMARC reports are being sent anywhere.
 
-These records, along with the MX records already documented above, are the complete set of email-related DNS configuration for `kilotest.com` as of the date given above. Any future change to Resend's configuration (for example, rotating the DKIM key, or tightening the DMARC policy from `p=none` to `p=quarantine` once deliverability is confirmed stable) should be reflected here and in the DNS Configuration section's CSV.
+A delivered alert message inspected on 2026-09-17 confirms this configuration end to end: `spf=pass` with `smtp.mailfrom` on `send.kilotest.com`, `dkim=pass` with `d=kilotest.com` (`s=resend`), and `dmarc=pass` at both the Porkbun forwarding hop and the final mailbox. Any future change to Resend’s configuration (for example, rotating the DKIM key, adding a `rua=` reporting address to the DMARC record, or tightening the DMARC policy from `p=none` to `p=quarantine`) should be reflected here and in the DNS Configuration section’s CSV.
 
 ### Setting environment variables in production
 

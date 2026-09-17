@@ -4,10 +4,6 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed are preserved for about 2 weeks in case of production bugs.
 
-## Document alerting
-
-Document when and how Kilotest sends alerts to its maintainer, including the subscription to Resend and the DNS configuration for Resend authentication.
-
 ## Decide whether to tighten the DMARC policy and add SPF alignment for Resend
 
 Live DNS for `kilotest.com`, checked 2026-09-16, shows a DMARC record of `v=DMARC1; p=none;` (monitoring only, no `rua=` reporting address) and an SPF record (`v=spf1 include:_spf.porkbun.com ~all`) that does not include `resend.com`. Mail sent via Resend is currently authenticated only by the DKIM record at `resend._domainkey.kilotest.com`. This may be an intentional, working minimal configuration, or an oversight from Resend's onboarding; it has not been confirmed against the Resend dashboard's domain-verification status. Consider confirming, in the Resend dashboard, whether SPF alignment is recommended or required for this domain's deliverability, and once alert deliverability has been stable for a period, whether to tighten DMARC from `p=none` to `p=quarantine` and add an `rua=` address so DMARC aggregate reports reach the maintainer.
@@ -204,6 +200,10 @@ Create this file in your project root as `scripts/generate-manifest.js`. It pull
 ## Add observability of request metrics
 
 Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
+
+## Document alerting (completed)
+
+Document when and how Kilotest sends alerts to its maintainer, including the subscription to Resend and the DNS configuration for Resend authentication.
 
 ## Serve explanation page for human MCP requests (completed)
 

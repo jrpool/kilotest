@@ -308,6 +308,108 @@ UptimeRobot also sends a recovery message when the service recovers and a subseq
 
 This monitoring service requires `Caddyfile` to permit `HEAD` requests, not only `GET` requests, to the root path.
 
+## Alerting
+
+Kilotest sends email alerts to the maintainer when certain events occur during normal operation. This section describes when and how those alerts are configured and sent.
+
+### When alerts are sent
+
+Alerts are sent to the maintainer in the following conditions:
+
+1. **Tutorial comment received**: When a user submits a comment on either the web tutorial page (`/tutorialWeb.html`) or the AI agent tutorial page (`/tutorialAI.html`), an alert is sent with subject `"New web tutorial comment received"` or `"New AI tutorial comment received"`.
+
+2. **Annotations become obsolete**: The `/listTopIssues.html` page displays no individual report; it aggregates violation counts, across all stored reports (one per tested page, its latest only), into a single cross-report summary of the most frequently reported issues. To build that summary, Kilotest reads the `issueID` field that it previously wrote onto each violating standard instance during annotation, and looks that `issueID` up as a key in the current `testaro-issues` package's issue definitions. The alert fires only if that key is entirely absent, i.e., the issue that this violation was previously classified under has since been removed (or renamed to a different key) in `testaro-issues`. It does not fire, and this check cannot detect, a rule being *reclassified* to a different, still-existing issue; that broader discrepancy (any stored `issueID` that no longer matches what `testaro-issues` currently assigns the rule, whether because the issue vanished or because the rule was moved to a different issue) is instead surfaced separately, without an alert, on the `/reannotateForm.html` page, which lists both such "reclassified" rules and rules that remain wholly unclassified. Each violating instance is checked independently, so a single stored report can trigger this alert once per distinct missing issue ID it contains, and the alert body names one such issue ID at a time. Despite naming a specific issue, the alert does not point at a way to reannotate just that issue: Kilotest's only reannotation mechanism, reached via `/reannotateForm.html` and submitted at `/reannotate.html`, always re-annotates every standard instance of every currently stored report in one bulk operation (see `web/reannotate/index.ts`); there is no per-issue or per-report reannotation. The named issue ID is diagnostic detail only, telling the maintainer why reannotation is needed, not a parameter to a targeted fix.
+
+3. **Unclassified rules violated**: When a Testaro report is received and annotated, Kilotest attempts to classify every rule violation by looking up each rule in the `testaro-issues` package, which Kilotest depends on (`testaro-issues` in `package.json`) but does not itself define. If a rule has no classification in the currently installed `testaro-issues` package (i.e., the rule has never been assigned to any issue), that rule is added to an `issuelessRules` list in the report, and an alert is sent with subject `"Kilotest: unclassified rules violated"`, listing which rules in which rule engines lack classifications. Because Kilotest can only look up classifications that `testaro-issues` already provides, it has no means to give such a violation an issue ID until `testaro-issues` is updated to supply one; the remedy is two-fold and cannot be done in Kilotest alone: first update `testaro-issues` to add the missing rule-to-issue mapping, then, once Kilotest's dependency on `testaro-issues` is updated to that new version, reannotate the stored reports (`/reannotateForm.html`, see item 2 above) so their violating instances of that rule are written with the new issue ID. The two packages currently share a maintainer, so coordinating the two steps is not an external obstacle, but both steps remain necessary.
+
+4. **Unusable report received**: When a Testaro worker submits a report that Kilotest cannot parse or use (e.g., malformed data), an alert is sent with subject `"Kilotest: unusable report received"`, indicating which job produced the report and which worker submitted it.
+
+5. **Requested full report unavailable**: When a user requests a full report via the API but the report cannot be retrieved (e.g., the report file is missing from disk), an alert is sent with subject `"Kilotest: requested full report unavailable"`, including details on which report was requested and why it could not be retrieved.
+
+6. **Test request received via UI**: When a user submits a test request through the web interface, an alert is sent with subject `"Kilotest: new test request in the UI"` (via `/requestTest.html`) or `"Kilotest: new retest request in the UI"` (via `/requestRetest.html`), including the target URL, description, and the user's stated reason for the request. `test` and `retest` here are the only two literal values Kilotest passes as the request's type; they are hardcoded at each call site, not user-supplied.
+
+7. **Test request received via API**: When a test request is submitted via the API, an alert is sent with subject `"Kilotest: new test request in the API"` (via the `requestTest` API operation) or `"Kilotest: new retest request in the API"` (via the `requestRetest` API operation), including the target URL, description, and the user's stated reason. A request is treated as a duplicate, and no alert is sent for it, only if a request already pending in `db/jobs/testRequests.json`, i.e., submitted but not yet manually approved by the maintainer into an actual job, for the same URL has the identical description; this check ignores the stated reason and the test-versus-retest distinction, and is not limited to a recent time window, it compares against every request still pending approval for that URL. Once the maintainer approves a pending request (turning it into a job via `/enqueue.html`), all pending requests for that URL are cleared, so this check cannot detect a duplicate against a request that has already been approved, is currently running, or has already completed; an identical request submitted after approval alerts again. The check and its dedup key are identical for the UI and API paths, since both funnel through the same underlying request-queuing function.
+
+8. **MCP feature request received**: When a user submits a feature request via the MCP server's `requestFeature` tool, an alert is sent with subject `"MCP feature request received"`, including the text of the feature request.
+
+9. **WAVE balance low**: When Kilotest detects that the account balance for the WAVE API service (used for accessibility testing) has fallen below a threshold, an alert is sent with subject `"Kilotest: WAVE balance low"`, indicating the number of credits remaining.
+
+10. **AI service balance low**: When Kilotest detects that the account balance for an AI service account (such as Anthropic) has fallen below a threshold, an alert is sent with subject `"Kilotest: AI service [N] balance low"`, indicating the approximate remaining balance in dollars and the estimated cost per job.
+
+### Alert configuration
+
+Alerts are sent via the `sendAlert()` function in [alerts.ts](../alerts.ts), which requires five environment variables to be configured:
+
+1. **`MANAGER_EMAIL`**: The email address to which alerts should be sent. This is typically the maintainer's email address.
+2. **`ALERT_API_HOST`**: The hostname of the email delivery service. For Kilotest, this is configured to use [Resend](https://resend.com/), a transactional email service.
+3. **`ALERT_API_PATH`**: The API endpoint path on the email delivery service. For Resend, this is typically `/emails` or similar, depending on the API version.
+4. **`ALERT_API_KEY`**: An API key issued by the email delivery service for authentication. For Resend, this is the API key generated in the Resend dashboard.
+5. **`ALERT_FROM`**: The sender email address for outgoing alerts. This must be a verified sender address on the email delivery service.
+
+If any of these five variables is missing or empty at alert time, the alert is not sent. Instead, a warning message is logged to the console, and the application continues normal operation. The warning includes the alert subject and body so the maintainer can manually review what would have been sent.
+
+### Resend integration
+
+Kilotest uses [Resend](https://resend.com/) as its transactional email delivery service. Resend is configured through the environment variables above.
+
+**Resend configuration for Kilotest**: `ALERT_API_HOST` and `ALERT_API_PATH` together identify the Resend API endpoint Kilotest posts to; `ALERT_API_KEY` is a Resend-issued API key; `ALERT_FROM` is the sender address Kilotest sends as. The live values of these environment variables are set in the server's `.env` file, not its PM2 configuration (see “Setting environment variables in production” below), and are not duplicated here.
+
+### DNS configuration for Resend
+
+Resend authenticates outgoing mail using DKIM, and mail receivers additionally consult SPF and DMARC records for the sending domain. The `kilotest.com` DNS zone (managed at [porkbun.com](https://porkbun.com/); see the DNS Configuration section above for the full record set) currently contains the following records relevant to Resend, confirmed live on 2026-09-16 by querying DNS directly:
+
+1. **DKIM (DomainKeys Identified Mail)**
+   - **Record type**: TXT (not a CNAME)
+   - **Host**: `resend._domainkey.kilotest.com`
+   - **Value**: an RSA public key in `p=...` form, issued by Resend for this domain.
+
+2. **SPF (Sender Policy Framework)**
+   - **Record type**: TXT
+   - **Host**: `kilotest.com` (the root domain)
+   - **Value**: `v=spf1 include:_spf.porkbun.com ~all`
+   - This record does **not** include `include:resend.com` or any other Resend-related mechanism. Whether Resend's deliverability for this domain depends on that inclusion, or relies on DKIM alignment alone under the current relaxed DMARC policy (see below), has not been confirmed; this is worth confirming against the Resend dashboard's domain-verification status rather than assuming either way.
+
+3. **DMARC (Domain-based Message Authentication, Reporting and Conformance)**
+   - **Record type**: TXT
+   - **Host**: `_dmarc.kilotest.com`
+   - **Value**: `v=DMARC1; p=none;`
+   - The `p=none` policy is monitoring-only: it asks receivers to take no special action on mail that fails alignment, rather than quarantining or rejecting it. No `rua=` reporting address is configured, so no aggregate DMARC reports are being sent anywhere.
+
+These records, along with the MX records already documented above, are the complete set of email-related DNS configuration for `kilotest.com` as of the date given above. Any future change to Resend's configuration (for example, rotating the DKIM key, or tightening the DMARC policy from `p=none` to `p=quarantine` once deliverability is confirmed stable) should be reflected here and in the DNS Configuration section's CSV.
+
+### Setting environment variables in production
+
+The deployed `pm2.config.cjs` on the server (`/opt/jpdev/kilotest/pm2.config.cjs`) does not list any of the five alert variables in its `env` object; it matches the repository's own copy of that file, which contains only `NODE_ENV`, `BASE_PATH`, and `DEMO_SSE_DELAY_MS`. Alerting is nonetheless working in production, so the five alert variables are being supplied another way.
+
+`index.ts` calls `dotenv.config({quiet: true})` at startup, which reads a `.env` file from the process's working directory (`/opt/jpdev/kilotest/.env`) and loads its contents into `process.env`, in addition to whatever PM2 itself already set. `.env` is listed in `.gitignore`, so it is never committed and exists only on the server; this is the actual mechanism supplying `MANAGER_EMAIL`, `ALERT_API_HOST`, `ALERT_API_PATH`, `ALERT_API_KEY`, and `ALERT_FROM` to the running process. Its expected contents, including these five variables, are documented by the repository's own [env.example](../env.example) (see also the setup instructions in the project [README](../README.md)); `env.example` already records `ALERT_API_HOST=api.resend.com` and `ALERT_API_PATH=/emails` as committed values (also confirmed live: a direct request to `https://api.resend.com/emails` returns `401 Unauthorized`, i.e., a real endpoint that requires an API key, not a routing failure), while `MANAGER_EMAIL`, `ALERT_API_KEY`, and `ALERT_FROM` are left as placeholders there, to be filled in per deployment with server-side secrets not recorded in this document.
+
+To change any of the five alert variables:
+
+1. Edit `/opt/jpdev/kilotest/.env` on the server directly.
+2. Restart PM2 so the process starts fresh and `dotenv.config()` re-reads the file:
+
+   ```bash
+   pm2 restart kilotest --time --update-env
+   pm2 save
+   ```
+
+### Troubleshooting
+
+**Alerts are not being sent**:
+
+1. Check that all five alert environment variables are set in `/opt/jpdev/kilotest/.env` on the server (not `pm2.config.cjs`, which does not carry them): `MANAGER_EMAIL`, `ALERT_API_HOST`, `ALERT_API_PATH`, `ALERT_API_KEY`, `ALERT_FROM`.
+2. Check the PM2 logs for warning or error messages: `pm2 logs kilotest | grep -i alert`.
+3. Verify that the Resend API key is valid and has not been revoked in the Resend dashboard.
+4. Verify that the sender email address (`ALERT_FROM`) is verified in the Resend dashboard.
+5. Verify that the DNS records (DKIM, SPF, DMARC) are correctly configured for `kilotest.com`.
+
+**Alerts are bouncing or not reaching the maintainer**:
+
+1. Check the Resend dashboard logs for delivery errors.
+2. Verify that the `MANAGER_EMAIL` address is correct and actively monitored.
+3. Check the maintainer's email spam folder; some email providers filter unfamiliar senders.
+4. Verify DMARC, SPF, and DKIM records are correctly configured.
+
 ## Performance
 
 The Cloud Compute host, in initial testing, took about 2.5 as long to process an example job as an Apple M2 Pro MacBook Pro with 16GB of memory. After tuning, the ratio was reduced to about 1.7.
@@ -333,7 +435,7 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 Jobs and reports are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. Therefore, reports risk deletion unless duplicates are made externally. Other files, including application code, dependencies, and `db/reportsExtract.json`, are not at risk, because they can be pushed from the local repository or regenerated.
 
-Reports created on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created two _buckets_ named `kilotest-reports` and `kilotest-hidden-reports`, and has created an API token scoped to those buckets with object read-write permissions, access and secret access keys for S3 clients, and a restriction to the IPv4 and IPv6 addresses of the server.
+Reports created on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created two *buckets* named `kilotest-reports` and `kilotest-hidden-reports`, and has created an API token scoped to those buckets with object read-write permissions, access and secret access keys for S3 clients, and a restriction to the IPv4 and IPv6 addresses of the server.
 
 The server host uses `rclone` for file synchronization with external storage locations. Two files on the server host enable `rclone` for use by Kilotest. One file is `/home/linuxuser/.config/rclone/rclone.conf`. Its content, with secrets replaced, is:
 

@@ -4,17 +4,210 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed are preserved for about 2 weeks in case of production bugs.
 
-## Serve explanation page for human MCP requests
-
-When the `/mcp` path is requested without a `text/event-stream` accept header, serve an HTML page explaining that the endpoint is for AI agents and providing a link to the AI tutorial.
-
 ## Document alerting
 
 Document when and how Kilotest sends alerts to its maintainer, including the subscription to Resend and the DNS configuration for Resend authentication.
 
+## Decide whether to tighten the DMARC policy and add SPF alignment for Resend
+
+Live DNS for `kilotest.com`, checked 2026-09-16, shows a DMARC record of `v=DMARC1; p=none;` (monitoring only, no `rua=` reporting address) and an SPF record (`v=spf1 include:_spf.porkbun.com ~all`) that does not include `resend.com`. Mail sent via Resend is currently authenticated only by the DKIM record at `resend._domainkey.kilotest.com`. This may be an intentional, working minimal configuration, or an oversight from Resend's onboarding; it has not been confirmed against the Resend dashboard's domain-verification status. Consider confirming, in the Resend dashboard, whether SPF alignment is recommended or required for this domain's deliverability, and once alert deliverability has been stable for a period, whether to tighten DMARC from `p=none` to `p=quarantine` and add an `rua=` address so DMARC aggregate reports reach the maintainer.
+
+## Widen test-request duplicate detection
+
+The duplicate check in `addTestRequest` (`util.ts`), reached by all four test/retest request paths (UI `/requestTest.html` and `/requestRetest.html`; API `requestTest` and `requestRetest` operations), compares an incoming request only against other requests currently pending in `db/jobs/testRequests.json`, i.e., submitted but not yet manually approved by the maintainer into a job. Once a pending request is approved into a job (`web/enqueue/index.ts`), all pending requests for that URL are cleared from `testRequests.json`, so this shared check cannot recognize a duplicate against a request that has already been approved, is currently running, or has already completed. An identical request submitted after approval triggers a fresh alert rather than being filtered.
+
+The four paths differ in what, if anything, they check before reaching this shared dedup, and none of the four closes the gap:
+
+- UI `requestTest` (`web/requestTest/index.ts`) additionally calls `getRequestability`, rejecting the request outright if the URL matches a claimed or queued job. This screens out most already-approved, not-yet-completed requests for a new test, but not ones for a completed report, since `getRequestability` does not consult reports.
+- API `requestTest` (`api/requestTest.ts`) additionally checks `getReportExtracts` and rejects the request if a report already exists for the same description and URL, but, unlike the UI path, does not call `getRequestability`, so it does not screen out a URL that is currently claimed or queued as a job.
+- UI `requestRetest` (`web/requestRetest/index.ts`) and API `requestRetest` (`api/requestRetest.ts`) call neither `getRequestability` nor a same-description-and-URL report check; each only confirms the report being retested is still the latest one for its page before falling through to the shared dedup.
+
+Consider widening the shared `addTestRequest` check itself, so that all four paths benefit uniformly, to also compare against approved, claimed, queued, or completed requests, for example recently created jobs or reports for the same URL and description, and if so over what time window, rather than continuing to rely on each path's own inconsistent pre-check.
+
+## Improve MCP-zero discoverability
+
+### Advice from Gemini
+
+To make your **kilotest** MCP server discoverable by **MCP-Zero** agent loops (or enterprise gateways using active tool discovery architectures), you need to optimize how your server represents itself to semantic routers.
+
+Because MCP-Zero operates as a **two-stage semantic routing system** (first matching the server domain, then matching the specific tools via vector embeddings), a standard MCP list_tools setup is not enough. You must optimize your metadata and schemas so that indexers can crawl and agents can query your server dynamically on demand.
+
+Follow these steps to make your server fully discoverable:
+
+### **1. Re-Architect Your Tool Naming & Descriptions**
+
+MCP-Zero relies heavily on the LLM’s ability to articulate an *Active Tool Request* based on semantic gaps. Ambiguous tool names like `listReports` are the primary reason a server gets passed over during a vector lookup.
+
+Change your tool declarations to be unambiguous and explicitly tied to your domain (ensemble front-end quality and accessibility testing):
+
+*`// ❌ Old Anti-Pattern for MCP-Zero`*
+`{`
+  `name: "listReports",`
+  `description: "Lists all reports."`
+`}`
+
+*`// ✅ Optimized Pattern for MCP-Zero Discovery`*
+`{`
+  `name: "kilotest_list_web_quality_reports",`
+  `description: "Retrieves a historical catalog of ensemble front-end quality test reports for web pages. Use this to check whether a specific URL has already been audited for accessibility (WCAG), usability, and W3C standards conformity."`
+`}`
+
+**Prefix your tools:** Use a uniform prefix like `kilotest_` to prevent namespaces from colliding with other standard testing tools when flattened into an agent’s runtime.
+
+**Inject key synonyms in descriptions:** Notice how the bad example just repeats the name. The optimized description explicitly seeds semantic keywords (**accessibility, WCAG, usability, standards, audit**). If an agent thinks, *“I need to check if this site is accessible for screen readers,”* the embedding vectors will match your tool.
+
+### **2. Deepen Your Parameter Schemas**
+
+MCP-Zero models often inspect input expectations before mounting a server to ensure they can fulfill the schema requirements. Provide dense descriptions for arguments instead of generic labels:
+
+`"url_filter": {`
+  `"type": "string",`
+  `"description": "Optional target web page URL to filter reports for (e.g., 'https://example.com'). Helps find existing accessibility and front-end compliance history for this specific site."`
+`}`
+
+(Note from maintainer: This feature does not yet exist, so this is an example illustrating a principle but cannot be applied verbatim.)
+
+### **3. Maximize Your Centralized Registry Metadata (package.json)**
+
+Since kilotest is a public npm-published server already registered on community indexes (like Smithery and Glama), ensure your package file is effectively feeding their background indexers. MCP-Zero ingestion scripts crawl these registries and rely on the keywords and description tags to build their top-level server embedding maps.
+
+Update your package.json to feature dense, functional keywords:
+
+`{`
+  `"name": "kilotest",`
+  `"description": "Model Context Protocol (MCP) server for Kilotest ensemble web testing. Runs over 1,300 front-end tests across multiple rule engines covering WCAG accessibility, usability, performance, and web standards.",`
+  `"keywords": [`
+    `"mcp",`
+    `"model-context-protocol",`
+    `"mcp-server",`
+    `"accessibility-testing",`
+    `"wcag",`
+    `"web-quality-audit",`
+    `"automated-qa",`
+    `"ensemble-testing"`
+  `]`
+`}`
+
+### **4. Provide a "Capability Discovery" Tool**
+
+A useful pattern for MCP-Zero discovery loops is exposing a zero-argument metadata tool, such as kilotest_get_server_capabilities. If an agent routes to your server but needs to confirm exactly what it can check before running an audit, this lightweight tool can return a deterministic list summarizing the specific rule engines inside kilotest.
+
+Here are both the **TypeScript schema definitions** to update your tool definitions in code, and an **automated script** to generate an optimized manifest file (`mcp-manifest.json`) for your npm release.
+
+### **1. The Optimized TypeScript Tool Schemas**
+
+Replace your existing tool definitions with these semantically rich schemas. They are designed to rank highly when evaluated by an MCP-Zero semantic routing loop.
+
+`import {Tool} from "@modelcontextprotocol/sdk/types.js";`
+
+`export const KILOTEST_TOOLS: Tool[] = [`
+  `{`
+    `name: "kilotest_list_web_quality_reports",`
+    `description: "Retrieves a historical catalog of ensemble front-end quality and compliance test reports. Use this tool to check if a specific web page or URL has already been audited for accessibility (WCAG), performance benchmarks, semantic HTML correctness, or usability standards.",`
+    `inputSchema: {`
+      `type: "object",`
+      `properties: {`
+        `url_filter: {`
+          `type: "string",`
+          `description: "Optional URL to filter reports for (e.g., 'https://example.com'). Helps identify existing compliance test history for a specific website."`
+        `},`
+        `limit: {`
+          `type: "number",`
+          `description: "Maximum number of historical reports to return. Defaults to 10.",`
+          `default: 10`
+        `}`
+      `}`
+    `}`
+  `},`
+  `{`
+    `name: "kilotest_run_ensemble_audit",`
+    `description: "Triggers a live, comprehensive front-end engineering audit on a target URL. Runs 1,300+ automated test checks across 12 rule engines simultaneously to evaluate WCAG accessibility compliance, mobile responsiveness, SEO configurations, and core web vitals performance.",`
+    `inputSchema: {`
+      `type: "object",`
+      `properties: {`
+        `url: {`
+          `type: "string",`
+          `description: "The absolute web page URL to inspect (must include http:// or https://)."`
+        `},`
+        `scan_depth: {`
+          `type: "string",`
+          `enum: ["single_page", "shallow_crawl"],`
+          `description: "Depth of the quality sweep. 'single_page' tests only the target URL; 'shallow_crawl' includes immediately linked internal assets."`
+        `}`
+      `},`
+      `required: ["url"]`
+    `}`
+  `},`
+  `{`
+    `name: "kilotest_get_server_capabilities",`
+    `description: "Exposes a metadata summary of the 12 underlying rule engines configured inside this kilotest instance. Run this zero-argument tool to inspect exactly what front-end compliance standards (such as WCAG 2.2, W3C HTML, or performance budgets) this server is currently capable of evaluating.",`
+    `inputSchema: {`
+      `type: "object",`
+      `properties: {}`
+    `}`
+  `}`
+`];`
+
+### **2. Auto-Generation Script (`generate-manifest.js`)**
+
+MCP-Zero frameworks and platform indexers often ingest a static metadata file to cache tool definitions before spawning your server.
+
+Create this file in your project root as `scripts/generate-manifest.js`. It pulls details directly from your package config and spits out a completely optimized index file.
+
+`import fs from 'fs';`
+`import path from 'path';`
+
+*`// Read your existing package.json`*
+`const packageJsonPath = path.resolve(process.cwd(), 'package.json');`
+`const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));`
+
+*`// Construct the high-fidelity MCP discovery manifest`*
+`const mcpManifest = {`
+  `manifest_version: "1.0.0",`
+  `server: {`
+    `name: "kilotest",`
+    `version: pkg.version,`
+    `description: "Official Model Context Protocol (MCP) server for Kilotest ensemble web testing. Programmatically evaluates front-end code bases across 1,300 validation checks covering WCAG 2.1/2.2 accessibility, performance budgets, markup standards, and cross-browser UX compliance.",`
+    `homepage: pkg.homepage || "https://kilotest.com",`
+    `routing_tags: [`
+      `"accessibility", "wcag", "web-standards", "html-validation",`
+      `"ux-audit", "front-end-qa", "performance-benchmarks", "automated-testing"`
+    `]`
+  `},`
+  `// Static schema fallback for zero-install discovery loops`
+  `discovery_schemas: {`
+    `transport: "stdio",`
+    `recommended_namespace: "kilotest"`
+  `}`
+`};`
+
+*`// Write it to your distribution/root folder`*
+`const outputPath = path.resolve(process.cwd(), 'mcp-manifest.json');`
+`fs.writeFileSync(outputPath, JSON.stringify(mcpManifest, null, 2));`
+
+``console.log(`✅ MCP-Zero Discovery Manifest successfully written to: ${outputPath}`);``
+
+### **How to use this in your workflow**
+
+> 1. Add a generation step to your package.json scripts:
+>    `"scripts": {`
+>      `"build": "tsc && node scripts/generate-manifest.js"`
+>    `}`
+> 2. When you run your build pipeline, it will ensure that both your active runtime code and your static metadata file match perfectly.
+> 3. Make sure `mcp-manifest.json` is included in your files array in `package.json` so it gets published to **npm**.
+
+### **Other actions**
+
+1. Create the **underlying handler function** for the new `kilotest_get_server_capabilities` tool.
+2. Create a **GitHub Action configuration** to automatically validate these schemas on push.
+
 ## Add observability of request metrics
 
 Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
+
+## Serve explanation page for human MCP requests (completed)
+
+When the `/mcp` path is requested without a `text/event-stream` accept header, serve an HTML page explaining that the endpoint is for AI agents and providing a link to the AI tutorial.
 
 ## Deploy revisions (completed)
 

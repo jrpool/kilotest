@@ -4,14 +4,6 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed are preserved for about 2 weeks in case of production bugs.
 
-## Tighten the DMARC policy after adding aggregate reporting
-
-Resend mail is already fully authenticated and passes DMARC; what remains undecided is reporting and enforcement, not SPF alignment. Confirmed on 2026-09-17 by querying DNS live and by inspecting the full headers of a received alert: SPF passes against a Resend-configured MAIL FROM on `send.kilotest.com` (MX `feedback-smtp.us-east-1.amazonses.com` and TXT `v=spf1 include:amazonses.com ~all`, the pair created by Resend’s “Enable SPF” option), which aligns with the `kilotest.com` From domain under relaxed alignment, and DKIM passes with an aligned `d=kilotest.com` signature (`s=resend`, key published at `resend._domainkey.kilotest.com`). The captured message showed `dmarc=pass` at both the Porkbun forwarding hop and the final Zoho mailbox; Porkbun’s SRS rewrite makes post-forward SPF unaligned, so DKIM is what carries DMARC across the forward. `ALERT_FROM` is `info@kilotest.com`, matching the DMARC domain, and `MANAGER_EMAIL` is the same Porkbun-forwarded address, which terminates at `pool@jpdev.pro` on Zoho.
-
-The maintainer sends no mail as `@kilotest.com` (human mail is sent from `pool@jpdev.pro`), so Resend alerts are currently the domain’s only legitimate sending stream, and tightening DMARC risks no known sender. If transactional mail is added later it will also use `info@kilotest.com`; any provider other than Resend would need its own SPF and DKIM alignment configured before deployment under an enforced policy. The root-domain SPF record has no Resend mechanism and needs none: SPF is evaluated against the MAIL FROM domain, which for Resend is `send.kilotest.com`, not the root domain.
-
-Consider: (1) adding `rua=mailto:info@kilotest.com` to the `_dmarc.kilotest.com` record while still at `p=none` (aggregate reports are zipped XML and reach Zoho through the existing forward); (2) after a few weeks of reports confirm that no unexpected stream is failing, moving to `p=quarantine`, optionally with a `pct=` ramp, and later to `p=reject`; (3) reflecting any DNS change in `docs/SERVICE.md` and its DNS CSV.
-
 ## Widen test-request duplicate detection
 
 The duplicate check in `addTestRequest` (`util.ts`), reached by all four test/retest request paths (UI `/requestTest.html` and `/requestRetest.html`; API `requestTest` and `requestRetest` operations), compares an incoming request only against other requests currently pending in `db/jobs/testRequests.json`, i.e., submitted but not yet manually approved by the maintainer into a job. Once a pending request is approved into a job (`web/enqueue/index.ts`), all pending requests for that URL are cleared from `testRequests.json`, so this shared check cannot recognize a duplicate against a request that has already been approved, is currently running, or has already completed. An identical request submitted after approval triggers a fresh alert rather than being filtered.
@@ -204,6 +196,14 @@ Create this file in your project root as `scripts/generate-manifest.js`. It pull
 ## Add observability of request metrics
 
 Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
+
+## Tighten the DMARC policy after adding aggregate reporting (revised and completed)
+
+Resend mail is already fully authenticated and passes DMARC; what remains undecided is reporting and enforcement, not SPF alignment. Confirmed on 2026-09-17 by querying DNS live and by inspecting the full headers of a received alert: SPF passes against a Resend-configured MAIL FROM on `send.kilotest.com` (MX `feedback-smtp.us-east-1.amazonses.com` and TXT `v=spf1 include:amazonses.com ~all`, the pair created by Resend’s “Enable SPF” option), which aligns with the `kilotest.com` From domain under relaxed alignment, and DKIM passes with an aligned `d=kilotest.com` signature (`s=resend`, key published at `resend._domainkey.kilotest.com`). The captured message showed `dmarc=pass` at both the Porkbun forwarding hop and the final Zoho mailbox; Porkbun’s SRS rewrite makes post-forward SPF unaligned, so DKIM is what carries DMARC across the forward. `ALERT_FROM` is `info@kilotest.com`, matching the DMARC domain, and `MANAGER_EMAIL` is the same Porkbun-forwarded address, which terminates at `pool@jpdev.pro` on Zoho.
+
+The maintainer sends no mail as `@kilotest.com` (human mail is sent from `pool@jpdev.pro`), so Resend alerts are currently the domain’s only legitimate sending stream, and tightening DMARC risks no known sender. If transactional mail is added later it will also use `info@kilotest.com`; any provider other than Resend would need its own SPF and DKIM alignment configured before deployment under an enforced policy. The root-domain SPF record has no Resend mechanism and needs none: SPF is evaluated against the MAIL FROM domain, which for Resend is `send.kilotest.com`, not the root domain.
+
+Consider: (1) adding `rua=mailto:info@kilotest.com` to the `_dmarc.kilotest.com` record while still at `p=none` (aggregate reports are zipped XML and reach Zoho through the existing forward); (2) after a few weeks of reports confirm that no unexpected stream is failing, moving to `p=quarantine`, optionally with a `pct=` ramp, and later to `p=reject`; (3) reflecting any DNS change in `docs/SERVICE.md` and its DNS CSV.
 
 ## Document alerting (completed)
 

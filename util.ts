@@ -205,13 +205,38 @@ export const getJobNames = async (): Promise<{queue: string[], claimed: string[]
         fileNames = [];
       }
       else {
-        throw new Error(`Job directory ${category} not readable (${errorMessage(error)})`, {cause: error});
+        throw new Error(
+          `Job directory ${category} not readable (${errorMessage(error)})`, {cause: error}
+        );
       }
     }
     jobNames[category] = fileNames;
   }
   return jobNames;
 }
+// Gets the descriptions and URLs of the pages of all jobs of a category.
+export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{description: string, url: string}[]> => {
+  const jobsDir = path.join(jobsPath(), category);
+  const jobFileNames = await fs.readdir(jobsDir);
+  // For each job in the category:
+  const data: {description: string, url: string}[] = [];
+  for (const jobFileName of jobFileNames) {
+    const jobPath = path.join(jobsDir, jobFileName);
+    try {
+      const jobData = await fs.readFile(jobPath, 'utf8');
+      const job = JSON.parse(jobData);
+      const {target} = job;
+      data.push({
+        description: target.what,
+        url: target.url
+      });
+    }
+    catch(error: unknown) {
+      throw new Error(`Job file ${jobPath} defective`, {cause: error});
+    }
+  }
+  return data;
+};
 // Returns the JSON stringification of an object, with a final newline.
 export const getJSON = (object: unknown): string => `${JSON.stringify(object, null, 2)}\n`;
 // Returns the message of an error, or its string representation if it is not an Error instance.
@@ -365,30 +390,6 @@ export const htmlSafe = (string: string): string => string ? string
 export const isJobID = (string: string): boolean => {
   return /^[a-z0-9]{3}$/.test(string);
 };
-// Returns whether a job to test a target is eligible for a request.
-export const getRequestability = async (url: string): Promise<string> => {
-  const jobNames = await getJobNames();
-  // For each claimed job:
-  for (const fileName of jobNames.claimed) {
-    const job = await getObject(path.join(jobsPath(), 'claimed', fileName));
-    // If its URL is that of the requested target:
-    if ((job as {target: {url: string}}).target.url === url) {
-      // Return this.
-      return 'claimed';
-    }
-  }
-  // If no claimed job has the URL of the target, for each queued job:
-  for (const fileName of jobNames.queue) {
-    const job = await getObject(path.join(jobsPath(), 'queue', fileName));
-    // If its URL is that of the requested target:
-    if ((job as {target: {url: string}}).target.url === url) {
-      // Return this.
-      return 'queued';
-    }
-  }
-  // If no claimed or queued job has the URL of the target, return this.
-  return '';
-};
 // Returns whether a string is a time stamp.
 export const isTimeStamp = (string: string): boolean => {
   return !!getDateString(string);
@@ -483,7 +484,9 @@ export const testRequestsLock = createLock();
 // Adds a test request as a transaction.
 export const addTestRequest = (description: string, url: string, why: string) => testRequestsLock(async (): Promise<{error?: string}> => {
   // Get the data on waiting test requests.
-  const testRequests = await getTestRequests() as Record<string, {description: string, why: string, timeStamp: string}[]>;
+  const testRequests = await getTestRequests() as Record<string, {
+    description: string, reason: string, timeStamp: string
+  }[]>;
   testRequests[url] ??= [];
   // If any request has the same description and URL:
   if (testRequests[url].some(req => req.description === description)) {
@@ -918,4 +921,88 @@ export const getMultiReportWhats = async (): Promise<string[]> => {
     (description, index) => description !== sortedDescriptions[index - 1] && description === sortedDescriptions[index + 1]
   );
   return multiReportDescriptions;
+};
+// Returns the property that an approved job in a category has.
+const getApprovedJobProperty = async (
+  description: string, url: string, category: 'claimed' | 'queue'
+): Promise<string> => {
+  try {
+    // Get the descriptions and URLs of all jobs in the category.
+    const jobsData = await getJobsData(category);
+    // If a job with the description is in the category:
+    if (jobsData.some(job => job.description === description)) {
+      // Return this.
+      return 'description';
+    }
+    // Otherwise, if a job with the URL is in the category:
+    if (jobsData.some(job => job.url === url)) {
+      // Return this.
+      return 'url';
+    }
+    // Otherwise, return this.
+    return '';
+  }
+  catch(error) {
+    throw new Error('Failed to get approved job property', {cause: error});
+  }
+};
+// Returns whether a job to test or retest a page is eligible to be requested.
+export const getRequestability = async (
+  description: string,
+  url: string,
+  reason: string,
+  requestType: 'test' | 'retest',
+  timeStamp = '',
+  jobID = ''
+): Promise<string> => {
+  try {
+    // Get any property shared with a claimed job.
+    const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
+    // Get any property shared with a queued job.
+    const queueJobProperty = await getApprovedJobProperty(description, url, 'queue');
+    // If a property is shared with a claimed or queued job:
+    if (claimedJobProperty || queueJobProperty) {
+      // Return the property.
+      return claimedJobProperty || queueJobProperty;
+    }
+    // Otherwise, get the requests.
+    const requests = await getTestRequests() as Record<string, {
+      description: string, reason: string, timeStamp: string
+    }[]>;
+    // If the request has the same description, URL, and reason as an existing request:
+    if (requests[url]?.some(
+      request => request.description === description && request.reason === reason
+    )) {
+      // Return this.
+      return 'duplicate';
+    }
+    // Otherwise, get the extracts of all available reports.
+    const reportExtracts = await getReportExtracts();
+    // If the request is to retest a page:
+    if (requestType === 'retest') {
+      // Get the extract of the cited report.
+      const extract = reportExtracts.find(
+        extract => extract.timeStamp === timeStamp && extract.jobID === jobID
+      );
+      // If the cited report has been superseded:
+      if (extract!.superseded) {
+        // Return this.
+        return 'superseded';
+      }
+    }
+    // Otherwise, i.e. if the request is to test a new page:
+    else {
+      // If any report has the requested description and URL:
+      if (reportExtracts.some(report => report.description === description && report.url === url)) {
+        // Return this.
+        return 'retest';
+      }
+    }
+    // If the request is eligible, return this.
+    return 'eligible';
+    // If an error occurred:
+  } catch(error) {
+    // Throw this.
+    throw new Error('Failed to get requestability', {cause: error});
+  }
 };

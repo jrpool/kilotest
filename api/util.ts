@@ -7,6 +7,7 @@
 
 import {sendAlert} from '../alerts.ts';
 import {
+  addTestRequest,
   getAgoDays,
   getReportExtracts,
   getNowStamp,
@@ -15,8 +16,7 @@ import {
   getReportExtract,
   getReportStats,
   objectSort,
-  ruleEngines,
-  addTestRequest
+  ruleEngines
 } from '../util.ts';
 import type {ReportExtract} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -151,23 +151,22 @@ export const getIssueSpec = (issueID: string) => {
   // Otherwise, i.e. if it does not exist, return this.
   return null;
 };
-// Processes a test or retest request from the API.
-export const processTestRequest = async (testType: string, description: string, url: string, why: string): Promise<{status: string; message: string} | undefined> => {
-  // Get an email-safe version of the reason.
-  const plainWhy = getPlainText(why);
-  // Add the test request as a transaction.
-  const updateResult = await addTestRequest(description, url, plainWhy);
-  // If the request was a duplicate:
-  if (updateResult.error === 'duplicate') {
-    // Return this.
-    return {
-      status: 'error',
-      message: 'Duplicate request'
-    };
+// Processes a test or retest request and returns the result.
+export const processTestRequest = async (
+  testType: 'test' | 'retest', description: string, url: string, reason: string
+): Promise<'url' | 'description' | 'retest' | 'duplicate' | 'added'> => {
+  // Add the test request as a transaction if approvable and return the result.
+  const additionResult = await addTestRequest(description, url, reason);
+  // If the request was added:
+  if (additionResult === 'added') {
+    // Get an email-safe version of the reason.
+    const plainReason = getPlainText(reason);
+    // Alert a manager.
+    await sendAlert(
+      `Kilotest: new ${testType} request in the API`,
+      `Target: ${description}\nURL: ${url}\nReason: ${plainReason}`
+    );
   }
-  // Otherwise, i.e. if it was not a duplicate, alert a manager about it.
-  await sendAlert(
-    `Kilotest: new ${testType} request in the API`,
-    `Target: ${description}\nURL: ${url}\nReason: ${plainWhy}`
-  );
+  // Return the result.
+  return additionResult;
 };

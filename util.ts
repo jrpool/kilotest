@@ -48,6 +48,95 @@ const ruleEngines: Record<string, [string, string]> = {
 };
 export {ruleEngines};
 
+// TYPES
+
+// Test request.
+export type TestRequest = {
+  timeStamp: string;
+  description: string;
+  reason: string;
+};
+
+// Test requests by URL.
+export type TestRequests = Record<string, TestRequest[]>;
+
+// A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
+export interface AnnotatedInstance extends StandardInstance {
+  issueID?: string;
+}
+
+// An Act whose standardResult instances (if any) are AnnotatedInstances.
+// An intersection is used because Omit<Act, 'result'> would collapse Act's
+// string index signature and lose its named properties.
+export type AnnotatedAct = Act & {
+  result?: {
+    nativeResult?: unknown;
+    standardResult?: {
+      instances?: AnnotatedInstance[];
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
+
+// The shape of a Report that has passed isUsableReport: optional fields that
+// the guard verifies are narrowed to their required/non-null forms.
+// error?: never is a discriminant: UsableReport.error is always undefined/never (falsy),
+// so if (report.error) narrows a UsableReport | {error: string} union to {error: string},
+// and the else/after-return branch is narrowed to UsableReport.
+export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts'> & {
+  error?: never;
+  target: {what: string; url: string};
+  catalog: Catalog;
+  jobData: NonNullable<Report['jobData']> & {endTime: string; issuelessRules?: string[]};
+  acts: AnnotatedAct[];
+};
+
+// An extract of an available report.
+export type ReportExtract = {
+  timeStamp: string;
+  jobID: string;
+  description: string;
+  url: string;
+  reportTime: string;
+  superseded?: boolean;
+};
+
+// Page data from an available report.
+export type PageData = {
+  description: string;
+  url: string;
+  daysAgo: number | null;
+  error?: never;
+};
+
+// HTML strings describing the page data of an available report.
+export type PageDataStrings = {
+  description: string;
+  url: string;
+  urlLink: string;
+  testInfo: string;
+  error?: never;
+};
+
+// Basics about an available report.
+export type ReportData = {
+  description: string;
+  url: string;
+  jobName: unknown;
+  creationDate: Date | null;
+  daysAgo: number | null;
+  issueCount: number;
+  engineNames: string[];
+  engineCount: number;
+  reporterNames: string[];
+  reporterCount: number;
+  violatorCount: number;
+  preventedEngineNames: string[];
+  preventedEngineCount: number;
+  error?: never;
+};
+
 // MISCELLANEOUS FUNCTIONS
 
 // Compares strings alphabetically and case-insensitively.
@@ -336,11 +425,9 @@ export const getPOSTData = (request: import('node:http').IncomingMessage): Promi
     }
   });
 });
-// Returns the waiting test and retest requests. A missing test-requests file is a
-// normal, recoverable condition (e.g. on first run) and is replaced with an empty one; a
-// present but unreadable or non-JSON file should never occur, so that failure is thrown.
-export const getTestRequests = async (): Promise<unknown> => {
-  let testRequestsJSON;
+// Returns the test and retest requests awaiting approval.
+export const getTestRequests = async (): Promise<TestRequests> => {
+  let testRequestsJSON: string;
   try {
     testRequestsJSON = await fs.readFile(testRequestsPath(), 'utf8');
   }
@@ -352,10 +439,10 @@ export const getTestRequests = async (): Promise<unknown> => {
     throw new Error(`Test-requests file not readable (${errorMessage(error)})`, {cause: error});
   }
   try {
-    return JSON.parse(testRequestsJSON);
+    return JSON.parse(testRequestsJSON) as TestRequests;
   }
   catch(error: unknown) {
-    throw new Error(`Test-requests file not JSON (${errorMessage(error)})`, {cause: error});
+    throw new Error('Test-requests file not JSON', {cause: error});
   }
 };
 // Converts a catalog item text to a text-fragment link destination.
@@ -431,81 +518,8 @@ export const objectSort = <T extends Record<string, unknown>>(
   // Otherwise, do not sort.
   return 0;
 });
-// Processes a test or retest request in the UI.
-export const processTestRequest = async (testType: string, dirName: string, description: string, url: string, why: string): Promise<{status: string, message?: string, answerPage?: string}> => {
-  // If the request is valid:
-  if (
-    ['test', 'retest'].includes(testType)
-    && ['Test', 'Retest'].some(end => dirName.endsWith(end))
-    && description
-    && isURL(url)
-    && why.length > 4
-  ) {
-    // Make the reason display-safe.
-    const plainWhy = getPlainText(why);
-    // Update the waiting test requests as a transaction.
-    const updateResult = await addTestRequest(description, url, plainWhy);
-    // If the request was a duplicate:
-    if (updateResult.error === 'duplicate') {
-      // Return this.
-      return {
-        status: 'error',
-        message: 'Duplicate request'
-      };
-    }
-    // Otherwise, i.e. if it was not a duplicate:
-    else {
-      // Log the request.
-      console.log(`Test request received for ${description}: ${plainWhy}`);
-      // Alert a manager about it.
-      await sendAlert(
-        `Kilotest: new ${testType} request in the UI`,
-        `Target: ${description}\nURL: ${url}\nReason: ${plainWhy}`
-      );
-      // Get the populated template.
-      const answerPage = await populateTemplate(dirName, {
-        target: description,
-        why: plainWhy
-      });
-      // Return the populated page.
-      return {
-        status: 'ok',
-        answerPage
-      };
-    }
-  }
-  return {
-    status: 'error',
-    message: 'Invalid request'
-  };
-};
 // Concurrency lock for the `testRequests.json` file.
 export const testRequestsLock = createLock();
-// Adds a test request as a transaction.
-export const addTestRequest = (description: string, url: string, why: string) => testRequestsLock(async (): Promise<{error?: string}> => {
-  // Get the data on waiting test requests.
-  const testRequests = await getTestRequests() as Record<string, {
-    description: string, reason: string, timeStamp: string
-  }[]>;
-  testRequests[url] ??= [];
-  // If any request has the same description and URL:
-  if (testRequests[url].some(req => req.description === description)) {
-    // Return this.
-    return {
-      error: 'duplicate'
-    };
-  }
-  // Otherwise, i.e. if the request is not a duplicate, add it to those for the target.
-  testRequests[url].push({
-    timeStamp: getNowStamp(),
-    description,
-    why
-  });
-  // Save the revised test requests.
-  await fs.writeFile(testRequestsPath(), getJSON(testRequests));
-  // Return success.
-  return {};
-});
 // Deletes the test requests for a URL as a transaction.
 export const deleteTestRequests = (url: string) => testRequestsLock(async (): Promise<void> => {
   // Get the test requests.
@@ -515,85 +529,6 @@ export const deleteTestRequests = (url: string) => testRequestsLock(async (): Pr
   // Save the revised test requests.
   await fs.writeFile(testRequestsPath(), getJSON(testRequests));
 });
-
-// REPORT TYPES
-
-// A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
-export interface AnnotatedInstance extends StandardInstance {
-  issueID?: string;
-}
-
-// An Act whose standardResult instances (if any) are AnnotatedInstances.
-// An intersection is used because Omit<Act, 'result'> would collapse Act's
-// string index signature and lose its named properties.
-export type AnnotatedAct = Act & {
-  result?: {
-    nativeResult?: unknown;
-    standardResult?: {
-      instances?: AnnotatedInstance[];
-      [key: string]: unknown;
-    };
-    [key: string]: unknown;
-  };
-};
-
-// The shape of a Report that has passed isUsableReport: optional fields that
-// the guard verifies are narrowed to their required/non-null forms.
-// error?: never is a discriminant: UsableReport.error is always undefined/never (falsy),
-// so if (report.error) narrows a UsableReport | {error: string} union to {error: string},
-// and the else/after-return branch is narrowed to UsableReport.
-export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts'> & {
-  error?: never;
-  target: {what: string; url: string};
-  catalog: Catalog;
-  jobData: NonNullable<Report['jobData']> & {endTime: string; issuelessRules?: string[]};
-  acts: AnnotatedAct[];
-};
-
-// An extract of an available report.
-export type ReportExtract = {
-  timeStamp: string;
-  jobID: string;
-  description: string;
-  url: string;
-  reportTime: string;
-  superseded?: boolean;
-};
-
-// Page data from an available report.
-export type PageData = {
-  description: string;
-  url: string;
-  daysAgo: number | null;
-  error?: never;
-};
-
-// HTML strings describing the page data of an available report.
-export type PageDataStrings = {
-  description: string;
-  url: string;
-  urlLink: string;
-  testInfo: string;
-  error?: never;
-};
-
-// Basics about an available report.
-export type ReportData = {
-  description: string;
-  url: string;
-  jobName: unknown;
-  creationDate: Date | null;
-  daysAgo: number | null;
-  issueCount: number;
-  engineNames: string[];
-  engineCount: number;
-  reporterNames: string[];
-  reporterCount: number;
-  violatorCount: number;
-  preventedEngineNames: string[];
-  preventedEngineCount: number;
-  error?: never;
-};
 
 // REPORT FUNCTIONS
 
@@ -925,7 +860,7 @@ export const getMultiReportWhats = async (): Promise<string[]> => {
 // Returns the property that an approved job in a category has.
 const getApprovedJobProperty = async (
   description: string, url: string, category: 'claimed' | 'queue'
-): Promise<string> => {
+): Promise<'description' | 'url' | ''> => {
   try {
     // Get the descriptions and URLs of all jobs in the category.
     const jobsData = await getJobsData(category);
@@ -946,30 +881,30 @@ const getApprovedJobProperty = async (
     throw new Error('Failed to get approved job property', {cause: error});
   }
 };
-// Returns whether a job to test or retest a page is eligible to be requested.
-export const getRequestability = async (
+// Returns whether test or retest request is eligible to be approved.
+export const getApprovability = async (
   description: string,
   url: string,
   reason: string,
   requestType: 'test' | 'retest',
   timeStamp = '',
   jobID = ''
-): Promise<string> => {
+): Promise<'description' | 'url' | 'duplicate' | 'superseded' | 'retest' | 'eligible'> => {
   try {
-    // Get any property shared with a claimed job.
+    // Get any property the page shares with a claimed job.
     const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
-    // Get any property shared with a queued job.
+    // Get any property the page shares with a queued job.
     const queueJobProperty = await getApprovedJobProperty(description, url, 'queue');
-    // If a property is shared with a claimed or queued job:
+    // If the page shares a property with a claimed or queued job:
     if (claimedJobProperty || queueJobProperty) {
       // Return the property.
-      return claimedJobProperty || queueJobProperty;
+      return claimedJobProperty || queueJobProperty as 'description' | 'url';
     }
-    // Otherwise, get the requests.
+    // Otherwise, get the requests awaiting approval.
     const requests = await getTestRequests() as Record<string, {
       description: string, reason: string, timeStamp: string
     }[]>;
-    // If the request has the same description, URL, and reason as an existing request:
+    // If the request has the same URL, description and reason as an existing request:
     if (requests[url]?.some(
       request => request.description === description && request.reason === reason
     )) {
@@ -1006,3 +941,36 @@ export const getRequestability = async (
     throw new Error('Failed to get requestability', {cause: error});
   }
 };
+// Adds a new-test request as a transaction if approvable and return the result.
+export const addTestRequest = (description: string, url: string, reason: string) => testRequestsLock(async (): Promise<'retest' | 'duplicate' | 'description' | 'url' | 'added'> => {
+  try {
+    // Get the approvability of the request.
+    const approvability = await getApprovability(
+      description, url, reason, 'test'
+    ) as 'description' | 'url' | 'duplicate' | 'retest' | 'eligible';
+    // If the request is not approvable:
+    if (approvability !== 'eligible') {
+      // Return why.
+      return approvability;
+    }
+    // Otherwise, get the requests awaiting approval.
+    const testRequests = await getTestRequests();
+    // Initialize the requests with the URL if necessary.
+    testRequests[url] ??= [];
+    // Add the request to them.
+    testRequests[url].push({
+      timeStamp: getNowStamp(),
+      description,
+      reason
+    });
+    // Save the revised test requests.
+    await fs.writeFile(testRequestsPath(), getJSON(testRequests));
+    // Return success.
+    return 'added';
+  }
+  // If an error occurred:
+  catch(error) {
+    // Throw it.
+    throw new Error('Failed to add test request', {cause: error});
+  }
+});

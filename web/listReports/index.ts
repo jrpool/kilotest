@@ -15,7 +15,6 @@ import {
   getTestRequests,
   getReportData,
   getReportExtracts,
-  getRequestability,
   jobsPath,
   objectSort,
   populateTemplate
@@ -35,7 +34,7 @@ const populateQuery = async (query: Record<string, any>) => {
     tested: []
   };
   // Get the test requests.
-  const testRequests = await getTestRequests() as Record<string, {description: string, why: string}[]>;
+  const testRequests = await getTestRequests();
   // For each requested URL:
   Object.keys(testRequests).forEach(url => {
     // For each of its requests:
@@ -55,12 +54,29 @@ const populateQuery = async (query: Record<string, any>) => {
   : 'No requests await approval now.';
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
+  // Initialize sets of the page descriptions and URLs of jobs in both categories.
+  const jobsData = {
+    queue: {
+      descriptions: new Set(),
+      urls: new Set()
+    },
+    claimed: {
+      descriptions: new Set(),
+      urls: new Set()
+    }
+  };
   // For each job category:
   for (const category of ['queue', 'claimed'] as const) {
     // For each job in the category:
     for (const fileName of jobFileNames[category]) {
       // Get the job.
       const job = await getObject(path.join(jobsPath(), category, fileName)) as {target: {url: string, what: string}};
+      // Get the description and URL of its page.
+      const {target} = job;
+      const {what, url} = target;
+      // Ensure they are in the sets of properties of the category.
+      jobsData[category].descriptions.add(what);
+      jobsData[category].urls.add(url);
       // Add a line.
       lines[category].push(`${margin}<li><code>${job.target.url}</code> (${job.target.what})</li>`);
     }
@@ -84,7 +100,7 @@ const populateQuery = async (query: Record<string, any>) => {
   sortedExtracts = objectSort(sortedExtracts, 'description', 'alpha');
   // For each report:
   for (const extract of sortedExtracts) {
-    const {jobID, timeStamp, url, description} = extract;
+    const {jobID, timeStamp, url, description, superseded} = extract;
     // Get data about it.
     const reportData = await getReportData(timeStamp, jobID);
     // If this failed:
@@ -145,21 +161,26 @@ const populateQuery = async (query: Record<string, any>) => {
       const link = `<a ${href} ${label}>What ${questionString}?</a>`;
       lines.tested.push(`${margin}    <li>${link}</li>`);
     }
-    // Add the status of, and if necessary a question link about, retesting to the lines.
-    const status = await getRequestability(url);
-    let retestString: string;
-    if (status === 'claimed') {
+    let retestString: string = '';
+    // If a page with the same description or URL is being tested:
+    if (jobsData.claimed.descriptions.has(description) || jobsData.claimed.urls.has(url)) {
+      // Report this.
       retestString = 'Currently being retested';
     }
-    else if (status === 'queued') {
+    // Otherwise, if such a page is queued:
+    else if (jobsData.queue.descriptions.has(description) || jobsData.queue.urls.has(url)) {
       retestString = 'Currently in the queue for retesting';
     }
-    else {
+    // Otherwise, if no such page is being tested or queued and the report is not superseded:
+    else if (!superseded) {
+      // Make the page available for retesting.
       const href = `/requestRetestForm.html/${timeStamp}/${jobID}`;
       const retestContent = 'Should Kilotest retest the page?';
       retestString = `<a href="${href}">${retestContent}</a>`;
     }
-    lines.tested.push(`${margin}    <li>${retestString}</li>`);
+    if (retestString) {
+      lines.tested.push(`${margin}    <li>${retestString}</li>`);
+    }
     lines.tested.push(`${margin}  </ul>`);
     lines.tested.push(`${margin}</details>`);
   }

@@ -53,7 +53,7 @@ export const answer = async (pageArgs: string, reason: string) => {
       message: 'A later report about the page is already available'
     }
   }
-  // Otherwise, if the cited report has been superseded:
+  // Otherwise, if the cited report does not exist:
   else if (result === 'nonreport') {
     // Report this.
     return {

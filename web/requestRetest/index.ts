@@ -23,7 +23,7 @@ export const answer = async (pageArgs: string, reason: string) => {
   }
   const {description, url} = extract;
   // Otherwise, i.e. if it succeeded, process the request.
-  const result = await processTestRequest('test', description, url, reason, timeStamp, jobID);
+  const result = await processTestRequest('retest', description, url, reason, timeStamp, jobID);
   // If the request was recorded:
   if (result === 'ok') {
     const query = {
@@ -51,6 +51,14 @@ export const answer = async (pageArgs: string, reason: string) => {
     return {
       status: 'error',
       message: 'A later report about the page is already available'
+    }
+  }
+  // Otherwise, if the cited report has been superseded:
+  else if (result === 'nonreport') {
+    // Report this.
+    return {
+      status: 'error',
+      message: 'The report you want an update of does not exist'
     }
   }
   // Otherwise, i.e. if a request to test a page with the same description or URL is approved:

@@ -39,9 +39,9 @@ const populateQuery = async (query: Record<string, any>) => {
   Object.keys(testRequests).forEach(url => {
     // For each of its requests:
     testRequests[url]!.forEach((req: any) => {
-      const {description, why} = req;
+      const {description, reason} = req;
       // Add a line.
-      lines.requests.push(`${margin}<li><code>${url}</code> (${description}): ${why}</li>`);
+      lines.requests.push(`${margin}<li><code>${url}</code> (${description}): ${reason}</li>`);
     });
   });
   // Sort the lines in alphabetical order by URL and secondarily by proposed name.

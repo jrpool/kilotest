@@ -77,6 +77,9 @@ export const response = async (args: string[]) => {
       else if (requestResult === 'superseded') {
         failureReason = 'a later report about a page with the same description is available.'
       }
+      else if (requestResult === 'nonreport') {
+        failureReason = 'the report that you want an update of does not exist.'
+      }
       else {
         failureReason = 'an identical request is already awaiting approval.'
       }

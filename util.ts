@@ -62,7 +62,7 @@ export type TestRequests = Record<string, TestRequest[]>;
 
 // Test request addition result.
 export type TestRequestResult
-= 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'ok';
+= 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'nonreport' | 'ok';
 
 // A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
 export interface AnnotatedInstance extends StandardInstance {
@@ -923,8 +923,13 @@ export const getApprovability = async (
       const extract = reportExtracts.find(
         extract => extract.timeStamp === timeStamp && extract.jobID === jobID
       );
-      // If the cited report has been superseded:
-      if (extract!.superseded) {
+      // If the cited report does not exist:
+      if (!extract) {
+        // Return this.
+        return 'nonreport';
+      }
+      // Otherwise, if it exists but has been superseded:
+      else if (extract.superseded) {
         // Return this.
         return 'superseded';
       }

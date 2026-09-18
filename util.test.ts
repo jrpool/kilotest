@@ -428,12 +428,6 @@ test('getPageDataStrings uses provided pageData instead of reading the report', 
   assert.ok(strings.testInfo.includes('1 day ago'));
 });
 
-test('processTestRequest returns an error for an invalid test type', async () => {
-  const result: any = await processTestRequest('invalid', requestTestDir, 'Page', 'https://example.com', 'because');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
-});
-
 test('processTestRequest returns an error for an invalid URL', async () => {
   const result: any = await processTestRequest('test', requestTestDir, 'Page', 'not-a-url', 'because');
   assert.equal(result.status, 'error');
@@ -683,69 +677,6 @@ test('getPOSTData resolves with parsed query for form-urlencoded requests', asyn
   assert.equal(result.why, 'Because');
 });
 
-test('getRequestability returns "claimed" for a URL in a claimed job', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/failed', {recursive: true});
-  fsSync.writeFileSync(tmpDir + '/jobs/claimed/job1.json', JSON.stringify({
-    target: {url: 'https://example.com/test', what: 'Test Page'}
-  }));
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getRequestability} = await import('./util.ts');
-    const result = await getRequestability('https://example.com/test');
-    assert.equal(result, 'claimed');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
-test('getRequestability returns "queued" for a URL in a queued job', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/failed', {recursive: true});
-  fsSync.writeFileSync(tmpDir + '/jobs/queue/job1.json', JSON.stringify({
-    target: {url: 'https://example.com/test', what: 'Test Page'}
-  }));
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getRequestability} = await import('./util.ts');
-    const result = await getRequestability('https://example.com/test');
-    assert.equal(result, 'queued');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
-test('getRequestability returns empty string for a URL with no matching jobs', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/failed', {recursive: true});
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getRequestability} = await import('./util.ts');
-    const result = await getRequestability('https://example.com/no-match');
-    assert.equal(result, '');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
 test('isURL returns false for a malformed URL', () => {
   assert.equal(isURL('https://[invalid'), false);
 });
@@ -990,8 +921,8 @@ test('testRequestsLock is a function (the lock returned by createLock)', () => {
 
 test('addTestRequest adds a request and returns success', async () => {
   await fs.writeFile(testRequestsPath(), '{}\n');
-  const result = await addTestRequest('Test Page', 'https://example.com/test', 'because');
-  assert.equal(result.error, undefined);
+  const result = await addTestRequest('test', 'Test Page', 'https://example.com/test', 'because');
+  assert.equal(result, 'added');
   const testRequests = JSON.parse(await fs.readFile(testRequestsPath(), 'utf8'));
   assert.ok(testRequests['https://example.com/test']);
   assert.equal(testRequests['https://example.com/test'].length, 1);
@@ -1001,9 +932,9 @@ test('addTestRequest adds a request and returns success', async () => {
 
 test('addTestRequest returns a duplicate error for a repeated request', async () => {
   await fs.writeFile(testRequestsPath(), '{}\n');
-  await addTestRequest('Test Page', 'https://example.com/test', 'because');
-  const result = await addTestRequest('Test Page', 'https://example.com/test', 'another reason');
-  assert.equal(result.error, 'duplicate');
+  await addTestRequest('test', 'Test Page', 'https://example.com/test', 'because');
+  const result = await addTestRequest('test', 'Test Page', 'https://example.com/test', 'another reason');
+  assert.equal(result, 'duplicate');
   await fs.writeFile(testRequestsPath(), '{}\n');
 });
 

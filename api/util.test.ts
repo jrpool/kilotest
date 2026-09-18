@@ -7,7 +7,8 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, processTestRequest} from './util.ts';
+import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts} from './util.ts';
+import {processTestRequest} from '../util.ts';
 
 // SETUP
 
@@ -99,9 +100,8 @@ test('processTestRequest returns an error for a duplicate request', async () => 
   process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
   // Submit the same request twice; the second should be a duplicate.
   await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
-  const result: any = await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Duplicate request');
+  const result = await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
+  assert.equal(result, 'duplicate');
   if (savedDBDir !== undefined) {
     process.env.DB_DIR = savedDBDir;
   }

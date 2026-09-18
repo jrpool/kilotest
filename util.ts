@@ -60,6 +60,10 @@ export type TestRequest = {
 // Test requests by URL.
 export type TestRequests = Record<string, TestRequest[]>;
 
+// Test request addition result.
+export type TestRequestResult
+= 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'ok';
+
 // A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
 export interface AnnotatedInstance extends StandardInstance {
   issueID?: string;
@@ -881,15 +885,15 @@ const getApprovedJobProperty = async (
     throw new Error('Failed to get approved job property', {cause: error});
   }
 };
-// Returns whether test or retest request is eligible to be approved.
+// Returns whether a new-test or retest request is eligible to be approved.
 export const getApprovability = async (
+  requestType: 'test' | 'retest',
   description: string,
   url: string,
   reason: string,
-  requestType: 'test' | 'retest',
   timeStamp = '',
   jobID = ''
-): Promise<'description' | 'url' | 'duplicate' | 'superseded' | 'retest' | 'eligible'> => {
+): Promise<TestRequestResult> => {
   try {
     // Get any property the page shares with a claimed job.
     const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
@@ -933,44 +937,79 @@ export const getApprovability = async (
         return 'retest';
       }
     }
-    // If the request is eligible, return this.
-    return 'eligible';
+    // The request is eligible, so return this.
+    return 'ok';
     // If an error occurred:
   } catch(error) {
     // Throw this.
     throw new Error('Failed to get requestability', {cause: error});
   }
 };
-// Adds a new-test request as a transaction if approvable and return the result.
-export const addTestRequest = (description: string, url: string, reason: string) => testRequestsLock(async (): Promise<'retest' | 'duplicate' | 'description' | 'url' | 'added'> => {
-  try {
-    // Get the approvability of the request.
-    const approvability = await getApprovability(
-      description, url, reason, 'test'
-    ) as 'description' | 'url' | 'duplicate' | 'retest' | 'eligible';
-    // If the request is not approvable:
-    if (approvability !== 'eligible') {
-      // Return why.
-      return approvability;
+// Adds a new-test or retest request as a transaction if approvable and returns the result.
+export const addTestRequest = (
+  requestType: 'test' | 'retest',
+  description: string,
+  url: string,
+  reason: string,
+  timeStamp: string = '',
+  jobID: string = ''
+) => testRequestsLock(
+  async (): Promise<TestRequestResult> => {
+    try {
+      // Get the approvability of the request.
+      const approvability = await getApprovability(
+        requestType, description, url, reason, timeStamp, jobID
+      );
+      // If the request is not approvable:
+      if (approvability !== 'ok') {
+        // Return why.
+        return approvability;
+      }
+      // Otherwise, get the requests awaiting approval.
+      const testRequests = await getTestRequests();
+      // Initialize the requests with the URL if necessary.
+      testRequests[url] ??= [];
+      // Add the request to them.
+      testRequests[url].push({
+        timeStamp: getNowStamp(),
+        description,
+        reason
+      });
+      // Save the revised test requests.
+      await fs.writeFile(testRequestsPath(), getJSON(testRequests));
+      // Return success.
+      return 'ok';
     }
-    // Otherwise, get the requests awaiting approval.
-    const testRequests = await getTestRequests();
-    // Initialize the requests with the URL if necessary.
-    testRequests[url] ??= [];
-    // Add the request to them.
-    testRequests[url].push({
-      timeStamp: getNowStamp(),
-      description,
-      reason
-    });
-    // Save the revised test requests.
-    await fs.writeFile(testRequestsPath(), getJSON(testRequests));
-    // Return success.
-    return 'added';
+    // If an error occurred:
+    catch(error) {
+      // Throw it.
+      throw new Error('Failed to add test request', {cause: error});
+    }
   }
-  // If an error occurred:
-  catch(error) {
-    // Throw it.
-    throw new Error('Failed to add test request', {cause: error});
+);
+// Processes a new-test or retest request and returns the result.
+export const processTestRequest = async (
+  requestType: 'test' | 'retest',
+  description: string,
+  url: string,
+  reason: string,
+  timeStamp: string = '',
+  jobID: string = ''
+): Promise<TestRequestResult> => {
+  // Add the test request as a transaction if approvable and return the result.
+  const additionResult = await addTestRequest(
+    requestType, description, url, reason, timeStamp, jobID
+  );
+  // If the request was added:
+  if (additionResult === 'ok') {
+    // Get an email-safe version of the reason.
+    const plainReason = getPlainText(reason);
+    // Alert a manager.
+    await sendAlert(
+      `Kilotest: new ${requestType} request awaits approval`,
+      `Page description: ${description}\nURL: ${url}\nReason: ${plainReason}`
+    );
   }
-});
+  // Return the result.
+  return additionResult;
+};

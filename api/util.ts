@@ -5,13 +5,10 @@
 
 // IMPORTS
 
-import {sendAlert} from '../alerts.ts';
 import {
-  addTestRequest,
   getAgoDays,
   getReportExtracts,
   getNowStamp,
-  getPlainText,
   getRandomString,
   getReportExtract,
   getReportStats,
@@ -83,6 +80,7 @@ export const getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
 // getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
 // With an extract provided, failure is impossible, so the return type narrows
 // to ReportBasics; without one, an error object may be returned.
+// XXX Why are these overloads necessary? Can't we just have one function?
 export function getReportBasics(
   timeStamp: string, jobID: string, extract: ReportExtract
 ): Promise<ReportBasics>;
@@ -150,23 +148,4 @@ export const getIssueSpec = (issueID: string) => {
   }
   // Otherwise, i.e. if it does not exist, return this.
   return null;
-};
-// Processes a test or retest request and returns the result.
-export const processTestRequest = async (
-  testType: 'test' | 'retest', description: string, url: string, reason: string
-): Promise<'url' | 'description' | 'retest' | 'duplicate' | 'added'> => {
-  // Add the test request as a transaction if approvable and return the result.
-  const additionResult = await addTestRequest(description, url, reason);
-  // If the request was added:
-  if (additionResult === 'added') {
-    // Get an email-safe version of the reason.
-    const plainReason = getPlainText(reason);
-    // Alert a manager.
-    await sendAlert(
-      `Kilotest: new ${testType} request in the API`,
-      `Target: ${description}\nURL: ${url}\nReason: ${plainReason}`
-    );
-  }
-  // Return the result.
-  return additionResult;
 };

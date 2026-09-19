@@ -1222,3 +1222,96 @@ test('recordMetric keeps categories independent for the same name', async () => 
     fsSync.rmSync(tmpDir, {recursive: true});
   }
 });
+
+test('recordMetric tracks managerActivity outcomes separately per page', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-manager-activity-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('managerActivity', 'reannotate.html', 'ok');
+    await recordMetric('managerActivity', 'reannotate.html', 'error');
+    await recordMetric('managerActivity', 'reannotate.html', 'error');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.deepEqual(metrics.managerActivity['reannotate.html'], {ok: 1, error: 2});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric keeps managerActivity independent of pageViews for the same name', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-manager-vs-pageviews-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('pageViews', 'hideReportForm.html');
+    await recordMetric('managerActivity', 'hideReportForm.html', 'ok');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.pageViews['hideReportForm.html'], 1);
+    assert.deepEqual(metrics.managerActivity['hideReportForm.html'], {ok: 1, error: 0});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('getMetrics backfills categories missing from a metrics.json written before they existed', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-backfill-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  // Simulate a metrics.json written before the managerActivity category was added.
+  fsSync.writeFileSync(tmpDir + '/metrics.json', JSON.stringify({
+    since: '260101T0000',
+    pageViews: {listReports: 1},
+    mcpToolCalls: {},
+    apiOperations: {}
+  }));
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    // Recording a managerActivity outcome must not throw despite the file predating that category.
+    await recordMetric('managerActivity', 'metrics', 'ok');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.since, '260101T0000');
+    assert.equal(metrics.pageViews.listReports, 1);
+    assert.deepEqual(metrics.managerActivity.metrics, {ok: 1, error: 0});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('getMetrics backfills every category, and generates a since stamp, from a bare empty file', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-backfill-empty-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  // Simulate a metrics.json with none of the known fields (an extreme case of an outdated schema).
+  fsSync.writeFileSync(tmpDir + '/metrics.json', '{}');
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('pageViews', 'tutorialWeb');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(typeof metrics.since, 'string');
+    assert.ok(metrics.since.length > 0);
+    assert.equal(metrics.pageViews.tutorialWeb, 1);
+    assert.deepEqual(metrics.mcpToolCalls, {});
+    assert.deepEqual(metrics.apiOperations, {});
+    assert.deepEqual(metrics.managerActivity, {});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});

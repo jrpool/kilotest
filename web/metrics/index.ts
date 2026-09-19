@@ -6,9 +6,7 @@
 
 // IMPORTS
 
-import fs from 'node:fs/promises';
-import {getDateTimeString, metricsPath, populateTemplate} from '../../util.ts';
-import type {Metrics} from '../../util.ts';
+import {getDateTimeString, getMetrics, populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -24,6 +22,29 @@ const getCategoryTable = (counts: Record<string, number>): string => {
     `${margin}<table class="allBorder">`,
     `${margin}  <thead>`,
     `${margin}    <tr><th>Name</th><th>Count</th></tr>`,
+    `${margin}  </thead>`,
+    `${margin}  <tbody>`,
+    ...rows,
+    `${margin}  </tbody>`,
+    `${margin}</table>`
+  ].join('\n');
+};
+// Returns an HTML table of manager-page activity, sorted by descending failure count,
+// since repeated failures are the signal of suspected abuse most worth surfacing first.
+const getManagerActivityTable = (activity: Record<string, {ok: number; error: number}>): string => {
+  const margin = ' '.repeat(6);
+  const names = Object.keys(activity).sort((a, b) => activity[b]!.error - activity[a]!.error);
+  if (!names.length) {
+    return `${margin}<p>None yet.</p>`;
+  }
+  const rows = names.map(name => {
+    const {ok, error} = activity[name]!;
+    return `${margin}    <tr><td>${name}</td><td>${ok}</td><td>${error}</td></tr>`;
+  });
+  return [
+    `${margin}<table class="allBorder">`,
+    `${margin}  <thead>`,
+    `${margin}    <tr><th>Name</th><th>Successful</th><th>Failed</th></tr>`,
     `${margin}  </thead>`,
     `${margin}  <tbody>`,
     ...rows,
@@ -47,23 +68,19 @@ export const answer = async (_: any, search: string) => {
         message: 'Invalid authorization code'
       };
     }
-    let metrics: Metrics;
-    try {
-      metrics = JSON.parse(await fs.readFile(metricsPath(), 'utf8'));
-    }
-    // If no metric has been recorded yet:
-    catch {
-      metrics = {since: '', pageViews: {}, mcpToolCalls: {}, apiOperations: {}};
-    }
+    const metrics = await getMetrics();
     query = {
       body: [
-        `<p>Counts recorded since ${metrics.since ? getDateTimeString(metrics.since) : 'not yet available'}.</p>`,
+        `<p>Counts recorded since ${getDateTimeString(metrics.since)}.</p>`,
         '<h2>Web page views</h2>',
         getCategoryTable(metrics.pageViews),
         '<h2>MCP tool calls</h2>',
         getCategoryTable(metrics.mcpToolCalls),
         '<h2>API operation calls</h2>',
-        getCategoryTable(metrics.apiOperations)
+        getCategoryTable(metrics.apiOperations),
+        '<h2>Manager page activity</h2>',
+        '<p>Manager-only pages (linked from <a href="/manage.html">management</a>), excluded from the web page views above. A high failed count for a page may indicate a suspected attack, such as repeated guessing of the authorization code.</p>',
+        getManagerActivityTable(metrics.managerActivity)
       ].join('\n')
     };
   }

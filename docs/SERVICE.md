@@ -444,11 +444,19 @@ Kilotest records basic counts of how it is used, so the maintainer can answer qu
 
 `recordMetric(category, name)`, in `util.ts`, increments a count for a `(category, name)` pair and writes the result to `db/metrics.json`. It is called from three places:
 
-- The generic `.html` GET dispatch in `index.ts`, once per successfully served web page, recorded under the `pageViews` category by page name (for example `tutorialWeb`, `listReports`).
+- The generic `.html` GET dispatch in `index.ts`, once per successfully served web page, recorded under the `pageViews` category by page name (for example `tutorialWeb`, `listReports`), unless the page is a manager-only page (see "Manager page activity" below), in which case it is recorded there instead.
 - Each of the 8 MCP tool handlers in `mcp.ts`, once per successful tool call, recorded under the `mcpToolCalls` category by tool name (for example `listReports`, `requestTest`).
 - The `/api/*` GET and POST service branches in `index.ts`, once per call, recorded under the `apiOperations` category by operation name.
 
-`db/metrics.json` also stores a `since` time stamp, set when the file is first created, so the counts can be read as "since this date" rather than assumed to cover Kilotest's entire history.
+`db/metrics.json` also stores a `since` time stamp, set when the file is first created, so the counts can be read as "since this date" rather than assumed to cover Kilotest's entire history. `getMetrics()` backfills any category absent from an existing `db/metrics.json` (for example one written before a category such as `managerActivity` existed), so an older file remains readable rather than causing every subsequent request to error.
+
+#### Manager page activity
+
+Every page linked from `/manage.html` (`enqueueForm.html`, `reannotateForm.html`, `pruneReportsForm.html`, `rewindReportsForm.html`, `expungeReportsForm.html`, `hideReportForm.html`, `unhideReportForm.html`, `ai0BalanceForm.html`, `renewWCAGForm.html`, `metrics.html`), plus the POST-only action pages some of them submit to (`requestAction.html`, `reannotate.html`, `renewWCAG.html`), is excluded from `pageViews` and recorded instead under a separate `managerActivity` category, keyed by page name, with `ok` and `error` counts tracked separately.
+
+This exclusion exists because manager pages reflect the maintainer operating Kilotest, not the usage the other three categories are meant to reveal (the maintainer manually testing a page, for example after a deployment, would otherwise inflate `pageViews` with non-representative traffic). Tracking `ok` and `error` outcomes separately, rather than a single combined count, makes a spike of failed `authCode` submissions against a manager page visible as a possible sign of an attempted attack, a signal a combined count would hide.
+
+A cookie-based approach (excluding a browser from metrics once it has proven identity via a valid `authCode`) was considered and rejected: the request that first earns the cookie can never itself be excluded, so at least one page view per maintainer session would always leak into the counts regardless of implementation, and correcting that retroactively was judged disproportionate complexity for a small, shrinking error. Excluding by page identity, rather than by requester session, avoids this bootstrap problem entirely.
 
 Requests from the periodic smoke test (`smokeTest.ts`) are not recorded: `index.ts`'s `handleRequest` intercepts any request bearing the `x-kilotest-smoke` header before any dispatch, route handler, or MCP tool call runs, so smoke-test traffic never reaches a `recordMetric` call site in the first place.
 
@@ -456,7 +464,7 @@ This is a small, initial feature set, not a complete observability solution: it 
 
 ### Viewing the metrics
 
-The counts are displayed at `/metrics.html`, linked from `/manage.html`. Like the other self-submitting manager-power pages (`/hideReportForm.html`, `/unhideReportForm.html`, `/ai0BalanceForm.html`), visiting it with no `authCode` query-string parameter displays a form requesting one rather than immediately rejecting the request, since the maintainer following the `/manage.html` link has had no earlier opportunity to supply the code; submitting that form (or visiting the page directly with `?authCode=...`) then either shows the counts, if the code matches the `AUTH_CODE` environment variable, or reports an error if it does not. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
+The counts are displayed at `/metrics.html`, linked from `/manage.html`, as four tables: web page views, MCP tool calls, API operation calls, and manager page activity (successful and failed counts per manager page). Like the other self-submitting manager-power pages (`/hideReportForm.html`, `/unhideReportForm.html`, `/ai0BalanceForm.html`), visiting it with no `authCode` query-string parameter displays a form requesting one rather than immediately rejecting the request, since the maintainer following the `/manage.html` link has had no earlier opportunity to supply the code; submitting that form (or visiting the page directly with `?authCode=...`) then either shows the counts, if the code matches the `AUTH_CODE` environment variable, or reports an error if it does not. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
 
 ## Performance
 

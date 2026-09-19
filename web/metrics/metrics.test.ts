@@ -53,17 +53,19 @@ test('metrics reports no counts yet when the metrics file does not exist', async
   await fs.rm(metricsPath(), {force: true});
   const result: any = await answer(null, 'authCode=test-auth-code');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('not yet available'));
+  assert.ok(result.answerPage.includes('Counts recorded since'));
   const html = parse(result.answerPage);
   assert.equal(html.querySelectorAll('table').length, 0);
+  await fs.rm(metricsPath(), {force: true});
 });
 
 test('metrics reports recorded counts with a valid auth code', async () => {
   await fs.writeFile(metricsPath(), getJSON({
     since: '260101T0000',
-    pageViews: {tutorialWeb: 3, manage: 1},
+    pageViews: {tutorialWeb: 3},
     mcpToolCalls: {listReports: 5},
-    apiOperations: {}
+    apiOperations: {},
+    managerActivity: {}
   }));
   const result: any = await answer(null, 'authCode=test-auth-code');
   assert.equal(result.status, 'ok');
@@ -79,14 +81,54 @@ test('metrics reports recorded counts with a valid auth code', async () => {
 test('metrics sorts each category by descending count', async () => {
   await fs.writeFile(metricsPath(), getJSON({
     since: '260101T0000',
-    pageViews: {manage: 1, tutorialWeb: 9, metrics: 4},
+    pageViews: {manage: 1, tutorialWeb: 9, otherPage: 4},
     mcpToolCalls: {},
-    apiOperations: {}
+    apiOperations: {},
+    managerActivity: {}
   }));
   const result: any = await answer(null, 'authCode=test-auth-code');
   const html = parse(result.answerPage);
   const names = html.querySelectorAll('table')[0]!.querySelectorAll('tbody td:first-child')
   .map(cell => cell.text);
-  assert.deepEqual(names, ['tutorialWeb', 'metrics', 'manage']);
+  assert.deepEqual(names, ['tutorialWeb', 'otherPage', 'manage']);
+  await fs.rm(metricsPath(), {force: true});
+});
+
+test('metrics reports manager page activity, sorted by descending failure count', async () => {
+  await fs.writeFile(metricsPath(), getJSON({
+    since: '260101T0000',
+    pageViews: {},
+    mcpToolCalls: {},
+    apiOperations: {},
+    managerActivity: {
+      metrics: {ok: 5, error: 0},
+      reannotate: {ok: 1, error: 8}
+    }
+  }));
+  const result: any = await answer(null, 'authCode=test-auth-code');
+  assert.ok(result.answerPage.includes('Manager page activity'));
+  const html = parse(result.answerPage);
+  const tables = html.querySelectorAll('table');
+  assert.equal(tables.length, 1);
+  const managerTable = tables[0]!;
+  const rows = managerTable.querySelectorAll('tbody tr').map(row =>
+    row.querySelectorAll('td').map(cell => cell.text)
+  );
+  assert.deepEqual(rows, [['reannotate', '1', '8'], ['metrics', '5', '0']]);
+  await fs.rm(metricsPath(), {force: true});
+});
+
+test('metrics reports no manager activity yet when none has been recorded', async () => {
+  await fs.writeFile(metricsPath(), getJSON({
+    since: '260101T0000',
+    pageViews: {},
+    mcpToolCalls: {},
+    apiOperations: {},
+    managerActivity: {}
+  }));
+  const result: any = await answer(null, 'authCode=test-auth-code');
+  const html = parse(result.answerPage);
+  assert.equal(html.querySelectorAll('table').length, 0);
+  assert.ok(result.answerPage.includes('None yet.'));
   await fs.rm(metricsPath(), {force: true});
 });

@@ -202,6 +202,22 @@ export const routes = {
     '/worker/report'
   ]
 };
+// The set of page topics (answer{} keys) that are manager-only pages, linked from
+// manage.html. Their views and submissions are recorded under the managerActivity
+// metrics category instead of pageViews, since they are the maintainer operating
+// Kilotest rather than the usage the observability plan's questions are about.
+const managerPages = new Set([
+  'enqueueForm',
+  'reannotateForm',
+  'pruneReportsForm',
+  'rewindReportsForm',
+  'expungeReportsForm',
+  'hideReportForm',
+  'unhideReportForm',
+  'ai0BalanceForm',
+  'renewWCAGForm',
+  'metrics'
+]);
 const jobLock = createLock();
 
 // FUNCTIONS
@@ -560,12 +576,20 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const answerData = await answer[topic](pathTail, search);
         // If they are valid:
         if (answerData.status === 'ok') {
-          await recordMetric('pageViews', topic);
+          if (managerPages.has(topic)) {
+            await recordMetric('managerActivity', topic, 'ok');
+          }
+          else {
+            await recordMetric('pageViews', topic);
+          }
           // Serve the answer page.
           response.end(answerData.answerPage);
         }
         // Otherwise, i.e. if they are invalid:
         else {
+          if (managerPages.has(topic)) {
+            await recordMetric('managerActivity', topic, 'error');
+          }
           // Report the error as suspected abuse.
           await serveError(getAbuseError(request, answerData.message), response, true);
         }
@@ -786,17 +810,20 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             const answerData = await answer.enqueue(url, description, authCode);
             // If the answer data are valid:
             if (answerData.status === 'ok') {
+              await recordMetric('managerActivity', 'requestAction.html', 'ok');
               // Serve the test-order page with the remaining recommendations.
               response.end(answerData.answerPage);
             }
             // Otherwise, i.e. if they are invalid:
             else {
+              await recordMetric('managerActivity', 'requestAction.html', 'error');
               // Report the error.
               await serveError({message: answerData.message}, response, true);
             }
           }
           // Otherwise, i.e. if it is a rejection:
           else {
+            await recordMetric('managerActivity', 'requestAction.html', 'ok');
             // Delete the test requests for the URL.
             await deleteTestRequests(url);
             // Set a location header for a response.
@@ -809,6 +836,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         }
         // Otherwise, i.e. if the request is invalid:
         else {
+          await recordMetric('managerActivity', 'requestAction.html', 'error');
           // Report the error.
           await serveError({message: 'ERROR: Invalid test order'}, response, true);
         }
@@ -822,11 +850,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const answerData = await answer.reannotate(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {
+          await recordMetric('managerActivity', 'reannotate.html', 'ok');
           // Serve the answer page.
           response.end(answerData.answerPage);
         }
         // Otherwise, i.e. if they are invalid:
         else {
+          await recordMetric('managerActivity', 'reannotate.html', 'error');
           // Report the error.
           await serveError({message: answerData.message}, response, true);
         }
@@ -840,11 +870,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const answerData = await answer.renewWCAG(authCode);
         // If the answer data are valid:
         if (answerData.status === 'ok') {
+          await recordMetric('managerActivity', 'renewWCAG.html', 'ok');
           // Serve the answer page.
           response.end(answerData.answerPage);
         }
         // Otherwise, i.e. if they are invalid:
         else {
+          await recordMetric('managerActivity', 'renewWCAG.html', 'error');
           // Report the error.
           await serveError({message: answerData.message}, response, true);
         }

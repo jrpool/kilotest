@@ -53,12 +53,15 @@ export {ruleEngines};
 // TYPES
 
 // Usage-metrics categories, each a map from an event name (page name, MCP tool name, or
-// API operation name) to a count of how many times it has occurred.
+// API operation name) to a count of how many times it has occurred. managerActivity
+// counts manager-only pages separately from pageViews, by outcome, since a spike in
+// failed authCode attempts against a manager page is a signal of suspected abuse.
 export type Metrics = {
   since: string;
   pageViews: Record<string, number>;
   mcpToolCalls: Record<string, number>;
   apiOperations: Record<string, number>;
+  managerActivity: Record<string, {ok: number; error: number}>;
 };
 
 // Test request.
@@ -1032,7 +1035,7 @@ export const processTestRequest = (
 // Concurrency lock for the `metrics.json` file.
 const metricsLock = createLock();
 // Returns the usage metrics, creating the file with zeroed counts if it does not yet exist.
-const getMetrics = async (): Promise<Metrics> => {
+export const getMetrics = async (): Promise<Metrics> => {
   let metricsJSON: string;
   try {
     metricsJSON = await fs.readFile(metricsPath(), 'utf8');
@@ -1040,26 +1043,55 @@ const getMetrics = async (): Promise<Metrics> => {
   catch(error: unknown) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       const metrics: Metrics = {
-        since: getNowStamp(), pageViews: {}, mcpToolCalls: {}, apiOperations: {}
+        since: getNowStamp(), pageViews: {}, mcpToolCalls: {}, apiOperations: {}, managerActivity: {}
       };
       await fs.writeFile(metricsPath(), getJSON(metrics));
       return metrics;
     }
     throw new Error(`Metrics file not readable (${errorMessage(error)})`, {cause: error});
   }
+  let metrics: Partial<Metrics>;
   try {
-    return JSON.parse(metricsJSON) as Metrics;
+    metrics = JSON.parse(metricsJSON) as Partial<Metrics>;
   }
   catch(error: unknown) {
     throw new Error(`Metrics file not JSON (${errorMessage(error)})`, {cause: error});
   }
+  // Backfill any category absent from a file written before that category existed,
+  // so an older metrics.json (e.g. from before a schema change) remains readable.
+  return {
+    since: metrics.since ?? getNowStamp(),
+    pageViews: metrics.pageViews ?? {},
+    mcpToolCalls: metrics.mcpToolCalls ?? {},
+    apiOperations: metrics.apiOperations ?? {},
+    managerActivity: metrics.managerActivity ?? {}
+  };
 };
 // Records an occurrence of a named event (a web page view, an MCP tool call, or an API
 // operation call) in the usage metrics, creating the category and name if not yet present.
-export const recordMetric = (
+export function recordMetric(
   category: 'pageViews' | 'mcpToolCalls' | 'apiOperations', name: string
-): Promise<void> => metricsLock(async (): Promise<void> => {
-  const metrics = await getMetrics();
-  metrics[category][name] = (metrics[category][name] ?? 0) + 1;
-  await fs.writeFile(metricsPath(), getJSON(metrics));
-});
+): Promise<void>;
+// Records an outcome of a manager-page visit or submission (a distinct category from
+// pageViews, so a spike in failed authCode attempts against a manager page is visible
+// as a signal of suspected abuse, rather than being folded into ordinary page views).
+export function recordMetric(
+  category: 'managerActivity', name: string, outcome: 'ok' | 'error'
+): Promise<void>;
+export function recordMetric(
+  category: 'pageViews' | 'mcpToolCalls' | 'apiOperations' | 'managerActivity',
+  name: string,
+  outcome?: 'ok' | 'error'
+): Promise<void> {
+  return metricsLock(async (): Promise<void> => {
+    const metrics = await getMetrics();
+    if (category === 'managerActivity') {
+      const entry = metrics.managerActivity[name] ??= {ok: 0, error: 0};
+      entry[outcome!]++;
+    }
+    else {
+      metrics[category][name] = (metrics[category][name] ?? 0) + 1;
+    }
+    await fs.writeFile(metricsPath(), getJSON(metrics));
+  });
+}

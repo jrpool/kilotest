@@ -160,6 +160,18 @@ const getMetricCount = async (category: string, name: string): Promise<number> =
   const metrics = JSON.parse(metricsJSON);
   return metrics[category][name] ?? 0;
 };
+// Returns the current managerActivity ok/error count for a page name, or 0 if absent.
+const getManagerActivityCount = async (name: string, outcome: 'ok' | 'error'): Promise<number> => {
+  let metricsJSON: string;
+  try {
+    metricsJSON = await fs.readFile(metricsPath, 'utf8');
+  }
+  catch {
+    return 0;
+  }
+  const metrics = JSON.parse(metricsJSON);
+  return metrics.managerActivity[name]?.[outcome] ?? 0;
+};
 
 // TESTS: routes table
 
@@ -634,27 +646,31 @@ test('serveError sends HTML for human requests (isHumanUser = true)', async () =
 
 // TESTS: requestAction.html
 
-test('POST /requestAction.html with invalid auth code returns an error', {timeout: 500}, async () => {
+test('POST /requestAction.html with invalid auth code returns an error and records a managerActivity failure', {timeout: 500}, async () => {
+  const countBefore = await getManagerActivityCount('requestAction.html', 'error');
   const res = await formRequest('POST', '/requestAction.html', {
     target: 'https://example.com\tTest Page',
     authCode: 'wrong-code'
   });
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Invalid test order'));
+  assert.equal(await getManagerActivityCount('requestAction.html', 'error'), countBefore + 1);
 });
 
-test('POST /requestAction.html with valid auth code and rejection (no description) returns HTML', async () => {
+test('POST /requestAction.html with valid auth code and rejection (no description) returns HTML and records a managerActivity success', async () => {
   await formRequest('POST', '/requestTest.html', {
     description: `Reject Test Page ${uniqueStamp}`,
     url: `https://example.com/reject-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
+  const countBefore = await getManagerActivityCount('requestAction.html', 'ok');
   const res = await formRequest('POST', '/requestAction.html', {
     target: `https://example.com/reject-${uniqueStamp}`,
     authCode: 'test-auth-code'
   });
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.equal(await getManagerActivityCount('requestAction.html', 'ok'), countBefore + 1);
 });
 
 // TESTS: tutorialWeb (web user tutorial)
@@ -698,14 +714,16 @@ test('POST /requestAction.html with valid auth code and approval returns HTML', 
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('POST /reannotate.html with invalid auth code returns an error page', async () => {
+test('POST /reannotate.html with invalid auth code returns an error page and records a managerActivity failure', async () => {
+  const countBefore = await getManagerActivityCount('reannotate.html', 'error');
   const res = await formRequest('POST', '/reannotate.html', {
     authCode: 'wrong-code'
   });
   assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.equal(await getManagerActivityCount('reannotate.html', 'error'), countBefore + 1);
 });
 
-test('POST /reannotate.html with valid auth code serves the answer page', async () => {
+test('POST /reannotate.html with valid auth code serves the answer page and records a managerActivity success', async () => {
   // Back up all fixture reports, because reannotation modifies them in place.
   const reportsDir = path.join(fixtureDBDir, 'reports');
   const reportFiles = await fs.readdir(reportsDir);
@@ -714,12 +732,14 @@ test('POST /reannotate.html with valid auth code serves the answer page', async 
     backups[file] = await fs.readFile(path.join(reportsDir, file), 'utf8');
   }
   try {
+    const countBefore = await getManagerActivityCount('reannotate.html', 'ok');
     const res = await formRequest('POST', '/reannotate.html', {
       authCode: 'test-auth-code'
     });
     assert.equal(res.statusCode, 200);
     assert.ok(res.headers['content-type'].includes('text/html'));
     assert.ok(res.body.includes('Reannotation order'));
+    assert.equal(await getManagerActivityCount('reannotate.html', 'ok'), countBefore + 1);
   }
   finally {
     // Restore all fixture reports.
@@ -729,14 +749,16 @@ test('POST /reannotate.html with valid auth code serves the answer page', async 
   }
 });
 
-test('POST /renewWCAG.html with invalid auth code returns an error page', async () => {
+test('POST /renewWCAG.html with invalid auth code returns an error page and records a managerActivity failure', async () => {
+  const countBefore = await getManagerActivityCount('renewWCAG.html', 'error');
   const res = await formRequest('POST', '/renewWCAG.html', {
     authCode: 'wrong-code'
   });
   assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.equal(await getManagerActivityCount('renewWCAG.html', 'error'), countBefore + 1);
 });
 
-test('POST /renewWCAG.html with valid auth code serves the answer page', async () => {
+test('POST /renewWCAG.html with valid auth code serves the answer page and records a managerActivity success', async () => {
   // Mock fetch to avoid a network dependency.
   const originalFetch = global.fetch;
   const wcagMapPath = path.join(import.meta.dirname, 'wcagMap.json');
@@ -747,12 +769,14 @@ test('POST /renewWCAG.html with valid auth code serves the answer page', async (
     text: async () => '<a href="understanding/contrast-minimum"><span class="secno">1.4.3 </span>'
   });
   try {
+    const countBefore = await getManagerActivityCount('renewWCAG.html', 'ok');
     const res = await formRequest('POST', '/renewWCAG.html', {
       authCode: 'test-auth-code'
     });
     assert.equal(res.statusCode, 200);
     assert.ok(res.headers['content-type'].includes('text/html'));
     assert.ok(res.body.includes('WCAG map renewed'));
+    assert.equal(await getManagerActivityCount('renewWCAG.html', 'ok'), countBefore + 1);
   }
   finally {
     global.fetch = originalFetch;
@@ -1200,15 +1224,28 @@ for (const pagePath of htmlPagePaths) {
   });
 }
 
-test('GET /metrics.html with a valid authCode serves the usage-metrics table', async () => {
+test('GET /metrics.html with a valid authCode serves the usage-metrics table and records a managerActivity success', async () => {
+  const countBefore = await getManagerActivityCount('metrics', 'ok');
   const res = await request('GET', '/metrics.html?authCode=test-auth-code');
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.equal(await getManagerActivityCount('metrics', 'ok'), countBefore + 1);
 });
 
-test('GET /metrics.html with an invalid authCode is rejected', async () => {
+test('GET /metrics.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
+  const countBefore = await getManagerActivityCount('metrics', 'error');
   const res = await request('GET', '/metrics.html?authCode=wrong');
   assert.equal(res.statusCode, 400);
+  assert.equal(await getManagerActivityCount('metrics', 'error'), countBefore + 1);
+});
+
+test('GET /hideReportForm.html records managerActivity, not a pageViews entry', async () => {
+  const managerCountBefore = await getManagerActivityCount('hideReportForm', 'ok');
+  const pageViewCountBefore = await getMetricCount('pageViews', 'hideReportForm');
+  const res = await request('GET', '/hideReportForm.html');
+  assert.equal(res.statusCode, 200);
+  assert.equal(await getManagerActivityCount('hideReportForm', 'ok'), managerCountBefore + 1);
+  assert.equal(await getMetricCount('pageViews', 'hideReportForm'), pageViewCountBefore);
 });
 
 test('GET /enqueueForm.html shows requests when testRequests.json has entries', async () => {

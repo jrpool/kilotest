@@ -1199,6 +1199,19 @@ for (const pagePath of htmlPagePaths) {
   });
 }
 
+// metrics.html requires a valid authCode to serve its page, unlike the other pages
+// above, so it is tested separately rather than in the no-params htmlPagePaths list.
+test('GET /metrics.html with a valid authCode serves a generated HTML page', async () => {
+  const res = await request('GET', '/metrics.html?authCode=test-auth-code');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('text/html'));
+});
+
+test('GET /metrics.html with no authCode is rejected', async () => {
+  const res = await request('GET', '/metrics.html');
+  assert.equal(res.statusCode, 400);
+});
+
 test('GET /enqueueForm.html shows requests when testRequests.json has entries', async () => {
   await fs.writeFile(testRequestsPath, JSON.stringify({
     'https://example.com/enqueue-test': [

@@ -4,6 +4,10 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed or not adopted are preserved for about 2 weeks in case of production bugs.
 
+## Protect hidden report list
+
+Make the list of hidden reports available only on submission of a valid authorization code.
+
 ## Plan observability
 
 ### Observability context

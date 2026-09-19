@@ -50,6 +50,7 @@ import {answer as listRules} from './web/listRules/index.ts';
 import {answer as listTopIssues} from './web/listTopIssues/index.ts';
 import {answer as listViolatorsPage} from './web/listViolators/index.ts';
 import {answer as manage} from './web/manage/index.ts';
+import {answer as metrics} from './web/metrics/index.ts';
 import {answer as pruneReportsForm} from './web/pruneReportsForm/index.ts';
 import {answer as reannotate} from './web/reannotate/index.ts';
 import {answer as reannotateForm} from './web/reannotateForm/index.ts';
@@ -94,6 +95,7 @@ const answer: {
   listTopIssues: PageHandler;
   listViolators: PageHandler;
   manage: PageHandler;
+  metrics: PageHandler;
   pruneReportsForm: PageHandler;
   tutorialWeb: PageHandler;
   tutorialAI: PageHandler;
@@ -121,6 +123,7 @@ const answer: {
   listTopIssues,
   listViolators: listViolatorsPage,
   manage,
+  metrics,
   pruneReportsForm,
   tutorialWeb,
   tutorialAI,

@@ -688,6 +688,52 @@ test('getJobsData returns an empty array, instead of throwing ENOENT, when its c
   }
 });
 
+test('getJobsData skips a job file that is removed between the directory listing and its read', async (t) => {
+  // Regression test: on the deployed server, a worker can complete or reclaim a
+  // claimed job (moving or deleting its file) between getJobsData listing the
+  // claimed directory and reading a specific file it found there. That race must
+  // result in the vanished job simply being skipped, not an uncaught ENOENT.
+  const claimedPath = path.join(jobsPath(), 'claimed', 'raced.json');
+  await fs.writeFile(claimedPath, getJSON({
+    target: {what: 'Raced Page', url: 'https://example.com/raced'}
+  }));
+  const originalReadFile = fs.readFile;
+  t.mock.method(fs, 'readFile', async (filePath: any, ...rest: any[]) => {
+    // Simulate the file having been removed by a worker just before this read.
+    if (String(filePath) === claimedPath) {
+      await fs.unlink(claimedPath);
+      const error: any = new Error('ENOENT: no such file or directory');
+      error.code = 'ENOENT';
+      throw error;
+    }
+    return (originalReadFile as any)(filePath, ...rest);
+  });
+  try {
+    const {getJobsData} = await import('./util.ts');
+    const result = await getJobsData('claimed');
+    assert.ok(!result.some(job => job.description === 'Raced Page'));
+  }
+  finally {
+    t.mock.reset();
+    await fs.unlink(claimedPath).catch(() => {});
+  }
+});
+
+test('getJobsData throws when a job file cannot be read for a reason other than its removal', async () => {
+  // A directory where a job file is expected causes fs.readFile to fail with
+  // EISDIR, not ENOENT, so getJobsData must still treat it as defective (unlike
+  // the ENOENT case above, which is skipped as a normal race with a worker).
+  const claimedDirAsFile = path.join(jobsPath(), 'claimed', 'notAFile.json');
+  await fs.mkdir(claimedDirAsFile);
+  try {
+    const {getJobsData} = await import('./util.ts');
+    await assert.rejects(getJobsData('claimed'), /defective/);
+  }
+  finally {
+    await fs.rm(claimedDirAsFile, {recursive: true}).catch(() => {});
+  }
+});
+
 test('processTestRequest succeeds on a fresh deployment with no job directories yet', async () => {
   // Regression test for the same ENOENT scenario, exercised through the actual
   // public interface: a brand-new DB_DIR with no jobs/claimed or jobs/queue

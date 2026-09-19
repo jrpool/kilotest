@@ -321,7 +321,10 @@ export const getJobNames = async (): Promise<{queue: string[], claimed: string[]
 // Gets the descriptions and URLs of the pages of all jobs of a category. Uses
 // getJobNames rather than reading the category directory directly, so that a
 // missing directory (e.g. because no job has ever been claimed or queued yet on
-// this deployment) is created empty instead of throwing ENOENT.
+// this deployment) is created empty instead of throwing ENOENT. A job file that
+// disappears between the directory listing and the read of that specific file is
+// likewise a normal, recoverable condition (a worker completed or reclaimed that
+// job in the interim), so it is skipped rather than treated as defective.
 export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{description: string, url: string}[]> => {
   const jobsDir = path.join(jobsPath(), category);
   const jobFileNames = (await getJobNames())[category];
@@ -329,8 +332,19 @@ export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{descr
   const data: {description: string, url: string}[] = [];
   for (const jobFileName of jobFileNames) {
     const jobPath = path.join(jobsDir, jobFileName);
+    let jobData: string;
     try {
-      const jobData = await fs.readFile(jobPath, 'utf8');
+      jobData = await fs.readFile(jobPath, 'utf8');
+    }
+    catch(error: unknown) {
+      // If the job file has been removed since the directory was listed:
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        // Skip it.
+        continue;
+      }
+      throw new Error(`Job file ${jobPath} defective`, {cause: error});
+    }
+    try {
       const job = JSON.parse(jobData);
       const {target} = job;
       data.push({

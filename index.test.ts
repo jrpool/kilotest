@@ -32,6 +32,7 @@ const {requestHandler, routes, serveError, startServer, runIfMain, isPathAllowed
 
 const port = 3997;
 const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
+const metricsPath = path.join(fixtureDBDir, 'metrics.json');
 
 // SETUP AND TEARDOWN
 
@@ -145,6 +146,19 @@ const jsonBody = (res: any) => {
   catch {
     return null;
   }
+};
+// Returns the current count for a metrics category and name, or 0 if the file or the
+// entry is absent (the file does not exist until the first metric is recorded).
+const getMetricCount = async (category: string, name: string): Promise<number> => {
+  let metricsJSON: string;
+  try {
+    metricsJSON = await fs.readFile(metricsPath, 'utf8');
+  }
+  catch {
+    return 0;
+  }
+  const metrics = JSON.parse(metricsJSON);
+  return metrics[category][name] ?? 0;
 };
 
 // TESTS: routes table
@@ -267,11 +281,13 @@ test('GET /favicon.ico serves the favicon as an icon', async () => {
   assert.ok(res.headers['content-type'].includes('image/x-icon'));
 });
 
-test('GET /api/listReports returns JSON with report data', async () => {
+test('GET /api/listReports returns JSON with report data and records an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'listReports');
   const res = await request('GET', '/api/listReports');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['tool name'], 'listReports');
+  assert.equal(await getMetricCount('apiOperations', 'listReports'), countBefore + 1);
 });
 
 test('GET /api/listIssues/260101T0000/mix returns JSON with issue data', async () => {
@@ -466,13 +482,15 @@ test('POST /api/requestRetest/260202T0000/new with valid JSON returns a JSON res
   assert.ok(body['tool name'] || body['response content']);
 });
 
-test('POST /api/requestFeature with valid JSON returns a JSON response', async () => {
+test('POST /api/requestFeature with valid JSON returns a JSON response and records an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'requestFeature');
   const res = await request('POST', '/api/requestFeature', {
     feature: 'Add a dark mode toggle'
   });
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.ok(body['tool name'] || body['response content']);
+  assert.equal(await getMetricCount('apiOperations', 'requestFeature'), countBefore + 1);
 });
 
 test('POST /api/invalidService returns an error', async () => {
@@ -641,10 +659,12 @@ test('POST /requestAction.html with valid auth code and rejection (no descriptio
 
 // TESTS: tutorialWeb (web user tutorial)
 
-test('GET /tutorialWeb.html returns HTML', async () => {
+test('GET /tutorialWeb.html returns HTML and records a page-view metric', async () => {
+  const countBefore = await getMetricCount('pageViews', 'tutorialWeb');
   const res = await request('GET', '/tutorialWeb.html');
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.equal(await getMetricCount('pageViews', 'tutorialWeb'), countBefore + 1);
 });
 
 test('POST /tutorialWebComment.html with content returns JSON', async () => {

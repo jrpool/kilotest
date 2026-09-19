@@ -24,6 +24,7 @@ import {
   isJobID,
   isUsableReport,
   jobsPath,
+  recordMetric,
   reportsPath
 } from './util.ts';
 import {sendAlert} from './alerts.ts';
@@ -556,6 +557,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const answerData = await answer[topic](pathTail, search);
         // If they are valid:
         if (answerData.status === 'ok') {
+          await recordMetric('pageViews', topic);
           // Serve the answer page.
           response.end(answerData.answerPage);
         }
@@ -578,6 +580,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       if (service === 'listReports') {
         // Get the response body.
         const responseBody = await apiRespond.listReports([]);
+        await recordMetric('apiOperations', 'listReports');
         // Send it.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
@@ -586,6 +589,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'listIssues') {
         // Get the response body.
         const responseBody = await apiRespond.listIssues(specs);
+        await recordMetric('apiOperations', 'listIssues');
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -594,6 +598,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'listViolators') {
         // Get the response body.
         const responseBody = await apiRespond.listViolators(specs);
+        await recordMetric('apiOperations', 'listViolators');
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -602,6 +607,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'listDiagnoses') {
         // Get the response body.
         const responseBody = await apiRespond.listDiagnoses(specs);
+        await recordMetric('apiOperations', 'listDiagnoses');
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -610,6 +616,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'getReport') {
         // Get the response body.
         const responseBody = await apiRespond.getReport(specs);
+        await recordMetric('apiOperations', 'getReport');
         // Send it.
         setHeaders('application/json', null, 'low');
         response.end(JSON.stringify(responseBody));
@@ -952,6 +959,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
           // Get the response body.
           const responseBody = await apiRespond.requestTest([description, URL, reason]);
+          await recordMetric('apiOperations', 'requestTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
@@ -961,6 +969,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           const {reason} = postData as {reason: string};
           // Get the response body.
           const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason));
+          await recordMetric('apiOperations', 'requestRetest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
@@ -970,6 +979,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           const {feature} = postData as {feature: string};
           // Get the response body.
           const responseBody = await apiRespond.requestFeature([feature]);
+          await recordMetric('apiOperations', 'requestFeature');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

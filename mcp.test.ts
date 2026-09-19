@@ -9,11 +9,25 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {mcpPath, createMCPServer, handleMCP} from './mcp.ts';
+import {metricsPath} from './util.ts';
+import fs from 'node:fs';
 
 // CONSTANTS
 
 // Set DB_DIR to the fixture database for all tests.
 process.env.DB_DIR = (await import('./test/dbFixture.ts')).fixtureDBDir;
+
+// FUNCTIONS
+
+// Returns the current count for an MCP tool in the metrics file, or 0 if the file or the
+// tool's entry is absent (the file does not exist until the first metric is recorded).
+const getToolCallCount = (toolName: string): number => {
+  if (!fs.existsSync(metricsPath())) {
+    return 0;
+  }
+  const metrics = JSON.parse(fs.readFileSync(metricsPath(), 'utf8'));
+  return metrics.mcpToolCalls[toolName] ?? 0;
+};
 
 // TESTS
 
@@ -48,14 +62,17 @@ test('each tool has a description and a handler function', () => {
 
 test('listReports handler returns content and structuredContent', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('listReports');
   const result = await (server as any)._registeredTools.listReports.handler({});
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('listReports'), countBefore + 1);
 });
 
 test('listIssues handler returns content and structuredContent for a valid report', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('listIssues');
   const result = await (server as any)._registeredTools.listIssues.handler({
     timeStamp: '260101T0000',
     jobID: 'mix'
@@ -63,10 +80,12 @@ test('listIssues handler returns content and structuredContent for a valid repor
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('listIssues'), countBefore + 1);
 });
 
 test('listViolators handler returns content and structuredContent for a valid issue', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('listViolators');
   const result = await (server as any)._registeredTools.listViolators.handler({
     issueID: 'linkNoText',
     timeStamp: '260101T0000',
@@ -75,10 +94,12 @@ test('listViolators handler returns content and structuredContent for a valid is
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('listViolators'), countBefore + 1);
 });
 
 test('listDiagnoses handler returns content and structuredContent for a valid diagnosis', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('listDiagnoses');
   const result = await (server as any)._registeredTools.listDiagnoses.handler({
     catalogIndex: '0',
     issueID: 'linkNoText',
@@ -88,10 +109,12 @@ test('listDiagnoses handler returns content and structuredContent for a valid di
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('listDiagnoses'), countBefore + 1);
 });
 
 test('getReport handler returns content and structuredContent for a valid report', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('getReport');
   const result = await (server as any)._registeredTools.getReport.handler({
     timeStamp: '260101T0000',
     jobID: 'mix'
@@ -99,10 +122,12 @@ test('getReport handler returns content and structuredContent for a valid report
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('getReport'), countBefore + 1);
 });
 
 test('requestTest handler returns content and structuredContent', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('requestTest');
   const result = await (server as any)._registeredTools.requestTest.handler({
     description: 'Test Page',
     URL: 'https://example.com/test',
@@ -111,10 +136,12 @@ test('requestTest handler returns content and structuredContent', async () => {
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('requestTest'), countBefore + 1);
 });
 
 test('requestRetest handler returns content and structuredContent for a valid report', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('requestRetest');
   const result = await (server as any)._registeredTools.requestRetest.handler({
     timeStamp: '260101T0000',
     jobID: 'mix',
@@ -123,16 +150,19 @@ test('requestRetest handler returns content and structuredContent for a valid re
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('requestRetest'), countBefore + 1);
 });
 
 test('requestFeature handler returns content and structuredContent', async () => {
   const server = createMCPServer();
+  const countBefore = getToolCallCount('requestFeature');
   const result = await (server as any)._registeredTools.requestFeature.handler({
     feature: 'A new feature idea'
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('requestFeature'), countBefore + 1);
 });
 
 test('listIssues handler returns an error for a nonexistent report', async () => {

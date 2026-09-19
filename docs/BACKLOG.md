@@ -2,15 +2,29 @@
 
 Engineering tasks and risks that are not yet scheduled.
 
-Items marked completed are preserved for about 2 weeks in case of production bugs.
+Items marked completed or not adopted are preserved for about 2 weeks in case of production bugs.
 
-## Improve MCP-zero discoverability
+## Add observability of request metrics
 
-The MCP-Zero protocol for tool discovery and selection has not yet been widely adopted but appears to have gained substantial traction. The following review asserts that Kilotest is not as well prepared to be discovered and used by MCP-Zero agents as it could be.
+Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
+
+## Improve MCP-zero discoverability (not adopted)
+
+The MCP-Zero protocol for tool discovery and selection has not yet been widely adopted but appears to have gained substantial traction. The following review (by Gemini) asserts that Kilotest is not as well prepared to be discovered and used by MCP-Zero agents as it could be.
 
 Get a second opinion on the following review. Is it prudent for Kilotest to make itself more MCP-Zero-friendly? If so, is the expansion of identifiers from short IDs to descriptions-as-names a necessary part of that improvement? If it is, can the identifier expansion be limited to the externally visible interface, so that it does not creep into the internal implementation? If the proposed revision is prudent, plan it.
 
-### Advice from Gemini
+### Second opinion (obtained 2026-09-19, not adopted)
+
+The review does not hold up under verification against the actual codebase and against MCP-Zero itself, so its proposal was not adopted.
+
+- **The review’s “before” code quotes are fabricated.** It presents `listReports` as having the description “Lists all reports.”, but no such string exists anywhere in the repo; the real tool (`mcp.ts`, lines 56 to 58) already has a substantive description (“Provide basics about all available reports.”) plus annotations such as `title` and `readOnlyHint`. Its “optimized” replacement tool, `kilotest_list_web_quality_reports` with a `url_filter`/`limit` schema, corresponds to no real tool: `listReports` takes no input at all, and the review’s own footnote admits that schema “does not yet exist”. The proposed `kilotest_run_ensemble_audit` also matches no real tool. These are invented strawmen, not an accurate before/after of Kilotest’s code.
+- **The review misrepresents what MCP-Zero is.** MCP-Zero (arXiv 2506.01056) is a single 2025 research paper, not an adopted protocol, and there is no evidence of the “substantial traction” the review claims. It describes a client-side technique: the agent generates a request, and a routing layer embeds it against whatever names, descriptions, and schemas a server already exposes. Nothing in the paper asks server authors to add a manifest file, adopt name prefixes, or restructure schemas. `mcp-manifest.json` is a real but unrelated third-party convention (mcp-manifest.dev) that the review conflates with MCP-Zero to manufacture a concrete-sounding deliverable.
+- **One claim does check out.** Kilotest is genuinely registered on Smithery and Glama (`README.md`, lines 60 to 61; `docs/AI-TOOLS.md`, lines 46 to 47), so that part of the review is accurate, though it is not evidence for the MCP-Zero framing built around it.
+
+**Conclusion:** it is not prudent to restructure Kilotest’s MCP tools on the basis of this review, since there is no verified mechanism by which the proposed changes would improve discoverability under MCP-Zero specifically. The identifier-expansion question (and whether it could be confined to the externally visible interface without creeping into the internal implementation) is therefore moot; it was not reached. Any future, independently justified improvements to tool naming, descriptions, or package metadata should be evaluated on their own merits (for example, human and LLM legibility in MCP clients generally), not as compliance with a research paper that does not impose such requirements.
+
+### Introduction
 
 To make your **kilotest** MCP server discoverable by **MCP-Zero** agent loops (or enterprise gateways using active tool discovery architectures), you need to optimize how your server represents itself to semantic routers.
 
@@ -184,10 +198,6 @@ Create this file in your project root as `scripts/generate-manifest.js`. It pull
 
 1. Create the **underlying handler function** for the new `kilotest_get_server_capabilities` tool.
 2. Create a **GitHub Action configuration** to automatically validate these schemas on push.
-
-## Add observability of request metrics
-
-Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
 
 ## Widen test-request duplicate detection (completed)
 

@@ -29,6 +29,8 @@ export const testRequestsPath = (): string => path.join(jobsPath(), 'testRequest
 export const reportsPath = (): string => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
 export const hiddenReportsPath = (): string => path.join(dbPath(), 'hiddenReports');
+// Path of the usage-metrics file.
+export const metricsPath = (): string => path.join(dbPath(), 'metrics.json');
 // IDs, names, and sponsors of Testaro rule engines.
 const ruleEngines: Record<string, [string, string]> = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -49,6 +51,15 @@ const ruleEngines: Record<string, [string, string]> = {
 export {ruleEngines};
 
 // TYPES
+
+// Usage-metrics categories, each a map from an event name (page name, MCP tool name, or
+// API operation name) to a count of how many times it has occurred.
+export type Metrics = {
+  since: string;
+  pageViews: Record<string, number>;
+  mcpToolCalls: Record<string, number>;
+  apiOperations: Record<string, number>;
+};
 
 // Test request.
 export type TestRequest = {
@@ -1014,4 +1025,41 @@ export const processTestRequest = (
     // Throw it.
     throw new Error('Failed to process test request', {cause: error});
   }
+});
+
+// METRICS FUNCTIONS
+
+// Concurrency lock for the `metrics.json` file.
+const metricsLock = createLock();
+// Returns the usage metrics, creating the file with zeroed counts if it does not yet exist.
+const getMetrics = async (): Promise<Metrics> => {
+  let metricsJSON: string;
+  try {
+    metricsJSON = await fs.readFile(metricsPath(), 'utf8');
+  }
+  catch(error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      const metrics: Metrics = {
+        since: getNowStamp(), pageViews: {}, mcpToolCalls: {}, apiOperations: {}
+      };
+      await fs.writeFile(metricsPath(), getJSON(metrics));
+      return metrics;
+    }
+    throw new Error(`Metrics file not readable (${errorMessage(error)})`, {cause: error});
+  }
+  try {
+    return JSON.parse(metricsJSON) as Metrics;
+  }
+  catch(error: unknown) {
+    throw new Error(`Metrics file not JSON (${errorMessage(error)})`, {cause: error});
+  }
+};
+// Records an occurrence of a named event (a web page view, an MCP tool call, or an API
+// operation call) in the usage metrics, creating the category and name if not yet present.
+export const recordMetric = (
+  category: 'pageViews' | 'mcpToolCalls' | 'apiOperations', name: string
+): Promise<void> => metricsLock(async (): Promise<void> => {
+  const metrics = await getMetrics();
+  metrics[category][name] = (metrics[category][name] ?? 0) + 1;
+  await fs.writeFile(metricsPath(), getJSON(metrics));
 });

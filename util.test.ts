@@ -1127,3 +1127,98 @@ test('getMultiReportWhats returns descriptions that have multiple reports', asyn
   const whats = await getMultiReportWhats();
   assert.ok(whats.includes('Mixed Outcomes Page'));
 });
+
+test('recordMetric creates the metrics file and records a first occurrence when the file is missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-metrics-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('pageViews', 'tutorialWeb.html');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.pageViews['tutorialWeb.html'], 1);
+    assert.equal(metrics.mcpToolCalls['tutorialWeb.html'], undefined);
+    assert.equal(typeof metrics.since, 'string');
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric increments an existing count rather than overwriting it', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-existing-metrics-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('mcpToolCalls', 'listReports');
+    await recordMetric('mcpToolCalls', 'listReports');
+    await recordMetric('mcpToolCalls', 'getReport');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.mcpToolCalls.listReports, 2);
+    assert.equal(metrics.mcpToolCalls.getReport, 1);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric throws when the metrics file is not readable for a reason other than being missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-unreadable-test';
+  const fsSync = await import('node:fs');
+  // Create a directory where the metrics file should be, causing EISDIR rather than ENOENT.
+  fsSync.mkdirSync(tmpDir + '/metrics.json', {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric} = await import('./util.ts');
+    await assert.rejects(recordMetric('pageViews', 'tutorialWeb.html'), /not readable/);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric throws when the metrics file is not JSON', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-not-json-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  fsSync.writeFileSync(tmpDir + '/metrics.json', 'not json');
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric} = await import('./util.ts');
+    await assert.rejects(recordMetric('pageViews', 'tutorialWeb.html'), /not JSON/);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric keeps categories independent for the same name', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-categories-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('apiOperations', 'listReports');
+    await recordMetric('mcpToolCalls', 'listReports');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.apiOperations.listReports, 1);
+    assert.equal(metrics.mcpToolCalls.listReports, 1);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});

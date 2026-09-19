@@ -902,6 +902,39 @@ test('POST /worker/job with a claimed job assigned to the worker returns an erro
   await fs.unlink(failedJobPath).catch(() => {});
 });
 
+test('POST /worker/job skips a claimed job file that disappears before it is read', {timeout: 500}, async () => {
+  // Create a claimed job assigned to a different worker, so it does not match this
+  // worker and would otherwise just be skipped normally, then delete it before the
+  // request is made, simulating the file vanishing between the directory listing and
+  // the read (e.g. because a concurrent report submission completed it).
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
+  for (const dir of [claimedDir, queueDir]) {
+    await fs.mkdir(dir, {recursive: true});
+    const files = await fs.readdir(dir).catch(() => []);
+    for (const file of files) {
+      await fs.unlink(path.join(dir, file)).catch(() => {});
+    }
+  }
+  const jobFile = '260101T0000-mix.json';
+  const claimedJobPath = path.join(claimedDir, jobFile);
+  await fs.writeFile(claimedJobPath, JSON.stringify({
+    id: '260101T0000-mix',
+    target: {what: 'Test', url: 'https://example.com/test'},
+    sources: {worker: 'Worker Two'}
+  }));
+  await fs.unlink(claimedJobPath);
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  const res = await request('POST', '/worker/job', {}, {
+    authorization: `Basic ${auth}`
+  });
+  // With no queued jobs and the claimed job gone, the worker should just get told
+  // there is no job, rather than a 500 error from an unhandled ENOENT.
+  assert.equal(res.statusCode, 200);
+  const body = jsonBody(res);
+  assert.ok(!body.error);
+});
+
 test('POST /worker/job with a queued job assigns it to the worker', {timeout: 500}, async () => {
   // Clean up claimed and queue directories.
   const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');

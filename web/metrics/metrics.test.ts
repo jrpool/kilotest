@@ -40,10 +40,13 @@ test('metrics returns an error for an invalid auth code', async () => {
   assert.equal(result.message, 'Invalid authorization code');
 });
 
-test('metrics returns an error for a missing auth code', async () => {
+test('metrics displays a form requesting an auth code when none has been submitted', async () => {
   const result: any = await answer(null, '');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.status, 'ok');
+  const html = parse(result.answerPage);
+  const input = html.querySelector('input[name="authCode"]');
+  assert.ok(input);
+  assert.equal(html.querySelectorAll('table').length, 0);
 });
 
 test('metrics reports no counts yet when the metrics file does not exist', async () => {

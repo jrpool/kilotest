@@ -456,7 +456,7 @@ This is a small, initial feature set, not a complete observability solution: it 
 
 ### Viewing the metrics
 
-The counts are displayed at `/metrics.html`, linked from `/manage.html`. Like the other manager-power pages (`/reannotateForm.html`, `/hideReportForm.html`, and others), it requires the query-string parameter `authCode` to match the `AUTH_CODE` environment variable; without a valid `authCode`, the request is rejected rather than the page being served. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
+The counts are displayed at `/metrics.html`, linked from `/manage.html`. Like the other self-submitting manager-power pages (`/hideReportForm.html`, `/unhideReportForm.html`, `/ai0BalanceForm.html`), visiting it with no `authCode` query-string parameter displays a form requesting one rather than immediately rejecting the request, since the maintainer following the `/manage.html` link has had no earlier opportunity to supply the code; submitting that form (or visiting the page directly with `?authCode=...`) then either shows the counts, if the code matches the `AUTH_CODE` environment variable, or reports an error if it does not. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
 
 ## Performance
 

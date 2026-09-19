@@ -1188,7 +1188,8 @@ const htmlPagePaths = [
   '/expungeReportsForm.html',
   '/pruneReportsForm.html',
   '/rewindReportsForm.html',
-  '/ai0BalanceForm.html'
+  '/ai0BalanceForm.html',
+  '/metrics.html'
 ];
 
 for (const pagePath of htmlPagePaths) {
@@ -1199,16 +1200,14 @@ for (const pagePath of htmlPagePaths) {
   });
 }
 
-// metrics.html requires a valid authCode to serve its page, unlike the other pages
-// above, so it is tested separately rather than in the no-params htmlPagePaths list.
-test('GET /metrics.html with a valid authCode serves a generated HTML page', async () => {
+test('GET /metrics.html with a valid authCode serves the usage-metrics table', async () => {
   const res = await request('GET', '/metrics.html?authCode=test-auth-code');
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('GET /metrics.html with no authCode is rejected', async () => {
-  const res = await request('GET', '/metrics.html');
+test('GET /metrics.html with an invalid authCode is rejected', async () => {
+  const res = await request('GET', '/metrics.html?authCode=wrong');
   assert.equal(res.statusCode, 400);
 });
 

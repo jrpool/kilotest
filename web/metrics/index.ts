@@ -31,32 +31,55 @@ const getCategoryTable = (counts: Record<string, number>): string => {
     `${margin}</table>`
   ].join('\n');
 };
-// Returns a page reporting usage metrics.
+// Returns a page reporting usage metrics, or, if no authorization code has been
+// submitted yet, a form requesting one.
 export const answer = async (_: any, search: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
-  // If the authorization code is invalid:
-  if (authCode !== process.env.AUTH_CODE) {
-    // Report the error.
-    return {
-      status: 'error',
-      message: 'Invalid authorization code'
+  let query: Record<string, string>;
+  // If the form has been submitted:
+  if (authCode) {
+    // If the authorization code is invalid:
+    if (authCode !== process.env.AUTH_CODE) {
+      // Report the error.
+      return {
+        status: 'error',
+        message: 'Invalid authorization code'
+      };
+    }
+    let metrics: Metrics;
+    try {
+      metrics = JSON.parse(await fs.readFile(metricsPath(), 'utf8'));
+    }
+    // If no metric has been recorded yet:
+    catch {
+      metrics = {since: '', pageViews: {}, mcpToolCalls: {}, apiOperations: {}};
+    }
+    query = {
+      body: [
+        `<p>Counts recorded since ${metrics.since ? getDateTimeString(metrics.since) : 'not yet available'}.</p>`,
+        '<h2>Web page views</h2>',
+        getCategoryTable(metrics.pageViews),
+        '<h2>MCP tool calls</h2>',
+        getCategoryTable(metrics.mcpToolCalls),
+        '<h2>API operation calls</h2>',
+        getCategoryTable(metrics.apiOperations)
+      ].join('\n')
     };
   }
-  let metrics: Metrics;
-  try {
-    metrics = JSON.parse(await fs.readFile(metricsPath(), 'utf8'));
+  // Otherwise, i.e. if the form has not been submitted yet:
+  else {
+    query = {
+      body: [
+        '<form action="/metrics.html">',
+        '  <p><label>',
+        '    Authorization code: <input size="3" minlength="3" maxlength="3" name="authCode" required>',
+        '  </label></p>',
+        '  <p><button type="submit">Submit</button></p>',
+        '</form>'
+      ].join('\n')
+    };
   }
-  // If no metric has been recorded yet:
-  catch {
-    metrics = {since: '', pageViews: {}, mcpToolCalls: {}, apiOperations: {}};
-  }
-  const query: Record<string, string> = {
-    since: metrics.since ? getDateTimeString(metrics.since) : 'not yet available',
-    pageViews: getCategoryTable(metrics.pageViews),
-    mcpToolCalls: getCategoryTable(metrics.mcpToolCalls),
-    apiOperations: getCategoryTable(metrics.apiOperations)
-  };
   // Get the populated template.
   const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.

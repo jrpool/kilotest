@@ -46,7 +46,7 @@ export const response = async (args: string[]) => {
   // Otherwise, i.e. if the description and URL are valid:
   else {
     // Process the request.
-    const requestResult = await processTestRequest('test', description, url, reason);
+    const {result: requestResult} = await processTestRequest(reason, {description, url});
     // Add details about the request.
     requestDetails = {
       'date and time received': new Date().toISOString(),

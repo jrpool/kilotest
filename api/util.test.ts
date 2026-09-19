@@ -99,8 +99,9 @@ test('getReportBasics returns an error for a report whose extract cannot be read
 test('processTestRequest returns an error for a duplicate request', async () => {
   process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
   // Submit the same request twice; the second should be a duplicate.
-  await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
-  const result = await processTestRequest('test', 'Dup Page', 'https://example.com/dup', 'A reason that is long enough.');
+  const target = {description: 'Dup Page', url: 'https://example.com/dup'};
+  await processTestRequest('A reason that is long enough.', target);
+  const {result} = await processTestRequest('A reason that is long enough.', target);
   assert.equal(result, 'duplicate');
   if (savedDBDir !== undefined) {
     process.env.DB_DIR = savedDBDir;

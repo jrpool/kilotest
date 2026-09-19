@@ -64,6 +64,17 @@ export type TestRequests = Record<string, TestRequest[]>;
 export type TestRequestResult
 = 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'nonreport' | 'ok';
 
+// Target of a new-test or retest request: a description and URL for a new-test request,
+// or the timeStamp and jobID of the cited report for a retest request.
+export type TestRequestTarget
+= {description: string; url: string} | {timeStamp: string; jobID: string};
+
+// Result of processTestRequest. description and url are absent only when the result
+// is 'nonreport', i.e. when the target page could not be resolved; this is a
+// discriminated union on result so that a check of result narrows their presence.
+export type ProcessRequestResult
+= {result: 'nonreport'} | {result: Exclude<TestRequestResult, 'nonreport'>; description: string; url: string};
+
 // A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
 export interface AnnotatedInstance extends StandardInstance {
   issueID?: string;
@@ -885,15 +896,45 @@ const getApprovedJobProperty = async (
     throw new Error('Failed to get approved job property', {cause: error});
   }
 };
-// Returns whether a new-test or retest request is eligible to be approved.
-export const getApprovability = async (
-  requestType: 'test' | 'retest',
-  description: string,
-  url: string,
+// Processes a new-test or retest request as a transaction and returns the result.
+// For a retest request (target has a timeStamp and jobID), resolves the description
+// and URL of the cited report itself, so a caller never needs its own
+// getReportExtract call. Approvability (whether the request may proceed) and, if so,
+// its addition to testRequests.json are both decided inside the lock, as a single
+// atomic operation, so no caller-visible seam exists where an approvability decision
+// could be based on stale information about testRequests.json.
+export const processTestRequest = (
   reason: string,
-  timeStamp = '',
-  jobID = ''
-): Promise<TestRequestResult> => {
+  target: TestRequestTarget
+): Promise<ProcessRequestResult> => testRequestsLock(async (): Promise<ProcessRequestResult> => {
+  let requestType: 'test' | 'retest';
+  let description: string;
+  let url: string;
+  // Whether the cited report (for a retest) has been superseded by a later one.
+  let superseded = false;
+  // If the target identifies a report to retest:
+  if ('timeStamp' in target) {
+    requestType = 'retest';
+    const {timeStamp, jobID} = target;
+    // Get the cited report.
+    const extract = await getReportExtract(timeStamp, jobID);
+    // If it does not exist:
+    if ('error' in extract) {
+      // Return this.
+      return {result: 'nonreport'};
+    }
+    ({description, url} = extract);
+    // Get whether it has been superseded by a later report.
+    const reportExtracts = await getReportExtracts();
+    superseded = reportExtracts.some(
+      ex => ex.timeStamp === timeStamp && ex.jobID === jobID && ex.superseded
+    );
+  }
+  // Otherwise, i.e. if the target is a page to test for the first time:
+  else {
+    requestType = 'test';
+    ({description, url} = target);
+  }
   try {
     // Get any property the page shares with a claimed job.
     const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
@@ -902,7 +943,11 @@ export const getApprovability = async (
     // If the page shares a property with a claimed or queued job:
     if (claimedJobProperty || queueJobProperty) {
       // Return the property.
-      return claimedJobProperty || queueJobProperty as 'description' | 'url';
+      return {
+        result: (claimedJobProperty || queueJobProperty) as 'description' | 'url',
+        description,
+        url
+      };
     }
     // Otherwise, get the requests awaiting approval.
     const requests = await getTestRequests() as Record<string, {
@@ -913,100 +958,31 @@ export const getApprovability = async (
       request => request.description === description && request.reason === reason
     )) {
       // Return this.
-      return 'duplicate';
+      return {result: 'duplicate', description, url};
     }
-    // Otherwise, get the extracts of all available reports.
-    const reportExtracts = await getReportExtracts();
-    // If the request is to retest a page:
-    if (requestType === 'retest') {
-      // Get the extract of the cited report.
-      const extract = reportExtracts.find(
-        extract => extract.timeStamp === timeStamp && extract.jobID === jobID
-      );
-      // If the cited report does not exist:
-      if (!extract) {
-        // Return this.
-        return 'nonreport';
-      }
-      // Otherwise, if it exists but has been superseded:
-      else if (extract.superseded) {
-        // Return this.
-        return 'superseded';
-      }
+    // If the request is to retest a page that has been superseded:
+    if (requestType === 'retest' && superseded) {
+      // Return this.
+      return {result: 'superseded', description, url};
     }
-    // Otherwise, i.e. if the request is to test a new page:
-    else {
-      // If any report has the requested description and URL:
+    // Otherwise, if the request is to test a new page for which a report already exists:
+    if (requestType === 'test') {
+      const reportExtracts = await getReportExtracts();
       if (reportExtracts.some(report => report.description === description && report.url === url)) {
         // Return this.
-        return 'retest';
+        return {result: 'retest', description, url};
       }
     }
-    // The request is eligible, so return this.
-    return 'ok';
-    // If an error occurred:
-  } catch(error) {
-    // Throw this.
-    throw new Error('Failed to get requestability', {cause: error});
-  }
-};
-// Adds a new-test or retest request as a transaction if approvable and returns the result.
-export const addTestRequest = (
-  requestType: 'test' | 'retest',
-  description: string,
-  url: string,
-  reason: string,
-  timeStamp: string = '',
-  jobID: string = ''
-) => testRequestsLock(
-  async (): Promise<TestRequestResult> => {
-    try {
-      // Get the approvability of the request.
-      const approvability = await getApprovability(
-        requestType, description, url, reason, timeStamp, jobID
-      );
-      // If the request is not approvable:
-      if (approvability !== 'ok') {
-        // Return why.
-        return approvability;
-      }
-      // Otherwise, get the requests awaiting approval.
-      const testRequests = await getTestRequests();
-      // Initialize the requests with the URL if necessary.
-      testRequests[url] ??= [];
-      // Add the request to them.
-      testRequests[url].push({
-        timeStamp: getNowStamp(),
-        description,
-        reason
-      });
-      // Save the revised test requests.
-      await fs.writeFile(testRequestsPath(), getJSON(testRequests));
-      // Return success.
-      return 'ok';
-    }
-    // If an error occurred:
-    catch(error) {
-      // Throw it.
-      throw new Error('Failed to add test request', {cause: error});
-    }
-  }
-);
-// Processes a new-test or retest request and returns the result.
-export const processTestRequest = async (
-  requestType: 'test' | 'retest',
-  description: string,
-  url: string,
-  reason: string,
-  timeStamp: string = '',
-  jobID: string = ''
-): Promise<TestRequestResult> => {
-  // Add the test request as a transaction if approvable and return the result.
-  const additionResult = await addTestRequest(
-    requestType, description, url, reason, timeStamp, jobID
-  );
-  // If the request was added:
-  if (additionResult === 'ok') {
+    // The request is eligible, so get the requests awaiting approval.
+    const testRequests = await getTestRequests();
+    // Add the request to them, initializing them with the URL if necessary.
+    (testRequests[url] ??= []).push({
+      timeStamp: getNowStamp(),
+      description,
+      reason
+    });
+    // Save the revised test requests.
+    await fs.writeFile(testRequestsPath(), getJSON(testRequests));
     // Get an email-safe version of the reason.
     const plainReason = getPlainText(reason);
     // Alert a manager.
@@ -1014,7 +990,11 @@ export const processTestRequest = async (
       `Kilotest: new ${requestType} request awaits approval`,
       `Page description: ${description}\nURL: ${url}\nReason: ${plainReason}`
     );
+    // Return success.
+    return {result: 'ok', description, url};
+    // If an error occurred:
+  } catch(error) {
+    // Throw it.
+    throw new Error('Failed to process test request', {cause: error});
   }
-  // Return the result.
-  return additionResult;
-};
+});

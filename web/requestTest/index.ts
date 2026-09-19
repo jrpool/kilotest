@@ -11,7 +11,7 @@ import {populateTemplate, processTestRequest} from '../../util.ts';
 
 export const answer = async (description: string, url: string, reason: string) => {
   // Process the request.
-  const result = await processTestRequest('test', description, url, reason);
+  const {result} = await processTestRequest(reason, {description, url});
   // If the request was recorded:
   if (result === 'ok') {
     const query = {

@@ -1036,16 +1036,20 @@ test('GET /style.css with a read error returns an error page', async () => {
   }
 });
 
-test('GET /requestTest.html returns an error page when called without arguments', async () => {
+// requestTest.html and requestRetest.html are POST-only routes (see the
+// `routes.POST` list above). They also match the generic '*.html*' GET pattern,
+// but the generic `pageName.endsWith('.html')` branch of the GET dispatcher
+// excludes any path that is POST-only, since such a path's answer handler
+// expects POST's argument list and performs no GET-appropriate rendering.
+
+test('GET /requestTest.html without arguments is rejected as an invalid GET request', async () => {
   const res = await request('GET', '/requestTest.html');
   assert.equal(res.statusCode, 400);
-  assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('GET /requestRetest.html/260202T0000/new returns an error page when called as GET', async () => {
+test('GET /requestRetest.html/260202T0000/new is rejected as an invalid GET request', async () => {
   const res = await request('GET', '/requestRetest.html/260202T0000/new');
   assert.equal(res.statusCode, 400);
-  assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
 // TESTS: GET HTML page routing
@@ -1186,34 +1190,38 @@ test('POST /mcp with a valid initialize request returns server info via SSE', as
 
 test('POST /requestTest.html with valid format but duplicate URL returns an answer error', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
-  // First request to create the request.
+  // First request to create the request. processTestRequest treats a request as a
+  // duplicate only when description, URL, AND reason all match an existing pending
+  // request, so the reason must be identical between the two requests here.
   await formRequest('POST', '/requestTest.html', {
     description: `Dup Test Page ${uniqueStamp}`,
     url: `https://example.com/dup-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
-  // Second request with the same URL should get a duplicate error.
+  // Second, identical request should get a duplicate error.
   const res = await formRequest('POST', '/requestTest.html', {
     description: `Dup Test Page ${uniqueStamp}`,
     url: `https://example.com/dup-${uniqueStamp}`,
-    why: 'Because accessibility matters again'
+    why: 'Because accessibility matters'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Duplicate request'));
+  assert.ok(res.body.includes('Test request duplicates an already submitted request'));
 });
 
 test('POST /requestRetest.html with valid format but duplicate retest returns an answer error', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
-  // First retest to create the recommendation.
+  // First retest to create the recommendation. As above, the reason must match
+  // exactly between the two requests for processTestRequest to treat the second as
+  // a duplicate rather than a second, independent (and thus also 'ok') request.
   await formRequest('POST', '/requestRetest.html/260202T0000/new', {
     why: 'Because the report is obsolete and needs refreshing'
   });
-  // Second retest with the same report should get a duplicate error.
+  // Second, identical retest of the same report should get a duplicate error.
   const res = await formRequest('POST', '/requestRetest.html/260202T0000/new', {
-    why: 'Because the report is obsolete and needs refreshing again'
+    why: 'Because the report is obsolete and needs refreshing'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Duplicate request'));
+  assert.ok(res.body.includes('Test request duplicates an already submitted request'));
 });
 
 test('POST /requestAction.html with valid auth code and approval of a duplicate returns an error', {timeout: 500}, async () => {

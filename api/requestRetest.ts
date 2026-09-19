@@ -7,7 +7,7 @@
 
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {getReportExtract, processTestRequest} from '../util.ts';
+import {processTestRequest} from '../util.ts';
 import {requestRetestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -22,71 +22,65 @@ export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = '', reason = ''] = args;
   const thisHost = getThisHost();
   const reasonLength = reason.length;
-  // Get data on the report.
-  const reportExtract = await getReportExtract(timeStamp, jobID);
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your request'];
   let requestDisposition: ResponseContent['disposition of your request'] = null;
-  // If this failed:
-  if ('error' in reportExtract) {
-    requestDetails = {
-      error: 'request invalid: the specified existing report is not an available report'
-    };
-  }
-  // Otherwise, if the encoded reason is too short or too long:
-  else if (reasonLength < 20 || reasonLength > 100) {
+  // If the encoded reason is too short or too long:
+  if (reasonLength < 20 || reasonLength > 100) {
     requestDetails = {
       error: 'request invalid: your reason is not between 20 and 100 characters long'
     }
   }
-  // Otherwise, i.e. if getting the report succeeded and the request is facially valid:
+  // Otherwise, i.e. if the request is facially valid:
   else {
-    // Process the request.
-    const requestResult = await processTestRequest(
-      'retest', reportExtract.description, reportExtract.url, reason, timeStamp, jobID
-    );
-    // Add details about the request.
-    requestDetails = {
-      'date and time received': new Date().toISOString(),
-      'page to be retested': {
-        'description': reportExtract.description,
-        'URL': reportExtract.url
-      },
-      'reason why the page should be retested': reason
-    };
-    // Add information about the disposition of the request.
-    if (requestResult === 'ok') {
-      requestDisposition = {
-        'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
-        'how you can check for completion': 'You can call the listReports tool to learn whether the page has been retested and a new report is available.',
-        'how a web user can check for completion': `A web user can visit ${thisHost}/listReports.html to learn whether the page has been retested and a new report is available.`
+    // Process the request. This resolves the cited report's description and URL itself.
+    const processResult = await processTestRequest(reason, {timeStamp, jobID});
+    // If the cited report does not exist:
+    if (processResult.result === 'nonreport') {
+      requestDetails = {
+        error: 'request invalid: the specified report does not exist'
       };
     }
+    // Otherwise, i.e. if the cited report was found:
     else {
-      const failureFact = 'Your request will not be processed, because ';
-      let failureReason: string;
-      if (requestResult === 'description') {
-        failureReason = 'a request to test a page with the same description is already approved.'
-      }
-      else if (requestResult === 'url') {
-        failureReason = 'a request to test a page with the same URL is already approved.'
-      }
-      else if (requestResult === 'retest') {
-        failureReason = 'a report about a page with the same description and URL is available.'
-      }
-      else if (requestResult === 'superseded') {
-        failureReason = 'a later report about a page with the same description is available.'
-      }
-      else if (requestResult === 'nonreport') {
-        failureReason = 'the report that you want an update of does not exist.'
+      const {result: requestResult, description, url} = processResult;
+      // Add details about the request.
+      requestDetails = {
+        'date and time received': new Date().toISOString(),
+        'page to be retested': {
+          'description': description,
+          'URL': url
+        },
+        'reason why the page should be retested': reason
+      };
+      // Add information about the disposition of the request.
+      if (requestResult === 'ok') {
+        requestDisposition = {
+          'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
+          'how you can check for completion': 'You can call the listReports tool to learn whether the page has been retested and a new report is available.',
+          'how a web user can check for completion': `A web user can visit ${thisHost}/listReports.html to learn whether the page has been retested and a new report is available.`
+        };
       }
       else {
-        failureReason = 'an identical request is already awaiting approval.'
-      }
-      requestDisposition = {
-        'what happens next': `${failureFact}${failureReason}`,
-        'how you can check for completion': 'Not applicable.',
-        'how a web user can check for completion': 'Not applicable.'
+        const failureFact = 'Your request will not be processed, because ';
+        let failureReason: string;
+        if (requestResult === 'description') {
+          failureReason = 'a request to test a page with the same description is already approved.'
+        }
+        else if (requestResult === 'url') {
+          failureReason = 'a request to test a page with the same URL is already approved.'
+        }
+        else if (requestResult === 'superseded') {
+          failureReason = 'a later report about a page with the same description is available.'
+        }
+        else {
+          failureReason = 'an identical request is already awaiting approval.'
+        }
+        requestDisposition = {
+          'what happens next': `${failureFact}${failureReason}`,
+          'how you can check for completion': 'Not applicable.',
+          'how a web user can check for completion': 'Not applicable.'
+        }
       }
     }
   }

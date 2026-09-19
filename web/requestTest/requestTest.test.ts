@@ -72,8 +72,9 @@ test('answer returns ok with a populated answer page for a valid test request', 
   // Verify the placeholders were replaced.
   assert.ok(result.answerPage.includes('Test Page'));
   assert.ok(result.answerPage.includes('Because accessibility'));
-  assert.ok(!result.answerPage.includes('__target__'));
-  assert.ok(!result.answerPage.includes('__why__'));
+  assert.ok(!result.answerPage.includes('__description__'));
+  assert.ok(!result.answerPage.includes('__url__'));
+  assert.ok(!result.answerPage.includes('__reason__'));
   // Verify the HTML is well-formed.
   const doc = parse(result.answerPage);
   const h1 = doc.querySelector('h1');
@@ -95,7 +96,7 @@ test('answer returns an error when the URL is already queued', {timeout: 500}, a
       'Queued Page', 'https://example.com/queued', 'Because accessibility'
     );
     assert.equal(result.status, 'error');
-    assert.ok(result.message.includes('queued'));
+    assert.equal(result.message, 'A request to test a page with the same description or URL is already approved');
   }
   finally {
     try {
@@ -107,9 +108,23 @@ test('answer returns an error when the URL is already queued', {timeout: 500}, a
   }
 });
 
-test('answer returns an error for an invalid request', {timeout: 500}, async () => {
+test('answer returns an error for a duplicate request', {timeout: 500}, async () => {
   const {answer} = await import('./index.ts');
-  const result: any = await answer('', 'not-a-url', 'why');
+  // Submit the same request twice; the second is a duplicate.
+  await answer('Duplicate Page', 'https://example.com/duplicate', 'Because accessibility');
+  const result: any = await answer(
+    'Duplicate Page', 'https://example.com/duplicate', 'Because accessibility'
+  );
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
+  assert.equal(result.message, 'Test request duplicates an already submitted request');
+});
+
+test('answer returns an error when a report already exists for the page', {timeout: 500}, async () => {
+  const {answer} = await import('./index.ts');
+  // The fixture database already has a report for this description and URL.
+  const result: any = await answer(
+    'Mixed Outcomes Page', 'https://example.com/mixed', 'Because accessibility'
+  );
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'A report about the page is already available');
 });

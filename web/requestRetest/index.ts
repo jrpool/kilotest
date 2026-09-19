@@ -5,25 +5,23 @@
 
 // IMPORTS
 
-import {getReportExtract, populateTemplate, processTestRequest} from '../../util.ts';
+import {populateTemplate, processTestRequest} from '../../util.ts';
 
 // FUNCTIONS
 
 export const answer = async (pageArgs: string, reason: string) => {
   const [timeStamp, jobID] = pageArgs.split('/') as [string, string];
-  // Get an extract of the cited report.
-  const extract = await getReportExtract(timeStamp, jobID);
-  // If this failed:
-  if ('error' in extract) {
+  // Process the request. This resolves the cited report's description and URL itself.
+  const processResult = await processTestRequest(reason, {timeStamp, jobID});
+  // If the cited report does not exist:
+  if (processResult.result === 'nonreport') {
     // Report this.
     return {
       status: 'error',
       message: 'Invalid request'
     };
   }
-  const {description, url} = extract;
-  // Otherwise, i.e. if it succeeded, process the request.
-  const result = await processTestRequest('retest', description, url, reason, timeStamp, jobID);
+  const {result, description, url} = processResult;
   // If the request was recorded:
   if (result === 'ok') {
     const query = {
@@ -51,14 +49,6 @@ export const answer = async (pageArgs: string, reason: string) => {
     return {
       status: 'error',
       message: 'A later report about the page is already available'
-    }
-  }
-  // Otherwise, if the cited report does not exist:
-  else if (result === 'nonreport') {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'The report you want an update of does not exist'
     }
   }
   // Otherwise, i.e. if a request to test a page with the same description or URL is approved:

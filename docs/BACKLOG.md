@@ -2,23 +2,29 @@
 
 Engineering tasks and risks that are not yet scheduled.
 
-Items marked completed are preserved for about 2 weeks in case of production bugs.
+Items marked completed or not adopted are preserved for about 2 weeks in case of production bugs.
 
-## Widen test-request duplicate detection
+## Add observability of request metrics
 
-The duplicate check in `addTestRequest` (`util.ts`), reached by all four test/retest request paths (UI `/requestTest.html` and `/requestRetest.html`; API `requestTest` and `requestRetest` operations), compares an incoming request only against other requests currently pending in `db/jobs/testRequests.json`, i.e., submitted but not yet manually approved by the maintainer into a job. Once a pending request is approved into a job (`web/enqueue/index.ts`), all pending requests for that URL are cleared from `testRequests.json`, so this shared check cannot recognize a duplicate against a request that has already been approved, is currently running, or has already completed. An identical request submitted after approval triggers a fresh alert rather than being filtered.
+Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
 
-The four paths differ in what, if anything, they check before reaching this shared dedup, and none of the four closes the gap:
+## Improve MCP-zero discoverability (not adopted)
 
-- UI `requestTest` (`web/requestTest/index.ts`) additionally calls `getRequestability`, rejecting the request outright if the URL matches a claimed or queued job. This screens out most already-approved, not-yet-completed requests for a new test, but not ones for a completed report, since `getRequestability` does not consult reports.
-- API `requestTest` (`api/requestTest.ts`) additionally checks `getReportExtracts` and rejects the request if a report already exists for the same description and URL, but, unlike the UI path, does not call `getRequestability`, so it does not screen out a URL that is currently claimed or queued as a job.
-- UI `requestRetest` (`web/requestRetest/index.ts`) and API `requestRetest` (`api/requestRetest.ts`) call neither `getRequestability` nor a same-description-and-URL report check; each only confirms the report being retested is still the latest one for its page before falling through to the shared dedup.
+The MCP-Zero protocol for tool discovery and selection has not yet been widely adopted but appears to have gained substantial traction. The following review (by Gemini) asserts that Kilotest is not as well prepared to be discovered and used by MCP-Zero agents as it could be.
 
-Consider widening the shared `addTestRequest` check itself, so that all four paths benefit uniformly, to also compare against approved, claimed, queued, or completed requests, for example recently created jobs or reports for the same URL and description, and if so over what time window, rather than continuing to rely on each path's own inconsistent pre-check.
+Get a second opinion on the following review. Is it prudent for Kilotest to make itself more MCP-Zero-friendly? If so, is the expansion of identifiers from short IDs to descriptions-as-names a necessary part of that improvement? If it is, can the identifier expansion be limited to the externally visible interface, so that it does not creep into the internal implementation? If the proposed revision is prudent, plan it.
 
-## Improve MCP-zero discoverability
+### Second opinion (obtained 2026-09-19, not adopted)
 
-### Advice from Gemini
+The review does not hold up under verification against the actual codebase and against MCP-Zero itself, so its proposal was not adopted.
+
+- **The review’s “before” code quotes are fabricated.** It presents `listReports` as having the description “Lists all reports.”, but no such string exists anywhere in the repo; the real tool (`mcp.ts`, lines 56 to 58) already has a substantive description (“Provide basics about all available reports.”) plus annotations such as `title` and `readOnlyHint`. Its “optimized” replacement tool, `kilotest_list_web_quality_reports` with a `url_filter`/`limit` schema, corresponds to no real tool: `listReports` takes no input at all, and the review’s own footnote admits that schema “does not yet exist”. The proposed `kilotest_run_ensemble_audit` also matches no real tool. These are invented strawmen, not an accurate before/after of Kilotest’s code.
+- **The review misrepresents what MCP-Zero is.** MCP-Zero (arXiv 2506.01056) is a single 2025 research paper, not an adopted protocol, and there is no evidence of the “substantial traction” the review claims. It describes a client-side technique: the agent generates a request, and a routing layer embeds it against whatever names, descriptions, and schemas a server already exposes. Nothing in the paper asks server authors to add a manifest file, adopt name prefixes, or restructure schemas. `mcp-manifest.json` is a real but unrelated third-party convention (mcp-manifest.dev) that the review conflates with MCP-Zero to manufacture a concrete-sounding deliverable.
+- **One claim does check out.** Kilotest is genuinely registered on Smithery and Glama (`README.md`, lines 60 to 61; `docs/AI-TOOLS.md`, lines 46 to 47), so that part of the review is accurate, though it is not evidence for the MCP-Zero framing built around it.
+
+**Conclusion:** it is not prudent to restructure Kilotest’s MCP tools on the basis of this review, since there is no verified mechanism by which the proposed changes would improve discoverability under MCP-Zero specifically. The identifier-expansion question (and whether it could be confined to the externally visible interface without creeping into the internal implementation) is therefore moot; it was not reached. Any future, independently justified improvements to tool naming, descriptions, or package metadata should be evaluated on their own merits (for example, human and LLM legibility in MCP clients generally), not as compliance with a research paper that does not impose such requirements.
+
+### Introduction
 
 To make your **kilotest** MCP server discoverable by **MCP-Zero** agent loops (or enterprise gateways using active tool discovery architectures), you need to optimize how your server represents itself to semantic routers.
 
@@ -193,9 +199,17 @@ Create this file in your project root as `scripts/generate-manifest.js`. It pull
 1. Create the **underlying handler function** for the new `kilotest_get_server_capabilities` tool.
 2. Create a **GitHub Action configuration** to automatically validate these schemas on push.
 
-## Add observability of request metrics
+## Widen test-request duplicate detection (completed)
 
-Record per-endpoint request counts, latencies, and error rates so that Kilotest managers can observe which API operations are most used and identify performance regressions.
+The duplicate check in `addTestRequest` (`util.ts`), reached by all four test/retest request paths (UI `/requestTest.html` and `/requestRetest.html`; API `requestTest` and `requestRetest` operations), compares an incoming request only against other requests currently pending in `db/jobs/testRequests.json`, i.e., submitted but not yet manually approved by the maintainer into a job. Once a pending request is approved into a job (`web/enqueue/index.ts`), all pending requests for that URL are cleared from `testRequests.json`, so this shared check cannot recognize a duplicate against a request that has already been approved, is currently running, or has already completed. An identical request submitted after approval triggers a fresh alert rather than being filtered.
+
+The four paths differ in what, if anything, they check before reaching this shared dedup, and none of the four closes the gap:
+
+- UI `requestTest` (`web/requestTest/index.ts`) additionally calls `getRequestability`, rejecting the request outright if the URL matches a claimed or queued job. This screens out most already-approved, not-yet-completed requests for a new test, but not ones for a completed report, since `getRequestability` does not consult reports.
+- API `requestTest` (`api/requestTest.ts`) additionally checks `getReportExtracts` and rejects the request if a report already exists for the same description and URL, but, unlike the UI path, does not call `getRequestability`, so it does not screen out a URL that is currently claimed or queued as a job.
+- UI `requestRetest` (`web/requestRetest/index.ts`) and API `requestRetest` (`api/requestRetest.ts`) call neither `getRequestability` nor a same-description-and-URL report check; each only confirms the report being retested is still the latest one for its page before falling through to the shared dedup.
+
+Consider widening the shared `addTestRequest` check itself, so that all four paths benefit uniformly, to also compare against approved, claimed, queued, or completed requests, for example recently created jobs or reports for the same URL and description, and if so over what time window, rather than continuing to rely on each path's own inconsistent pre-check.
 
 ## Tighten the DMARC policy after adding aggregate reporting (revised and completed)
 

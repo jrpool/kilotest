@@ -311,7 +311,21 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
   const claimedJobNames = jobNames.claimed;
   // For each claimed job:
   for (const jobName of claimedJobNames) {
-    const job = await getObject(path.join(jobsPath(), 'claimed', jobName));
+    // A claimed-job file can disappear between the directory listing above and this
+    // read, because report submission (which deletes or reclassifies claimed jobs) is
+    // not serialized by jobLock. That race is a normal, recoverable condition, so the
+    // job is skipped rather than treated as defective; any other failure to read it
+    // should never occur and is left to propagate.
+    let job: unknown;
+    try {
+      job = await getObject(path.join(jobsPath(), 'claimed', jobName));
+    }
+    catch (error: unknown) {
+      if (error instanceof Error && (error.cause as NodeJS.ErrnoException | undefined)?.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
+    }
     const {id, sources} = job as {id: string, sources: {worker: string}};
     const {worker} = sources;
     // If its assignee is the worker:

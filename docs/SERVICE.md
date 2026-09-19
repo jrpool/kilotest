@@ -436,6 +436,28 @@ To change any of the five alert variables:
 3. Check the maintainer's email spam folder; some email providers filter unfamiliar senders.
 4. Verify DMARC, SPF, and DKIM records are correctly configured.
 
+## Usage metrics
+
+Kilotest records basic counts of how it is used, so the maintainer can answer questions such as whether the web UI or the MCP server is being used, and what classes of requests are made, without needing external tooling.
+
+### What is recorded
+
+`recordMetric(category, name)`, in `util.ts`, increments a count for a `(category, name)` pair and writes the result to `db/metrics.json`. It is called from three places:
+
+- The generic `.html` GET dispatch in `index.ts`, once per successfully served web page, recorded under the `pageViews` category by page name (for example `tutorialWeb`, `listReports`).
+- Each of the 8 MCP tool handlers in `mcp.ts`, once per successful tool call, recorded under the `mcpToolCalls` category by tool name (for example `listReports`, `requestTest`).
+- The `/api/*` GET and POST service branches in `index.ts`, once per call, recorded under the `apiOperations` category by operation name.
+
+`db/metrics.json` also stores a `since` time stamp, set when the file is first created, so the counts can be read as "since this date" rather than assumed to cover Kilotest's entire history.
+
+Requests from the periodic smoke test (`smokeTest.ts`) are not recorded: `index.ts`'s `handleRequest` intercepts any request bearing the `x-kilotest-smoke` header before any dispatch, route handler, or MCP tool call runs, so smoke-test traffic never reaches a `recordMetric` call site in the first place.
+
+This is a small, initial feature set, not a complete observability solution: it counts requests by class and frequency, but does not record resource metrics (memory, storage, CPU; already available via `pm2 monit`, `free`, and `df`), per-event time-series data, or any caller identity (Kilotest's MCP transport is stateless and has no stable per-caller identifier).
+
+### Viewing the metrics
+
+The counts are displayed at `/metrics.html`, linked from `/manage.html`. Like the other manager-power pages (`/reannotateForm.html`, `/hideReportForm.html`, and others), it requires the query-string parameter `authCode` to match the `AUTH_CODE` environment variable; without a valid `authCode`, the request is rejected rather than the page being served. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
+
 ## Performance
 
 The Cloud Compute host, in initial testing, took about 2.5 as long to process an example job as an Apple M2 Pro MacBook Pro with 16GB of memory. After tuning, the ratio was reduced to about 1.7.

@@ -6,7 +6,7 @@
 // IMPORTS
 
 import {
-  errorMessage, getReportData, objectSort, populateTemplate, reportsPath
+  errorMessage, getReportData, objectSort, populateTemplate, readdirOrCreate, reportsPath
 } from '../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -71,7 +71,7 @@ export const reportDeletionForm = async (
       };
     }
   }
-  const reportNames = await fs.readdir(reportsPath());
+  const reportNames = await readdirOrCreate(reportsPath(), 'Reports directory');
   // Initialize an array of report summaries.
   const reportSpecs: ReportSpec[] = [];
   // For each report:

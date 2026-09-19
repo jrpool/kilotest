@@ -668,6 +668,47 @@ test('getJobNames throws when a job directory is a file, not a directory', async
   }
 });
 
+test('getJobsData returns an empty array, instead of throwing ENOENT, when its category directory does not yet exist', async () => {
+  // Regression test: on a fresh deployment, jobs/claimed and jobs/queue may never
+  // have been created yet (no job has ever been claimed or queued there). getJobsData
+  // must tolerate that the same way getJobNames does, rather than reading the
+  // category directory directly and throwing ENOENT.
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-jobsdata-'));
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    const {getJobsData} = await import('./util.ts');
+    const result = await getJobsData('claimed');
+    assert.deepEqual(result, []);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
+  }
+});
+
+test('processTestRequest succeeds on a fresh deployment with no job directories yet', async () => {
+  // Regression test for the same ENOENT scenario, exercised through the actual
+  // public interface: a brand-new DB_DIR with no jobs/claimed or jobs/queue
+  // directories must not prevent a new-test request from being approved.
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-freshdeploy-'));
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    const {processTestRequest: freshProcessTestRequest} = await import('./util.ts');
+    const {result} = await freshProcessTestRequest(
+      'because accessibility', {description: 'Fresh Deploy Page', url: 'https://example.com/fresh'}
+    );
+    assert.equal(result, 'ok');
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
+  }
+});
+
 test('getObject throws for a file that is not valid JSON', async () => {
   const tmpFile = path.join((await import('node:os')).tmpdir(), 'kilotest-test-invalid.json');
   (await import('node:fs')).writeFileSync(tmpFile, 'not json');

@@ -288,40 +288,43 @@ export const getIssue = (engineID: string, ruleID: string): string | null => {
   // Return the issue ID if a pattern matched, or a failure result otherwise.
   return variableRuleID ? variable[variableRuleID]!.issueID : null;
 };
-// Gets the names and categories of the job files. Missing job directories are a normal,
-// recoverable condition (e.g. on first run) and are created empty; any other failure to
-// read a job directory should never occur, so it is thrown rather than returned.
+// Returns the names of the files in a directory. A missing directory is a normal,
+// recoverable condition (e.g. on first run, before anything has ever been written to
+// it) and is created empty; any other failure to read it should never occur, so it is
+// thrown rather than returned. label identifies the directory in the thrown message.
+export const readdirOrCreate = async (dirPath: string, label: string): Promise<string[]> => {
+  try {
+    return await fs.readdir(dirPath);
+  }
+  catch(error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      await fs.mkdir(dirPath, {recursive: true});
+      return [];
+    }
+    throw new Error(`${label} not readable (${errorMessage(error)})`, {cause: error});
+  }
+};
+// Gets the names and categories of the job files.
 export const getJobNames = async (): Promise<{queue: string[], claimed: string[], failed: string[]}> => {
   const jobNames: {queue: string[], claimed: string[], failed: string[]} = {
     queue: [],
     claimed: [],
     failed: []
   };
-  let fileNames: string[];
   for (const category of ['queue', 'claimed', 'failed'] as const) {
-    const categoryPath = path.join(jobsPath(), category);
-    try {
-      fileNames = await fs.readdir(categoryPath);
-    }
-    catch(error: unknown) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        await fs.mkdir(categoryPath, {recursive: true});
-        fileNames = [];
-      }
-      else {
-        throw new Error(
-          `Job directory ${category} not readable (${errorMessage(error)})`, {cause: error}
-        );
-      }
-    }
-    jobNames[category] = fileNames;
+    jobNames[category] = await readdirOrCreate(
+      path.join(jobsPath(), category), `Job directory ${category}`
+    );
   }
   return jobNames;
 }
-// Gets the descriptions and URLs of the pages of all jobs of a category.
+// Gets the descriptions and URLs of the pages of all jobs of a category. Uses
+// getJobNames rather than reading the category directory directly, so that a
+// missing directory (e.g. because no job has ever been claimed or queued yet on
+// this deployment) is created empty instead of throwing ENOENT.
 export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{description: string, url: string}[]> => {
   const jobsDir = path.join(jobsPath(), category);
-  const jobFileNames = await fs.readdir(jobsDir);
+  const jobFileNames = (await getJobNames())[category];
   // For each job in the category:
   const data: {description: string, url: string}[] = [];
   for (const jobFileName of jobFileNames) {
@@ -829,7 +832,7 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
 // Returns extracts of all available reports.
 export const getReportExtracts = async (onlyLatest: boolean = false): Promise<ReportExtract[]> => {
   // Get the names of the available report files.
-  const reportFileNames = await fs.readdir(reportsPath());
+  const reportFileNames = await readdirOrCreate(reportsPath(), 'Reports directory');
   // Initialize an array of extracts.
   const extracts: ReportExtract[] = [];
   // For each one:

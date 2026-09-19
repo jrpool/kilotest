@@ -95,7 +95,7 @@ test('listReports shows requests when testRequests.json has entries', {timeout: 
   try {
     const testRequests = {
       'https://example.com/mixed': [
-        {description: 'Mixed Outcomes Page', why: 'Needs retesting for accessibility'}
+        {description: 'Mixed Outcomes Page', reason: 'Needs retesting for accessibility'}
       ]
     };
     await fs.writeFile(testRequestsPath, JSON.stringify(testRequests, null, 2));

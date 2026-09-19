@@ -5,18 +5,15 @@
 
 // IMPORTS
 
-import {sendAlert} from '../alerts.ts';
 import {
   getAgoDays,
   getReportExtracts,
   getNowStamp,
-  getPlainText,
   getRandomString,
   getReportExtract,
   getReportStats,
   objectSort,
-  ruleEngines,
-  addTestRequest
+  ruleEngines
 } from '../util.ts';
 import type {ReportExtract} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -83,6 +80,7 @@ export const getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
 // getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
 // With an extract provided, failure is impossible, so the return type narrows
 // to ReportBasics; without one, an error object may be returned.
+// XXX Why are these overloads necessary? Can't we just have one function?
 export function getReportBasics(
   timeStamp: string, jobID: string, extract: ReportExtract
 ): Promise<ReportBasics>;
@@ -150,24 +148,4 @@ export const getIssueSpec = (issueID: string) => {
   }
   // Otherwise, i.e. if it does not exist, return this.
   return null;
-};
-// Processes a test or retest request from the API.
-export const processTestRequest = async (testType: string, description: string, url: string, why: string): Promise<{status: string; message: string} | undefined> => {
-  // Get an email-safe version of the reason.
-  const plainWhy = getPlainText(why);
-  // Add the test request as a transaction.
-  const updateResult = await addTestRequest(description, url, plainWhy);
-  // If the request was a duplicate:
-  if (updateResult.error === 'duplicate') {
-    // Return this.
-    return {
-      status: 'error',
-      message: 'Duplicate request'
-    };
-  }
-  // Otherwise, i.e. if it was not a duplicate, alert a manager about it.
-  await sendAlert(
-    `Kilotest: new ${testType} request in the API`,
-    `Target: ${description}\nURL: ${url}\nReason: ${plainWhy}`
-  );
 };

@@ -6,8 +6,8 @@
 // IMPORTS
 
 import {z} from 'zod';
-import {getResponseMetadata, getThisHost, getToolsFacts, processTestRequest} from './util.ts';
-import {getReportExtracts, isURL} from '../util.ts';
+import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
+import {isURL, processTestRequest} from '../util.ts';
 import {requestTestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -45,35 +45,45 @@ export const response = async (args: string[]) => {
   }
   // Otherwise, i.e. if the description and URL are valid:
   else {
-    // Get an extract of the available reports.
-    const reportExtracts = await getReportExtracts();
-    // If any report is on a page with the specified description and URL:
-    if (
-      reportExtracts.some(extract => extract.description === description && extract.url === url)
-    ) {
-      requestDetails = {
-        error: 'request invalid: the page has already been tested and its report is available'
-      };
-    }
-    // Otherwise, i.e. if none is on the page:
-    else {
-      // Process the request.
-      await processTestRequest('test', description, url, reason);
-      // Add details about the request.
-      requestDetails = {
-        'date and time received': new Date().toISOString(),
-        'page to be tested': {
-          description,
-          URL: url
-        },
-        'reason why the page should be tested': reason
-      };
-      // Add information about the disposition of the request.
+    // Process the request.
+    const {result: requestResult} = await processTestRequest(reason, {description, url});
+    // Add details about the request.
+    requestDetails = {
+      'date and time received': new Date().toISOString(),
+      'page to be tested': {
+        description,
+        URL: url
+      },
+      'reason why the page should be tested': reason
+    };
+    // Add information about the disposition of the request.
+    if (requestResult === 'ok') {
       requestDisposition = {
         'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
         'how you can check for completion': 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
         'how a web user can check for completion': `A web user can visit ${thisHost}/listReports.html to learn whether the page has been tested and a report is available.`
       };
+    }
+    else {
+      const failureFact = 'Your request will not be processed, because ';
+      let failureReason: string;
+      if (requestResult === 'description') {
+        failureReason = 'a request to test a page with the same description is already approved.'
+      }
+      else if (requestResult === 'url') {
+        failureReason = 'a request to test a page with the same URL is already approved.'
+      }
+      else if (requestResult === 'retest') {
+        failureReason = 'a report about a page with the same description and URL is available.'
+      }
+      else {
+        failureReason = 'an identical request is already awaiting approval.'
+      }
+      requestDisposition = {
+        'what happens next': `${failureFact}${failureReason}`,
+        'how you can check for completion': 'Not applicable.',
+        'how a web user can check for completion': 'Not applicable.'
+      }
     }
   }
   // Create the response content.

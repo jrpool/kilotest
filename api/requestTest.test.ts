@@ -47,34 +47,90 @@ after(() => {
 test('requestTest rejects an empty description', async () => {
   const body = await response(['', 'https://example.com/test', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
 });
 
 test('requestTest rejects a description longer than 100 characters', async () => {
   const longWhat = 'x'.repeat(101);
   const body = await response([longWhat, 'https://example.com/test', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
 });
 
 test('requestTest rejects a URL shorter than 12 characters', async () => {
   const body = await response(['Test Page', 'short', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
 });
 
 test('requestTest rejects a syntactically invalid URL with the correct length', async () => {
   const body = await response(['Test Page', 'not-a-valid-url', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('invalid URL'));
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
 });
 
 test('requestTest rejects an already-tested page', async () => {
   const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
-  assert.ok(details.error.includes('already been tested'));
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  // A report for this description and URL already exists, so processTestRequest
+  // returns 'retest' and the failure is reported via the disposition, not details.error.
+  assert.equal(details.error, undefined);
+  const disposition = body['response content']['disposition of your request'] as any;
+  assert.ok(
+    disposition['what happens next']
+    .includes('a report about a page with the same description and URL is available.')
+  );
+  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+});
+
+test('requestTest rejects a page matching a claimed job by description', async () => {
+  const claimedPath = path.join(fixtureDBDir, 'jobs', 'claimed', 'clm.json');
+  await fs.writeFile(claimedPath, JSON.stringify({
+    target: {what: 'Claimed Test Page', url: 'https://example.com/claimed-job'}
+  }));
+  try {
+    const body = await response(['Claimed Test Page', 'https://example.com/other-url', 'A reason that is long enough.']);
+    const details = body['response content']['details about your request'] as any;
+    assert.equal(details.error, undefined);
+    const disposition = body['response content']['disposition of your request'] as any;
+    assert.ok(
+      disposition['what happens next']
+      .includes('a request to test a page with the same description is already approved.')
+    );
+  }
+  finally {
+    await fs.unlink(claimedPath);
+  }
+});
+
+test('requestTest rejects a page matching a queued job by URL', async () => {
+  const queuedPath = path.join(fixtureDBDir, 'jobs', 'queue', 'que.json');
+  await fs.writeFile(queuedPath, JSON.stringify({
+    target: {what: 'Some Other Page', url: 'https://example.com/queued-url'}
+  }));
+  try {
+    const body = await response(['A Different Page', 'https://example.com/queued-url', 'A reason that is long enough.']);
+    const details = body['response content']['details about your request'] as any;
+    assert.equal(details.error, undefined);
+    const disposition = body['response content']['disposition of your request'] as any;
+    assert.ok(
+      disposition['what happens next']
+      .includes('a request to test a page with the same URL is already approved.')
+    );
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('requestTest rejects a duplicate request', async () => {
+  await response(['Duplicate API Page', 'https://example.com/dup-api', 'A reason that is long enough.']);
+  const body = await response(['Duplicate API Page', 'https://example.com/dup-api', 'A reason that is long enough.']);
+  const details = body['response content']['details about your request'] as any;
+  assert.equal(details.error, undefined);
+  const disposition = body['response content']['disposition of your request'] as any;
+  assert.ok(disposition['what happens next'].includes('an identical request is already awaiting approval.'));
 });
 
 test('requestTest accepts a valid new page request', async () => {
@@ -83,7 +139,7 @@ test('requestTest accepts a valid new page request', async () => {
   assert.equal(details.error, undefined);
   assert.equal(details['page to be tested'].description, 'Brand New Page');
   assert.ok(logged.some(line =>
-    line.startsWith('WARNING (Kilotest: new test request in the API)')
+    line.startsWith('WARNING (Kilotest: new test request awaits approval)')
     && line.includes('Brand New Page')
     && line.includes('https://example.com/brandnew')
   ));

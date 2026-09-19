@@ -46,22 +46,30 @@ after(() => {
 
 test('requestRetest rejects a nonexistent report', async () => {
   const body = await response(['999999T9999', 'xyz', 'A reason that is long enough.']);
-  assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  const details = body['response content']['details about your request'] as any;
+  assert.ok(details.error.includes('does not exist'));
+  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
 });
 
 test('requestRetest rejects a superseded report', async () => {
+  // 260101T0000-mix is an earlier report of "Mixed Outcomes Page" than 260202T0000-new,
+  // so it is superseded and processTestRequest returns 'superseded', reported via the
+  // disposition rather than details.error.
   const body = await response(['260101T0000', 'mix', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
-  assert.ok(details.error.includes('later report'));
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  assert.equal(details.error, undefined);
+  const disposition = body['response content']['disposition of your request'] as any;
+  assert.ok(
+    disposition['what happens next'].includes('a later report about a page with the same description is available.')
+  );
+  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
 });
 
 test('requestRetest rejects a reason shorter than 20 characters', async () => {
   const body = await response(['260101T0001', 'ct', 'short']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
 });
 
 test('requestRetest rejects a reason longer than 100 characters', async () => {
@@ -69,7 +77,58 @@ test('requestRetest rejects a reason longer than 100 characters', async () => {
   const body = await response(['260101T0001', 'ct', longReason]);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
-  assert.ok(!logged.some(line => line.includes('request in the API')));
+  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
+});
+
+test('requestRetest rejects a report matching a claimed job by description', async () => {
+  // 260101T0001-ct is the "All CantTell Page" report.
+  const claimedPath = path.join(fixtureDBDir, 'jobs', 'claimed', 'clm.json');
+  await fs.writeFile(claimedPath, JSON.stringify({
+    target: {what: 'All CantTell Page', url: 'https://example.com/unrelated'}
+  }));
+  try {
+    const body = await response(['260101T0001', 'ct', 'A reason that is long enough.']);
+    const details = body['response content']['details about your request'] as any;
+    assert.equal(details.error, undefined);
+    const disposition = body['response content']['disposition of your request'] as any;
+    assert.ok(
+      disposition['what happens next']
+      .includes('a request to test a page with the same description is already approved.')
+    );
+  }
+  finally {
+    await fs.unlink(claimedPath);
+  }
+});
+
+test('requestRetest rejects a report matching a queued job by URL', async () => {
+  // 260101T0001-ct's URL is https://example.com/canttell.
+  const queuedPath = path.join(fixtureDBDir, 'jobs', 'queue', 'que.json');
+  await fs.writeFile(queuedPath, JSON.stringify({
+    target: {what: 'Some Other Page', url: 'https://example.com/canttell'}
+  }));
+  try {
+    const body = await response(['260101T0001', 'ct', 'A reason that is long enough.']);
+    const details = body['response content']['details about your request'] as any;
+    assert.equal(details.error, undefined);
+    const disposition = body['response content']['disposition of your request'] as any;
+    assert.ok(
+      disposition['what happens next']
+      .includes('a request to test a page with the same URL is already approved.')
+    );
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('requestRetest rejects a duplicate request', async () => {
+  await response(['260101T0001', 'ct', 'A reason that is long enough.']);
+  const body = await response(['260101T0001', 'ct', 'A reason that is long enough.']);
+  const details = body['response content']['details about your request'] as any;
+  assert.equal(details.error, undefined);
+  const disposition = body['response content']['disposition of your request'] as any;
+  assert.ok(disposition['what happens next'].includes('an identical request is already awaiting approval.'));
 });
 
 test('requestRetest accepts a valid retest request for the latest report of a page', async () => {
@@ -78,7 +137,7 @@ test('requestRetest accepts a valid retest request for the latest report of a pa
   assert.equal(details.error, undefined);
   assert.equal(details['page to be retested'].description, 'Mixed Outcomes Page');
   assert.ok(logged.some(line =>
-    line.startsWith('WARNING (Kilotest: new retest request in the API)')
+    line.startsWith('WARNING (Kilotest: new retest request awaits approval)')
     && line.includes('Mixed Outcomes Page')
     && line.includes('https://example.com/mixed')
   ));

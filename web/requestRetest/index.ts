@@ -5,27 +5,58 @@
 
 // IMPORTS
 
-import {getReportExtracts, processTestRequest} from '../../util.ts';
+import {populateTemplate, processTestRequest} from '../../util.ts';
 
 // FUNCTIONS
 
-export const answer = async (pageArgs: string, why: string) => {
-  const [timeStamp, jobID] = pageArgs.split('/');
-  // Get data on the latest available reports.
-  const reportExtracts = await getReportExtracts(true);
-  // Get data on the report whose page is to be retested.
-  const reportExtract = reportExtracts.find(
-    (extract) => extract.timeStamp === timeStamp && extract.jobID === jobID
-  );
-  // If no matching report was found:
-  if (!reportExtract) {
-    // Return why.
+export const answer = async (pageArgs: string, reason: string) => {
+  const [timeStamp, jobID] = pageArgs.split('/') as [string, string];
+  // Process the request. This resolves the cited report's description and URL itself.
+  const processResult = await processTestRequest(reason, {timeStamp, jobID});
+  // If the cited report does not exist:
+  if (processResult.result === 'nonreport') {
+    // Report this.
     return {
       status: 'error',
-      message: `No report found for ${timeStamp}-${jobID}`
+      message: 'Invalid request'
     };
   }
-  const {url, description} = reportExtract;
-  // Otherwise, i.e. if it succeeded, process the request.
-  return await processTestRequest('retest', import.meta.dirname, description, url, why);
+  const {result, description, url} = processResult;
+  // If the request was recorded:
+  if (result === 'ok') {
+    const query = {
+      description,
+      url,
+      reason
+    };
+    // Return the populated page.
+    return {
+      status: 'ok',
+      answerPage: await populateTemplate(import.meta.dirname, query)
+    };
+  }
+  // Otherwise, if the request is a duplicate:
+  else if (result === 'duplicate') {
+    // Report this.
+    return {
+      status: 'error',
+      message: 'Test request duplicates an already submitted request'
+    };
+  }
+  // Otherwise, if the cited report has been superseded:
+  else if (result === 'superseded') {
+    // Report this.
+    return {
+      status: 'error',
+      message: 'A later report about the page is already available'
+    }
+  }
+  // Otherwise, i.e. if a request to test a page with the same description or URL is approved:
+  else {
+    // Report this.
+    return {
+      status: 'error',
+      message: 'A request to test a page with the same description or URL is already approved'
+    }
+  }
 };

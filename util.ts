@@ -48,6 +48,110 @@ const ruleEngines: Record<string, [string, string]> = {
 };
 export {ruleEngines};
 
+// TYPES
+
+// Test request.
+export type TestRequest = {
+  timeStamp: string;
+  description: string;
+  reason: string;
+};
+
+// Test requests by URL.
+export type TestRequests = Record<string, TestRequest[]>;
+
+// Test request addition result.
+export type TestRequestResult
+= 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'nonreport' | 'ok';
+
+// Target of a new-test or retest request: a description and URL for a new-test request,
+// or the timeStamp and jobID of the cited report for a retest request.
+export type TestRequestTarget
+= {description: string; url: string} | {timeStamp: string; jobID: string};
+
+// Result of processTestRequest. description and url are absent only when the result
+// is 'nonreport', i.e. when the target page could not be resolved; this is a
+// discriminated union on result so that a check of result narrows their presence.
+export type ProcessRequestResult
+= {result: 'nonreport'} | {result: Exclude<TestRequestResult, 'nonreport'>; description: string; url: string};
+
+// A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
+export interface AnnotatedInstance extends StandardInstance {
+  issueID?: string;
+}
+
+// An Act whose standardResult instances (if any) are AnnotatedInstances.
+// An intersection is used because Omit<Act, 'result'> would collapse Act's
+// string index signature and lose its named properties.
+export type AnnotatedAct = Act & {
+  result?: {
+    nativeResult?: unknown;
+    standardResult?: {
+      instances?: AnnotatedInstance[];
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+};
+
+// The shape of a Report that has passed isUsableReport: optional fields that
+// the guard verifies are narrowed to their required/non-null forms.
+// error?: never is a discriminant: UsableReport.error is always undefined/never (falsy),
+// so if (report.error) narrows a UsableReport | {error: string} union to {error: string},
+// and the else/after-return branch is narrowed to UsableReport.
+export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts'> & {
+  error?: never;
+  target: {what: string; url: string};
+  catalog: Catalog;
+  jobData: NonNullable<Report['jobData']> & {endTime: string; issuelessRules?: string[]};
+  acts: AnnotatedAct[];
+};
+
+// An extract of an available report.
+export type ReportExtract = {
+  timeStamp: string;
+  jobID: string;
+  description: string;
+  url: string;
+  reportTime: string;
+  superseded?: boolean;
+};
+
+// Page data from an available report.
+export type PageData = {
+  description: string;
+  url: string;
+  daysAgo: number | null;
+  error?: never;
+};
+
+// HTML strings describing the page data of an available report.
+export type PageDataStrings = {
+  description: string;
+  url: string;
+  urlLink: string;
+  testInfo: string;
+  error?: never;
+};
+
+// Basics about an available report.
+export type ReportData = {
+  description: string;
+  url: string;
+  jobName: unknown;
+  creationDate: Date | null;
+  daysAgo: number | null;
+  issueCount: number;
+  engineNames: string[];
+  engineCount: number;
+  reporterNames: string[];
+  reporterCount: number;
+  violatorCount: number;
+  preventedEngineNames: string[];
+  preventedEngineCount: number;
+  error?: never;
+};
+
 // MISCELLANEOUS FUNCTIONS
 
 // Compares strings alphabetically and case-insensitively.
@@ -184,34 +288,76 @@ export const getIssue = (engineID: string, ruleID: string): string | null => {
   // Return the issue ID if a pattern matched, or a failure result otherwise.
   return variableRuleID ? variable[variableRuleID]!.issueID : null;
 };
-// Gets the names and categories of the job files. Missing job directories are a normal,
-// recoverable condition (e.g. on first run) and are created empty; any other failure to
-// read a job directory should never occur, so it is thrown rather than returned.
+// Returns the names of the files in a directory. A missing directory is a normal,
+// recoverable condition (e.g. on first run, before anything has ever been written to
+// it) and is created empty; any other failure to read it should never occur, so it is
+// thrown rather than returned. label identifies the directory in the thrown message.
+export const readdirOrCreate = async (dirPath: string, label: string): Promise<string[]> => {
+  try {
+    return await fs.readdir(dirPath);
+  }
+  catch(error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      await fs.mkdir(dirPath, {recursive: true});
+      return [];
+    }
+    throw new Error(`${label} not readable (${errorMessage(error)})`, {cause: error});
+  }
+};
+// Gets the names and categories of the job files.
 export const getJobNames = async (): Promise<{queue: string[], claimed: string[], failed: string[]}> => {
   const jobNames: {queue: string[], claimed: string[], failed: string[]} = {
     queue: [],
     claimed: [],
     failed: []
   };
-  let fileNames: string[];
   for (const category of ['queue', 'claimed', 'failed'] as const) {
-    const categoryPath = path.join(jobsPath(), category);
-    try {
-      fileNames = await fs.readdir(categoryPath);
-    }
-    catch(error: unknown) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        await fs.mkdir(categoryPath, {recursive: true});
-        fileNames = [];
-      }
-      else {
-        throw new Error(`Job directory ${category} not readable (${errorMessage(error)})`, {cause: error});
-      }
-    }
-    jobNames[category] = fileNames;
+    jobNames[category] = await readdirOrCreate(
+      path.join(jobsPath(), category), `Job directory ${category}`
+    );
   }
   return jobNames;
 }
+// Gets the descriptions and URLs of the pages of all jobs of a category. Uses
+// getJobNames rather than reading the category directory directly, so that a
+// missing directory (e.g. because no job has ever been claimed or queued yet on
+// this deployment) is created empty instead of throwing ENOENT. A job file that
+// disappears between the directory listing and the read of that specific file is
+// likewise a normal, recoverable condition (a worker completed or reclaimed that
+// job in the interim), so it is skipped rather than treated as defective.
+export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{description: string, url: string}[]> => {
+  const jobsDir = path.join(jobsPath(), category);
+  const jobFileNames = (await getJobNames())[category];
+  // For each job in the category:
+  const data: {description: string, url: string}[] = [];
+  for (const jobFileName of jobFileNames) {
+    const jobPath = path.join(jobsDir, jobFileName);
+    let jobData: string;
+    try {
+      jobData = await fs.readFile(jobPath, 'utf8');
+    }
+    catch(error: unknown) {
+      // If the job file has been removed since the directory was listed:
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        // Skip it.
+        continue;
+      }
+      throw new Error(`Job file ${jobPath} defective`, {cause: error});
+    }
+    try {
+      const job = JSON.parse(jobData);
+      const {target} = job;
+      data.push({
+        description: target.what,
+        url: target.url
+      });
+    }
+    catch(error: unknown) {
+      throw new Error(`Job file ${jobPath} defective`, {cause: error});
+    }
+  }
+  return data;
+};
 // Returns the JSON stringification of an object, with a final newline.
 export const getJSON = (object: unknown): string => `${JSON.stringify(object, null, 2)}\n`;
 // Returns the message of an error, or its string representation if it is not an Error instance.
@@ -311,11 +457,9 @@ export const getPOSTData = (request: import('node:http').IncomingMessage): Promi
     }
   });
 });
-// Returns the waiting test and retest requests. A missing test-requests file is a
-// normal, recoverable condition (e.g. on first run) and is replaced with an empty one; a
-// present but unreadable or non-JSON file should never occur, so that failure is thrown.
-export const getTestRequests = async (): Promise<unknown> => {
-  let testRequestsJSON;
+// Returns the test and retest requests awaiting approval.
+export const getTestRequests = async (): Promise<TestRequests> => {
+  let testRequestsJSON: string;
   try {
     testRequestsJSON = await fs.readFile(testRequestsPath(), 'utf8');
   }
@@ -327,10 +471,10 @@ export const getTestRequests = async (): Promise<unknown> => {
     throw new Error(`Test-requests file not readable (${errorMessage(error)})`, {cause: error});
   }
   try {
-    return JSON.parse(testRequestsJSON);
+    return JSON.parse(testRequestsJSON) as TestRequests;
   }
   catch(error: unknown) {
-    throw new Error(`Test-requests file not JSON (${errorMessage(error)})`, {cause: error});
+    throw new Error('Test-requests file not JSON', {cause: error});
   }
 };
 // Converts a catalog item text to a text-fragment link destination.
@@ -364,30 +508,6 @@ export const htmlSafe = (string: string): string => string ? string
 // Returns whether a string is a job ID.
 export const isJobID = (string: string): boolean => {
   return /^[a-z0-9]{3}$/.test(string);
-};
-// Returns whether a job to test a target is eligible for a request.
-export const getRequestability = async (url: string): Promise<string> => {
-  const jobNames = await getJobNames();
-  // For each claimed job:
-  for (const fileName of jobNames.claimed) {
-    const job = await getObject(path.join(jobsPath(), 'claimed', fileName));
-    // If its URL is that of the requested target:
-    if ((job as {target: {url: string}}).target.url === url) {
-      // Return this.
-      return 'claimed';
-    }
-  }
-  // If no claimed job has the URL of the target, for each queued job:
-  for (const fileName of jobNames.queue) {
-    const job = await getObject(path.join(jobsPath(), 'queue', fileName));
-    // If its URL is that of the requested target:
-    if ((job as {target: {url: string}}).target.url === url) {
-      // Return this.
-      return 'queued';
-    }
-  }
-  // If no claimed or queued job has the URL of the target, return this.
-  return '';
 };
 // Returns whether a string is a time stamp.
 export const isTimeStamp = (string: string): boolean => {
@@ -430,79 +550,8 @@ export const objectSort = <T extends Record<string, unknown>>(
   // Otherwise, do not sort.
   return 0;
 });
-// Processes a test or retest request in the UI.
-export const processTestRequest = async (testType: string, dirName: string, description: string, url: string, why: string): Promise<{status: string, message?: string, answerPage?: string}> => {
-  // If the request is valid:
-  if (
-    ['test', 'retest'].includes(testType)
-    && ['Test', 'Retest'].some(end => dirName.endsWith(end))
-    && description
-    && isURL(url)
-    && why.length > 4
-  ) {
-    // Make the reason display-safe.
-    const plainWhy = getPlainText(why);
-    // Update the waiting test requests as a transaction.
-    const updateResult = await addTestRequest(description, url, plainWhy);
-    // If the request was a duplicate:
-    if (updateResult.error === 'duplicate') {
-      // Return this.
-      return {
-        status: 'error',
-        message: 'Duplicate request'
-      };
-    }
-    // Otherwise, i.e. if it was not a duplicate:
-    else {
-      // Log the request.
-      console.log(`Test request received for ${description}: ${plainWhy}`);
-      // Alert a manager about it.
-      await sendAlert(
-        `Kilotest: new ${testType} request in the UI`,
-        `Target: ${description}\nURL: ${url}\nReason: ${plainWhy}`
-      );
-      // Get the populated template.
-      const answerPage = await populateTemplate(dirName, {
-        target: description,
-        why: plainWhy
-      });
-      // Return the populated page.
-      return {
-        status: 'ok',
-        answerPage
-      };
-    }
-  }
-  return {
-    status: 'error',
-    message: 'Invalid request'
-  };
-};
 // Concurrency lock for the `testRequests.json` file.
 export const testRequestsLock = createLock();
-// Adds a test request as a transaction.
-export const addTestRequest = (description: string, url: string, why: string) => testRequestsLock(async (): Promise<{error?: string}> => {
-  // Get the data on waiting test requests.
-  const testRequests = await getTestRequests() as Record<string, {description: string, why: string, timeStamp: string}[]>;
-  testRequests[url] ??= [];
-  // If any request has the same description and URL:
-  if (testRequests[url].some(req => req.description === description)) {
-    // Return this.
-    return {
-      error: 'duplicate'
-    };
-  }
-  // Otherwise, i.e. if the request is not a duplicate, add it to those for the target.
-  testRequests[url].push({
-    timeStamp: getNowStamp(),
-    description,
-    why
-  });
-  // Save the revised test requests.
-  await fs.writeFile(testRequestsPath(), getJSON(testRequests));
-  // Return success.
-  return {};
-});
 // Deletes the test requests for a URL as a transaction.
 export const deleteTestRequests = (url: string) => testRequestsLock(async (): Promise<void> => {
   // Get the test requests.
@@ -512,85 +561,6 @@ export const deleteTestRequests = (url: string) => testRequestsLock(async (): Pr
   // Save the revised test requests.
   await fs.writeFile(testRequestsPath(), getJSON(testRequests));
 });
-
-// REPORT TYPES
-
-// A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
-export interface AnnotatedInstance extends StandardInstance {
-  issueID?: string;
-}
-
-// An Act whose standardResult instances (if any) are AnnotatedInstances.
-// An intersection is used because Omit<Act, 'result'> would collapse Act's
-// string index signature and lose its named properties.
-export type AnnotatedAct = Act & {
-  result?: {
-    nativeResult?: unknown;
-    standardResult?: {
-      instances?: AnnotatedInstance[];
-      [key: string]: unknown;
-    };
-    [key: string]: unknown;
-  };
-};
-
-// The shape of a Report that has passed isUsableReport: optional fields that
-// the guard verifies are narrowed to their required/non-null forms.
-// error?: never is a discriminant: UsableReport.error is always undefined/never (falsy),
-// so if (report.error) narrows a UsableReport | {error: string} union to {error: string},
-// and the else/after-return branch is narrowed to UsableReport.
-export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts'> & {
-  error?: never;
-  target: {what: string; url: string};
-  catalog: Catalog;
-  jobData: NonNullable<Report['jobData']> & {endTime: string; issuelessRules?: string[]};
-  acts: AnnotatedAct[];
-};
-
-// An extract of an available report.
-export type ReportExtract = {
-  timeStamp: string;
-  jobID: string;
-  description: string;
-  url: string;
-  reportTime: string;
-  superseded?: boolean;
-};
-
-// Page data from an available report.
-export type PageData = {
-  description: string;
-  url: string;
-  daysAgo: number | null;
-  error?: never;
-};
-
-// HTML strings describing the page data of an available report.
-export type PageDataStrings = {
-  description: string;
-  url: string;
-  urlLink: string;
-  testInfo: string;
-  error?: never;
-};
-
-// Basics about an available report.
-export type ReportData = {
-  description: string;
-  url: string;
-  jobName: unknown;
-  creationDate: Date | null;
-  daysAgo: number | null;
-  issueCount: number;
-  engineNames: string[];
-  engineCount: number;
-  reporterNames: string[];
-  reporterCount: number;
-  violatorCount: number;
-  preventedEngineNames: string[];
-  preventedEngineCount: number;
-  error?: never;
-};
 
 // REPORT FUNCTIONS
 
@@ -876,7 +846,7 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
 // Returns extracts of all available reports.
 export const getReportExtracts = async (onlyLatest: boolean = false): Promise<ReportExtract[]> => {
   // Get the names of the available report files.
-  const reportFileNames = await fs.readdir(reportsPath());
+  const reportFileNames = await readdirOrCreate(reportsPath(), 'Reports directory');
   // Initialize an array of extracts.
   const extracts: ReportExtract[] = [];
   // For each one:
@@ -919,3 +889,129 @@ export const getMultiReportWhats = async (): Promise<string[]> => {
   );
   return multiReportDescriptions;
 };
+// Returns the property that an approved job in a category has.
+const getApprovedJobProperty = async (
+  description: string, url: string, category: 'claimed' | 'queue'
+): Promise<'description' | 'url' | ''> => {
+  try {
+    // Get the descriptions and URLs of all jobs in the category.
+    const jobsData = await getJobsData(category);
+    // If a job with the description is in the category:
+    if (jobsData.some(job => job.description === description)) {
+      // Return this.
+      return 'description';
+    }
+    // Otherwise, if a job with the URL is in the category:
+    if (jobsData.some(job => job.url === url)) {
+      // Return this.
+      return 'url';
+    }
+    // Otherwise, return this.
+    return '';
+  }
+  catch(error) {
+    throw new Error('Failed to get approved job property', {cause: error});
+  }
+};
+// Processes a new-test or retest request as a transaction and returns the result.
+// For a retest request (target has a timeStamp and jobID), resolves the description
+// and URL of the cited report itself, so a caller never needs its own
+// getReportExtract call. Approvability (whether the request may proceed) and, if so,
+// its addition to testRequests.json are both decided inside the lock, as a single
+// atomic operation, so no caller-visible seam exists where an approvability decision
+// could be based on stale information about testRequests.json.
+export const processTestRequest = (
+  reason: string,
+  target: TestRequestTarget
+): Promise<ProcessRequestResult> => testRequestsLock(async (): Promise<ProcessRequestResult> => {
+  let requestType: 'test' | 'retest';
+  let description: string;
+  let url: string;
+  // Whether the cited report (for a retest) has been superseded by a later one.
+  let superseded = false;
+  // If the target identifies a report to retest:
+  if ('timeStamp' in target) {
+    requestType = 'retest';
+    const {timeStamp, jobID} = target;
+    // Get the cited report.
+    const extract = await getReportExtract(timeStamp, jobID);
+    // If it does not exist:
+    if ('error' in extract) {
+      // Return this.
+      return {result: 'nonreport'};
+    }
+    ({description, url} = extract);
+    // Get whether it has been superseded by a later report.
+    const reportExtracts = await getReportExtracts();
+    superseded = reportExtracts.some(
+      ex => ex.timeStamp === timeStamp && ex.jobID === jobID && ex.superseded
+    );
+  }
+  // Otherwise, i.e. if the target is a page to test for the first time:
+  else {
+    requestType = 'test';
+    ({description, url} = target);
+  }
+  try {
+    // Get any property the page shares with a claimed job.
+    const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
+    // Get any property the page shares with a queued job.
+    const queueJobProperty = await getApprovedJobProperty(description, url, 'queue');
+    // If the page shares a property with a claimed or queued job:
+    if (claimedJobProperty || queueJobProperty) {
+      // Return the property.
+      return {
+        result: (claimedJobProperty || queueJobProperty) as 'description' | 'url',
+        description,
+        url
+      };
+    }
+    // Otherwise, get the requests awaiting approval.
+    const requests = await getTestRequests() as Record<string, {
+      description: string, reason: string, timeStamp: string
+    }[]>;
+    // If the request has the same URL, description and reason as an existing request:
+    if (requests[url]?.some(
+      request => request.description === description && request.reason === reason
+    )) {
+      // Return this.
+      return {result: 'duplicate', description, url};
+    }
+    // If the request is to retest a page that has been superseded:
+    if (requestType === 'retest' && superseded) {
+      // Return this.
+      return {result: 'superseded', description, url};
+    }
+    // Otherwise, if the request is to test a new page for which a report already exists:
+    if (requestType === 'test') {
+      const reportExtracts = await getReportExtracts();
+      if (reportExtracts.some(report => report.description === description && report.url === url)) {
+        // Return this.
+        return {result: 'retest', description, url};
+      }
+    }
+    // The request is eligible, so get the requests awaiting approval.
+    const testRequests = await getTestRequests();
+    // Add the request to them, initializing them with the URL if necessary.
+    (testRequests[url] ??= []).push({
+      timeStamp: getNowStamp(),
+      description,
+      reason
+    });
+    // Save the revised test requests.
+    await fs.writeFile(testRequestsPath(), getJSON(testRequests));
+    // Get an email-safe version of the reason.
+    const plainReason = getPlainText(reason);
+    // Alert a manager.
+    await sendAlert(
+      `Kilotest: new ${requestType} request awaits approval`,
+      `Page description: ${description}\nURL: ${url}\nReason: ${plainReason}`
+    );
+    // Return success.
+    return {result: 'ok', description, url};
+    // If an error occurred:
+  } catch(error) {
+    // Throw it.
+    throw new Error('Failed to process test request', {cause: error});
+  }
+});

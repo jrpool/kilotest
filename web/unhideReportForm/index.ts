@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-import {hiddenReportsPath, populateTemplate, reportsPath} from '../../util.ts';
+import {hiddenReportsPath, populateTemplate, readdirOrCreate, reportsPath} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -45,7 +45,7 @@ export const answer = async (_: any, search: string) => {
   // Initialize an array of data on reports to be unhidden.
   const reportsData: any[] = [];
   // Get the names of the hidden report files.
-  const hiddenReportFileNames = await fs.readdir(hiddenReportsPath());
+  const hiddenReportFileNames = await readdirOrCreate(hiddenReportsPath(), 'Hidden reports directory');
   // For each hidden report:
   for (const reportFileName of hiddenReportFileNames) {
     // Get its file.

@@ -52,8 +52,7 @@ import {
   processTestRequest,
   testRequestsLock,
   testRequestsPath,
-  reportsPath,
-  addTestRequest
+  reportsPath
 } from './util.ts';
 
 // TESTS
@@ -366,9 +365,8 @@ test('objectSort sorts objects numerically descending', () => {
 
 // TESTS FOR processTestRequest AND isReportAvailable
 
-// These tests use the fixture database directory and the real web/requestTest template.
+// These tests use the fixture database directory.
 import {fixtureDBDir as fixtureDbDir} from './test/dbFixture.ts';
-const requestTestDir = path.join(import.meta.dirname, 'web', 'requestTest');
 const savedDbDir = process.env.DB_DIR;
 
 before(() => {
@@ -428,44 +426,15 @@ test('getPageDataStrings uses provided pageData instead of reading the report', 
   assert.ok(strings.testInfo.includes('1 day ago'));
 });
 
-test('processTestRequest returns an error for an invalid test type', async () => {
-  const result: any = await processTestRequest('invalid', requestTestDir, 'Page', 'https://example.com', 'because');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
-});
-
-test('processTestRequest returns an error for an invalid URL', async () => {
-  const result: any = await processTestRequest('test', requestTestDir, 'Page', 'not-a-url', 'because');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
-});
-
-test('processTestRequest returns an error for a short reason', async () => {
-  const result: any = await processTestRequest('test', requestTestDir, 'Page', 'https://example.com', 'abc');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
-});
-
-test('processTestRequest returns an error for a missing description', async () => {
-  const result: any = await processTestRequest('test', requestTestDir, '', 'https://example.com', 'because');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
-});
-
-test('processTestRequest returns an error for a mismatched directory name', async () => {
-  const result: any = await processTestRequest('test', '/tmp/wrongDir', 'Page', 'https://example.com', 'because');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
-});
-
-
-test('processTestRequest succeeds and populates the template for a valid request', {timeout: 500}, async () => {
+test('processTestRequest succeeds for a valid new-test request', {timeout: 500}, async () => {
   // Reset testRequests.json to empty before the test.
   await fs.writeFile(testRequestsPath(), '{}\n');
-  const result: any = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
-  assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('Example Page'));
-  assert.ok(result.answerPage.includes('because accessibility'));
+  const {result} = await processTestRequest(
+    'because accessibility', {description: 'Example Page', url: 'https://example.com'}
+  );
+  assert.equal(result, 'ok');
+  const testRequests = JSON.parse(await fs.readFile(testRequestsPath(), 'utf8'));
+  assert.equal(testRequests['https://example.com'][0].description, 'Example Page');
   // Clean up testRequests.json.
   await fs.writeFile(testRequestsPath(), '{}\n');
 });
@@ -473,13 +442,21 @@ test('processTestRequest succeeds and populates the template for a valid request
 test('processTestRequest returns a duplicate error for a repeated request', {timeout: 500}, async () => {
   // Reset testRequests.json to empty, then make a successful request.
   await fs.writeFile(testRequestsPath(), '{}\n');
-  await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'because accessibility');
-  // Repeat the same request.
-  const result: any = await processTestRequest('test', requestTestDir, 'Example Page', 'https://example.com', 'another reason');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Duplicate request');
+  const target = {description: 'Example Page', url: 'https://example.com'};
+  await processTestRequest('because accessibility', target);
+  // Repeat the same request (same description, URL, and reason).
+  const {result} = await processTestRequest('because accessibility', target);
+  assert.equal(result, 'duplicate');
   // Clean up testRequests.json.
   await fs.writeFile(testRequestsPath(), '{}\n');
+});
+
+test('processTestRequest returns a retest error when a report already exists for the page', async () => {
+  // The fixture database already has a report for this description and URL.
+  const {result} = await processTestRequest(
+    'because accessibility', {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}
+  );
+  assert.equal(result, 'retest');
 });
 
 test('annotateReportObject annotates a report object in place without reading or writing a file', async () => {
@@ -558,6 +535,92 @@ test('isReportAvailable returns false for an unknown page and URL', async () => 
   assert.equal(result, false);
 });
 
+// TESTS FOR processTestRequest's claimed/queued-job detection
+
+test('processTestRequest returns "description" for a page matching a claimed job by description', async () => {
+  const claimedPath = path.join(jobsPath(), 'claimed', 'clm.json');
+  await fs.writeFile(claimedPath, getJSON({
+    target: {what: 'Claimed Page', url: 'https://example.com/claimed-job'}
+  }));
+  try {
+    const {result} = await processTestRequest(
+      'because', {description: 'Claimed Page', url: 'https://example.com/some-other-url'}
+    );
+    assert.equal(result, 'description');
+  }
+  finally {
+    await fs.unlink(claimedPath);
+  }
+});
+
+test('processTestRequest returns "url" for a page matching a claimed job by URL', async () => {
+  const claimedPath = path.join(jobsPath(), 'claimed', 'clm.json');
+  await fs.writeFile(claimedPath, getJSON({
+    target: {what: 'Some Claimed Page', url: 'https://example.com/claimed-url'}
+  }));
+  try {
+    const {result} = await processTestRequest(
+      'because', {description: 'A Different Page', url: 'https://example.com/claimed-url'}
+    );
+    assert.equal(result, 'url');
+  }
+  finally {
+    await fs.unlink(claimedPath);
+  }
+});
+
+test('processTestRequest returns "description" for a page matching a queued job by description', async () => {
+  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
+  await fs.writeFile(queuedPath, getJSON({
+    target: {what: 'Queued Page', url: 'https://example.com/queued-job'}
+  }));
+  try {
+    const {result} = await processTestRequest(
+      'because', {description: 'Queued Page', url: 'https://example.com/some-other-url'}
+    );
+    assert.equal(result, 'description');
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('processTestRequest returns "url" for a page matching a queued job by URL', async () => {
+  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
+  await fs.writeFile(queuedPath, getJSON({
+    target: {what: 'Some Queued Page', url: 'https://example.com/queued-url'}
+  }));
+  try {
+    const {result} = await processTestRequest(
+      'because', {description: 'A Different Page', url: 'https://example.com/queued-url'}
+    );
+    assert.equal(result, 'url');
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('processTestRequest returns "nonreport" when the cited report does not exist', async () => {
+  // Cite a timeStamp/jobID that does not correspond to any available report.
+  const {result} = await processTestRequest('because', {timeStamp: '999999T9999', jobID: 'xxx'});
+  assert.equal(result, 'nonreport');
+});
+
+test('processTestRequest throws when a job file in a category directory is defective', async () => {
+  const claimedPath = path.join(jobsPath(), 'claimed', 'bad.json');
+  await fs.writeFile(claimedPath, 'not valid json');
+  try {
+    await assert.rejects(
+      processTestRequest('because', {description: 'Any Page', url: 'https://example.com/any'}),
+      /Failed to process test request/
+    );
+  }
+  finally {
+    await fs.unlink(claimedPath);
+  }
+});
+
 // TESTS FOR REMAINING BRANCH COVERAGE
 
 test('getJobNames creates missing job directories and returns empty arrays', async () => {
@@ -598,6 +661,93 @@ test('getJobNames throws when a job directory is a file, not a directory', async
   try {
     const {getJobNames} = await import('./util.ts');
     await assert.rejects(getJobNames(), /not readable/);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
+  }
+});
+
+test('getJobsData returns an empty array, instead of throwing ENOENT, when its category directory does not yet exist', async () => {
+  // Regression test: on a fresh deployment, jobs/claimed and jobs/queue may never
+  // have been created yet (no job has ever been claimed or queued there). getJobsData
+  // must tolerate that the same way getJobNames does, rather than reading the
+  // category directory directly and throwing ENOENT.
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-jobsdata-'));
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    const {getJobsData} = await import('./util.ts');
+    const result = await getJobsData('claimed');
+    assert.deepEqual(result, []);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
+  }
+});
+
+test('getJobsData skips a job file that is removed between the directory listing and its read', async (t) => {
+  // Regression test: on the deployed server, a worker can complete or reclaim a
+  // claimed job (moving or deleting its file) between getJobsData listing the
+  // claimed directory and reading a specific file it found there. That race must
+  // result in the vanished job simply being skipped, not an uncaught ENOENT.
+  const claimedPath = path.join(jobsPath(), 'claimed', 'raced.json');
+  await fs.writeFile(claimedPath, getJSON({
+    target: {what: 'Raced Page', url: 'https://example.com/raced'}
+  }));
+  const originalReadFile = fs.readFile;
+  t.mock.method(fs, 'readFile', async (filePath: any, ...rest: any[]) => {
+    // Simulate the file having been removed by a worker just before this read.
+    if (String(filePath) === claimedPath) {
+      await fs.unlink(claimedPath);
+      const error: any = new Error('ENOENT: no such file or directory');
+      error.code = 'ENOENT';
+      throw error;
+    }
+    return (originalReadFile as any)(filePath, ...rest);
+  });
+  try {
+    const {getJobsData} = await import('./util.ts');
+    const result = await getJobsData('claimed');
+    assert.ok(!result.some(job => job.description === 'Raced Page'));
+  }
+  finally {
+    t.mock.reset();
+    await fs.unlink(claimedPath).catch(() => {});
+  }
+});
+
+test('getJobsData throws when a job file cannot be read for a reason other than its removal', async () => {
+  // A directory where a job file is expected causes fs.readFile to fail with
+  // EISDIR, not ENOENT, so getJobsData must still treat it as defective (unlike
+  // the ENOENT case above, which is skipped as a normal race with a worker).
+  const claimedDirAsFile = path.join(jobsPath(), 'claimed', 'notAFile.json');
+  await fs.mkdir(claimedDirAsFile);
+  try {
+    const {getJobsData} = await import('./util.ts');
+    await assert.rejects(getJobsData('claimed'), /defective/);
+  }
+  finally {
+    await fs.rm(claimedDirAsFile, {recursive: true}).catch(() => {});
+  }
+});
+
+test('processTestRequest succeeds on a fresh deployment with no job directories yet', async () => {
+  // Regression test for the same ENOENT scenario, exercised through the actual
+  // public interface: a brand-new DB_DIR with no jobs/claimed or jobs/queue
+  // directories must not prevent a new-test request from being approved.
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-freshdeploy-'));
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    const {processTestRequest: freshProcessTestRequest} = await import('./util.ts');
+    const {result} = await freshProcessTestRequest(
+      'because accessibility', {description: 'Fresh Deploy Page', url: 'https://example.com/fresh'}
+    );
+    assert.equal(result, 'ok');
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -681,69 +831,6 @@ test('getPOSTData resolves with parsed query for form-urlencoded requests', asyn
   const result: any = await getPOSTData(req as any);
   assert.equal(result.target, 'Page');
   assert.equal(result.why, 'Because');
-});
-
-test('getRequestability returns "claimed" for a URL in a claimed job', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/failed', {recursive: true});
-  fsSync.writeFileSync(tmpDir + '/jobs/claimed/job1.json', JSON.stringify({
-    target: {url: 'https://example.com/test', what: 'Test Page'}
-  }));
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getRequestability} = await import('./util.ts');
-    const result = await getRequestability('https://example.com/test');
-    assert.equal(result, 'claimed');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
-test('getRequestability returns "queued" for a URL in a queued job', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/failed', {recursive: true});
-  fsSync.writeFileSync(tmpDir + '/jobs/queue/job1.json', JSON.stringify({
-    target: {url: 'https://example.com/test', what: 'Test Page'}
-  }));
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getRequestability} = await import('./util.ts');
-    const result = await getRequestability('https://example.com/test');
-    assert.equal(result, 'queued');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
-test('getRequestability returns empty string for a URL with no matching jobs', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-requestability-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/jobs/claimed', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/queue', {recursive: true});
-  fsSync.mkdirSync(tmpDir + '/jobs/failed', {recursive: true});
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getRequestability} = await import('./util.ts');
-    const result = await getRequestability('https://example.com/no-match');
-    assert.equal(result, '');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
 });
 
 test('isURL returns false for a malformed URL', () => {
@@ -986,25 +1073,6 @@ test('getEngineNamesString falls back to the ID for an unknown engine', () => {
 
 test('testRequestsLock is a function (the lock returned by createLock)', () => {
   assert.equal(typeof testRequestsLock, 'function');
-});
-
-test('addTestRequest adds a request and returns success', async () => {
-  await fs.writeFile(testRequestsPath(), '{}\n');
-  const result = await addTestRequest('Test Page', 'https://example.com/test', 'because');
-  assert.equal(result.error, undefined);
-  const testRequests = JSON.parse(await fs.readFile(testRequestsPath(), 'utf8'));
-  assert.ok(testRequests['https://example.com/test']);
-  assert.equal(testRequests['https://example.com/test'].length, 1);
-  assert.equal(testRequests['https://example.com/test'][0].description, 'Test Page');
-  await fs.writeFile(testRequestsPath(), '{}\n');
-});
-
-test('addTestRequest returns a duplicate error for a repeated request', async () => {
-  await fs.writeFile(testRequestsPath(), '{}\n');
-  await addTestRequest('Test Page', 'https://example.com/test', 'because');
-  const result = await addTestRequest('Test Page', 'https://example.com/test', 'another reason');
-  assert.equal(result.error, 'duplicate');
-  await fs.writeFile(testRequestsPath(), '{}\n');
 });
 
 test('getReportPath returns the path of a report file', () => {

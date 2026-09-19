@@ -11,6 +11,7 @@ import {
   getReport,
   getReportPath,
   isReportError,
+  readdirOrCreate,
   reportsPath
 } from '../../util.ts';
 import fs from 'node:fs/promises';
@@ -23,7 +24,7 @@ export const answer = async (authCode: string) => {
   // If the authorization code is valid:
   if (authCode === process.env.AUTH_CODE) {
     // Get the names of the stored report files.
-    const reportFileNames = (await fs.readdir(reportsPath()))
+    const reportFileNames = (await readdirOrCreate(reportsPath(), 'Reports directory'))
     .filter(fileName => fileName.endsWith('.json'));
     // If any exist:
     if (reportFileNames.length) {

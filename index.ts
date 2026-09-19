@@ -533,8 +533,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
-      // If the page can be generated:
-      if (answer[topic]) {
+      // If the page can be generated and is not POST-only (a POST-only path also
+      // matches the '*.html*' GET pattern, but its handler expects POST's argument
+      // list and performs no GET-appropriate rendering):
+      if (answer[topic] && !isPathAllowed('POST', pathname)) {
         setHeaders('text/html', pathname, 'ultra');
         // Get the answer data.
         const answerData = await answer[topic](pathTail, search);

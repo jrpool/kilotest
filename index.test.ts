@@ -1208,7 +1208,7 @@ const htmlPagePaths = [
   '/reannotateForm.html',
   '/renewWCAGForm.html',
   '/hideReportForm.html',
-  '/unhideReportForm.html',
+  '/showHiddenReportsForm.html',
   '/expungeReportsForm.html',
   '/pruneReportsForm.html',
   '/rewindReportsForm.html',
@@ -1293,6 +1293,36 @@ test('GET /hideReportForm.html records managerActivity, not a pageViews entry', 
   assert.equal(res.statusCode, 200);
   assert.equal(await getManagerActivityCount('hideReportForm', 'ok'), managerCountBefore + 1);
   assert.equal(await getMetricCount('pageViews', 'hideReportForm'), pageViewCountBefore);
+});
+
+// TESTS: hidden report list is never served on a direct GET, only via showHiddenReports
+
+test('GET /unhideReportForm.html is rejected, since the hidden-report list must not be disclosed without an authorization code', async () => {
+  const res = await request('GET', '/unhideReportForm.html');
+  assert.equal(res.statusCode, 400);
+  assert.ok(!res.body.includes('260101T0007-hid'));
+});
+
+test('GET /showHiddenReportsForm.html displays a bare authCode form, disclosing no report names', async () => {
+  const res = await request('GET', '/showHiddenReportsForm.html');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.includes('Authorization code'));
+  assert.ok(!res.body.includes('260101T0007-hid'));
+});
+
+test('POST /showHiddenReportsForm.html with a valid authCode serves the hidden-report list and records a managerActivity success', async () => {
+  const countBefore = await getManagerActivityCount('showHiddenReportsForm', 'ok');
+  const res = await formRequest('POST', '/showHiddenReportsForm.html', {authCode: 'test-auth-code'});
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.includes('type="radio"'));
+  assert.equal(await getManagerActivityCount('showHiddenReportsForm', 'ok'), countBefore + 1);
+});
+
+test('POST /showHiddenReportsForm.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
+  const countBefore = await getManagerActivityCount('showHiddenReportsForm', 'error');
+  const res = await formRequest('POST', '/showHiddenReportsForm.html', {authCode: 'wrong'});
+  assert.equal(res.statusCode, 400);
+  assert.equal(await getManagerActivityCount('showHiddenReportsForm', 'error'), countBefore + 1);
 });
 
 // TESTS: self-submitting manager pages now POST their own submissions (formerly GET)

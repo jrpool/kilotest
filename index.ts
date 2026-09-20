@@ -63,6 +63,7 @@ import {answer as requestRetestForm} from './web/requestRetestForm/index.ts';
 import {answer as requestTestPage} from './web/requestTest/index.ts';
 import {answer as requestTestForm} from './web/requestTestForm/index.ts';
 import {answer as rewindReportsForm} from './web/rewindReportsForm/index.ts';
+import {answer as showHiddenReportsForm} from './web/showHiddenReportsForm/index.ts';
 import {answer as unhideReportForm} from './web/unhideReportForm/index.ts';
 import {response as getReportAPI} from './api/getReport.ts';
 import {response as listDiagnosesAPI} from './api/listDiagnoses.ts';
@@ -118,6 +119,7 @@ const answer: {
   requestTest: PageHandler;
   requestTestForm: PageHandler;
   rewindReportsForm: PageHandler;
+  showHiddenReportsForm: PageHandler;
   unhideReportForm: PageHandler;
   [key: string]: PageHandler | undefined;
 } = {
@@ -146,6 +148,7 @@ const answer: {
   requestTest: requestTestPage,
   requestTestForm,
   rewindReportsForm,
+  showHiddenReportsForm,
   unhideReportForm
 };
 // Response functions of the API services.
@@ -207,6 +210,7 @@ export const routes = {
     '/metrics.html',
     '/pruneReportsForm.html',
     '/rewindReportsForm.html',
+    '/showHiddenReportsForm.html',
     '/tutorialAIComment.html',
     '/reannotate.html',
     '/requestAction.html',
@@ -230,6 +234,7 @@ const managerPages = new Set([
   'rewindReportsForm',
   'expungeReportsForm',
   'hideReportForm',
+  'showHiddenReportsForm',
   'unhideReportForm',
   'ai0BalanceForm',
   'renewWCAGForm',
@@ -237,16 +242,24 @@ const managerPages = new Set([
 ]);
 // The set of manager pages (a subset of managerPages) whose single answer() function both
 // displays a form on GET and processes that form's own submission on POST, as opposed to
-// enqueueForm/reannotateForm, whose submissions post to a separate action page.
+// enqueueForm/reannotateForm, whose submissions post to a separate action page. This
+// governs POST dispatch for all of these pages, and GET dispatch for all except
+// unhideReportForm (see noDirectGetPages below).
 const selfSubmittingManagerPages = new Set([
   'pruneReportsForm',
   'rewindReportsForm',
   'expungeReportsForm',
   'hideReportForm',
+  'showHiddenReportsForm',
   'unhideReportForm',
   'ai0BalanceForm',
   'metrics'
 ]);
+// The subset of selfSubmittingManagerPages that must never be served on a direct GET
+// request, only as the response to another page's successful submission (here,
+// unhideReportForm is served only by showHiddenReportsForm, once a valid authorization code
+// has been submitted), so that the names of hidden reports are never disclosed without one.
+const noDirectGetPages = new Set(['unhideReportForm']);
 const jobLock = createLock();
 
 // FUNCTIONS
@@ -626,8 +639,14 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       // If the page can be generated and is not POST-only (a POST-only path also matches
       // the '*.html*' GET pattern, but its handler expects POST's argument list and
       // performs no GET-appropriate rendering; a self-submitting manager page is POST-allowed
-      // too, but its handler serves both methods the same way, so it is not excluded here):
-      if (answer[topic] && (!isPathAllowed('POST', pathname) || selfSubmittingManagerPages.has(topic))) {
+      // too, but its handler serves both methods the same way, so it is not excluded here,
+      // except for a page in noDirectGetPages, which stays excluded from GET even though
+      // it is self-submitting, since it must be reachable only via another page's POST):
+      if (
+        answer[topic] &&
+        !noDirectGetPages.has(topic) &&
+        (!isPathAllowed('POST', pathname) || selfSubmittingManagerPages.has(topic))
+      ) {
         setHeaders('text/html', pathname, 'ultra');
         // Get the answer data. The method is passed so that a self-submitting manager
         // page's handler can tell a form-display GET from its own submission POST.

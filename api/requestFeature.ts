@@ -30,7 +30,7 @@ export const response = async (args: string[]) => {
   // If the requested feature or improvement exists:
   if (feature) {
     // Notify the manager.
-    await sendAlert('MCP feature request received', feature);
+    await sendAlert('Kilotest: MCP feature request received', feature);
     // Add the disposition to the response content.
     responseContent['details about your request'] = {
       'date and time received': new Date().toISOString(),

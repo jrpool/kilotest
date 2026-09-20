@@ -64,7 +64,18 @@ pm2 start pm2.config.cjs
 pm2 save
 ```
 
-The management of the PM2 logs is [documented by PM2](https://pm2.keymetrics.io/docs/usage/log-management/).
+### PM2 log rotation
+
+PM2's own log management is [documented by PM2](https://pm2.keymetrics.io/docs/usage/log-management/), but PM2 does not rotate its logs by default. Since the general request log (see “Request logging” above) writes one line per request rather than only for rejections, log volume is meaningfully higher than before that addition, so explicit rotation is configured via the [`pm2-logrotate`](https://github.com/keymetrics/pm2-logrotate) module:
+
+```text
+pm2 install pm2-logrotate
+pm2 set pm2-logrotate:max_size 20M
+pm2 set pm2-logrotate:retain 14
+pm2 set pm2-logrotate:compress true
+```
+
+This rotates `~/.pm2/logs/kilotest-out-0.log` (and the error log) once it reaches 20MB, keeps 14 rotated files, and compresses rotated files with gzip.
 
 ### Process tuning
 
@@ -233,6 +244,16 @@ The Caddy configuration is maintained and tracked in `/etc/caddy/Caddyfile`. Lea
 # Docs: https://caddyserver.com/docs/caddyfile.
 
 kilotest.com {
+  # Log every request in structured JSON, rotated so it cannot grow unbounded. See
+  # "Request logging" below for why this exists alongside Kilotest's own request log.
+  log {
+    output file /var/log/caddy/kilotest-access.log {
+      roll_size 50mb
+      roll_keep 10
+      roll_keep_for 720h
+    }
+    format json
+  }
   # Enable Zstandard and Gzip compression of responses.
   encode zstd gzip
   # Specify the only paths of forwardable requests. UptimeRobet uses HEAD.
@@ -278,6 +299,15 @@ This configuration can be futher tightened if experience warrants.
 
 The `flush_interval` setting prevents granular reporting by Testaro workers from being buffered, so the updates reach the browser without delay.
 
+### Request logging
+
+Two independent request logs exist, added as part of the abuse evaluation in [GitHub issue #3](https://github.com/jrpool/kilotest/issues/3), so that suspicious traffic can be recognized after the fact rather than only the narrower set of cases that already trigger a rejection:
+
+- **Application-level, general request log** (`index.ts`): every request Kilotest itself receives, whether it succeeds or is rejected, is logged as one single-line JSON record via `console.log` (captured by PM2 like all of Kilotest's other console output), with the fields `type: 'request'`, `time`, `ip`, `method`, `path` (no query string, so a parameter such as `authCode` is never written to a log file), `status`, and `userAgent`. This is separate from, and does not replace, `getAbuseError`'s existing multi-line dump, which remains a rarer, human-read-in-the-moment record logged only for rejected requests. Smoke-test-tagged requests (`x-kilotest-smoke`) are excluded from this log, exactly as they are already excluded from usage metrics; the maintainer's own manual testing is deliberately *not* excluded (unlike usage metrics), since abuse visibility should see all real traffic.
+- **Caddy access log**: enabled at the reverse-proxy layer for connection- and pre-dispatch-level visibility the application itself never sees (for example, requests to paths outside Kilotest's own allowlist, which Caddy rejects before ever forwarding them). See the `log` directive in the Caddyfile above.
+
+Both logs are rotated; see “PM2 log rotation” above for the application log and the `log` directive’s own `roll_size`/`roll_keep` options for the Caddy log.
+
 ## Version management
 
 When a new version of the `kilotest` package has been published, the service can be updated as follows:
@@ -310,7 +340,7 @@ The smoke-test check is defined in `.github/workflows/smoke-test.yml` and runs `
 When a pull request adds a new route to `index.js`, the Caddyfile at `/etc/caddy/Caddyfile` on the server must be updated to forward the new path before the pull request can merge. The workflow to follow is:
 
 1. Add the new route to the `routes` constant and the dispatch chain in `index.js`.
-1. Update the Caddyfile (`/etc/caddy/Caddyfile`) on the server to forward the new path.
+1. Update the Caddyfile (`/etc/caddy/Caddyfile`) on the server to forward the new path, then reload Caddy so the change takes effect: `sudo systemctl reload caddy` (a reload, not a restart, so in-flight connections are not dropped).
 1. Open or update the pull request.
 1. The smoke test workflow runs and verifies that all paths, including the new one, are forwarded by Caddy.
 1. If the Caddyfile was not updated, the smoke test reports a bare 404 for the new path, the required status check fails, and the pull request cannot merge.

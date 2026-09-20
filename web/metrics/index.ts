@@ -6,7 +6,9 @@
 
 // IMPORTS
 
-import {getDateTimeString, getExclusionCookieValue, getMetrics, metricsExclusionCookieName, populateTemplate} from '../../util.ts';
+import {
+  clearMetrics, getDateTimeString, getExclusionCookieValue, getMetrics, metricsExclusionCookieName, populateTemplate
+} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -52,14 +54,15 @@ const getManagerActivityTable = (activity: Record<string, {ok: number; error: nu
     `${margin}</table>`
   ].join('\n');
 };
-// Returns a page reporting usage metrics, or, if no authorization code has been
-// submitted yet, a form requesting one.
-export const answer = async (_: any, search: string) => {
+// Returns a page reporting usage metrics, or, if the form has not been submitted (a POST
+// request) yet, a form requesting an authorization code. A GET request, regardless of its
+// query string, never processes a submission, so the action cannot be triggered by GET.
+export const answer = async (_: any, search: string, method: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   let query: Record<string, string>;
   // If the form has been submitted:
-  if (authCode) {
+  if (method === 'POST') {
     // If the authorization code is invalid:
     if (authCode !== process.env.AUTH_CODE) {
       // Report the error.
@@ -68,9 +71,12 @@ export const answer = async (_: any, search: string) => {
         message: 'Invalid authorization code'
       };
     }
-    const metrics = await getMetrics();
+    // If clearing the counts was requested:
+    const clearCounts = searchParams.has('clearCounts');
+    const metrics = clearCounts ? await clearMetrics() : await getMetrics();
     query = {
       body: [
+        ...(clearCounts ? ['<p>Counts cleared.</p>'] : []),
         `<p>Counts recorded since ${getDateTimeString(metrics.since)}.</p>`,
         '<h2>Web page views</h2>',
         getCategoryTable(metrics.pageViews),
@@ -88,10 +94,11 @@ export const answer = async (_: any, search: string) => {
   else {
     query = {
       body: [
-        '<form action="/metrics.html">',
+        '<form action="/metrics.html" method="post">',
         '  <p><label>',
         '    Authorization code: <input size="3" minlength="3" maxlength="3" name="authCode" required>',
         '  </label></p>',
+        '  <p><label><input type="checkbox" name="clearCounts"> Clear counts</label></p>',
         '  <p><button type="submit">Submit</button></p>',
         '</form>'
       ].join('\n')
@@ -106,7 +113,7 @@ export const answer = async (_: any, search: string) => {
   return {
     status: 'ok',
     answerPage,
-    ...(authCode && {
+    ...(method === 'POST' && {
       setCookie: {
         name: metricsExclusionCookieName,
         value: getExclusionCookieValue(),

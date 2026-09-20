@@ -201,6 +201,12 @@ export const routes = {
   POST: [
     '/api/*',
     '/mcp',
+    '/ai0BalanceForm.html',
+    '/expungeReportsForm.html',
+    '/hideReportForm.html',
+    '/metrics.html',
+    '/pruneReportsForm.html',
+    '/rewindReportsForm.html',
     '/tutorialAIComment.html',
     '/reannotate.html',
     '/requestAction.html',
@@ -208,6 +214,7 @@ export const routes = {
     '/requestRetest.html/*',
     '/requestTest.html',
     '/tutorialWebComment.html',
+    '/unhideReportForm.html',
     '/worker/job',
     '/worker/report'
   ]
@@ -226,6 +233,18 @@ const managerPages = new Set([
   'unhideReportForm',
   'ai0BalanceForm',
   'renewWCAGForm',
+  'metrics'
+]);
+// The set of manager pages (a subset of managerPages) whose single answer() function both
+// displays a form on GET and processes that form's own submission on POST, as opposed to
+// enqueueForm/reannotateForm, whose submissions post to a separate action page.
+const selfSubmittingManagerPages = new Set([
+  'pruneReportsForm',
+  'rewindReportsForm',
+  'expungeReportsForm',
+  'hideReportForm',
+  'unhideReportForm',
+  'ai0BalanceForm',
   'metrics'
 ]);
 const jobLock = createLock();
@@ -460,6 +479,15 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
   // maintainer testing Kilotest manually rather than to real usage.
   const recordPageMetric = (category: 'pageViews' | 'apiOperations', name: string): Promise<void> =>
     isMetricsExcluded(request) ? Promise.resolve() : recordMetric(category, name);
+  // Applies a cookie an answer() handler asked to have set on the response.
+  const applySetCookie = (answerData: AnswerData): void => {
+    if (answerData.setCookie) {
+      const {name, value, maxAgeSeconds} = answerData.setCookie;
+      response.setHeader(
+        'Set-Cookie', `${name}=${value}; Max-Age=${maxAgeSeconds}; Path=/; HttpOnly; SameSite=Strict`
+      );
+    }
+  };
   // If the request is a GET request:
   if (method === 'GET') {
     // If the path is not authorized for GET requests:
@@ -595,13 +623,15 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
-      // If the page can be generated and is not POST-only (a POST-only path also
-      // matches the '*.html*' GET pattern, but its handler expects POST's argument
-      // list and performs no GET-appropriate rendering):
-      if (answer[topic] && !isPathAllowed('POST', pathname)) {
+      // If the page can be generated and is not POST-only (a POST-only path also matches
+      // the '*.html*' GET pattern, but its handler expects POST's argument list and
+      // performs no GET-appropriate rendering; a self-submitting manager page is POST-allowed
+      // too, but its handler serves both methods the same way, so it is not excluded here):
+      if (answer[topic] && (!isPathAllowed('POST', pathname) || selfSubmittingManagerPages.has(topic))) {
         setHeaders('text/html', pathname, 'ultra');
-        // Get the answer data.
-        const answerData = await answer[topic](pathTail, search);
+        // Get the answer data. The method is passed so that a self-submitting manager
+        // page's handler can tell a form-display GET from its own submission POST.
+        const answerData = await answer[topic](pathTail, search, method);
         // If they are valid:
         if (answerData.status === 'ok') {
           if (managerPages.has(topic)) {
@@ -610,13 +640,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           else {
             await recordPageMetric('pageViews', topic);
           }
-          // If the handler asked for a cookie to be set:
-          if (answerData.setCookie) {
-            const {name, value, maxAgeSeconds} = answerData.setCookie;
-            response.setHeader(
-              'Set-Cookie', `${name}=${value}; Max-Age=${maxAgeSeconds}; Path=/; HttpOnly; SameSite=Strict`
-            );
-          }
+          applySetCookie(answerData);
           // Serve the answer page.
           response.end(answerData.answerPage);
         }
@@ -912,6 +936,32 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // Otherwise, i.e. if they are invalid:
         else {
           await recordMetric('managerActivity', 'renewWCAG.html', 'error');
+          // Report the error.
+          await serveError({message: answerData.message}, response, true);
+        }
+      }
+      // Otherwise, if it is a self-submitting manager page (one page serves the form on
+      // GET and processes its own submission on POST, unlike enqueueForm.html/reannotateForm.html,
+      // whose submissions go to a separate action page):
+      else if (pageName.endsWith('.html') && selfSubmittingManagerPages.has(pageName.slice(0, -5))) {
+        const topic = pageName.slice(0, -5);
+        setHeaders('text/html', pathname, 'ultra');
+        // Reconstruct a query string from the POST body, so the page's answer() function
+        // can read its submitted parameters the same way it reads a GET query string.
+        const search = `?${new URLSearchParams(postData as Record<string, string>).toString()}`;
+        // Get the answer data. The method is passed so the handler only processes a
+        // submission for POST, never for GET, regardless of what its query string contains.
+        const answerData = await answer[topic]!(pathTail, search, method);
+        // If they are valid:
+        if (answerData.status === 'ok') {
+          await recordMetric('managerActivity', topic, 'ok');
+          applySetCookie(answerData);
+          // Serve the answer page.
+          response.end(answerData.answerPage);
+        }
+        // Otherwise, i.e. if they are invalid:
+        else {
+          await recordMetric('managerActivity', topic, 'error');
           // Report the error.
           await serveError({message: answerData.message}, response, true);
         }

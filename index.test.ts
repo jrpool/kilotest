@@ -1224,21 +1224,29 @@ for (const pagePath of htmlPagePaths) {
   });
 }
 
-test('GET /metrics.html with a valid authCode serves the usage-metrics table and records a managerActivity success', async () => {
+test('POST /metrics.html with a valid authCode serves the usage-metrics table and records a managerActivity success', async () => {
   const countBefore = await getManagerActivityCount('metrics', 'ok');
-  const res = await request('GET', '/metrics.html?authCode=test-auth-code');
+  const res = await formRequest('POST', '/metrics.html', {authCode: 'test-auth-code'});
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
   assert.equal(await getManagerActivityCount('metrics', 'ok'), countBefore + 1);
 });
 
-test('GET /metrics.html with a valid authCode sets a metrics-exclusion cookie', async () => {
-  const res = await request('GET', '/metrics.html?authCode=test-auth-code');
+test('POST /metrics.html with a valid authCode sets a metrics-exclusion cookie', async () => {
+  const res = await formRequest('POST', '/metrics.html', {authCode: 'test-auth-code'});
   const setCookie = res.headers['set-cookie']?.[0] ?? res.headers['set-cookie'];
   assert.ok(setCookie);
   assert.ok(setCookie.startsWith('kilotestExclude='));
   assert.ok(setCookie.includes('Max-Age=2592000'));
   assert.ok(setCookie.includes('HttpOnly'));
+});
+
+test('GET /metrics.html with a valid authCode in the query string does not set a cookie or show the counts', async () => {
+  const res = await request('GET', '/metrics.html?authCode=test-auth-code');
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.headers['set-cookie'], undefined);
+  assert.ok(res.body.includes('Authorization code'));
+  assert.ok(!res.body.includes('Web page views'));
 });
 
 test('a request carrying the metrics-exclusion cookie does not record a pageViews or apiOperations metric', async () => {
@@ -1271,9 +1279,9 @@ test('GET / and GET /index.html record a pageViews metric under "index"', async 
   assert.equal(await getMetricCount('pageViews', 'index'), countBefore + 2);
 });
 
-test('GET /metrics.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
+test('POST /metrics.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
   const countBefore = await getManagerActivityCount('metrics', 'error');
-  const res = await request('GET', '/metrics.html?authCode=wrong');
+  const res = await formRequest('POST', '/metrics.html', {authCode: 'wrong'});
   assert.equal(res.statusCode, 400);
   assert.equal(await getManagerActivityCount('metrics', 'error'), countBefore + 1);
 });
@@ -1285,6 +1293,86 @@ test('GET /hideReportForm.html records managerActivity, not a pageViews entry', 
   assert.equal(res.statusCode, 200);
   assert.equal(await getManagerActivityCount('hideReportForm', 'ok'), managerCountBefore + 1);
   assert.equal(await getMetricCount('pageViews', 'hideReportForm'), pageViewCountBefore);
+});
+
+// TESTS: self-submitting manager pages now POST their own submissions (formerly GET)
+
+test('POST /ai0BalanceForm.html with a valid authCode records the balance and records a managerActivity success', async () => {
+  const countBefore = await getManagerActivityCount('ai0BalanceForm', 'ok');
+  const res = await formRequest('POST', '/ai0BalanceForm.html', {
+    newBalance: '42.50',
+    authCode: 'test-auth-code'
+  });
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.ok(res.body.includes('$42.5'));
+  assert.equal(await getManagerActivityCount('ai0BalanceForm', 'ok'), countBefore + 1);
+});
+
+test('POST /ai0BalanceForm.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
+  const countBefore = await getManagerActivityCount('ai0BalanceForm', 'error');
+  const res = await formRequest('POST', '/ai0BalanceForm.html', {
+    newBalance: '10',
+    authCode: 'wrong-code'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.equal(await getManagerActivityCount('ai0BalanceForm', 'error'), countBefore + 1);
+});
+
+test('POST /hideReportForm.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
+  const countBefore = await getManagerActivityCount('hideReportForm', 'error');
+  const res = await formRequest('POST', '/hideReportForm.html', {
+    report: '260101T0009-brd',
+    authCode: 'wrong-code'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.equal(await getManagerActivityCount('hideReportForm', 'error'), countBefore + 1);
+});
+
+test('POST /unhideReportForm.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
+  const countBefore = await getManagerActivityCount('unhideReportForm', 'error');
+  const res = await formRequest('POST', '/unhideReportForm.html', {
+    report: '260101T0009-brd',
+    authCode: 'wrong-code'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.equal(await getManagerActivityCount('unhideReportForm', 'error'), countBefore + 1);
+});
+
+test('POST /expungeReportsForm.html with no selections shows the form and records a managerActivity success', async () => {
+  const countBefore = await getManagerActivityCount('expungeReportsForm', 'ok');
+  const res = await formRequest('POST', '/expungeReportsForm.html', {});
+  assert.equal(res.statusCode, 200);
+  assert.equal(await getManagerActivityCount('expungeReportsForm', 'ok'), countBefore + 1);
+});
+
+test('POST /pruneReportsForm.html with no selections shows the form and records a managerActivity success', async () => {
+  const countBefore = await getManagerActivityCount('pruneReportsForm', 'ok');
+  const res = await formRequest('POST', '/pruneReportsForm.html', {});
+  assert.equal(res.statusCode, 200);
+  assert.equal(await getManagerActivityCount('pruneReportsForm', 'ok'), countBefore + 1);
+});
+
+test('POST /rewindReportsForm.html with no selections shows the form and records a managerActivity success', async () => {
+  const countBefore = await getManagerActivityCount('rewindReportsForm', 'ok');
+  const res = await formRequest('POST', '/rewindReportsForm.html', {});
+  assert.equal(res.statusCode, 200);
+  assert.equal(await getManagerActivityCount('rewindReportsForm', 'ok'), countBefore + 1);
+});
+
+test('GET /pruneReportsForm.html records a managerActivity failure when a report file is corrupt', {timeout: 500}, async () => {
+  const reportPath = path.join(fixtureDBDir, 'reports', '260101T0001-ct.json');
+  const backup = await fs.readFile(reportPath, 'utf8');
+  const countBefore = await getManagerActivityCount('pruneReportsForm', 'error');
+  try {
+    await fs.writeFile(reportPath, 'not valid json');
+    const res = await request('GET', '/pruneReportsForm.html');
+    assert.equal(res.statusCode, 400);
+    assert.equal(await getManagerActivityCount('pruneReportsForm', 'error'), countBefore + 1);
+  }
+  finally {
+    await fs.writeFile(reportPath, backup);
+  }
 });
 
 test('GET /enqueueForm.html shows requests when testRequests.json has entries', async () => {

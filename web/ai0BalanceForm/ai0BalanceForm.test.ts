@@ -44,22 +44,28 @@ after(async () => {
 
 // TESTS
 
-test('ai0BalanceForm displays the current balance when no newBalance is submitted', async () => {
-  const result: any = await answer(null, '');
+test('ai0BalanceForm displays the current balance on a GET request', async () => {
+  const result: any = await answer(null, '', 'GET');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
   assert.ok(html.querySelector('title'));
 });
 
-test('ai0BalanceForm returns an error for an invalid auth code', async () => {
-  const result: any = await answer(null, 'authCode=wrong&newBalance=5.00');
+test('ai0BalanceForm ignores a newBalance query string on a GET request', async () => {
+  const result: any = await answer(null, 'authCode=test-auth-code&newBalance=99.00', 'GET');
+  assert.equal(result.status, 'ok');
+  assert.ok(!result.answerPage.includes('$99 is the'));
+});
+
+test('ai0BalanceForm returns an error for an invalid auth code on a POST request', async () => {
+  const result: any = await answer(null, 'authCode=wrong&newBalance=5.00', 'POST');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid authorization code');
 });
 
-test('ai0BalanceForm records a valid new balance with valid auth code', async () => {
-  const result: any = await answer(null, 'authCode=test-auth-code&newBalance=2.50');
+test('ai0BalanceForm records a valid new balance with valid auth code on a POST request', async () => {
+  const result: any = await answer(null, 'authCode=test-auth-code&newBalance=2.50', 'POST');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('$2.5 is the'));
   // Verify the file was written.
@@ -67,9 +73,9 @@ test('ai0BalanceForm records a valid new balance with valid auth code', async ()
   assert.equal(data.balance, 2.50);
 });
 
-test('ai0BalanceForm does not record an invalid balance', async () => {
+test('ai0BalanceForm does not record an invalid balance on a POST request', async () => {
   // 150 is out of range (>= 100).
-  const result: any = await answer(null, 'authCode=test-auth-code&newBalance=150');
+  const result: any = await answer(null, 'authCode=test-auth-code&newBalance=150', 'POST');
   assert.equal(result.status, 'ok');
   // The oldBalance should not show the new value.
   assert.ok(!result.answerPage.includes('$150 is the'));
@@ -78,7 +84,7 @@ test('ai0BalanceForm does not record an invalid balance', async () => {
 test('ai0BalanceForm shows no-balance message when balance file is missing', async () => {
   await fs.unlink(balancePath).catch(() => {});
   try {
-    const result: any = await answer(null, '');
+    const result: any = await answer(null, '', 'GET');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('There is no'));
   }

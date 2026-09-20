@@ -10,7 +10,7 @@ import {reportDeletionForm} from '../reportDeletion.ts';
 // FUNCTIONS
 
 // Returns a form for deleting non-latest reports.
-export const answer = async (_: any, search: string) => reportDeletionForm(import.meta.dirname, search, {
+export const answer = async (_: any, search: string, method: string) => reportDeletionForm(import.meta.dirname, search, method, {
   intro: 'Choose the superseded reports to delete.',
   emptyIntro: 'Each target has only 1 report, so there are no superseded reports to delete.',
   failurePrefix: 'Deleting superseded reports failed',

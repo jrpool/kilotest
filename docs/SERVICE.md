@@ -242,7 +242,7 @@ kilotest.com {
   }
   @allowedPOST {
     method POST
-    path /mcp /requestRetest.html/* /requestTest.html /requestAction.html /reannotate.html /renewWCAG.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
+    path /mcp /requestRetest.html/* /requestTest.html /requestAction.html /reannotate.html /renewWCAG.html /ai0BalanceForm.html /expungeReportsForm.html /hideReportForm.html /metrics.html /pruneReportsForm.html /rewindReportsForm.html /unhideReportForm.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
   }
   # Respond to OPTIONS requests.
   @allowedOPTIONS method OPTIONS
@@ -473,7 +473,13 @@ This is a small, initial feature set, not a complete observability solution: it 
 
 ### Viewing the metrics
 
-The counts are displayed at `/metrics.html`, linked from `/manage.html`, as four tables: web page views, MCP tool calls, API operation calls, and manager page activity (successful and failed counts per manager page). Like the other self-submitting manager-power pages (`/hideReportForm.html`, `/unhideReportForm.html`, `/ai0BalanceForm.html`), visiting it with no `authCode` query-string parameter displays a form requesting one rather than immediately rejecting the request, since the maintainer following the `/manage.html` link has had no earlier opportunity to supply the code; submitting that form (or visiting the page directly with `?authCode=...`) then either shows the counts, if the code matches the `AUTH_CODE` environment variable, or reports an error if it does not. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
+The counts are displayed at `/metrics.html`, linked from `/manage.html`, as four tables: web page views, MCP tool calls, API operation calls, and manager page activity (successful and failed counts per manager page). Like the other self-submitting manager-power pages (`/hideReportForm.html`, `/unhideReportForm.html`, `/ai0BalanceForm.html`), a GET request always displays a form requesting an authorization code, since the maintainer following the `/manage.html` link has had no earlier opportunity to supply one; only a POST request (the form's own submission) either shows the counts, if the code matches the `AUTH_CODE` environment variable, or reports an error if it does not. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
+
+A GET request's query string is never processed as a submission, even if it happens to contain a valid `authCode` (for example typed or pasted into the address bar): all 6 self-submitting manager pages (`ai0BalanceForm.html`, `expungeReportsForm.html`, `hideReportForm.html`, `metrics.html`, `pruneReportsForm.html`, `rewindReportsForm.html`, plus `unhideReportForm.html`) take an explicit HTTP method argument and only act on a submission when that method is POST, so the same query-string parameters that a POST body carries are inert on GET. This closes a gap found during development: 5 of these pages had omitted `method="post"` from their HTML forms and were submitting via GET, and even after adding a POST option, the pages continued to also accept the identical action via GET until this method check was added.
+
+#### Clearing the counts
+
+`/metrics.html`'s form includes a "Clear counts" checkbox. Submitting the form with it checked (and a valid `authCode`) resets all four categories, and the `since` time stamp, to empty, then renders the (now empty) result as confirmation, alongside a "Counts cleared." message.
 
 ## Performance
 

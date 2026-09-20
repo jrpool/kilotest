@@ -1104,3 +1104,11 @@ export function recordMetric(
     await fs.writeFile(metricsPath(), getJSON(metrics));
   });
 }
+// Resets all usage metrics to empty and since to now.
+export const clearMetrics = (): Promise<Metrics> => metricsLock(async (): Promise<Metrics> => {
+  const metrics: Metrics = {
+    since: getNowStamp(), pageViews: {}, mcpToolCalls: {}, apiOperations: {}, managerActivity: {}
+  };
+  await fs.writeFile(metricsPath(), getJSON(metrics));
+  return metrics;
+});

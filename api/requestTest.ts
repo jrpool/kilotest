@@ -7,7 +7,7 @@
 
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {isURL, processTestRequest} from '../util.ts';
+import {checkLength, isURL, processTestRequest} from '../util.ts';
 import {requestTestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -24,14 +24,14 @@ export const response = async (args: string[]) => {
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your request'];
   let requestDisposition: ResponseContent['disposition of your request'] = null;
-  const descriptionLength = description.length;
-  // If the description is empty or too long:
-  if (!descriptionLength || descriptionLength > 100) {
+  const descriptionCheck = checkLength(description, 1, 100, 'description of the page');
+  // If the description is invalid:
+  if (descriptionCheck.status === 'error') {
     requestDetails = {
-      error: 'request invalid: your description of the page is not between 1 and 100 characters long'
+      error: `request invalid: your ${descriptionCheck.message}`
     };
   }
-  // Otherwise, i.e. if the URL is too short or too long::
+  // Otherwise, i.e. if the URL is too short or too long:
   else if (url.length < 12 || url.length > 300) {
     requestDetails = {
       error: 'request invalid: you specified a URL for the page that is not between 12 and 300 characters long'

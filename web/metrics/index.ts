@@ -7,7 +7,8 @@
 // IMPORTS
 
 import {
-  clearMetrics, getDateTimeString, getExclusionCookieValue, getMetrics, metricsExclusionCookieName, populateTemplate
+  clearMetrics, getDateTimeString, getExclusionCookieValue, getMetrics, isValidAuthCode,
+  metricsExclusionCookieName, populateTemplate
 } from '../../util.ts';
 
 // FUNCTIONS
@@ -64,7 +65,7 @@ export const answer = async (_: any, search: string, method: string) => {
   // If the form has been submitted:
   if (method === 'POST') {
     // If the authorization code is invalid:
-    if (authCode !== process.env.AUTH_CODE) {
+    if (!isValidAuthCode(authCode)) {
       // Report the error, deliberately vague so as not to confirm to an attacker that the
       // authorization code specifically (as opposed to some other part of the request) is
       // what was wrong.

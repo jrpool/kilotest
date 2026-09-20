@@ -11,6 +11,7 @@ import {
   getReport,
   getReportPath,
   isReportError,
+  isValidAuthCode,
   readdirOrCreate,
   reportsPath
 } from '../../util.ts';
@@ -22,7 +23,7 @@ import path from 'node:path';
 // Implements a reannotation order and returns an acknowledgement page.
 export const answer = async (authCode: string) => {
   // If the authorization code is valid:
-  if (authCode === process.env.AUTH_CODE) {
+  if (isValidAuthCode(authCode)) {
     // Get the names of the stored report files.
     const reportFileNames = (await readdirOrCreate(reportsPath(), 'Reports directory'))
     .filter(fileName => fileName.endsWith('.json'));

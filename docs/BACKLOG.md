@@ -4,9 +4,21 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed or not adopted are preserved for about 2 weeks in case of production bugs.
 
-## Make validation locations consistent
+## Make validation locations consistent (completed)
 
 Inventory where request validations occur, e.g. in `index.ts` versus in the modules to which it routes requests. Find any arbitrary inconsistencies in the locations. If any are found, decide where it is most parsimonious and maintainable for the validation to take place and, when the user approves, standardize on that.
+
+### Inventory findings
+
+Validation was spread across `index.ts`, the `web/*` modules it dispatches to, and the `api/*.ts` modules shared by the HTTP API and the MCP tools (`mcp.ts` itself performs no validation; it delegates entirely to `api/*.ts`, whose zod `inputSchema`s in `api/schemas.ts` are shape-only, documenting length/format bounds in `.describe()` prose rather than enforcing them). Several arbitrary inconsistencies were found and fixed:
+
+- **A URL was validated three different, inconsistent ways** for what is logically the same field: a loose inline `url.startsWith('https://')` check in `index.ts` (for both `requestTest.html` and `requestAction.html`), and the correct, stricter shared `isURL()` helper (already used by `api/requestTest.ts` and `web/enqueue/index.ts`) nowhere in `index.ts` itself. Fixed by having `index.ts` call `isURL()` at both sites.
+- **`requestAction.html`'s URL and authorization code were validated twice**: once in `index.ts` before dispatch, and again inside `web/enqueue/index.ts`'s own `answer()`, using different strictness for the URL check. Once both checks used the same `isURL()`/`isValidAuthCode()` helpers, the inner check in `enqueue` became strictly unreachable-as-false (its only caller, `index.ts`, already guarantees both conditions), so it was removed; `enqueue` now trusts its caller, consistent with `web/requestTest/` and `web/requestRetest/`.
+- **The authorization-code check (`authCode === process.env.AUTH_CODE`) was copy-pasted verbatim across 8 separate modules** (`hideReportForm`, `unhideReportForm`, `ai0BalanceForm`, `showHiddenReportsForm`, `metrics`, `renewWCAG`, `reannotate`, and, via the already-shared `web/reportDeletion.ts`, `pruneReportsForm`/`expungeReportsForm`/`rewindReportsForm`). Consolidated into one shared `isValidAuthCode()` helper in `util.ts`, called everywhere the check occurs.
+- **`api/requestRetest.ts` never validated `timeStamp`/`jobID` syntactically**, unlike the equivalent web path (`index.ts`, `requestRetest.html`) and the equivalent worker path, both of which call `isTimeStamp`/`isJobID` before proceeding; it relied solely on the report lookup failing gracefully. Added the same `isTimeStamp`/`isJobID` pre-check, matching the web path, with its own dedicated (non-corpus) test fixture since the shared 2-character fixture job IDs used elsewhere in the test suite do not satisfy the real, production 3-character job ID format `isJobID` enforces.
+- **`api/requestFeature.ts` had no length bound at all** (only a truthiness check), unlike every other free-text field in the codebase (comments: 20-1000 characters; `reason`/`why`: 20-100). Added a matching 20-1000 character bound via a new, generic `checkLength()` helper (generalized from the existing `checkCommentLength()`, which was already comment-specific and left unchanged), and corrected `api/schemas.ts`'s description accordingly.
+- **A documentation/code mismatch**: `api/schemas.ts` described `requestTest`'s `description` field as "10- to 100-character" while the code actually enforced (and still enforces) 1-100. Corrected the description to match the code's real, existing behavior.
+- **`api/getReport.ts`, `api/listIssues.ts`, `api/listViolators.ts`, `api/listDiagnoses.ts` perform no syntactic validation of `timeStamp`/`jobID`/`issueID`/`catalogIndex`**, unlike routes elsewhere that call `isTimeStamp`/`isJobID` before proceeding. Investigated as a candidate gap, but not changed: these four read-only operations resolve straight to a file-path lookup (`getReport`/`getReportStats`) that already fails gracefully for any malformed or nonexistent input, so a syntactic pre-check would produce an identical outcome through a different code path, with no functional benefit. This is a legitimate, already-consistent "fail-on-use" validation strategy for pure lookups, distinct from (and not required to match) the "fail-fast" strategy used for mutating requests elsewhere.
 
 ## Protect hidden report list (completed)
 

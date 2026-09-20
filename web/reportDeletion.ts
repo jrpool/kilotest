@@ -6,7 +6,8 @@
 // IMPORTS
 
 import {
-  errorMessage, getReportData, objectSort, populateTemplate, readdirOrCreate, reportsPath
+  errorMessage, getReportData, isValidAuthCode, objectSort, populateTemplate, readdirOrCreate,
+  reportsPath
 } from '../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -48,7 +49,7 @@ export const reportDeletionForm = async (
   // If the form has been submitted and any reports are to be deleted:
   if (method === 'POST' && jobNames?.length) {
     // If the authorization code is valid:
-    if (authCode === process.env.AUTH_CODE) {
+    if (isValidAuthCode(authCode)) {
       try {
         // For each report to be deleted:
         for (const jobName of jobNames) {

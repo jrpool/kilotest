@@ -13,6 +13,7 @@ import {
   annotateReportObject,
   checkCommentDuplicate,
   checkCommentLength,
+  checkLength,
   createLock,
   dbPath,
   getAgoDays,
@@ -45,6 +46,7 @@ import {
   isReportAvailable,
   isTimeStamp,
   isURL,
+  isValidAuthCode,
   jobsPath,
   makeBreakable,
   minifyURL,
@@ -80,6 +82,32 @@ test('checkCommentLength rejects a comment longer than 1000 characters', () => {
   assert.deepEqual(result, {
     status: 'error',
     message: 'Your comment was longer than 1000 characters'
+  });
+});
+
+test('checkLength accepts text at the minimum bound', () => {
+  const result = checkLength('a'.repeat(5), 5, 10, 'reason');
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkLength accepts text at the maximum bound', () => {
+  const result = checkLength('a'.repeat(10), 5, 10, 'reason');
+  assert.deepEqual(result, {status: 'ok'});
+});
+
+test('checkLength rejects text shorter than the minimum bound', () => {
+  const result = checkLength('a'.repeat(4), 5, 10, 'reason');
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'The reason must be between 5 and 10 characters long'
+  });
+});
+
+test('checkLength rejects text longer than the maximum bound', () => {
+  const result = checkLength('a'.repeat(11), 5, 10, 'reason');
+  assert.deepEqual(result, {
+    status: 'error',
+    message: 'The reason must be between 5 and 10 characters long'
   });
 });
 
@@ -335,6 +363,42 @@ test('isURL returns false for a non-HTTPS URL', () => {
 
 test('isURL returns false for an invalid URL', () => {
   assert.equal(isURL('not-a-url'), false);
+});
+
+test('isValidAuthCode returns true when the code matches AUTH_CODE', () => {
+  const saved = process.env.AUTH_CODE;
+  process.env.AUTH_CODE = 'secret-code';
+  try {
+    assert.equal(isValidAuthCode('secret-code'), true);
+  }
+  finally {
+    if (saved === undefined) {
+      delete process.env.AUTH_CODE;
+    }
+    else {
+      process.env.AUTH_CODE = saved;
+    }
+  }
+});
+
+test('isValidAuthCode returns false when the code does not match AUTH_CODE', () => {
+  const saved = process.env.AUTH_CODE;
+  process.env.AUTH_CODE = 'secret-code';
+  try {
+    assert.equal(isValidAuthCode('wrong-code'), false);
+  }
+  finally {
+    if (saved === undefined) {
+      delete process.env.AUTH_CODE;
+    }
+    else {
+      process.env.AUTH_CODE = saved;
+    }
+  }
+});
+
+test('isValidAuthCode returns false for an undefined code', () => {
+  assert.equal(isValidAuthCode(undefined), false);
 });
 
 test('makeBreakable inserts wbr before non-initial slashes', () => {

@@ -23,7 +23,9 @@ import {
   isReportAvailable,
   isTimeStamp,
   isJobID,
+  isURL,
   isUsableReport,
+  isValidAuthCode,
   jobsPath,
   metricsExclusionCookieName,
   recordMetric,
@@ -815,7 +817,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (pageName === 'requestTest.html') {
         const {description, url, why} = postData as {description?: string; url: string; why?: string};
         // If the request is valid:
-        if (description && url.startsWith('https://') && why) {
+        if (description && isURL(url) && why) {
           // If a report on the page is already available:
           if (await isReportAvailable(description, url)) {
             // Report the error.
@@ -877,7 +879,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const {target, authCode} = postData as {target: string; authCode?: string};
         const [url, description] = target.split('\t') as [string, string];
         // If the request is valid:
-        if (url.startsWith('https://') && authCode === process.env.AUTH_CODE) {
+        if (isURL(url) && isValidAuthCode(authCode)) {
           // Set the non-location headers for a response.
           setHeaders('text/html', null, 'ultra');
           // If the request is an approval:
@@ -885,19 +887,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             // Set a location header for a response.
             response.setHeader('content-location', pathname);
             // Process the approval and get the answer data about the remaining requests.
-            const answerData = await answer.enqueue(url, description, authCode);
-            // If the answer data are valid:
-            if (answerData.status === 'ok') {
-              await recordMetric('managerActivity', 'requestAction.html', 'ok');
-              // Serve the test-order page with the remaining recommendations.
-              response.end(answerData.answerPage);
-            }
-            // Otherwise, i.e. if they are invalid:
-            else {
-              await recordMetric('managerActivity', 'requestAction.html', 'error');
-              // Report the error.
-              await serveError({message: answerData.message}, response, true);
-            }
+            const answerData = await answer.enqueue(url, description);
+            await recordMetric('managerActivity', 'requestAction.html', 'ok');
+            // Serve the test-order page with the remaining recommendations.
+            response.end(answerData.answerPage);
           }
           // Otherwise, i.e. if it is a rejection:
           else {

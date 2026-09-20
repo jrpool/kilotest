@@ -173,6 +173,24 @@ export type ReportData = {
 const alphaCompare = (a: string, b: string) => a.localeCompare(b, 'en', {sensitivity: 'base'});
 // Sorts strings alphabetically and case-insensitively.
 const alphaSort = (strings: string[]) => strings.sort((a, b) => alphaCompare(a, b));
+// Returns whether a string's length is within the given bounds. Generic length check
+// shared by any field with a min/max character-count rule (e.g. a request description
+// or reason), so each caller states its own bounds and label instead of hardcoding an
+// ad hoc length comparison.
+export const checkLength = (
+  text: string, min: number, max: number, label: string
+): {status: 'ok'} | {status: 'error'; message: string} => {
+  const {length} = text;
+  // If the length is invalid:
+  if (length < min || length > max) {
+    // Return the applicable error message.
+    return {
+      status: 'error',
+      message: `The ${label} must be between ${min} and ${max} characters long`
+    };
+  }
+  return {status: 'ok'};
+};
 // Returns whether a comment's raw length is within the 20-to-1000-character bounds.
 export const checkCommentLength = (
   content: string
@@ -535,6 +553,12 @@ export const isURL = (string: string): boolean => {
   } catch {
     return false;
   }
+};
+// Returns whether a string is the authorization code, the shared check every
+// manager-facing page and action uses to gate a submission. Centralized so all call
+// sites compare against process.env.AUTH_CODE the same way.
+export const isValidAuthCode = (authCode: string | undefined | null): boolean => {
+  return !!authCode && authCode === process.env.AUTH_CODE;
 };
 // Makes a string breakable before non-initial slashes.
 export const makeBreakable = (string: string): string => string.replace(/\//g, '<wbr>/').replace(/^<wbr>/, '');

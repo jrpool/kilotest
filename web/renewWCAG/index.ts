@@ -7,14 +7,14 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {getJSON} from '../../util.ts';
+import {getJSON, isValidAuthCode} from '../../util.ts';
 
 // FUNCTIONS
 
 // Renews the WCAG map and serves an acknowledgment.
 export const answer = async (authCode: string) => {
   // If the authorization code is valid:
-  if (authCode === process.env.AUTH_CODE) {
+  if (isValidAuthCode(authCode)) {
     // Get the map source response.
     const mapSourceResponse = await fetch('https://www.w3.org/WAI/WCAG22/Understanding/');
     const mapSourceStatus = mapSourceResponse.status;

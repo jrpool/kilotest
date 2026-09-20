@@ -7,6 +7,15 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+
+// Blank the alert configuration unconditionally, before ../util.ts (which
+// processTestRequest calls sendAlert from) is ever imported below, so this file sends
+// no real alert emails even when run directly (e.g. `npx tsx --test api/util.test.ts`)
+// rather than via `npm test`, which normally guards against this via test/setup.ts.
+for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
+  process.env[key] = '';
+}
+
 import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts} from './util.ts';
 import {processTestRequest} from '../util.ts';
 

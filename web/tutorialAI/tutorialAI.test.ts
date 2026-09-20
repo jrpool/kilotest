@@ -14,6 +14,12 @@ import path from 'node:path';
 
 const testDir = path.join(import.meta.dirname, '../../test/fixtures/comments');
 process.env.TUTORIAL_AI_COMMENTS_PATH = path.join(testDir, 'tutorialAI.json');
+// Blank the alert configuration unconditionally, before index.ts (whose handleComment
+// calls sendAlert for a new comment) is ever imported below, so this file sends no real
+// alert emails even when run directly rather than via `npm test`.
+for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
+  process.env[key] = '';
+}
 
 import {answer, handleComment} from './index.ts';
 

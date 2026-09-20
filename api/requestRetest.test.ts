@@ -11,6 +11,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fixtureDBDir} from '../test/dbFixture.ts';
 
+// Blank the alert configuration unconditionally, before ./requestRetest.ts (whose
+// processTestRequest calls sendAlert) is ever imported below, so this file sends no
+// real alert emails even when run directly rather than via `npm test`.
+for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
+  process.env[key] = '';
+}
+
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;

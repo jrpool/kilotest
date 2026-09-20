@@ -8,19 +8,29 @@
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import {requestHandler} from './index.ts';
 
 // CONSTANTS
 
 const port = 3998;
+const featureRequestsPath = path.join(import.meta.dirname, 'test/fixtures/apiIntegration/featureRequests.json');
 
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
+const savedFeatureRequestsPath = process.env.FEATURE_REQUESTS_PATH;
 let server: http.Server;
 
 before(async () => {
   process.env.DB_DIR = (await import('./test/dbFixture.ts')).fixtureDBDir;
+  // Use a fixture path, rather than the real default, for feature requests, so this
+  // test's submission neither pollutes real data nor is rejected as a duplicate of
+  // whatever a prior run of this same test already left on disk.
+  process.env.FEATURE_REQUESTS_PATH = featureRequestsPath;
+  await fs.mkdir(path.dirname(featureRequestsPath), {recursive: true});
+  await fs.writeFile(featureRequestsPath, '[]\n');
   server = http.createServer(requestHandler);
   await new Promise<void>(resolve => server.listen(port, () => resolve()));
 });
@@ -32,6 +42,13 @@ after(async () => {
   else {
     delete process.env.DB_DIR;
   }
+  if (savedFeatureRequestsPath !== undefined) {
+    process.env.FEATURE_REQUESTS_PATH = savedFeatureRequestsPath;
+  }
+  else {
+    delete process.env.FEATURE_REQUESTS_PATH;
+  }
+  await fs.rm(path.dirname(featureRequestsPath), {recursive: true, force: true});
   server.closeAllConnections?.();
   await new Promise<void>(resolve => {
     const timer = setTimeout(() => {

@@ -77,7 +77,7 @@ test('handleComment returns an error for a comment longer than 1000 characters',
   assert.equal(result.message, 'Your comment was longer than 1000 characters');
 });
 
-test('handleComment returns an error for a comment repeating one submitted within the last 1000 seconds', {timeout: 500}, async () => {
+test('handleComment returns an error for a comment identical to one already submitted', {timeout: 500}, async () => {
   await fs.writeFile(getCommentsPath(), '[]\n');
   const content = 'This is a duplicate comment.';
   const firstResult = await handleComment(content);
@@ -86,7 +86,7 @@ test('handleComment returns an error for a comment repeating one submitted withi
   assert.equal(secondResult.status, 'error');
   assert.equal(
     secondResult.message,
-    'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+    'Your comment is identical to one already submitted, but you are welcome to submit a different comment'
   );
 });
 
@@ -97,7 +97,7 @@ test('handleComment saves a sanitized comment and returns ok', {timeout: 500}, a
   const comments = JSON.parse(await fs.readFile(getCommentsPath(), 'utf8'));
   assert.equal(comments.length, 1);
   assert.equal(comments[0].content, 'This is a test comment.');
-  assert.ok(comments[0].dateTime);
+  assert.ok(comments[0].timeStamp);
 });
 
 test('handleComment strips HTML tags and control characters', {timeout: 500}, async () => {

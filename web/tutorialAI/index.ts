@@ -6,7 +6,7 @@
 // IMPORTS
 
 import {sendAlert} from '../../alerts.ts';
-import {checkCommentLength, getJSON} from '../../util.ts';
+import {checkCommentDuplicate, checkCommentLength, getJSON, getNowStamp} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -56,18 +56,13 @@ export const handleComment = async (content: unknown) => {
     return {status: 'error', message: 'Comment is empty after sanitization'};
   }
   // Check for duplicate submissions within the last 1000 seconds.
-  const duplicates = comments
-  .filter(comment => new Date(comment.dateTime).getTime() > Date.now() - 1000000)
-  .filter(comment => comment.content === sanitized);
-  if (duplicates.length) {
-    return {
-      status: 'error',
-      message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
-    };
+  const duplicateCheck = checkCommentDuplicate(comments, sanitized);
+  if (duplicateCheck.status === 'error') {
+    return duplicateCheck;
   }
-  // Add the comment to the existing ones, using dateTime format.
+  // Add the comment to the existing ones.
   comments.push({
-    dateTime: new Date().toISOString(),
+    timeStamp: getNowStamp(),
     content: sanitized
   });
   // Ensure the comments directory exists.

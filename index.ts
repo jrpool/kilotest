@@ -42,7 +42,9 @@ import {answer as tutorialAI, handleComment as handleTutorialAIComment} from './
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
+import querystring from 'node:querystring';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
+import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
 import {answer as enqueueForm} from './web/enqueueForm/index.ts';
 import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';
@@ -97,6 +99,7 @@ type PageHandler = (...args: any[]) => Promise<AnswerData>;
 
 const answer: {
   ai0BalanceForm: PageHandler;
+  deleteNotesForm: PageHandler;
   enqueue: PageHandler;
   enqueueForm: PageHandler;
   expungeReportsForm: PageHandler;
@@ -126,6 +129,7 @@ const answer: {
   [key: string]: PageHandler | undefined;
 } = {
   ai0BalanceForm,
+  deleteNotesForm,
   enqueue,
   enqueueForm,
   expungeReportsForm,
@@ -207,6 +211,7 @@ export const routes = {
     '/api/*',
     '/mcp',
     '/ai0BalanceForm.html',
+    '/deleteNotesForm.html',
     '/expungeReportsForm.html',
     '/hideReportForm.html',
     '/metrics.html',
@@ -240,6 +245,7 @@ const managerPages = new Set([
   'unhideReportForm',
   'ai0BalanceForm',
   'renewWCAGForm',
+  'deleteNotesForm',
   'metrics'
 ]);
 // The set of manager pages (a subset of managerPages) whose single answer() function both
@@ -255,6 +261,7 @@ const selfSubmittingManagerPages = new Set([
   'showHiddenReportsForm',
   'unhideReportForm',
   'ai0BalanceForm',
+  'deleteNotesForm',
   'metrics'
 ]);
 // The subset of selfSubmittingManagerPages that must never be served on a direct GET
@@ -1023,7 +1030,12 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         setHeaders('text/html', pathname, 'ultra');
         // Reconstruct a query string from the POST body, so the page's answer() function
         // can read its submitted parameters the same way it reads a GET query string.
-        const search = `?${new URLSearchParams(postData as Record<string, string>).toString()}`;
+        // querystring.stringify (rather than the URLSearchParams object constructor) is
+        // required here, because postData, from querystring.parse in getPOSTData, holds
+        // repeated form fields (e.g. multiple checked checkboxes sharing a name) as an
+        // array; the URLSearchParams constructor would join such an array into a single
+        // comma-separated value instead of preserving it as repeated key=value pairs.
+        const search = `?${querystring.stringify(postData as Record<string, string | string[]>)}`;
         // Get the answer data. The method is passed so the handler only processes a
         // submission for POST, never for GET, regardless of what its query string contains.
         const answerData = await answer[topic]!(pathTail, search, method);

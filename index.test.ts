@@ -15,6 +15,7 @@ process.env.DB_DIR = fixtureDBDir;
 process.env.AUTH_CODE = 'test-auth-code';
 process.env.TUTORIAL_WEB_COMMENTS_PATH = path.join(testCommentsDir, 'tutorialWeb.json');
 process.env.TUTORIAL_AI_COMMENTS_PATH = path.join(testCommentsDir, 'tutorialAI.json');
+process.env.FEATURE_REQUESTS_PATH = path.join(testCommentsDir, 'featureRequests.json');
 process.env.TESTARO_WORKERS = JSON.stringify({
   worker1: {secret: 'secret1', name: 'Worker One'}
 });
@@ -67,6 +68,7 @@ beforeEach(async () => {
   await fs.mkdir(testCommentsDir, {recursive: true});
   await fs.writeFile(path.join(testCommentsDir, 'tutorialWeb.json'), '[]\n');
   await fs.writeFile(path.join(testCommentsDir, 'tutorialAI.json'), '[]\n');
+  await fs.writeFile(path.join(testCommentsDir, 'featureRequests.json'), '[]\n');
 });
 
 after(async () => {
@@ -1256,6 +1258,7 @@ const htmlPagePaths = [
   '/pruneReportsForm.html',
   '/rewindReportsForm.html',
   '/ai0BalanceForm.html',
+  '/deleteNotesForm.html',
   '/metrics.html'
 ];
 
@@ -1431,6 +1434,32 @@ test('POST /rewindReportsForm.html with no selections shows the form and records
   const res = await formRequest('POST', '/rewindReportsForm.html', {});
   assert.equal(res.statusCode, 200);
   assert.equal(await getManagerActivityCount('rewindReportsForm', 'ok'), countBefore + 1);
+});
+
+test('POST /deleteNotesForm.html deletes multiple selected notes across sources in one submission', async () => {
+  await fs.writeFile(process.env.TUTORIAL_WEB_COMMENTS_PATH!, JSON.stringify([
+    {timeStamp: '260101T0000', content: 'A web tutorial comment'}
+  ]));
+  await fs.writeFile(process.env.FEATURE_REQUESTS_PATH!, JSON.stringify([
+    {timeStamp: '260101T0001', content: 'A feature request'},
+    {timeStamp: '260101T0001', content: 'A different feature request'}
+  ]));
+  // Reconstructing the POST body's query string uses querystring.stringify, which (unlike
+  // the URLSearchParams object constructor) preserves multiple values for the same field
+  // name as repeated key=value pairs rather than collapsing them into one comma-joined
+  // value, so this exercises that multi-checkbox submission actually deletes every
+  // selected note, not just the one whose value happens to survive the collapse.
+  const res = await formRequest('POST', '/deleteNotesForm.html', [
+    ['authCode', 'test-auth-code'],
+    ['note', `tutorialWeb\t${encodeURIComponent('A web tutorial comment')}`],
+    ['note', `featureRequest\t${encodeURIComponent('A feature request')}`]
+  ]);
+  assert.equal(res.statusCode, 200);
+  const webComments = JSON.parse(await fs.readFile(process.env.TUTORIAL_WEB_COMMENTS_PATH!, 'utf8'));
+  assert.equal(webComments.length, 0);
+  const featureRequests = JSON.parse(await fs.readFile(process.env.FEATURE_REQUESTS_PATH!, 'utf8'));
+  assert.equal(featureRequests.length, 1);
+  assert.equal(featureRequests[0].content, 'A different feature request');
 });
 
 test('GET /pruneReportsForm.html records a managerActivity failure when a report file is corrupt', {timeout: 500}, async () => {

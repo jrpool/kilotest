@@ -8,13 +8,19 @@
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {sendAlert} from '../alerts.ts';
-import {checkLength} from '../util.ts';
+import {checkCommentDuplicate, checkLength, getJSON, getNowStamp} from '../util.ts';
 import {requestFeatureResponseSchema} from './schemas.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // TYPES
 
 // The response content defined by the response schema.
 type ResponseContent = z.infer<typeof requestFeatureResponseSchema>['response content'];
+
+// FUNCTIONS (helpers)
+
+const getFeatureRequestsPath = () => process.env.FEATURE_REQUESTS_PATH || path.join(import.meta.dirname, '../db/featureRequests.json');
 
 // FUNCTIONS
 
@@ -35,15 +41,45 @@ export const response = async (args: string[]) => {
   }
   // Otherwise, i.e. if it is valid:
   else {
-    // Notify the manager.
-    await sendAlert('Kilotest: MCP feature request received', feature);
-    // Add the disposition to the response content.
-    responseContent = {
-      'details about your request': {
-        'date and time received': new Date().toISOString(),
-        disposition: 'received and logged; manager notified'
-      }
-    };
+    // Get the feature requests already on file.
+    const featureRequestsPath = getFeatureRequestsPath();
+    let featureRequests: {timeStamp: string; content: string}[] = [];
+    try {
+      const existing = await fs.readFile(featureRequestsPath, 'utf8');
+      featureRequests = JSON.parse(existing);
+    }
+    catch {
+      // Initialize an empty feature-requests array.
+    }
+    // If the request is identical to one already on file:
+    const duplicateCheck = checkCommentDuplicate(featureRequests, feature);
+    if (duplicateCheck.status === 'error') {
+      responseContent = {
+        'details about your request': {
+          error: 'request invalid: your feature request is identical to one already submitted, ' +
+            'but you are welcome to submit a different one'
+        }
+      };
+    }
+    // Otherwise, i.e. if it is not a duplicate:
+    else {
+      // Record the feature request alongside the existing ones.
+      featureRequests.push({
+        timeStamp: getNowStamp(),
+        content: feature
+      });
+      await fs.mkdir(path.dirname(featureRequestsPath), {recursive: true});
+      await fs.writeFile(featureRequestsPath, getJSON(featureRequests));
+      // Notify the manager.
+      await sendAlert('Kilotest: MCP feature request received', feature);
+      // Add the disposition to the response content.
+      responseContent = {
+        'details about your request': {
+          'date and time received': new Date().toISOString(),
+          disposition: 'received and logged; manager notified'
+        }
+      };
+    }
   }
   // Create a response body.
   const body = {

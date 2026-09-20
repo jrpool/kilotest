@@ -262,6 +262,17 @@ const selfSubmittingManagerPages = new Set([
 // unhideReportForm is served only by showHiddenReportsForm, once a valid authorization code
 // has been submitted), so that the names of hidden reports are never disclosed without one.
 const noDirectGetPages = new Set(['unhideReportForm']);
+// Old page names, from before a 2026-08-31 rename (see GitHub issue #3), that search
+// engines and other crawlers are still requesting. Redirecting them lets crawlers update
+// their own indexes, rather than leaving them to repeat the same dead request indefinitely.
+// TEMPORARY: retire this redirect after 2027-04-01 once crawlers have re-indexed.
+const renamedPagePrefixes: Record<string, string> = {
+  diagnoses: 'listDiagnoses',
+  reportIssue: 'listViolators',
+  reportIssues: 'listIssues',
+  rules: 'listRules',
+  targets: 'listReports'
+};
 const jobLock = createLock();
 
 // FUNCTIONS
@@ -311,22 +322,61 @@ export const serveError = async (error: Record<string, unknown>, response: Serve
     console.log('Cannot send error response because the response has ended.');
   }
 };
+// Returns the IP address a request should be attributed to: the value of its
+// x-forwarded-for header (Caddy runs in front of Kilotest, so a real client's address
+// arrives this way, not as the socket's own remote address), else the socket's remote
+// address, else 'unknown' if neither is available.
+export const getRequestIP = (request: IncomingMessage): string | string[] => {
+  const forwardedFor = request.headers['x-forwarded-for'];
+  const remoteAddress = request.socket.remoteAddress;
+  return forwardedFor || remoteAddress || 'unknown';
+};
 // Creates an error object about a suspicious request.
 export const getAbuseError = (request: IncomingMessage, reason: string | undefined) => {
   const {method, url, headers} = request;
-  const forwardedFor = headers['x-forwarded-for'];
-  const remoteAddress = request.socket.remoteAddress;
-  const ip = forwardedFor || remoteAddress || 'unknown';
   return {
     message: 'Invalid request',
     reason,
-    'IP address': ip,
+    'IP address': getRequestIP(request),
     method,
     URL: url,
     'user agent': headers['user-agent'] || 'none',
     referer: headers.referer || 'none',
     time: new Date().toISOString()
   };
+};
+// Logs one line for every request, successful or not, once it finishes. Unlike
+// getAbuseError (logged only for rejected requests, as a rare, human-read-in-the-moment
+// dump), this is a terse, single-line-per-request JSON record, intended to be high-volume
+// and machine-parseable, so that any kind of suspicious traffic pattern (not only the
+// specific rejection reasons getAbuseError already covers) can be recognized later. It
+// deliberately does not consult isMetricsExcluded: that exclusion exists to keep the
+// maintainer's own manual testing out of usage counts, but abuse visibility should see
+// all traffic, including the maintainer's own, or it recreates the same kind of blind
+// spot this logging exists to close.
+const logRequestOnFinish = (request: IncomingMessage, response: ServerResponse): void => {
+  const {method, headers} = request;
+  const ip = getRequestIP(request);
+  const userAgent = headers['user-agent'] || 'none';
+  const path = new URL(request.url as string, 'https://localhost:3000').pathname;
+  const originalEnd = response.end.bind(response);
+  // Reassign response.end so that every path through handleRequest logs exactly once,
+  // right before the response is actually sent, rather than requiring every dispatch
+  // branch to remember to log itself (the same class of gap that left successful
+  // requests unlogged in the first place). No query string is logged, so that a
+  // parameter such as authCode is never written to a log file.
+  response.end = ((...args: Parameters<typeof originalEnd>) => {
+    console.log(JSON.stringify({
+      type: 'request',
+      time: new Date().toISOString(),
+      ip,
+      method,
+      path,
+      status: response.statusCode,
+      userAgent
+    }));
+    return originalEnd(...args);
+  }) as typeof response.end;
 };
 // Returns whether a request carries the metrics-exclusion cookie with the value that
 // proves it. A request without a valid AUTH_CODE configured can never match, since
@@ -489,6 +539,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     response.end('{}');
     return;
   }
+  // Log this request once it finishes, for general abuse/usage visibility (see GitHub
+  // issue #3). Placed after the smoke-test short-circuit above, so CI's own smoke-test
+  // traffic is excluded from this log exactly as it is already excluded from metrics.
+  logRequestOnFinish(request, response);
   // Records a pageViews or apiOperations metric, unless this request's browser has proven,
   // via a valid authCode submitted earlier on metrics.html, that it belongs to the
   // maintainer testing Kilotest manually rather than to real usage.
@@ -638,13 +692,21 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
-      // If the page can be generated and is not POST-only (a POST-only path also matches
+      // If it is for a page's old, pre-rename name:
+      if (renamedPagePrefixes[topic]) {
+        // Redirect the client permanently to the current page name, preserving any
+        // further path segments and the query string.
+        const newLocation = `/${renamedPagePrefixes[topic]}.html${pathTail ? `/${pathTail}` : ''}${search}`;
+        response.writeHead(301, {Location: newLocation});
+        response.end();
+      }
+      // Otherwise, if the page can be generated and is not POST-only (a POST-only path also matches
       // the '*.html*' GET pattern, but its handler expects POST's argument list and
       // performs no GET-appropriate rendering; a self-submitting manager page is POST-allowed
       // too, but its handler serves both methods the same way, so it is not excluded here,
       // except for a page in noDirectGetPages, which stays excluded from GET even though
       // it is self-submitting, since it must be reachable only via another page's POST):
-      if (
+      else if (
         answer[topic] &&
         !noDirectGetPages.has(topic) &&
         (!isPathAllowed('POST', pathname) || selfSubmittingManagerPages.has(topic))

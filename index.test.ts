@@ -826,6 +826,40 @@ test('GET /qai/comments redirects to /tutorialAI.html', async () => {
   assert.equal(res.headers['location'], '/tutorialAI.html');
 });
 
+test('GET /diagnoses.html/<segments> redirects to the equivalent /listDiagnoses.html/<segments>, preserving the query string', async () => {
+  const res = await request(
+    'GET', '/diagnoses.html/duplicateID/260426T1741/77w/718?pathID=/html/body', {}, {followRedirects: false}
+  );
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listDiagnoses.html/duplicateID/260426T1741/77w/718?pathID=/html/body');
+});
+
+test('GET /reportIssues.html/<timeStamp>/<jobID> redirects to the equivalent /listIssues.html/<timeStamp>/<jobID>', async () => {
+  const res = await request('GET', '/reportIssues.html/260101T0000/mix', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listIssues.html/260101T0000/mix');
+});
+
+test('GET /reportIssue.html/<segments> redirects to the equivalent /listViolators.html/<segments>', async () => {
+  const res = await request(
+    'GET', '/reportIssue.html/duplicateID/260101T0000/mix', {}, {followRedirects: false}
+  );
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listViolators.html/duplicateID/260101T0000/mix');
+});
+
+test('GET /rules.html/<segment> redirects to the equivalent /listRules.html/<segment>', async () => {
+  const res = await request('GET', '/rules.html/allCaps', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listRules.html/allCaps');
+});
+
+test('GET /targets.html redirects to /listReports.html', async () => {
+  const res = await request('GET', '/targets.html', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listReports.html');
+});
+
 test('POST /requestTest.html with non-https URL returns an error', async () => {
   const res = await formRequest('POST', '/requestTest.html', {
     description: 'Test Page',
@@ -1643,6 +1677,75 @@ test('getAbuseError uses unknown IP when no forwarding header or remote address'
   const result = getAbuseError(mockRequest as any, 'test reason');
   assert.equal(result['IP address'], 'unknown');
   assert.equal(result.reason, 'test reason');
+});
+
+// TESTS FOR general per-request logging
+
+test('a request logs a single-line JSON record with the expected fields', async () => {
+  const logged: string[] = [];
+  const originalLog = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    await request('GET', '/listReports.html');
+  }
+  finally {
+    console.log = originalLog;
+  }
+  const requestLines = logged.filter(line => {
+    try {
+      return JSON.parse(line).type === 'request';
+    }
+    catch {
+      return false;
+    }
+  });
+  assert.equal(requestLines.length, 1);
+  const record = JSON.parse(requestLines[0]!);
+  assert.equal(record.method, 'GET');
+  assert.equal(record.path, '/listReports.html');
+  assert.equal(record.status, 200);
+  assert.ok(record.ip);
+  assert.ok(record.userAgent);
+  assert.ok(record.time);
+});
+
+test('a request logs its path without its query string', async () => {
+  const logged: string[] = [];
+  const originalLog = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    await request('GET', '/listIssues.html/260101T0000/mix?authCode=secret');
+  }
+  finally {
+    console.log = originalLog;
+  }
+  const record = logged
+  .map(line => { try {return JSON.parse(line);} catch {return null;} })
+  .find(parsed => parsed?.type === 'request');
+  assert.ok(record);
+  assert.equal(record.path, '/listIssues.html/260101T0000/mix');
+  assert.ok(!JSON.stringify(record).includes('secret'));
+});
+
+test('a smoke-test-flagged request is not logged as a general request', async () => {
+  const logged: string[] = [];
+  const originalLog = console.log;
+  console.log = (line: string) => logged.push(line);
+  try {
+    await request('GET', '/listReports.html', null, {'x-kilotest-smoke': '1'});
+  }
+  finally {
+    console.log = originalLog;
+  }
+  const requestLines = logged.filter(line => {
+    try {
+      return JSON.parse(line).type === 'request';
+    }
+    catch {
+      return false;
+    }
+  });
+  assert.equal(requestLines.length, 0);
 });
 
 // UNIT TESTS FOR startServer

@@ -11,6 +11,7 @@
 import {sendAlert} from './alerts.ts';
 import {issues as issueSpecs, rules as ruleSpecs} from 'testaro-issues';
 import type {Act, Catalog, Report, StandardInstance} from 'testaro';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import querystring from 'node:querystring';
@@ -1032,6 +1033,14 @@ export const processTestRequest = (
 
 // METRICS FUNCTIONS
 
+// Name of the cookie that excludes a browser's requests from usage metrics.
+export const metricsExclusionCookieName = 'kilotestExclude';
+// Returns the value that the metrics-exclusion cookie must have to be honored: a SHA-256
+// hash of AUTH_CODE, not AUTH_CODE itself, so the secret is never placed in a long-lived
+// browser cookie, and not a fixed value, since Kilotest's source is public and a fixed
+// value would let anyone read it and exclude themselves from metrics at no cost.
+export const getExclusionCookieValue = (): string =>
+  crypto.createHash('sha256').update(process.env.AUTH_CODE ?? '').digest('hex');
 // Concurrency lock for the `metrics.json` file.
 const metricsLock = createLock();
 // Returns the usage metrics, creating the file with zeroed counts if it does not yet exist.

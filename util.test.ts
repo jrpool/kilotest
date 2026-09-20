@@ -1128,6 +1128,49 @@ test('getMultiReportWhats returns descriptions that have multiple reports', asyn
   assert.ok(whats.includes('Mixed Outcomes Page'));
 });
 
+test('getExclusionCookieValue is deterministic for a given AUTH_CODE', async () => {
+  const savedAuthCode = process.env.AUTH_CODE;
+  process.env.AUTH_CODE = 'test-auth-code';
+  try {
+    const {getExclusionCookieValue} = await import('./util.ts');
+    const first = getExclusionCookieValue();
+    const second = getExclusionCookieValue();
+    assert.equal(first, second);
+    assert.equal(typeof first, 'string');
+    assert.ok(first.length > 0);
+  }
+  finally {
+    process.env.AUTH_CODE = savedAuthCode;
+  }
+});
+
+test('getExclusionCookieValue changes when AUTH_CODE changes', async () => {
+  const savedAuthCode = process.env.AUTH_CODE;
+  try {
+    const {getExclusionCookieValue} = await import('./util.ts');
+    process.env.AUTH_CODE = 'code-one';
+    const first = getExclusionCookieValue();
+    process.env.AUTH_CODE = 'code-two';
+    const second = getExclusionCookieValue();
+    assert.notEqual(first, second);
+  }
+  finally {
+    process.env.AUTH_CODE = savedAuthCode;
+  }
+});
+
+test('getExclusionCookieValue does not throw when AUTH_CODE is unset', async () => {
+  const savedAuthCode = process.env.AUTH_CODE;
+  delete process.env.AUTH_CODE;
+  try {
+    const {getExclusionCookieValue} = await import('./util.ts');
+    assert.equal(typeof getExclusionCookieValue(), 'string');
+  }
+  finally {
+    process.env.AUTH_CODE = savedAuthCode;
+  }
+});
+
 test('recordMetric creates the metrics file and records a first occurrence when the file is missing', async () => {
   const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-metrics-test';
   const fsSync = await import('node:fs');

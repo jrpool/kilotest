@@ -1232,6 +1232,45 @@ test('GET /metrics.html with a valid authCode serves the usage-metrics table and
   assert.equal(await getManagerActivityCount('metrics', 'ok'), countBefore + 1);
 });
 
+test('GET /metrics.html with a valid authCode sets a metrics-exclusion cookie', async () => {
+  const res = await request('GET', '/metrics.html?authCode=test-auth-code');
+  const setCookie = res.headers['set-cookie']?.[0] ?? res.headers['set-cookie'];
+  assert.ok(setCookie);
+  assert.ok(setCookie.startsWith('kilotestExclude='));
+  assert.ok(setCookie.includes('Max-Age=2592000'));
+  assert.ok(setCookie.includes('HttpOnly'));
+});
+
+test('a request carrying the metrics-exclusion cookie does not record a pageViews or apiOperations metric', async () => {
+  const {getExclusionCookieValue} = await import('./util.ts');
+  const cookieHeader = `kilotestExclude=${getExclusionCookieValue()}`;
+  const pageViewCountBefore = await getMetricCount('pageViews', 'tutorialWeb');
+  const apiOperationCountBefore = await getMetricCount('apiOperations', 'listReports');
+  await request('GET', '/tutorialWeb.html', null, {cookie: cookieHeader});
+  await request('GET', '/api/listReports', null, {cookie: cookieHeader});
+  assert.equal(await getMetricCount('pageViews', 'tutorialWeb'), pageViewCountBefore);
+  assert.equal(await getMetricCount('apiOperations', 'listReports'), apiOperationCountBefore);
+});
+
+test('a request carrying an invalid exclusion cookie still records metrics normally', async () => {
+  const pageViewCountBefore = await getMetricCount('pageViews', 'tutorialWeb');
+  await request('GET', '/tutorialWeb.html', null, {cookie: 'kilotestExclude=wrong-value'});
+  assert.equal(await getMetricCount('pageViews', 'tutorialWeb'), pageViewCountBefore + 1);
+});
+
+test('a request with an unrelated cookie still records metrics normally', async () => {
+  const pageViewCountBefore = await getMetricCount('pageViews', 'tutorialWeb');
+  await request('GET', '/tutorialWeb.html', null, {cookie: 'someOtherCookie=1'});
+  assert.equal(await getMetricCount('pageViews', 'tutorialWeb'), pageViewCountBefore + 1);
+});
+
+test('GET / and GET /index.html record a pageViews metric under "index"', async () => {
+  const countBefore = await getMetricCount('pageViews', 'index');
+  await request('GET', '/');
+  await request('GET', '/index.html');
+  assert.equal(await getMetricCount('pageViews', 'index'), countBefore + 2);
+});
+
 test('GET /metrics.html with an invalid authCode is rejected and records a managerActivity failure', async () => {
   const countBefore = await getManagerActivityCount('metrics', 'error');
   const res = await request('GET', '/metrics.html?authCode=wrong');

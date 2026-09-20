@@ -11,6 +11,7 @@ import {
   createLock,
   deleteTestRequests,
   errorMessage,
+  getExclusionCookieValue,
   getJobNames,
   getJSON,
   getObject,
@@ -24,6 +25,7 @@ import {
   isJobID,
   isUsableReport,
   jobsPath,
+  metricsExclusionCookieName,
   recordMetric,
   reportsPath
 } from './util.ts';
@@ -78,7 +80,15 @@ dotenv.config({quiet: true});
 // CONSTANTS
 
 // The data returned by a page-answering handler.
-type AnswerData = {status: string; message?: string; answerPage?: string};
+type AnswerData = {
+  status: string;
+  message?: string;
+  answerPage?: string;
+  // A cookie an answer() handler wants set on the response. Generic, not metrics-specific:
+  // handlers return data and never touch the response object directly, so this is how one
+  // asks index.ts, which owns the response, to set a cookie on its behalf.
+  setCookie?: {name: string; value: string; maxAgeSeconds: number};
+};
 // A page-answering handler, whose parameters vary by topic.
 type PageHandler = (...args: any[]) => Promise<AnswerData>;
 
@@ -284,6 +294,18 @@ export const getAbuseError = (request: IncomingMessage, reason: string | undefin
     time: new Date().toISOString()
   };
 };
+// Returns whether a request carries the metrics-exclusion cookie with the value that
+// proves it. A request without a valid AUTH_CODE configured can never match, since
+// getExclusionCookieValue then hashes an empty string, which no cookie should equal.
+const isMetricsExcluded = (request: IncomingMessage): boolean => {
+  const header = request.headers.cookie;
+  if (!header || !process.env.AUTH_CODE) {
+    return false;
+  }
+  const cookies = header.split(';').map(pair => pair.trim().split('='));
+  const cookieValue = cookies.find(([name]) => name === metricsExclusionCookieName)?.[1];
+  return cookieValue === getExclusionCookieValue();
+};
 // Gets the ID and secret from a request's HTTP Basic Authorization header, or null if the header
 // is absent or malformed.
 const getBasicAuth = (request: IncomingMessage) => {
@@ -433,6 +455,11 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     response.end('{}');
     return;
   }
+  // Records a pageViews or apiOperations metric, unless this request's browser has proven,
+  // via a valid authCode submitted earlier on metrics.html, that it belongs to the
+  // maintainer testing Kilotest manually rather than to real usage.
+  const recordPageMetric = (category: 'pageViews' | 'apiOperations', name: string): Promise<void> =>
+    isMetricsExcluded(request) ? Promise.resolve() : recordMetric(category, name);
   // If the request is a GET request:
   if (method === 'GET') {
     // If the path is not authorized for GET requests:
@@ -457,6 +484,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for the home page:
     else if (['/', '/index.html'].includes(pathname)) {
+      await recordPageMetric('pageViews', 'index');
       // Get the home page.
       const homePage = await fs.readFile('index.html', 'utf8');
       // Serve it.
@@ -580,7 +608,14 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             await recordMetric('managerActivity', topic, 'ok');
           }
           else {
-            await recordMetric('pageViews', topic);
+            await recordPageMetric('pageViews', topic);
+          }
+          // If the handler asked for a cookie to be set:
+          if (answerData.setCookie) {
+            const {name, value, maxAgeSeconds} = answerData.setCookie;
+            response.setHeader(
+              'Set-Cookie', `${name}=${value}; Max-Age=${maxAgeSeconds}; Path=/; HttpOnly; SameSite=Strict`
+            );
           }
           // Serve the answer page.
           response.end(answerData.answerPage);
@@ -607,7 +642,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       if (service === 'listReports') {
         // Get the response body.
         const responseBody = await apiRespond.listReports([]);
-        await recordMetric('apiOperations', 'listReports');
+        await recordPageMetric('apiOperations', 'listReports');
         // Send it.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
@@ -616,7 +651,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'listIssues') {
         // Get the response body.
         const responseBody = await apiRespond.listIssues(specs);
-        await recordMetric('apiOperations', 'listIssues');
+        await recordPageMetric('apiOperations', 'listIssues');
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -625,7 +660,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'listViolators') {
         // Get the response body.
         const responseBody = await apiRespond.listViolators(specs);
-        await recordMetric('apiOperations', 'listViolators');
+        await recordPageMetric('apiOperations', 'listViolators');
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -634,7 +669,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'listDiagnoses') {
         // Get the response body.
         const responseBody = await apiRespond.listDiagnoses(specs);
-        await recordMetric('apiOperations', 'listDiagnoses');
+        await recordPageMetric('apiOperations', 'listDiagnoses');
         // Send it.
         setHeaders('application/json', null, 'high');
         response.end(JSON.stringify(responseBody));
@@ -643,7 +678,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (service === 'getReport') {
         // Get the response body.
         const responseBody = await apiRespond.getReport(specs);
-        await recordMetric('apiOperations', 'getReport');
+        await recordPageMetric('apiOperations', 'getReport');
         // Send it.
         setHeaders('application/json', null, 'low');
         response.end(JSON.stringify(responseBody));
@@ -994,7 +1029,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
           // Get the response body.
           const responseBody = await apiRespond.requestTest([description, URL, reason]);
-          await recordMetric('apiOperations', 'requestTest');
+          await recordPageMetric('apiOperations', 'requestTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
@@ -1004,7 +1039,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           const {reason} = postData as {reason: string};
           // Get the response body.
           const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason));
-          await recordMetric('apiOperations', 'requestRetest');
+          await recordPageMetric('apiOperations', 'requestRetest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
@@ -1014,7 +1049,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           const {feature} = postData as {feature: string};
           // Get the response body.
           const responseBody = await apiRespond.requestFeature([feature]);
-          await recordMetric('apiOperations', 'requestFeature');
+          await recordPageMetric('apiOperations', 'requestFeature');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

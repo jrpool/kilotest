@@ -6,7 +6,7 @@
 
 // IMPORTS
 
-import {getDateTimeString, getMetrics, populateTemplate} from '../../util.ts';
+import {getDateTimeString, getExclusionCookieValue, getMetrics, metricsExclusionCookieName, populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -99,9 +99,19 @@ export const answer = async (_: any, search: string) => {
   }
   // Get the populated template.
   const answerPage = await populateTemplate(import.meta.dirname, query);
-  // Return the populated page.
+  // Return the populated page. Submitting a valid authCode also sets a cookie that
+  // excludes this browser's future page views and API calls from usage metrics, on the
+  // premise that a maintainer who has just proven their identity here is very likely the
+  // same person about to manually browse and test the rest of Kilotest.
   return {
     status: 'ok',
-    answerPage
+    answerPage,
+    ...(authCode && {
+      setCookie: {
+        name: metricsExclusionCookieName,
+        value: getExclusionCookieValue(),
+        maxAgeSeconds: 30 * 24 * 60 * 60
+      }
+    })
   };
 };

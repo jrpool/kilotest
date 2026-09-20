@@ -43,6 +43,7 @@ import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
+import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
 import {answer as enqueueForm} from './web/enqueueForm/index.ts';
 import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';
@@ -97,6 +98,7 @@ type PageHandler = (...args: any[]) => Promise<AnswerData>;
 
 const answer: {
   ai0BalanceForm: PageHandler;
+  deleteNotesForm: PageHandler;
   enqueue: PageHandler;
   enqueueForm: PageHandler;
   expungeReportsForm: PageHandler;
@@ -126,6 +128,7 @@ const answer: {
   [key: string]: PageHandler | undefined;
 } = {
   ai0BalanceForm,
+  deleteNotesForm,
   enqueue,
   enqueueForm,
   expungeReportsForm,
@@ -207,6 +210,7 @@ export const routes = {
     '/api/*',
     '/mcp',
     '/ai0BalanceForm.html',
+    '/deleteNotesForm.html',
     '/expungeReportsForm.html',
     '/hideReportForm.html',
     '/metrics.html',
@@ -240,6 +244,7 @@ const managerPages = new Set([
   'unhideReportForm',
   'ai0BalanceForm',
   'renewWCAGForm',
+  'deleteNotesForm',
   'metrics'
 ]);
 // The set of manager pages (a subset of managerPages) whose single answer() function both
@@ -255,6 +260,7 @@ const selfSubmittingManagerPages = new Set([
   'showHiddenReportsForm',
   'unhideReportForm',
   'ai0BalanceForm',
+  'deleteNotesForm',
   'metrics'
 ]);
 // The subset of selfSubmittingManagerPages that must never be served on a direct GET

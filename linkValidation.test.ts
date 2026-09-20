@@ -60,6 +60,7 @@ const htmlRoutes = [
   '/expungeReportsForm.html',
   '/pruneReportsForm.html',
   '/rewindReportsForm.html',
+  '/deleteNotesForm.html',
   '/renewWCAG.html',
   '/renewWCAGForm.html',
   '/enqueue.html',

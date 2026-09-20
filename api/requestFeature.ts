@@ -8,13 +8,19 @@
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {sendAlert} from '../alerts.ts';
-import {checkLength} from '../util.ts';
+import {checkLength, getJSON, getNowStamp} from '../util.ts';
 import {requestFeatureResponseSchema} from './schemas.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 // TYPES
 
 // The response content defined by the response schema.
 type ResponseContent = z.infer<typeof requestFeatureResponseSchema>['response content'];
+
+// FUNCTIONS (helpers)
+
+const getFeatureRequestsPath = () => process.env.FEATURE_REQUESTS_PATH || path.join(import.meta.dirname, '../db/featureRequests.json');
 
 // FUNCTIONS
 
@@ -35,6 +41,22 @@ export const response = async (args: string[]) => {
   }
   // Otherwise, i.e. if it is valid:
   else {
+    // Record the feature request alongside any existing ones.
+    const featureRequestsPath = getFeatureRequestsPath();
+    let featureRequests: {timeStamp: string; content: string}[] = [];
+    try {
+      const existing = await fs.readFile(featureRequestsPath, 'utf8');
+      featureRequests = JSON.parse(existing);
+    }
+    catch {
+      // Initialize an empty feature-requests array.
+    }
+    featureRequests.push({
+      timeStamp: getNowStamp(),
+      content: feature
+    });
+    await fs.mkdir(path.dirname(featureRequestsPath), {recursive: true});
+    await fs.writeFile(featureRequestsPath, getJSON(featureRequests));
     // Notify the manager.
     await sendAlert('Kilotest: MCP feature request received', feature);
     // Add the disposition to the response content.

@@ -97,7 +97,7 @@ test('handleComment saves a sanitized comment and returns ok', {timeout: 500}, a
   const comments = JSON.parse(await fs.readFile(getCommentsPath(), 'utf8'));
   assert.equal(comments.length, 1);
   assert.equal(comments[0].content, 'This is a test comment.');
-  assert.ok(comments[0].dateTime);
+  assert.ok(comments[0].timeStamp);
 });
 
 test('handleComment strips HTML tags and control characters', {timeout: 500}, async () => {

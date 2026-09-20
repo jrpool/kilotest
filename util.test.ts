@@ -1127,3 +1127,234 @@ test('getMultiReportWhats returns descriptions that have multiple reports', asyn
   const whats = await getMultiReportWhats();
   assert.ok(whats.includes('Mixed Outcomes Page'));
 });
+
+test('getExclusionCookieValue is deterministic for a given AUTH_CODE', async () => {
+  const savedAuthCode = process.env.AUTH_CODE;
+  process.env.AUTH_CODE = 'test-auth-code';
+  try {
+    const {getExclusionCookieValue} = await import('./util.ts');
+    const first = getExclusionCookieValue();
+    const second = getExclusionCookieValue();
+    assert.equal(first, second);
+    assert.equal(typeof first, 'string');
+    assert.ok(first.length > 0);
+  }
+  finally {
+    process.env.AUTH_CODE = savedAuthCode;
+  }
+});
+
+test('getExclusionCookieValue changes when AUTH_CODE changes', async () => {
+  const savedAuthCode = process.env.AUTH_CODE;
+  try {
+    const {getExclusionCookieValue} = await import('./util.ts');
+    process.env.AUTH_CODE = 'code-one';
+    const first = getExclusionCookieValue();
+    process.env.AUTH_CODE = 'code-two';
+    const second = getExclusionCookieValue();
+    assert.notEqual(first, second);
+  }
+  finally {
+    process.env.AUTH_CODE = savedAuthCode;
+  }
+});
+
+test('getExclusionCookieValue does not throw when AUTH_CODE is unset', async () => {
+  const savedAuthCode = process.env.AUTH_CODE;
+  delete process.env.AUTH_CODE;
+  try {
+    const {getExclusionCookieValue} = await import('./util.ts');
+    assert.equal(typeof getExclusionCookieValue(), 'string');
+  }
+  finally {
+    process.env.AUTH_CODE = savedAuthCode;
+  }
+});
+
+test('recordMetric creates the metrics file and records a first occurrence when the file is missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-metrics-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('pageViews', 'tutorialWeb.html');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.pageViews['tutorialWeb.html'], 1);
+    assert.equal(metrics.mcpToolCalls['tutorialWeb.html'], undefined);
+    assert.equal(typeof metrics.since, 'string');
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric increments an existing count rather than overwriting it', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-existing-metrics-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('mcpToolCalls', 'listReports');
+    await recordMetric('mcpToolCalls', 'listReports');
+    await recordMetric('mcpToolCalls', 'getReport');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.mcpToolCalls.listReports, 2);
+    assert.equal(metrics.mcpToolCalls.getReport, 1);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric throws when the metrics file is not readable for a reason other than being missing', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-unreadable-test';
+  const fsSync = await import('node:fs');
+  // Create a directory where the metrics file should be, causing EISDIR rather than ENOENT.
+  fsSync.mkdirSync(tmpDir + '/metrics.json', {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric} = await import('./util.ts');
+    await assert.rejects(recordMetric('pageViews', 'tutorialWeb.html'), /not readable/);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric throws when the metrics file is not JSON', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-not-json-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  fsSync.writeFileSync(tmpDir + '/metrics.json', 'not json');
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric} = await import('./util.ts');
+    await assert.rejects(recordMetric('pageViews', 'tutorialWeb.html'), /not JSON/);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric keeps categories independent for the same name', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-categories-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('apiOperations', 'listReports');
+    await recordMetric('mcpToolCalls', 'listReports');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.apiOperations.listReports, 1);
+    assert.equal(metrics.mcpToolCalls.listReports, 1);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric tracks managerActivity outcomes separately per page', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-manager-activity-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('managerActivity', 'reannotate.html', 'ok');
+    await recordMetric('managerActivity', 'reannotate.html', 'error');
+    await recordMetric('managerActivity', 'reannotate.html', 'error');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.deepEqual(metrics.managerActivity['reannotate.html'], {ok: 1, error: 2});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('recordMetric keeps managerActivity independent of pageViews for the same name', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-manager-vs-pageviews-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('pageViews', 'hideReportForm.html');
+    await recordMetric('managerActivity', 'hideReportForm.html', 'ok');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.pageViews['hideReportForm.html'], 1);
+    assert.deepEqual(metrics.managerActivity['hideReportForm.html'], {ok: 1, error: 0});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('getMetrics backfills categories missing from a metrics.json written before they existed', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-backfill-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  // Simulate a metrics.json written before the managerActivity category was added.
+  fsSync.writeFileSync(tmpDir + '/metrics.json', JSON.stringify({
+    since: '260101T0000',
+    pageViews: {listReports: 1},
+    mcpToolCalls: {},
+    apiOperations: {}
+  }));
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    // Recording a managerActivity outcome must not throw despite the file predating that category.
+    await recordMetric('managerActivity', 'metrics', 'ok');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(metrics.since, '260101T0000');
+    assert.equal(metrics.pageViews.listReports, 1);
+    assert.deepEqual(metrics.managerActivity.metrics, {ok: 1, error: 0});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+test('getMetrics backfills every category, and generates a since stamp, from a bare empty file', async () => {
+  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-metrics-backfill-empty-test';
+  const fsSync = await import('node:fs');
+  fsSync.mkdirSync(tmpDir, {recursive: true});
+  // Simulate a metrics.json with none of the known fields (an extreme case of an outdated schema).
+  fsSync.writeFileSync(tmpDir + '/metrics.json', '{}');
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = tmpDir;
+  try {
+    const {recordMetric, metricsPath} = await import('./util.ts');
+    await recordMetric('pageViews', 'tutorialWeb');
+    const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
+    assert.equal(typeof metrics.since, 'string');
+    assert.ok(metrics.since.length > 0);
+    assert.equal(metrics.pageViews.tutorialWeb, 1);
+    assert.deepEqual(metrics.mcpToolCalls, {});
+    assert.deepEqual(metrics.apiOperations, {});
+    assert.deepEqual(metrics.managerActivity, {});
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});

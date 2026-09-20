@@ -35,32 +35,40 @@ after(async () => {
 
 // TESTS
 
-test('pruneReportsForm displays a list of reports when no submission', async () => {
-  const result = await answer(null, '');
+test('pruneReportsForm displays a list of reports on a GET request', async () => {
+  const result = await answer(null, '', 'GET');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
   assert.ok(html.querySelector('title'));
 });
 
-test('pruneReportsForm returns an error for an invalid auth code', async () => {
-  const result = await answer(null, 'authCode=wrong&report=260101T0000-mix');
+test('pruneReportsForm ignores a report query string on a GET request', async () => {
+  const reportPath = path.join(reportsPath(), '260101T0000-mix.json');
+  const result = await answer(null, 'authCode=test-auth-code&report=260101T0000-mix', 'GET');
+  assert.equal(result.status, 'ok');
+  // The report should NOT have been deleted by a mere GET request.
+  await fs.access(reportPath);
+});
+
+test('pruneReportsForm returns an error for an invalid auth code on a POST request', async () => {
+  const result = await answer(null, 'authCode=wrong&report=260101T0000-mix', 'POST');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid authorization code');
 });
 
-test('pruneReportsForm returns an error when deleting a nonexistent report', async () => {
-  const result = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope');
+test('pruneReportsForm returns an error when deleting a nonexistent report on a POST request', async () => {
+  const result = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope', 'POST');
   assert.equal(result.status, 'error');
   assert.ok(result.message?.includes('Deleting superseded reports'));
 });
 
-test('pruneReportsForm deletes a superseded report with valid auth code', async () => {
+test('pruneReportsForm deletes a superseded report with valid auth code on a POST request', async () => {
   // 260101T0000-mix is superseded by 260202T0000-new (same URL).
   const reportPath = path.join(reportsPath(), '260101T0000-mix.json');
   const backup = await fs.readFile(reportPath, 'utf8');
   try {
-    const result = await answer(null, 'authCode=test-auth-code&report=260101T0000-mix');
+    const result = await answer(null, 'authCode=test-auth-code&report=260101T0000-mix', 'POST');
     assert.equal(result.status, 'ok');
     await fs.access(reportPath).then(
       () => {throw new Error('Report should have been deleted');},
@@ -77,7 +85,7 @@ test('pruneReportsForm returns an error when a report file is corrupt', async ()
   const backup = await fs.readFile(reportPath, 'utf8');
   try {
     await fs.writeFile(reportPath, 'not valid json');
-    const result = await answer(null, '');
+    const result = await answer(null, '', 'GET');
     assert.equal(result.status, 'error');
   }
   finally {

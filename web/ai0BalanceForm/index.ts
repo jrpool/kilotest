@@ -11,14 +11,16 @@ import {getJSON, populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
-// Returns a form for recording the AI service 0 balance.
-export const answer = async (_: any, search: string) => {
+// Returns a form for recording the AI service 0 balance. A GET request never processes a
+// submission, regardless of its query string; only a POST request (the form's own
+// submission) does.
+export const answer = async (_: any, search: string, method: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const newBalanceString = searchParams?.get('newBalance');
   let oldBalance: any;
-  // If the form displayed itself:
-  if (newBalanceString) {
+  // If the form has been submitted:
+  if (method === 'POST' && newBalanceString) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
       const newBalance = Number.parseFloat(newBalanceString);

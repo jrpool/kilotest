@@ -17,6 +17,7 @@ import * as requestTestAPI from './api/requestTest.ts';
 import * as requestRetestAPI from './api/requestRetest.ts';
 import * as requestFeatureAPI from './api/requestFeature.ts';
 import {version} from './api/version.ts';
+import {recordMetric} from './util.ts';
 
 import {
   getReportSchema,
@@ -68,6 +69,7 @@ export const createMCPServer = (): McpServer => {
     },
     async () => {
       const result = await listReportsAPI.response();
+      await recordMetric('mcpToolCalls', 'listReports');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -87,6 +89,7 @@ export const createMCPServer = (): McpServer => {
     },
     async ({timeStamp, jobID}) => {
       const result = await listIssuesAPI.response([timeStamp, jobID]);
+      await recordMetric('mcpToolCalls', 'listIssues');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -106,6 +109,7 @@ export const createMCPServer = (): McpServer => {
     },
     async ({issueID, timeStamp, jobID}) => {
       const result = await listViolatorsAPI.response([issueID, timeStamp, jobID]);
+      await recordMetric('mcpToolCalls', 'listViolators');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -125,6 +129,7 @@ export const createMCPServer = (): McpServer => {
     },
     async ({catalogIndex, issueID, timeStamp, jobID}) => {
       const result = await listDiagnosesAPI.response([catalogIndex, issueID, timeStamp, jobID]);
+      await recordMetric('mcpToolCalls', 'listDiagnoses');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -144,6 +149,7 @@ export const createMCPServer = (): McpServer => {
     },
     async ({timeStamp, jobID}) => {
       const result = await getReportAPI.response([timeStamp, jobID]);
+      await recordMetric('mcpToolCalls', 'getReport');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -163,6 +169,7 @@ export const createMCPServer = (): McpServer => {
     },
     async ({description, URL, reason}) => {
       const result = await requestTestAPI.response([description, URL, reason]);
+      await recordMetric('mcpToolCalls', 'requestTest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -182,6 +189,7 @@ export const createMCPServer = (): McpServer => {
     },
     async ({timeStamp, jobID, reason}) => {
       const result = await requestRetestAPI.response([timeStamp, jobID, reason]);
+      await recordMetric('mcpToolCalls', 'requestRetest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -201,6 +209,7 @@ export const createMCPServer = (): McpServer => {
     },
     async ({feature}) => {
       const result = await requestFeatureAPI.response([feature]);
+      await recordMetric('mcpToolCalls', 'requestFeature');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );

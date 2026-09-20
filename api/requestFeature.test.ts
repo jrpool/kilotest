@@ -32,7 +32,9 @@ test('requestFeature rejects an empty feature request', async () => {
   const body = await response(['']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error);
-  assert.ok(!logged.some(line => line.startsWith('WARNING (MCP feature request received)')));
+  assert.ok(
+    !logged.some(line => line.startsWith('WARNING (Kilotest: MCP feature request received)'))
+  );
 });
 
 test('requestFeature accepts a non-empty feature request and notifies the manager', async () => {
@@ -42,7 +44,7 @@ test('requestFeature accepts a non-empty feature request and notifies the manage
   assert.ok(details['date and time received']);
   assert.equal(details.disposition, 'received and logged; manager notified');
   assert.ok(logged.some(line =>
-    line.startsWith('WARNING (MCP feature request received)')
+    line.startsWith('WARNING (Kilotest: MCP feature request received)')
     && line.includes('Add a dark mode toggle')
   ));
 });

@@ -32,18 +32,21 @@ export type DeletionSpec = {
 
 // FUNCTIONS
 
-// Returns a form for deleting the reports that the predicate marks as deletable.
+// Returns a form for deleting the reports that the predicate marks as deletable. A GET
+// request never processes a submission, regardless of its query string; only a POST
+// request (the form's own submission) does.
 export const reportDeletionForm = async (
   dirName: string,
   search: string,
+  method: string,
   deletionSpec: DeletionSpec
 ): Promise<{status: string; message?: string; answerPage?: string}> => {
   const {emptyIntro, failurePrefix, intro, isDeletable} = deletionSpec;
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
-  // If the form has been displayed by itself after a submission and any reports are to be deleted:
-  if (jobNames?.length) {
+  // If the form has been submitted and any reports are to be deleted:
+  if (method === 'POST' && jobNames?.length) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
       try {

@@ -40,6 +40,12 @@ const concretePaths: Record<string, Record<string, string>> = {
   POST: {
     '/api/*': '/api/requestFeature',
     '/mcp': '/mcp',
+    '/ai0BalanceForm.html': '/ai0BalanceForm.html',
+    '/expungeReportsForm.html': '/expungeReportsForm.html',
+    '/hideReportForm.html': '/hideReportForm.html',
+    '/metrics.html': '/metrics.html',
+    '/pruneReportsForm.html': '/pruneReportsForm.html',
+    '/rewindReportsForm.html': '/rewindReportsForm.html',
     '/reannotate.html': '/reannotate.html',
     '/requestAction.html': '/requestAction.html',
     '/renewWCAG.html': '/renewWCAG.html',
@@ -47,6 +53,7 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/requestTest.html': '/requestTest.html',
     '/tutorialAIComment.html': '/tutorialAIComment.html',
     '/tutorialWebComment.html': '/tutorialWebComment.html',
+    '/unhideReportForm.html': '/unhideReportForm.html',
     '/worker/job': '/worker/job',
     '/worker/report': '/worker/report'
   }
@@ -55,6 +62,12 @@ const concretePaths: Record<string, Record<string, string>> = {
 const postBodies: Record<string, object> = {
   '/api/requestFeature': {feature: 'smoke test'},
   '/mcp': {},
+  '/ai0BalanceForm.html': {authCode: 'invalid'},
+  '/expungeReportsForm.html': {authCode: 'invalid'},
+  '/hideReportForm.html': {authCode: 'invalid'},
+  '/metrics.html': {authCode: 'invalid'},
+  '/pruneReportsForm.html': {authCode: 'invalid'},
+  '/rewindReportsForm.html': {authCode: 'invalid'},
   '/reannotate.html': {authCode: 'invalid'},
   '/requestAction.html': {
     target: 'https://smoketest.example.com\tSmoke Test Page', authCode: 'invalid'
@@ -63,6 +76,7 @@ const postBodies: Record<string, object> = {
   '/requestRetest.html/260101T0001/ct': {why: 'smoke test'},
   '/requestTest.html': {description: 'Smoke Test Page', url: 'https://smoketest.example.com', why: 'smoke test'},
   '/tutorialAIComment.html': {content: 'smoke test'},
+  '/unhideReportForm.html': {authCode: 'invalid'},
   '/tutorialWebComment.html': {content: 'smoke test'},
   '/worker/job': {},
   '/worker/report': {}

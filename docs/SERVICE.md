@@ -242,7 +242,7 @@ kilotest.com {
   }
   @allowedPOST {
     method POST
-    path /mcp /requestRetest.html/* /requestTest.html /requestAction.html /reannotate.html /renewWCAG.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
+    path /mcp /requestRetest.html/* /requestTest.html /requestAction.html /reannotate.html /renewWCAG.html /ai0BalanceForm.html /expungeReportsForm.html /hideReportForm.html /metrics.html /pruneReportsForm.html /rewindReportsForm.html /unhideReportForm.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
   }
   # Respond to OPTIONS requests.
   @allowedOPTIONS method OPTIONS
@@ -435,6 +435,51 @@ To change any of the five alert variables:
 2. Verify that the `MANAGER_EMAIL` address is correct and actively monitored.
 3. Check the maintainer's email spam folder; some email providers filter unfamiliar senders.
 4. Verify DMARC, SPF, and DKIM records are correctly configured.
+
+## Usage metrics
+
+Kilotest records basic counts of how it is used, so the maintainer can answer questions such as whether the web UI or the MCP server is being used, and what classes of requests are made, without needing external tooling.
+
+### What is recorded
+
+`recordMetric(category, name)`, in `util.ts`, increments a count for a `(category, name)` pair and writes the result to `db/metrics.json`. It is called from three places:
+
+- The generic `.html` GET dispatch in `index.ts`, once per successfully served web page, recorded under the `pageViews` category by page name (for example `tutorialWeb`, `listReports`), unless the page is a manager-only page (see "Manager page activity" below), in which case it is recorded there instead.
+- The home page (`/` and `/index.html`), served by its own branch in `index.ts` rather than through the generic `.html` dispatch, recorded under `pageViews` as `index`.
+- Each of the 8 MCP tool handlers in `mcp.ts`, once per successful tool call, recorded under the `mcpToolCalls` category by tool name (for example `listReports`, `requestTest`).
+- The `/api/*` GET and POST service branches in `index.ts`, once per call, recorded under the `apiOperations` category by operation name.
+
+`db/metrics.json` also stores a `since` time stamp, set when the file is first created, so the counts can be read as "since this date" rather than assumed to cover Kilotest's entire history. `getMetrics()` backfills any category absent from an existing `db/metrics.json` (for example one written before a category such as `managerActivity` existed), so an older file remains readable rather than causing every subsequent request to error.
+
+#### Manager page activity
+
+Every page linked from `/manage.html` (`enqueueForm.html`, `reannotateForm.html`, `pruneReportsForm.html`, `rewindReportsForm.html`, `expungeReportsForm.html`, `hideReportForm.html`, `unhideReportForm.html`, `ai0BalanceForm.html`, `renewWCAGForm.html`, `metrics.html`), plus the POST-only action pages some of them submit to (`requestAction.html`, `reannotate.html`, `renewWCAG.html`), is excluded from `pageViews` and recorded instead under a separate `managerActivity` category, keyed by page name, with `ok` and `error` counts tracked separately.
+
+This exclusion exists because manager pages reflect the maintainer operating Kilotest, not the usage the other three categories are meant to reveal. Tracking `ok` and `error` outcomes separately, rather than a single combined count, makes a spike of failed `authCode` submissions against a manager page visible as a possible sign of an attempted attack, a signal a combined count would hide.
+
+#### Excluding the maintainer's own manual testing
+
+The manager-page exclusion above only keeps the maintainer's use of manager-only pages out of `pageViews`; it does not, by itself, keep the maintainer's manual testing of *ordinary* pages (for example clicking through `tutorialWeb.html` or `listReports.html` after a deployment) from being counted as real usage. A separate mechanism addresses that: submitting a valid `authCode` on `/metrics.html` sets a cookie (`kilotestExclude`), valid for 30 days, whose value is a SHA-256 hash of `AUTH_CODE` rather than the code itself, so the secret is never placed in a long-lived browser cookie. Every subsequent request from that browser that carries a matching cookie is excluded from `pageViews` and `apiOperations` (not from `managerActivity`, which should keep counting regardless, since it exists to surface suspected abuse, including from the maintainer's own browser if its cookie were ever compromised).
+
+A fixed or guessable cookie value was deliberately avoided: Kilotest's source is public, so anyone could otherwise read it and set the same cookie in their own browser to exclude themselves from metrics at no cost, defeating the feature. Hashing `AUTH_CODE` means only someone who has already proven they know the real code can derive the correct cookie value.
+
+This mechanism has one known, accepted limitation: the very first request of a testing session, the one that submits the `authCode` and earns the cookie, is necessarily made before the cookie exists and so cannot itself be excluded (visible today as the `metrics` page's own `managerActivity` count, which is unaffected, since that page is a manager page regardless). This is treated as a small, one-time-per-session cost rather than something worth building retroactive correction for.
+
+MCP tool calls are not currently covered by this cookie, since `mcp.ts`'s handlers do not receive the raw request needed to read it, and a maintainer manually driving MCP tools from a browser is a rare case; this is an explicit, narrower scope, left for a future iteration if it proves worth extending.
+
+Requests from the periodic smoke test (`smokeTest.ts`) are not recorded: `index.ts`'s `handleRequest` intercepts any request bearing the `x-kilotest-smoke` header before any dispatch, route handler, or MCP tool call runs, so smoke-test traffic never reaches a `recordMetric` call site in the first place.
+
+This is a small, initial feature set, not a complete observability solution: it counts requests by class and frequency, but does not record resource metrics (memory, storage, CPU; already available via `pm2 monit`, `free`, and `df`), per-event time-series data, or any caller identity (Kilotest's MCP transport is stateless and has no stable per-caller identifier).
+
+### Viewing the metrics
+
+The counts are displayed at `/metrics.html`, linked from `/manage.html`, as four tables: web page views, MCP tool calls, API operation calls, and manager page activity (successful and failed counts per manager page). Like the other self-submitting manager-power pages (`/hideReportForm.html`, `/unhideReportForm.html`, `/ai0BalanceForm.html`), a GET request always displays a form requesting an authorization code, since the maintainer following the `/manage.html` link has had no earlier opportunity to supply one; only a POST request (the form's own submission) either shows the counts, if the code matches the `AUTH_CODE` environment variable, or reports an error if it does not. This makes the data a manager-only capability for now, not because it is considered more sensitive than other manager-only data, but because it may later be made public, and starting restricted keeps that as a small, easily found reversal (dropping the `authCode` check in `web/metrics/index.ts`) rather than a rearchitecture.
+
+A GET request's query string is never processed as a submission, even if it happens to contain a valid `authCode` (for example typed or pasted into the address bar): all 6 self-submitting manager pages (`ai0BalanceForm.html`, `expungeReportsForm.html`, `hideReportForm.html`, `metrics.html`, `pruneReportsForm.html`, `rewindReportsForm.html`, plus `unhideReportForm.html`) take an explicit HTTP method argument and only act on a submission when that method is POST, so the same query-string parameters that a POST body carries are inert on GET. This closes a gap found during development: 5 of these pages had omitted `method="post"` from their HTML forms and were submitting via GET, and even after adding a POST option, the pages continued to also accept the identical action via GET until this method check was added.
+
+#### Clearing the counts
+
+`/metrics.html`'s form includes a "Clear counts" checkbox. Submitting the form with it checked (and a valid `authCode`) resets all four categories, and the `since` time stamp, to empty, then renders the (now empty) result as confirmation, alongside a "Counts cleared." message.
 
 ## Performance
 

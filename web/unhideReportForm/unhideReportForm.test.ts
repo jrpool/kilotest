@@ -63,8 +63,8 @@ after(async () => {
 
 // TESTS
 
-test('unhideReportForm displays a list of hidden reports when no submission', async () => {
-  const result: any = await answer(null, '');
+test('unhideReportForm displays a list of hidden reports on a GET request', async () => {
+  const result: any = await answer(null, '', 'GET');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -72,22 +72,30 @@ test('unhideReportForm displays a list of hidden reports when no submission', as
   assert.ok(radios.length > 0);
 });
 
-test('unhideReportForm returns an error for an invalid auth code', async () => {
-  const result: any = await answer(null, 'authCode=wrong&report=260101T0007-hid');
+test('unhideReportForm ignores a report query string on a GET request', async () => {
+  const {report} = getPaths();
+  const result: any = await answer(null, 'authCode=test-auth-code&report=260101T0007-hid', 'GET');
+  assert.equal(result.status, 'ok');
+  // The report should NOT have been unhidden by a mere GET request.
+  await assert.rejects(fs.access(report));
+});
+
+test('unhideReportForm returns an error for an invalid auth code on a POST request', async () => {
+  const result: any = await answer(null, 'authCode=wrong&report=260101T0007-hid', 'POST');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid authorization code');
 });
 
-test('unhideReportForm unhides a report with valid auth code', async () => {
+test('unhideReportForm unhides a report with valid auth code on a POST request', async () => {
   const {report} = getPaths();
-  const result: any = await answer(null, 'authCode=test-auth-code&report=260101T0007-hid');
+  const result: any = await answer(null, 'authCode=test-auth-code&report=260101T0007-hid', 'POST');
   assert.equal(result.status, 'ok');
   // The report should now be in the reports directory.
   await fs.access(report);
 });
 
-test('unhideReportForm returns an error when unhiding a nonexistent report', async () => {
-  const result: any = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope');
+test('unhideReportForm returns an error when unhiding a nonexistent report on a POST request', async () => {
+  const result: any = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope', 'POST');
   assert.equal(result.status, 'error');
   assert.ok(result.message.includes('Unhiding report'));
 });
@@ -102,7 +110,7 @@ test('unhideReportForm sorts hidden reports with the same page name by timeStamp
   const copyPath = path.join(hiddenReportsPath(), '260101T0010-hid2.json');
   await fs.writeFile(copyPath, JSON.stringify(copy));
   try {
-    const result: any = await answer(null, '');
+    const result: any = await answer(null, '', 'GET');
     assert.equal(result.status, 'ok');
     // Both reports should appear in the form.
     assert.ok(result.answerPage.includes('260101T0007-hid'));
@@ -123,7 +131,7 @@ test('unhideReportForm sorts hidden reports with different page names alphabetic
   const copyPath = path.join(hiddenReportsPath(), '260101T0011-hid3.json');
   await fs.writeFile(copyPath, JSON.stringify(copy));
   try {
-    const result: any = await answer(null, '');
+    const result: any = await answer(null, '', 'GET');
     assert.equal(result.status, 'ok');
     // Both reports should appear in the form.
     assert.ok(result.answerPage.includes('260101T0007-hid'));

@@ -75,6 +75,6 @@ export const handleComment = async (content: unknown) => {
   // Save the revised comments.
   await fs.writeFile(commentsPath, getJSON(comments));
   // Send an alert to the manager.
-  await sendAlert('New AI tutorial comment received', 'A new AI tutorial comment has been received.');
+  await sendAlert('Kilotest: New AI tutorial comment received', 'A new AI tutorial comment has been received.');
   return {status: 'ok'};
 };

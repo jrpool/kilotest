@@ -11,6 +11,7 @@
 import {sendAlert} from './alerts.ts';
 import {issues as issueSpecs, rules as ruleSpecs} from 'testaro-issues';
 import type {Act, Catalog, Report, StandardInstance} from 'testaro';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import querystring from 'node:querystring';
@@ -29,6 +30,8 @@ export const testRequestsPath = (): string => path.join(jobsPath(), 'testRequest
 export const reportsPath = (): string => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
 export const hiddenReportsPath = (): string => path.join(dbPath(), 'hiddenReports');
+// Path of the usage-metrics file.
+export const metricsPath = (): string => path.join(dbPath(), 'metrics.json');
 // IDs, names, and sponsors of Testaro rule engines.
 const ruleEngines: Record<string, [string, string]> = {
   alfa: ['Alfa', 'Siteimprove'],
@@ -49,6 +52,18 @@ const ruleEngines: Record<string, [string, string]> = {
 export {ruleEngines};
 
 // TYPES
+
+// Usage-metrics categories, each a map from an event name (page name, MCP tool name, or
+// API operation name) to a count of how many times it has occurred. managerActivity
+// counts manager-only pages separately from pageViews, by outcome, since a spike in
+// failed authCode attempts against a manager page is a signal of suspected abuse.
+export type Metrics = {
+  since: string;
+  pageViews: Record<string, number>;
+  mcpToolCalls: Record<string, number>;
+  apiOperations: Record<string, number>;
+  managerActivity: Record<string, {ok: number; error: number}>;
+};
 
 // Test request.
 export type TestRequest = {
@@ -1014,4 +1029,86 @@ export const processTestRequest = (
     // Throw it.
     throw new Error('Failed to process test request', {cause: error});
   }
+});
+
+// METRICS FUNCTIONS
+
+// Name of the cookie that excludes a browser's requests from usage metrics.
+export const metricsExclusionCookieName = 'kilotestExclude';
+// Returns the value that the metrics-exclusion cookie must have to be honored: a SHA-256
+// hash of AUTH_CODE, not AUTH_CODE itself, so the secret is never placed in a long-lived
+// browser cookie, and not a fixed value, since Kilotest's source is public and a fixed
+// value would let anyone read it and exclude themselves from metrics at no cost.
+export const getExclusionCookieValue = (): string =>
+  crypto.createHash('sha256').update(process.env.AUTH_CODE ?? '').digest('hex');
+// Concurrency lock for the `metrics.json` file.
+const metricsLock = createLock();
+// Returns the usage metrics, creating the file with zeroed counts if it does not yet exist.
+export const getMetrics = async (): Promise<Metrics> => {
+  let metricsJSON: string;
+  try {
+    metricsJSON = await fs.readFile(metricsPath(), 'utf8');
+  }
+  catch(error: unknown) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      const metrics: Metrics = {
+        since: getNowStamp(), pageViews: {}, mcpToolCalls: {}, apiOperations: {}, managerActivity: {}
+      };
+      await fs.writeFile(metricsPath(), getJSON(metrics));
+      return metrics;
+    }
+    throw new Error(`Metrics file not readable (${errorMessage(error)})`, {cause: error});
+  }
+  let metrics: Partial<Metrics>;
+  try {
+    metrics = JSON.parse(metricsJSON) as Partial<Metrics>;
+  }
+  catch(error: unknown) {
+    throw new Error(`Metrics file not JSON (${errorMessage(error)})`, {cause: error});
+  }
+  // Backfill any category absent from a file written before that category existed,
+  // so an older metrics.json (e.g. from before a schema change) remains readable.
+  return {
+    since: metrics.since ?? getNowStamp(),
+    pageViews: metrics.pageViews ?? {},
+    mcpToolCalls: metrics.mcpToolCalls ?? {},
+    apiOperations: metrics.apiOperations ?? {},
+    managerActivity: metrics.managerActivity ?? {}
+  };
+};
+// Records an occurrence of a named event (a web page view, an MCP tool call, or an API
+// operation call) in the usage metrics, creating the category and name if not yet present.
+export function recordMetric(
+  category: 'pageViews' | 'mcpToolCalls' | 'apiOperations', name: string
+): Promise<void>;
+// Records an outcome of a manager-page visit or submission (a distinct category from
+// pageViews, so a spike in failed authCode attempts against a manager page is visible
+// as a signal of suspected abuse, rather than being folded into ordinary page views).
+export function recordMetric(
+  category: 'managerActivity', name: string, outcome: 'ok' | 'error'
+): Promise<void>;
+export function recordMetric(
+  category: 'pageViews' | 'mcpToolCalls' | 'apiOperations' | 'managerActivity',
+  name: string,
+  outcome?: 'ok' | 'error'
+): Promise<void> {
+  return metricsLock(async (): Promise<void> => {
+    const metrics = await getMetrics();
+    if (category === 'managerActivity') {
+      const entry = metrics.managerActivity[name] ??= {ok: 0, error: 0};
+      entry[outcome!]++;
+    }
+    else {
+      metrics[category][name] = (metrics[category][name] ?? 0) + 1;
+    }
+    await fs.writeFile(metricsPath(), getJSON(metrics));
+  });
+}
+// Resets all usage metrics to empty and since to now.
+export const clearMetrics = (): Promise<Metrics> => metricsLock(async (): Promise<Metrics> => {
+  const metrics: Metrics = {
+    since: getNowStamp(), pageViews: {}, mcpToolCalls: {}, apiOperations: {}, managerActivity: {}
+  };
+  await fs.writeFile(metricsPath(), getJSON(metrics));
+  return metrics;
 });

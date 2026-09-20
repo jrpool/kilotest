@@ -79,7 +79,7 @@ const getIssuesSummary = async () => {
       // Report this.
       console.log(`ERROR: Annotations obsolete for issue ${issueID}; reannotate`);
       // Notify a manager.
-      sendAlert('Annotations obsolete', `Annotations for issue ${issueID} obsolete; reannotate.`);
+      sendAlert('Kilotest: Annotations obsolete', `Annotations for issue ${issueID} obsolete; reannotate.`);
     }
   });
   // For each summarized issue:

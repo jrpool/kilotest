@@ -11,13 +11,14 @@ import path from 'node:path';
 
 // FUNCTIONS
 
-// Returns a form for hiding a report.
-export const answer = async (_: any, search: string) => {
+// Returns a form for hiding a report. A GET request never processes a submission,
+// regardless of its query string; only a POST request (the form's own submission) does.
+export const answer = async (_: any, search: string, method: string) => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobName = searchParams?.get('report');
-  // If the form has been displayed by itself after a submission and a report is to be hidden:
-  if (jobName) {
+  // If the form has been submitted and a report is to be hidden:
+  if (method === 'POST' && jobName) {
     // If the authorization code is valid:
     if (authCode === process.env.AUTH_CODE) {
       const fileName = `${jobName}.json`;

@@ -55,6 +55,7 @@ const htmlRoutes = [
   '/reannotate.html',
   '/reannotateForm.html',
   '/hideReportForm.html',
+  '/showHiddenReportsForm.html',
   '/unhideReportForm.html',
   '/expungeReportsForm.html',
   '/pruneReportsForm.html',

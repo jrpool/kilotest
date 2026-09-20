@@ -54,7 +54,7 @@ test('pruneReportsForm ignores a report query string on a GET request', async ()
 test('pruneReportsForm returns an error for an invalid auth code on a POST request', async () => {
   const result = await answer(null, 'authCode=wrong&report=260101T0000-mix', 'POST');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('pruneReportsForm returns an error when deleting a nonexistent report on a POST request', async () => {

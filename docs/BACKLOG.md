@@ -4,11 +4,32 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed or not adopted are preserved for about 2 weeks in case of production bugs.
 
-## Protect hidden report list
+## Make validation locations consistent
 
-Make the list of hidden reports available only on submission of a valid authorization code.
+Inventory where request validations occur, e.g. in `index.ts` versus in the modules to which it routes requests. Find any arbitrary inconsistencies in the locations. If any are found, decide where it is most parsimonious and maintainable for the validation to take place and standardize on that.
 
-## Plan observability
+## Protect hidden report list (completed)
+
+### Problem
+
+`unhideReportForm.html` currently serves the list of hidden reports, including the names of the pages they report on, in response to a plain `GET` request, with no authorization check. Only its `POST` (the unhide action itself) currently checks `authCode`. This leaks the names of hidden pages to anyone who requests the URL, which is the information this item protects; `hideReportForm.html` (which lists non-hidden reports) is not in scope.
+
+### Adopted solution: 2 successive forms
+
+This is a new pattern, with no precedent elsewhere in the codebase (the closest existing pattern, a single self-submitting form per manager page, is described under “Addition… addition… clear counts checkbox” above, but that pattern always leaves its `GET` publicly viewable, which is exactly what must not happen here).
+
+- **Form 1**: a new page, `web/showHiddenReportsForm/` (`showHiddenReportsForm.html`). `GET` renders a bare form with one text input (authorization code) and a submit button, `POST`-ing to itself. It has no other content, and does not itself reveal anything about hidden reports. On a submitted `POST`, it validates the authorization code:
+  - **Invalid code**: serve the error page (`status: 'error'`, message “Invalid request”, deliberately vague so as not to confirm to an attacker that the authorization code specifically was wrong), matching the now-standardized `authCode`-failure pattern used by every manager-facing form and action page in the codebase (`hideReportForm`, `unhideReportForm`, `ai0BalanceForm`, `metrics`, `pruneReportsForm`, `rewindReportsForm`, `expungeReportsForm`, `enqueue`, `reannotate`, `renewWCAG`): self-submitting forms in this codebase serve the generic error page on an invalid code, not a re-rendering of themselves with an inline error.
+  - **Valid code**: respond with Form 2 (`unhideReportForm`’s rendered content: the current hidden-reports list, plus its own authorization-code input and submit button), freshly rendered.
+- **Form 2**: `unhideReportForm.html`, unchanged in its own `POST` (unhide) behavior, including serving the error page on an invalid code exactly as it does today, but its `GET` route is removed entirely. It is reachable only as the response to a valid Form 1 submission, never by direct `GET`. It remains self-submitting in the existing sense: each `POST` (submitted with the authorization code and the report to unhide) re-serves the form with the updated hidden-reports list and the code input, so the manager can unhide further reports without returning to Form 1. Because a self-submitting form must accept `POST`, `unhideReportForm.html` keeps a `POST` route; only its `GET` route is removed.
+
+Both `showHiddenReportsForm` and `unhideReportForm` are added to (or, for `unhideReportForm`, already are part of) the `managerPages` set (`index.ts`), so both are counted under `managerActivity` in the metrics table rather than `pageViews`, consistent with how every other manager route is already counted, regardless of `GET` or `POST`.
+
+### Manage-page link
+
+The “What can a manager do?” link on `manage.html` that currently points at the hidden-reports flow is reworded from wording that implies “declassify” to “View the list of experimental reports”, and repointed from `unhideReportForm.html` to `showHiddenReportsForm.html`.
+
+## Expand observability (completed)
 
 ### Observability context
 

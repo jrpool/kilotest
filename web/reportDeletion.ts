@@ -67,10 +67,12 @@ export const reportDeletionForm = async (
     }
     // Otherwise, i.e. if the authorization code is invalid:
     else {
-      // Report the error.
+      // Report the error, deliberately vague so as not to confirm to an attacker that the
+      // authorization code specifically (as opposed to some other part of the request) is
+      // what was wrong.
       return {
         status: 'error',
-        message: 'Invalid authorization code'
+        message: 'Invalid request'
       };
     }
   }

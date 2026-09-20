@@ -83,7 +83,7 @@ test('unhideReportForm ignores a report query string on a GET request', async ()
 test('unhideReportForm returns an error for an invalid auth code on a POST request', async () => {
   const result: any = await answer(null, 'authCode=wrong&report=260101T0007-hid', 'POST');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('unhideReportForm unhides a report with valid auth code on a POST request', async () => {

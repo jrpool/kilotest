@@ -7,7 +7,7 @@
 
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {processTestRequest} from '../util.ts';
+import {checkLength, isJobID, isTimeStamp, processTestRequest} from '../util.ts';
 import {requestRetestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -21,14 +21,20 @@ type ResponseContent = z.infer<typeof requestRetestResponseSchema>['response con
 export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = '', reason = ''] = args;
   const thisHost = getThisHost();
-  const reasonLength = reason.length;
+  const reasonCheck = checkLength(reason, 20, 100, 'reason');
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your request'];
   let requestDisposition: ResponseContent['disposition of your request'] = null;
-  // If the encoded reason is too short or too long:
-  if (reasonLength < 20 || reasonLength > 100) {
+  // If the timestamp or job ID is not syntactically valid:
+  if (!isTimeStamp(timeStamp) || !isJobID(jobID)) {
     requestDetails = {
-      error: 'request invalid: your reason is not between 20 and 100 characters long'
+      error: 'request invalid: the report timestamp or job identifier is malformed'
+    };
+  }
+  // Otherwise, if the encoded reason is too short or too long:
+  else if (reasonCheck.status === 'error') {
+    requestDetails = {
+      error: `request invalid: your ${reasonCheck.message}`
     }
   }
   // Otherwise, i.e. if the request is facially valid:

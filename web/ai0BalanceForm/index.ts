@@ -7,7 +7,7 @@
 
 import fs from 'node:fs/promises';
 import {balancePath} from '../../balances.ts';
-import {getJSON, populateTemplate} from '../../util.ts';
+import {getJSON, isValidAuthCode, populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -22,7 +22,7 @@ export const answer = async (_: any, search: string, method: string) => {
   // If the form has been submitted:
   if (method === 'POST' && newBalanceString) {
     // If the authorization code is valid:
-    if (authCode === process.env.AUTH_CODE) {
+    if (isValidAuthCode(authCode)) {
       const newBalance = Number.parseFloat(newBalanceString);
       // If the new balance is valid:
       if (

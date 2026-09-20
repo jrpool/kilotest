@@ -157,7 +157,7 @@ test('requestFeature handler returns content and structuredContent', async () =>
   const server = createMCPServer();
   const countBefore = getToolCallCount('requestFeature');
   const result = await (server as any)._registeredTools.requestFeature.handler({
-    feature: 'A new feature idea'
+    feature: 'A new feature idea worth considering'
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');

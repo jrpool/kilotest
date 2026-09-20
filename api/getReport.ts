@@ -25,7 +25,9 @@ type ResponseContent = z.infer<typeof getReportResponseSchema>['response content
 export const response = async (args: string[]) => {
   const [timeStamp = '', jobID = ''] = args;
   const thisHost = getThisHost();
-  // Get the report size.
+  // Get the report size. A malformed timestamp or job ID resolves to a nonexistent file
+  // path, which getReportStats already reports as unavailable, so no separate syntactic
+  // check is needed here.
   const reportStats = await getReportStats(timeStamp, jobID);
   // Create the response content.
   const responseContent: ResponseContent = reportStats

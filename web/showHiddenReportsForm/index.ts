@@ -7,7 +7,7 @@
 
 // IMPORTS
 
-import {populateTemplate} from '../../util.ts';
+import {isValidAuthCode, populateTemplate} from '../../util.ts';
 import {answer as unhideReportForm} from '../unhideReportForm/index.ts';
 
 // FUNCTIONS
@@ -22,7 +22,7 @@ export const answer = async (pathTail: any, search: string, method: string) => {
   // If the form has been submitted:
   if (method === 'POST') {
     // If the authorization code is invalid:
-    if (authCode !== process.env.AUTH_CODE) {
+    if (!isValidAuthCode(authCode)) {
       // Report the error, deliberately vague so as not to confirm to an attacker that the
       // authorization code specifically (as opposed to some other part of the request) is
       // what was wrong.

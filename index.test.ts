@@ -1545,7 +1545,7 @@ test('POST /requestRetest.html with valid format but duplicate retest returns an
   assert.ok(res.body.includes('Test request duplicates an already submitted request'));
 });
 
-test('POST /requestAction.html with valid auth code and approval of a duplicate returns an error', {timeout: 500}, async () => {
+test('POST /requestAction.html with valid auth code approves the same target twice without error', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
   // Create a request.
   await formRequest('POST', '/requestTest.html', {
@@ -1559,20 +1559,19 @@ test('POST /requestAction.html with valid auth code and approval of a duplicate 
     authCode: 'test-auth-code',
     what: 'yes'
   });
-  // Approve it again (the requests may have been cleared, so this may succeed or fail).
-  // This test covers the requestAction answer error branch.
+  // Approve it again. enqueue.answer has no duplicate-detection logic of its own (that
+  // lives in processTestRequest, upstream of approval), so a second approval of the same
+  // target queues a second job rather than erroring.
   const res = await formRequest('POST', '/requestAction.html', {
     target: `https://example.com/action-dup-${uniqueStamp}\tAction Dup Page ${uniqueStamp}`,
     authCode: 'test-auth-code',
     what: 'yes'
   });
-  // Either it succeeds (200) or returns an error (400).
-  assert.ok(res.statusCode === 200 || res.statusCode === 400);
+  assert.equal(res.statusCode, 200);
 });
 
 test('POST /requestAction.html with valid auth code and approval of an invalid URL returns an error', async () => {
-  // A URL that starts with https:// but is not a valid URL causes
-  // enqueue.answer to return status error.
+  // A URL that starts with https:// but is not a valid URL fails index.ts's own isURL check.
   const res = await formRequest('POST', '/requestAction.html', {
     target: 'https://\tTest Page',
     authCode: 'test-auth-code',

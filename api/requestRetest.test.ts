@@ -15,11 +15,29 @@ import {fixtureDBDir} from '../test/dbFixture.ts';
 
 const savedDBDir = process.env.DB_DIR;
 const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
+// A report added only to this test's disposable copy of the fixture database (never to
+// the tracked test/fixtures/db corpus), so its 3-character job ID satisfies isJobID
+// without perturbing report-count tests elsewhere that copy the whole corpus. Its job ID
+// intentionally differs from the tracked corpus's 2-character 260101T0001-ct.json, which
+// isJobID would reject.
+const retestFixturePath = path.join(fixtureDBDir, 'reports', '260101T0003-ret.json');
+const retestFixtureReport = {
+  id: '260101T0003-ret',
+  what: 'Retest Fixture Page',
+  target: {what: 'Retest Fixture Page', url: 'https://example.com/retestfixture'},
+  sources: {worker: 'test-worker'},
+  acts: [],
+  jobData: {startTime: '26-01-01T00:00', endTime: '26-01-01T00:10', elapsedSeconds: 600, preventions: {}, issuelessRules: []},
+  catalog: {},
+  images: {},
+  checkpoints: []
+};
 let logged: any[] = [];
 const originalLog = console.log;
 
-before(() => {
+before(async () => {
   process.env.DB_DIR = fixtureDBDir;
+  await fs.writeFile(retestFixturePath, JSON.stringify(retestFixtureReport));
 });
 
 // Reset the test-requests file and capture console.log, so the alert that
@@ -32,8 +50,9 @@ beforeEach(async () => {
 
 import {response} from './requestRetest.ts';
 
-after(() => {
+after(async () => {
   console.log = originalLog;
+  await fs.unlink(retestFixturePath);
   if (savedDBDir !== undefined) {
     process.env.DB_DIR = savedDBDir;
   }
@@ -45,9 +64,16 @@ after(() => {
 // TESTS
 
 test('requestRetest rejects a nonexistent report', async () => {
-  const body = await response(['999999T9999', 'xyz', 'A reason that is long enough.']);
+  const body = await response(['251231T0000', 'zzz', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('does not exist'));
+  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
+});
+
+test('requestRetest rejects a malformed timestamp or job identifier', async () => {
+  const body = await response(['999999T9999', 'xyz', 'A reason that is long enough.']);
+  const details = body['response content']['details about your request'] as any;
+  assert.ok(details.error.includes('malformed'));
   assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
 });
 
@@ -66,7 +92,7 @@ test('requestRetest rejects a superseded report', async () => {
 });
 
 test('requestRetest rejects a reason shorter than 20 characters', async () => {
-  const body = await response(['260101T0001', 'ct', 'short']);
+  const body = await response(['260101T0003', 'ret', 'short']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
   assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
@@ -74,20 +100,20 @@ test('requestRetest rejects a reason shorter than 20 characters', async () => {
 
 test('requestRetest rejects a reason longer than 100 characters', async () => {
   const longReason = 'x'.repeat(101);
-  const body = await response(['260101T0001', 'ct', longReason]);
+  const body = await response(['260101T0003', 'ret', longReason]);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
   assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
 });
 
 test('requestRetest rejects a report matching a claimed job by description', async () => {
-  // 260101T0001-ct is the "All CantTell Page" report.
+  // 260101T0003-ret is the "Retest Fixture Page" report.
   const claimedPath = path.join(fixtureDBDir, 'jobs', 'claimed', 'clm.json');
   await fs.writeFile(claimedPath, JSON.stringify({
-    target: {what: 'All CantTell Page', url: 'https://example.com/unrelated'}
+    target: {what: 'Retest Fixture Page', url: 'https://example.com/unrelated'}
   }));
   try {
-    const body = await response(['260101T0001', 'ct', 'A reason that is long enough.']);
+    const body = await response(['260101T0003', 'ret', 'A reason that is long enough.']);
     const details = body['response content']['details about your request'] as any;
     assert.equal(details.error, undefined);
     const disposition = body['response content']['disposition of your request'] as any;
@@ -102,13 +128,13 @@ test('requestRetest rejects a report matching a claimed job by description', asy
 });
 
 test('requestRetest rejects a report matching a queued job by URL', async () => {
-  // 260101T0001-ct's URL is https://example.com/canttell.
+  // 260101T0003-ret's URL is https://example.com/retestfixture.
   const queuedPath = path.join(fixtureDBDir, 'jobs', 'queue', 'que.json');
   await fs.writeFile(queuedPath, JSON.stringify({
-    target: {what: 'Some Other Page', url: 'https://example.com/canttell'}
+    target: {what: 'Some Other Page', url: 'https://example.com/retestfixture'}
   }));
   try {
-    const body = await response(['260101T0001', 'ct', 'A reason that is long enough.']);
+    const body = await response(['260101T0003', 'ret', 'A reason that is long enough.']);
     const details = body['response content']['details about your request'] as any;
     assert.equal(details.error, undefined);
     const disposition = body['response content']['disposition of your request'] as any;
@@ -123,8 +149,8 @@ test('requestRetest rejects a report matching a queued job by URL', async () => 
 });
 
 test('requestRetest rejects a duplicate request', async () => {
-  await response(['260101T0001', 'ct', 'A reason that is long enough.']);
-  const body = await response(['260101T0001', 'ct', 'A reason that is long enough.']);
+  await response(['260101T0003', 'ret', 'A reason that is long enough.']);
+  const body = await response(['260101T0003', 'ret', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   const disposition = body['response content']['disposition of your request'] as any;

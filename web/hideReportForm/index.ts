@@ -5,7 +5,9 @@
 
 // IMPORTS
 
-import {getReportExtracts, hiddenReportsPath, populateTemplate, reportsPath} from '../../util.ts';
+import {
+  getReportExtracts, hiddenReportsPath, isValidAuthCode, populateTemplate, reportsPath
+} from '../../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -20,7 +22,7 @@ export const answer = async (_: any, search: string, method: string) => {
   // If the form has been submitted and a report is to be hidden:
   if (method === 'POST' && jobName) {
     // If the authorization code is valid:
-    if (authCode === process.env.AUTH_CODE) {
+    if (isValidAuthCode(authCode)) {
       const fileName = `${jobName}.json`;
       try {
         // Move the specified report to the directory of hidden reports.

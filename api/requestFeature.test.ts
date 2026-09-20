@@ -37,6 +37,24 @@ test('requestFeature rejects an empty feature request', async () => {
   );
 });
 
+test('requestFeature rejects a feature request shorter than 20 characters', async () => {
+  const body = await response(['Too short']);
+  const details = body['response content']['details about your request'] as any;
+  assert.ok(details.error.includes('feature description'));
+  assert.ok(
+    !logged.some(line => line.startsWith('WARNING (Kilotest: MCP feature request received)'))
+  );
+});
+
+test('requestFeature rejects a feature request longer than 1000 characters', async () => {
+  const body = await response(['x'.repeat(1001)]);
+  const details = body['response content']['details about your request'] as any;
+  assert.ok(details.error.includes('feature description'));
+  assert.ok(
+    !logged.some(line => line.startsWith('WARNING (Kilotest: MCP feature request received)'))
+  );
+});
+
 test('requestFeature accepts a non-empty feature request and notifies the manager', async () => {
   const body = await response(['Add a dark mode toggle']);
   const details = body['response content']['details about your request'] as any;
@@ -50,7 +68,7 @@ test('requestFeature accepts a non-empty feature request and notifies the manage
 });
 
 test('requestFeature includes tool name and metadata', async () => {
-  const body = await response(['Some feature']);
+  const body = await response(['A sufficiently long feature description']);
   assert.equal(body['tool name'], 'requestFeature');
   assert.ok(body['response metadata'].identifier);
 });

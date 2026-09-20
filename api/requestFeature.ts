@@ -8,6 +8,7 @@
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {sendAlert} from '../alerts.ts';
+import {checkLength} from '../util.ts';
 import {requestFeatureResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -21,20 +22,27 @@ type ResponseContent = z.infer<typeof requestFeatureResponseSchema>['response co
 export const response = async (args: string[]) => {
   const [feature = ''] = args;
   const thisHost = getThisHost();
+  const lengthCheck = checkLength(feature, 20, 1000, 'feature description');
   // Initialize the response content.
-  const responseContent: ResponseContent = {
-    'details about your request': {
-      error: 'request invalid: request is empty'
-    }
-  };
-  // If the requested feature or improvement exists:
-  if (feature) {
+  let responseContent: ResponseContent;
+  // If the feature description is invalid:
+  if (lengthCheck.status === 'error') {
+    responseContent = {
+      'details about your request': {
+        error: `request invalid: ${lengthCheck.message}`
+      }
+    };
+  }
+  // Otherwise, i.e. if it is valid:
+  else {
     // Notify the manager.
     await sendAlert('Kilotest: MCP feature request received', feature);
     // Add the disposition to the response content.
-    responseContent['details about your request'] = {
-      'date and time received': new Date().toISOString(),
-      disposition: 'received and logged; manager notified'
+    responseContent = {
+      'details about your request': {
+        'date and time received': new Date().toISOString(),
+        disposition: 'received and logged; manager notified'
+      }
     };
   }
   // Create a response body.

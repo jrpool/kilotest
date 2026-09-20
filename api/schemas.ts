@@ -43,7 +43,7 @@ export const getReportSchema = {
 
 // requestTest: POST /api/requestTest
 export const requestTestSchema = {
-  description: z.string().describe('10- to 100-character description of the page conforming to the naming convention used in the listReports output'),
+  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listReports output'),
   URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
 };
@@ -57,7 +57,7 @@ export const requestRetestSchema = {
 
 // requestFeature: POST /api/requestFeature
 export const requestFeatureSchema = {
-  feature: z.string().describe('description of requested feature improvement or new feature')
+  feature: z.string().describe('20- to 1000-character description of requested feature improvement or new feature')
 };
 
 // listReports takes no input; omitted (mcp.ts already uses inputSchema: {}).

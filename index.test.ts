@@ -18,6 +18,15 @@ process.env.TUTORIAL_AI_COMMENTS_PATH = path.join(testCommentsDir, 'tutorialAI.j
 process.env.TESTARO_WORKERS = JSON.stringify({
   worker1: {secret: 'secret1', name: 'Worker One'}
 });
+// Blank the alert configuration unconditionally, so this file sends no real alert
+// emails (e.g. from the requestTest/requestRetest/tutorial-comment tests below) even
+// when run directly (e.g. `npx tsx --test index.test.ts`) rather than via `npm test`,
+// which normally guards against this by --require-ing test/setup.ts first. dotenv does
+// not override an already-set env var, so setting these here, before index.ts is ever
+// imported, prevents a real .env file's alert credentials from ever taking effect.
+for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
+  process.env[key] = '';
+}
 
 // IMPORTS
 

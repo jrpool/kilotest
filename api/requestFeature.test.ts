@@ -8,13 +8,20 @@
 import {test, beforeEach, after} from 'node:test';
 import assert from 'node:assert/strict';
 
+// Blank the alert configuration unconditionally, before ./requestFeature.ts (which
+// calls sendAlert) is ever imported below, so this file sends no real alert emails
+// even when run directly rather than via `npm test`.
+for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
+  process.env[key] = '';
+}
+
 // SETUP AND TEARDOWN
 
 let logged: any[] = [];
 const originalLog = console.log;
 
 // Capture console.log so the alert sendAlert emits can be observed. The alert
-// configuration is empty in tests, so sendAlert logs a WARNING instead of sending.
+// configuration is blanked above, so sendAlert logs a WARNING instead of sending.
 beforeEach(() => {
   logged = [];
   console.log = (...args) => logged.push(args.join(' '));

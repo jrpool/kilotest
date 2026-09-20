@@ -78,7 +78,9 @@ test('deleteNotesForm lists notes from all three sources on a GET request', asyn
 
 test('deleteNotesForm ignores a note query string on a GET request', async () => {
   const result = await answer(
-    null, 'authCode=test-auth-code&note=tutorialWeb%09260101T0000', 'GET'
+    null,
+    `authCode=test-auth-code&note=tutorialWeb%09${encodeURIComponent('A web tutorial comment')}`,
+    'GET'
   );
   assert.equal(result.status, 'ok');
   // The note should NOT have been deleted by a mere GET request.
@@ -88,7 +90,9 @@ test('deleteNotesForm ignores a note query string on a GET request', async () =>
 
 test('deleteNotesForm returns an error for an invalid auth code on a POST request', async () => {
   const result = await answer(
-    null, 'authCode=wrong&note=tutorialWeb%09260101T0000', 'POST'
+    null,
+    `authCode=wrong&note=tutorialWeb%09${encodeURIComponent('A web tutorial comment')}`,
+    'POST'
   );
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid request');
@@ -98,7 +102,9 @@ test('deleteNotesForm returns an error for an invalid auth code on a POST reques
 
 test('deleteNotesForm deletes a selected web tutorial comment with a valid auth code', async () => {
   const result = await answer(
-    null, 'authCode=test-auth-code&note=tutorialWeb%09260101T0000', 'POST'
+    null,
+    `authCode=test-auth-code&note=tutorialWeb%09${encodeURIComponent('A web tutorial comment')}`,
+    'POST'
   );
   assert.equal(result.status, 'ok');
   const notes = JSON.parse(await fs.readFile(tutorialWebPath, 'utf8'));
@@ -112,9 +118,9 @@ test('deleteNotesForm deletes selected notes across multiple sources in one subm
   const result = await answer(
     null,
     'authCode=test-auth-code' +
-      '&note=tutorialWeb%09260101T0000' +
-      '&note=tutorialAI%09260102T0000' +
-      '&note=featureRequest%09260103T0000',
+      `&note=tutorialWeb%09${encodeURIComponent('A web tutorial comment')}` +
+      `&note=tutorialAI%09${encodeURIComponent('An AI tutorial comment')}` +
+      `&note=featureRequest%09${encodeURIComponent('A feature request')}`,
     'POST'
   );
   assert.equal(result.status, 'ok');
@@ -129,7 +135,9 @@ test('deleteNotesForm leaves unselected notes in a source intact', async () => {
     {timeStamp: '260101T0001', content: 'Delete this one'}
   ]));
   const result = await answer(
-    null, 'authCode=test-auth-code&note=tutorialWeb%09260101T0001', 'POST'
+    null,
+    `authCode=test-auth-code&note=tutorialWeb%09${encodeURIComponent('Delete this one')}`,
+    'POST'
   );
   assert.equal(result.status, 'ok');
   const notes = JSON.parse(await fs.readFile(tutorialWebPath, 'utf8'));
@@ -162,6 +170,29 @@ test('deleteNotesForm escapes note content to prevent HTML injection', async () 
   assert.ok(!result.answerPage!.includes('<script>'));
 });
 
+test('deleteNotesForm deletes a note whose content contains a literal tab character', async () => {
+  const content = 'Line one\tLine two, after an embedded tab';
+  await fs.writeFile(tutorialWebPath, JSON.stringify([
+    {timeStamp: '260101T0000', content}
+  ]));
+  const result = await answer(
+    null, `authCode=test-auth-code&note=tutorialWeb%09${encodeURIComponent(content)}`, 'POST'
+  );
+  assert.equal(result.status, 'ok');
+  const notes = JSON.parse(await fs.readFile(tutorialWebPath, 'utf8'));
+  assert.equal(notes.length, 0);
+});
+
+test('deleteNotesForm renders a checkbox value that round-trips a note with a literal tab', async () => {
+  const content = 'Has\ta\ttab';
+  await fs.writeFile(tutorialWebPath, JSON.stringify([
+    {timeStamp: '260101T0000', content}
+  ]));
+  const result = await answer(null, '', 'GET');
+  assert.equal(result.status, 'ok');
+  assert.ok(result.answerPage!.includes(`tutorialWeb\t${encodeURIComponent(content)}`));
+});
+
 test('deleteNotesForm returns an error when a note file cannot be written', async () => {
   // Point the web tutorial comments path at a location whose parent is a file, so that
   // creating the directory for it fails.
@@ -172,7 +203,9 @@ test('deleteNotesForm returns an error when a note file cannot be written', asyn
   process.env.TUTORIAL_WEB_COMMENTS_PATH = unwritablePath;
   try {
     const result = await answer(
-      null, 'authCode=test-auth-code&note=tutorialWeb%09260101T0000', 'POST'
+      null,
+      `authCode=test-auth-code&note=tutorialWeb%09${encodeURIComponent('A web tutorial comment')}`,
+      'POST'
     );
     assert.equal(result.status, 'error');
     assert.ok(result.message?.includes('Deleting notes failed'));

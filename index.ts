@@ -42,6 +42,7 @@ import {answer as tutorialAI, handleComment as handleTutorialAIComment} from './
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
+import querystring from 'node:querystring';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
 import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
@@ -1029,7 +1030,12 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         setHeaders('text/html', pathname, 'ultra');
         // Reconstruct a query string from the POST body, so the page's answer() function
         // can read its submitted parameters the same way it reads a GET query string.
-        const search = `?${new URLSearchParams(postData as Record<string, string>).toString()}`;
+        // querystring.stringify (rather than the URLSearchParams object constructor) is
+        // required here, because postData, from querystring.parse in getPOSTData, holds
+        // repeated form fields (e.g. multiple checked checkboxes sharing a name) as an
+        // array; the URLSearchParams constructor would join such an array into a single
+        // comma-separated value instead of preserving it as repeated key=value pairs.
+        const search = `?${querystring.stringify(postData as Record<string, string | string[]>)}`;
         // Get the answer data. The method is passed so the handler only processes a
         // submission for POST, never for GET, regardless of what its query string contains.
         const answerData = await answer[topic]!(pathTail, search, method);

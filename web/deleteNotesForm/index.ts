@@ -77,31 +77,40 @@ export const answer = async (
 ): Promise<{status: string; message?: string; answerPage?: string}> => {
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
-  // Each selected checkbox's value is `${sourceName}\t${timeStamp}`.
+  // Each selected checkbox's value is `${sourceName}\t${encodeURIComponent(content)}`.
+  // Content, rather than time stamp, identifies a note, because no two notes in the same
+  // source ever share content: checkCommentDuplicate rejects a submission identical to
+  // one already on file. Content is percent-encoded, and split out at the first tab
+  // only, because comment and feature-request content is not stripped of tab characters
+  // (see the sanitize functions in web/tutorialWeb/index.ts and web/tutorialAI/index.ts),
+  // so an unencoded tab within the content itself could otherwise be mistaken for the
+  // delimiter between the source name and the content.
   const selections = searchParams?.getAll('note');
   // If the form has been submitted and any notes are to be deleted:
   if (method === 'POST' && selections?.length) {
     // If the authorization code is valid:
     if (isValidAuthCode(authCode)) {
-      // Group the selected time stamps by source.
-      const timeStampsBySource = new Map<string, Set<string>>();
-      for (const selection of selections) {
-        const [sourceName, timeStamp] = selection.split('\t') as [string, string];
-        if (!timeStampsBySource.has(sourceName)) {
-          timeStampsBySource.set(sourceName, new Set());
-        }
-        timeStampsBySource.get(sourceName)!.add(timeStamp);
-      }
       try {
+        // Group the selected content by source.
+        const contentBySource = new Map<string, Set<string>>();
+        for (const selection of selections) {
+          const tabIndex = selection.indexOf('\t');
+          const sourceName = selection.slice(0, tabIndex);
+          const content = decodeURIComponent(selection.slice(tabIndex + 1));
+          if (!contentBySource.has(sourceName)) {
+            contentBySource.set(sourceName, new Set());
+          }
+          contentBySource.get(sourceName)!.add(content);
+        }
         // For each source with any selected notes:
         for (const source of noteSources) {
-          const timeStamps = timeStampsBySource.get(source.name);
-          if (!timeStamps) {
+          const contentSet = contentBySource.get(source.name);
+          if (!contentSet) {
             continue;
           }
           // Remove the selected notes and save the rest.
           const notes = await getNotes(source);
-          const remaining = notes.filter(note => !timeStamps.has(note.timeStamp));
+          const remaining = notes.filter(note => !contentSet.has(note.content));
           await fs.mkdir(path.dirname(source.getPath()), {recursive: true});
           await fs.writeFile(source.getPath(), getJSON(remaining));
         }
@@ -135,7 +144,7 @@ export const answer = async (
     // For each of its notes, oldest first:
     for (const note of notes) {
       anyNotes = true;
-      const value = `${source.name}\t${note.timeStamp}`;
+      const value = `${source.name}\t${encodeURIComponent(note.content)}`;
       const when = getDateTimeString(note.timeStamp);
       lines.push(
         `${margin}<p><input type="checkbox" name="note" value="${value}"> ` +

@@ -118,3 +118,35 @@ test('requestFeature creates the feature-requests file when it does not exist', 
   assert.equal(featureRequests.length, 1);
   assert.equal(featureRequests[0].content, 'A feature request when no file yet exists');
 });
+
+test('requestFeature rejects a feature request identical to one already on file', async () => {
+  const feature = 'Add a dark mode toggle to the reports page';
+  const firstBody = await response([feature]);
+  const firstDetails = firstBody['response content']['details about your request'] as any;
+  assert.equal(firstDetails.error, undefined);
+  const secondBody = await response([feature]);
+  const secondDetails = secondBody['response content']['details about your request'] as any;
+  assert.ok(secondDetails.error.includes('identical to one already submitted'));
+  const featureRequests = JSON.parse(await fs.readFile(process.env.FEATURE_REQUESTS_PATH!, 'utf8'));
+  // The duplicate was not recorded a second time.
+  assert.equal(featureRequests.length, 1);
+});
+
+test('requestFeature does not notify the manager of a duplicate feature request', async () => {
+  const feature = 'Add a dark mode toggle to the settings page';
+  await response([feature]);
+  logged = [];
+  await response([feature]);
+  assert.ok(
+    !logged.some(line => line.startsWith('WARNING (Kilotest: MCP feature request received)'))
+  );
+});
+
+test('requestFeature accepts a feature request that differs from an existing one', async () => {
+  await response(['An existing feature request on file']);
+  const body = await response(['A different feature request entirely']);
+  const details = body['response content']['details about your request'] as any;
+  assert.equal(details.error, undefined);
+  const featureRequests = JSON.parse(await fs.readFile(process.env.FEATURE_REQUESTS_PATH!, 'utf8'));
+  assert.equal(featureRequests.length, 2);
+});

@@ -125,26 +125,18 @@ test('checkCommentDuplicate accepts a comment with no existing comments', () => 
   assert.deepEqual(result, {status: 'ok'});
 });
 
-test('checkCommentDuplicate rejects a comment repeating one submitted within the last 1000 seconds', () => {
+test('checkCommentDuplicate rejects a comment identical to one already stored, regardless of when', () => {
   const content = 'a'.repeat(20);
-  const comments = [{timeStamp: getNowStamp(), content}];
+  const comments = [{content}];
   const result = checkCommentDuplicate(comments, content);
   assert.deepEqual(result, {
     status: 'error',
-    message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+    message: 'Your comment is identical to one already submitted, but you are welcome to submit a different comment'
   });
 });
 
-test('checkCommentDuplicate accepts a comment repeating one submitted more than 1000 seconds ago', () => {
-  const content = 'a'.repeat(20);
-  const oldTimeStamp = getTimeStamp(new Date(Date.now() - 2000000));
-  const comments = [{timeStamp: oldTimeStamp, content}];
-  const result = checkCommentDuplicate(comments, content);
-  assert.deepEqual(result, {status: 'ok'});
-});
-
-test('checkCommentDuplicate accepts a comment that differs from a recent one', () => {
-  const comments = [{timeStamp: getNowStamp(), content: 'a'.repeat(20)}];
+test('checkCommentDuplicate accepts a comment that differs from a stored one', () => {
+  const comments = [{content: 'a'.repeat(20)}];
   const result = checkCommentDuplicate(comments, 'b'.repeat(20));
   assert.deepEqual(result, {status: 'ok'});
 });

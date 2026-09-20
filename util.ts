@@ -207,27 +207,22 @@ export const checkCommentLength = (
   }
   return {status: 'ok'};
 };
-// Returns whether a comment repeats, verbatim, one of the given comments submitted
-// within the last 1000 seconds. Comment time stamps use Kilotest's own timeStamp
-// format (see getTimeStamp), not an ISO date-time string, so this integrates with
-// the same comments.json shape that web/tutorial/index.ts already uses. The content
-// passed in should be the content as it will be stored (e.g. after sanitization),
-// so that it is compared on the same basis as the stored comments.
+// Returns whether a comment repeats, verbatim, one of the given comments, regardless
+// of when the earlier one was submitted: a legitimate need to resubmit exactly the
+// same content never arises (the near-term case is a browser "Back" resubmission),
+// so storing a second copy would only ever be redundant. The content passed in
+// should be the content as it will be stored (e.g. after sanitization), so that it
+// is compared on the same basis as the stored comments. Content, not any time
+// stamp, is what this checks and what identifies a comment as unique.
 export const checkCommentDuplicate = (
-  comments: {timeStamp: string; content: string}[], content: string
+  comments: {content: string}[], content: string
 ): {status: 'ok'} | {status: 'error'; message: string} => {
-  // Get the comments submitted within the last 1000 seconds with the same content.
-  // Comment time stamps are always valid, because this codebase is the sole writer
-  // of comments.json.
-  const duplicates = comments
-  .filter(comment => getDateTime(comment.timeStamp)!.getTime() > Date.now() - 1000000)
-  .filter(comment => comment.content === content);
-  // If the comment duplicates a recent one:
-  if (duplicates.length) {
+  // If the comment duplicates one already stored:
+  if (comments.some(comment => comment.content === content)) {
     // Return this.
     return {
       status: 'error',
-      message: 'Your comment repeats a recently submitted one, but you are welcome to submit a different comment'
+      message: 'Your comment is identical to one already submitted, but you are welcome to submit a different comment'
     };
   }
   // Otherwise, the comment is not a duplicate.

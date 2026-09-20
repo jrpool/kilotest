@@ -653,7 +653,7 @@ test('POST /requestAction.html with invalid auth code returns an error and recor
     authCode: 'wrong-code'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Invalid test order'));
+  assert.ok(res.body.includes('Invalid request'));
   assert.equal(await getManagerActivityCount('requestAction.html', 'error'), countBefore + 1);
 });
 

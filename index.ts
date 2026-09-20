@@ -915,8 +915,9 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // Otherwise, i.e. if the request is invalid:
         else {
           await recordMetric('managerActivity', 'requestAction.html', 'error');
-          // Report the error.
-          await serveError({message: 'ERROR: Invalid test order'}, response, true);
+          // Report the error, deliberately vague so as not to confirm to an attacker
+          // which part of the request (the URL, or the authorization code) was wrong.
+          await serveError({message: 'Invalid request'}, response, true);
         }
       }
       // Otherwise, if it is a reannotation order:

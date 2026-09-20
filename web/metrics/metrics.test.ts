@@ -37,7 +37,7 @@ after(() => {
 test('metrics returns an error for an invalid auth code on a POST request', async () => {
   const result: any = await answer(null, 'authCode=wrong', 'POST');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('metrics displays a form requesting an auth code on a GET request', async () => {

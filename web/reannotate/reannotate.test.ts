@@ -59,7 +59,7 @@ test('answer returns an error for an invalid authorization code', async () => {
   const {answer} = await import('./index.ts');
   const result = await answer('wrong-code');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('answer returns an error when no reports are available', async () => {

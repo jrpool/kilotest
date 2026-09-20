@@ -54,7 +54,7 @@ test('expungeReportsForm ignores a report query string on a GET request', async 
 test('expungeReportsForm returns an error for an invalid auth code on a POST request', async () => {
   const result: any = await answer(null, 'authCode=wrong&report=260101T0001-ct', 'POST');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('expungeReportsForm returns an error when deleting a nonexistent report on a POST request', async () => {

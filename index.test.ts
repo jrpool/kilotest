@@ -1579,7 +1579,7 @@ test('POST /requestAction.html with valid auth code and approval of an invalid U
     what: 'yes'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Invalid authorization code'));
+  assert.ok(res.body.includes('Invalid request'));
 });
 
 // UNIT TESTS FOR serveError

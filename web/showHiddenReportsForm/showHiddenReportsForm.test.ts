@@ -90,7 +90,7 @@ test('showHiddenReportsForm ignores a valid authCode query string on a GET reque
 test('showHiddenReportsForm returns an error for an invalid auth code on a POST request', async () => {
   const result: any = await answer(null, 'authCode=wrong', 'POST');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('showHiddenReportsForm serves the hidden reports list on a POST request with a valid auth code', async () => {

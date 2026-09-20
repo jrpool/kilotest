@@ -61,10 +61,13 @@ export const answer = async (authCode: string) => {
       };
     }
   }
+  // The message is deliberately vague so as not to confirm to an attacker that the
+  // authorization code specifically (as opposed to some other part of the request) is
+  // what was wrong.
   else {
     return {
       status: 'error',
-      message: 'Authorization code invalid'
+      message: 'Invalid request'
     };
   }
 };

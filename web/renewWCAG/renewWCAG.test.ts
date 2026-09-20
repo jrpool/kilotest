@@ -65,7 +65,7 @@ test('answer returns an error for an invalid authorization code', async () => {
   const {answer} = await import('./index.ts');
   const result = await answer('wrong-code');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Authorization code invalid');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('answer returns an error when the WCAG map source returns a non-200 status', async () => {

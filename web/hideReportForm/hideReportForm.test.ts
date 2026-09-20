@@ -71,7 +71,7 @@ test('hideReportForm ignores a report query string on a GET request', async () =
 test('hideReportForm returns an error for an invalid auth code on a POST request', async () => {
   const result: any = await answer(null, 'authCode=wrong&report=260101T0009-brd', 'POST');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('hideReportForm hides a report with valid auth code on a POST request', async () => {

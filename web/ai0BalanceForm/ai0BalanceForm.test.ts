@@ -61,7 +61,7 @@ test('ai0BalanceForm ignores a newBalance query string on a GET request', async 
 test('ai0BalanceForm returns an error for an invalid auth code on a POST request', async () => {
   const result: any = await answer(null, 'authCode=wrong&newBalance=5.00', 'POST');
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid authorization code');
+  assert.equal(result.message, 'Invalid request');
 });
 
 test('ai0BalanceForm records a valid new balance with valid auth code on a POST request', async () => {

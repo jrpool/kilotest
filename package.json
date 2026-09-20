@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "48.0.0",
+  "version": "49.0.0",
   "description": "Ensemble testing for front-end web quality",
   "type": "module",
   "main": "index.ts",

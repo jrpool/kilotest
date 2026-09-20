@@ -4,6 +4,10 @@ Engineering tasks and risks that are not yet scheduled.
 
 Items marked completed or not adopted are preserved for about 2 weeks in case of production bugs.
 
+## Make validation locations consistent
+
+Inventory where request validations occur, e.g. in `index.ts` versus in the modules to which it routes requests. Find any arbitrary inconsistencies in the locations. If any are found, decide where it is most parsimonious and maintainable for the validation to take place and standardize on that.
+
 ## Protect hidden report list (completed)
 
 ### Problem

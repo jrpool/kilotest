@@ -41,6 +41,7 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/api/*': '/api/requestFeature',
     '/mcp': '/mcp',
     '/ai0BalanceForm.html': '/ai0BalanceForm.html',
+    '/deleteNotesForm.html': '/deleteNotesForm.html',
     '/expungeReportsForm.html': '/expungeReportsForm.html',
     '/hideReportForm.html': '/hideReportForm.html',
     '/metrics.html': '/metrics.html',
@@ -64,6 +65,7 @@ const postBodies: Record<string, object> = {
   '/api/requestFeature': {feature: 'smoke test'},
   '/mcp': {},
   '/ai0BalanceForm.html': {authCode: 'invalid'},
+  '/deleteNotesForm.html': {authCode: 'invalid'},
   '/expungeReportsForm.html': {authCode: 'invalid'},
   '/hideReportForm.html': {authCode: 'invalid'},
   '/metrics.html': {authCode: 'invalid'},
@@ -229,20 +231,23 @@ const isMCPErrorResponse = (result: {statusCode: number | undefined, body: strin
     console.log(`FAIL: POST ${mcpPath} initialize -> error: ${message}`);
     failures++;
   }
-  // Send a browser-style GET to verify that invalid MCP requests get JSON-RPC errors end-to-end.
+  // Send a POST with an Accept header the MCP SDK itself rejects (missing text/event-stream)
+  // to verify that invalid MCP requests get JSON-RPC errors end-to-end. A browser-style GET
+  // is not used here because index.ts deliberately intercepts it before handleMCP, serving a
+  // human-readable explainer page instead of a JSON-RPC error.
   try {
-    const probe = await sendMCPRequest('GET', 'text/html');
+    const probe = await sendMCPRequest('POST', 'application/json', mcpInitialize);
     if (isMCPErrorResponse(probe)) {
-      console.log(`PASS: GET ${mcpPath} browser -> ${probe.statusCode} (JSON-RPC error)`);
+      console.log(`PASS: POST ${mcpPath} bad accept -> ${probe.statusCode} (JSON-RPC error)`);
     }
     else {
-      console.log(`FAIL: GET ${mcpPath} browser -> ${probe.statusCode} (body: ${probe.body.slice(0, 120)})`);
+      console.log(`FAIL: POST ${mcpPath} bad accept -> ${probe.statusCode} (body: ${probe.body.slice(0, 120)})`);
       failures++;
     }
   }
   catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.log(`FAIL: GET ${mcpPath} browser -> error: ${message}`);
+    console.log(`FAIL: POST ${mcpPath} bad accept -> error: ${message}`);
     failures++;
   }
   console.log(`\n=== ${failures === 0 ? 'All checks passed' : `${failures} failure(s)`} ===`);

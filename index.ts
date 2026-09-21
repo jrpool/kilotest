@@ -864,6 +864,19 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       );
     }
   }
+  // Otherwise, if the request is a HEAD request: only the home page supports HEAD, since
+  // UptimeRobot's uptime check is the only known HEAD caller and it targets only that path
+  // (see "Health monitoring" in docs/SERVICE.md). Its response must match what GET / would
+  // send, minus the body, so that a monitor reading headers alone sees the real page state.
+  else if (method === 'HEAD') {
+    if (['/', '/index.html'].includes(pathname)) {
+      setHeaders('text/html', '/index.html', 'medium');
+      response.end();
+    }
+    else {
+      await serveError({message: `ERROR: Invalid HEAD request (${pathname})`}, response, true);
+    }
+  }
   // Otherwise, if the request is a POST request:
   else if (method === 'POST') {
     // If the path is not authorized for POST requests:
@@ -1226,7 +1239,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       }
     }
   }
-  // Otherwise, i.e. if it is neither a GET nor a POST request:
+  // Otherwise, i.e. if it is none of GET, HEAD, or POST:
   else {
     // Report its invalidity. (Caddy handles OPTIONS requests.)
     await serveError({message: 'ERROR: Invalid request method'}, response, true);

@@ -10,7 +10,7 @@ An ensemble testing and reporting service for front-end web quality
 
 ## Features
 
-This application uses an ensemble of 12 rule engines to test public web pages for front-end quality (i.e. accessibility, usability, and standards conformity).
+This application uses an ensemble of 12 rule engines to test web pages for front-end quality (i.e. accessibility, usability, and standards conformity).
 
 The testing paradigm employed by Kilotest is discussed in these papers:
 
@@ -20,11 +20,11 @@ The testing paradigm employed by Kilotest is discussed in these papers:
 
 Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access.
 
-Testing for Kilotest is performed by one or more testing agents that obtain jobs from Kilotest, perform them, and send reports of the results back to Kilotest. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package.
+Testing for Kilotest is performed by one or more workers (testing agents) that obtain jobs from Kilotest, perform them, and send reports of the results back to Kilotest. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package. Thus, the pages that Kilotest tests need not be on the public Internet. They need only be reachable by the Testaro workers that do the testing for Kilotest. So, one or more Testaro workers running inside a private intranet can test internal pages, as well as any external ones reachable from inside the intranet.
 
-An active production instance of Kilotest may require multiple testing agents to handle the load, because testing one web page typically takes about 3 minutes and agents test only one page at a time.
+An active production instance of Kilotest may require multiple Testaro workers to handle the load, because testing one web page typically takes about 3 minutes and workers test only one page at a time.
 
-## Getting started locally with 1 testing worker
+## Getting started locally with 1 worker
 
 ### Installation
 

@@ -226,6 +226,30 @@ test('GET /index.html serves the home page', async () => {
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
+// TESTS: HEAD routes
+
+test('HEAD / returns the same status and headers as GET /, with no body', async () => {
+  const getRes = await request('GET', '/');
+  const headRes = await request('HEAD', '/');
+  assert.equal(headRes.statusCode, getRes.statusCode);
+  assert.equal(headRes.headers['content-type'], getRes.headers['content-type']);
+  assert.equal(headRes.body, '');
+});
+
+test('HEAD /index.html returns the same status and headers as GET /, with no body', async () => {
+  const getRes = await request('GET', '/');
+  const headRes = await request('HEAD', '/index.html');
+  assert.equal(headRes.statusCode, getRes.statusCode);
+  assert.equal(headRes.headers['content-type'], getRes.headers['content-type']);
+  assert.equal(headRes.body, '');
+});
+
+test('HEAD /robots.txt returns an invalid HEAD request error, since only the home page supports HEAD', async () => {
+  const res = await request('HEAD', '/robots.txt');
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body, '');
+});
+
 test('GET /robots.txt serves the robots file as text', async () => {
   const res = await request('GET', '/robots.txt');
   assert.equal(res.statusCode, 200);

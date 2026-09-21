@@ -256,10 +256,17 @@ kilotest.com {
   }
   # Enable Zstandard and Gzip compression of responses.
   encode zstd gzip
-  # Specify the only paths of forwardable requests. UptimeRobet uses HEAD.
+  # Specify the only paths of forwardable requests.
   @allowedGET {
-    method GET HEAD
+    method GET
     path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorialWeb/images/* /tutorialAI/images/* /qai /qai/comments /favicon.* /style.css /sitemap.xml
+  }
+  # UptimeRobot's uptime check is the only known HEAD caller, and it targets only the site
+  # root (see "Health monitoring" below), so HEAD is forwarded only for that path, not the
+  # full GET allowlist above. index.ts's HEAD branch matches this same scope.
+  @allowedHEAD {
+    method HEAD
+    path / /index.html
   }
   @allowedPOST {
     method POST
@@ -275,8 +282,14 @@ kilotest.com {
     }
     respond 204
   }
-  # Forward any other GET, POST, or OPTIONS request, if allowed, to port 3000.
+  # Forward any other GET, HEAD, or POST request, if allowed, to port 3000.
   handle @allowedGET {
+    reverse_proxy localhost:3000 {
+      # Improve SSE latency.
+      flush_interval -1
+    }
+  }
+  handle @allowedHEAD {
     reverse_proxy localhost:3000 {
       # Improve SSE latency.
       flush_interval -1
@@ -362,7 +375,7 @@ The deployment is monitored for external health and availability using [UptimeRo
 
 UptimeRobot also sends a recovery message when the service recovers and a subsequent check succeeds after a prior failure.
 
-This monitoring service requires `Caddyfile` to permit `HEAD` requests, not only `GET` requests, to the root path.
+This monitoring service requires both `Caddyfile` and Kilotest itself to permit `HEAD` requests, not only `GET` requests, to the root path: `Caddyfile`’s `@allowedHEAD` matcher forwards such a request to port 3000, and `index.ts`’s own dedicated `HEAD` branch in `handleRequest` answers it. Before that branch existed, Kilotest treated `HEAD` as an invalid method for every path (its dispatch recognized only `GET` and `POST`), so UptimeRobot’s hourly check received a `400` response and reported the service as down even while it was actually up.
 
 ## Alerting
 

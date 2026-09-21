@@ -270,7 +270,7 @@ kilotest.com {
   }
   @allowedPOST {
     method POST
-    path /mcp /requestRetest.html/* /requestTest.html /requestAction.html /reannotate.html /renewWCAG.html /ai0BalanceForm.html /expungeReportsForm.html /hideReportForm.html /metrics.html /pruneReportsForm.html /rewindReportsForm.html /showHiddenReportsForm.html /unhideReportForm.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
+    path /mcp /requestRetest.html/* /requestTest.html /requestAction.html /reannotate.html /renewWCAG.html /ai0BalanceForm.html /deleteNotesForm.html /expungeReportsForm.html /hideReportForm.html /metrics.html /pruneReportsForm.html /rewindReportsForm.html /showHiddenReportsForm.html /unhideReportForm.html /api/* /tutorialWebComment.html /tutorialAIComment.html /worker/job /worker/report
   }
   # Respond to OPTIONS requests.
   @allowedOPTIONS method OPTIONS

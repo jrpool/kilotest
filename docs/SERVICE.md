@@ -595,6 +595,14 @@ If restoration becomes necessary, the files can be copied in the opposite direct
 
 After that the maintainer can inspect the original and restored directories and delete or move report files as needed. After that the `db/reportsExtract.json` file should be deleted, so it will be regenerated when next needed.
 
+### Testing target restrictions
+
+A page submitted for testing need not be publicly accessible; it need only be reachable from the Testaro worker assigned the job. Without a restriction on which addresses a worker may be sent to, an arbitrary requester could induce a worker to fetch a target it has no legitimate reason to reach, such as [a private or link-local address](https://developer.mozilla.org/en-US/docs/Glossary/Private_network) on the network local to that worker, including a metadata service run by a cloud host. This class of attack is known as [server-side request forgery (SSRF)](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/SSRF).
+
+Kilotest guards against this with the `ALLOW_INTERNAL_TARGETS` environment variable (documented in `env.example`). Left unset, a deployment restricts testing to addresses that resolve to the public address space, checked both when a URL is submitted and again against the actually visited URL of each report before that report is stored (since a redirect could otherwise route a worker to a disallowed target after submission-time validation passed). Setting it to `true` opts a deployment in to testing private, loopback, and link-local addresses, and removes this protection entirely for that Kilotest instance.
+
+Setting `ALLOW_INTERNAL_TARGETS` to `true` is not safe merely because every Testaro worker able to poll that Kilotest instance is confined to a private network. A report on an internal page is stored and served by Kilotest itself, so if that Kilotest instance is reachable from the public Internet, anyone able to reach it, not only someone with access to the private network, can read the content of that report, including page text and, depending on job configuration, a screenshot or the HTML source of the page. Setting this variable to `true` is appropriate only for a Kilotest instance that is itself kept off the public Internet, or otherwise restricts who can request and retrieve reports, in addition to confining every one of its Testaro workers to the private network being tested.
+
 ### Possible future Testaro integration
 
 Kilotest uses Testaro to run jobs. In previous versions of Kilotest, Testaro was a dependency. It is currently not a dependency. Instead, Testaro instances are installed on one or more other hosts, and each instance polls Kilotest to ask for jobs to run.

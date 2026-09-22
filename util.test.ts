@@ -52,6 +52,7 @@ import {
   getWeightName,
   hiddenReportsPath,
   htmlSafe,
+  isAllowedRedirectTarget,
   isAllowedReport,
   isAllowedTarget,
   isJobID,
@@ -451,6 +452,66 @@ test('isAllowedTarget returns true for a URL resolving to a public IPv6 address'
   assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('2606:2800:220:1:248:1893:25c8:1946')), true);
 });
 
+test('isAllowedTarget returns false for a URL resolving to a TEST-NET-1 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('192.0.2.1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a TEST-NET-2 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('198.51.100.1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a TEST-NET-3 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('203.0.113.1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a benchmarking (198.18/15) address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('198.18.0.1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a reserved 240/4 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('240.0.0.1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to the broadcast address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('255.255.255.255')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a multicast address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('224.0.0.1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a deprecated IPv6 site-local address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('fec0::1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an IPv6 multicast address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('ff02::1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a 6to4 (2002::/16) address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('2002::1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a Teredo (2001::/32) address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('2001::1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an NAT64 (64:ff9b::/96) address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('64:ff9b::10.0.0.5')), false);
+});
+
 test('isAllowedTarget returns false for a URL resolving to an address family net.isIP does not recognize', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   assert.equal(await isAllowedTarget('https://example.com/page', async () => [{address: 'not-an-ip', family: 0}]), false);
@@ -480,6 +541,118 @@ test('isAllowedTarget returns false for a syntactically invalid URL', async () =
 test('isAllowedTarget returns true for a private-address target when ALLOW_INTERNAL_TARGETS is true', async () => {
   process.env.ALLOW_INTERNAL_TARGETS = 'true';
   assert.equal(await isAllowedTarget('https://192.168.1.1/page'), true);
+});
+
+// A fake fetch that returns a response whose url reflects any redirect,
+// so isAllowedRedirectTarget tests need no real network access.
+const fakeFetch = (finalURL: string) => async () => ({url: finalURL}) as Response;
+
+test('isAllowedRedirectTarget returns true when the final URL resolves to a public address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://example.com/page'), fakeLookup('93.184.216.34')),
+    true
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a private address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://10.0.0.5/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when the fetch throws', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const fetchImpl = async () => { throw new Error('fetch failed'); };
+  assert.equal(await isAllowedRedirectTarget('https://example.com/page', fetchImpl), false);
+});
+
+test('isAllowedRedirectTarget returns true for any URL when ALLOW_INTERNAL_TARGETS is true, without fetching', async () => {
+  process.env.ALLOW_INTERNAL_TARGETS = 'true';
+  const fetchImpl = async () => { throw new Error('fetch should not be called'); };
+  assert.equal(await isAllowedRedirectTarget('https://192.168.1.1/page', fetchImpl), true);
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a TEST-NET-1 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://192.0.2.1/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a TEST-NET-2 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://198.51.100.1/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a TEST-NET-3 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://203.0.113.1/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a benchmarking (198.18/15) address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://198.18.0.1/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a reserved 240/4 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://240.0.0.1/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to the broadcast address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://255.255.255.255/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a multicast address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://224.0.0.1/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a deprecated IPv6 site-local address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://[fec0::1]/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a 6to4 (2002::/16) address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://[2002::1]/page'), fakeLookup('93.184.216.34')),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns false when a redirect leads to a Teredo (2001::/32) address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fakeFetch('https://[2001::1]/page'), fakeLookup('93.184.216.34')),
+    false
+  );
 });
 
 test('isAllowedReport returns true when every act has a public actualURL', async () => {

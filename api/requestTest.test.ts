@@ -93,6 +93,22 @@ test('requestTest rejects a private-address URL unless internal targets are allo
   }
 });
 
+test('requestTest rejects a URL that redirects to a disallowed target, and alerts a manager', async (t) => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  t.mock.method(globalThis, 'fetch', async () => ({url: 'https://10.0.0.5/page'}) as Response);
+  try {
+    const body = await response(['Redirecting Page', 'https://example.com/redirector', 'A reason that is long enough.']);
+    const details = body['response content']['details about your request'] as any;
+    assert.ok(details.error.includes('does not resolve to a page that this deployment can test'));
+    assert.ok(logged.some(line =>
+      line.includes('WARNING (Kilotest: request rejected for redirecting to a disallowed target)')
+      && line.includes('https://example.com/redirector')
+    ));
+  } finally {
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
+  }
+});
+
 test('requestTest rejects an already-tested page', async () => {
   const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;

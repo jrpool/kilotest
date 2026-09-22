@@ -8,7 +8,7 @@
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {sendAlert} from '../alerts.ts';
-import {checkCommentDuplicate, checkLength, getJSON, getNowStamp} from '../util.ts';
+import {checkCommentDuplicate, checkLength, describeMax, getEnvMax, getJSON, getNowStamp} from '../util.ts';
 import {requestFeatureResponseSchema} from './schemas.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -21,6 +21,13 @@ type ResponseContent = z.infer<typeof requestFeatureResponseSchema>['response co
 // FUNCTIONS (helpers)
 
 const getFeatureRequestsPath = () => process.env.FEATURE_REQUESTS_PATH || path.join(import.meta.dirname, '../db/featureRequests.json');
+// Maximum number of feature requests held at once. Once reached, a new, distinct request
+// is rejected rather than stored, so the feature-requests file and the manager alert
+// emails it generates cannot grow without bound (modeled on a full mailbox rejecting new
+// mail; see GitHub issue #3, abuse type 3). Configurable via FEATURE_REQUESTS_MAX, since
+// different Kilotest deployments' maintainers may want a different size; a value of 0
+// means no limit.
+const getFeatureRequestsMax = () => getEnvMax('FEATURE_REQUESTS_MAX', 20);
 
 // FUNCTIONS
 
@@ -61,7 +68,18 @@ export const response = async (args: string[]) => {
         }
       };
     }
-    // Otherwise, i.e. if it is not a duplicate:
+    // Otherwise, if the feature requests already on file have reached the cap (a cap of 0
+    // means no limit, so the queue is never full):
+    else if (getFeatureRequestsMax() > 0 && featureRequests.length >= getFeatureRequestsMax()) {
+      responseContent = {
+        'details about your request': {
+          error: 'request invalid: too many feature requests are awaiting review right now. ' +
+            'Please try again later, or post your request at https://github.com/jrpool/kilotest/issues ' +
+            'or email info@kilotest.com.'
+        }
+      };
+    }
+    // Otherwise, i.e. if it is not a duplicate and the queue is not full:
     else {
       // Record the feature request alongside the existing ones.
       featureRequests.push({
@@ -70,8 +88,12 @@ export const response = async (args: string[]) => {
       });
       await fs.mkdir(path.dirname(featureRequestsPath), {recursive: true});
       await fs.writeFile(featureRequestsPath, getJSON(featureRequests));
-      // Notify the manager.
-      await sendAlert('Kilotest: MCP feature request received', feature);
+      // Notify the manager, including the resulting count, so a maintainer who has been
+      // away sees at a glance how urgently the requests need review.
+      await sendAlert(
+        'Kilotest: MCP feature request received',
+        `${feature}\nFeature requests now awaiting review: ${featureRequests.length} of ${describeMax(getFeatureRequestsMax())}`
+      );
       // Add the disposition to the response content.
       responseContent = {
         'details about your request': {

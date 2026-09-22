@@ -26,12 +26,14 @@ import {
   checkLength,
   createLock,
   dbPath,
+  describeMax,
   getAgoDays,
   getAgoString,
   getCountString,
   getDateString,
   getDateTime,
   getEngineNamesString,
+  getEnvMax,
   getIssue,
   errorMessage,
   getJSON,
@@ -267,6 +269,46 @@ test('getDateTime returns a Date for a valid time stamp', () => {
 
 test('getDateTime returns null for an invalid time stamp', () => {
   assert.equal(getDateTime('invalid'), null);
+});
+
+test('getEnvMax returns the default when the variable is unset', () => {
+  delete process.env.TEST_ENV_MAX_VAR;
+  assert.equal(getEnvMax('TEST_ENV_MAX_VAR', 20), 20);
+});
+
+test('getEnvMax returns the default when the variable is empty', () => {
+  process.env.TEST_ENV_MAX_VAR = '';
+  assert.equal(getEnvMax('TEST_ENV_MAX_VAR', 20), 20);
+  delete process.env.TEST_ENV_MAX_VAR;
+});
+
+test('getEnvMax returns the configured value when it is a positive integer', () => {
+  process.env.TEST_ENV_MAX_VAR = '50';
+  assert.equal(getEnvMax('TEST_ENV_MAX_VAR', 20), 50);
+  delete process.env.TEST_ENV_MAX_VAR;
+});
+
+test('getEnvMax returns the default when the variable is not an integer', () => {
+  process.env.TEST_ENV_MAX_VAR = 'not-a-number';
+  assert.equal(getEnvMax('TEST_ENV_MAX_VAR', 20), 20);
+  delete process.env.TEST_ENV_MAX_VAR;
+});
+
+test('getEnvMax returns 0 when the variable is explicitly 0, meaning no limit', () => {
+  process.env.TEST_ENV_MAX_VAR = '0';
+  assert.equal(getEnvMax('TEST_ENV_MAX_VAR', 20), 0);
+  delete process.env.TEST_ENV_MAX_VAR;
+});
+
+test('getEnvMax returns the default when the variable is negative', () => {
+  process.env.TEST_ENV_MAX_VAR = '-5';
+  assert.equal(getEnvMax('TEST_ENV_MAX_VAR', 20), 20);
+  delete process.env.TEST_ENV_MAX_VAR;
+});
+
+test('describeMax returns "no limit" for a cap of 0 and the number otherwise', () => {
+  assert.equal(describeMax(0), 'no limit');
+  assert.equal(describeMax(20), '20');
 });
 
 test('getIssue returns an issue ID for a known engine and rule', () => {
@@ -852,6 +894,63 @@ test('processTestRequest returns a retest error when a report already exists for
     'because accessibility', {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}
   );
   assert.equal(result, 'retest');
+});
+
+test('processTestRequest returns a queueFull error once the pending-request queue is full', {timeout: 500}, async () => {
+  // Fill testRequests.json with 20 pending requests, all for the same URL, so the total
+  // pending count (summed across all URLs' request arrays) reaches the cap directly,
+  // without needing 20 distinct URLs.
+  const filler = Array.from({length: 20}, (_, i) => ({
+    timeStamp: getNowStamp(), description: `Filler Page ${i}`, reason: 'because filler'
+  }));
+  await fs.writeFile(testRequestsPath(), getJSON({'https://example.com/filler': filler}));
+  // A further, distinct request is rejected as queueFull.
+  const {result} = await processTestRequest(
+    'because accessibility', {description: 'One Too Many Page', url: 'https://example.com/one-too-many'}
+  );
+  assert.equal(result, 'queueFull');
+  // Clean up testRequests.json.
+  await fs.writeFile(testRequestsPath(), '{}\n');
+});
+
+test('processTestRequest honors TEST_REQUEST_QUEUE_MAX when the cap is reached below the default', {timeout: 500}, async () => {
+  // With the cap lowered to 2, a single pending request already fills the queue.
+  process.env.TEST_REQUEST_QUEUE_MAX = '2';
+  try {
+    await fs.writeFile(testRequestsPath(), getJSON({
+      'https://example.com/filler': [
+        {timeStamp: getNowStamp(), description: 'Filler Page A', reason: 'because filler'},
+        {timeStamp: getNowStamp(), description: 'Filler Page B', reason: 'because filler'}
+      ]
+    }));
+    const {result} = await processTestRequest(
+      'because accessibility', {description: 'One Too Many Page', url: 'https://example.com/one-too-many'}
+    );
+    assert.equal(result, 'queueFull');
+  }
+  finally {
+    delete process.env.TEST_REQUEST_QUEUE_MAX;
+    await fs.writeFile(testRequestsPath(), '{}\n');
+  }
+});
+
+test('processTestRequest never returns queueFull when TEST_REQUEST_QUEUE_MAX is 0 (no limit)', {timeout: 500}, async () => {
+  // With the cap set to 0, a queue already past the default size is still not full.
+  process.env.TEST_REQUEST_QUEUE_MAX = '0';
+  try {
+    const filler = Array.from({length: 25}, (_, i) => ({
+      timeStamp: getNowStamp(), description: `Filler Page ${i}`, reason: 'because filler'
+    }));
+    await fs.writeFile(testRequestsPath(), getJSON({'https://example.com/filler': filler}));
+    const {result} = await processTestRequest(
+      'because accessibility', {description: 'One More Page', url: 'https://example.com/one-more'}
+    );
+    assert.equal(result, 'ok');
+  }
+  finally {
+    delete process.env.TEST_REQUEST_QUEUE_MAX;
+    await fs.writeFile(testRequestsPath(), '{}\n');
+  }
 });
 
 test('annotateReportObject annotates a report object in place without reading or writing a file', async () => {

@@ -41,6 +41,15 @@ export const answer = async (description: string, url: string, reason: string) =
       message: 'A report about the page is already available'
     }
   }
+  // Otherwise, if the queue of requests awaiting approval is full:
+  else if (result === 'queueFull') {
+    // Report this, with a fallback channel, since this request cannot be queued here.
+    return {
+      status: 'error',
+      message: 'Too many requests are awaiting approval right now. Please try again later, ' +
+        'or post your request at https://github.com/jrpool/kilotest/issues or email info@kilotest.com.'
+    }
+  }
   // Otherwise, i.e. if a request to test a page with the same description or URL is approved:
   else {
     // Report this.

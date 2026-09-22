@@ -128,3 +128,17 @@ test('answer returns an error when a matching job is already claimed or queued',
   }
 });
 
+test('answer returns an error with a fallback channel when the request queue is full', async () => {
+  const {answer} = await import('./index.ts');
+  // Fill testRequests.json with 20 pending requests, all for one URL, to reach the cap.
+  const filler = Array.from({length: 20}, (_, i) => ({
+    timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Because filler'
+  }));
+  await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
+  const result: any = await answer('260101T0001/ct', 'Because changes were made');
+  assert.equal(result.status, 'error');
+  assert.ok(result.message.startsWith('Too many requests are awaiting approval right now.'));
+  assert.ok(result.message.includes('https://github.com/jrpool/kilotest/issues'));
+  assert.ok(result.message.includes('info@kilotest.com'));
+});
+

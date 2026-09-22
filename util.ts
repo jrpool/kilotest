@@ -80,7 +80,7 @@ export type TestRequests = Record<string, TestRequest[]>;
 
 // Test request addition result.
 export type TestRequestResult
-= 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'nonreport' | 'ok';
+= 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'nonreport' | 'queueFull' | 'ok';
 
 // Target of a new-test or retest request: a description and URL for a new-test request,
 // or the timeStamp and jobID of the cited report for a retest request.
@@ -1094,6 +1094,35 @@ const getApprovedJobProperty = async (
 // its addition to testRequests.json are both decided inside the lock, as a single
 // atomic operation, so no caller-visible seam exists where an approvability decision
 // could be based on stale information about testRequests.json.
+// Returns the non-negative-integer value of an environment variable, or a default if the
+// variable is unset, empty, or not a non-negative integer. Read at call time, not cached,
+// so a variable set (e.g. in .env) after this module first loads still takes effect. Used
+// by the "inbox full" caps below (test requests, tutorial comments, feature requests),
+// which different Kilotest deployments' maintainers may reasonably want sized differently.
+// A value of 0 means no limit, mirroring how these caps are checked (never reached).
+export const getEnvMax = (name: string, defaultValue: number): number => {
+  const raw = process.env[name];
+  if (!raw) {
+    return defaultValue;
+  }
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : defaultValue;
+};
+// Maximum number of test/retest requests awaiting approval at once, across all URLs.
+// Once reached, a new, distinct request is rejected rather than added, so the pending
+// queue and the manager alert emails it generates cannot grow without bound (see GitHub
+// issue #3, abuse type 3, repeated/automated test-request submissions). Modeled on a full
+// mailbox rejecting new mail, rather than on a submission rate limit, since it is the
+// backlog itself, not how quickly it grows, that costs the manager review time and risks
+// unbounded storage. Configurable via TEST_REQUEST_QUEUE_MAX, since different Kilotest
+// deployments' maintainers may want a different size; a value of 0 means no limit.
+const testRequestQueueMax = () => getEnvMax('TEST_REQUEST_QUEUE_MAX', 20);
+// Returns a cap for display in an alert message: the cap itself, or "no limit" if the
+// cap is 0.
+export const describeMax = (max: number): string => max === 0 ? 'no limit' : String(max);
+// Returns the total number of test/retest requests awaiting approval, across all URLs.
+const getPendingTestRequestCount = (testRequests: TestRequests): number =>
+  Object.values(testRequests).reduce((total, requests) => total + requests.length, 0);
 export const processTestRequest = (
   reason: string,
   target: TestRequestTarget
@@ -1164,6 +1193,13 @@ export const processTestRequest = (
         return {result: 'retest', description, url};
       }
     }
+    // Otherwise, i.e. if the request is genuinely new, if the queue of requests awaiting
+    // approval is already full (a cap of 0 means no limit, so the queue is never full):
+    const queueMax = testRequestQueueMax();
+    if (queueMax > 0 && getPendingTestRequestCount(requests) >= queueMax) {
+      // Return this.
+      return {result: 'queueFull', description, url};
+    }
     // The request is eligible, so get the requests awaiting approval.
     const testRequests = await getTestRequests();
     // Add the request to them, initializing them with the URL if necessary.
@@ -1176,10 +1212,13 @@ export const processTestRequest = (
     await fs.writeFile(testRequestsPath(), getJSON(testRequests));
     // Get an email-safe version of the reason.
     const plainReason = getPlainText(reason);
-    // Alert a manager.
+    // Alert a manager, including the resulting queue size, so a maintainer who has been
+    // away sees at a glance how urgently the queue needs review (approval or rejection)
+    // rather than learning this only once it is already full.
     await sendAlert(
       `Kilotest: new ${requestType} request awaits approval`,
-      `Page description: ${description}\nURL: ${url}\nReason: ${plainReason}`
+      `Page description: ${description}\nURL: ${url}\nReason: ${plainReason}\n` +
+      `Requests now awaiting approval: ${getPendingTestRequestCount(testRequests)} of ${describeMax(queueMax)}`
     );
     // Return success.
     return {result: 'ok', description, url};

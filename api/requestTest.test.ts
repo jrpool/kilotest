@@ -181,6 +181,9 @@ test('requestTest accepts a valid new page request', async () => {
     line.startsWith('WARNING (Kilotest: new test request awaits approval)')
     && line.includes('Brand New Page')
     && line.includes('https://example.com/brandnew')
+    // The alert reports the resulting queue size, so a maintainer who has been away can
+    // see at a glance how close the queue is to full.
+    && line.includes('Requests now awaiting approval: 1 of 20')
   ));
 });
 
@@ -189,4 +192,19 @@ test('requestTest includes disposition information for a valid request', async (
   const disposition = body['response content']['disposition of your request'];
   assert.ok(disposition);
   assert.ok(disposition['what happens next']);
+});
+
+test('requestTest rejects a request with a fallback channel when the queue is full', async () => {
+  // Fill testRequests.json with 20 pending requests, all for one URL, to reach the cap.
+  const filler = Array.from({length: 20}, (_, i) => ({
+    timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Filler reason.'
+  }));
+  await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
+  const body = await response(['One Too Many Page', 'https://example.com/one-too-many', 'A reason that is long enough.']);
+  const details = body['response content']['details about your request'] as any;
+  assert.equal(details.error, undefined);
+  const disposition = body['response content']['disposition of your request'] as any;
+  assert.ok(disposition['what happens next'].includes('too many requests are awaiting approval right now.'));
+  assert.ok(disposition['what happens next'].includes('https://github.com/jrpool/kilotest/issues'));
+  assert.ok(disposition['what happens next'].includes('info@kilotest.com'));
 });

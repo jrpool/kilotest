@@ -100,6 +100,38 @@ test('handleComment saves a sanitized comment and returns ok', {timeout: 500}, a
   assert.ok(comments[0].timeStamp);
 });
 
+test('handleComment returns an error with a fallback channel when the comments cap is reached', {timeout: 500}, async () => {
+  // Fill comments.json with 20 distinct comments, reaching the cap.
+  const filler = Array.from({length: 20}, (_, i) => ({
+    timeStamp: '260101T0000', content: `Filler comment number ${i}, long enough to pass the length check.`
+  }));
+  await fs.writeFile(getCommentsPath(), JSON.stringify(filler));
+  const result = await handleComment('One comment too many, long enough to pass the length check.');
+  assert.equal(result.status, 'error');
+  assert.ok(result.message?.startsWith('Too many comments are awaiting review right now.'));
+  assert.ok(result.message?.includes('https://github.com/jrpool/kilotest/issues'));
+  assert.ok(result.message?.includes('info@kilotest.com'));
+  // Clean up.
+  await fs.writeFile(getCommentsPath(), '[]\n');
+});
+
+test('handleComment never rejects for a full inbox when TUTORIAL_AI_COMMENTS_MAX is 0 (no limit)', {timeout: 500}, async () => {
+  process.env.TUTORIAL_AI_COMMENTS_MAX = '0';
+  try {
+    // Fill comments.json past the default cap.
+    const filler = Array.from({length: 25}, (_, i) => ({
+      timeStamp: '260101T0000', content: `Filler comment number ${i}, long enough to pass the length check.`
+    }));
+    await fs.writeFile(getCommentsPath(), JSON.stringify(filler));
+    const result = await handleComment('One more comment, long enough to pass the length check.');
+    assert.equal(result.status, 'ok');
+  }
+  finally {
+    delete process.env.TUTORIAL_AI_COMMENTS_MAX;
+    await fs.writeFile(getCommentsPath(), '[]\n');
+  }
+});
+
 test('handleComment strips HTML tags and control characters', {timeout: 500}, async () => {
   await fs.writeFile(getCommentsPath(), '[]\n');
   const result = await handleComment('<img src=x onerror=alert(1)>\x00\x07Hello');

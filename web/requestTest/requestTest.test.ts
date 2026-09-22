@@ -128,3 +128,19 @@ test('answer returns an error when a report already exists for the page', {timeo
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'A report about the page is already available');
 });
+
+test('answer returns an error with a fallback channel when the request queue is full', {timeout: 500}, async () => {
+  const {answer} = await import('./index.ts');
+  // Fill testRequests.json with 20 pending requests, all for one URL, to reach the cap.
+  const filler = Array.from({length: 20}, (_, i) => ({
+    timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Because filler'
+  }));
+  await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
+  const result: any = await answer(
+    'One Too Many Page', 'https://example.com/one-too-many', 'Because accessibility'
+  );
+  assert.equal(result.status, 'error');
+  assert.ok(result.message.startsWith('Too many requests are awaiting approval right now.'));
+  assert.ok(result.message.includes('https://github.com/jrpool/kilotest/issues'));
+  assert.ok(result.message.includes('info@kilotest.com'));
+});

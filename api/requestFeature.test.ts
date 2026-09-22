@@ -81,7 +81,43 @@ test('requestFeature accepts a non-empty feature request and notifies the manage
   assert.ok(logged.some(line =>
     line.startsWith('WARNING (Kilotest: MCP feature request received)')
     && line.includes('Add a dark mode toggle')
+    // The alert reports the resulting queue size, so a maintainer who has been away can
+    // see at a glance how close the queue is to full.
+    && line.includes('Feature requests now awaiting review: 1 of 20')
   ));
+});
+
+test('requestFeature rejects a request with a fallback channel when the queue is full', async () => {
+  // Fill featureRequests.json with 20 distinct requests, reaching the cap.
+  const filler = Array.from({length: 20}, (_, i) => ({
+    timeStamp: '260101T0000', content: `Filler feature request number ${i}, long enough to pass the length check.`
+  }));
+  await fs.writeFile(process.env.FEATURE_REQUESTS_PATH!, JSON.stringify(filler));
+  const body = await response(['One feature request too many, long enough to pass the length check.']);
+  const details = body['response content']['details about your request'] as any;
+  assert.ok(details.error.includes('too many feature requests are awaiting review right now.'));
+  assert.ok(details.error.includes('https://github.com/jrpool/kilotest/issues'));
+  assert.ok(details.error.includes('info@kilotest.com'));
+  const featureRequests = JSON.parse(await fs.readFile(process.env.FEATURE_REQUESTS_PATH!, 'utf8'));
+  // The rejected request was not recorded.
+  assert.equal(featureRequests.length, 20);
+});
+
+test('requestFeature never rejects for a full inbox when FEATURE_REQUESTS_MAX is 0 (no limit)', async () => {
+  process.env.FEATURE_REQUESTS_MAX = '0';
+  try {
+    // Fill featureRequests.json past the default cap.
+    const filler = Array.from({length: 25}, (_, i) => ({
+      timeStamp: '260101T0000', content: `Filler feature request number ${i}, long enough to pass the length check.`
+    }));
+    await fs.writeFile(process.env.FEATURE_REQUESTS_PATH!, JSON.stringify(filler));
+    const body = await response(['One more feature request, long enough to pass the length check.']);
+    const details = body['response content']['details about your request'] as any;
+    assert.equal(details.error, undefined);
+  }
+  finally {
+    delete process.env.FEATURE_REQUESTS_MAX;
+  }
 });
 
 test('requestFeature includes tool name and metadata', async () => {

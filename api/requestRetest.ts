@@ -79,6 +79,10 @@ export const response = async (args: string[]) => {
         else if (requestResult === 'superseded') {
           failureReason = 'a later report about a page with the same description is available.'
         }
+        else if (requestResult === 'queueFull') {
+          failureReason = 'too many requests are awaiting approval right now. Please try again later, ' +
+            'or post your request at https://github.com/jrpool/kilotest/issues or email info@kilotest.com.'
+        }
         else {
           failureReason = 'an identical request is already awaiting approval.'
         }

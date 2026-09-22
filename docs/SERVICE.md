@@ -417,6 +417,19 @@ Alerts are sent via the `sendAlert()` function in [alerts.ts](../alerts.ts), whi
 
 If any of these five variables is missing or empty at alert time, the alert is not sent. Instead, a warning message is logged to the console, and the application continues normal operation. The warning includes the alert subject and body so the maintainer can manually review what would have been sent.
 
+### Inbox size limits
+
+Four submission types (test requests and retest requests together, web tutorial comments, AI tutorial comments, and MCP feature requests) are each held in a pending "inbox" (`db/jobs/testRequests.json`, `db/comments/tutorialWeb.json`, `db/comments/tutorialAI.json`, and `db/featureRequests.json` respectively) awaiting manual review by the maintainer. Each inbox has a maximum size; once reached, a new, distinct submission is rejected (with a message suggesting the requester instead post to the [GitHub issues page](https://github.com/jrpool/kilotest/issues) or email `info@kilotest.com`) rather than added, so neither the inbox file nor the manager alert emails it generates can grow without bound (see GitHub issue #3, abuse type 3, repeated/automated submissions). This is modeled on a full mailbox rejecting new mail, rather than on a submission rate limit: it is the backlog size itself, not how quickly it grows, that costs the maintainer review time and risks unbounded storage. Every alert sent for an accepted submission reports the resulting inbox count against its cap, so a maintainer returning after an absence can immediately see how close an inbox is to full.
+
+Each cap defaults to 20 and can be set independently via an environment variable:
+
+1. **`TEST_REQUEST_QUEUE_MAX`**: The maximum number of test and retest requests awaiting approval at once, summed across all requested URLs.
+2. **`TUTORIAL_WEB_COMMENTS_MAX`**: The maximum number of comments held on the web tutorial page (`/tutorialWeb.html`).
+3. **`TUTORIAL_AI_COMMENTS_MAX`**: The maximum number of comments held on the AI agent tutorial page (`/tutorialAI.html`).
+4. **`FEATURE_REQUESTS_MAX`**: The maximum number of feature requests held via the MCP server's `requestFeature` tool.
+
+Each variable, if set, must be a non-negative integer; if unset, empty, or not a non-negative integer, the default of 20 is used instead. A value of `0` means no limit: that inbox is never treated as full, regardless of size. Unlike the alert-configuration variables above, these are not required: an unset value never disables the limit, it only selects the default size.
+
 ### Resend integration
 
 Kilotest uses [Resend](https://resend.com/) as its transactional email delivery service. Resend is configured through the environment variables above.

@@ -17,6 +17,8 @@ import {
   getObject,
   getPOSTData,
   getReport,
+  isAllowedReport,
+  isAllowedTarget,
   isReportError,
   getReportPath,
   hiddenReportsPath,
@@ -899,7 +901,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else if (pageName === 'requestTest.html') {
         const {description, url, why} = postData as {description?: string; url: string; why?: string};
         // If the request is valid:
-        if (description && isURL(url) && why) {
+        if (description && isURL(url) && why && await isAllowedTarget(url)) {
           // If a report on the page is already available:
           if (await isReportAvailable(description, url)) {
             // Report the error.
@@ -1103,8 +1105,28 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
               }
               // If the job was actually assigned to this worker:
               if (typeof claimedJob === 'object' && claimedJob !== null && (claimedJob as {sources?: {worker?: string}}).sources?.worker === workerName) {
-                // If the report is usable by Kilotest (as any report of an assigned job should be):
-                if (isUsableReport(reportObj)) {
+                // If the report is on a target this deployment allows (a redirect during
+                // navigation, possibly via DNS rebinding, can take a worker to a target that
+                // was disallowed even though the originally submitted URL passed that check
+                // at submission time):
+                if (!(await isAllowedReport(reportObj))) {
+                  console.error(`ERROR: Report ${id} from worker ${workerName} is on a disallowed target`);
+                  // Alert a manager, since this indicates an attempted or accidental SSRF
+                  // rather than an ordinary usability problem with the report.
+                  await sendAlert(
+                    'Kilotest: report on disallowed target rejected',
+                    `Job ${id} from worker ${workerName} resulted in a visit to a target this deployment does not allow (e.g. a private, loopback, or link-local address), possibly via a redirect. The report was discarded and the job was reclassified as failed.`
+                  );
+                  // Reclassify the job as failed, instead of recording the disallowed report or
+                  // leaving the job claimed indefinitely.
+                  await fs.rename(
+                    path.join(claimedPath(), `${id}.json`), path.join(failedPath(), `${id}.json`)
+                  );
+                  // Report the error.
+                  await serveError({message: `ERROR: Report ${id} is on a disallowed target`}, response, false);
+                }
+                // Otherwise, if the report is usable by Kilotest (as any report of an assigned job should be):
+                else if (isUsableReport(reportObj)) {
                   console.log(`Testaro report ${id} was received from worker ${workerName}`);
                   // Add the public worker name to the report.
                   report!.sources = {...report!.sources, worker: workerName};

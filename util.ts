@@ -12,7 +12,9 @@ import {sendAlert} from './alerts.ts';
 import {issues as issueSpecs, rules as ruleSpecs} from 'testaro-issues';
 import type {Act, Catalog, Report, StandardInstance} from 'testaro';
 import crypto from 'node:crypto';
+import dns from 'node:dns/promises';
 import fs from 'node:fs/promises';
+import net from 'node:net';
 import path from 'node:path';
 import querystring from 'node:querystring';
 /* c8 ignore stop */
@@ -549,6 +551,95 @@ export const isURL = (string: string): boolean => {
     return false;
   }
 };
+// Returns whether an IPv4 address (in dotted-decimal form) is in a private,
+// loopback, link-local, or otherwise non-public range, including the
+// 169.254.169.254 cloud-metadata address (which falls under link-local).
+const isNonPublicIPv4 = (address: string): boolean => {
+  const octets = address.split('.').map(Number);
+  const [a, b = 0] = octets;
+  return (
+    a === 127 || // loopback
+    a === 10 || // private
+    a === 0 || // "this network"
+    (a === 172 && b >= 16 && b <= 31) || // private
+    (a === 192 && b === 168) || // private
+    (a === 169 && b === 254) || // link-local, incl. cloud metadata
+    (a === 100 && b >= 64 && b <= 127) // carrier-grade NAT
+  );
+};
+// Returns whether an IPv6 address is in a loopback, unique-local, or
+// link-local range.
+const isNonPublicIPv6 = (address: string): boolean => {
+  const normalized = address.toLowerCase();
+  return (
+    normalized === '::1' // loopback
+    || normalized === '::' // unspecified
+    || /^::ffff:/.test(normalized) && isNonPublicIPv4(normalized.replace(/^::ffff:/, '')) // IPv4-mapped
+    || /^f[cd][0-9a-f]{2}:/.test(normalized) // unique local (fc00::/7)
+    || /^fe[89ab][0-9a-f]:/.test(normalized) // link-local (fe80::/10)
+  );
+};
+// Returns whether an IP address (v4 or v6) is outside the public address
+// space, i.e. is a loopback, private, link-local, or other reserved address
+// that a public deployment should never intend to test.
+const isNonPublicIP = (address: string): boolean => {
+  const version = net.isIP(address);
+  if (version === 4) {
+    return isNonPublicIPv4(address);
+  }
+  if (version === 6) {
+    return isNonPublicIPv6(address);
+  }
+  // Not a recognizable IP address, so treat it as non-public, i.e. as unsafe.
+  return true;
+};
+// Returns whether ALLOW_INTERNAL_TARGETS opts this deployment in to testing
+// pages at private, loopback, or link-local addresses. A deployment that
+// intentionally runs a Testaro worker inside a private network to test
+// intranet pages sets this to "true"; a public deployment, whose Testaro
+// workers may run on hosts with access to their own cloud metadata service,
+// leaves it unset so private addresses are rejected by default (fail safe).
+const allowsInternalTargets = (): boolean => process.env.ALLOW_INTERNAL_TARGETS === 'true';
+// The signature of dns.lookup with {all: true}, extracted so tests can inject
+// a fake resolver and avoid depending on real network/DNS access.
+type LookupAll = (hostname: string, options: {all: true}) => Promise<{address: string; family: number}[]>;
+// Returns whether the host a URL resolves to consists only of addresses this
+// deployment is configured to allow as testing targets. This governs where
+// the Testaro browser is allowed to navigate, so it is the control against
+// submitting (or, via a redirect, being routed to) an unintended internal
+// target such as a cloud metadata service or another host on a private
+// network. It is deliberately independent of the syntax check that isURL
+// performs, because it requires a DNS lookup, and therefore an internal
+// deployment can use it to check both a requested URL (at submission time)
+// and the actual, possibly redirected, URL of a report (at report-ingestion
+// time). The lookup parameter defaults to the real dns.lookup and exists so
+// tests can inject a fake resolver.
+export const isAllowedTarget = async (url: string, lookup: LookupAll = dns.lookup): Promise<boolean> => {
+  // If this deployment allows internal targets, every syntactically valid URL is allowed.
+  if (allowsInternalTargets()) {
+    return true;
+  }
+  let hostname: string;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    return false;
+  }
+  // If the hostname is itself a literal IP address, check it directly.
+  if (net.isIP(hostname)) {
+    return !isNonPublicIP(hostname);
+  }
+  // Otherwise, resolve the hostname and reject it if any address it resolves
+  // to is non-public, since a hostname can resolve to more than one address
+  // and an attacker need control only one of them.
+  try {
+    const addresses = await lookup(hostname, {all: true});
+    return addresses.length > 0 && addresses.every(({address}) => !isNonPublicIP(address));
+  } catch {
+    // An unresolvable hostname cannot be a usable testing target either way.
+    return false;
+  }
+};
 // Returns whether a string is the authorization code, the shared check every
 // manager-facing page and action uses to gate a submission. Centralized so all call
 // sites compare against process.env.AUTH_CODE the same way.
@@ -601,6 +692,31 @@ export const deleteTestRequests = (url: string) => testRequestsLock(async (): Pr
 // Returns the test acts of a report.
 export const getTestActs = (report: UsableReport): AnnotatedAct[] =>
   report.acts.filter(act => act.type === 'test');
+// Returns whether all URLs actually visited for a report are allowed targets.
+// A URL submitted for testing can pass isAllowedTarget at submission time and
+// still result in a report on a disallowed target, because the browser
+// running in a worker can be redirected (possibly through DNS rebinding, so
+// the same hostname resolves differently at fetch time) to a host this
+// deployment does not allow as a testing target. Since each test act records
+// the URL it actually visited (actualURL, defaulting to the requested URL of
+// the job if a tool did not report one), checking every act here, right
+// before a report is stored or served, is what actually closes that gap,
+// independently of whatever happened during navigation.
+export const isAllowedReport = async (
+  report: Partial<Report>, lookup: LookupAll = dns.lookup
+): Promise<boolean> => {
+  const acts = Array.isArray(report.acts) ? report.acts : [];
+  const testActs = acts.filter((act): act is AnnotatedAct => act?.type === 'test');
+  const urlsVisited = new Set(
+    testActs.map(act => act.actualURL ?? report.target?.url).filter((url): url is string => !!url)
+  );
+  for (const url of urlsVisited) {
+    if (!(await isAllowedTarget(url, lookup))) {
+      return false;
+    }
+  }
+  return true;
+};
 // Returns the standard instances of a report's test acts, optionally filtered.
 export const getTestActInstances = (
   report: UsableReport,

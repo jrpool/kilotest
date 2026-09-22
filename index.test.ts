@@ -19,6 +19,10 @@ process.env.FEATURE_REQUESTS_PATH = path.join(testCommentsDir, 'featureRequests.
 process.env.TESTARO_WORKERS = JSON.stringify({
   worker1: {secret: 'secret1', name: 'Worker One'}
 });
+// Allow internal targets by default, so tests that submit an ordinary https://example.com/...
+// URL do not depend on real DNS/network access to pass the resolution check that
+// isAllowedTarget performs. Tests of the check itself (below) override this per test.
+process.env.ALLOW_INTERNAL_TARGETS = 'true';
 // Blank the alert configuration unconditionally, so this file sends no real alert
 // emails (e.g. from the requestTest/requestRetest/tutorial-comment tests below) even
 // when run directly (e.g. `npx tsx --test index.test.ts`) rather than via `npm test`,
@@ -905,6 +909,21 @@ test('POST /requestTest.html with non-https URL returns an error', async () => {
   assert.ok(res.body.includes('Invalid test request'));
 });
 
+test('POST /requestTest.html with a private-address URL returns an error unless internal targets are allowed', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  try {
+    const res = await formRequest('POST', '/requestTest.html', {
+      description: 'Internal Page',
+      url: 'https://192.168.1.1/page',
+      why: 'Because accessibility matters'
+    });
+    assert.equal(res.statusCode, 400);
+    assert.ok(res.body.includes('Invalid test request'));
+  } finally {
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
+  }
+});
+
 test('POST /requestRetest.html/260202T0000/new with missing why returns an error', async () => {
   const res = await formRequest('POST', '/requestRetest.html/260202T0000/new', {
     why: ''
@@ -1225,6 +1244,62 @@ test('POST /worker/report with a claimed job but an unusable report returns an e
   assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
   // Clean up.
   await fs.unlink(failedJobPath).catch(() => {});
+});
+
+test('POST /worker/report with a report on a disallowed target rejects it and reclassifies the job', {timeout: 500}, async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  // Use a unique job ID that does not conflict with existing fixtures.
+  const jobID = '990101T0002-ssr';
+  const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  const jobFile = `${jobID}.json`;
+  const claimedJobPath = path.join(claimedDir, jobFile);
+  const failedJobPath = path.join(failedDir, jobFile);
+  try {
+    // Clean up any leftover files.
+    await fs.unlink(reportPath).catch(() => {});
+    await fs.unlink(failedJobPath).catch(() => {});
+    // Create a claimed job assigned to Worker One.
+    await fs.writeFile(claimedJobPath, JSON.stringify({
+      id: jobID,
+      target: {what: 'Test', url: 'https://example.com/test'},
+      sources: {worker: 'Worker One'}
+    }));
+    const auth = Buffer.from('worker1:secret1').toString('base64');
+    // A report that is otherwise usable, but whose test act was redirected (actualURL)
+    // to a private address that this deployment does not allow as a testing target.
+    const report = {
+      id: jobID,
+      target: {what: 'Test', url: 'https://example.com/test'},
+      acts: [{
+        type: 'test', which: 'axe', actualURL: 'https://192.168.1.1/test',
+        result: {standardResult: {instances: []}}
+      }],
+      jobData: {endTime: '26-01-01T00:00'},
+      catalog: {}
+    };
+    const res = await request('POST', '/worker/report', {report}, {
+      authorization: `Basic ${auth}`
+    });
+    assert.equal(res.statusCode, 400);
+    const body = jsonBody(res);
+    assert.ok(body.error.message.includes('disallowed target'));
+    // The report should not have been recorded.
+    const reportExists = await fs.access(reportPath).then(() => true).catch(() => false);
+    assert.equal(reportExists, false, 'Report on a disallowed target should not be saved');
+    // Wait for the async rename to complete.
+    await new Promise<void>(resolve => setTimeout(resolve, 100));
+    // The job should have been reclassified as failed rather than left claimed.
+    const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+    assert.ok(failedExists, 'Job should be moved to the failed directory');
+    const claimedExists = await fs.access(claimedJobPath).then(() => true).catch(() => false);
+    assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
+  } finally {
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
+    // Clean up.
+    await fs.unlink(failedJobPath).catch(() => {});
+  }
 });
 
 // TESTS: remaining error branches and web pages

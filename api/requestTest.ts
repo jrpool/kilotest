@@ -7,7 +7,7 @@
 
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {checkLength, isURL, processTestRequest} from '../util.ts';
+import {checkLength, isAllowedTarget, isURL, processTestRequest} from '../util.ts';
 import {requestTestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -41,6 +41,12 @@ export const response = async (args: string[]) => {
   else if (!isURL(url)) {
     requestDetails = {
       error: 'request invalid: you specified an invalid URL for the page'
+    };
+  }
+  // Otherwise, i.e. if the URL does not resolve to an allowed target:
+  else if (!(await isAllowedTarget(url))) {
+    requestDetails = {
+      error: 'request invalid: the URL you specified does not resolve to a page that this deployment can test'
     };
   }
   // Otherwise, i.e. if the description and URL are valid:

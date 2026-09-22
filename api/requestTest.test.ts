@@ -17,6 +17,10 @@ import {fixtureDBDir} from '../test/dbFixture.ts';
 for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
   process.env[key] = '';
 }
+// Allow internal targets by default, so tests that submit an ordinary https://example.com/...
+// URL do not depend on real DNS/network access to pass the resolution check that
+// isAllowedTarget performs. The test of the check itself (below) overrides this.
+process.env.ALLOW_INTERNAL_TARGETS = 'true';
 
 // SETUP AND TEARDOWN
 
@@ -75,6 +79,18 @@ test('requestTest rejects a syntactically invalid URL with the correct length', 
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('invalid URL'));
   assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+});
+
+test('requestTest rejects a private-address URL unless internal targets are allowed', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  try {
+    const body = await response(['Internal Page', 'https://192.168.1.1/page', 'A reason that is long enough.']);
+    const details = body['response content']['details about your request'] as any;
+    assert.ok(details.error.includes('does not resolve to a page that this deployment can test'));
+    assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+  } finally {
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
+  }
 });
 
 test('requestTest rejects an already-tested page', async () => {

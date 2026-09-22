@@ -7,6 +7,7 @@
 
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
+import net from 'node:net';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 
@@ -51,6 +52,8 @@ import {
   getWeightName,
   hiddenReportsPath,
   htmlSafe,
+  isAllowedReport,
+  isAllowedTarget,
   isJobID,
   isReportAvailable,
   isTimeStamp,
@@ -364,6 +367,160 @@ test('isURL returns false for a non-HTTPS URL', () => {
 
 test('isURL returns false for an invalid URL', () => {
   assert.equal(isURL('not-a-url'), false);
+});
+
+// A fake resolver, so isAllowedTarget tests need no real DNS/network access.
+const fakeLookup = (address: string) => async () => [{address, family: net.isIP(address)}];
+
+// isAllowedTarget and isAllowedReport branch on ALLOW_INTERNAL_TARGETS, which other test
+// files (sharing this process) set to "true" for their own unrelated tests, so every test
+// below sets the env var itself, rather than relying on it being unset by default, and
+// restores whatever value preceded it.
+let savedAllowInternalTargets: string | undefined;
+
+before(() => {
+  savedAllowInternalTargets = process.env.ALLOW_INTERNAL_TARGETS;
+});
+
+after(() => {
+  if (savedAllowInternalTargets === undefined) {
+    delete process.env.ALLOW_INTERNAL_TARGETS;
+  }
+  else {
+    process.env.ALLOW_INTERNAL_TARGETS = savedAllowInternalTargets;
+  }
+});
+
+test('isAllowedTarget returns true for a URL resolving to a public address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('93.184.216.34')), true);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a loopback address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('127.0.0.1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a private address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('10.0.0.5')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a 172.16/12 private address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('172.20.0.5')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a carrier-grade NAT address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('100.70.0.5')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to a link-local/cloud-metadata address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('169.254.169.254')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an IPv6 loopback address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('::1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an IPv6 unspecified address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('::')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an IPv4-mapped private IPv6 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('::ffff:10.0.0.5')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an IPv6 unique-local address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('fd12:3456:789a:1::1')), false);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an IPv6 link-local address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('fe80::1')), false);
+});
+
+test('isAllowedTarget returns true for a URL resolving to a public IPv6 address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', fakeLookup('2606:2800:220:1:248:1893:25c8:1946')), true);
+});
+
+test('isAllowedTarget returns false for a URL resolving to an address family net.isIP does not recognize', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://example.com/page', async () => [{address: 'not-an-ip', family: 0}]), false);
+});
+
+test('isAllowedTarget returns false when the DNS lookup rejects', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const lookup = async () => { throw new Error('lookup failed'); };
+  assert.equal(await isAllowedTarget('https://nonexistent.invalid/page', lookup), false);
+});
+
+test('isAllowedTarget returns false for a URL whose literal host is a private IP', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://192.168.1.1/page'), false);
+});
+
+test('isAllowedTarget returns true for a URL whose literal host is a public IP', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('https://93.184.216.34/page'), true);
+});
+
+test('isAllowedTarget returns false for a syntactically invalid URL', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(await isAllowedTarget('not-a-url'), false);
+});
+
+test('isAllowedTarget returns true for a private-address target when ALLOW_INTERNAL_TARGETS is true', async () => {
+  process.env.ALLOW_INTERNAL_TARGETS = 'true';
+  assert.equal(await isAllowedTarget('https://192.168.1.1/page'), true);
+});
+
+test('isAllowedReport returns true when every act has a public actualURL', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const report = {
+    target: {what: 'Example', url: 'https://example.com/page'},
+    acts: [
+      {type: 'test', actualURL: 'https://example.com/page'},
+      {type: 'test', actualURL: 'https://example.com/page2'}
+    ]
+  };
+  assert.equal(await isAllowedReport(report, fakeLookup('93.184.216.34')), true);
+});
+
+test('isAllowedReport returns false when any act has a disallowed actualURL', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const report = {
+    target: {what: 'Example', url: 'https://example.com/page'},
+    acts: [
+      {type: 'test', actualURL: 'https://example.com/page'},
+      {type: 'test', actualURL: 'https://internal.example.net/page'}
+    ]
+  };
+  let callCount = 0;
+  const lookup = async (hostname: string) => {
+    callCount++;
+    return hostname === 'internal.example.net'
+      ? [{address: '10.0.0.5', family: 4}]
+      : [{address: '93.184.216.34', family: 4}];
+  };
+  assert.equal(await isAllowedReport(report, lookup), false);
+  assert.ok(callCount > 0);
+});
+
+test('isAllowedReport falls back to the report target URL when an act has no actualURL', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const report = {
+    target: {what: 'Example', url: 'https://example.com/page'},
+    acts: [{type: 'test'}]
+  };
+  assert.equal(await isAllowedReport(report, fakeLookup('93.184.216.34')), true);
 });
 
 test('isValidAuthCode returns true when the code matches AUTH_CODE', () => {

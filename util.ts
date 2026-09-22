@@ -14,6 +14,7 @@ import type {Act, Catalog, Report, StandardInstance} from 'testaro';
 import crypto from 'node:crypto';
 import dns from 'node:dns/promises';
 import fs from 'node:fs/promises';
+import ipaddr from 'ipaddr.js';
 import net from 'node:net';
 import path from 'node:path';
 import querystring from 'node:querystring';
@@ -551,47 +552,41 @@ export const isURL = (string: string): boolean => {
     return false;
   }
 };
-// Returns whether an IPv4 address (in dotted-decimal form) is in a private,
-// loopback, link-local, or otherwise non-public range, including the
-// 169.254.169.254 cloud-metadata address (which falls under link-local).
-const isNonPublicIPv4 = (address: string): boolean => {
-  const octets = address.split('.').map(Number);
-  const [a, b = 0] = octets;
-  return (
-    a === 127 || // loopback
-    a === 10 || // private
-    a === 0 || // "this network"
-    (a === 172 && b >= 16 && b <= 31) || // private
-    (a === 192 && b === 168) || // private
-    (a === 169 && b === 254) || // link-local, incl. cloud metadata
-    (a === 100 && b >= 64 && b <= 127) // carrier-grade NAT
-  );
-};
-// Returns whether an IPv6 address is in a loopback, unique-local, or
-// link-local range.
-const isNonPublicIPv6 = (address: string): boolean => {
-  const normalized = address.toLowerCase();
-  return (
-    normalized === '::1' // loopback
-    || normalized === '::' // unspecified
-    || /^::ffff:/.test(normalized) && isNonPublicIPv4(normalized.replace(/^::ffff:/, '')) // IPv4-mapped
-    || /^f[cd][0-9a-f]{2}:/.test(normalized) // unique local (fc00::/7)
-    || /^fe[89ab][0-9a-f]:/.test(normalized) // link-local (fe80::/10)
-  );
-};
+// The ipaddr.js range labels, for each address family, that are not part of
+// the public, globally routable address space and so must never be a testing
+// target. Sourced from ipaddr.js's own IPv4/IPv6 SpecialRanges tables, which
+// track the IANA special-purpose address registries (e.g. RFC 1918 private
+// ranges, RFC 5737/3849 documentation ranges, RFC 6598 carrier-grade NAT,
+// RFC 6890 link-local, including the 169.254.169.254 cloud-metadata address).
+// A version bump of ipaddr.js is not pinned or specially reviewed here (this
+// deployment always installs the latest of every dependency); instead, the
+// isAllowedTarget/isAllowedRedirectTarget tests enumerate specific addresses
+// in every one of these ranges, so a future release that narrowed this
+// coverage would fail those tests rather than silently allowing an address
+// that should be rejected.
+const nonPublicIPv4Ranges = new Set([
+  'unspecified', 'broadcast', 'multicast', 'linkLocal', 'loopback', 'carrierGradeNat', 'private', 'reserved'
+]);
+const nonPublicIPv6Ranges = new Set([
+  'unspecified', 'linkLocal', 'multicast', 'loopback', 'uniqueLocal', 'deprecatedSiteLocal', 'discard',
+  'rfc6145', 'rfc6052', '6to4', 'teredo', 'benchmarking', 'amt', 'as112v6', 'deprecatedOrchid', 'orchid2'
+]);
 // Returns whether an IP address (v4 or v6) is outside the public address
 // space, i.e. is a loopback, private, link-local, or other reserved address
 // that a public deployment should never intend to test.
 const isNonPublicIP = (address: string): boolean => {
-  const version = net.isIP(address);
-  if (version === 4) {
-    return isNonPublicIPv4(address);
+  let parsed;
+  try {
+    // process(), rather than parse(), so an IPv4-mapped IPv6 address (e.g.
+    // ::ffff:10.0.0.5) is unwrapped and classified by its embedded IPv4 address.
+    parsed = ipaddr.process(address);
   }
-  if (version === 6) {
-    return isNonPublicIPv6(address);
+  catch {
+    // Not a recognizable IP address, so treat it as non-public, i.e. as unsafe.
+    return true;
   }
-  // Not a recognizable IP address, so treat it as non-public, i.e. as unsafe.
-  return true;
+  const ranges = parsed.kind() === 'ipv4' ? nonPublicIPv4Ranges : nonPublicIPv6Ranges;
+  return ranges.has(parsed.range());
 };
 // Returns whether ALLOW_INTERNAL_TARGETS opts this deployment in to testing
 // pages at private, loopback, or link-local addresses. A deployment that
@@ -621,7 +616,9 @@ export const isAllowedTarget = async (url: string, lookup: LookupAll = dns.looku
   }
   let hostname: string;
   try {
-    hostname = new URL(url).hostname;
+    // URL.hostname keeps the surrounding brackets of a literal IPv6 host (e.g.
+    // "[::1]"), which net.isIP and dns.lookup both reject, so they are stripped here.
+    hostname = new URL(url).hostname.replace(/^\[(.*)\]$/, '$1');
   } catch {
     return false;
   }
@@ -639,6 +636,33 @@ export const isAllowedTarget = async (url: string, lookup: LookupAll = dns.looku
     // An unresolvable hostname cannot be a usable testing target either way.
     return false;
   }
+};
+// Returns whether a URL, when actually requested, resolves through any
+// redirects to a final response whose URL is an allowed target. isAllowedTarget
+// only resolves DNS, so it cannot see an application-layer redirect (e.g. a
+// legitimately resolving host issuing a 302 to a private address); this
+// check is what can catch that at request time, before a job is ever queued.
+// It cannot catch a redirect introduced after it runs, e.g. an attacker who
+// reconfigures the target host once a request is accepted, so isAllowedReport
+// remains the backstop that re-checks the URL a worker actually visited.
+export const isAllowedRedirectTarget = async (
+  url: string, fetchImpl: typeof fetch = fetch, lookup: LookupAll = dns.lookup
+): Promise<boolean> => {
+  // If this deployment allows internal targets, every syntactically valid URL is
+  // allowed, and no fetch is needed, consistent with isAllowedTarget's own early return.
+  if (allowsInternalTargets()) {
+    return true;
+  }
+  let response: Response;
+  try {
+    // redirect: 'follow' is the default, but named here because observing
+    // where redirects lead is the entire purpose of this request.
+    response = await fetchImpl(url, {redirect: 'follow', signal: AbortSignal.timeout(10000)});
+  } catch {
+    // An unreachable or errored target cannot be verified as safe either way.
+    return false;
+  }
+  return isAllowedTarget(response.url, lookup);
 };
 // Returns whether a string is the authorization code, the shared check every
 // manager-facing page and action uses to gate a submission. Centralized so all call

@@ -7,8 +7,9 @@
 
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {checkLength, isAllowedTarget, isURL, processTestRequest} from '../util.ts';
+import {checkLength, isAllowedRedirectTarget, isAllowedTarget, isURL, processTestRequest} from '../util.ts';
 import {requestTestResponseSchema} from './schemas.ts';
+import {sendAlert} from '../alerts.ts';
 
 // TYPES
 
@@ -48,6 +49,19 @@ export const response = async (args: string[]) => {
     requestDetails = {
       error: 'request invalid: the URL you specified does not resolve to a page that this deployment can test'
     };
+  }
+  // Otherwise, i.e. if the URL redirects to a target this deployment does not allow:
+  else if (!(await isAllowedRedirectTarget(url))) {
+    requestDetails = {
+      error: 'request invalid: the URL you specified does not resolve to a page that this deployment can test'
+    };
+    // Alert a manager, since a redirect to a disallowed target on a request that
+    // itself named an allowed hostname suggests an attempted or accidental SSRF,
+    // rather than an ordinary mistake by a legitimate submitter.
+    await sendAlert(
+      'Kilotest: request rejected for redirecting to a disallowed target',
+      `A request to test ${url} (described as "${description}") was rejected because it redirects to a target this deployment does not allow (e.g. a private, loopback, or link-local address).`
+    );
   }
   // Otherwise, i.e. if the description and URL are valid:
   else {

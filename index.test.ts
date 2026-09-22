@@ -1166,6 +1166,57 @@ test('POST /worker/job with a queued job assigns it to the worker', {timeout: 50
   await fs.unlink(path.join(claimedDir, jobFile)).catch(() => {});
 });
 
+test('POST /worker/job with a queued job whose host now redirects to a disallowed target rejects it without assigning it', {timeout: 500}, async (t) => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  // Clean up claimed, queue, and failed directories.
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  for (const dir of [claimedDir, queueDir]) {
+    await fs.mkdir(dir, {recursive: true});
+    const files = await fs.readdir(dir).catch(() => []);
+    for (const file of files) {
+      await fs.unlink(path.join(dir, file)).catch(() => {});
+    }
+  }
+  const jobFile = '260101T0000-mix.json';
+  const failedJobPath = path.join(failedDir, jobFile);
+  await fs.unlink(failedJobPath).catch(() => {});
+  // The job's host still resolves publicly, but by the time it is dequeued for
+  // assignment it has been reconfigured (e.g. by an attacker) to redirect to a
+  // private address, which only a fetch-based check, not a DNS-only one, can see.
+  t.mock.method(globalThis, 'fetch', async () => ({url: 'https://192.168.1.1/test'}) as Response);
+  try {
+    await fs.writeFile(path.join(queueDir, jobFile), JSON.stringify({
+      id: '260101T0000-mix',
+      target: {what: 'Test Page', url: 'https://example.com/test'},
+      sources: {}
+    }));
+    const auth = Buffer.from('worker1:secret1').toString('base64');
+    const res = await request('POST', '/worker/job', {}, {
+      authorization: `Basic ${auth}`
+    });
+    // The worker should be told there is no job, not given the disallowed job.
+    assert.equal(res.statusCode, 200);
+    const body = jsonBody(res);
+    assert.equal(body.id, undefined);
+    // Wait for the async rename to complete.
+    await new Promise<void>(resolve => setTimeout(resolve, 100));
+    // The job should have been moved from queue to failed, never to claimed.
+    const queueExists = await fs.access(path.join(queueDir, jobFile)).then(() => true).catch(() => false);
+    assert.equal(queueExists, false, 'Job should be removed from queue');
+    const claimedExists = await fs.access(path.join(claimedDir, jobFile)).then(() => true).catch(() => false);
+    assert.equal(claimedExists, false, 'Job should not be moved to claimed directory');
+    const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+    assert.ok(failedExists, 'Job should be moved to the failed directory');
+  } finally {
+    t.mock.reset();
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
+    // Clean up.
+    await fs.unlink(failedJobPath).catch(() => {});
+  }
+});
+
 // TESTS: worker/report valid submission
 
 test('POST /worker/report with valid authentication and valid claimed job processes the report', {timeout: 500}, async () => {

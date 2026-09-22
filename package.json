@@ -38,6 +38,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "*",
     "dotenv": "*",
+    "ipaddr.js": "*",
     "testaro-issues": "*",
     "zod": "*"
   },

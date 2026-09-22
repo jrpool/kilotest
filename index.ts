@@ -17,6 +17,7 @@ import {
   getObject,
   getPOSTData,
   getReport,
+  isAllowedRedirectTarget,
   isAllowedReport,
   isAllowedTarget,
   isReportError,
@@ -484,26 +485,54 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
     if (queuedJobNames.length) {
       const oldestJobName = queuedJobNames[0]!;
       // Get the first one.
-      const firstJob = await getObject(path.join(queuePath(), oldestJobName)) as {id: string, sources: {worker: string}, target: {what: string}};
-      // Add the public worker name to the job, in a property Testaro does not read or alter.
-      firstJob.sources.worker = workerName;
-      console.log(
-        `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the worker.`
-      );
-      // Assign the job to the worker.
-      response.writeHead(200, {
-        'content-type': 'application/json; charset=utf-8'
-      });
-      response.end(JSON.stringify(firstJob));
-      const messageEnd
-      = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the worker`;
-      console.log(`${messageStart}${messageEnd}`);
-      // Save the job in the claimed-jobs directory.
-      await fs.writeFile(
-        path.join(claimedPath(), oldestJobName), getJSON(firstJob)
-      );
-      // Delete it from the queue.
-      await fs.unlink(path.join(queuePath(), oldestJobName));
+      const firstJob = await getObject(path.join(queuePath(), oldestJobName)) as {id: string, sources: {worker: string}, target: {what: string, url: string}};
+      // If the job's target is no longer allowed, whether because its host now resolves
+      // to a disallowed address or, more likely, because the host now redirects to one
+      // (both possible if the target host was reconfigured, e.g. by an attacker, after
+      // the request was accepted; a fetch-based check is used, rather than the cheaper
+      // DNS-only isAllowedTarget, because this runs only when a job is actually queued,
+      // which is rare, and a redirect introduced after acceptance is the likelier attack):
+      if (!(await isAllowedRedirectTarget(firstJob.target.url))) {
+        console.error(`ERROR: Queued job ${firstJob.id} is on a target this deployment does not allow`);
+        // Alert a manager, since this indicates an attempted or accidental SSRF
+        // rather than an ordinary usability problem with the target.
+        await sendAlert(
+          'Kilotest: queued job on disallowed target rejected',
+          `Job ${firstJob.id} (${firstJob.target.what}) was never assigned to a worker because its target no longer resolves, directly or via a redirect, to an address this deployment allows (e.g. a private, loopback, or link-local address). The job was reclassified as failed.`
+        );
+        // Reclassify the job as failed, instead of assigning it or leaving it queued.
+        await fs.rename(
+          path.join(queuePath(), oldestJobName), path.join(failedPath(), oldestJobName)
+        );
+        // Respond as if no job were queued, rather than revealing anything about the rejected job.
+        response.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8'
+        });
+        response.end(JSON.stringify({}));
+        console.log(`${messageStart}but the queued job was on a disallowed target`);
+      }
+      // Otherwise, i.e. if the job's target is still allowed:
+      else {
+        // Add the public worker name to the job, in a property Testaro does not read or alter.
+        firstJob.sources.worker = workerName;
+        console.log(
+          `Job ${firstJob.id} (${firstJob.target.what}) is being sent to the worker.`
+        );
+        // Assign the job to the worker.
+        response.writeHead(200, {
+          'content-type': 'application/json; charset=utf-8'
+        });
+        response.end(JSON.stringify(firstJob));
+        const messageEnd
+        = `and job ${firstJob.id} (${firstJob.target.what}) was assigned to the worker`;
+        console.log(`${messageStart}${messageEnd}`);
+        // Save the job in the claimed-jobs directory.
+        await fs.writeFile(
+          path.join(claimedPath(), oldestJobName), getJSON(firstJob)
+        );
+        // Delete it from the queue.
+        await fs.unlink(path.join(queuePath(), oldestJobName));
+      }
     }
     // Otherwise, i.e. if no jobs are queued:
     else {

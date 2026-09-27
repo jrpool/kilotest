@@ -6,7 +6,7 @@ Kilotest is an application that performs ensemble testing of web pages for front
 
 ## What Kilotest does for language models
 
-Kilotest is deployed on the public Internet as a service at `https://kilotest.com`. Kilotest can test only web pages that can be accessed from the public Internet and that are not protected by authentication or other access controls. Kilotest has not implemented any mechanism for testing private, internal, password-protected, or otherwise restricted pages.
+Kilotest is deployed on the public Internet as a service at `https://kilotest.com`. That deployment of Kilotest can test only web pages that can be accessed by its Testaro worker with a URL. Generally those are pages on the public Internet that are not protected by authentication or other access controls.
 
 Without calling any tool, an LLM can, under some conditions, load web pages and use its knowledge to assess successes and failures of front-end quality. But such an assessment is almost always:
 

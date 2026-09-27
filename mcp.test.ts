@@ -11,6 +11,8 @@ import http from 'node:http';
 import {mcpPath, createMCPServer, handleMCP} from './mcp.ts';
 import {metricsPath} from './util.ts';
 import fs from 'node:fs';
+import {Client} from '@modelcontextprotocol/sdk/client/index.js';
+import {InMemoryTransport} from '@modelcontextprotocol/sdk/inMemory.js';
 
 // CONSTANTS
 
@@ -35,11 +37,12 @@ test('mcpPath is /mcp', () => {
   assert.equal(mcpPath, '/mcp');
 });
 
-test('createMCPServer registers all 8 tools', () => {
+test('createMCPServer registers all 9 tools', () => {
   const server = createMCPServer();
   const toolNames = Object.keys((server as any)._registeredTools);
-  assert.equal(toolNames.length, 8);
+  assert.equal(toolNames.length, 9);
   assert.deepEqual(toolNames, [
+    'getKilotestOverview',
     'listReports',
     'listIssues',
     'listViolators',
@@ -56,8 +59,39 @@ test('each tool has a description and a handler function', () => {
   const tools = (server as any)._registeredTools;
   for (const [name, tool] of Object.entries(tools) as [string, any][]) {
     assert.ok(tool.description, `${name} has a description`);
+    assert.ok(
+      tool.description.includes('front-end quality'),
+      `${name} description includes the shared domain context`
+    );
     assert.equal(typeof tool.handler, 'function', `${name} has a handler function`);
   }
+});
+
+test('getKilotestOverview handler returns overview text and records a metric', async () => {
+  const server = createMCPServer();
+  const countBefore = getToolCallCount('getKilotestOverview');
+  const result = await (server as any)._registeredTools.getKilotestOverview.handler({});
+  assert.ok(result.content);
+  assert.equal(result.content[0].type, 'text');
+  assert.ok(result.content[0].text.includes('front-end quality'));
+  assert.equal(getToolCallCount('getKilotestOverview'), countBefore + 1);
+});
+
+test('client receives instructions, server description, and the overview resource', async () => {
+  const server = createMCPServer();
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  const client = new Client({name: 'test-client', version: '1.0.0'});
+  await client.connect(clientTransport);
+  assert.ok(client.getInstructions()?.includes('front-end quality'));
+  assert.ok(client.getServerVersion()?.description?.includes('front-end quality'));
+  const resources = await client.listResources();
+  assert.deepEqual(resources.resources.map((r: any) => r.uri), ['docs://kilotest/overview']);
+  const read = await client.readResource({uri: 'docs://kilotest/overview'});
+  assert.equal(read.contents[0]?.mimeType, 'text/plain');
+  assert.ok((read.contents[0] as any).text.includes('front-end quality'));
+  await client.close();
+  await server.close();
 });
 
 test('listReports handler returns content and structuredContent', async () => {
@@ -258,6 +292,8 @@ test('handleMCP responds to initialize with server info', async () => {
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);
     assert.equal(result.result.serverInfo.name, 'Kilotest');
+    assert.ok(result.result.serverInfo.description.includes('front-end quality'));
+    assert.ok(result.result.instructions.includes('front-end quality'));
     assert.equal(result.result.protocolVersion, '2025-06-18');
   }
   finally {
@@ -265,7 +301,7 @@ test('handleMCP responds to initialize with server info', async () => {
   }
 });
 
-test('handleMCP lists all 8 tools via tools/list', async () => {
+test('handleMCP lists all 9 tools via tools/list', async () => {
   const server = await startMCPServer();
   try {
     const port = server.address().port;
@@ -273,8 +309,9 @@ test('handleMCP lists all 8 tools via tools/list', async () => {
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);
     const toolNames = result.result.tools.map((t: any) => t.name);
-    assert.equal(toolNames.length, 8);
+    assert.equal(toolNames.length, 9);
     assert.deepEqual(toolNames, [
+      'getKilotestOverview',
       'listReports',
       'listIssues',
       'listViolators',

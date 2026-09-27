@@ -2,7 +2,7 @@
 
 ## Capability
 
-Web-page front-end quality audit. Kilotest tests public web pages for front-end quality, namely accessibility, usability, and standards conformity, and makes structured findings available for retrieval.
+Web-page front-end quality audit. Kilotest tests web pages for front-end quality, namely accessibility, usability, and standards conformity, and makes structured findings available for retrieval.
 
 ## Purpose
 
@@ -36,7 +36,7 @@ A list of available reports.
 
 ## Side effects
 
-Kilotest reads the specified public web page during testing. It does not modify the target site. Testing is asynchronous and may take up to approximately one day before reports are available for newly requested pages.
+Kilotest reads the specified web page during testing. It does not modify the target site. Testing is asynchronous and may take up to approximately one day before reports are available for newly requested pages.
 
 ## Cost
 

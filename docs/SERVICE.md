@@ -502,7 +502,7 @@ Kilotest records basic counts of how it is used, so the maintainer can answer qu
 
 - The generic `.html` GET dispatch in `index.ts`, once per successfully served web page, recorded under the `pageViews` category by page name (for example `tutorialWeb`, `listReports`), unless the page is a manager-only page (see "Manager page activity" below), in which case it is recorded there instead.
 - The home page (`/` and `/index.html`), served by its own branch in `index.ts` rather than through the generic `.html` dispatch, recorded under `pageViews` as `index`.
-- Each of the 8 MCP tool handlers in `mcp.ts`, once per successful tool call, recorded under the `mcpToolCalls` category by tool name (for example `listReports`, `requestTest`).
+- Each of the 9 MCP tool handlers in `mcp.ts`, once per successful tool call, recorded under the `mcpToolCalls` category by tool name (for example `listReports`, `requestTest`).
 - The `/api/*` GET and POST service branches in `index.ts`, once per call, recorded under the `apiOperations` category by operation name.
 
 `db/metrics.json` also stores a `since` time stamp, set when the file is first created, so the counts can be read as "since this date" rather than assumed to cover Kilotest's entire history. `getMetrics()` backfills any category absent from an existing `db/metrics.json` (for example one written before a category such as `managerActivity` existed), so an older file remains readable rather than causing every subsequent request to error.

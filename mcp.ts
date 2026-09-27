@@ -41,7 +41,27 @@ import {
 
 export const mcpPath = '/mcp';
 
+// Shared statement of the Kilotest domain and data hierarchy, repeated in every tool
+// description, in the server instructions, and in the getKilotestOverview tool description,
+// because some MCP clients do not propagate server-level instructions or the server
+// description to their models.
+const sharedContext = 'Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as report, then issue, then violator element, then diagnosis.';
+
+// Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by
+// the getKilotestOverview tool and served as the docs://kilotest/overview resource.
+const kilotestOverview = [
+  'Kilotest tests web pages for front-end quality: accessibility, usability, and standards conformity.',
+  'Kilotest integrates an ensemble of twelve independent rule engines to test a web page and stores the results as a structured report.',
+  'Results are organized as a hierarchy. A report contains issues. An issue has violators: elements of the tested page reported as exhibiting the issue. A violator has diagnoses: explanations from rule engines of how the element exhibited the issue.',
+  'Typical workflow: call the listReports tool to learn whether a report about the page already exists. If it does, drill down with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. If no report exists, request a test with the requestTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
+  'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
+].join('\n\n');
+
 // FUNCTIONS
+
+// Returns a tool description consisting of the tool-specific summary followed by the shared
+// Kilotest domain context.
+const toolDoc = (summary: string): string => `${summary} ${sharedContext}`;
 
 // Creates and returns an McpServer with Kilotest tools registered.
 export const createMCPServer = (): McpServer => {
@@ -51,16 +71,34 @@ export const createMCPServer = (): McpServer => {
     description: 'Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available'
   },
   {
-    instructions: 'Use the listReports tool to start. If it shows that there is a report available about the page you want facts about, drill down with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestTest tool to request that the page be tested. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested.'
+    instructions: `${sharedContext} Use the listReports tool to start. If it shows that there is a report available about the page you want facts about, drill down with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestTest tool to request that the page be tested. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested. For detailed documentation, call the getKilotestOverview tool.`
   });
+  server.registerTool(
+    'getKilotestOverview',
+    {
+      description: toolDoc('Explain what Kilotest is, what its tools do, and how its results are structured.'),
+      inputSchema: {},
+      annotations: {
+        title: toolDoc('Explain what Kilotest is, what its tools do, and how its results are structured.'),
+        readOnlyHint: true,
+        idempotentHint: true,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async () => {
+      await recordMetric('mcpToolCalls', 'getKilotestOverview');
+      return {content: [{type: 'text', text: kilotestOverview}]};
+    }
+  );
   server.registerTool(
     'listReports',
     {
-      description: 'Provide basics about all available reports.',
+      description: toolDoc('Provide basics about all available reports.'),
       inputSchema: {},
       outputSchema: listReportsResponseSchema,
       annotations: {
-        title: 'Provide basics about all available reports.',
+        title: toolDoc('Provide basics about all available reports.'),
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -76,11 +114,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: 'Provide details about one report, including basics about the issues reported in it.',
+      description: toolDoc('Provide details about one report, including basics about the issues reported in it.'),
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
-        title: 'Provide details about one report, including basics about the issues reported in it.',
+        title: toolDoc('Provide details about one report, including basics about the issues reported in it.'),
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -96,11 +134,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listViolators',
     {
-      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
+      description: toolDoc('Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.'),
       inputSchema: listViolatorsSchema,
       outputSchema: listViolatorsResponseSchema,
       annotations: {
-        title: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
+        title: toolDoc('Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.'),
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -116,11 +154,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listDiagnoses',
     {
-      description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
+      description: toolDoc('Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.'),
       inputSchema: listDiagnosesSchema,
       outputSchema: listDiagnosesResponseSchema,
       annotations: {
-        title: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
+        title: toolDoc('Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.'),
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -136,11 +174,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getReport',
     {
-      description: 'Get one full report in JSON.',
+      description: toolDoc('Get one full report in JSON.'),
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
-        title: 'Get one full report in JSON.',
+        title: toolDoc('Get one full report in JSON.'),
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -156,11 +194,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestTest',
     {
-      description: 'Process my request to test a page about which no report is available yet.',
+      description: toolDoc('Process my request to test a page about which no report is available yet.'),
       inputSchema: requestTestSchema,
       outputSchema: requestTestResponseSchema,
       annotations: {
-        title: 'Process my request to test a page about which no report is available yet.',
+        title: toolDoc('Process my request to test a page about which no report is available yet.'),
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -176,11 +214,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Process my request to retest a page about which a report is available.',
+      description: toolDoc('Process my request to retest a page about which a report is available.'),
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
-        title: 'Process my request to retest a page about which a report is available.',
+        title: toolDoc('Process my request to retest a page about which a report is available.'),
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -196,11 +234,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Process my request to add or improve a feature.',
+      description: toolDoc('Process my request to add or improve a feature.'),
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
-        title: 'Process my request to add or improve a feature.',
+        title: toolDoc('Process my request to add or improve a feature.'),
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -212,6 +250,18 @@ export const createMCPServer = (): McpServer => {
       await recordMetric('mcpToolCalls', 'requestFeature');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
+  );
+  server.registerResource(
+    'kilotest-overview',
+    'docs://kilotest/overview',
+    {
+      title: 'Kilotest overview',
+      description: `What Kilotest is and how its tools and results are organized. ${sharedContext}`,
+      mimeType: 'text/plain'
+    },
+    async () => ({
+      contents: [{uri: 'docs://kilotest/overview', mimeType: 'text/plain', text: kilotestOverview}]
+    })
   );
   return server;
 };

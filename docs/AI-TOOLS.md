@@ -107,7 +107,7 @@ Other future work:
     Capability: web-page-quality-audit
 
     Purpose:
-      Test a public web page for accessibility,
+      Test a web page for accessibility,
       usability, HTML and web-standards problems.
 
     Interfaces:
@@ -123,7 +123,7 @@ Other future work:
       rule-engine diagnoses, WCAG mappings
 
     Side effects:
-      Reads the specified public web page.
+      Reads the specified web page.
       Does not modify the target site.
 
     Cost:

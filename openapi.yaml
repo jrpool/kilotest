@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Kilotest API
-  description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 12 rule engines to test public web pages for front-end quality (accessibility, usability, and standards conformity). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
+  description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 12 rule engines to test web pages for front-end quality (accessibility, usability, and standards conformity). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
   version: 2.1.0
   license:
     name: MIT
@@ -822,7 +822,7 @@ paths:
               properties:
                 description:
                   type: string
-                  description: 10- to 100-character description of the page conforming to the naming convention used in the listReports output
+                  description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
                 URL:
                   type: string
                   description: 12- to 300-character URL of the page, including the https:// scheme and any query
@@ -860,7 +860,7 @@ paths:
                         properties:
                           description:
                             type: string
-                            description: 10- to 100-character description of the page conforming to the naming convention used in the listReports output
+                            description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
                           URL:
                             type: string
                             description: 12- to 300-character URL of the page, including the https:// scheme and any query
@@ -1099,7 +1099,7 @@ paths:
               properties:
                 feature:
                   type: string
-                  description: description of requested feature improvement or new feature
+                  description: 20- to 1000-character description of requested feature improvement or new feature
               required:
                 - feature
       responses:
@@ -1129,7 +1129,7 @@ paths:
                         properties:
                           feature:
                             type: string
-                            description: description of requested feature improvement or new feature
+                            description: 20- to 1000-character description of requested feature improvement or new feature
                         required:
                           - feature
                         additionalProperties: false

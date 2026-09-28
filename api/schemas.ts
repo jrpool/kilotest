@@ -60,6 +60,26 @@ export const requestFeatureSchema = {
   feature: z.string().describe('20- to 1000-character description of requested feature improvement or new feature')
 };
 
+// orderTest: POST /api/orderTest
+export const orderTestSchema = {
+  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listReports output'),
+  URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
+  reason: z.string().describe('20- to 100-character reason why the page should be tested')
+};
+
+// orderRetest: POST /api/orderRetest/{timeStamp}/{jobID}
+export const orderRetestSchema = {
+  timeStamp: z.string().describe('Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'),
+  jobID: z.string().describe('Job identifier of the latest report about the page (example: x9z)'),
+  reason: z.string().describe('20- to 100-character reason why the page should be retested')
+};
+
+// awaitTest: POST /api/awaitTest
+export const awaitTestSchema = {
+  timeStamp: z.string().describe('Timestamp of the ordered job, from the report identifier returned by orderTest, in YYMMDDTHHmm format (example: 260503T0432)'),
+  jobID: z.string().describe('Job identifier of the ordered job, from the report identifier returned by orderTest (example: x9z)')
+};
+
 // listReports takes no input; omitted (mcp.ts already uses inputSchema: {}).
 
 // RESPONSE SCHEMAS
@@ -93,11 +113,13 @@ const toolsFactsSchema = z.object({
   'web users can obtain similar functionalities at': z.string()
 }).meta({id: 'ToolsFacts'});
 
-// Identifies a related request (e.g., the closest ancestor request in the drill-down hierarchy).
+// Identifies a related request (e.g., the closest ancestor request in the drill-down
+// hierarchy). method is usually GET (every drill-down tool's ancestor is a read), except
+// for awaitTest, whose only ancestor, orderTest, is a POST (it creates a job).
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
   description: z.string(),
-  method: z.literal('GET'),
+  method: z.enum(['GET', 'POST']),
   URL: z.string()
 }).meta({id: 'RequestReference'});
 
@@ -319,4 +341,82 @@ export const requestFeatureResponseSchema = envelope(
   ])}),
   z.object(requestFeatureSchema),
   z.null()
+);
+
+// Identifies the report a successfully ordered or awaited job will produce, once complete.
+const reportIdentifierSchema = z.object({
+  timeStamp: z.string().describe('Timestamp to pass to listIssues once the report is ready.'),
+  jobID: z.string().describe('Job identifier to pass to listIssues once the report is ready.')
+}).meta({id: 'ReportIdentifier'});
+
+export const orderTestResponseSchema = envelope(
+  'POST',
+  z.object({
+    'details about your order': z.union([
+      z.object({error: z.string()}),
+      z.object({
+        'date and time received': z.string(),
+        'page to be tested': z.object({description: z.string(), URL: z.string()}),
+        'reason why the page should be tested': z.string()
+      })
+    ]),
+    'disposition of your order': z.object({
+      'what happens next': z.string(),
+      'report identifier': reportIdentifierSchema.nullable(),
+      'how you can check for completion': z.string(),
+      'do you want to wait for completion': z.string()
+    }).nullable()
+  }),
+  z.object(orderTestSchema),
+  z.object({
+    'this request': z.null(),
+    'closest ancestor request': z.string().nullable()
+  })
+);
+
+export const orderRetestResponseSchema = envelope(
+  'POST',
+  z.object({
+    'details about your order': z.union([
+      z.object({error: z.string()}),
+      z.object({
+        'date and time received': z.string(),
+        'page to be retested': z.object({description: z.string(), URL: z.string()}),
+        'reason why the page should be retested': z.string()
+      })
+    ]),
+    'disposition of your order': z.object({
+      'what happens next': z.string(),
+      'report identifier': reportIdentifierSchema.nullable(),
+      'how you can check for completion': z.string(),
+      'do you want to wait for completion': z.string()
+    }).nullable()
+  }),
+  z.object({reason: orderRetestSchema.reason}),
+  z.object({
+    'this request': z.null(),
+    'closest ancestor request': z.string().nullable()
+  })
+);
+
+export const awaitTestResponseSchema = envelope(
+  'POST',
+  z.object({
+    'details about your wait': z.union([
+      z.object({error: z.string()}),
+      z.object({
+        'report identifier': reportIdentifierSchema
+      })
+    ]),
+    'disposition of your wait': z.object({
+      outcome: z.enum(['completed', 'failed', 'timedOut']),
+      'what happened': z.string(),
+      'how you can check for completion': z.string()
+    }).nullable()
+  }),
+  undefined,
+  z.object({
+    'this request': z.null(),
+    'closest ancestor request': z.null()
+  })
 );

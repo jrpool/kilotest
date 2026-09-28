@@ -21,6 +21,7 @@ for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_A
 
 import {
   annotateReportObject,
+  awaitJob,
   checkCommentDuplicate,
   checkCommentLength,
   checkLength,
@@ -66,6 +67,7 @@ import {
   makeBreakable,
   minifyURL,
   objectSort,
+  orderJob,
   processTestRequest,
   testRequestsLock,
   testRequestsPath,
@@ -1850,5 +1852,215 @@ test('getMetrics backfills every category, and generates a since stamp, from a b
   finally {
     process.env.DB_DIR = savedDbDir;
     fsSync.rmSync(tmpDir, {recursive: true});
+  }
+});
+
+// TESTS FOR orderJob AND awaitJob (GitHub issue #111)
+
+test('orderJob enqueues a new-page order directly into the job queue', async () => {
+  const {result, description, url, jobID} = await orderJob(
+    {description: 'Ordered Page', url: 'https://example.com/ordered'}, 'because accessibility matters here'
+  ) as any;
+  assert.equal(result, 'ok');
+  assert.equal(description, 'Ordered Page');
+  assert.equal(url, 'https://example.com/ordered');
+  assert.match(jobID, /^\d{6}T\d{4}-[a-z0-9]{3}$/);
+  const queuedPath = path.join(jobsPath(), 'queue', `${jobID}.json`);
+  try {
+    const job = JSON.parse(await fs.readFile(queuedPath, 'utf8'));
+    assert.equal(job.target.what, 'Ordered Page');
+    assert.equal(job.target.url, 'https://example.com/ordered');
+    assert.equal(job.sources.reason, 'because accessibility matters here');
+    // No pending-approval inbox entry is created; the job goes straight to the queue.
+    const testRequests = JSON.parse(await fs.readFile(testRequestsPath(), 'utf8'));
+    assert.equal(testRequests['https://example.com/ordered'], undefined);
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('orderJob returns a retest error when a report already exists for the ordered page', async () => {
+  const {result} = await orderJob(
+    {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}, 'because accessibility matters here'
+  );
+  assert.equal(result, 'retest');
+});
+
+test('orderJob returns "description" for a page matching a claimed job by description', async () => {
+  const claimedPath = path.join(jobsPath(), 'claimed', 'clm.json');
+  await fs.writeFile(claimedPath, getJSON({
+    target: {what: 'Claimed Order Page', url: 'https://example.com/claimed-order-job'}
+  }));
+  try {
+    const {result} = await orderJob(
+      {description: 'Claimed Order Page', url: 'https://example.com/some-other-order-url'},
+      'because accessibility matters here'
+    );
+    assert.equal(result, 'description');
+  }
+  finally {
+    await fs.unlink(claimedPath);
+  }
+});
+
+test('orderJob returns "url" for a page matching a queued job by URL', async () => {
+  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
+  await fs.writeFile(queuedPath, getJSON({
+    target: {what: 'Some Queued Order Page', url: 'https://example.com/queued-order-url'}
+  }));
+  try {
+    const {result} = await orderJob(
+      {description: 'A Different Order Page', url: 'https://example.com/queued-order-url'},
+      'because accessibility matters here'
+    );
+    assert.equal(result, 'url');
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('orderJob throws when a job file in a category directory is defective', async () => {
+  const claimedPath = path.join(jobsPath(), 'claimed', 'bad.json');
+  await fs.writeFile(claimedPath, 'not valid json');
+  try {
+    await assert.rejects(
+      orderJob({description: 'Any Order Page', url: 'https://example.com/any-order'}, 'because accessibility matters here'),
+      /Failed to order test/
+    );
+  }
+  finally {
+    await fs.unlink(claimedPath);
+  }
+});
+
+test('orderJob returns "nonreport" when a retest order cites a report that does not exist', async () => {
+  const {result} = await orderJob({timeStamp: '999999T9999', jobID: 'xxx'}, 'because accessibility matters here');
+  assert.equal(result, 'nonreport');
+});
+
+test('orderJob returns "superseded" when a retest order cites a superseded report', async () => {
+  // 260101T0000-mix is an earlier report of "Mixed Outcomes Page" than 260202T0000-new,
+  // so it is superseded.
+  const {result} = await orderJob(
+    {timeStamp: '260101T0000', jobID: 'mix'}, 'because accessibility matters here'
+  );
+  assert.equal(result, 'superseded');
+});
+
+test('orderJob enqueues a retest order for the latest report of a page', async () => {
+  const {result, description, url, jobID} = await orderJob(
+    {timeStamp: '260202T0000', jobID: 'new'}, 'because accessibility matters here'
+  ) as any;
+  assert.equal(result, 'ok');
+  assert.equal(description, 'Mixed Outcomes Page');
+  assert.equal(url, 'https://example.com/mixed');
+  const queuedPath = path.join(jobsPath(), 'queue', `${jobID}.json`);
+  try {
+    const job = JSON.parse(await fs.readFile(queuedPath, 'utf8'));
+    assert.equal(job.target.what, 'Mixed Outcomes Page');
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('orderJob honors JOB_QUEUE_MAX when the cap is reached', async () => {
+  process.env.JOB_QUEUE_MAX = '1';
+  const fillerPath = path.join(jobsPath(), 'queue', 'fil.json');
+  await fs.writeFile(fillerPath, getJSON({target: {what: 'Filler Queued Page', url: 'https://example.com/filler-queued'}}));
+  try {
+    const {result} = await orderJob(
+      {description: 'One Too Many Order Page', url: 'https://example.com/one-too-many-order'},
+      'because accessibility matters here'
+    );
+    assert.equal(result, 'queueFull');
+  }
+  finally {
+    delete process.env.JOB_QUEUE_MAX;
+    await fs.unlink(fillerPath);
+  }
+});
+
+test('orderJob never returns queueFull when JOB_QUEUE_MAX is 0 (no limit)', async () => {
+  process.env.JOB_QUEUE_MAX = '0';
+  const fillerPath = path.join(jobsPath(), 'queue', 'fi2.json');
+  await fs.writeFile(fillerPath, getJSON({target: {what: 'Filler Queued Page Two', url: 'https://example.com/filler-queued-2'}}));
+  try {
+    const {result, jobID} = await orderJob(
+      {description: 'One More Order Page', url: 'https://example.com/one-more-order'},
+      'because accessibility matters here'
+    ) as any;
+    assert.equal(result, 'ok');
+    await fs.unlink(path.join(jobsPath(), 'queue', `${jobID}.json`));
+  }
+  finally {
+    delete process.env.JOB_QUEUE_MAX;
+    await fs.unlink(fillerPath);
+  }
+});
+
+test('awaitJob returns "completed" immediately when a report already exists', async () => {
+  const outcome = await awaitJob('260101T0000', 'mix');
+  assert.equal(outcome, 'completed');
+});
+
+test('awaitJob returns "notFound" for an identifier naming neither a report nor a pending job', async () => {
+  const outcome = await awaitJob('999999T9999', 'xxx');
+  assert.equal(outcome, 'notFound');
+});
+
+test('awaitJob returns "failed" when the job has moved to the failed directory', async () => {
+  const failedPath = path.join(jobsPath(), 'failed', '260101T1111-flj.json');
+  await fs.mkdir(path.dirname(failedPath), {recursive: true});
+  await fs.writeFile(failedPath, getJSON({target: {what: 'Failed Await Page', url: 'https://example.com/failed-await'}}));
+  try {
+    const outcome = await awaitJob('260101T1111', 'flj');
+    assert.equal(outcome, 'failed');
+  }
+  finally {
+    await fs.unlink(failedPath);
+  }
+});
+
+test('awaitJob polls until a queued job completes, then returns "completed"', async () => {
+  process.env.AWAIT_JOB_POLL_MS = '20';
+  process.env.AWAIT_JOB_TIMEOUT_MS = '2000';
+  const jobName = '260101T2222-plj';
+  const queuedPath = path.join(jobsPath(), 'queue', `${jobName}.json`);
+  const reportPath = path.join(reportsPath(), `${jobName}.json`);
+  await fs.writeFile(queuedPath, getJSON({target: {what: 'Polled Page', url: 'https://example.com/polled'}}));
+  // Simulate the job completing shortly after the wait begins.
+  setTimeout(async () => {
+    await fs.unlink(queuedPath).catch(() => {});
+    await fs.writeFile(reportPath, getJSON({id: jobName, target: {what: 'Polled Page', url: 'https://example.com/polled'}}));
+  }, 50);
+  try {
+    const outcome = await awaitJob('260101T2222', 'plj');
+    assert.equal(outcome, 'completed');
+  }
+  finally {
+    delete process.env.AWAIT_JOB_POLL_MS;
+    delete process.env.AWAIT_JOB_TIMEOUT_MS;
+    await fs.unlink(queuedPath).catch(() => {});
+    await fs.unlink(reportPath).catch(() => {});
+  }
+});
+
+test('awaitJob returns "timedOut" when a claimed job neither completes nor fails before the deadline', async () => {
+  process.env.AWAIT_JOB_POLL_MS = '10';
+  process.env.AWAIT_JOB_TIMEOUT_MS = '50';
+  const jobName = '260101T3333-toj';
+  const claimedPath = path.join(jobsPath(), 'claimed', `${jobName}.json`);
+  await fs.writeFile(claimedPath, getJSON({target: {what: 'Stuck Page', url: 'https://example.com/stuck'}}));
+  try {
+    const outcome = await awaitJob('260101T3333', 'toj');
+    assert.equal(outcome, 'timedOut');
+  }
+  finally {
+    delete process.env.AWAIT_JOB_POLL_MS;
+    delete process.env.AWAIT_JOB_TIMEOUT_MS;
+    await fs.unlink(claimedPath);
   }
 });

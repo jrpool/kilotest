@@ -1228,6 +1228,169 @@ export const processTestRequest = (
     throw new Error('Failed to process test request', {cause: error});
   }
 });
+// Maximum number of jobs allowed in the job queue (db/jobs/queue) at once. This queue is
+// shared by every path that enqueues a job: manual approval of a pending test/retest
+// request (web/enqueue), and any tool (such as orderTest) that enqueues directly. The cap
+// therefore protects the queue itself, not any one source of jobs; a value of 0 means no
+// limit. Configurable via JOB_QUEUE_MAX.
+const jobQueueMax = () => getEnvMax('JOB_QUEUE_MAX', 20);
+// Result of orderJob. description and url are absent only when the result is
+// 'nonreport' (a retest order citing a report that does not exist), matching
+// ProcessRequestResult's own discriminated-union shape. There is no pending approval
+// inbox to compare against, so 'duplicate' (an identical pending request) never applies.
+// jobID (the enqueued job's own identifier, timeStamp-jobID) is present only on 'ok'.
+export type OrderJobResult
+= {result: 'nonreport'}
+| {result: 'ok'; description: string; url: string; jobID: string}
+| {result: Exclude<TestRequestResult, 'nonreport' | 'duplicate' | 'ok'>; description: string; url: string};
+// Orders a test or retest as a transaction: validates the target is not already queued,
+// claimed, or (for a new-page order) reported, then enqueues a job directly into
+// db/jobs/queue, bypassing the pending-approval inbox (testRequests.json) that
+// processTestRequest writes to. This is the auto-approval GitHub issue #111 asks for: a
+// lightweight gate (the same claimed/queued dedup check processTestRequest already
+// performs, plus a cap on the queue itself) substitutes for a maintainer's manual
+// review. Runs under testRequestsLock, the same lock processTestRequest uses, so an
+// orderJob call and a processTestRequest call can never race to enqueue duplicate jobs
+// for the same page. The caller's stated reason is recorded on the job (sources.reason),
+// which survives into the eventual report exactly as sources.worker already does: no
+// approval rule consults it yet, but accumulating real callers' stated reasons is
+// intended to inform the design of more sophisticated, reason-aware approval rules in a
+// later iteration.
+export const orderJob = (
+  target: TestRequestTarget, reason: string
+): Promise<OrderJobResult> => testRequestsLock(async (): Promise<OrderJobResult> => {
+  let description: string;
+  let url: string;
+  // Whether the cited report (for a retest order) has been superseded by a later one.
+  let superseded = false;
+  // If the target identifies a report to retest:
+  if ('timeStamp' in target) {
+    const {timeStamp, jobID} = target;
+    // Get the cited report.
+    const extract = await getReportExtract(timeStamp, jobID);
+    // If it does not exist:
+    if ('error' in extract) {
+      // Return this.
+      return {result: 'nonreport'};
+    }
+    ({description, url} = extract);
+    // Get whether it has been superseded by a later report.
+    const reportExtracts = await getReportExtracts();
+    superseded = reportExtracts.some(
+      ex => ex.timeStamp === timeStamp && ex.jobID === jobID && ex.superseded
+    );
+  }
+  // Otherwise, i.e. if the target is a page to test for the first time:
+  else {
+    ({description, url} = target);
+  }
+  try {
+    // Get any property the page shares with a claimed job.
+    const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
+    // Get any property the page shares with a queued job.
+    const queueJobProperty = await getApprovedJobProperty(description, url, 'queue');
+    // If the page shares a property with a claimed or queued job:
+    if (claimedJobProperty || queueJobProperty) {
+      // Return the property.
+      return {
+        result: (claimedJobProperty || queueJobProperty) as 'description' | 'url',
+        description,
+        url
+      };
+    }
+    // Otherwise, if the order is to retest a page that has been superseded:
+    if ('timeStamp' in target && superseded) {
+      // Return this.
+      return {result: 'superseded', description, url};
+    }
+    // Otherwise, if the order is to test a new page for which a report already exists:
+    if (!('timeStamp' in target)) {
+      const reportExtracts = await getReportExtracts();
+      if (reportExtracts.some(report => report.description === description && report.url === url)) {
+        // Return this.
+        return {result: 'retest', description, url};
+      }
+    }
+    // Otherwise, if the job queue is already full (a cap of 0 means no limit, so the
+    // queue is never full):
+    const queueMax = jobQueueMax();
+    const {queue: queuedJobNames} = await getJobNames();
+    if (queueMax > 0 && queuedJobNames.length >= queueMax) {
+      // Return this.
+      return {result: 'queueFull', description, url};
+    }
+    // The page is eligible, so build a job from the template.
+    const jobTemplateJSON = await fs.readFile(path.join(import.meta.dirname, 'job.json'), 'utf8');
+    const job = JSON.parse(jobTemplateJSON);
+    const nowStamp = getNowStamp();
+    const jobIDSuffix = getRandomString(3);
+    const jobName = `${nowStamp}-${jobIDSuffix}`;
+    job.id = jobName;
+    job.creationTimeStamp = nowStamp;
+    job.executionTimeStamp = nowStamp;
+    job.target.what = description;
+    job.target.url = url;
+    job.sources.reason = reason;
+    // Save the job in the queue.
+    await fs.writeFile(path.join(jobsPath(), 'queue', `${jobName}.json`), getJSON(job));
+    console.log(`Test ordered for ${description} as job ${jobName}`);
+    // Return success, with the job identifier so the caller can report it.
+    return {result: 'ok', description, url, jobID: jobName};
+    // If an error occurred:
+  } catch(error) {
+    // Throw it.
+    throw new Error('Failed to order test', {cause: error});
+  }
+});
+// Milliseconds between polls in awaitJob, and the maximum total milliseconds awaitJob
+// waits before giving up. Both are read at call time (not cached), via environment
+// variables, so tests can shrink them well below the real ~2-to-4-minute wait a
+// production caller experiences; AWAIT_JOB_TIMEOUT_MS deliberately exceeds the
+// documented "occasionally up to 4 minutes" a caller is told to expect, leaving margin
+// so a job that is genuinely still running is not mistaken for one that never will
+// finish.
+const awaitJobPollMs = () => getEnvMax('AWAIT_JOB_POLL_MS', 2000);
+const awaitJobTimeoutMs = () => getEnvMax('AWAIT_JOB_TIMEOUT_MS', 5 * 60 * 1000);
+// Result of awaitJob.
+export type AwaitJobResult = 'completed' | 'failed' | 'timedOut' | 'notFound';
+// Waits for a job ordered via orderJob (or, in principle, any job in db/jobs/queue or
+// db/jobs/claimed identified the same way) to leave the queue/claimed pipeline, by
+// polling for the outcome Kilotest already records for it: a completed report at
+// timeStamp-jobID.json (see index.ts's worker/report handler, which is the sole writer
+// of that file), or the job's own file having moved to db/jobs/failed (see
+// index.ts's processJobRequest and worker/report handler, which are the only
+// code that reclassifies a job as failed). Returns 'notFound' immediately, without
+// polling, if the identifier names neither a completed report nor a job anywhere in the
+// queue/claimed/failed pipeline, since there is then nothing to wait for. No progress
+// notifications are emitted during the wait; this is a pure bounded poll.
+export const awaitJob = async (timeStamp: string, jobID: string): Promise<AwaitJobResult> => {
+  const jobFileName = `${timeStamp}-${jobID}.json`;
+  const pollMs = awaitJobPollMs();
+  const timeoutMs = awaitJobTimeoutMs();
+  const deadline = Date.now() + timeoutMs;
+  // Returns the job's outcome if it is now determinable, or null if it is still pending.
+  const checkOutcome = async (): Promise<AwaitJobResult | null> => {
+    if (await getReportStats(timeStamp, jobID)) {
+      return 'completed';
+    }
+    const jobNames = await getJobNames();
+    if (jobNames.failed.includes(jobFileName)) {
+      return 'failed';
+    }
+    if (jobNames.queue.includes(jobFileName) || jobNames.claimed.includes(jobFileName)) {
+      return null;
+    }
+    // The identifier names neither a report nor a job anywhere in the pipeline.
+    return 'notFound';
+  };
+  // If the job is not yet determinable, poll until it is or the deadline passes.
+  let outcome = await checkOutcome();
+  while (outcome === null && Date.now() < deadline) {
+    await new Promise(resolve => setTimeout(resolve, pollMs));
+    outcome = await checkOutcome();
+  }
+  return outcome ?? 'timedOut';
+};
 
 // METRICS FUNCTIONS
 

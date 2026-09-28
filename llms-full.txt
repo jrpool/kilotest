@@ -132,6 +132,35 @@ Kilotest offers these tools:
   - path: `/api/requestFeature`
   - payload properties
     - `feature`: description and motivation of the feature improvement or the new feature
+- `orderTest`
+  - method: `POST`
+  - purpose: order immediate, automatically approved testing of one web page about which no report is available, instead of waiting for manual approval
+  - path: `/api/orderTest`
+  - payload properties
+    - `description`: description of the page to be tested
+    - `URL`: URL of the page to be tested
+    - `reason`: reason for testing the page
+  - response includes a report identifier (`timeStamp` and `jobID`) once the job is enqueued
+- `orderRetest`
+  - method: `POST`
+  - purpose: order immediate, automatically approved retesting of one web page about which a report is available, instead of waiting for manual approval
+  - path: `/api/orderRetest/{timeStamp}/{jobID}`
+  - parameters
+    - `timeStamp`: initial segment of report identifier
+    - `jobID`: final segment of report identifier
+  - source of parameters: response to a `listIssues` request
+  - payload properties
+    - `reason`: reason for retesting the page
+  - response includes a report identifier (`timeStamp` and `jobID`) once the job is enqueued
+- `awaitTest`
+  - method: `POST`
+  - purpose: wait for a job ordered via `orderTest` or `orderRetest` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
+  - path: `/api/awaitTest/{timeStamp}/{jobID}`
+  - parameters
+    - `timeStamp`: initial segment of the report identifier returned by `orderTest` or `orderRetest`
+    - `jobID`: final segment of the report identifier returned by `orderTest` or `orderRetest`
+  - source of parameters: response to an `orderTest` or `orderRetest` request
+  - caveat: testing typically takes about 2 minutes and occasionally up to 4 minutes; sends no interim notices while waiting
 
 ## After a test, retest, or feature request
 
@@ -146,6 +175,8 @@ When you request a test or a retest:
 - how to confirm approval
   - check test completion by calling `listReports` and looking for the page and completion date in the list
   - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listReports.html`
+
+For immediate testing without waiting for manual approval, use `orderTest` or `orderRetest` instead of `requestTest` or `requestRetest`. Each enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 

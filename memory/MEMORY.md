@@ -5,3 +5,4 @@ This directory holds persistent context files for the Kilotest project. Each fil
 ## Index
 
 - [user_maintainer_context.md](user_maintainer_context.md) — user: Maintainer is 84 years old, sole contributor, prioritizes legibility for future maintainers over short-term velocity
+- [plan_issue_111_instant_test.md](plan_issue_111_instant_test.md) — project: orderTest/orderRetest/awaitTest (issue #111), implemented on orderTest branch with full REST+MCP parity

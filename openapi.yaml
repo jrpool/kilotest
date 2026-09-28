@@ -1181,6 +1181,436 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
+  /api/orderTest:
+    post:
+      operationId: orderTest
+      summary: Order that a page be tested immediately, without manual approval
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                  description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
+                URL:
+                  type: string
+                  description: 12- to 300-character URL of the page, including the https:// scheme and any query
+                reason:
+                  type: string
+                  description: 20- to 100-character reason why the page should be tested
+              required:
+                - description
+                - URL
+                - reason
+      responses:
+        '200':
+          description: Order that a page be tested immediately, without manual approval
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          description:
+                            type: string
+                            description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
+                          URL:
+                            type: string
+                            description: 12- to 300-character URL of the page, including the https:// scheme and any query
+                          reason:
+                            type: string
+                            description: 20- to 100-character reason why the page should be tested
+                        required:
+                          - description
+                          - URL
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: 'null'
+                      closest ancestor request:
+                        type:
+                          - string
+                          - 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your order:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              page to be tested:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              reason why the page should be tested:
+                                type: string
+                            required:
+                              - date and time received
+                              - page to be tested
+                              - reason why the page should be tested
+                            additionalProperties: false
+                      disposition of your order:
+                        anyOf:
+                          - type: object
+                            properties:
+                              what happens next:
+                                type: string
+                              report identifier:
+                                anyOf:
+                                  - $ref: '#/components/schemas/ReportIdentifier'
+                                  - type: 'null'
+                              how you can check for completion:
+                                type: string
+                              do you want to wait for completion:
+                                type: string
+                            required:
+                              - what happens next
+                              - report identifier
+                              - how you can check for completion
+                              - do you want to wait for completion
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - details about your order
+                      - disposition of your order
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/orderRetest/{timeStamp}/{jobID}:
+    post:
+      operationId: orderRetest
+      summary: Order that a page be retested immediately, without manual approval
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the latest report about the page (example: x9z)'
+          required: true
+          description: 'Job identifier of the latest report about the page (example: x9z)'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: 20- to 100-character reason why the page should be retested
+              required:
+                - reason
+      responses:
+        '200':
+          description: Order that a page be retested immediately, without manual approval
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          reason:
+                            type: string
+                            description: 20- to 100-character reason why the page should be retested
+                        required:
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: 'null'
+                      closest ancestor request:
+                        type:
+                          - string
+                          - 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your order:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              page to be retested:
+                                type: object
+                                properties:
+                                  description:
+                                    type: string
+                                  URL:
+                                    type: string
+                                required:
+                                  - description
+                                  - URL
+                                additionalProperties: false
+                              reason why the page should be retested:
+                                type: string
+                            required:
+                              - date and time received
+                              - page to be retested
+                              - reason why the page should be retested
+                            additionalProperties: false
+                      disposition of your order:
+                        anyOf:
+                          - type: object
+                            properties:
+                              what happens next:
+                                type: string
+                              report identifier:
+                                anyOf:
+                                  - $ref: '#/components/schemas/ReportIdentifier'
+                                  - type: 'null'
+                              how you can check for completion:
+                                type: string
+                              do you want to wait for completion:
+                                type: string
+                            required:
+                              - what happens next
+                              - report identifier
+                              - how you can check for completion
+                              - do you want to wait for completion
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - details about your order
+                      - disposition of your order
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/awaitTest/{timeStamp}/{jobID}:
+    post:
+      operationId: awaitTest
+      summary: Wait for a job ordered via orderTest or orderRetest to complete
+      parameters:
+        - in: path
+          name: timeStamp
+          schema:
+            type: string
+            description: 'Timestamp of the ordered job, from the report identifier returned by orderTest, in YYMMDDTHHmm format (example: 260503T0432)'
+          required: true
+          description: 'Timestamp of the ordered job, from the report identifier returned by orderTest, in YYMMDDTHHmm format (example: 260503T0432)'
+        - in: path
+          name: jobID
+          schema:
+            type: string
+            description: 'Job identifier of the ordered job, from the report identifier returned by orderTest (example: x9z)'
+          required: true
+          description: 'Job identifier of the ordered job, from the report identifier returned by orderTest (example: x9z)'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: Wait for a job ordered via orderTest or orderRetest to complete
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: object
+                    properties:
+                      this request:
+                        type: 'null'
+                      closest ancestor request:
+                        type: 'null'
+                    required:
+                      - this request
+                      - closest ancestor request
+                    additionalProperties: false
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your wait:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              report identifier:
+                                $ref: '#/components/schemas/ReportIdentifier'
+                            required:
+                              - report identifier
+                            additionalProperties: false
+                      disposition of your wait:
+                        anyOf:
+                          - type: object
+                            properties:
+                              outcome:
+                                type: string
+                                enum:
+                                  - completed
+                                  - failed
+                                  - timedOut
+                              what happened:
+                                type: string
+                              how you can check for completion:
+                                type: string
+                            required:
+                              - outcome
+                              - what happened
+                              - how you can check for completion
+                            additionalProperties: false
+                          - type: 'null'
+                    required:
+                      - details about your wait
+                      - disposition of your wait
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
 components:
   schemas:
     ToolsFacts:
@@ -1253,7 +1683,9 @@ components:
           type: string
         method:
           type: string
-          const: GET
+          enum:
+            - GET
+            - POST
         URL:
           type: string
       required:
@@ -1394,3 +1826,16 @@ components:
           required:
             - error
           additionalProperties: false
+    ReportIdentifier:
+      type: object
+      properties:
+        timeStamp:
+          type: string
+          description: Timestamp to pass to listIssues once the report is ready.
+        jobID:
+          type: string
+          description: Job identifier to pass to listIssues once the report is ready.
+      required:
+        - timeStamp
+        - jobID
+      additionalProperties: false

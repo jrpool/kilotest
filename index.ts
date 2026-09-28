@@ -80,6 +80,9 @@ import {response as listViolatorsAPI} from './api/listViolators.ts';
 import {response as requestFeatureAPI} from './api/requestFeature.ts';
 import {response as requestRetestAPI} from './api/requestRetest.ts';
 import {response as requestTestAPI} from './api/requestTest.ts';
+import {response as orderTestAPI} from './api/orderTest.ts';
+import {response as orderRetestAPI} from './api/orderRetest.ts';
+import {response as awaitTestAPI} from './api/awaitTest.ts';
 
 // ENVIRONMENT
 
@@ -171,6 +174,9 @@ const apiRespond: {
   requestFeature: ApiResponder;
   requestRetest: ApiResponder;
   requestTest: ApiResponder;
+  orderTest: ApiResponder;
+  orderRetest: ApiResponder;
+  awaitTest: ApiResponder;
 } = {
   getReport: getReportAPI,
   listDiagnoses: listDiagnosesAPI,
@@ -179,7 +185,10 @@ const apiRespond: {
   listViolators: listViolatorsAPI,
   requestFeature: requestFeatureAPI,
   requestRetest: requestRetestAPI,
-  requestTest: requestTestAPI
+  requestTest: requestTestAPI,
+  orderTest: orderTestAPI,
+  orderRetest: orderRetestAPI,
+  awaitTest: awaitTestAPI
 };
 
 // CONSTANTS
@@ -1251,6 +1260,35 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           // Get the response body.
           const responseBody = await apiRespond.requestFeature([feature]);
           await recordPageMetric('apiOperations', 'requestFeature');
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to order an immediate, automatically approved test:
+        else if (segments[0] === 'orderTest') {
+          const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
+          // Get the response body.
+          const responseBody = await apiRespond.orderTest([description, URL, reason]);
+          await recordPageMetric('apiOperations', 'orderTest');
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to order an immediate, automatically approved retest:
+        else if (segments[0] === 'orderRetest') {
+          const {reason} = postData as {reason: string};
+          // Get the response body.
+          const responseBody = await apiRespond.orderRetest(segments.slice(1).concat(reason));
+          await recordPageMetric('apiOperations', 'orderRetest');
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to wait for an ordered job to complete:
+        else if (segments[0] === 'awaitTest') {
+          // Get the response body.
+          const responseBody = await apiRespond.awaitTest(segments.slice(1));
+          await recordPageMetric('apiOperations', 'awaitTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

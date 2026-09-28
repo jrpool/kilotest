@@ -34,7 +34,7 @@ export const answer = async (description: string, url: string, reason: string) =
     };
   }
   // Otherwise, if a report is available about a page with the same description and URL:
-  else if (result === 'retest') {
+  else if (result === 'reportExists') {
     // Report this.
     return {
       status: 'error',

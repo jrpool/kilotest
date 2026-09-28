@@ -2297,7 +2297,7 @@
       }
     },
     {
-      "name": "requestTest",
+      "name": "requestNewTest",
       "description": "Process my request to test a page about which no report is available yet.",
       "inputSchema": {
         "type": "object",

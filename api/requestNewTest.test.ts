@@ -1,6 +1,6 @@
 /*
-  requestTest.test.ts
-  Tests for api/requestTest.ts using the fixture corpus.
+  requestNewTest.test.ts
+  Tests for api/requestNewTest.ts using the fixture corpus.
 */
 
 // IMPORTS
@@ -11,7 +11,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fixtureDBDir} from '../test/dbFixture.ts';
 
-// Blank the alert configuration unconditionally, before ./requestTest.ts (whose
+// Blank the alert configuration unconditionally, before ./requestNewTest.ts (whose
 // processTestRequest calls sendAlert) is ever imported below, so this file sends no
 // real alert emails even when run directly rather than via `npm test`.
 for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
@@ -41,7 +41,7 @@ beforeEach(async () => {
   console.log = (...args) => logged.push(args.join(' '));
 });
 
-import {response} from './requestTest.ts';
+import {response} from './requestNewTest.ts';
 
 after(() => {
   console.log = originalLog;
@@ -55,45 +55,45 @@ after(() => {
 
 // TESTS
 
-test('requestTest rejects an empty description', async () => {
+test('requestNewTest rejects an empty description', async () => {
   const body = await response(['', 'https://example.com/test', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
 });
 
-test('requestTest rejects a description longer than 100 characters', async () => {
+test('requestNewTest rejects a description longer than 100 characters', async () => {
   const longWhat = 'x'.repeat(101);
   const body = await response([longWhat, 'https://example.com/test', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
 });
 
-test('requestTest rejects a URL shorter than 12 characters', async () => {
+test('requestNewTest rejects a URL shorter than 12 characters', async () => {
   const body = await response(['Test Page', 'short', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
 });
 
-test('requestTest rejects a syntactically invalid URL with the correct length', async () => {
+test('requestNewTest rejects a syntactically invalid URL with the correct length', async () => {
   const body = await response(['Test Page', 'not-a-valid-url', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('invalid URL'));
-  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
 });
 
-test('requestTest rejects a private-address URL unless internal targets are allowed', async () => {
+test('requestNewTest rejects a private-address URL unless internal targets are allowed', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   try {
     const body = await response(['Internal Page', 'https://192.168.1.1/page', 'A reason that is long enough.']);
     const details = body['response content']['details about your request'] as any;
     assert.ok(details.error.includes('does not resolve to a page that this deployment can test'));
-    assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+    assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
   } finally {
     process.env.ALLOW_INTERNAL_TARGETS = 'true';
   }
 });
 
-test('requestTest rejects a URL that redirects to a disallowed target, and alerts a manager', async (t) => {
+test('requestNewTest rejects a URL that redirects to a disallowed target, and alerts a manager', async (t) => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   t.mock.method(globalThis, 'fetch', async () => ({url: 'https://10.0.0.5/page'}) as Response);
   try {
@@ -109,21 +109,21 @@ test('requestTest rejects a URL that redirects to a disallowed target, and alert
   }
 });
 
-test('requestTest rejects an already-tested page', async () => {
+test('requestNewTest rejects an already-tested page', async () => {
   const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   // A report for this description and URL already exists, so processTestRequest
-  // returns 'retest' and the failure is reported via the disposition, not details.error.
+  // returns 'reportExists' and the failure is reported via the disposition, not details.error.
   assert.equal(details.error, undefined);
   const disposition = body['response content']['disposition of your request'] as any;
   assert.ok(
     disposition['what happens next']
     .includes('a report about a page with the same description and URL is available.')
   );
-  assert.ok(!logged.some(line => line.includes('new test request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
 });
 
-test('requestTest rejects a page matching a claimed job by description', async () => {
+test('requestNewTest rejects a page matching a claimed job by description', async () => {
   const claimedPath = path.join(fixtureDBDir, 'jobs', 'claimed', 'clm.json');
   await fs.writeFile(claimedPath, JSON.stringify({
     target: {what: 'Claimed Test Page', url: 'https://example.com/claimed-job'}
@@ -143,7 +143,7 @@ test('requestTest rejects a page matching a claimed job by description', async (
   }
 });
 
-test('requestTest rejects a page matching a queued job by URL', async () => {
+test('requestNewTest rejects a page matching a queued job by URL', async () => {
   const queuedPath = path.join(fixtureDBDir, 'jobs', 'queue', 'que.json');
   await fs.writeFile(queuedPath, JSON.stringify({
     target: {what: 'Some Other Page', url: 'https://example.com/queued-url'}
@@ -163,7 +163,7 @@ test('requestTest rejects a page matching a queued job by URL', async () => {
   }
 });
 
-test('requestTest rejects a duplicate request', async () => {
+test('requestNewTest rejects a duplicate request', async () => {
   await response(['Duplicate API Page', 'https://example.com/dup-api', 'A reason that is long enough.']);
   const body = await response(['Duplicate API Page', 'https://example.com/dup-api', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
@@ -172,13 +172,13 @@ test('requestTest rejects a duplicate request', async () => {
   assert.ok(disposition['what happens next'].includes('an identical request is already awaiting approval.'));
 });
 
-test('requestTest accepts a valid new page request', async () => {
+test('requestNewTest accepts a valid new page request', async () => {
   const body = await response(['Brand New Page', 'https://example.com/brandnew', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   assert.equal(details['page to be tested'].description, 'Brand New Page');
   assert.ok(logged.some(line =>
-    line.startsWith('WARNING (Kilotest: new test request awaits approval)')
+    line.startsWith('WARNING (Kilotest: request for a new test awaits approval)')
     && line.includes('Brand New Page')
     && line.includes('https://example.com/brandnew')
     // The alert reports the resulting queue size, so a maintainer who has been away can
@@ -187,14 +187,14 @@ test('requestTest accepts a valid new page request', async () => {
   ));
 });
 
-test('requestTest includes disposition information for a valid request', async () => {
+test('requestNewTest includes disposition information for a valid request', async () => {
   const body = await response(['Brand New Page', 'https://example.com/brandnew', 'A reason that is long enough.']);
   const disposition = body['response content']['disposition of your request'];
   assert.ok(disposition);
   assert.ok(disposition['what happens next']);
 });
 
-test('requestTest rejects a request with a fallback channel when the queue is full', async () => {
+test('requestNewTest rejects a request with a fallback channel when the queue is full', async () => {
   // Fill testRequests.json with 20 pending requests, all for one URL, to reach the cap.
   const filler = Array.from({length: 20}, (_, i) => ({
     timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Filler reason.'

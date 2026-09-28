@@ -102,12 +102,12 @@ test('awaitTest response has no web UI equivalents for this request or its ances
   assert.equal(similarWeb['closest ancestor request'], null);
 });
 
-test('awaitTest reports both orderTest and orderRetest as possible ancestors', async () => {
+test('awaitTest reports both orderNewTest and orderRetest as possible ancestors', async () => {
   const body = await response(['260101T0000', 'mix']);
   const ancestors = (body['this request'] as any)['closest ancestor request'];
   assert.equal(ancestors.length, 2);
   const names = ancestors.map((a: any) => a['tool name']).sort();
-  assert.deepEqual(names, ['orderRetest', 'orderTest']);
+  assert.deepEqual(names, ['orderNewTest', 'orderRetest']);
   for (const ancestor of ancestors) {
     assert.equal(ancestor.method, 'POST');
   }

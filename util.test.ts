@@ -890,12 +890,12 @@ test('processTestRequest returns a duplicate error for a repeated request', {tim
   await fs.writeFile(testRequestsPath(), '{}\n');
 });
 
-test('processTestRequest returns a retest error when a report already exists for the page', async () => {
+test('processTestRequest returns a reportExists error when a report already exists for the page', async () => {
   // The fixture database already has a report for this description and URL.
   const {result} = await processTestRequest(
     'because accessibility', {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}
   );
-  assert.equal(result, 'retest');
+  assert.equal(result, 'reportExists');
 });
 
 test('processTestRequest returns a queueFull error once the pending-request queue is full', {timeout: 500}, async () => {
@@ -1880,11 +1880,11 @@ test('orderJob enqueues a new-page order directly into the job queue', async () 
   }
 });
 
-test('orderJob returns a retest error when a report already exists for the ordered page', async () => {
+test('orderJob returns a reportExists error when a report already exists for the ordered page', async () => {
   const {result} = await orderJob(
     {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}, 'because accessibility matters here'
   );
-  assert.equal(result, 'retest');
+  assert.equal(result, 'reportExists');
 });
 
 test('orderJob returns "description" for a page matching a claimed job by description', async () => {

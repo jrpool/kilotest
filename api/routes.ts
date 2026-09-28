@@ -11,10 +11,10 @@ import {
   listViolatorsSchema,
   listDiagnosesSchema,
   getReportSchema,
-  requestTestSchema,
+  requestNewTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
-  orderTestSchema,
+  orderNewTestSchema,
   orderRetestSchema,
   awaitTestSchema,
   listReportsResponseSchema,
@@ -22,10 +22,10 @@ import {
   listViolatorsResponseSchema,
   listDiagnosesResponseSchema,
   getReportResponseSchema,
-  requestTestResponseSchema,
+  requestNewTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
-  orderTestResponseSchema,
+  orderNewTestResponseSchema,
   orderRetestResponseSchema,
   awaitTestResponseSchema
 } from './schemas.ts';
@@ -73,12 +73,12 @@ export const routes = [
     responseSchema: getReportResponseSchema
   },
   {
-    operationId: 'requestTest',
+    operationId: 'requestNewTest',
     method: 'post',
-    path: '/api/requestTest',
+    path: '/api/requestNewTest',
     summary: 'Request that a page be tested',
-    bodySchema: z.object(requestTestSchema),
-    responseSchema: requestTestResponseSchema
+    bodySchema: z.object(requestNewTestSchema),
+    responseSchema: requestNewTestResponseSchema
   },
   {
     operationId: 'requestRetest',
@@ -101,12 +101,12 @@ export const routes = [
     responseSchema: requestFeatureResponseSchema
   },
   {
-    operationId: 'orderTest',
+    operationId: 'orderNewTest',
     method: 'post',
-    path: '/api/orderTest',
+    path: '/api/orderNewTest',
     summary: 'Order that a page be tested immediately, without manual approval',
-    bodySchema: z.object(orderTestSchema),
-    responseSchema: orderTestResponseSchema
+    bodySchema: z.object(orderNewTestSchema),
+    responseSchema: orderNewTestResponseSchema
   },
   {
     operationId: 'orderRetest',
@@ -124,7 +124,7 @@ export const routes = [
     operationId: 'awaitTest',
     method: 'post',
     path: '/api/awaitTest/{timeStamp}/{jobID}',
-    summary: 'Wait for a job ordered via orderTest or orderRetest to complete',
+    summary: 'Wait for a job ordered via orderNewTest or orderRetest to complete',
     pathParamsSchema: z.object(awaitTestSchema),
     // No caller-supplied fields beyond the path parameters; an empty body schema (rather
     // than omitting bodySchema) keeps this route consistent with the "every POST route

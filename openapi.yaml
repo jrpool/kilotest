@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Kilotest API
   description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 12 rule engines to test web pages for front-end quality (accessibility, usability, and standards conformity). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
-  version: 2.1.0
+  version: 57.0.0
   license:
     name: MIT
     identifier: MIT
@@ -810,9 +810,9 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/requestTest:
+  /api/requestNewTest:
     post:
-      operationId: requestTest
+      operationId: requestNewTest
       summary: Request that a page be tested
       requestBody:
         content:
@@ -1181,9 +1181,9 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/orderTest:
+  /api/orderNewTest:
     post:
-      operationId: orderTest
+      operationId: orderNewTest
       summary: Order that a page be tested immediately, without manual approval
       requestBody:
         content:
@@ -1493,22 +1493,22 @@ paths:
   /api/awaitTest/{timeStamp}/{jobID}:
     post:
       operationId: awaitTest
-      summary: Wait for a job ordered via orderTest or orderRetest to complete
+      summary: Wait for a job ordered via orderNewTest or orderRetest to complete
       parameters:
         - in: path
           name: timeStamp
           schema:
             type: string
-            description: 'Timestamp of the ordered job, from the report identifier returned by orderTest, in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)'
           required: true
-          description: 'Timestamp of the ordered job, from the report identifier returned by orderTest, in YYMMDDTHHmm format (example: 260503T0432)'
+          description: 'Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)'
         - in: path
           name: jobID
           schema:
             type: string
-            description: 'Job identifier of the ordered job, from the report identifier returned by orderTest (example: x9z)'
+            description: 'Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)'
           required: true
-          description: 'Job identifier of the ordered job, from the report identifier returned by orderTest (example: x9z)'
+          description: 'Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)'
       requestBody:
         content:
           application/json:
@@ -1517,7 +1517,7 @@ paths:
               properties: {}
       responses:
         '200':
-          description: Wait for a job ordered via orderTest or orderRetest to complete
+          description: Wait for a job ordered via orderNewTest or orderRetest to complete
           content:
             application/json:
               schema:

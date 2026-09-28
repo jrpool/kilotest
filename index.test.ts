@@ -24,7 +24,7 @@ process.env.TESTARO_WORKERS = JSON.stringify({
 // isAllowedTarget performs. Tests of the check itself (below) override this per test.
 process.env.ALLOW_INTERNAL_TARGETS = 'true';
 // Blank the alert configuration unconditionally, so this file sends no real alert
-// emails (e.g. from the requestTest/requestRetest/tutorial-comment tests below) even
+// emails (e.g. from the requestNewTest/requestRetest/tutorial-comment tests below) even
 // when run directly (e.g. `npx tsx --test index.test.ts`) rather than via `npm test`,
 // which normally guards against this by --require-ing test/setup.ts first. dotenv does
 // not override an already-set env var, so setting these here, before index.ts is ever
@@ -459,8 +459,8 @@ test('GET /forbidden-path returns an invalid GET request error', async () => {
 
 // TESTS: POST routes
 
-test('POST /requestTest.html with valid data returns an HTML page', async () => {
-  const res = await formRequest('POST', '/requestTest.html', {
+test('POST /requestNewTest.html with valid data returns an HTML page', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
     description: `Unique Test Page ${uniqueStamp}`,
     url: `https://example.com/unique-${uniqueStamp}`,
     why: 'Because accessibility matters'
@@ -469,8 +469,8 @@ test('POST /requestTest.html with valid data returns an HTML page', async () => 
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('POST /requestTest.html with an already-tested URL returns an error', async () => {
-  const res = await formRequest('POST', '/requestTest.html', {
+test('POST /requestNewTest.html with an already-tested URL returns an error', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
     description: 'Mixed Outcomes Page',
     url: 'https://example.com/mixed',
     why: 'Because accessibility matters'
@@ -479,8 +479,8 @@ test('POST /requestTest.html with an already-tested URL returns an error', async
   assert.ok(res.body.includes('already been tested'));
 });
 
-test('POST /requestTest.html with invalid data returns an error', async () => {
-  const res = await formRequest('POST', '/requestTest.html', {
+test('POST /requestNewTest.html with invalid data returns an error', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
     description: '',
     url: 'not-a-url',
     why: ''
@@ -489,8 +489,8 @@ test('POST /requestTest.html with invalid data returns an error', async () => {
   assert.ok(res.body.includes('Invalid test request'));
 });
 
-test('POST /requestTest.html with an unreadable body returns an error', async () => {
-  const res = await request('POST', '/requestTest.html', 'rawbody', {'content-type': 'text/plain'});
+test('POST /requestNewTest.html with an unreadable body returns an error', async () => {
+  const res = await request('POST', '/requestNewTest.html', 'rawbody', {'content-type': 'text/plain'});
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Unreadable request body'));
 });
@@ -513,8 +513,8 @@ test('POST /requestRetest.html/invalid/invalid with invalid data returns an erro
   assert.ok(res.body.includes('Invalid retest request'));
 });
 
-test('POST /api/requestTest with valid JSON returns a JSON response', {timeout: 500}, async () => {
-  const res = await request('POST', '/api/requestTest', {
+test('POST /api/requestNewTest with valid JSON returns a JSON response', {timeout: 500}, async () => {
+  const res = await request('POST', '/api/requestNewTest', {
     description: `API Test Page ${uniqueStamp}`,
     URL: `https://example.com/api-test-${uniqueStamp}`,
     reason: 'Because accessibility matters'
@@ -544,9 +544,9 @@ test('POST /api/requestFeature with valid JSON returns a JSON response and recor
   assert.equal(await getMetricCount('apiOperations', 'requestFeature'), countBefore + 1);
 });
 
-test('POST /api/orderTest with valid JSON enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
-  const countBefore = await getMetricCount('apiOperations', 'orderTest');
-  const res = await request('POST', '/api/orderTest', {
+test('POST /api/orderNewTest with valid JSON enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
+  const countBefore = await getMetricCount('apiOperations', 'orderNewTest');
+  const res = await request('POST', '/api/orderNewTest', {
     description: `API Ordered Page ${uniqueStamp}`,
     URL: `https://example.com/api-ordered-${uniqueStamp}`,
     reason: 'Because accessibility matters here'
@@ -554,7 +554,7 @@ test('POST /api/orderTest with valid JSON enqueues a job directly and records an
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.ok(body['tool name'] || body['response content']);
-  assert.equal(await getMetricCount('apiOperations', 'orderTest'), countBefore + 1);
+  assert.equal(await getMetricCount('apiOperations', 'orderNewTest'), countBefore + 1);
   const reportIdentifier = body['response content']['disposition of your order']['report identifier'];
   assert.ok(reportIdentifier);
   await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`));
@@ -736,7 +736,7 @@ test('POST /requestAction.html with invalid auth code returns an error and recor
 });
 
 test('POST /requestAction.html with valid auth code and rejection (no description) returns HTML and records a managerActivity success', async () => {
-  await formRequest('POST', '/requestTest.html', {
+  await formRequest('POST', '/requestNewTest.html', {
     description: `Reject Test Page ${uniqueStamp}`,
     url: `https://example.com/reject-${uniqueStamp}`,
     why: 'Because accessibility matters'
@@ -779,7 +779,7 @@ test('GET /fullReport.json/260101T0007/hid returns an error for an unavailable r
 
 test('POST /requestAction.html with valid auth code and approval returns HTML', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
-  await formRequest('POST', '/requestTest.html', {
+  await formRequest('POST', '/requestNewTest.html', {
     description: `Approval Test Page ${uniqueStamp}`,
     url: `https://example.com/approval-${uniqueStamp}`,
     why: 'Because accessibility matters'
@@ -938,8 +938,40 @@ test('GET /targets.html redirects to /listReports.html', async () => {
   assert.equal(res.headers['location'], '/listReports.html');
 });
 
-test('POST /requestTest.html with non-https URL returns an error', async () => {
-  const res = await formRequest('POST', '/requestTest.html', {
+test('GET /requestTest.html redirects to /requestNewTest.html', async () => {
+  const res = await request('GET', '/requestTest.html', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/requestNewTest.html');
+});
+
+test('GET /requestTestForm.html redirects to /requestNewTestForm.html', async () => {
+  const res = await request('GET', '/requestTestForm.html', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/requestNewTestForm.html');
+});
+
+test('POST /api/requestTest redirects (308, preserving method) to /api/requestNewTest', async () => {
+  const res = await request('POST', '/api/requestTest', {
+    description: `Old Path Page ${uniqueStamp}`,
+    URL: `https://example.com/old-path-${uniqueStamp}`,
+    reason: 'Because accessibility matters'
+  }, {followRedirects: false});
+  assert.equal(res.statusCode, 308);
+  assert.equal(res.headers['location'], '/api/requestNewTest');
+});
+
+test('POST /api/orderTest redirects (308, preserving method) to /api/orderNewTest', async () => {
+  const res = await request('POST', '/api/orderTest', {
+    description: `Old Path Ordered Page ${uniqueStamp}`,
+    URL: `https://example.com/old-path-ordered-${uniqueStamp}`,
+    reason: 'Because accessibility matters'
+  }, {followRedirects: false});
+  assert.equal(res.statusCode, 308);
+  assert.equal(res.headers['location'], '/api/orderNewTest');
+});
+
+test('POST /requestNewTest.html with non-https URL returns an error', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
     description: 'Test Page',
     url: 'http://example.com',
     why: 'Because accessibility matters'
@@ -948,10 +980,10 @@ test('POST /requestTest.html with non-https URL returns an error', async () => {
   assert.ok(res.body.includes('Invalid test request'));
 });
 
-test('POST /requestTest.html with a private-address URL returns an error unless internal targets are allowed', async () => {
+test('POST /requestNewTest.html with a private-address URL returns an error unless internal targets are allowed', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   try {
-    const res = await formRequest('POST', '/requestTest.html', {
+    const res = await formRequest('POST', '/requestNewTest.html', {
       description: 'Internal Page',
       url: 'https://192.168.1.1/page',
       why: 'Because accessibility matters'
@@ -1409,14 +1441,14 @@ test('GET /style.css with a read error returns an error page', async () => {
   }
 });
 
-// requestTest.html and requestRetest.html are POST-only routes (see the
+// requestNewTest.html and requestRetest.html are POST-only routes (see the
 // `routes.POST` list above). They also match the generic '*.html*' GET pattern,
 // but the generic `pageName.endsWith('.html')` branch of the GET dispatcher
 // excludes any path that is POST-only, since such a path's answer handler
 // expects POST's argument list and performs no GET-appropriate rendering.
 
-test('GET /requestTest.html without arguments is rejected as an invalid GET request', async () => {
-  const res = await request('GET', '/requestTest.html');
+test('GET /requestNewTest.html without arguments is rejected as an invalid GET request', async () => {
+  const res = await request('GET', '/requestNewTest.html');
   assert.equal(res.statusCode, 400);
 });
 
@@ -1770,18 +1802,18 @@ test('POST /mcp with a valid initialize request returns server info via SSE', as
 
 // TESTS: answer error branches
 
-test('POST /requestTest.html with valid format but duplicate URL returns an answer error', {timeout: 500}, async () => {
+test('POST /requestNewTest.html with valid format but duplicate URL returns an answer error', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
   // First request to create the request. processTestRequest treats a request as a
   // duplicate only when description, URL, AND reason all match an existing pending
   // request, so the reason must be identical between the two requests here.
-  await formRequest('POST', '/requestTest.html', {
+  await formRequest('POST', '/requestNewTest.html', {
     description: `Dup Test Page ${uniqueStamp}`,
     url: `https://example.com/dup-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
   // Second, identical request should get a duplicate error.
-  const res = await formRequest('POST', '/requestTest.html', {
+  const res = await formRequest('POST', '/requestNewTest.html', {
     description: `Dup Test Page ${uniqueStamp}`,
     url: `https://example.com/dup-${uniqueStamp}`,
     why: 'Because accessibility matters'
@@ -1809,7 +1841,7 @@ test('POST /requestRetest.html with valid format but duplicate retest returns an
 test('POST /requestAction.html with valid auth code approves the same target twice without error', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
   // Create a request.
-  await formRequest('POST', '/requestTest.html', {
+  await formRequest('POST', '/requestNewTest.html', {
     description: `Action Dup Page ${uniqueStamp}`,
     url: `https://example.com/action-dup-${uniqueStamp}`,
     why: 'Because accessibility matters'

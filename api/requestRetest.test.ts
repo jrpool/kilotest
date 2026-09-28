@@ -74,14 +74,14 @@ test('requestRetest rejects a nonexistent report', async () => {
   const body = await response(['251231T0000', 'zzz', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('does not exist'));
-  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
 test('requestRetest rejects a malformed timestamp or job identifier', async () => {
   const body = await response(['999999T9999', 'xyz', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('malformed'));
-  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
 test('requestRetest rejects a superseded report', async () => {
@@ -95,14 +95,14 @@ test('requestRetest rejects a superseded report', async () => {
   assert.ok(
     disposition['what happens next'].includes('a later report about a page with the same description is available.')
   );
-  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
 test('requestRetest rejects a reason shorter than 20 characters', async () => {
   const body = await response(['260101T0003', 'ret', 'short']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
-  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
 test('requestRetest rejects a reason longer than 100 characters', async () => {
@@ -110,7 +110,7 @@ test('requestRetest rejects a reason longer than 100 characters', async () => {
   const body = await response(['260101T0003', 'ret', longReason]);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
-  assert.ok(!logged.some(line => line.includes('new retest request awaits approval')));
+  assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
 test('requestRetest rejects a report matching a claimed job by description', async () => {
@@ -170,7 +170,7 @@ test('requestRetest accepts a valid retest request for the latest report of a pa
   assert.equal(details.error, undefined);
   assert.equal(details['page to be retested'].description, 'Mixed Outcomes Page');
   assert.ok(logged.some(line =>
-    line.startsWith('WARNING (Kilotest: new retest request awaits approval)')
+    line.startsWith('WARNING (Kilotest: request for a retest awaits approval)')
     && line.includes('Mixed Outcomes Page')
     && line.includes('https://example.com/mixed')
     // The alert reports the resulting queue size, so a maintainer who has been away can

@@ -41,8 +41,8 @@ export const getReportSchema = {
   jobID: z.string().describe('Job identifier of the report (example: x9z)')
 };
 
-// requestTest: POST /api/requestTest
-export const requestTestSchema = {
+// requestNewTest: POST /api/requestNewTest
+export const requestNewTestSchema = {
   description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listReports output'),
   URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
@@ -60,8 +60,8 @@ export const requestFeatureSchema = {
   feature: z.string().describe('20- to 1000-character description of requested feature improvement or new feature')
 };
 
-// orderTest: POST /api/orderTest
-export const orderTestSchema = {
+// orderNewTest: POST /api/orderNewTest
+export const orderNewTestSchema = {
   description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listReports output'),
   URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
@@ -76,8 +76,8 @@ export const orderRetestSchema = {
 
 // awaitTest: POST /api/awaitTest
 export const awaitTestSchema = {
-  timeStamp: z.string().describe('Timestamp of the ordered job, from the report identifier returned by orderTest, in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the ordered job, from the report identifier returned by orderTest (example: x9z)')
+  timeStamp: z.string().describe('Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)'),
+  jobID: z.string().describe('Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)')
 };
 
 // listReports takes no input; omitted (mcp.ts already uses inputSchema: {}).
@@ -115,8 +115,8 @@ const toolsFactsSchema = z.object({
 
 // Identifies a related request (e.g., the closest ancestor request in the drill-down
 // hierarchy). method is usually GET (every drill-down tool's ancestor is a read), except
-// for orderTest/orderRetest, whose own ancestor is a GET, and awaitTest, whose ancestors
-// (orderTest and orderRetest) are both POST (they create a job).
+// for orderNewTest/orderRetest, whose own ancestor is a GET, and awaitTest, whose ancestors
+// (orderNewTest and orderRetest) are both POST (they create a job).
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
   description: z.string(),
@@ -126,7 +126,7 @@ const requestReferenceSchema = z.object({
 
 // GET endpoints have no 'body'; POST endpoints get a request-specific body schema.
 // ancestorSchema overrides the default single-ancestor shape for a tool whose closest
-// ancestor is not unique: awaitTest can be reached from either orderTest or orderRetest,
+// ancestor is not unique: awaitTest can be reached from either orderNewTest or orderRetest,
 // and the identifier alone does not say which, so it reports both as an array rather
 // than arbitrarily picking one.
 const thisRequestSchema = (method: string, bodySchema?: ZodTypeAny, ancestorSchema: ZodTypeAny = requestReferenceSchema.nullable()) => z.object({
@@ -296,7 +296,7 @@ export const getReportResponseSchema = envelope('GET', z.object({
   'full report': z.unknown().describe('The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.')
 }));
 
-export const requestTestResponseSchema = envelope(
+export const requestNewTestResponseSchema = envelope(
   'POST',
   z.object({
     'details about your request': z.union([
@@ -313,7 +313,7 @@ export const requestTestResponseSchema = envelope(
       'how a web user can check for completion': z.string()
     }).nullable()
   }),
-  z.object(requestTestSchema)
+  z.object(requestNewTestSchema)
 );
 
 export const requestRetestResponseSchema = envelope(
@@ -355,7 +355,7 @@ const reportIdentifierSchema = z.object({
   jobID: z.string().describe('Job identifier to pass to listIssues once the report is ready.')
 }).meta({id: 'ReportIdentifier'});
 
-export const orderTestResponseSchema = envelope(
+export const orderNewTestResponseSchema = envelope(
   'POST',
   z.object({
     'details about your order': z.union([
@@ -373,7 +373,7 @@ export const orderTestResponseSchema = envelope(
       'do you want to wait for completion': z.string()
     }).nullable()
   }),
-  z.object(orderTestSchema),
+  z.object(orderNewTestSchema),
   z.object({
     'this request': z.null(),
     'closest ancestor request': z.string().nullable()
@@ -425,7 +425,7 @@ export const awaitTestResponseSchema = envelope(
     'this request': z.null(),
     'closest ancestor request': z.null()
   }),
-  // awaitTest can be reached from either orderTest or orderRetest, and its own
+  // awaitTest can be reached from either orderNewTest or orderRetest, and its own
   // parameters (timeStamp/jobID) do not say which one produced them, so both possible
   // ancestors are reported, rather than arbitrarily naming just one as "the" ancestor.
   z.array(requestReferenceSchema).length(2)

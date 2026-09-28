@@ -42,7 +42,7 @@ test('routes GET includes all known GET paths', () => {
 test('routes POST includes all known POST paths', () => {
   const required = [
     '/mcp',
-    '/requestTest.html',
+    '/requestNewTest.html',
     '/requestAction.html',
     '/reannotate.html',
     '/renewWCAG.html',

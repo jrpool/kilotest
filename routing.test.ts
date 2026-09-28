@@ -62,8 +62,8 @@ const get = (requestPath: string): Promise<any> => new Promise((resolve, reject)
 
 // TESTS
 
-test('GET /api/requestTest returns an error, not a test-request response', async () => {
-  const result = await get('/api/requestTest');
+test('GET /api/requestNewTest returns an error, not a test-request response', async () => {
+  const result = await get('/api/requestNewTest');
   assert.ok(result.body.includes('Invalid service request'));
 });
 

@@ -1,5 +1,5 @@
 /*
-  requestTest.ts
+  requestNewTest.ts
   Processes a request to test an untested page and returns an acknowledgement.
 */
 
@@ -8,13 +8,13 @@
 import {z} from 'zod';
 import {buildRequestDisposition, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {checkLength, isAllowedRedirectTarget, isAllowedTarget, isURL, processTestRequest} from '../util.ts';
-import {requestTestResponseSchema} from './schemas.ts';
+import {requestNewTestResponseSchema} from './schemas.ts';
 import {sendAlert} from '../alerts.ts';
 
 // TYPES
 
 // The response content defined by the response schema.
-type ResponseContent = z.infer<typeof requestTestResponseSchema>['response content'];
+type ResponseContent = z.infer<typeof requestNewTestResponseSchema>['response content'];
 
 // FUNCTIONS
 
@@ -84,7 +84,7 @@ export const response = async (args: string[]) => {
         howToCheck: 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
         howWebUserChecks: `A web user can visit ${thisHost}/listReports.html to learn whether the page has been tested and a report is available.`
       },
-      {result: 'retest', reason: 'a report about a page with the same description and URL is available.'}
+      {result: 'reportExists', reason: 'a report about a page with the same description and URL is available.'}
     );
   }
   // Create the response content.
@@ -95,11 +95,11 @@ export const response = async (args: string[]) => {
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),
-    'tool name': 'requestTest',
+    'tool name': 'requestNewTest',
     'this request': {
       description: 'Process my request to test a page about which no report is available yet. I have provided a description and the URL of the page and a reason why it should be tested.',
       method: 'POST',
-      URL: `${thisHost}/api/requestTest`,
+      URL: `${thisHost}/api/requestNewTest`,
       body: {
         description,
         URL: url,
@@ -113,7 +113,7 @@ export const response = async (args: string[]) => {
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/requestTestForm.html`,
+      'this request': `${thisHost}/requestNewTestForm.html`,
       'closest ancestor request': `${thisHost}/listReports.html`
     },
     'response metadata': getResponseMetadata(),

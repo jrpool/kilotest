@@ -28,12 +28,14 @@ A list of available reports.
 
 - If there is no report about the wanted page, a request or order for a new test, with a page description, its URL, and a reason for testing it.
 - If there is already a report about the wanted page, requests for findings from the report at successive levels of detail, or, if the report is deemed obsolete, a request or order for a retest, with a reason for retesting it.
+- Complaints and suggestions about features of Kilotest.
 
 ## Subsequent outputs
 
-- From a **request** for a new test or a retest: confirmation of receipt. If the request is manager-approved and executed, the list of available reports will include the new report, typically within 1 day.
-- From an **order** for a new test or a retest: confirmation of receipt and immediate approval or rejection. If the request is approved, the output will include the identifier of the forthcoming report and two methods for getting the report: (1) allowing time (2 to 4 minutes) for completion of the report and then requesting it, and (2) making a request whose response will await the report and then link to it. Orders are enabled in the MCP and API interfaces only.
+- From a **request** for a new test or a retest: if valid, confirmation of receipt. If the request is manager-approved and executed, the list of available reports will include the new report, typically in 1 hour to 1 day.
+- From an **order** for a new test or a retest: if valid, confirmation of receipt and immediate approval or rejection. If the request is approved, the output will include the identifier of the forthcoming report and two methods for getting the report: (1) allowing time (2 to 4 minutes) for completion of the report and then requesting it, and (2) making a request whose response will await the report and then link to it. Orders are enabled in the MCP and API interfaces only.
 - From a request for findings: Details about issues reported, related WCAG standards, what rules were violated, and which DOM elements violated them.
+- From complaints and suggestions about features: acknowledgment of receipt and of the manager being notified.
 
 ## Side effects
 

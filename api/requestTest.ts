@@ -6,7 +6,7 @@
 // IMPORTS
 
 import {z} from 'zod';
-import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
+import {buildRequestDisposition, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {checkLength, isAllowedRedirectTarget, isAllowedTarget, isURL, processTestRequest} from '../util.ts';
 import {requestTestResponseSchema} from './schemas.ts';
 import {sendAlert} from '../alerts.ts';
@@ -77,38 +77,15 @@ export const response = async (args: string[]) => {
       'reason why the page should be tested': reason
     };
     // Add information about the disposition of the request.
-    if (requestResult === 'ok') {
-      requestDisposition = {
-        'what happens next': 'Your request is likely to be approved and processed within 1 hour to 1 day.',
-        'how you can check for completion': 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
-        'how a web user can check for completion': `A web user can visit ${thisHost}/listReports.html to learn whether the page has been tested and a report is available.`
-      };
-    }
-    else {
-      const failureFact = 'Your request will not be processed, because ';
-      let failureReason: string;
-      if (requestResult === 'description') {
-        failureReason = 'a request to test a page with the same description is already approved.'
-      }
-      else if (requestResult === 'url') {
-        failureReason = 'a request to test a page with the same URL is already approved.'
-      }
-      else if (requestResult === 'retest') {
-        failureReason = 'a report about a page with the same description and URL is available.'
-      }
-      else if (requestResult === 'queueFull') {
-        failureReason = 'too many requests are awaiting approval right now. Please try again later, ' +
-          'or post your request at https://github.com/jrpool/kilotest/issues or email info@kilotest.com.'
-      }
-      else {
-        failureReason = 'an identical request is already awaiting approval.'
-      }
-      requestDisposition = {
-        'what happens next': `${failureFact}${failureReason}`,
-        'how you can check for completion': 'Not applicable.',
-        'how a web user can check for completion': 'Not applicable.'
-      }
-    }
+    requestDisposition = buildRequestDisposition(
+      requestResult,
+      {
+        whatHappensNext: 'Your request is likely to be approved and processed within 1 hour to 1 day.',
+        howToCheck: 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
+        howWebUserChecks: `A web user can visit ${thisHost}/listReports.html to learn whether the page has been tested and a report is available.`
+      },
+      {result: 'retest', reason: 'a report about a page with the same description and URL is available.'}
+    );
   }
   // Create the response content.
   const responseContent: ResponseContent = {

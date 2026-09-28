@@ -36,7 +36,7 @@ A list of available reports.
 
 ## Side effects
 
-Kilotest reads the specified web page during testing. It does not modify the target site. Testing is asynchronous and may take up to approximately one day before reports are available for newly requested pages.
+Kilotest reads the specified web page during testing. It does not modify the target site. A manually approved test request is asynchronous and may take up to approximately one day before a report is available; an automatically approved, immediate test order is enqueued right away and typically completes within a few minutes.
 
 ## Cost
 

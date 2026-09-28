@@ -14,6 +14,9 @@ import {
   requestTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
+  orderTestSchema,
+  orderRetestSchema,
+  awaitTestSchema,
   listReportsResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
@@ -21,7 +24,10 @@ import {
   getReportResponseSchema,
   requestTestResponseSchema,
   requestRetestResponseSchema,
-  requestFeatureResponseSchema
+  requestFeatureResponseSchema,
+  orderTestResponseSchema,
+  orderRetestResponseSchema,
+  awaitTestResponseSchema
 } from './schemas.ts';
 
 // ROUTES
@@ -93,5 +99,37 @@ export const routes = [
     summary: 'Request a feature improvement or new feature',
     bodySchema: z.object(requestFeatureSchema),
     responseSchema: requestFeatureResponseSchema
+  },
+  {
+    operationId: 'orderTest',
+    method: 'post',
+    path: '/api/orderTest',
+    summary: 'Order that a page be tested immediately, without manual approval',
+    bodySchema: z.object(orderTestSchema),
+    responseSchema: orderTestResponseSchema
+  },
+  {
+    operationId: 'orderRetest',
+    method: 'post',
+    path: '/api/orderRetest/{timeStamp}/{jobID}',
+    summary: 'Order that a page be retested immediately, without manual approval',
+    pathParamsSchema: z.object({
+      timeStamp: orderRetestSchema.timeStamp,
+      jobID: orderRetestSchema.jobID
+    }),
+    bodySchema: z.object({reason: orderRetestSchema.reason}),
+    responseSchema: orderRetestResponseSchema
+  },
+  {
+    operationId: 'awaitTest',
+    method: 'post',
+    path: '/api/awaitTest/{timeStamp}/{jobID}',
+    summary: 'Wait for a job ordered via orderTest or orderRetest to complete',
+    pathParamsSchema: z.object(awaitTestSchema),
+    // No caller-supplied fields beyond the path parameters; an empty body schema (rather
+    // than omitting bodySchema) keeps this route consistent with the "every POST route
+    // has a bodySchema" invariant the rest of this table and its own test maintain.
+    bodySchema: z.object({}),
+    responseSchema: awaitTestResponseSchema
   }
 ];

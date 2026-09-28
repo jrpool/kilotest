@@ -16,6 +16,9 @@ import * as listDiagnosesAPI from './api/listDiagnoses.ts';
 import * as requestTestAPI from './api/requestTest.ts';
 import * as requestRetestAPI from './api/requestRetest.ts';
 import * as requestFeatureAPI from './api/requestFeature.ts';
+import * as orderTestAPI from './api/orderTest.ts';
+import * as orderRetestAPI from './api/orderRetest.ts';
+import * as awaitTestAPI from './api/awaitTest.ts';
 import {version} from './api/version.ts';
 import {recordMetric} from './util.ts';
 
@@ -27,6 +30,9 @@ import {
   requestTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
+  orderTestSchema,
+  orderRetestSchema,
+  awaitTestSchema,
   listReportsResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
@@ -34,7 +40,10 @@ import {
   getReportResponseSchema,
   requestTestResponseSchema,
   requestRetestResponseSchema,
-  requestFeatureResponseSchema
+  requestFeatureResponseSchema,
+  orderTestResponseSchema,
+  orderRetestResponseSchema,
+  awaitTestResponseSchema
 } from './api/schemas.ts';
 
 // CONSTANTS
@@ -54,6 +63,7 @@ const kilotestOverview = [
   'Kilotest integrates an ensemble of twelve independent rule engines to test a web page and stores the results as a structured report.',
   'Results are organized as a hierarchy. A report contains issues. An issue has violators: elements of the tested page reported as exhibiting the issue. A violator has diagnoses: explanations from rule engines of how the element exhibited the issue.',
   'Typical workflow: call the listReports tool to learn whether a report about the page already exists. If it does, drill down with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. If no report exists, request a test with the requestTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
+  'For immediate, automatically approved testing, use the orderTest tool (for a new page) or the orderRetest tool (for a page with an obsolete report) instead of requestTest or requestRetest. Each enqueues the job right away, with no manual approval step, and returns a report identifier along with a question about whether to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
 
@@ -71,7 +81,7 @@ export const createMCPServer = (): McpServer => {
     description: 'Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available'
   },
   {
-    instructions: `${sharedContext} Use the listReports tool to start. If it shows that there is a report available about the page you want facts about, drill down with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestTest tool to request that the page be tested. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested. For detailed documentation, call the getKilotestOverview tool.`
+    instructions: `${sharedContext} Use the listReports tool to start. If it shows that there is a report available about the page you want facts about, drill down with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestTest tool to request that the page be tested, or the orderTest tool for immediate, automatically approved testing. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate, automatically approved retesting. For detailed documentation, call the getKilotestOverview tool.`
   });
   server.registerTool(
     'getKilotestOverview',
@@ -248,6 +258,66 @@ export const createMCPServer = (): McpServer => {
     async ({feature}) => {
       const result = await requestFeatureAPI.response([feature]);
       await recordMetric('mcpToolCalls', 'requestFeature');
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
+    }
+  );
+  server.registerTool(
+    'orderTest',
+    {
+      description: toolDoc('Process my order to test a page about which no report is available yet, immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes.'),
+      inputSchema: orderTestSchema,
+      outputSchema: orderTestResponseSchema,
+      annotations: {
+        title: toolDoc('Process my order to test a page about which no report is available yet, immediately and automatically approved.'),
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({description, URL, reason}) => {
+      const result = await orderTestAPI.response([description, URL, reason]);
+      await recordMetric('mcpToolCalls', 'orderTest');
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
+    }
+  );
+  server.registerTool(
+    'orderRetest',
+    {
+      description: toolDoc('Process my order to retest a page immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes.'),
+      inputSchema: orderRetestSchema,
+      outputSchema: orderRetestResponseSchema,
+      annotations: {
+        title: toolDoc('Process my order to retest a page immediately and automatically approved.'),
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({timeStamp, jobID, reason}) => {
+      const result = await orderRetestAPI.response([timeStamp, jobID, reason]);
+      await recordMetric('mcpToolCalls', 'orderRetest');
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
+    }
+  );
+  server.registerTool(
+    'awaitTest',
+    {
+      description: toolDoc('Wait for a job ordered via the orderTest or orderRetest tool to complete, using the report identifier either tool returned. Blocks until the report is ready, the job fails, or a maximum wait time elapses; sends no interim notices.'),
+      inputSchema: awaitTestSchema,
+      outputSchema: awaitTestResponseSchema,
+      annotations: {
+        title: toolDoc('Wait for a job ordered via the orderTest or orderRetest tool to complete.'),
+        readOnlyHint: true,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({timeStamp, jobID}) => {
+      const result = await awaitTestAPI.response([timeStamp, jobID]);
+      await recordMetric('mcpToolCalls', 'awaitTest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );

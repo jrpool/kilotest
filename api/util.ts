@@ -15,7 +15,7 @@ import {
   objectSort,
   ruleEngines
 } from '../util.ts';
-import type {ReportExtract} from '../util.ts';
+import type {ReportExtract, TestRequestResult} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // TYPES
@@ -28,6 +28,15 @@ export type ReportBasics = {
   'tested web page': {description: string; URL: string};
   'whether a later report about the same page exists': boolean;
 };
+
+// The disposition of a test/retest/instant-test request, as returned by
+// buildRequestDisposition, or null when the request itself was invalid (in which case
+// details about your request already carries the error, and no disposition applies).
+export type RequestDisposition = {
+  'what happens next': string;
+  'how you can check for completion': string;
+  'how a web user can check for completion': string;
+} | null;
 
 // FUNCTIONS
 
@@ -59,6 +68,54 @@ export const getToolsFacts = () => ({
   'URL': `${getThisHost()}/mcp`,
   'web users can obtain similar functionalities at': getThisHost()
 });
+// Returns the human-readable reason a test/retest/instant-test request was not
+// processed, given the result processTestRequest returned. requestResult is always a
+// rejection reason here ('description', 'url', 'queueFull', or an unrecognized value
+// meaning 'duplicate'); callers pass their own extra branch for a requestResult value
+// specific to their own request type ('retest' for requestTest, 'superseded' for
+// requestRetest), since that is the one branch not shared between them.
+export const getRequestFailureReason = (
+  requestResult: Exclude<TestRequestResult, 'ok'>,
+  extraBranch?: {result: TestRequestResult; reason: string}
+): string => {
+  if (requestResult === 'description') {
+    return 'a request to test a page with the same description is already approved.';
+  }
+  if (requestResult === 'url') {
+    return 'a request to test a page with the same URL is already approved.';
+  }
+  if (extraBranch && requestResult === extraBranch.result) {
+    return extraBranch.reason;
+  }
+  if (requestResult === 'queueFull') {
+    return 'too many requests are awaiting approval right now. Please try again later, ' +
+      'or post your request at https://github.com/jrpool/kilotest/issues or email info@kilotest.com.';
+  }
+  return 'an identical request is already awaiting approval.';
+};
+// Returns the disposition of a test/retest/instant-test request: an 'ok' disposition
+// describing how to check for completion, or a rejection disposition naming why the
+// request was not processed. Shared by requestTest, requestRetest, and orderTest,
+// whose only differences are the wording of the 3 completion-related sentences and, for
+// a rejection, the one extra requestResult branch getRequestFailureReason takes.
+export const buildRequestDisposition = (
+  requestResult: TestRequestResult,
+  okText: {whatHappensNext: string; howToCheck: string; howWebUserChecks: string},
+  extraBranch?: {result: TestRequestResult; reason: string}
+): RequestDisposition => {
+  if (requestResult === 'ok') {
+    return {
+      'what happens next': okText.whatHappensNext,
+      'how you can check for completion': okText.howToCheck,
+      'how a web user can check for completion': okText.howWebUserChecks
+    };
+  }
+  return {
+    'what happens next': `Your request will not be processed, because ${getRequestFailureReason(requestResult, extraBranch)}`,
+    'how you can check for completion': 'Not applicable.',
+    'how a web user can check for completion': 'Not applicable.'
+  };
+};
 // Returns the facts about a rule engine.
 export const getRuleEngineFacts = (ruleEngineID: string) => {
   const ruleEngineData = ruleEngines[ruleEngineID] || [null, null];

@@ -544,6 +544,45 @@ test('POST /api/requestFeature with valid JSON returns a JSON response and recor
   assert.equal(await getMetricCount('apiOperations', 'requestFeature'), countBefore + 1);
 });
 
+test('POST /api/orderTest with valid JSON enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
+  const countBefore = await getMetricCount('apiOperations', 'orderTest');
+  const res = await request('POST', '/api/orderTest', {
+    description: `API Ordered Page ${uniqueStamp}`,
+    URL: `https://example.com/api-ordered-${uniqueStamp}`,
+    reason: 'Because accessibility matters here'
+  });
+  assert.equal(res.statusCode, 200);
+  const body = jsonBody(res);
+  assert.ok(body['tool name'] || body['response content']);
+  assert.equal(await getMetricCount('apiOperations', 'orderTest'), countBefore + 1);
+  const reportIdentifier = body['response content']['disposition of your order']['report identifier'];
+  assert.ok(reportIdentifier);
+  await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`));
+});
+
+test('POST /api/orderRetest/260202T0000/new with valid JSON enqueues a job directly and records an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'orderRetest');
+  const res = await request('POST', '/api/orderRetest/260202T0000/new', {
+    reason: 'Because the report is obsolete and needs refreshing'
+  });
+  assert.equal(res.statusCode, 200);
+  const body = jsonBody(res);
+  assert.ok(body['tool name'] || body['response content']);
+  assert.equal(await getMetricCount('apiOperations', 'orderRetest'), countBefore + 1);
+  const reportIdentifier = body['response content']['disposition of your order']['report identifier'];
+  assert.ok(reportIdentifier);
+  await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`));
+});
+
+test('POST /api/awaitTest/260101T0000/mix with an already-completed report records an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'awaitTest');
+  const res = await request('POST', '/api/awaitTest/260101T0000/mix', {});
+  assert.equal(res.statusCode, 200);
+  const body = jsonBody(res);
+  assert.equal(body['response content']['disposition of your wait'].outcome, 'completed');
+  assert.equal(await getMetricCount('apiOperations', 'awaitTest'), countBefore + 1);
+});
+
 test('POST /api/invalidService returns an error', async () => {
   const res = await request('POST', '/api/invalidService', {data: 'test'});
   assert.equal(res.statusCode, 400);

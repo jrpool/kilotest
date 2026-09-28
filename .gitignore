@@ -18,4 +18,5 @@ coverage/
 
 # Secrets and environment-specific configurations
 .env
+.env-prod
 .secrets

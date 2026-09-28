@@ -1538,9 +1538,11 @@ paths:
                       URL:
                         type: string
                       closest ancestor request:
-                        anyOf:
-                          - $ref: '#/components/schemas/RequestReference'
-                          - type: 'null'
+                        minItems: 2
+                        maxItems: 2
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/RequestReference'
                     required:
                       - description
                       - method

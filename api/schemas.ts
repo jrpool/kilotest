@@ -115,7 +115,8 @@ const toolsFactsSchema = z.object({
 
 // Identifies a related request (e.g., the closest ancestor request in the drill-down
 // hierarchy). method is usually GET (every drill-down tool's ancestor is a read), except
-// for awaitTest, whose only ancestor, orderTest, is a POST (it creates a job).
+// for orderTest/orderRetest, whose own ancestor is a GET, and awaitTest, whose ancestors
+// (orderTest and orderRetest) are both POST (they create a job).
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
   description: z.string(),
@@ -124,23 +125,28 @@ const requestReferenceSchema = z.object({
 }).meta({id: 'RequestReference'});
 
 // GET endpoints have no 'body'; POST endpoints get a request-specific body schema.
-const thisRequestSchema = (method: string, bodySchema?: ZodTypeAny) => z.object({
+// ancestorSchema overrides the default single-ancestor shape for a tool whose closest
+// ancestor is not unique: awaitTest can be reached from either orderTest or orderRetest,
+// and the identifier alone does not say which, so it reports both as an array rather
+// than arbitrarily picking one.
+const thisRequestSchema = (method: string, bodySchema?: ZodTypeAny, ancestorSchema: ZodTypeAny = requestReferenceSchema.nullable()) => z.object({
   description: z.string(),
   method: z.literal(method),
   URL: z.string(),
   ...(bodySchema ? {body: bodySchema} : {}),
-  'closest ancestor request': requestReferenceSchema.nullable()
+  'closest ancestor request': ancestorSchema
 });
 
 const envelope = <T extends ZodTypeAny>(
   method: string,
   responseContentSchema: T,
   bodySchema?: ZodTypeAny,
-  similarWebSchema: ZodTypeAny = similarWebRequestsSchema
+  similarWebSchema: ZodTypeAny = similarWebRequestsSchema,
+  ancestorSchema?: ZodTypeAny
 ) => z.object({
   'tool collection': toolsFactsSchema,
   'tool name': z.string(),
-  'this request': thisRequestSchema(method, bodySchema),
+  'this request': thisRequestSchema(method, bodySchema, ancestorSchema),
   'URLs of similar requests for web users': similarWebSchema,
   'response metadata': responseMetadataSchema,
   'response content': responseContentSchema
@@ -418,5 +424,9 @@ export const awaitTestResponseSchema = envelope(
   z.object({
     'this request': z.null(),
     'closest ancestor request': z.null()
-  })
+  }),
+  // awaitTest can be reached from either orderTest or orderRetest, and its own
+  // parameters (timeStamp/jobID) do not say which one produced them, so both possible
+  // ancestors are reported, rather than arbitrarily naming just one as "the" ancestor.
+  z.array(requestReferenceSchema).length(2)
 );

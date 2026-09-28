@@ -74,8 +74,22 @@ it enqueues synchronously and returns the job's own identifier immediately.
   "web users will not be offered an order option." The *ancestor* request's web URL
   (e.g. `listReports.html`, `listIssues.html`) is still populated where one exists.
 - `requestReferenceSchema` (`api/schemas.ts`) had to be widened from `method:
-  z.literal('GET')` to `z.enum(['GET', 'POST'])`, since `awaitTest`'s only ancestor,
-  `orderTest`/`orderRetest`, is a POST, unlike every other tool's GET ancestor.
+  z.literal('GET')` to `z.enum(['GET', 'POST'])`, since `awaitTest`'s ancestors,
+  `orderTest`/`orderRetest`, are POSTs, unlike every other tool's GET ancestor.
+- **`awaitTest` has two possible ancestors, not one**: a bug in the first cut had
+  `awaitTest.ts` unconditionally naming `orderTest` as `'closest ancestor request'`,
+  wrong for any identifier that actually came from `orderRetest`, and `awaitTest`
+  cannot tell which one produced a given `timeStamp`/`jobID`, nor does it need to (its
+  poll logic is origin-agnostic, per the earlier finding above). Considered and
+  rejected: adding an `orderType: 'test' | 'retest'` parameter so `awaitTest` could
+  report a single correct ancestor; rejected because it would force every caller to
+  track and pass through a fact `awaitTest`'s own behavior never uses, reintroducing
+  exactly the origin-coupling the generic design deliberately avoided. Adopted instead:
+  `'closest ancestor request'` reports both `orderTest` and `orderRetest` as an array,
+  only for `awaitTest` (every other tool keeps a single nullable ancestor object).
+  Implemented by giving `thisRequestSchema`/`envelope` (`api/schemas.ts`) an optional
+  `ancestorSchema` override parameter, mirroring the existing `similarWebSchema`
+  override pattern, rather than widening the shared schema for every tool.
 - The caller's stated `reason` is persisted onto the job itself (`job.sources.reason`),
   surviving into the eventual report exactly as `sources.worker` already does. No
   approval rule consults it yet; the user's rationale for keeping the field even though

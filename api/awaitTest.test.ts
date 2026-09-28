@@ -95,12 +95,20 @@ test('awaitTest returns "timedOut" when a claimed job neither completes nor fail
   }
 });
 
-test('awaitTest response has no web UI equivalents for this request or its ancestor', async () => {
+test('awaitTest response has no web UI equivalents for this request or its ancestors', async () => {
   const body = await response(['260101T0000', 'mix']);
   const similarWeb = body['URLs of similar requests for web users'] as any;
   assert.equal(similarWeb['this request'], null);
   assert.equal(similarWeb['closest ancestor request'], null);
-  const ancestor = (body['this request'] as any)['closest ancestor request'];
-  assert.equal(ancestor['tool name'], 'orderTest');
-  assert.equal(ancestor.method, 'POST');
+});
+
+test('awaitTest reports both orderTest and orderRetest as possible ancestors', async () => {
+  const body = await response(['260101T0000', 'mix']);
+  const ancestors = (body['this request'] as any)['closest ancestor request'];
+  assert.equal(ancestors.length, 2);
+  const names = ancestors.map((a: any) => a['tool name']).sort();
+  assert.deepEqual(names, ['orderRetest', 'orderTest']);
+  for (const ancestor of ancestors) {
+    assert.equal(ancestor.method, 'POST');
+  }
 });

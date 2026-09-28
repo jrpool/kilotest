@@ -1,6 +1,6 @@
 /*
   awaitTest.ts
-  Waits for a job ordered via orderTest to complete, and returns its outcome.
+  Waits for a job ordered via orderTest or orderRetest to complete, and returns its outcome.
 */
 
 // IMPORTS
@@ -75,15 +75,26 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'awaitTest',
     'this request': {
-      description: 'Wait for a job ordered via the orderTest tool to complete. The timeStamp and jobID parameters are the report identifier that orderTest returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
+      description: 'Wait for a job ordered via the orderTest or orderRetest tool to complete. The timeStamp and jobID parameters are the report identifier that orderTest or orderRetest returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
       method: 'POST',
       URL: `${thisHost}/api/awaitTest/${timeStamp}/${jobID}`,
-      'closest ancestor request': {
-        'tool name': 'orderTest',
-        description: 'Process my order to test a page about which no report is available yet, immediately and without manual approval.',
-        method: 'POST',
-        URL: `${thisHost}/api/orderTest`
-      }
+      // awaitTest's own parameters do not say whether the job was ordered via orderTest
+      // or orderRetest, so both are reported as possible ancestors, rather than
+      // arbitrarily naming just one.
+      'closest ancestor request': [
+        {
+          'tool name': 'orderTest',
+          description: 'Process my order to test a page about which no report is available yet, immediately and without manual approval.',
+          method: 'POST',
+          URL: `${thisHost}/api/orderTest`
+        },
+        {
+          'tool name': 'orderRetest',
+          description: 'Process my order to retest a page, immediately and without manual approval.',
+          method: 'POST',
+          URL: `${thisHost}/api/orderRetest`
+        }
+      ]
     },
     'URLs of similar requests for web users': {
       'this request': null,

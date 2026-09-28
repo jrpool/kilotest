@@ -304,11 +304,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'awaitTest',
     {
-      description: toolDoc('Wait for a job ordered via the orderTest tool to complete, using the report identifier orderTest returned. Blocks until the report is ready, the job fails, or a maximum wait time elapses; sends no interim notices.'),
+      description: toolDoc('Wait for a job ordered via the orderTest or orderRetest tool to complete, using the report identifier either tool returned. Blocks until the report is ready, the job fails, or a maximum wait time elapses; sends no interim notices.'),
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {
-        title: toolDoc('Wait for a job ordered via the orderTest tool to complete.'),
+        title: toolDoc('Wait for a job ordered via the orderTest or orderRetest tool to complete.'),
         readOnlyHint: true,
         idempotentHint: false,
         destructiveHint: false,

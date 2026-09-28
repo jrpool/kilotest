@@ -27,7 +27,7 @@ export const response = async (args: string[]) => {
   // If the timestamp or job ID is not syntactically valid:
   if (!isTimeStamp(timeStamp) || !isJobID(jobID)) {
     requestDetails = {
-      error: 'wait invalid: the report timestamp or job identifier is malformed'
+      error: 'wait invalid: the report timeStamp or jobID is malformed'
     };
   }
   // Otherwise, i.e. if the identifier is syntactically valid:
@@ -53,14 +53,14 @@ export const response = async (args: string[]) => {
     else if (outcome === 'failed') {
       requestDisposition = {
         outcome: 'failed',
-        'what happened': 'The job failed and no report will be produced.',
+        'what happened': 'The job failed, so no report will be produced.',
         'how you can check for completion': 'Not applicable.'
       };
     }
     else {
       requestDisposition = {
         outcome: 'timedOut',
-        'what happened': 'The job has not completed within the maximum wait time, but it may still be running.',
+        'what happened': 'The job was not completed within the maximum wait time, but it may still be running.',
         'how you can check for completion': `Call the listIssues tool with timeStamp "${timeStamp}" and jobID "${jobID}" after a few minutes to check whether the report is ready.`
       };
     }
@@ -84,13 +84,13 @@ export const response = async (args: string[]) => {
       'closest ancestor request': [
         {
           'tool name': 'orderTest',
-          description: 'Process my order to test a page about which no report is available yet, immediately and without manual approval.',
+          description: 'Fulfill or reject my order to test a page about which no report is available yet.',
           method: 'POST',
           URL: `${thisHost}/api/orderTest`
         },
         {
           'tool name': 'orderRetest',
-          description: 'Process my order to retest a page, immediately and without manual approval.',
+          description: 'Fulfill or reject my order to retest a page.',
           method: 'POST',
           URL: `${thisHost}/api/orderRetest`
         }

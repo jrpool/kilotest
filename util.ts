@@ -78,9 +78,13 @@ export type TestRequest = {
 // Test requests by URL.
 export type TestRequests = Record<string, TestRequest[]>;
 
-// Test request addition result.
+// Test request addition result. 'reportExists' means a report already exists for a
+// page a newTest request or order named (an outcome), distinct from the 'retest'
+// requestType discriminant elsewhere in this file, which means the caller asked to
+// retest a page that already has a report (a request kind); the two must not be
+// confused with one another.
 export type TestRequestResult
-= 'url' | 'description' | 'retest' | 'duplicate' | 'superseded' | 'nonreport' | 'queueFull' | 'ok';
+= 'url' | 'description' | 'reportExists' | 'duplicate' | 'superseded' | 'nonreport' | 'queueFull' | 'ok';
 
 // Target of a new-test or retest request: a description and URL for a new-test request,
 // or the timeStamp and jobID of the cited report for a retest request.
@@ -1127,7 +1131,7 @@ export const processTestRequest = (
   reason: string,
   target: TestRequestTarget
 ): Promise<ProcessRequestResult> => testRequestsLock(async (): Promise<ProcessRequestResult> => {
-  let requestType: 'test' | 'retest';
+  let requestType: 'newTest' | 'retest';
   let description: string;
   let url: string;
   // Whether the cited report (for a retest) has been superseded by a later one.
@@ -1152,7 +1156,7 @@ export const processTestRequest = (
   }
   // Otherwise, i.e. if the target is a page to test for the first time:
   else {
-    requestType = 'test';
+    requestType = 'newTest';
     ({description, url} = target);
   }
   try {
@@ -1186,11 +1190,11 @@ export const processTestRequest = (
       return {result: 'superseded', description, url};
     }
     // Otherwise, if the request is to test a new page for which a report already exists:
-    if (requestType === 'test') {
+    if (requestType === 'newTest') {
       const reportExtracts = await getReportExtracts();
       if (reportExtracts.some(report => report.description === description && report.url === url)) {
         // Return this.
-        return {result: 'retest', description, url};
+        return {result: 'reportExists', description, url};
       }
     }
     // Otherwise, i.e. if the request is genuinely new, if the queue of requests awaiting
@@ -1215,8 +1219,9 @@ export const processTestRequest = (
     // Alert a manager, including the resulting queue size, so a maintainer who has been
     // away sees at a glance how urgently the queue needs review (approval or rejection)
     // rather than learning this only once it is already full.
+    const requestTypeLabel = requestType === 'newTest' ? 'a new test' : 'a retest';
     await sendAlert(
-      `Kilotest: new ${requestType} request awaits approval`,
+      `Kilotest: request for ${requestTypeLabel} awaits approval`,
       `Page description: ${description}\nURL: ${url}\nReason: ${plainReason}\n` +
       `Requests now awaiting approval: ${getPendingTestRequestCount(testRequests)} of ${describeMax(queueMax)}`
     );
@@ -1230,7 +1235,7 @@ export const processTestRequest = (
 });
 // Maximum number of jobs allowed in the job queue (db/jobs/queue) at once. This queue is
 // shared by every path that enqueues a job: manual approval of a pending test/retest
-// request (web/enqueue), and any tool (such as orderTest) that enqueues directly. The cap
+// request (web/enqueue), and any tool (such as orderNewTest) that enqueues directly. The cap
 // therefore protects the queue itself, not any one source of jobs; a value of 0 means no
 // limit. Configurable via JOB_QUEUE_MAX.
 const jobQueueMax = () => getEnvMax('JOB_QUEUE_MAX', 20);
@@ -1308,7 +1313,7 @@ export const orderJob = (
       const reportExtracts = await getReportExtracts();
       if (reportExtracts.some(report => report.description === description && report.url === url)) {
         // Return this.
-        return {result: 'retest', description, url};
+        return {result: 'reportExists', description, url};
       }
     }
     // Otherwise, if the job queue is already full (a cap of 0 means no limit, so the

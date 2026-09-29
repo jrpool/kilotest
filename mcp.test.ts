@@ -48,10 +48,10 @@ test('createMCPServer registers all 12 tools', () => {
     'listViolators',
     'listDiagnoses',
     'getReport',
-    'requestTest',
+    'requestNewTest',
     'requestRetest',
     'requestFeature',
-    'orderTest',
+    'orderNewTest',
     'orderRetest',
     'awaitTest'
   ]);
@@ -162,10 +162,10 @@ test('getReport handler returns content and structuredContent for a valid report
   assert.equal(getToolCallCount('getReport'), countBefore + 1);
 });
 
-test('requestTest handler returns content and structuredContent', async () => {
+test('requestNewTest handler returns content and structuredContent', async () => {
   const server = createMCPServer();
-  const countBefore = getToolCallCount('requestTest');
-  const result = await (server as any)._registeredTools.requestTest.handler({
+  const countBefore = getToolCallCount('requestNewTest');
+  const result = await (server as any)._registeredTools.requestNewTest.handler({
     description: 'Test Page',
     URL: 'https://example.com/test',
     reason: 'Because accessibility matters'
@@ -173,7 +173,7 @@ test('requestTest handler returns content and structuredContent', async () => {
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
-  assert.equal(getToolCallCount('requestTest'), countBefore + 1);
+  assert.equal(getToolCallCount('requestNewTest'), countBefore + 1);
 });
 
 test('requestRetest handler returns content and structuredContent for a valid report', async () => {
@@ -202,11 +202,11 @@ test('requestFeature handler returns content and structuredContent', async () =>
   assert.equal(getToolCallCount('requestFeature'), countBefore + 1);
 });
 
-test('orderTest handler returns content and structuredContent, and enqueues a job', async () => {
+test('orderNewTest handler returns content and structuredContent, and enqueues a job', async () => {
   const {jobsPath} = await import('./util.ts');
   const server = createMCPServer();
-  const countBefore = getToolCallCount('orderTest');
-  const result = await (server as any)._registeredTools.orderTest.handler({
+  const countBefore = getToolCallCount('orderNewTest');
+  const result = await (server as any)._registeredTools.orderNewTest.handler({
     description: 'MCP Ordered Page',
     URL: 'https://example.com/mcp-ordered',
     reason: 'Because accessibility matters here'
@@ -214,7 +214,7 @@ test('orderTest handler returns content and structuredContent, and enqueues a jo
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
-  assert.equal(getToolCallCount('orderTest'), countBefore + 1);
+  assert.equal(getToolCallCount('orderNewTest'), countBefore + 1);
   const reportIdentifier = result.structuredContent['response content']['disposition of your order']['report identifier'];
   assert.ok(reportIdentifier);
   const queuedPath = `${jobsPath()}/queue/${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`;
@@ -374,10 +374,10 @@ test('handleMCP lists all 12 tools via tools/list', async () => {
       'listViolators',
       'listDiagnoses',
       'getReport',
-      'requestTest',
+      'requestNewTest',
       'requestRetest',
       'requestFeature',
-      'orderTest',
+      'orderNewTest',
       'orderRetest',
       'awaitTest'
     ]);

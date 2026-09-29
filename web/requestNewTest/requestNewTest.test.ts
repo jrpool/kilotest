@@ -1,6 +1,6 @@
 /*
-  requestTest.test.ts
-  Unit tests for web/requestTest/index.ts, covering the success path of answer.
+  requestNewTest.test.ts
+  Unit tests for web/requestNewTest/index.ts, covering the success path of answer.
 */
 
 // IMPORTS

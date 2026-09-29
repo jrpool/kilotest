@@ -1,6 +1,6 @@
 /*
   awaitTest.ts
-  Waits for a job ordered via orderTest or orderRetest to complete, and returns its outcome.
+  Waits for a job ordered via orderNewTest or orderRetest to complete, and returns its outcome.
 */
 
 // IMPORTS
@@ -75,18 +75,18 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'awaitTest',
     'this request': {
-      description: 'Wait for a job ordered via the orderTest or orderRetest tool to complete. The timeStamp and jobID parameters are the report identifier that orderTest or orderRetest returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
+      description: 'Wait for a job ordered via the orderNewTest or orderRetest tool to complete. The timeStamp and jobID parameters are the report identifier that orderNewTest or orderRetest returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
       method: 'POST',
       URL: `${thisHost}/api/awaitTest/${timeStamp}/${jobID}`,
-      // awaitTest's own parameters do not say whether the job was ordered via orderTest
+      // awaitTest's own parameters do not say whether the job was ordered via orderNewTest
       // or orderRetest, so both are reported as possible ancestors, rather than
       // arbitrarily naming just one.
       'closest ancestor request': [
         {
-          'tool name': 'orderTest',
+          'tool name': 'orderNewTest',
           description: 'Fulfill or reject my order to test a page about which no report is available yet.',
           method: 'POST',
-          URL: `${thisHost}/api/orderTest`
+          URL: `${thisHost}/api/orderNewTest`
         },
         {
           'tool name': 'orderRetest',

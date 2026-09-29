@@ -1,6 +1,6 @@
 /*
-  orderTest.test.ts
-  Tests for api/orderTest.ts using the fixture corpus.
+  orderNewTest.test.ts
+  Tests for api/orderNewTest.ts using the fixture corpus.
 */
 
 // IMPORTS
@@ -11,7 +11,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {fixtureDBDir} from '../test/dbFixture.ts';
 
-// Blank the alert configuration unconditionally, before ./orderTest.ts (whose orderJob
+// Blank the alert configuration unconditionally, before ./orderNewTest.ts (whose orderJob
 // calls no alert directly, but whose redirect-rejection branch does) is ever imported
 // below, so this file sends no real alert emails even when run directly rather than via
 // `npm test`.
@@ -44,7 +44,7 @@ beforeEach(async () => {
   console.log = (...args) => logged.push(args.join(' '));
 });
 
-import {response} from './orderTest.ts';
+import {response} from './orderNewTest.ts';
 
 after(() => {
   console.log = originalLog;
@@ -58,36 +58,36 @@ after(() => {
 
 // TESTS
 
-test('orderTest rejects an empty description', async () => {
+test('orderNewTest rejects an empty description', async () => {
   const body = await response(['', 'https://example.com/test', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your order'] as any).error);
 });
 
-test('orderTest rejects a reason shorter than 20 characters', async () => {
+test('orderNewTest rejects a reason shorter than 20 characters', async () => {
   const body = await response(['Ordered Page', 'https://example.com/ordered', 'short']);
   const details = body['response content']['details about your order'] as any;
   assert.ok(details.error.includes('reason'));
 });
 
-test('orderTest rejects a reason longer than 100 characters', async () => {
+test('orderNewTest rejects a reason longer than 100 characters', async () => {
   const longReason = 'x'.repeat(101);
   const body = await response(['Ordered Page', 'https://example.com/ordered', longReason]);
   const details = body['response content']['details about your order'] as any;
   assert.ok(details.error.includes('reason'));
 });
 
-test('orderTest rejects a URL shorter than 12 characters', async () => {
+test('orderNewTest rejects a URL shorter than 12 characters', async () => {
   const body = await response(['Test Page', 'short', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your order'] as any).error);
 });
 
-test('orderTest rejects a syntactically invalid URL with the correct length', async () => {
+test('orderNewTest rejects a syntactically invalid URL with the correct length', async () => {
   const body = await response(['Test Page', 'not-a-valid-url', 'A reason that is long enough.']);
   const details = body['response content']['details about your order'] as any;
   assert.ok(details.error.includes('invalid URL'));
 });
 
-test('orderTest rejects a private-address URL unless internal targets are allowed', async () => {
+test('orderNewTest rejects a private-address URL unless internal targets are allowed', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   try {
     const body = await response(['Internal Page', 'https://192.168.1.1/page', 'A reason that is long enough.']);
@@ -98,7 +98,7 @@ test('orderTest rejects a private-address URL unless internal targets are allowe
   }
 });
 
-test('orderTest rejects a URL that redirects to a disallowed target, and alerts a manager', async (t) => {
+test('orderNewTest rejects a URL that redirects to a disallowed target, and alerts a manager', async (t) => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   t.mock.method(globalThis, 'fetch', async () => ({url: 'https://10.0.0.5/page'}) as Response);
   try {
@@ -114,7 +114,7 @@ test('orderTest rejects a URL that redirects to a disallowed target, and alerts 
   }
 });
 
-test('orderTest rejects an already-tested page', async () => {
+test('orderNewTest rejects an already-tested page', async () => {
   const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your order'] as any;
   assert.equal(details.error, undefined);
@@ -126,7 +126,7 @@ test('orderTest rejects an already-tested page', async () => {
   assert.equal(disposition['report identifier'], null);
 });
 
-test('orderTest rejects a page matching a claimed job by description', async () => {
+test('orderNewTest rejects a page matching a claimed job by description', async () => {
   const claimedPath = path.join(fixtureDBDir, 'jobs', 'claimed', 'clm.json');
   await fs.writeFile(claimedPath, JSON.stringify({
     target: {what: 'Claimed Test Page', url: 'https://example.com/claimed-job'}
@@ -146,7 +146,7 @@ test('orderTest rejects a page matching a claimed job by description', async () 
   }
 });
 
-test('orderTest rejects a page matching a queued job by URL', async () => {
+test('orderNewTest rejects a page matching a queued job by URL', async () => {
   const queuedPath = path.join(fixtureDBDir, 'jobs', 'queue', 'que.json');
   await fs.writeFile(queuedPath, JSON.stringify({
     target: {what: 'Some Other Page', url: 'https://example.com/queued-url'}
@@ -166,7 +166,7 @@ test('orderTest rejects a page matching a queued job by URL', async () => {
   }
 });
 
-test('orderTest rejects an order once the job queue is full', async () => {
+test('orderNewTest rejects an order once the job queue is full', async () => {
   process.env.JOB_QUEUE_MAX = '0';
   const fillerPaths = await Promise.all(Array.from({length: 1}, async (_, i) => {
     const fillerPath = path.join(fixtureDBDir, 'jobs', 'queue', `fil${i}.json`);
@@ -187,7 +187,7 @@ test('orderTest rejects an order once the job queue is full', async () => {
   }
 });
 
-test('orderTest accepts a valid new page order and enqueues a job directly', async () => {
+test('orderNewTest accepts a valid new page order and enqueues a job directly', async () => {
   const body = await response(['Brand New Ordered Page', 'https://example.com/brandnewordered', 'A reason that is long enough.']);
   const details = body['response content']['details about your order'] as any;
   assert.equal(details.error, undefined);
@@ -205,7 +205,7 @@ test('orderTest accepts a valid new page order and enqueues a job directly', asy
   assert.equal(job.sources.reason, 'A reason that is long enough.');
 });
 
-test('orderTest response omits a web UI URL for this request but includes the ancestor', async () => {
+test('orderNewTest response omits a web UI URL for this request but includes the ancestor', async () => {
   const body = await response(['Brand New Ordered Page 2', 'https://example.com/brandnewordered2', 'A reason that is long enough.']);
   const similarWeb = body['URLs of similar requests for web users'] as any;
   assert.equal(similarWeb['this request'], null);

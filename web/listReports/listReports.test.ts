@@ -84,7 +84,7 @@ test('listReports includes the page URLs in the report details', async () => {
 test('listReports includes a link to request testing a new page', async () => {
   const result: any = await answer();
   const html = parse(result.answerPage);
-  const testLink = html.querySelector('a[href="requestTestForm.html"]');
+  const testLink = html.querySelector('a[href="requestNewTestForm.html"]');
   assert.ok(testLink);
 });
 

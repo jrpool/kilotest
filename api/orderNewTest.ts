@@ -1,5 +1,5 @@
 /*
-  orderTest.ts
+  orderNewTest.ts
   Processes an order to test an untested page immediately, without manual approval, and returns an acknowledgement.
 */
 
@@ -8,13 +8,13 @@
 import {z} from 'zod';
 import {getRequestFailureReason, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
 import {checkLength, isAllowedRedirectTarget, isAllowedTarget, isURL, orderJob} from '../util.ts';
-import {orderTestResponseSchema} from './schemas.ts';
+import {orderNewTestResponseSchema} from './schemas.ts';
 import {sendAlert} from '../alerts.ts';
 
 // TYPES
 
 // The response content defined by the response schema.
-type ResponseContent = z.infer<typeof orderTestResponseSchema>['response content'];
+type ResponseContent = z.infer<typeof orderNewTestResponseSchema>['response content'];
 
 // FUNCTIONS
 
@@ -100,7 +100,7 @@ export const response = async (args: string[]) => {
       requestDisposition = {
         'what happens next': `Your order will not be processed, because ${getRequestFailureReason(
           orderResult.result,
-          {result: 'retest', reason: 'a report about a page with the same description and URL is available.'}
+          {result: 'reportExists', reason: 'a report about a page with the same description and URL is available.'}
         )}`,
         'report identifier': null,
         'how you can check for completion': 'Not applicable.',
@@ -116,11 +116,11 @@ export const response = async (args: string[]) => {
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),
-    'tool name': 'orderTest',
+    'tool name': 'orderNewTest',
     'this request': {
       description: 'Process my order to test a page about which no report is available yet, immediately and without manual approval. I have provided a description and the URL of the page and a reason why it should be tested.',
       method: 'POST',
-      URL: `${thisHost}/api/orderTest`,
+      URL: `${thisHost}/api/orderNewTest`,
       body: {
         description,
         URL: url,

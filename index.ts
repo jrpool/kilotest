@@ -67,8 +67,8 @@ import {answer as renewWCAG} from './web/renewWCAG/index.ts';
 import {answer as renewWCAGForm} from './web/renewWCAGForm/index.ts';
 import {answer as requestRetestPage} from './web/requestRetest/index.ts';
 import {answer as requestRetestForm} from './web/requestRetestForm/index.ts';
-import {answer as requestTestPage} from './web/requestTest/index.ts';
-import {answer as requestTestForm} from './web/requestTestForm/index.ts';
+import {answer as requestNewTestPage} from './web/requestNewTest/index.ts';
+import {answer as requestNewTestForm} from './web/requestNewTestForm/index.ts';
 import {answer as rewindReportsForm} from './web/rewindReportsForm/index.ts';
 import {answer as showHiddenReportsForm} from './web/showHiddenReportsForm/index.ts';
 import {answer as unhideReportForm} from './web/unhideReportForm/index.ts';
@@ -79,8 +79,8 @@ import {response as listReportsAPI} from './api/listReports.ts';
 import {response as listViolatorsAPI} from './api/listViolators.ts';
 import {response as requestFeatureAPI} from './api/requestFeature.ts';
 import {response as requestRetestAPI} from './api/requestRetest.ts';
-import {response as requestTestAPI} from './api/requestTest.ts';
-import {response as orderTestAPI} from './api/orderTest.ts';
+import {response as requestNewTestAPI} from './api/requestNewTest.ts';
+import {response as orderNewTestAPI} from './api/orderNewTest.ts';
 import {response as orderRetestAPI} from './api/orderRetest.ts';
 import {response as awaitTestAPI} from './api/awaitTest.ts';
 
@@ -127,8 +127,8 @@ const answer: {
   renewWCAGForm: PageHandler;
   requestRetest: PageHandler;
   requestRetestForm: PageHandler;
-  requestTest: PageHandler;
-  requestTestForm: PageHandler;
+  requestNewTest: PageHandler;
+  requestNewTestForm: PageHandler;
   rewindReportsForm: PageHandler;
   showHiddenReportsForm: PageHandler;
   unhideReportForm: PageHandler;
@@ -157,8 +157,8 @@ const answer: {
   renewWCAGForm,
   requestRetest: requestRetestPage,
   requestRetestForm,
-  requestTest: requestTestPage,
-  requestTestForm,
+  requestNewTest: requestNewTestPage,
+  requestNewTestForm,
   rewindReportsForm,
   showHiddenReportsForm,
   unhideReportForm
@@ -173,8 +173,8 @@ const apiRespond: {
   listViolators: ApiResponder;
   requestFeature: ApiResponder;
   requestRetest: ApiResponder;
-  requestTest: ApiResponder;
-  orderTest: ApiResponder;
+  requestNewTest: ApiResponder;
+  orderNewTest: ApiResponder;
   orderRetest: ApiResponder;
   awaitTest: ApiResponder;
 } = {
@@ -185,8 +185,8 @@ const apiRespond: {
   listViolators: listViolatorsAPI,
   requestFeature: requestFeatureAPI,
   requestRetest: requestRetestAPI,
-  requestTest: requestTestAPI,
-  orderTest: orderTestAPI,
+  requestNewTest: requestNewTestAPI,
+  orderNewTest: orderNewTestAPI,
   orderRetest: orderRetestAPI,
   awaitTest: awaitTestAPI
 };
@@ -235,7 +235,7 @@ export const routes = {
     '/requestAction.html',
     '/renewWCAG.html',
     '/requestRetest.html/*',
-    '/requestTest.html',
+    '/requestNewTest.html',
     '/tutorialWebComment.html',
     '/unhideReportForm.html',
     '/worker/job',
@@ -285,12 +285,18 @@ const noDirectGetPages = new Set(['unhideReportForm']);
 // engines and other crawlers are still requesting. Redirecting them lets crawlers update
 // their own indexes, rather than leaving them to repeat the same dead request indefinitely.
 // TEMPORARY: retire this redirect after 2027-04-01 once crawlers have re-indexed.
+// requestTest and requestTestForm were renamed to requestNewTest and requestNewTestForm
+// on 2026-09-28 (see the newTest/retest naming-ambiguity fix), to distinguish the
+// new-test-only page from bare "test" language used elsewhere.
+// TEMPORARY: retire this redirect after 2027-03-28 once crawlers have re-indexed.
 const renamedPagePrefixes: Record<string, string> = {
   diagnoses: 'listDiagnoses',
   reportIssue: 'listViolators',
   reportIssues: 'listIssues',
   rules: 'listRules',
-  targets: 'listReports'
+  targets: 'listReports',
+  requestTest: 'requestNewTest',
+  requestTestForm: 'requestNewTestForm'
 };
 const jobLock = createLock();
 
@@ -936,7 +942,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         await serveError({message: 'ERROR: Unreadable request body'}, response, true);
       }
       // If the request is a test request:
-      else if (pageName === 'requestTest.html') {
+      else if (pageName === 'requestNewTest.html') {
         const {description, url, why} = postData as {description?: string; url: string; why?: string};
         // If the request is valid:
         if (description && isURL(url) && why && await isAllowedTarget(url)) {
@@ -950,7 +956,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             // Serve headers for a response.
             setHeaders('text/html', pathname, 'ultra');
             // Get the answer data.
-            const answerData = await answer.requestTest(description, url, why);
+            const answerData = await answer.requestNewTest(description, url, why);
             // If they are valid:
             if (answerData.status === 'ok') {
               // Serve the answer page.
@@ -1235,14 +1241,25 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // Get the segments of the path after api.
         const segments = pathTail.split('/');
         // If the service is to receive a test request:
-        if (segments[0] === 'requestTest') {
+        if (segments[0] === 'requestNewTest') {
           const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
           // Get the response body.
-          const responseBody = await apiRespond.requestTest([description, URL, reason]);
-          await recordPageMetric('apiOperations', 'requestTest');
+          const responseBody = await apiRespond.requestNewTest([description, URL, reason]);
+          await recordPageMetric('apiOperations', 'requestNewTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the request uses the old, pre-rename requestTest path name: redirect
+        // permanently to the new path name. requestTest takes no path parameters (its
+        // arguments are body fields), so there is no further path to preserve, unlike the
+        // renamedPagePrefixes GET-page redirects above. 308 (not 301) is used here because
+        // 301 is defined to let clients rewrite a POST redirect as a GET, which would drop
+        // this request's body; 308 preserves both the method and the body.
+        // TEMPORARY: retire this redirect after 2027-03-28 once callers have updated.
+        else if (segments[0] === 'requestTest') {
+          response.writeHead(308, {Location: '/api/requestNewTest'});
+          response.end();
         }
         // Otherwise, if the service is to receive a retest request:
         else if (segments[0] === 'requestRetest') {
@@ -1265,14 +1282,23 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           response.end(JSON.stringify(responseBody));
         }
         // Otherwise, if the service is to order an immediate, automatically approved test:
-        else if (segments[0] === 'orderTest') {
+        else if (segments[0] === 'orderNewTest') {
           const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
           // Get the response body.
-          const responseBody = await apiRespond.orderTest([description, URL, reason]);
-          await recordPageMetric('apiOperations', 'orderTest');
+          const responseBody = await apiRespond.orderNewTest([description, URL, reason]);
+          await recordPageMetric('apiOperations', 'orderNewTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the request uses the old, pre-rename orderTest path name: redirect
+        // permanently to the new path name. orderTest likewise takes no path parameters.
+        // See the requestTest redirect above for why 308 (not 301) is used for these
+        // POST-only API redirects.
+        // TEMPORARY: retire this redirect after 2027-03-28 once callers have updated.
+        else if (segments[0] === 'orderTest') {
+          response.writeHead(308, {Location: '/api/orderNewTest'});
+          response.end();
         }
         // Otherwise, if the service is to order an immediate, automatically approved retest:
         else if (segments[0] === 'orderRetest') {

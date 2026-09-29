@@ -25,11 +25,11 @@ test('routes includes all expected operation IDs', () => {
     'listIssues',
     'listReports',
     'listViolators',
+    'orderNewTest',
     'orderRetest',
-    'orderTest',
     'requestFeature',
-    'requestRetest',
-    'requestTest'
+    'requestNewTest',
+    'requestRetest'
   ]);
 });
 

@@ -40,7 +40,7 @@ In the steps below, hosts `T` and `K` may be the same host or two different host
 
 ### Usage
 
-1. In the `testaro` directory, make Testaro start listening for jobs: `node call netWatch true nn true`, where `nn` is the number of seconds to wait between checks for new jobs.
+1. In the `testaro` directory, make Testaro start listening for jobs: `node call netWatch true nn true`, where `nn` is the number of seconds to wait between checks for new jobs. Note that Kilotest promises nearly immediate review and, on approval, immediate execution of “orders” for tests and retests, with typical total elapsed time about 2 minutes. That promise implies a promise to keep `nn` small. A reasonable value is between 10 and 20.
 1. In the `kilotest` directory, start the Kilotest service: `node index`.
 
 ### Contributing

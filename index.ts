@@ -41,6 +41,7 @@ import {handleMCP, mcpPath} from './mcp.ts';
 import fs from 'node:fs/promises';
 import {handleComment as handleTutorialWebComment} from './web/tutorialWeb/index.ts';
 import {answer as tutorialWeb} from './web/tutorialWeb/index.ts';
+import {answer as privacy} from './web/privacy/index.ts';
 import {answer as tutorialAI, handleComment as handleTutorialAIComment} from './web/tutorialAI/index.ts';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
@@ -119,6 +120,7 @@ const answer: {
   manage: PageHandler;
   metrics: PageHandler;
   pruneReportsForm: PageHandler;
+  privacy: PageHandler;
   tutorialWeb: PageHandler;
   tutorialAI: PageHandler;
   reannotate: PageHandler;
@@ -149,6 +151,7 @@ const answer: {
   manage,
   metrics,
   pruneReportsForm,
+  privacy,
   tutorialWeb,
   tutorialAI,
   reannotate,

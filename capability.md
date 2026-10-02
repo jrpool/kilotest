@@ -52,3 +52,7 @@ MIT.
 ## Repository
 
 `https://github.com/jrpool/kilotest`
+
+## Privacy
+
+Kilotest requires no account. See the [privacy policy](https://kilotest.com/privacy.html).

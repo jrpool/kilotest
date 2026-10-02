@@ -14,5 +14,5 @@ import {answer} from './index.ts';
 test('answer returns the privacy policy page', async () => {
   const result = await answer();
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('<h1>Privacy policy</h1>'));
+  assert.ok(result.answerPage.includes('does not sell information'));
 });

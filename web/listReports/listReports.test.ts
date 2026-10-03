@@ -216,3 +216,76 @@ test('listReports shows no-reports message when the database is empty', async ()
     await fs.rm(tmpDir, {recursive: true}).catch(() => {});
   }
 });
+
+// Returns the details element of the report whose summary starts with a description and whose issue link, if required, contains a fragment.
+const getReportDetails = (html: any, description: string, hrefFragment?: string) => {
+  const matches = html.querySelectorAll('details').filter((d: any) => {
+    const summary = d.querySelector('summary')?.text ?? '';
+    if (!summary.startsWith(description)) {
+      return false;
+    }
+    return hrefFragment === undefined
+    || d.querySelectorAll('a').some((a: any) => a.getAttribute('href')?.includes(hrefFragment));
+  });
+  assert.equal(matches.length, 1, `exactly one report matches ${description} ${hrefFragment ?? ''}`);
+  return matches[0];
+};
+
+// Returns the rule-engine line, the prevention line, and the 3 summary amounts of a details element.
+const getResultFacts = (details: any) => {
+  const items = details.querySelectorAll('li');
+  const itemTexts: string[] = items.map((li: any) => li.text.trim());
+  const getAmount = (label: string) => {
+    const text = itemTexts.find(t => t.startsWith(`${label}: `));
+    assert.ok(text, `${label} item exists`);
+    return Number(text.slice(label.length + 2));
+  };
+  // The summary item is the parent of the 3 amount items.
+  const summaryItem = items.find((li: any) => li.text.trim().startsWith('Summary of results:'));
+  assert.ok(summaryItem, 'Summary of results item exists');
+  const amountLabels = summaryItem.querySelectorAll('ul > li').map((li: any) => li.text.trim().split(':')[0]);
+  return {
+    reporterLine: itemTexts.find(t => t.endsWith('reported issues') || t.includes('reported issues (')),
+    preventionLine: itemTexts.find(t => t.startsWith('Page not testable by')),
+    amountLabels,
+    violations: getAmount('Violations'),
+    violators: getAmount('Violators'),
+    issues: getAmount('Issues')
+  };
+};
+
+// Expected facts, hand-computed from the fixtures.
+const expectedFacts: [string, string | undefined, string, number, number, number][] = [
+  // Description, issue-link fragment, reporter line, violations, violators, issues.
+  ['Mixed Outcomes Page', '260101T0000/mix', '2 rule engines reported issues (Alfa + Axe)', 3, 2, 2],
+  ['Mixed Outcomes Page', '260202T0000/new', '1 rule engine reported issues (Axe)', 1, 1, 1],
+  ['All CantTell Page', undefined, '0 rule engines reported issues', 0, 0, 0],
+  ['No Outcomes Page', undefined, '1 rule engine reported issues (Accessibility Checker)', 1, 1, 1],
+  ['Empty Results Page', undefined, '0 rule engines reported issues', 0, 0, 0],
+  ['Prevented Page', undefined, '1 rule engine reported issues (Axe)', 1, 1, 1],
+  ['Multi Violator Page', undefined, '2 rule engines reported issues (Alfa + Axe)', 4, 3, 1],
+  ['Branch Coverage Page', undefined, '1 rule engine reported issues (Axe)', 4, 4, 1]
+];
+
+for (const [description, fragment, reporterLine, violations, violators, issues] of expectedFacts) {
+  test(`listReports gives correct rule-engine count and names and summary amounts for ${description}${fragment ? ` (${fragment})` : ''}`, async () => {
+    const result: any = await answer();
+    const html = parse(result.answerPage);
+    const facts = getResultFacts(getReportDetails(html, description, fragment));
+    assert.equal(facts.reporterLine, reporterLine);
+    assert.deepEqual(facts.amountLabels, ['Violations', 'Violators', 'Issues']);
+    assert.equal(facts.violations, violations);
+    assert.equal(facts.violators, violators);
+    assert.equal(facts.issues, issues);
+  });
+}
+
+test('listReports reports the prevented rule engine only for the report with a prevention', async () => {
+  const result: any = await answer();
+  const html = parse(result.answerPage);
+  const prevented = getResultFacts(getReportDetails(html, 'Prevented Page'));
+  assert.equal(prevented.preventionLine, 'Page not testable by 1 rule engine (Alfa)');
+  const others = html.querySelectorAll('details').filter((d: any) => !d.text.includes('Prevented Page'));
+  assert.equal(others.length, 7);
+  assert.ok(others.every((d: any) => !d.text.includes('Page not testable by')));
+});

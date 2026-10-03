@@ -54,6 +54,7 @@ export type ReportData = {
   engineCount: number;
   reporterNames: string[];
   reporterCount: number;
+  violationCount: number;
   violatorCount: number;
   preventedEngineNames: string[];
   preventedEngineCount: number;
@@ -160,6 +161,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
     engineCount: 0,
     reporterNames: [] as string[],
     reporterCount: 0,
+    violationCount: 0,
     violatorCount: 0,
     preventedEngineNames: [] as string[],
     preventedEngineCount: 0
@@ -182,6 +184,8 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
       reporterIDSet.add(act.which!);
       // Ensure that the issue is in the temporary data.
       issueIDSet.add(issueID);
+      // Increment the violation count.
+      data.violationCount++;
       // If the violator has a catalog index:
       if (catalogIndex) {
         // Ensure that the violator is in the temporary data.

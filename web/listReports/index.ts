@@ -119,6 +119,7 @@ const populateQuery = async (query: Record<string, any>) => {
       preventedEngineNames,
       reporterNames,
       reporterCount,
+      violationCount,
       violatorCount
     } = reportData;
     // Otherwise, i.e. if it succeeded, add lines about the report.
@@ -147,20 +148,21 @@ const populateQuery = async (query: Record<string, any>) => {
       const reporterNamesString = reporterNames.join(' + ');
       reporterString = `${reporterString} (${reporterNamesString})`;
     }
-    const issueCountString = getCountString(issueCount, 'issue was', 'issues were');
-    const violatorString = getCountString(violatorCount, 'violator was', 'violators were');
     lines.tested.push(`${margin}    <li>${reporterString}</li>`);
-    lines.tested.push(`${margin}    <li>${issueCountString} reported</li>`);
-    lines.tested.push(`${margin}    <li>${violatorString} reported</li>`);
-    lines.tested.push(`${margin}  </ul>`);
+    lines.tested.push(`${margin}    <li>Summary of results:`);
+    lines.tested.push(`${margin}      <ul>`);
+    lines.tested.push(`${margin}        <li>Violations: ${violationCount}</li>`);
+    lines.tested.push(`${margin}        <li>Violators: ${violatorCount}</li>`);
+    lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
+    lines.tested.push(`${margin}      </ul>`);
+    lines.tested.push(`${margin}    </li>`);
     lines.tested.push(`${margin}<ul class="nav">`);
     // If any issues were reported:
     if (issueCount) {
-      // Add a question link about the reported issues to the lines.
+      // Add a link to issue details to the lines.
       const href = `href="listIssues.html/${timeStamp}/${jobID}"`;
-      const label = `aria-label="What ${issueCountString} reported for the ${description} page?"`;
-      const questionString = issueCount === 1 ? 'was the issue' : 'were the issues';
-      const link = `<a ${href} ${label}>What ${questionString}?</a>`;
+      const label = `aria-label="issue details for the ${description} page"`;
+      const link = `<a ${href} ${label}>Issue details</a>`;
       lines.tested.push(`${margin}    <li>${link}</li>`);
     }
     let retestString: string = '';

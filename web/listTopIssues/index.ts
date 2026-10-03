@@ -7,16 +7,18 @@
 
 import {sendAlert} from '../../alerts.ts';
 import {
-  getEngineNamesString,
   getReportExtracts,
   getReport,
   getTestActInstances,
-  getWCAGLink,
-  getWeightName,
   isReportError,
   objectSort,
-  populateTemplate,
+  populateTemplate
 } from '../../util.ts';
+import {
+  getEngineNamesString,
+  getWCAGLink,
+  getWeightName
+} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // FUNCTIONS

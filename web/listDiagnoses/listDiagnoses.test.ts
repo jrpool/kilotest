@@ -14,6 +14,7 @@ import {parse} from 'node-html-parser';
 // Mock the util functions called by index.ts before requiring it, so that
 // it imports the mocked versions. Other exports delegate to the real module.
 import * as realUtil from '../../util.ts';
+import * as realWebUtil from '../util.ts';
 let getReportCallCount = 0;
 let failGetReportOnCall = -1;
 let pageDataStringsOverride: any = null;
@@ -26,12 +27,17 @@ mock.module('../../util.ts', {
         return {error: 'Report is invalid (test override)'};
       }
       return (realUtil.getReport as any)(...args);
-    },
+    }
+  }
+} as any);
+mock.module('../util.ts', {
+  exports: {
+    ...realWebUtil,
     getPageDataStrings: async (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
-      return (realUtil.getPageDataStrings as any)(...args);
+      return (realWebUtil.getPageDataStrings as any)(...args);
     }
   }
 } as any);

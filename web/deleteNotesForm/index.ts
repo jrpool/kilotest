@@ -7,7 +7,14 @@
 
 // IMPORTS
 
-import {errorMessage, getDateTimeString, getJSON, getPlainText, isValidAuthCode, populateTemplate} from '../../util.ts';
+import {
+  errorMessage,
+  getJSON,
+  getPlainText,
+  isValidAuthCode,
+  populateTemplate
+} from '../../util.ts';
+import {getDateTimeString} from '../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

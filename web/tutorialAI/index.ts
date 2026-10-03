@@ -6,7 +6,8 @@
 // IMPORTS
 
 import {sendAlert} from '../../alerts.ts';
-import {checkCommentDuplicate, checkCommentLength, describeMax, getEnvMax, getJSON, getNowStamp} from '../../util.ts';
+import {checkCommentDuplicate, describeMax, getEnvMax, getJSON, getNowStamp} from '../../util.ts';
+import {checkCommentLength} from '../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

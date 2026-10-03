@@ -23,36 +23,26 @@ import {
   annotateReportObject,
   awaitJob,
   checkCommentDuplicate,
-  checkCommentLength,
   checkLength,
   createLock,
   dbPath,
   describeMax,
   getAgoDays,
-  getAgoString,
-  getCountString,
   getDateString,
   getDateTime,
-  getEngineNamesString,
   getEnvMax,
   getIssue,
   errorMessage,
   getJSON,
-  getMultiReportWhats,
   getNowStamp,
   getObject,
-  getPageData,
-  getPageDataStrings,
   getPlainText,
   getRandomString,
   getReportExtract,
   getReportExtracts,
   getReportPath,
   getReportStats,
-  getTextFragmentHref,
   getTimeStamp,
-  getWCAGLink,
-  getWeightName,
   hiddenReportsPath,
   htmlSafe,
   isAllowedRedirectTarget,
@@ -64,7 +54,6 @@ import {
   isURL,
   isValidAuthCode,
   jobsPath,
-  makeBreakable,
   minifyURL,
   objectSort,
   orderJob,
@@ -75,32 +64,6 @@ import {
 } from './util.ts';
 
 // TESTS
-
-test('checkCommentLength accepts a comment of exactly 20 characters', () => {
-  const result = checkCommentLength('a'.repeat(20));
-  assert.deepEqual(result, {status: 'ok'});
-});
-
-test('checkCommentLength accepts a comment of exactly 1000 characters', () => {
-  const result = checkCommentLength('a'.repeat(1000));
-  assert.deepEqual(result, {status: 'ok'});
-});
-
-test('checkCommentLength rejects a comment shorter than 20 characters', () => {
-  const result = checkCommentLength('a'.repeat(19));
-  assert.deepEqual(result, {
-    status: 'error',
-    message: 'Your comment was shorter than 20 characters'
-  });
-});
-
-test('checkCommentLength rejects a comment longer than 1000 characters', () => {
-  const result = checkCommentLength('a'.repeat(1001));
-  assert.deepEqual(result, {
-    status: 'error',
-    message: 'Your comment was longer than 1000 characters'
-  });
-});
 
 test('checkLength accepts text at the minimum bound', () => {
   const result = checkLength('a'.repeat(5), 5, 10, 'reason');
@@ -233,28 +196,6 @@ test('getAgoDays returns 0 for the current time', () => {
   assert.equal(getAgoDays(new Date()), 0);
 });
 
-test('getAgoString returns "1 day" for a 1-day-old timestamp', () => {
-  const date = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
-  assert.equal(
-    getAgoString(date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11)), '1 day'
-  );
-});
-
-test('getAgoString returns "3 days" for a 3-day-old timestamp', () => {
-  const date = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-  assert.equal(
-    getAgoString(date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11)), '3 days'
-  );
-});
-
-test('getCountString returns singular for count 1', () => {
-  assert.equal(getCountString(1, 'report', 'reports'), '1 report');
-});
-
-test('getCountString returns plural for count 0', () => {
-  assert.equal(getCountString(0, 'report', 'reports'), '0 reports');
-});
-
 test('getDateString returns a valid date string for a valid time stamp', () => {
   assert.equal(getDateString('260101T0000'), '2026-01-01');
 });
@@ -357,24 +298,6 @@ test('getPlainText replaces special characters', () => {
 test('getRandomString returns a string of the requested length', () => {
   const s = getRandomString(10);
   assert.equal(s.length, 10);
-});
-
-test('getTextFragmentHref returns a text-fragment URL', () => {
-  const href = getTextFragmentHref('Hello', 'https://example.com/page');
-  assert.ok(href.startsWith('https://example.com/page#:~:text='));
-});
-
-test('getWCAGLink returns a URL for a numeric WCAG ID', () => {
-  const link = getWCAGLink('4.1.2');
-  assert.ok(link.startsWith('https://www.w3.org/WAI/WCAG22/Understanding/'));
-});
-
-test('getWeightName returns the correct name for each weight', () => {
-  assert.equal(getWeightName(1), 'lowest');
-  assert.equal(getWeightName(2), 'low');
-  assert.equal(getWeightName(3), 'high');
-  assert.equal(getWeightName(4), 'highest');
-  assert.equal(getWeightName(5), 'unknown');
 });
 
 test('htmlSafe escapes HTML special characters', () => {
@@ -776,10 +699,6 @@ test('isValidAuthCode returns false for an undefined code', () => {
   assert.equal(isValidAuthCode(undefined), false);
 });
 
-test('makeBreakable inserts wbr before non-initial slashes', () => {
-  assert.equal(makeBreakable('/api/listReports'), '/api<wbr>/listReports');
-});
-
 test('minifyURL removes www. and trailing slash and lowercases', () => {
   assert.equal(minifyURL('https://www.Example.com/'), 'https://example.com');
 });
@@ -819,50 +738,6 @@ after(() => {
   else {
     delete process.env.DB_DIR;
   }
-});
-
-test('getPageData returns page data for a valid report', async () => {
-  const data = await getPageData('260101T0000', 'mix') as any;
-  assert.equal(data.description, 'Mixed Outcomes Page');
-  assert.equal(data.url, 'https://example.com/mixed');
-  assert.equal(typeof data.daysAgo, 'number');
-});
-
-test('getPageData returns an error for a nonexistent report', async () => {
-  const data = await getPageData('999999T9999', 'xxx') as any;
-  assert.ok(data.error);
-});
-
-test('getPageDataStrings returns HTML strings for a valid report', async () => {
-  const strings = await getPageDataStrings('260101T0000', 'mix') as any;
-  assert.equal(strings.description, 'Mixed Outcomes Page');
-  assert.equal(strings.url, 'https://example.com/mixed');
-  assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
-  assert.ok(strings.testInfo.includes('by job <code>mix</code>'));
-  assert.ok(strings.testInfo.includes('2026-01-01 at 00:00'));
-});
-
-test('getPageDataStrings returns different testInfo for a different timeStamp', async () => {
-  const strings = await getPageDataStrings('260101T0001', 'ct') as any;
-  assert.equal(strings.description, 'All CantTell Page');
-  assert.ok(strings.testInfo.includes('by job <code>ct</code>'));
-  assert.ok(strings.testInfo.includes('2026-01-01 at 00:01'));
-});
-
-test('getPageDataStrings returns an error for a nonexistent report', async () => {
-  const strings = await getPageDataStrings('999999T9999', 'xxx');
-  assert.ok(strings.error);
-});
-
-test('getPageDataStrings uses provided pageData instead of reading the report', async () => {
-  const strings = await getPageDataStrings('260101T0000', 'mix', {
-    description: 'Custom Page',
-    url: 'https://custom.com',
-    daysAgo: 1
-  }) as any;
-  assert.equal(strings.description, 'Custom Page');
-  assert.equal(strings.url, 'https://custom.com');
-  assert.ok(strings.testInfo.includes('1 day ago'));
 });
 
 test('processTestRequest succeeds for a valid new-test request', {timeout: 500}, async () => {
@@ -1358,39 +1233,10 @@ test('getReport returns an error for an invalid report', async () => {
   }
 });
 
-test('getReportData returns an error for a nonexistent report', async () => {
-  const {getReportData} = await import('./util.ts');
-  const result: any = await getReportData('990101T0000', 'xxx');
-  assert.ok(result.error);
-});
-
-test('getReportData falls back to the engine ID for an unknown prevented engine', async () => {
-  const {getReportData} = await import('./util.ts');
-  const prvJSON = await fs.readFile(path.join(reportsPath(), '260101T0006-prv.json'), 'utf8');
-  const report = JSON.parse(prvJSON);
-  report.jobData.preventions.unknownEngine = 'mystery failure';
-  const reportPath = path.join(reportsPath(), '260103T0000-unk.json');
-  await fs.writeFile(reportPath, JSON.stringify(report));
-  try {
-    const result: any = await getReportData('260103T0000', 'unk');
-    assert.ok(result.preventedEngineNames.includes('unknownEngine'));
-  }
-  finally {
-    await fs.unlink(reportPath);
-  }
-});
-
 // TESTS FOR REMAINING BRANCH COVERAGE IN util.js
 
 test('getAgoDays returns null for an invalid Date object', () => {
   assert.equal(getAgoDays(new Date('invalid')), null);
-});
-
-test('getAgoString returns "1 day" for exactly 1 day ago', () => {
-  // Construct a time stamp 1 day and 1 hour ago, so Math.round gives exactly 1.
-  const date = new Date(Date.now() - (86400000 + 3600000));
-  const stamp = date.toISOString().slice(2).replace(/[-:]/g, '').slice(0, 11);
-  assert.equal(getAgoString(stamp), '1 day');
 });
 
 test('getIssue returns null for a known engine with an unknown variable rule', () => {
@@ -1401,12 +1247,6 @@ test('getIssue returns an issue ID for a variable rule pattern match', () => {
   const result = getIssue('nuVal', 'Duplicate attribute foo');
   assert.ok(typeof result === 'string');
   assert.equal(result, 'duplicateAttribute');
-});
-
-test('getDateTimeString describes an invalid time stamp as unknown', async () => {
-  const {getDateTimeString} = await import('./util.ts');
-  const result = getDateTimeString('999999T9999');
-  assert.equal(result, 'an unknown date at an unknown time');
 });
 
 test('getPOSTData resolves with parsed JSON for application/json requests', async () => {
@@ -1462,35 +1302,6 @@ test('getPOSTData resolves with null for a malformed JSON body', async () => {
   }), {headers: {'content-type': 'application/json'}});
   const result: any = await getPOSTData(req as any);
   assert.equal(result, null);
-});
-
-test('getEngineNamesString falls back to the engine ID for an unknown engine', async () => {
-  const {getEngineNamesString} = await import('./util.ts');
-  const result = getEngineNamesString(new Set(['unknownEngine']));
-  assert.equal(result, 'unknownEngine');
-});
-
-test('getPathID returns the catalog pathID when catalogIndex is truthy', async () => {
-  const {getPathID} = await import('./util.ts');
-  const catalog = {'0': {tagName: 'div', pathID: '/html/body/div'}};
-  assert.equal(getPathID(catalog, '0', '/fallback'), '/html/body/div');
-});
-
-test('getPathID returns the fallback pathID when catalogIndex is truthy but catalogItem has no pathID', async () => {
-  const {getPathID} = await import('./util.ts');
-  const catalog = {'0': {tagName: 'div', pathID: ''}};
-  assert.equal(getPathID(catalog, '0', '/fallback'), '/fallback');
-});
-
-test('getPathID returns /html when catalogIndex is truthy but catalogItem and pathID are both missing', async () => {
-  const {getPathID} = await import('./util.ts');
-  const catalog = {};
-  assert.equal(getPathID(catalog, '0', null as any), '/html');
-});
-
-test('getPathID returns /html when catalogIndex is falsy and pathID is null', async () => {
-  const {getPathID} = await import('./util.ts');
-  assert.equal(getPathID({}, null as any, null as any), '/html');
 });
 
 test('isUsableReport returns false for a report with a test act using an unknown engine', async () => {
@@ -1556,17 +1367,6 @@ test('getTimeStamp returns an 11-character stamp from a Date', () => {
   assert.equal(stamp.slice(7), '1430');
 });
 
-test('getEngineNamesString returns a sorted +-delimited list of engine names', () => {
-  const result = getEngineNamesString(new Set(['axe', 'wave', 'nuVal']));
-  const names = result.split(' + ');
-  assert.ok(names.length === 3);
-  assert.ok(names.includes('WAVE'));
-});
-
-test('getEngineNamesString falls back to the ID for an unknown engine', () => {
-  assert.equal(getEngineNamesString(new Set(['unknownEngine'])), 'unknownEngine');
-});
-
 test('testRequestsLock is a function (the lock returned by createLock)', () => {
   assert.equal(typeof testRequestsLock, 'function');
 });
@@ -1617,11 +1417,6 @@ test('getReportExtracts with onlyLatest returns only the latest report for each 
   const mixReports = latest.filter(e => e.description === 'Mixed Outcomes Page');
   assert.equal(mixReports.length, 1);
   assert.equal(mixReports[0]!.timeStamp, '260202T0000');
-});
-
-test('getMultiReportWhats returns descriptions that have multiple reports', async () => {
-  const whats = await getMultiReportWhats();
-  assert.ok(whats.includes('Mixed Outcomes Page'));
 });
 
 test('getExclusionCookieValue is deterministic for a given AUTH_CODE', async () => {

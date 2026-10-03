@@ -156,6 +156,7 @@ const populateQuery = async (query: Record<string, any>) => {
     lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
     lines.tested.push(`${margin}      </ul>`);
     lines.tested.push(`${margin}    </li>`);
+    lines.tested.push(`${margin}  </ul>`);
     lines.tested.push(`${margin}<ul class="nav">`);
     // If any issues were reported:
     if (issueCount) {

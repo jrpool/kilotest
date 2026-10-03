@@ -6,9 +6,16 @@
 // IMPORTS
 
 import {
-  errorMessage, getReportData, isValidAuthCode, objectSort, populateTemplate, readdirOrCreate,
+  errorMessage,
+  isValidAuthCode,
+  objectSort,
+  populateTemplate,
+  readdirOrCreate,
   reportsPath
 } from '../util.ts';
+import {
+  getReportData
+} from './util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

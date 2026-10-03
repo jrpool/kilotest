@@ -7,18 +7,20 @@
 
 import {
   getAgoDays,
-  getCountString,
   getJobNames,
-  getMultiReportWhats,
   getObject,
-  getPageDataStrings,
   getTestRequests,
-  getReportData,
   getReportExtracts,
   jobsPath,
   objectSort,
   populateTemplate
 } from '../../util.ts';
+import {
+  getCountString,
+  getMultiReportWhats,
+  getPageDataStrings,
+  getReportData
+} from '../util.ts';
 import path from 'node:path';
 
 // FUNCTIONS

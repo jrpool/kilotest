@@ -6,11 +6,13 @@
 // IMPORTS
 
 import {
-  getWeightName,
   htmlSafe,
   populateTemplate,
   ruleEngines
 } from '../../util.ts';
+import {
+  getWeightName
+} from '../util.ts';
 import {issues as issueSpecs, issueRules, rules as ruleSpecs} from 'testaro-issues';
 
 // FUNCTIONS

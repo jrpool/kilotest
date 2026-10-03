@@ -6,19 +6,21 @@
 // IMPORTS
 
 import {
+  getReport,
+  getTestActInstances,
+  htmlSafe,
+  isReportError,
+  populateTemplate
+} from '../../util.ts';
+import {
   getPageDataStrings,
   getPathID,
-  getReport,
   getEngineNamesString,
-  getTestActInstances,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
-  htmlSafe,
-  isReportError,
-  makeBreakable,
-  populateTemplate,
-} from '../../util.ts';
+  makeBreakable
+} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // FUNCTIONS

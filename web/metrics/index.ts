@@ -7,9 +7,16 @@
 // IMPORTS
 
 import {
-  clearMetrics, getDateTimeString, getExclusionCookieValue, getMetrics, isValidAuthCode,
-  metricsExclusionCookieName, populateTemplate
+  clearMetrics,
+  getExclusionCookieValue,
+  getMetrics,
+  isValidAuthCode,
+  metricsExclusionCookieName,
+  populateTemplate
 } from '../../util.ts';
+import {
+  getDateTimeString
+} from '../util.ts';
 
 // FUNCTIONS
 

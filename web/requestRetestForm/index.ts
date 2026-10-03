@@ -5,7 +5,8 @@
 
 // IMPORTS
 
-import {getAgoString, getDateTimeString, getReportExtracts, populateTemplate} from '../../util.ts';
+import {getReportExtracts, populateTemplate} from '../../util.ts';
+import {getAgoString, getDateTimeString} from '../util.ts';
 
 // FUNCTIONS
 

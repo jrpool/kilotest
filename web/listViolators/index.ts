@@ -94,7 +94,7 @@ const populateQuery = async (
   });
   // Populate the violator count.
   const violatorCount = Object.keys(violators).length;
-  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
+  query.violatorCount = violatorCount;
   // For each violator:
   Object.values(violators).forEach((violatorData: any) => {
     // Convert the set of its reporters to a string.

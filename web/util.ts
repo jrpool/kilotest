@@ -256,7 +256,7 @@ export const getPageDataStrings = async (
     description,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago by job <code>${timeStamp}-${jobID}</code> on ${when}`
+    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${timeStamp}-${jobID}</code>`
   };
 };
 // Gets the descriptions of multi-report pages.

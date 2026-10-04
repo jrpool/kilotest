@@ -6,19 +6,20 @@
 // IMPORTS
 
 import {
-  getAgoDays,
   getJobNames,
   getObject,
-  getTestRequests,
+  getReport,
   getReportExtracts,
+  getTestRequests,
+  isReportError,
   jobsPath,
   objectSort,
   populateTemplate
 } from '../../util.ts';
 import {
-  getCountString,
   getMultiReportWhats,
   getPageDataStrings,
+  getPageFactsLines,
   getReportData
 } from '../util.ts';
 import path from 'node:path';
@@ -103,61 +104,28 @@ const populateQuery = async (query: Record<string, any>) => {
   // For each report:
   for (const extract of sortedExtracts) {
     const {jobID, timeStamp, url, description, superseded} = extract;
-    // Get data about it.
-    const reportData = await getReportData(timeStamp, jobID);
+    // Get the report.
+    const report = await getReport(timeStamp, jobID);
     // If this failed:
-    if (reportData.error !== undefined) {
-      console.error(reportData.error);
+    if (isReportError(report)) {
+      console.error(report.error);
       // Populate the query with the reason.
-      query.error = reportData.error;
+      query.error = report.error;
       // Stop populating the query.
       return;
     }
-    const {
-      issueCount,
-      preventedEngineCount,
-      preventedEngineNames,
-      reporterNames,
-      reporterCount,
-      violationCount,
-      violatorCount
-    } = reportData;
-    // Otherwise, i.e. if it succeeded, add lines about the report.
+    // Otherwise, i.e. if it succeeded, get data about the report.
+    const reportData = getReportData(report);
+    const pageDataStrings = getPageDataStrings(report);
+    const {issueCount} = reportData;
+    const {testInfo} = pageDataStrings;
+    // Add lines about the report.
     lines.tested.push(`${margin}<details>`);
-    const daysAgo = getAgoDays(timeStamp);
-    const pageDataStrings = await getPageDataStrings(timeStamp, jobID, {description, url, daysAgo});
-    const {urlLink, testInfo}: any = pageDataStrings;
     const testText = multiReportWhats.includes(description) ? ` (${testInfo.toLowerCase()})` : '';
     lines.tested.push(`${margin}  <summary>${description}${testText}</summary>`);
-    lines.tested.push(`${margin}  <ul>`);
-    // Add the URL of the target to the lines.
-    lines.tested.push(`${margin}    <li>URL: ${urlLink}</li>`);
-    // Add facts about the report to the lines.
-    lines.tested.push(`${margin}    <li>${testInfo}</li>`);
-    // If the page prevented any rule engine from performing its tests:
-    if (preventedEngineCount) {
-      // Add this to the lines.
-      const engineCountString = getCountString(preventedEngineCount, 'rule engine', 'rule engines');
-      lines.tested.push(
-        `${margin}    <li>Page not testable by ${engineCountString} (${preventedEngineNames.join(' + ')})</li>`,
-      );
-    }
-    // Add facts about the test results to the lines.
-    let reporterString = `${getCountString(reporterCount, 'rule engine', 'rule engines')} reported issues`;
-    if (reporterCount) {
-      const reporterNamesString = reporterNames.join(' + ');
-      reporterString = `${reporterString} (${reporterNamesString})`;
-    }
-    lines.tested.push(`${margin}    <li>${reporterString}</li>`);
-    lines.tested.push(`${margin}    <li>Summary of results:`);
-    lines.tested.push(`${margin}      <ul>`);
-    lines.tested.push(`${margin}        <li>Violations: ${violationCount}</li>`);
-    lines.tested.push(`${margin}        <li>Violators: ${violatorCount}</li>`);
-    lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
-    lines.tested.push(`${margin}      </ul>`);
-    lines.tested.push(`${margin}    </li>`);
-    lines.tested.push(`${margin}  </ul>`);
-    lines.tested.push(`${margin}<ul class="nav">`);
+    // Add the page facts to the lines.
+    lines.tested.push(...getPageFactsLines(pageDataStrings, reportData, `${margin}  `));
+    lines.tested.push(`${margin}  <ul class="nav">`);
     // If any issues were reported:
     if (issueCount) {
       // Add a link to issue details to the lines.

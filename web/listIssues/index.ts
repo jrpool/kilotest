@@ -8,147 +8,132 @@
 import {
   getReport,
   getTestActInstances,
-  htmlSafe,
-  isUsableReport,
+  isReportError,
   objectSort,
-  populateTemplate,
-  ruleEngines
+  populateTemplate
 } from '../../util.ts';
+import type {UsableReport} from '../../util.ts';
 import {
-  getPageData,
+  getIssueFactsLines,
   getPageDataStrings,
+  getPageFactsLines,
+  getEngineIDs,
   getEngineNamesString,
-  getWCAGLink,
   getWeightName
 } from '../util.ts';
+import type {ResultsSummary} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // FUNCTIONS
 
 // Returns data on the issues reported by a report.
-const getIssuesData = async (timeStamp: string, jobID: string) => {
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If it exists and is valid:
-  if (isUsableReport(report)) {
-    // Initialize the temporary data.
-    const temp = {
-      issues: {} as Record<string, any>,
-      reporters: new Set<string>(),
-      violators: new Set<string>()
-    };
-    // Initialize the final data.
-    const final: Record<string, any> = {
-      reporters: [],
-      reporterList: '',
-      reporterCount: 0,
-      violatorCount: 0,
-      preventions: report.jobData.preventions,
-      issues: {
-        4: [],
-        3: [],
-        2: [],
-        1: []
-      },
-      issueCount: 0
-    };
-    // For each violating standard instance of each test act:
-    getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
-      const {catalogIndex, issueID} = instance;
-      const which = act.which!;
-      // If it identifies a non-ignorable issue:
-      if (issueID && issueID !== 'ignorable') {
-        const issueClassification = issueSpecs[issueID];
-        // If the issue has a current weighted classification:
-        if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {
-          const {summary, wcag, weight, why} = issueClassification;
-          // Initialize the temporary data on the issue if necessary.
-          temp.issues[issueID] ??= {
-            issueID,
-            summary,
-            wcag,
-            why,
-            weight,
-            reporters: new Set(),
-            reporterList: '',
-            violators: new Set()
-          };
-          // Ensure the rule engine is in the temporary data.
-          temp.issues[issueID].reporters.add(which);
-          temp.reporters.add(which);
-          // If the instance has a catalog index:
-          if (catalogIndex) {
-            // Ensure the violator is in the temporary data.
-            temp.issues[issueID].violators.add(catalogIndex);
-            temp.violators.add(String(catalogIndex));
-          }
+const getIssuesData = (report: UsableReport): ResultsSummary & Record<string, any> => {
+  // Initialize the temporary data.
+  const temp = {
+    issues: {} as Record<string, any>,
+    reporters: new Set<string>(),
+    violators: new Set<string>()
+  };
+  // Initialize the final data.
+  const final: ResultsSummary & Record<string, any> = {
+    reporters: [],
+    reporterList: '',
+    reporterCount: 0,
+    engineCount: 0,
+    testedEngineCount: 0,
+    violationCount: 0,
+    violatorCount: 0,
+    issues: {
+      4: [],
+      3: [],
+      2: [],
+      1: []
+    },
+    issueCount: 0
+  };
+  // For each violating standard instance of each test act:
+  getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
+    const {catalogIndex, issueID} = instance;
+    const which = act.which!;
+    // If it identifies a non-ignorable issue:
+    if (issueID && issueID !== 'ignorable') {
+      const issueClassification = issueSpecs[issueID];
+      // If the issue has a current weighted classification:
+      if (issueClassification && [1, 2, 3, 4].includes(issueClassification.weight)) {
+        const {summary, wcag, weight, why} = issueClassification;
+        // Initialize the temporary data on the issue if necessary.
+        temp.issues[issueID] ??= {
+          issueID,
+          summary,
+          wcag,
+          why,
+          weight,
+          reporters: new Set(),
+          reporterList: '',
+          violationCount: 0,
+          violators: new Set()
+        };
+        // Ensure the rule engine is in the temporary data.
+        temp.issues[issueID].reporters.add(which);
+        temp.reporters.add(which);
+        // Increment the violation counts.
+        temp.issues[issueID].violationCount++;
+        final.violationCount++;
+        // If the instance has a catalog index:
+        if (catalogIndex) {
+          // Ensure the violator is in the temporary data.
+          temp.issues[issueID].violators.add(catalogIndex);
+          temp.violators.add(String(catalogIndex));
         }
       }
-    });
-    // Finish populating the final data.
-    final.reporterList = getEngineNamesString(temp.reporters);
-    final.reporterCount = temp.reporters.size;
-    final.violatorCount = temp.violators.size;
-    Object.values(temp.issues).forEach(issue => {
-      const {issueID, summary, wcag, why, weight} = issue;
-      const finalIssue: Record<string, any> = {
-        issueID,
-        summary,
-        wcag,
-        why,
-        weight
-      };
-      finalIssue.reporterList = getEngineNamesString(issue.reporters);
-      finalIssue.reporterCount = issue.reporters.size;
-      finalIssue.violatorCount = issue.violators.size;
-      final.issues[issue.weight].push(finalIssue);
-    });
-    final.issueCount = Object.keys(temp.issues).length;
-    // For each weight:
-    [4, 3, 2, 1].forEach(weight => {
-      // Sort its issues in the final data alphabetically by reporter names.
-      objectSort(final.issues[weight], 'reporterList', 'alpha');
-      // Sort the issues again in descending reporter-count order, making this the primary order.
-      objectSort(final.issues[weight], 'reporterCount', 'numericDown');
-    });
-    // Return the data.
-    return final;
-  }
-  // Otherwise, i.e. if it is invalid or does not exist, return this.
-  return {error: 'Report missing or invalid.'};
-};
-// Get page and issues data from a report.
-const getData = async (timeStamp: string, jobID: string) => {
-  const pageData = await getPageData(timeStamp, jobID);
-  const issuesData: any = await getIssuesData(timeStamp, jobID);
-  const pageError = ('error' in pageData ? pageData.error : '');
-  const issuesError = issuesData.error || '';
-  const errors = [pageError, issuesError].filter(Boolean).join('; ');
-  // If the data of either type are missing or invalid:
-  if (errors) {
-    // Return this.
-    return {error: errors};
-  }
-  // Otherwise, return the data.
-  return {
-    pageData,
-    issuesData
-  };
+    }
+  });
+  // Finish populating the final data.
+  const {calledIDs, preventedIDs} = getEngineIDs(report);
+  final.engineCount = calledIDs.length;
+  final.testedEngineCount = calledIDs.length - preventedIDs.length;
+  final.reporterList = getEngineNamesString(temp.reporters);
+  final.reporterCount = temp.reporters.size;
+  final.violatorCount = temp.violators.size;
+  Object.values(temp.issues).forEach(issue => {
+    const {issueID, summary, wcag, why, weight} = issue;
+    const finalIssue: Record<string, any> = {
+      issueID,
+      summary,
+      wcag,
+      why,
+      weight
+    };
+    finalIssue.reporterList = getEngineNamesString(issue.reporters);
+    finalIssue.reporterCount = issue.reporters.size;
+    finalIssue.violationCount = issue.violationCount;
+    finalIssue.violatorCount = issue.violators.size;
+    final.issues[issue.weight].push(finalIssue);
+  });
+  final.issueCount = Object.keys(temp.issues).length;
+  // For each weight:
+  [4, 3, 2, 1].forEach(weight => {
+    // Sort its issues in the final data alphabetically by reporter names.
+    objectSort(final.issues[weight], 'reporterList', 'alpha');
+    // Sort the issues again in descending reporter-count order, making this the primary order.
+    objectSort(final.issues[weight], 'reporterCount', 'numericDown');
+  });
+  // Return the data.
+  return final;
 };
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp: string, jobID: string, query: Record<string, any>) => {
-  // Get data on the target and its issues according to the report.
-  const data: any = await getData(timeStamp, jobID);
-  const {pageData, issuesData} = data;
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
   // If this failed:
-  if (data.error) {
+  if (isReportError(report)) {
     // Populate the query with the reason.
-    query.error = data.error;
+    query.error = report.error;
     // Stop populating the query.
     return;
   }
   // Otherwise, i.e. if it succeeded, get fact descriptions for the target.
-  const pageInfo = await getPageDataStrings(timeStamp, jobID, pageData);
+  const pageInfo = getPageDataStrings(report);
   // If this failed:
   if (pageInfo.error !== undefined) {
     // Populate the query with the reason.
@@ -156,45 +141,24 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
     // Stop populating the query.
     return;
   }
-  const {testInfo, urlLink, description} = pageInfo;
-  // Otherwise, i.e. if it succeeded, add target data to the query.
+  // Otherwise, i.e. if it succeeded, get data on the issues.
+  const issuesData = getIssuesData(report);
+  const {testInfo, description} = pageInfo;
+  // Add target data to the query.
   query.target = description;
-  query.urlLink = urlLink;
   query.testInfo = testInfo;
-  const {
-    reporterList,
-    reporterCount,
-    violatorCount,
-    issueCount,
-    preventions,
-    issues
-  } = issuesData;
-  // Initialize strings for the prevention notices query property.
-  const preventionStrings: string[] = [];
   const margin = ' '.repeat(6);
-  Object.keys(preventions).forEach(preventedEngineID => {
-    const [engineName, engineSponsor] = ruleEngines[preventedEngineID] ?? [preventedEngineID, 'unknown sponsor'];
-    const engineNameString = `${engineName} (${engineSponsor})`;
-    const causeString = htmlSafe(preventions[preventedEngineID]);
-    const preventionString = `${margin}<li>Page not testable by ${engineNameString}: ${causeString}</li>`;
-    preventionStrings.push(preventionString);
-  });
-  // Add prevention notices to the query.
-  query.preventions = preventionStrings.join('\n');
+  // Add the page-facts list to the query.
+  query.pageFacts = getPageFactsLines(pageInfo, issuesData, margin).join('\n');
+  const {issues} = issuesData;
   // Add report data to the query.
   query.timeStamp = timeStamp;
   query.jobID = jobID;
-  // Add reporter information to the query.
-  query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
-  query.reporters = reporterList;
   // Add a summary of the issues to the query.
-  query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
   query.highestCount = issues[4].length;
   query.highCount = issues[3].length;
   query.lowCount = issues[2].length;
   query.lowestCount = issues[1].length;
-  // Add a violator count to the query.
-  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     const weightName = getWeightName(weight);
@@ -208,35 +172,15 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
         const weightIssueCount = weightIssues.length;
         // Add the issue count to the query.
         query[`${weightName}Count`] = weightIssueCount;
-        const {
-          issueID,
-          reporterCount,
-          reporterList,
-          summary,
-          violatorCount,
-          wcag,
-          why
-        } = issueData;
-        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+        const {issueID, summary} = issueData;
         // Add the start of a list item to the lines.
         detailsLines.push(`${margin}  <li>`);
         // Add a heading summarizing the issue to the lines.
         detailsLines.push(`${margin}    <h5>${summary}</h5>`);
-        // Add the start of a fact list about the issue to the lines.
-        detailsLines.push(`${margin}    <ul class="pseudoTopLevel">`);
         // Add the issue facts to the lines.
-        detailsLines.push(`${margin}      <li>Why it matters: ${why}`);
-        detailsLines.push(`${margin}      <li>Related WCAG standard: ${wcagLink}`);
-        const reporterCountString = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
         detailsLines.push(
-          `${margin}      <li>Reported by ${reporterCountString} (${reporterList})</li>`
+          ...getIssueFactsLines(report, issueID, `${margin}    `, 'pseudoTopLevel')
         );
-        const violatorCountString = violatorCount === 1
-        ? '1 violator was'
-        : `${violatorCount} violators were`;
-        detailsLines.push(`${margin}      <li>${violatorCountString} reported</li>`);
-        // Add the end of the fact list to the lines.
-        detailsLines.push(`${margin}    </ul>`);
         // Add the start of a link list to the lines.
         detailsLines.push(`${margin}    <ul class="nav">`);
         const whereQuestionString = 'Where was the issue found?';

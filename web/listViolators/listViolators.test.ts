@@ -33,7 +33,7 @@ mock.module('../../util.ts', {
 mock.module('../util.ts', {
   exports: {
     ...realWebUtil,
-    getPageDataStrings: async (...args: any[]) => {
+    getPageDataStrings: (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
@@ -86,7 +86,7 @@ test('listViolators includes links to listDiagnoses for violators', async () => 
 test('listViolators excludes cantTell instances from the violator count', async () => {
   const result = await answer('focusIndicationBad/260101T0000/mix');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('0 violators were'));
+  assert.ok(result.answerPage.includes('<li>Violators: 0</li>'));
   assert.ok(!result.answerPage.includes('<h3>Element'));
 });
 
@@ -101,7 +101,7 @@ test('listViolators returns an error status for an unknown issue', async () => {
   assert.equal(result.status, 'error');
 });
 
-test('listViolators returns an error when getReport fails after getPageDataStrings succeeds', async () => {
+test('listViolators returns an error when getReport fails', async () => {
   getReportCallCount = 0;
   failGetReportOnCall = 1;
   try {
@@ -111,6 +111,18 @@ test('listViolators returns an error when getReport fails after getPageDataStrin
   }
   finally {
     failGetReportOnCall = -1;
+  }
+});
+
+test('listViolators returns an error when getPageDataStrings fails after getReport succeeds', async () => {
+  pageDataStringsOverride = {error: 'Page data strings error'};
+  try {
+    const result = await answer('linkNoText/260101T0000/mix');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Page data strings error');
+  }
+  finally {
+    pageDataStringsOverride = null;
   }
 });
 
@@ -260,7 +272,7 @@ test('listViolators handles instances with missing catalogIndex and acts with no
     const result = await answer('linkNoText/260101T0004/nvi');
     assert.equal(result.status, 'ok');
     // Should show plural violator count.
-    assert.ok(result.answerPage.includes('2 violators were'));
+    assert.ok(result.answerPage.includes('<li>Violators: 2</li>'));
   }
   finally {
     await fs.unlink(reportPath).catch(() => {});

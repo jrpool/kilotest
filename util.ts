@@ -122,6 +122,7 @@ export type AnnotatedAct = Act & {
 // and the else/after-return branch is narrowed to UsableReport.
 export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts'> & {
   error?: never;
+  id: string;
   target: {what: string; url: string};
   catalog: Catalog;
   jobData: NonNullable<Report['jobData']> & {endTime: string; issuelessRules?: string[]};

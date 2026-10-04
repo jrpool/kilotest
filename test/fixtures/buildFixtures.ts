@@ -203,11 +203,20 @@ const main = async () => {
   const preventedCatalog = {
     '0': catalogItem('IMG', 'An image', '/html/body/img[1]', '0:0:200:100')
   };
+  // As in real reports, the prevented engine has a test act, with no standard result.
+  const preventedAlfaAct = {
+    type: 'test',
+    which: engineAlfa,
+    startTime: '26-01-01T00:00',
+    data: {prevented: true, error: 'page timed out'},
+    endTime: '26-01-01T00:01'
+  };
   const preventedActs = [
     testAct(engineAxe, [
       instance('r11', 'The image has no alt text', 'failed',
         issueLinkNoText, 0, 2, 1)
-    ])
+    ]),
+    preventedAlfaAct
   ];
   const preventedReport = report('260101T0006-prv', 'Prevented Page',
     'https://example.com/prevented', preventedActs, preventedCatalog);

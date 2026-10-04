@@ -8,18 +8,17 @@
 import {
   getReport,
   getTestActInstances,
-  htmlSafe,
   isReportError,
   populateTemplate
 } from '../../util.ts';
 import {
+  getIssueFactsLines,
   getPageDataStrings,
+  getPageFactsLines,
   getPathID,
-  getEngineNamesString,
+  getReportData,
   getTextFragmentHref,
-  getWCAGLink,
-  getWeightName,
-  makeBreakable
+  getViolatorFactsLines
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
@@ -32,8 +31,17 @@ const populateQuery = async (
   jobID: string,
   query: Record<string, any>
 ) => {
-  // Get descriptions of the page facts.
-  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (isReportError(report)) {
+    // Populate the query with the reason.
+    query.error = report.error;
+    // Stop populating the query.
+    return;
+  }
+  // Otherwise, i.e. if it succeeded, get descriptions of the page facts.
+  const pageDataStrings = getPageDataStrings(report);
   // If this failed:
   if (pageDataStrings.error !== undefined) {
     // Populate the query with the reason.
@@ -50,58 +58,28 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  const {testInfo, url, urlLink, description} = pageDataStrings;
+  const {testInfo, url, description} = pageDataStrings;
   // Add page facts to the query.
   query.target = description;
-  query.urlLink = urlLink;
   query.testInfo = testInfo;
-  const issue = issueSpecs[issueID]!;
-  const {wcag, weight, why} = issue;
-  query.why = why;
-  query.priority = getWeightName(weight);
-  query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
-  // Initialize those whose values depend on instance inspection.
-  query.count = 0;
-  query.reporters = new Set();
+  query.pageFacts = getPageFactsLines(
+    pageDataStrings, getReportData(report), ' '.repeat(6)
+  ).join('\n');
+  // Add the issue facts to the query.
+  query.issueFacts = getIssueFactsLines(report, issueID, ' '.repeat(6)).join('\n');
+  // Initialize the violator data.
   let violators: any = {};
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Populate the query with the reason.
-    query.error = report.error;
-    // Stop populating the query.
-    return;
-  }
   const {catalog} = report;
-  // Otherwise, i.e. if it succeeded, for each violating standard instance of the issue:
-  getTestActInstances(report, {violationsOnly: true, issueID}).forEach(({act, instance}) => {
+  const testActInstances = getTestActInstances(report, {violationsOnly: true, issueID});
+  // For each violating standard instance of the issue:
+  testActInstances.forEach(({instance}) => {
     const pathID = instance.pathID || '/html';
     const catalogIndex = String(instance.catalogIndex || '0');
-    const tagName = catalog[catalogIndex]?.tagName
-    ?? pathID.split('/').pop()!.replace(/\[.+$/, '').toUpperCase();
+    // Initialize the violator data if necessary.
     violators[catalogIndex] ??= {
-      pathID: getPathID(catalog, catalogIndex, pathID),
-      tagName,
-      text: catalog[catalogIndex]?.text ?? '',
-      reporters: new Set()
+      pathID: getPathID(catalog, catalogIndex, pathID)
     };
-    // Ensure that the rule engine is in the sets of reporters of the violator and the issue.
-    violators[catalogIndex].reporters.add(act.which);
-    query.reporters.add(act.which);
   });
-  // Populate the violator count.
-  const violatorCount = Object.keys(violators).length;
-  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
-  // For each violator:
-  Object.values(violators).forEach((violatorData: any) => {
-    // Convert the set of its reporters to a string.
-    violatorData.reporters = getEngineNamesString(violatorData.reporters);
-  });
-  const reporterCount = query.reporters.size;
-  query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
-  // Convert the set of issue reporters to a string.
-  query.reporters = getEngineNamesString(query.reporters);
   // Convert the violator data to an array.
   violators = Object.entries(violators).map((entry: [string, any]) => ({
     catalogIndex: entry[0],
@@ -115,23 +93,11 @@ const populateQuery = async (
   let takeMeAdviceNeeded = false;
   // For each violator:
   violators.forEach((violator: any, index: number) => {
-    const {catalogIndex, pathID, reporters, tagName, text} = violator;
+    const {catalogIndex, pathID} = violator;
     // Add a heading to the lines.
     lines.push(`${margin}<li><h3>Element ${catalogIndex}</h3>`);
-    lines.push(`${margin}  <ul class="pseudoTopLevel">`);
-    // Add properties of the violator to the lines.
-    if (pathID) {
-      lines.push(`${margin}    <li>XPath: <code>${makeBreakable(pathID)}</code></li>`);
-    }
-    if (tagName) {
-      lines.push(`${margin}    <li>Tag name: <code>${tagName}</code></li>`);
-    }
-    if (text && !['HTML', 'HEAD', 'BODY', 'MAIN', 'NOSCRIPT'].includes(tagName)) {
-      const textString = text.split('\n').join(' … ');
-      lines.push(`${margin}    <li>Text: <q>${htmlSafe(textString)}</q></li>`);
-    }
-    lines.push(`${margin}    <li>Reported by ${reporters}</li>`);
-    lines.push(`${margin}  </ul>`);
+    // Add the violator facts to the lines.
+    lines.push(...getViolatorFactsLines(report, issueID, catalogIndex, pathID, `${margin}  `, 'pseudoTopLevel'));
     lines.push(`${margin}  <ul class="nav">`);
     if (catalogIndex) {
       const catalogItem = catalog[catalogIndex];

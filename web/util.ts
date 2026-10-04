@@ -13,15 +13,15 @@ import {
   getAgoDays,
   getDateString,
   getDateTime,
-  getReport,
   getReportExtracts,
   getTestActInstances,
   getTestActs,
-  isReportError,
+  htmlSafe,
   ruleEngines
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 import type {Catalog} from 'testaro';
+import type {UsableReport} from '../util.ts';
 /* c8 ignore stop */
 import wcagMap from '../wcagMap.json' with {type: 'json'};
 
@@ -42,6 +42,15 @@ export type PageDataStrings = {
   testInfo: string;
   error?: never;
 };
+// Counts summarizing the results of an available report.
+export type ResultsSummary = {
+  engineCount: number;
+  testedEngineCount: number;
+  reporterCount: number;
+  violationCount: number;
+  violatorCount: number;
+  issueCount: number;
+};
 // Basics about an available report.
 export type ReportData = {
   description: string;
@@ -52,6 +61,7 @@ export type ReportData = {
   issueCount: number;
   engineNames: string[];
   engineCount: number;
+  testedEngineCount: number;
   reporterNames: string[];
   reporterCount: number;
   violationCount: number;
@@ -140,16 +150,37 @@ export const getPathID = (catalog: Catalog, catalogIndex: string, pathID?: strin
   }
   return pathID ?? '/html';
 };
-// Returns basics about an available report.
-export const getReportData = async (timeStamp: string, jobID: string): Promise<ReportData | {error: string}> => {
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Return why.
-    return {error: report.error};
+// Identifies the rule engines called and the rule engines prevented from testing, by a report.
+// Prevented engines have test acts. The nuVal and nuVnu engines are 2 implementations of one
+// engine, so they count as one. A nuVal prevention is ignored if nuVnu then ran successfully.
+export const getEngineIDs = (report: any) => {
+  const preventions = report.jobData?.preventions ?? {};
+  const calledIDs = new Set<string>([
+    ...getTestActs(report).map((act: any) => act.which as string),
+    ...Object.keys(preventions)
+  ]);
+  const preventedIDs = new Set<string>(Object.keys(preventions));
+  // If both implementations were called:
+  if (calledIDs.has('nuVal') && calledIDs.has('nuVnu')) {
+    // Count them as one engine.
+    calledIDs.delete('nuVnu');
+    // If nuVnu was not prevented from testing:
+    if (!preventedIDs.has('nuVnu')) {
+      // Ignore any nuVal prevention.
+      preventedIDs.delete('nuVal');
+    }
+    // Otherwise, i.e. if nuVnu was prevented, count both preventions as one.
+    else {
+      preventedIDs.delete('nuVnu');
+    }
   }
-  // Otherwise, i.e. if it succeeded, initialize the data.
+  return {calledIDs: Array.from(calledIDs), preventedIDs: Array.from(preventedIDs)};
+};
+// Returns basics about an available report.
+export const getReportData = (report: UsableReport): ReportData => {
+  // Identify the report by the time stamp at the start of its job name.
+  const timeStamp = report.id.slice(0, 11);
+  // Initialize the data.
   const data = {
     description: report.target.what,
     url: report.target.url,
@@ -159,6 +190,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
     issueCount: 0,
     engineNames: [] as string[],
     engineCount: 0,
+    testedEngineCount: 0,
     reporterNames: [] as string[],
     reporterCount: 0,
     violationCount: 0,
@@ -167,14 +199,9 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
     preventedEngineCount: 0
   };
   const issueIDSet = new Set<string>();
-  const engineNameSet = new Set<string>();
   const reporterIDSet = new Set<string>();
   const violatorIndexSet = new Set<string>();
-  // For each test act of the report:
-  getTestActs(report).forEach(act => {
-    // Ensure that the rule engine is in the temporary data.
-    engineNameSet.add(ruleEngines[act.which!]![0]);
-  });
+  const {calledIDs, preventedIDs} = getEngineIDs(report);
   // For each violating standard instance of each test act:
   getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
     const {catalogIndex, issueID} = instance;
@@ -196,9 +223,11 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   // Populate the data with the act data.
   data.issueCount = issueIDSet.size;
   data.engineNames = Array
-  .from(engineNameSet)
+  .from(calledIDs)
+  .map(id => ruleEngines[id]?.[0] || id)
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
-  data.engineCount = engineNameSet.size;
+  data.engineCount = calledIDs.length;
+  data.testedEngineCount = calledIDs.length - preventedIDs.length;
   data.reporterNames = Array
   .from(reporterIDSet)
   .map(id => ruleEngines[id]![0])
@@ -206,7 +235,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   data.reporterCount = data.reporterNames.length;
   data.violatorCount = violatorIndexSet.size;
   // Add the names of any prevented rule engines to the data.
-  data.preventedEngineNames = Object.keys(report.jobData?.preventions || {})
+  data.preventedEngineNames = preventedIDs
   .map(engineID => ruleEngines[engineID]?.[0] || engineID)
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.preventedEngineCount = data.preventedEngineNames.length;
@@ -214,14 +243,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   return data;
 }
 // Returns page data from an available report.
-export const getPageData = async (timeStamp: string, jobID: string): Promise<PageData | {error: string}> => {
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Return why.
-    return report;
-  }
+export const getPageData = (report: UsableReport): PageData => {
   const {what: description, url} = report.target;
   // Get the elapsed time in days since the report was completed, using the
   // report content rather than the file system birth time.
@@ -234,30 +256,121 @@ export const getPageData = async (timeStamp: string, jobID: string): Promise<Pag
   };
 };
 // Gets HTML strings for page data from a report.
-export const getPageDataStrings = async (
-  timeStamp: string,
-  jobID: string,
-  pageData?: PageData | {error: string}
-): Promise<PageDataStrings | {error: string}> => {
-  // Get the page data if they were not specified.
-  const data = pageData ?? await getPageData(timeStamp, jobID);
-  // If the page data are invalid:
-  if (data.error !== undefined) {
-    // Return why.
-    return {
-      error: data.error
-    };
-  }
-  const {daysAgo, url, description} = data;
-  // Otherwise, i.e. if they are valid, get a description of the timestamp.
-  const when = getDateTimeString(timeStamp);
+export const getPageDataStrings = (report: UsableReport): PageDataStrings => {
+  const {daysAgo, url, description} = getPageData(report);
+  // Get a description of the time stamp at the start of the job name.
+  const when = getDateTimeString(report.id.slice(0, 11));
   // Return the HTML strings.
   return {
     description,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago by job <code>${jobID}</code> on ${when}`
+    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${report.id}</code>`
   };
+};
+// Returns the lines of a list of facts about the page of an available report.
+export const getPageFactsLines = (
+  strings: PageDataStrings,
+  summary: ResultsSummary,
+  margin: string
+): string[] => [
+  `${margin}<ul>`,
+  `${margin}  <li>URL: ${strings.urlLink}</li>`,
+  `${margin}  <li>${strings.testInfo}</li>`,
+  `${margin}  <li>Summary of results:`,
+  `${margin}    <ul>`,
+  `${margin}      <li>Rule engines:`,
+  `${margin}        <ul>`,
+  `${margin}          <li>Called: ${summary.engineCount}</li>`,
+  `${margin}          <li>Were able to test: ${summary.testedEngineCount}</li>`,
+  `${margin}          <li>Reported any rule violations: ${summary.reporterCount}</li>`,
+  `${margin}        </ul>`,
+  `${margin}      </li>`,
+  `${margin}      <li>Violations: ${summary.violationCount}</li>`,
+  `${margin}      <li>Violators: ${summary.violatorCount}</li>`,
+  `${margin}      <li>Issues: ${summary.issueCount}</li>`,
+  `${margin}    </ul>`,
+  `${margin}  </li>`,
+  `${margin}</ul>`
+];
+// Returns the lines of a list of facts about an issue in an available report.
+export const getIssueFactsLines = (
+  report: UsableReport,
+  issueID: string,
+  margin: string,
+  listClass?: string
+): string[] => {
+  // Get the issue classification.
+  const {wcag, weight, why} = issueSpecs[issueID]!;
+  // Initialize the issue counts.
+  const reporters = new Set<string>();
+  const violatorIndexes = new Set<string>();
+  let violationCount = 0;
+  // For each violating standard instance of the issue:
+  getTestActInstances(report, {violationsOnly: true, issueID}).forEach(({act, instance}) => {
+    // Increment the counts.
+    violationCount++;
+    reporters.add(act.which!);
+    violatorIndexes.add(String(instance.catalogIndex || '0'));
+  });
+  const reporterString = getCountString(reporters.size, 'rule engine', 'rule engines');
+  // Return the lines.
+  return [
+    `${margin}<ul${listClass ? ` class="${listClass}"` : ''}>`,
+    `${margin}  <li>Why it matters: ${why}</li>`,
+    `${margin}  <li>Priority: ${getWeightName(weight)}</li>`,
+    `${margin}  <li>Related WCAG standard: <a href="${getWCAGLink(wcag)}">${wcag}</a></li>`,
+    `${margin}  <li>Reported by ${reporterString} (${getEngineNamesString(reporters)})</li>`,
+    `${margin}  <li>Violations: ${violationCount}</li>`,
+    `${margin}  <li>Violators: ${violatorIndexes.size}</li>`,
+    `${margin}</ul>`
+  ];
+};
+// Returns the lines of a list of facts about a violator of an issue in an available report.
+export const getViolatorFactsLines = (
+  report: UsableReport,
+  issueID: string,
+  catalogIndex: string,
+  pathID: string | null,
+  margin: string,
+  listClass?: string
+): string[] => {
+  const {catalog} = report;
+  const catalogItem = catalog[catalogIndex];
+  const boxID = catalogItem?.boxID;
+  const startTag = catalogItem?.startTag;
+  const tagName = catalogItem?.tagName;
+  const text = catalogItem?.text;
+  // Identify the rule engines that reported the violator for the issue.
+  const reporters = new Set<string>();
+  getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex}).forEach(({act}) => {
+    reporters.add(act.which!);
+  });
+  const lines: string[] = [
+    `${margin}<ul${listClass ? ` class="${listClass}"` : ''}>`,
+    `${margin}  <li>Tag name: <code>${tagName || 'HTML'}</code></li>`
+  ];
+  // Text is not applicable for container elements.
+  if (text && !['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName as string)) {
+    const textString = text.split('\n').join(' … ');
+    lines.push(`${margin}  <li>Text: <q>${htmlSafe(textString)}</q></li>`);
+  }
+  else {
+    lines.push(`${margin}  <li>Text: [not applicable]</li>`);
+  }
+  lines.push(`${margin}  <li>Start tag: <code>${htmlSafe(startTag ?? '') || '[not obtained]'}</code></li>`);
+  lines.push(`${margin}  <li>XPath: <code>${makeBreakable(pathID || '[not obtained]')}</code></li>`);
+  // If the catalog item has a bounding box, add its dimensions.
+  if (boxID) {
+    const dims = boxID.split(':');
+    lines.push(`${margin}  <li>Bounding box: x = ${dims[0]}, y = ${dims[1]}, width = ${dims[2]}, height = ${dims[3]}</li>`);
+  }
+  else {
+    lines.push(`${margin}  <li>Bounding box: [not obtained]</li>`);
+  }
+  lines.push(`${margin}  <li>Reported by ${getEngineNamesString(reporters)}</li>`);
+  lines.push(`${margin}</ul>`);
+  return lines;
 };
 // Gets the descriptions of multi-report pages.
 export const getMultiReportWhats = async (): Promise<string[]> => {

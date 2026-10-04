@@ -18,7 +18,7 @@ let pageDataStringsOverride: any = null;
 mock.module('../util.ts', {
   exports: {
     ...realWebUtil,
-    getPageDataStrings: async (...args: any[]) => {
+    getPageDataStrings: (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
@@ -93,14 +93,23 @@ test('listIssues for the empty report shows no issue links', async () => {
 });
 
 
-test('listIssues includes prevention notices for the prevented report', async () => {
+test('listIssues counts the prevented rule engine as called but not able to test', async () => {
   const result = await answer('260101T0006/prv');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('Page not testable by'));
-  assert.ok(result.answerPage.includes('page timed out'));
+  assert.ok(result.answerPage.includes('<li>Called: 2</li>'));
+  assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
+  assert.ok(result.answerPage.includes('<li>Reported any rule violations: 1</li>'));
 });
 
-test('listIssues falls back to the engine ID for an unknown prevented engine', async () => {
+test('listIssues counts a rule engine that reported no violations as called and able to test', async () => {
+  const result = await answer('260101T0005/emp');
+  assert.equal(result.status, 'ok');
+  assert.ok(result.answerPage.includes('<li>Called: 1</li>'));
+  assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
+  assert.ok(result.answerPage.includes('<li>Reported any rule violations: 0</li>'));
+});
+
+test('listIssues counts an unknown prevented engine as called but not able to test', async () => {
   const fs = await import('node:fs/promises');
   const prvJSON = await fs.readFile(path.join(realUtil.reportsPath(), '260101T0006-prv.json'), 'utf8');
   const report = JSON.parse(prvJSON);
@@ -110,14 +119,15 @@ test('listIssues falls back to the engine ID for an unknown prevented engine', a
   try {
     const result = await answer('260103T0000/unk');
     assert.equal(result.status, 'ok');
-    assert.ok(result.answerPage.includes('unknownEngine (unknown sponsor)'));
+    assert.ok(result.answerPage.includes('<li>Called: 3</li>'));
+    assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
   }
   finally {
     await fs.unlink(reportPath);
   }
 });
 
-test('listIssues returns an error when getPageDataStrings fails after getData succeeds', async () => {
+test('listIssues returns an error when getPageDataStrings fails after getReport succeeds', async () => {
   pageDataStringsOverride = {error: 'Page data strings error'};
   try {
     const result = await answer('260101T0000/mix');
@@ -145,11 +155,12 @@ test('listIssues returns an error when report facts are not obtained', async () 
   }
 });
 
-test('listIssues shows plural violator count for an issue with multiple violators', async () => {
-  // The mul report has linkNoText with 3 violators.
+test('listIssues shows violation and violator counts for an issue with multiple violators', async () => {
+  // The mul report has linkNoText with 4 violations by 3 violators.
   const result = await answer('260101T0008/mul');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('3 violators were'));
+  assert.ok(result.answerPage.includes('<li>Violations: 4</li>'));
+  assert.ok(result.answerPage.includes('<li>Violators: 3</li>'));
 });
 
 test('listIssues handles acts with no standardResult instances', async () => {

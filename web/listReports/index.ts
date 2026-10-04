@@ -146,9 +146,9 @@ const populateQuery = async (query: Record<string, any>) => {
     lines.tested.push(`${margin}            <li>Reported any rule violations: ${reporterCount}</li>`);
     lines.tested.push(`${margin}          </ul>`);
     lines.tested.push(`${margin}        </li>`);
-    lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
-    lines.tested.push(`${margin}        <li>Violators: ${violatorCount}</li>`);
     lines.tested.push(`${margin}        <li>Violations: ${violationCount}</li>`);
+    lines.tested.push(`${margin}        <li>Violators: ${violatorCount}</li>`);
+    lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
     lines.tested.push(`${margin}      </ul>`);
     lines.tested.push(`${margin}    </li>`);
     lines.tested.push(`${margin}  </ul>`);

@@ -141,9 +141,9 @@ const populateQuery = async (query: Record<string, any>) => {
     // If the page prevented any rule engine from performing its tests:
     if (preventedEngineCount) {
       // Add this to the lines.
-      lines.tested.push(`${margin}            <li>Succeeded in testing: ${engineCount - preventedEngineCount}</li>`);
+      lines.tested.push(`${margin}            <li>Were able to test: ${engineCount - preventedEngineCount}</li>`);
     }
-    lines.tested.push(`${margin}            <li>Reported any issues: ${reporterCount}</li>`);
+    lines.tested.push(`${margin}            <li>Reported any rule violations: ${reporterCount}</li>`);
     lines.tested.push(`${margin}          </ul>`);
     lines.tested.push(`${margin}        </li>`);
     lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);

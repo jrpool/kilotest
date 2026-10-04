@@ -34,6 +34,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
     // Initialize the temporary data.
     const temp = {
       issues: {} as Record<string, any>,
+      ruleEngines: new Set<string>(),
       reporters: new Set<string>(),
       violators: new Set<string>()
     };
@@ -57,6 +58,8 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
     getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
       const {catalogIndex, issueID} = instance;
       const which = act.which!;
+      // Ensure the rule engine is in the temporary data.
+      temp.ruleEngines.add(which);
       // If it identifies a non-ignorable issue:
       if (issueID && issueID !== 'ignorable') {
         const issueClassification = issueSpecs[issueID];
@@ -91,6 +94,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       }
     });
     // Finish populating the final data.
+    final.engineCount = temp.ruleEngines.size;
     final.reporterList = getEngineNamesString(temp.reporters);
     final.reporterCount = temp.reporters.size;
     final.violatorCount = temp.violators.size;
@@ -168,6 +172,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   query.urlLink = urlLink;
   query.testInfo = testInfo;
   const {
+    engineCount,
     reporterList,
     reporterCount,
     violationCount,
@@ -177,6 +182,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
     issues
   } = issuesData;
   // Add the results summary to the query.
+  query.engineCount = engineCount;
   query.violationCount = violationCount;
   query.violatorCount = violatorCount;
   query.issueCount = issueCount;
@@ -195,6 +201,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   // Add report data to the query.
   query.timeStamp = timeStamp;
   query.jobID = jobID;
+  query.testedCount = engineCount - Object.keys(preventions).length;
   // Add reporter information to the query.
   query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
   query.reporters = reporterList;

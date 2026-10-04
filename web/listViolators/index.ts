@@ -13,14 +13,13 @@ import {
   populateTemplate
 } from '../../util.ts';
 import {
+  getIssueFactsLines,
   getPageDataStrings,
   getPageFactsLines,
   getPathID,
   getEngineNamesString,
   getReportData,
   getTextFragmentHref,
-  getWCAGLink,
-  getWeightName,
   makeBreakable
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -68,19 +67,13 @@ const populateQuery = async (
   query.pageFacts = getPageFactsLines(
     pageDataStrings, getReportData(report), ' '.repeat(6)
   ).join('\n');
-  const issue = issueSpecs[issueID]!;
-  const {wcag, weight, why} = issue;
-  query.why = why;
-  query.priority = getWeightName(weight);
-  query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
-  // Initialize those whose values depend on instance inspection.
-  query.count = 0;
-  query.reporters = new Set();
+  // Add the issue facts to the query.
+  query.issueFacts = getIssueFactsLines(report, issueID, ' '.repeat(6)).join('\n');
+  // Initialize the violator data.
   let violators: any = {};
   const {catalog} = report;
   const testActInstances = getTestActInstances(report, {violationsOnly: true, issueID});
-  query.violationCount = testActInstances.length;
-  // Otherwise, i.e. if it succeeded, for each violating standard instance of the issue:
+  // For each violating standard instance of the issue:
   testActInstances.forEach(({act, instance}) => {
     const pathID = instance.pathID || '/html';
     const catalogIndex = String(instance.catalogIndex || '0');
@@ -92,22 +85,14 @@ const populateQuery = async (
       text: catalog[catalogIndex]?.text ?? '',
       reporters: new Set()
     };
-    // Ensure that the rule engine is in the sets of reporters of the violator and the issue.
+    // Ensure that the rule engine is in the set of reporters of the violator.
     violators[catalogIndex].reporters.add(act.which);
-    query.reporters.add(act.which);
   });
-  // Populate the violator count.
-  const violatorCount = Object.keys(violators).length;
-  query.violatorCount = violatorCount;
   // For each violator:
   Object.values(violators).forEach((violatorData: any) => {
     // Convert the set of its reporters to a string.
     violatorData.reporters = getEngineNamesString(violatorData.reporters);
   });
-  const reporterCount = query.reporters.size;
-  query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
-  // Convert the set of issue reporters to a string.
-  query.reporters = getEngineNamesString(query.reporters);
   // Convert the violator data to an array.
   violators = Object.entries(violators).map((entry: [string, any]) => ({
     catalogIndex: entry[0],

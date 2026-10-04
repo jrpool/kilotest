@@ -155,11 +155,12 @@ test('listIssues returns an error when report facts are not obtained', async () 
   }
 });
 
-test('listIssues shows plural violator count for an issue with multiple violators', async () => {
+test('listIssues shows violation and violator counts for an issue with multiple violators', async () => {
   // The mul report has linkNoText with 4 violations by 3 violators.
   const result = await answer('260101T0008/mul');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('4 violations by 3 violators reported'));
+  assert.ok(result.answerPage.includes('<li>Violations: 4</li>'));
+  assert.ok(result.answerPage.includes('<li>Violators: 3</li>'));
 });
 
 test('listIssues handles acts with no standardResult instances', async () => {

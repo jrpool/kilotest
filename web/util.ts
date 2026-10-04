@@ -292,6 +292,39 @@ export const getPageFactsLines = (
   `${margin}  </li>`,
   `${margin}</ul>`
 ];
+// Returns the lines of a list of facts about an issue in an available report.
+export const getIssueFactsLines = (
+  report: UsableReport,
+  issueID: string,
+  margin: string,
+  listClass?: string
+): string[] => {
+  // Get the issue classification.
+  const {wcag, weight, why} = issueSpecs[issueID]!;
+  // Initialize the issue counts.
+  const reporters = new Set<string>();
+  const violatorIndexes = new Set<string>();
+  let violationCount = 0;
+  // For each violating standard instance of the issue:
+  getTestActInstances(report, {violationsOnly: true, issueID}).forEach(({act, instance}) => {
+    // Increment the counts.
+    violationCount++;
+    reporters.add(act.which!);
+    violatorIndexes.add(String(instance.catalogIndex || '0'));
+  });
+  const reporterString = getCountString(reporters.size, 'rule engine', 'rule engines');
+  // Return the lines.
+  return [
+    `${margin}<ul${listClass ? ` class="${listClass}"` : ''}>`,
+    `${margin}  <li>Why it matters: ${why}</li>`,
+    `${margin}  <li>Priority: ${getWeightName(weight)}</li>`,
+    `${margin}  <li>Related WCAG standard: <a href="${getWCAGLink(wcag)}">${wcag}</a></li>`,
+    `${margin}  <li>Reported by ${reporterString} (${getEngineNamesString(reporters)})</li>`,
+    `${margin}  <li>Violations: ${violationCount}</li>`,
+    `${margin}  <li>Violators: ${violatorIndexes.size}</li>`,
+    `${margin}</ul>`
+  ];
+};
 // Gets the descriptions of multi-report pages.
 export const getMultiReportWhats = async (): Promise<string[]> => {
   const reportExtracts = await getReportExtracts();

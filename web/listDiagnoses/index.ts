@@ -14,12 +14,11 @@ import {
   ruleEngines
 } from '../../util.ts';
 import {
+  getIssueFactsLines,
   getPageDataStrings,
   getPageFactsLines,
   getReportData,
-  getTextFragmentHref,
-  getWCAGLink,
-  getWeightName
+  getTextFragmentHref
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
@@ -84,12 +83,8 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  // Otherwise, i.e. if it succeeded, get the issue details.
-  const issue = issueSpecs[issueID]!;
-  const {wcag, weight, why} = issue;
-  query.why = why;
-  query.priority = getWeightName(weight);
-  query.wcag = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+  // Otherwise, i.e. if it succeeded, add the issue-facts list to the query.
+  query.issueFacts = getIssueFactsLines(report, issueID, margin).join('\n');
   query.tagName = tagName || 'HTML';
   if (text && !['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName as string)) {
     const textString = text.split('\n').join(' … ');

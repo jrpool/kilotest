@@ -14,11 +14,11 @@ import {
 } from '../../util.ts';
 import type {UsableReport} from '../../util.ts';
 import {
+  getIssueFactsLines,
   getPageDataStrings,
   getPageFactsLines,
   getEngineIDs,
   getEngineNamesString,
-  getWCAGLink,
   getWeightName
 } from '../util.ts';
 import type {ResultsSummary} from '../util.ts';
@@ -172,39 +172,15 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
         const weightIssueCount = weightIssues.length;
         // Add the issue count to the query.
         query[`${weightName}Count`] = weightIssueCount;
-        const {
-          issueID,
-          reporterCount,
-          reporterList,
-          summary,
-          violationCount,
-          violatorCount,
-          wcag,
-          why
-        } = issueData;
-        const wcagLink = `<a href="${getWCAGLink(wcag)}">${wcag}</a>`;
+        const {issueID, summary} = issueData;
         // Add the start of a list item to the lines.
         detailsLines.push(`${margin}  <li>`);
         // Add a heading summarizing the issue to the lines.
         detailsLines.push(`${margin}    <h5>${summary}</h5>`);
-        // Add the start of a fact list about the issue to the lines.
-        detailsLines.push(`${margin}    <ul class="pseudoTopLevel">`);
         // Add the issue facts to the lines.
-        detailsLines.push(`${margin}      <li>Why it matters: ${why}`);
-        detailsLines.push(`${margin}      <li>Related WCAG standard: ${wcagLink}`);
-        const reporterCountString = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
         detailsLines.push(
-          `${margin}      <li>Reported by ${reporterCountString} (${reporterList})</li>`
+          ...getIssueFactsLines(report, issueID, `${margin}    `, 'pseudoTopLevel')
         );
-        const violationCountString = violationCount === 1
-        ? '1 violation'
-        : `${violationCount} violations`;
-        const violatorCountString = violatorCount === 1
-        ? '1 violator'
-        : `${violatorCount} violators`;
-        detailsLines.push(`${margin}      <li>${violationCountString} by ${violatorCountString} reported</li>`);
-        // Add the end of the fact list to the lines.
-        detailsLines.push(`${margin}    </ul>`);
         // Add the start of a link list to the lines.
         detailsLines.push(`${margin}    <ul class="nav">`);
         const whereQuestionString = 'Where was the issue found?';

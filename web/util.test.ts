@@ -222,6 +222,19 @@ test('getIssueFactsLines returns the about-issue list lines for a report', async
   assert.ok(html.includes('<li>Violators:'));
 });
 
+test('getViolatorFactsLines returns the about-violator list lines for a report', async () => {
+  const {getViolatorFactsLines} = await import('./util.ts');
+  const report = await getFixtureReport('260101T0000', 'mix');
+  const lines = getViolatorFactsLines(report, 'linkNoText', '0', null, '  ');
+  const html = lines.join('\n');
+  assert.ok(html.includes('<li>Tag name: <code>'));
+  assert.ok(html.includes('<li>Text:'));
+  assert.ok(html.includes('<li>Start tag: <code>'));
+  assert.ok(html.includes('<li>XPath: <code>'));
+  assert.ok(html.includes('<li>Bounding box:'));
+  assert.ok(html.includes('<li>Reported by'));
+});
+
 test('getAgoString returns "1 day" for exactly 1 day ago', () => {
   // Construct a time stamp 1 day and 1 hour ago, so Math.round gives exactly 1.
   const date = new Date(Date.now() - (86400000 + 3600000));

@@ -16,6 +16,7 @@ import {
   getReportExtracts,
   getTestActInstances,
   getTestActs,
+  htmlSafe,
   ruleEngines
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
@@ -324,6 +325,52 @@ export const getIssueFactsLines = (
     `${margin}  <li>Violators: ${violatorIndexes.size}</li>`,
     `${margin}</ul>`
   ];
+};
+// Returns the lines of a list of facts about a violator of an issue in an available report.
+export const getViolatorFactsLines = (
+  report: UsableReport,
+  issueID: string,
+  catalogIndex: string,
+  pathID: string | null,
+  margin: string,
+  listClass?: string
+): string[] => {
+  const {catalog} = report;
+  const catalogItem = catalog[catalogIndex];
+  const boxID = catalogItem?.boxID;
+  const startTag = catalogItem?.startTag;
+  const tagName = catalogItem?.tagName;
+  const text = catalogItem?.text;
+  // Identify the rule engines that reported the violator for the issue.
+  const reporters = new Set<string>();
+  getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex}).forEach(({act}) => {
+    reporters.add(act.which!);
+  });
+  const lines: string[] = [
+    `${margin}<ul${listClass ? ` class="${listClass}"` : ''}>`,
+    `${margin}  <li>Tag name: <code>${tagName || 'HTML'}</code></li>`
+  ];
+  // Text is not applicable for container elements.
+  if (text && !['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName as string)) {
+    const textString = text.split('\n').join(' … ');
+    lines.push(`${margin}  <li>Text: <q>${htmlSafe(textString)}</q></li>`);
+  }
+  else {
+    lines.push(`${margin}  <li>Text: [not applicable]</li>`);
+  }
+  lines.push(`${margin}  <li>Start tag: <code>${htmlSafe(startTag ?? '') || '[not obtained]'}</code></li>`);
+  lines.push(`${margin}  <li>XPath: <code>${makeBreakable(pathID || '[not obtained]')}</code></li>`);
+  // If the catalog item has a bounding box, add its dimensions.
+  if (boxID) {
+    const dims = boxID.split(':');
+    lines.push(`${margin}  <li>Bounding box: x = ${dims[0]}, y = ${dims[1]}, width = ${dims[2]}, height = ${dims[3]}</li>`);
+  }
+  else {
+    lines.push(`${margin}  <li>Bounding box: [not obtained]</li>`);
+  }
+  lines.push(`${margin}  <li>Reported by ${getEngineNamesString(reporters)}</li>`);
+  lines.push(`${margin}</ul>`);
+  return lines;
 };
 // Gets the descriptions of multi-report pages.
 export const getMultiReportWhats = async (): Promise<string[]> => {

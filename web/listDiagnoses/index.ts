@@ -18,7 +18,8 @@ import {
   getPageDataStrings,
   getPageFactsLines,
   getReportData,
-  getTextFragmentHref
+  getTextFragmentHref,
+  getViolatorFactsLines
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
@@ -53,17 +54,13 @@ const populateQuery = async (
   }
   const {testInfo, url, description} = pageDataStrings;
   const {catalog} = report;
-  // Otherwise, i.e. if it succeeded, get the catalog item of the specified violator.
-  const catalogItem = catalog[catalogIndex];
-  const boxID = catalogItem?.boxID;
-  const startTag = catalogItem?.startTag;
-  const tagName = catalogItem?.tagName;
-  const text = catalogItem?.text;
   query.catalogIndex = catalogIndex;
   const lines: string[] = [];
   const margin = ' '.repeat(6);
+  const catalogItem = catalog[catalogIndex];
+  // If the violator has a linkable text item, add a take-me-there link.
   if (catalogIndex && catalogItem?.textLinkable) {
-    const href = getTextFragmentHref(text as string, url);
+    const href = getTextFragmentHref(catalogItem.text as string, url);
     const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
     const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
     query.takeMeThere = `${margin}    <p>${link}</p>`;
@@ -71,7 +68,7 @@ const populateQuery = async (
   else {
     query.takeMeThere = '';
   }
-  // Add facts about the issue to the query.
+  // Add facts about the page to the query.
   query.target = description;
   query.testInfo = testInfo;
   query.pageFacts = getPageFactsLines(pageDataStrings, getReportData(report), margin).join('\n');
@@ -83,25 +80,9 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  // Otherwise, i.e. if it succeeded, add the issue-facts list to the query.
+  // Otherwise, i.e. if it succeeded, add the issue-facts and violator-facts lists to the query.
   query.issueFacts = getIssueFactsLines(report, issueID, margin).join('\n');
-  query.tagName = tagName || 'HTML';
-  if (text && !['HTML', 'BODY', 'HEAD', 'SCRIPT', 'STYLE', 'NOSCRIPT'].includes(tagName as string)) {
-    const textString = text.split('\n').join(' … ');
-    query.text = `<q>${htmlSafe(textString)}</q>`;
-  }
-  else {
-    query.text = '[not applicable]';
-  }
-  query.startTag = htmlSafe(startTag ?? '') || '[not obtained]';
-  query.pathID = pathID || '[not obtained]';
-  if (boxID) {
-    const dims = boxID.split(':');
-    query.box = `x = ${dims[0]}, y = ${dims[1]}, width = ${dims[2]}, height = ${dims[3]}`;
-  }
-  else {
-    query.box = '[not obtained]';
-  }
+  query.violatorFacts = getViolatorFactsLines(report, issueID, catalogIndex, pathID, margin).join('\n');
   // Initialize an array of diagnoses.
   const diagnoses: any[] = [];
   // For each violating standard instance that pertains to this combination of issue and violator:

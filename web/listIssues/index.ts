@@ -206,13 +206,13 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   query.reporterCount = reporterCount;
   query.reporters = reporterList;
   // Add a summary of the issues to the query.
-  query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;
+  query.issueCount = issueCount;
   query.highestCount = issues[4].length;
   query.highCount = issues[3].length;
   query.lowCount = issues[2].length;
   query.lowestCount = issues[1].length;
   // Add a violator count to the query.
-  query.violatorCount = violatorCount === 1 ? '1 violator was' : `${violatorCount} violators were`;
+  query.violatorCount = violatorCount;
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     const weightName = getWeightName(weight);

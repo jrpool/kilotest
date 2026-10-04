@@ -33,7 +33,7 @@ mock.module('../../util.ts', {
 mock.module('../util.ts', {
   exports: {
     ...realWebUtil,
-    getPageDataStrings: async (...args: any[]) => {
+    getPageDataStrings: (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
@@ -108,7 +108,7 @@ test('listDiagnoses returns ok with no diagnoses for a nonexistent catalog index
   assert.ok(!diagnosisTexts.some(t => t.includes('The link does not have an accessible name')));
 });
 
-test('listDiagnoses returns an error when getReport fails after getPageDataStrings succeeds', async () => {
+test('listDiagnoses returns an error when getReport fails', async () => {
   getReportCallCount = 0;
   failGetReportOnCall = 1;
   try {
@@ -118,6 +118,18 @@ test('listDiagnoses returns an error when getReport fails after getPageDataStrin
   }
   finally {
     failGetReportOnCall = -1;
+  }
+});
+
+test('listDiagnoses returns an error when getPageDataStrings fails after getReport succeeds', async () => {
+  pageDataStringsOverride = {error: 'Page data strings error'};
+  try {
+    const result = await answer('linkNoText/260101T0000/mix/0');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Page data strings error');
+  }
+  finally {
+    pageDataStringsOverride = null;
   }
 });
 

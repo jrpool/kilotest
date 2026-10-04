@@ -7,6 +7,8 @@
 
 import {
   errorMessage,
+  getReport,
+  isReportError,
   isValidAuthCode,
   objectSort,
   populateTemplate,
@@ -90,16 +92,18 @@ export const reportDeletionForm = async (
   // For each report:
   for (const reportName of reportNames) {
     const [timeStamp, jobID] = reportName.slice(0, -5).split('-') as [string, string];
-    // Get a summary of it.
-    const reportFacts = await getReportData(timeStamp, jobID);
+    // Get the report.
+    const report = await getReport(timeStamp, jobID);
     // If this failed:
-    if (reportFacts.error !== undefined) {
+    if (isReportError(report)) {
       // Return why.
       return {
         status: 'error',
-        message: reportFacts.error
+        message: report.error
       };
     }
+    // Otherwise, i.e. if it succeeded, get a summary of it.
+    const reportFacts = getReportData(report);
     const {issueCount, preventedEngineCount, url} = reportFacts;
     // Otherwise, i.e. if it succeeded, add the summary to the array.
     reportSpecs.push({

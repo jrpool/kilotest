@@ -18,7 +18,7 @@ let pageDataStringsOverride: any = null;
 mock.module('../util.ts', {
   exports: {
     ...realWebUtil,
-    getPageDataStrings: async (...args: any[]) => {
+    getPageDataStrings: (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
@@ -127,7 +127,7 @@ test('listIssues counts an unknown prevented engine as called but not able to te
   }
 });
 
-test('listIssues returns an error when getPageDataStrings fails after getData succeeds', async () => {
+test('listIssues returns an error when getPageDataStrings fails after getReport succeeds', async () => {
   pageDataStringsOverride = {error: 'Page data strings error'};
   try {
     const result = await answer('260101T0000/mix');

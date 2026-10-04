@@ -15,6 +15,8 @@ import {
 } from '../../util.ts';
 import {
   getPageDataStrings,
+  getPageFactsLines,
+  getReportData,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName
@@ -32,17 +34,7 @@ const populateQuery = async (
   pathID: string | null,
   query: Record<string, any>
 ) => {
-  // Get descriptions of the page facts.
-  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
-  // If this failed:
-  if (pageDataStrings.error !== undefined) {
-    // Populate the query with the reason.
-    query.error = pageDataStrings.error;
-    // Stop populating the query.
-    return;
-  }
-  const {testInfo, url, urlLink, description} = pageDataStrings;
-  // Otherwise, i.e. if it succeeded, get the report.
+  // Get the report.
   const report = await getReport(timeStamp, jobID);
   // If this failed:
   if (isReportError(report)) {
@@ -51,6 +43,16 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
+  // Otherwise, i.e. if it succeeded, get descriptions of the page facts.
+  const pageDataStrings = getPageDataStrings(report);
+  // If this failed:
+  if (pageDataStrings.error !== undefined) {
+    // Populate the query with the reason.
+    query.error = pageDataStrings.error;
+    // Stop populating the query.
+    return;
+  }
+  const {testInfo, url, description} = pageDataStrings;
   const {catalog} = report;
   // Otherwise, i.e. if it succeeded, get the catalog item of the specified violator.
   const catalogItem = catalog[catalogIndex];
@@ -72,8 +74,8 @@ const populateQuery = async (
   }
   // Add facts about the issue to the query.
   query.target = description;
-  query.urlLink = urlLink;
   query.testInfo = testInfo;
+  query.pageFacts = getPageFactsLines(pageDataStrings, getReportData(report), margin).join('\n');
   query.issue = issueSpecs[issueID]?.summary;
   // If adding the issue summary failed:
   if (!query.issue) {

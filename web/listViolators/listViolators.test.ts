@@ -33,7 +33,7 @@ mock.module('../../util.ts', {
 mock.module('../util.ts', {
   exports: {
     ...realWebUtil,
-    getPageDataStrings: async (...args: any[]) => {
+    getPageDataStrings: (...args: any[]) => {
       if (pageDataStringsOverride !== null) {
         return pageDataStringsOverride;
       }
@@ -101,7 +101,7 @@ test('listViolators returns an error status for an unknown issue', async () => {
   assert.equal(result.status, 'error');
 });
 
-test('listViolators returns an error when getReport fails after getPageDataStrings succeeds', async () => {
+test('listViolators returns an error when getReport fails', async () => {
   getReportCallCount = 0;
   failGetReportOnCall = 1;
   try {
@@ -111,6 +111,18 @@ test('listViolators returns an error when getReport fails after getPageDataStrin
   }
   finally {
     failGetReportOnCall = -1;
+  }
+});
+
+test('listViolators returns an error when getPageDataStrings fails after getReport succeeds', async () => {
+  pageDataStringsOverride = {error: 'Page data strings error'};
+  try {
+    const result = await answer('linkNoText/260101T0000/mix');
+    assert.equal(result.status, 'error');
+    assert.equal(result.message, 'Page data strings error');
+  }
+  finally {
+    pageDataStringsOverride = null;
   }
 });
 

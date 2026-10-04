@@ -9,7 +9,7 @@ import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
-import {reportsPath} from '../util.ts';
+import {getReport, isReportError, reportsPath} from '../util.ts';
 import {
   checkCommentLength,
   getAgoString,
@@ -19,6 +19,7 @@ import {
   getMultiReportWhats,
   getPageData,
   getPageDataStrings,
+  getPageFactsLines,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
@@ -116,20 +117,29 @@ test('makeBreakable inserts wbr before non-initial slashes', () => {
   assert.equal(makeBreakable('/api/listReports'), '/api<wbr>/listReports');
 });
 
+// Returns a fixture report, failing the test if it is not usable.
+const getFixtureReport = async (timeStamp: string, jobID: string) => {
+  const report = await getReport(timeStamp, jobID);
+  if (isReportError(report)) {
+    assert.fail(report.error);
+  }
+  return report;
+};
+
 test('getPageData returns page data for a valid report', async () => {
-  const data = await getPageData('260101T0000', 'mix') as any;
+  const data = getPageData(await getFixtureReport('260101T0000', 'mix'));
   assert.equal(data.description, 'Mixed Outcomes Page');
   assert.equal(data.url, 'https://example.com/mixed');
   assert.equal(typeof data.daysAgo, 'number');
 });
 
-test('getPageData returns an error for a nonexistent report', async () => {
-  const data = await getPageData('999999T9999', 'xxx') as any;
-  assert.ok(data.error);
+test('getReport returns an error for a nonexistent report', async () => {
+  const report = await getReport('999999T9999', 'xxx');
+  assert.ok(isReportError(report));
 });
 
 test('getPageDataStrings returns HTML strings for a valid report', async () => {
-  const strings = await getPageDataStrings('260101T0000', 'mix') as any;
+  const strings = getPageDataStrings(await getFixtureReport('260101T0000', 'mix'));
   assert.equal(strings.description, 'Mixed Outcomes Page');
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
@@ -138,48 +148,65 @@ test('getPageDataStrings returns HTML strings for a valid report', async () => {
 });
 
 test('getPageDataStrings returns different testInfo for a different timeStamp', async () => {
-  const strings = await getPageDataStrings('260101T0001', 'ct') as any;
+  const strings = getPageDataStrings(await getFixtureReport('260101T0001', 'ct'));
   assert.equal(strings.description, 'All CantTell Page');
   assert.ok(strings.testInfo.includes('by job <code>260101T0001-ct</code>'));
   assert.ok(strings.testInfo.includes('2026-01-01 at 00:01'));
 });
 
-test('getPageDataStrings returns an error for a nonexistent report', async () => {
-  const strings = await getPageDataStrings('999999T9999', 'xxx');
-  assert.ok(strings.error);
+test('getPageDataStrings derives the strings from the report object', async () => {
+  const report = await getFixtureReport('260101T0000', 'mix');
+  report.target.what = 'Custom Page';
+  const strings = getPageDataStrings(report);
+  assert.equal(strings.description, 'Custom Page');
 });
 
-test('getPageDataStrings uses provided pageData instead of reading the report', async () => {
-  const strings = await getPageDataStrings('260101T0000', 'mix', {
-    description: 'Custom Page',
-    url: 'https://custom.com',
-    daysAgo: 1
-  }) as any;
-  assert.equal(strings.description, 'Custom Page');
-  assert.equal(strings.url, 'https://custom.com');
+test('getPageDataStrings reports a 1-day-old report as tested 1 day ago', () => {
+  // Construct an end time 1 day and 1 hour ago, so Math.round gives exactly 1.
+  const date = new Date(Date.now() - (86400000 + 3600000));
+  const endTime = date.toISOString().slice(2, 16);
+  const report = {
+    id: '260101T0000-mix',
+    target: {what: 'Some Page', url: 'https://example.com'},
+    jobData: {endTime}
+  } as any;
+  const strings = getPageDataStrings(report);
   assert.ok(strings.testInfo.includes('1 day ago'));
 });
 
-test('getReportData returns an error for a nonexistent report', async () => {
+test('getReportData returns data for a valid report', async () => {
   const {getReportData} = await import('./util.ts');
-  const result: any = await getReportData('990101T0000', 'xxx');
-  assert.ok(result.error);
+  const result = getReportData(await getFixtureReport('260101T0000', 'mix'));
+  assert.equal(result.url, 'https://example.com/mixed');
+  assert.equal(result.jobName, '260101T0000-mix');
 });
 
 test('getReportData falls back to the engine ID for an unknown prevented engine', async () => {
   const {getReportData} = await import('./util.ts');
   const prvJSON = await fs.readFile(path.join(reportsPath(), '260101T0006-prv.json'), 'utf8');
-  const report = JSON.parse(prvJSON);
-  report.jobData.preventions.unknownEngine = 'mystery failure';
+  const reportJSON = JSON.parse(prvJSON);
+  reportJSON.jobData.preventions.unknownEngine = 'mystery failure';
   const reportPath = path.join(reportsPath(), '260103T0000-unk.json');
-  await fs.writeFile(reportPath, JSON.stringify(report));
+  await fs.writeFile(reportPath, JSON.stringify(reportJSON));
   try {
-    const result: any = await getReportData('260103T0000', 'unk');
+    const result = getReportData(await getFixtureReport('260103T0000', 'unk'));
     assert.ok(result.preventedEngineNames.includes('unknownEngine'));
   }
   finally {
     await fs.unlink(reportPath);
   }
+});
+
+test('getPageFactsLines returns the about-page list lines for a report', async () => {
+  const {getReportData} = await import('./util.ts');
+  const report = await getFixtureReport('260101T0000', 'mix');
+  const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '  ');
+  const html = lines.join('\n');
+  assert.ok(html.includes('<li>URL: <a href="https://example.com/mixed">'));
+  assert.ok(html.includes('<li>Summary of results:'));
+  assert.ok(html.includes('<li>Called: 2</li>'));
+  assert.ok(html.includes('<li>Violations: 3</li>'));
+  assert.ok(html.includes('<li>Issues: 2</li>'));
 });
 
 test('getAgoString returns "1 day" for exactly 1 day ago', () => {

@@ -14,8 +14,10 @@ import {
 } from '../../util.ts';
 import {
   getPageDataStrings,
+  getPageFactsLines,
   getPathID,
   getEngineNamesString,
+  getReportData,
   getTextFragmentHref,
   getWCAGLink,
   getWeightName,
@@ -32,8 +34,17 @@ const populateQuery = async (
   jobID: string,
   query: Record<string, any>
 ) => {
-  // Get descriptions of the page facts.
-  const pageDataStrings = await getPageDataStrings(timeStamp, jobID);
+  // Get the report.
+  const report = await getReport(timeStamp, jobID);
+  // If this failed:
+  if (isReportError(report)) {
+    // Populate the query with the reason.
+    query.error = report.error;
+    // Stop populating the query.
+    return;
+  }
+  // Otherwise, i.e. if it succeeded, get descriptions of the page facts.
+  const pageDataStrings = getPageDataStrings(report);
   // If this failed:
   if (pageDataStrings.error !== undefined) {
     // Populate the query with the reason.
@@ -50,11 +61,13 @@ const populateQuery = async (
     // Stop populating the query.
     return;
   }
-  const {testInfo, url, urlLink, description} = pageDataStrings;
+  const {testInfo, url, description} = pageDataStrings;
   // Add page facts to the query.
   query.target = description;
-  query.urlLink = urlLink;
   query.testInfo = testInfo;
+  query.pageFacts = getPageFactsLines(
+    pageDataStrings, getReportData(report), ' '.repeat(6)
+  ).join('\n');
   const issue = issueSpecs[issueID]!;
   const {wcag, weight, why} = issue;
   query.why = why;
@@ -64,15 +77,6 @@ const populateQuery = async (
   query.count = 0;
   query.reporters = new Set();
   let violators: any = {};
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Populate the query with the reason.
-    query.error = report.error;
-    // Stop populating the query.
-    return;
-  }
   const {catalog} = report;
   const testActInstances = getTestActInstances(report, {violationsOnly: true, issueID});
   query.violationCount = testActInstances.length;

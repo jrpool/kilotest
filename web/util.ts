@@ -13,15 +13,14 @@ import {
   getAgoDays,
   getDateString,
   getDateTime,
-  getReport,
   getReportExtracts,
   getTestActInstances,
   getTestActs,
-  isReportError,
   ruleEngines
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 import type {Catalog} from 'testaro';
+import type {UsableReport} from '../util.ts';
 /* c8 ignore stop */
 import wcagMap from '../wcagMap.json' with {type: 'json'};
 
@@ -41,6 +40,15 @@ export type PageDataStrings = {
   urlLink: string;
   testInfo: string;
   error?: never;
+};
+// Counts summarizing the results of an available report.
+export type ResultsSummary = {
+  engineCount: number;
+  testedEngineCount: number;
+  reporterCount: number;
+  violationCount: number;
+  violatorCount: number;
+  issueCount: number;
 };
 // Basics about an available report.
 export type ReportData = {
@@ -168,15 +176,10 @@ export const getEngineIDs = (report: any) => {
   return {calledIDs: Array.from(calledIDs), preventedIDs: Array.from(preventedIDs)};
 };
 // Returns basics about an available report.
-export const getReportData = async (timeStamp: string, jobID: string): Promise<ReportData | {error: string}> => {
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Return why.
-    return {error: report.error};
-  }
-  // Otherwise, i.e. if it succeeded, initialize the data.
+export const getReportData = (report: UsableReport): ReportData => {
+  // Identify the report by the time stamp at the start of its job name.
+  const timeStamp = report.id.slice(0, 11);
+  // Initialize the data.
   const data = {
     description: report.target.what,
     url: report.target.url,
@@ -239,14 +242,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   return data;
 }
 // Returns page data from an available report.
-export const getPageData = async (timeStamp: string, jobID: string): Promise<PageData | {error: string}> => {
-  // Get the report.
-  const report = await getReport(timeStamp, jobID);
-  // If this failed:
-  if (isReportError(report)) {
-    // Return why.
-    return report;
-  }
+export const getPageData = (report: UsableReport): PageData => {
   const {what: description, url} = report.target;
   // Get the elapsed time in days since the report was completed, using the
   // report content rather than the file system birth time.
@@ -259,31 +255,43 @@ export const getPageData = async (timeStamp: string, jobID: string): Promise<Pag
   };
 };
 // Gets HTML strings for page data from a report.
-export const getPageDataStrings = async (
-  timeStamp: string,
-  jobID: string,
-  pageData?: PageData | {error: string}
-): Promise<PageDataStrings | {error: string}> => {
-  // Get the page data if they were not specified.
-  const data = pageData ?? await getPageData(timeStamp, jobID);
-  // If the page data are invalid:
-  if (data.error !== undefined) {
-    // Return why.
-    return {
-      error: data.error
-    };
-  }
-  const {daysAgo, url, description} = data;
-  // Otherwise, i.e. if they are valid, get a description of the timestamp.
-  const when = getDateTimeString(timeStamp);
+export const getPageDataStrings = (report: UsableReport): PageDataStrings => {
+  const {daysAgo, url, description} = getPageData(report);
+  // Get a description of the time stamp at the start of the job name.
+  const when = getDateTimeString(report.id.slice(0, 11));
   // Return the HTML strings.
   return {
     description,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${timeStamp}-${jobID}</code>`
+    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${report.id}</code>`
   };
 };
+// Returns the lines of a list of facts about the page of an available report.
+export const getPageFactsLines = (
+  strings: PageDataStrings,
+  summary: ResultsSummary,
+  margin: string
+): string[] => [
+  `${margin}<ul>`,
+  `${margin}  <li>URL: ${strings.urlLink}</li>`,
+  `${margin}  <li>${strings.testInfo}</li>`,
+  `${margin}  <li>Summary of results:`,
+  `${margin}    <ul>`,
+  `${margin}      <li>Rule engines:`,
+  `${margin}        <ul>`,
+  `${margin}          <li>Called: ${summary.engineCount}</li>`,
+  `${margin}          <li>Were able to test: ${summary.testedEngineCount}</li>`,
+  `${margin}          <li>Reported any rule violations: ${summary.reporterCount}</li>`,
+  `${margin}        </ul>`,
+  `${margin}      </li>`,
+  `${margin}      <li>Violations: ${summary.violationCount}</li>`,
+  `${margin}      <li>Violators: ${summary.violatorCount}</li>`,
+  `${margin}      <li>Issues: ${summary.issueCount}</li>`,
+  `${margin}    </ul>`,
+  `${margin}  </li>`,
+  `${margin}</ul>`
+];
 // Gets the descriptions of multi-report pages.
 export const getMultiReportWhats = async (): Promise<string[]> => {
   const reportExtracts = await getReportExtracts();

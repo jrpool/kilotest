@@ -113,6 +113,7 @@ const populateQuery = async (query: Record<string, any>) => {
       return;
     }
     const {
+      engineCount,
       issueCount,
       preventedEngineCount,
       reporterCount,
@@ -134,21 +135,24 @@ const populateQuery = async (query: Record<string, any>) => {
     // Add facts about the test results to the lines.
     lines.tested.push(`${margin}    <li>Summary of results:`);
     lines.tested.push(`${margin}      <ul>`);
-    lines.tested.push(`${margin}        <li>Violations: ${violationCount}</li>`);
-    lines.tested.push(`${margin}        <li>Violators: ${violatorCount}</li>`);
-    lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
-    lines.tested.push(`${margin}        <li>Rule engines reporting issues: ${reporterCount}</li>`);
+    lines.tested.push(`${margin}        <li>Rule engines:`);
+    lines.tested.push(`${margin}          <ul>`);
+    lines.tested.push(`${margin}            <li>Called: ${engineCount}</li>`);
+    lines.tested.push(`${margin}            <li>Reported issues: ${reporterCount}</li>`);
     // If the page prevented any rule engine from performing its tests:
     if (preventedEngineCount) {
       // Add this to the lines.
-      lines.tested.push(
-        `${margin}        <li>Rule engines prevented from testing: ${preventedEngineCount}</li>`,
-      );
+      lines.tested.push(`${margin}            <li>Unable to test: ${preventedEngineCount}</li>`);
     }
+    lines.tested.push(`${margin}          </ul>`);
+    lines.tested.push(`${margin}        </li>`);
+    lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
+    lines.tested.push(`${margin}        <li>Violators: ${violatorCount}</li>`);
+    lines.tested.push(`${margin}        <li>Violations: ${violationCount}</li>`);
     lines.tested.push(`${margin}      </ul>`);
     lines.tested.push(`${margin}    </li>`);
     lines.tested.push(`${margin}  </ul>`);
-    lines.tested.push(`${margin}<ul class="nav">`);
+    lines.tested.push(`${margin}  <ul class="nav">`);
     // If any issues were reported:
     if (issueCount) {
       // Add a link to issue details to the lines.

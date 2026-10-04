@@ -8,11 +8,10 @@
 import {
   getReport,
   getTestActInstances,
-  htmlSafe,
+  getTestActs,
   isUsableReport,
   objectSort,
-  populateTemplate,
-  ruleEngines
+  populateTemplate
 } from '../../util.ts';
 import {
   getPageData,
@@ -34,7 +33,6 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
     // Initialize the temporary data.
     const temp = {
       issues: {} as Record<string, any>,
-      ruleEngines: new Set<string>(),
       reporters: new Set<string>(),
       violators: new Set<string>()
     };
@@ -43,9 +41,10 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       reporters: [],
       reporterList: '',
       reporterCount: 0,
+      engineCount: 0,
+      testedCount: 0,
       violationCount: 0,
       violatorCount: 0,
-      preventions: report.jobData.preventions,
       issues: {
         4: [],
         3: [],
@@ -58,8 +57,6 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
     getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
       const {catalogIndex, issueID} = instance;
       const which = act.which!;
-      // Ensure the rule engine is in the temporary data.
-      temp.ruleEngines.add(which);
       // If it identifies a non-ignorable issue:
       if (issueID && issueID !== 'ignorable') {
         const issueClassification = issueSpecs[issueID];
@@ -94,7 +91,13 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       }
     });
     // Finish populating the final data.
-    final.engineCount = temp.ruleEngines.size;
+    const testedEngineIDs = new Set(getTestActs(report).map(act => act.which!));
+    const calledEngineIDs = new Set([
+      ...testedEngineIDs,
+      ...Object.keys(report.jobData?.preventions ?? {})
+    ]);
+    final.engineCount = calledEngineIDs.size;
+    final.testedCount = testedEngineIDs.size;
     final.reporterList = getEngineNamesString(temp.reporters);
     final.reporterCount = temp.reporters.size;
     final.violatorCount = temp.violators.size;
@@ -173,46 +176,29 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   query.testInfo = testInfo;
   const {
     engineCount,
-    reporterList,
+    testedCount,
     reporterCount,
     violationCount,
     violatorCount,
     issueCount,
-    preventions,
     issues
   } = issuesData;
   // Add the results summary to the query.
   query.engineCount = engineCount;
+  query.testedCount = testedCount;
+  query.reporterCount = reporterCount;
   query.violationCount = violationCount;
   query.violatorCount = violatorCount;
   query.issueCount = issueCount;
-  // Initialize strings for the prevention notices query property.
-  const preventionStrings: string[] = [];
   const margin = ' '.repeat(6);
-  Object.keys(preventions).forEach(preventedEngineID => {
-    const [engineName, engineSponsor] = ruleEngines[preventedEngineID] ?? [preventedEngineID, 'unknown sponsor'];
-    const engineNameString = `${engineName} (${engineSponsor})`;
-    const causeString = htmlSafe(preventions[preventedEngineID]);
-    const preventionString = `${margin}<li>Page not testable by ${engineNameString}: ${causeString}</li>`;
-    preventionStrings.push(preventionString);
-  });
-  // Add prevention notices to the query.
-  query.preventions = preventionStrings.join('\n');
   // Add report data to the query.
   query.timeStamp = timeStamp;
   query.jobID = jobID;
-  query.testedCount = engineCount - Object.keys(preventions).length;
-  // Add reporter information to the query.
-  query.reporterCount = reporterCount;
-  query.reporters = reporterList;
   // Add a summary of the issues to the query.
-  query.issueCount = issueCount;
   query.highestCount = issues[4].length;
   query.highCount = issues[3].length;
   query.lowCount = issues[2].length;
   query.lowestCount = issues[1].length;
-  // Add a violator count to the query.
-  query.violatorCount = violatorCount;
   // For each weight:
   [4, 3, 2, 1].forEach(weight => {
     const weightName = getWeightName(weight);

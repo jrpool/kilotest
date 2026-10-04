@@ -231,7 +231,7 @@ const getReportDetails = (html: any, description: string, hrefFragment?: string)
   return matches[0];
 };
 
-// Returns the rule-engine line, the prevention line, and the 3 summary amounts of a details element.
+// Returns the 3 rule-engine amounts and the 3 summary amounts of a details element.
 const getResultFacts = (details: any) => {
   const items = details.querySelectorAll('li');
   const itemTexts: string[] = items.map((li: any) => li.text.trim());
@@ -240,13 +240,17 @@ const getResultFacts = (details: any) => {
     assert.ok(text, `${label} item exists`);
     return Number(text.slice(label.length + 2));
   };
-  // The summary item is the parent of the 3 amount items.
+  // The summary item is the parent of the rule-engine item and the 3 amount items.
   const summaryItem = items.find((li: any) => li.text.trim().startsWith('Summary of results:'));
   assert.ok(summaryItem, 'Summary of results item exists');
-  const amountLabels = summaryItem.querySelectorAll('ul > li').map((li: any) => li.text.trim().split(':')[0]);
+  const summaryList = summaryItem.querySelector('ul');
+  const amountLabels = summaryList.childNodes
+  .filter((node: any) => node.tagName === 'LI')
+  .map((li: any) => li.text.trim().split(':')[0]);
   return {
-    reporterLine: itemTexts.find(t => t.endsWith('reported issues') || t.includes('reported issues (')),
-    preventionLine: itemTexts.find(t => t.startsWith('Page not testable by')),
+    called: getAmount('Called'),
+    tested: getAmount('Were able to test'),
+    reporters: getAmount('Reported any rule violations'),
     amountLabels,
     violations: getAmount('Violations'),
     violators: getAmount('Violators'),
@@ -255,37 +259,42 @@ const getResultFacts = (details: any) => {
 };
 
 // Expected facts, hand-computed from the fixtures.
-const expectedFacts: [string, string | undefined, string, number, number, number][] = [
-  // Description, issue-link fragment, reporter line, violations, violators, issues.
-  ['Mixed Outcomes Page', '260101T0000/mix', '2 rule engines reported issues (Alfa + Axe)', 3, 2, 2],
-  ['Mixed Outcomes Page', '260202T0000/new', '1 rule engine reported issues (Axe)', 1, 1, 1],
-  ['All CantTell Page', undefined, '0 rule engines reported issues', 0, 0, 0],
-  ['No Outcomes Page', undefined, '1 rule engine reported issues (Accessibility Checker)', 1, 1, 1],
-  ['Empty Results Page', undefined, '0 rule engines reported issues', 0, 0, 0],
-  ['Prevented Page', undefined, '1 rule engine reported issues (Axe)', 1, 1, 1],
-  ['Multi Violator Page', undefined, '2 rule engines reported issues (Alfa + Axe)', 4, 3, 1],
-  ['Branch Coverage Page', undefined, '1 rule engine reported issues (Axe)', 4, 4, 1]
+const expectedFacts: [string, string | undefined, number, number, number, number, number, number][] = [
+  // Description, issue-link fragment, engines called, engines able to test, reporting engines, violations, violators, issues.
+  ['Mixed Outcomes Page', '260101T0000/mix', 2, 2, 2, 3, 2, 2],
+  ['Mixed Outcomes Page', '260202T0000/new', 1, 1, 1, 1, 1, 1],
+  ['All CantTell Page', undefined, 1, 1, 0, 0, 0, 0],
+  ['No Outcomes Page', undefined, 1, 1, 1, 1, 1, 1],
+  ['Empty Results Page', undefined, 1, 1, 0, 0, 0, 0],
+  ['Prevented Page', undefined, 2, 1, 1, 1, 1, 1],
+  ['Multi Violator Page', undefined, 2, 2, 2, 4, 3, 1],
+  ['Branch Coverage Page', undefined, 3, 3, 1, 4, 4, 1]
 ];
 
-for (const [description, fragment, reporterLine, violations, violators, issues] of expectedFacts) {
-  test(`listReports gives correct rule-engine count and names and summary amounts for ${description}${fragment ? ` (${fragment})` : ''}`, async () => {
+for (const [description, fragment, called, tested, reporters, violations, violators, issues] of expectedFacts) {
+  test(`listReports gives correct rule-engine and summary amounts for ${description}${fragment ? ` (${fragment})` : ''}`, async () => {
     const result: any = await answer();
     const html = parse(result.answerPage);
     const facts = getResultFacts(getReportDetails(html, description, fragment));
-    assert.equal(facts.reporterLine, reporterLine);
-    assert.deepEqual(facts.amountLabels, ['Violations', 'Violators', 'Issues']);
+    assert.equal(facts.called, called);
+    assert.equal(facts.tested, tested);
+    assert.equal(facts.reporters, reporters);
+    assert.deepEqual(facts.amountLabels, ['Rule engines', 'Violations', 'Violators', 'Issues']);
     assert.equal(facts.violations, violations);
     assert.equal(facts.violators, violators);
     assert.equal(facts.issues, issues);
   });
 }
 
-test('listReports reports the prevented rule engine only for the report with a prevention', async () => {
+test('listReports counts a prevented rule engine as called but not able to test', async () => {
   const result: any = await answer();
   const html = parse(result.answerPage);
   const prevented = getResultFacts(getReportDetails(html, 'Prevented Page'));
-  assert.equal(prevented.preventionLine, 'Page not testable by 1 rule engine (Alfa)');
+  assert.equal(prevented.called - prevented.tested, 1);
   const others = html.querySelectorAll('details').filter((d: any) => !d.text.includes('Prevented Page'));
   assert.equal(others.length, 7);
-  assert.ok(others.every((d: any) => !d.text.includes('Page not testable by')));
+  assert.ok(others.every((d: any) => {
+    const facts = getResultFacts(d);
+    return facts.called === facts.tested;
+  }));
 });

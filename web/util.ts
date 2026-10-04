@@ -52,6 +52,7 @@ export type ReportData = {
   issueCount: number;
   engineNames: string[];
   engineCount: number;
+  testedEngineCount: number;
   reporterNames: string[];
   reporterCount: number;
   violationCount: number;
@@ -159,6 +160,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
     issueCount: 0,
     engineNames: [] as string[],
     engineCount: 0,
+    testedEngineCount: 0,
     reporterNames: [] as string[],
     reporterCount: 0,
     violationCount: 0,
@@ -167,14 +169,17 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
     preventedEngineCount: 0
   };
   const issueIDSet = new Set<string>();
-  const engineNameSet = new Set<string>();
+  const testedEngineIDSet = new Set<string>();
   const reporterIDSet = new Set<string>();
   const violatorIndexSet = new Set<string>();
   // For each test act of the report:
   getTestActs(report).forEach(act => {
     // Ensure that the rule engine is in the temporary data.
-    engineNameSet.add(ruleEngines[act.which!]![0]);
+    testedEngineIDSet.add(act.which!);
   });
+  const preventedEngineIDs = Object.keys(report.jobData?.preventions || {});
+  // Identify the rule engines called, including those prevented from testing.
+  const calledEngineIDSet = new Set([...testedEngineIDSet, ...preventedEngineIDs]);
   // For each violating standard instance of each test act:
   getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
     const {catalogIndex, issueID} = instance;
@@ -196,9 +201,11 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   // Populate the data with the act data.
   data.issueCount = issueIDSet.size;
   data.engineNames = Array
-  .from(engineNameSet)
+  .from(calledEngineIDSet)
+  .map(id => ruleEngines[id]?.[0] || id)
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
-  data.engineCount = engineNameSet.size;
+  data.engineCount = calledEngineIDSet.size;
+  data.testedEngineCount = testedEngineIDSet.size;
   data.reporterNames = Array
   .from(reporterIDSet)
   .map(id => ruleEngines[id]![0])

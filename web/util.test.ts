@@ -132,14 +132,14 @@ test('getPageDataStrings returns HTML strings for a valid report', async () => {
   assert.equal(strings.description, 'Mixed Outcomes Page');
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
-  assert.ok(strings.testInfo.includes('by job <code>mix</code>'));
+  assert.ok(strings.testInfo.includes('by job <code>260101T0000-mix</code>'));
   assert.ok(strings.testInfo.includes('2026-01-01 at 00:00'));
 });
 
 test('getPageDataStrings returns different testInfo for a different timeStamp', async () => {
   const strings = await getPageDataStrings('260101T0001', 'ct') as any;
   assert.equal(strings.description, 'All CantTell Page');
-  assert.ok(strings.testInfo.includes('by job <code>ct</code>'));
+  assert.ok(strings.testInfo.includes('by job <code>260101T0001-ct</code>'));
   assert.ok(strings.testInfo.includes('2026-01-01 at 00:01'));
 });
 

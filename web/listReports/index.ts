@@ -16,7 +16,6 @@ import {
   populateTemplate
 } from '../../util.ts';
 import {
-  getCountString,
   getMultiReportWhats,
   getPageDataStrings,
   getReportData
@@ -116,8 +115,6 @@ const populateQuery = async (query: Record<string, any>) => {
     const {
       issueCount,
       preventedEngineCount,
-      preventedEngineNames,
-      reporterNames,
       reporterCount,
       violationCount,
       violatorCount
@@ -134,26 +131,20 @@ const populateQuery = async (query: Record<string, any>) => {
     lines.tested.push(`${margin}    <li>URL: ${urlLink}</li>`);
     // Add facts about the report to the lines.
     lines.tested.push(`${margin}    <li>${testInfo}</li>`);
-    // If the page prevented any rule engine from performing its tests:
-    if (preventedEngineCount) {
-      // Add this to the lines.
-      const engineCountString = getCountString(preventedEngineCount, 'rule engine', 'rule engines');
-      lines.tested.push(
-        `${margin}    <li>Page not testable by ${engineCountString} (${preventedEngineNames.join(' + ')})</li>`,
-      );
-    }
     // Add facts about the test results to the lines.
-    let reporterString = `${getCountString(reporterCount, 'rule engine', 'rule engines')} reported issues`;
-    if (reporterCount) {
-      const reporterNamesString = reporterNames.join(' + ');
-      reporterString = `${reporterString} (${reporterNamesString})`;
-    }
-    lines.tested.push(`${margin}    <li>${reporterString}</li>`);
     lines.tested.push(`${margin}    <li>Summary of results:`);
     lines.tested.push(`${margin}      <ul>`);
     lines.tested.push(`${margin}        <li>Violations: ${violationCount}</li>`);
     lines.tested.push(`${margin}        <li>Violators: ${violatorCount}</li>`);
     lines.tested.push(`${margin}        <li>Issues: ${issueCount}</li>`);
+    lines.tested.push(`${margin}        <li>Rule engines reporting issues: ${reporterCount}</li>`);
+    // If the page prevented any rule engine from performing its tests:
+    if (preventedEngineCount) {
+      // Add this to the lines.
+      lines.tested.push(
+        `${margin}        <li>Rule engines prevented from testing: ${preventedEngineCount}</li>`,
+      );
+    }
     lines.tested.push(`${margin}      </ul>`);
     lines.tested.push(`${margin}    </li>`);
     lines.tested.push(`${margin}  </ul>`);

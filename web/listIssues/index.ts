@@ -42,6 +42,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       reporters: [],
       reporterList: '',
       reporterCount: 0,
+      violationCount: 0,
       violatorCount: 0,
       preventions: report.jobData.preventions,
       issues: {
@@ -71,11 +72,15 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
             weight,
             reporters: new Set(),
             reporterList: '',
+            violationCount: 0,
             violators: new Set()
           };
           // Ensure the rule engine is in the temporary data.
           temp.issues[issueID].reporters.add(which);
           temp.reporters.add(which);
+          // Increment the violation counts.
+          temp.issues[issueID].violationCount++;
+          final.violationCount++;
           // If the instance has a catalog index:
           if (catalogIndex) {
             // Ensure the violator is in the temporary data.
@@ -100,6 +105,7 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       };
       finalIssue.reporterList = getEngineNamesString(issue.reporters);
       finalIssue.reporterCount = issue.reporters.size;
+      finalIssue.violationCount = issue.violationCount;
       finalIssue.violatorCount = issue.violators.size;
       final.issues[issue.weight].push(finalIssue);
     });
@@ -164,11 +170,16 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   const {
     reporterList,
     reporterCount,
+    violationCount,
     violatorCount,
     issueCount,
     preventions,
     issues
   } = issuesData;
+  // Add the results summary to the query.
+  query.violationCount = violationCount;
+  query.violatorCount = violatorCount;
+  query.issueCount = issueCount;
   // Initialize strings for the prevention notices query property.
   const preventionStrings: string[] = [];
   const margin = ' '.repeat(6);

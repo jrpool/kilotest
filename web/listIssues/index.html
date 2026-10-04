@@ -17,13 +17,27 @@
       <ul>
         <li>URL: __urlLink__</li>
         <li>__testInfo__</li>
-        __preventions__
+        <li>Summary of results:
+          <ul>
+            <li>Violations: __violationCount__</li>
+            <li>Violators: __violatorCount__</li>
+            <li>Issues: __issueCount__</li>
+            <li>Rule engines reporting issues: __reporterCount__</li>
+            __preventions__
+          </ul>
+        </li>
       </ul>
       <p><a href="/requestRetestForm.html/__timeStamp__/__jobID__">Should Kilotest retest the page?</a></p>
       <h2>Issues reported</h2>
       <h3>Summary</h3>
       <p>__reporterCount__ reported issues (__reporters__)</p>
-      <p>__issueCount__ reported (__highestCount__ highest, __highCount__ high, __lowCount__ low, __lowestCount__ lowest priority)</p>
+      <p>Summary of results:</p>
+      <ul>
+        <li>Violations: __violationCount__</li>
+        <li>
+         (__highestCount__ highest, __highCount__ high, __lowCount__ low, __lowestCount__ lowest priority)
+        </li>
+      </ul>
       <p>__violatorCount__ reported</p>
       <p>Download the <a href="/fullReport.json/__timeStamp__/__jobID__">full technical report</a></p>
       <h3>Details</h3>

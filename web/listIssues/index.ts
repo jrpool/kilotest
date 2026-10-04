@@ -203,7 +203,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   query.jobID = jobID;
   query.testedCount = engineCount - Object.keys(preventions).length;
   // Add reporter information to the query.
-  query.reporterCount = reporterCount === 1 ? '1 rule engine' : `${reporterCount} rule engines`;
+  query.reporterCount = reporterCount;
   query.reporters = reporterList;
   // Add a summary of the issues to the query.
   query.issueCount = issueCount === 1 ? '1 issue was' : `${issueCount} issues were`;

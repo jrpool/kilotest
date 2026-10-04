@@ -231,6 +231,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
           reporterCount,
           reporterList,
           summary,
+          violationCount,
           violatorCount,
           wcag,
           why
@@ -249,10 +250,13 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
         detailsLines.push(
           `${margin}      <li>Reported by ${reporterCountString} (${reporterList})</li>`
         );
+        const violationCountString = violationCount === 1
+        ? '1 violation'
+        : `${violationCount} violations`;
         const violatorCountString = violatorCount === 1
-        ? '1 violator was'
-        : `${violatorCount} violators were`;
-        detailsLines.push(`${margin}      <li>${violatorCountString} reported</li>`);
+        ? '1 violator'
+        : `${violatorCount} violators`;
+        detailsLines.push(`${margin}      <li>${violationCountString} by ${violatorCountString} reported</li>`);
         // Add the end of the fact list to the lines.
         detailsLines.push(`${margin}    </ul>`);
         // Add the start of a link list to the lines.

@@ -8,7 +8,6 @@
 import {
   getReport,
   getTestActInstances,
-  getTestActs,
   isUsableReport,
   objectSort,
   populateTemplate
@@ -16,6 +15,7 @@ import {
 import {
   getPageData,
   getPageDataStrings,
+  getEngineIDs,
   getEngineNamesString,
   getWCAGLink,
   getWeightName
@@ -91,13 +91,9 @@ const getIssuesData = async (timeStamp: string, jobID: string) => {
       }
     });
     // Finish populating the final data.
-    const testedEngineIDs = new Set(getTestActs(report).map(act => act.which!));
-    const calledEngineIDs = new Set([
-      ...testedEngineIDs,
-      ...Object.keys(report.jobData?.preventions ?? {})
-    ]);
-    final.engineCount = calledEngineIDs.size;
-    final.testedCount = testedEngineIDs.size;
+    const {calledIDs, preventedIDs} = getEngineIDs(report);
+    final.engineCount = calledIDs.length;
+    final.testedCount = calledIDs.length - preventedIDs.length;
     final.reporterList = getEngineNamesString(temp.reporters);
     final.reporterCount = temp.reporters.size;
     final.violatorCount = temp.violators.size;

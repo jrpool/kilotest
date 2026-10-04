@@ -42,6 +42,16 @@
           }
         }
       }
+    },
+    {
+      "type": "test",
+      "which": "alfa",
+      "startTime": "26-01-01T00:00",
+      "data": {
+        "prevented": true,
+        "error": "page timed out"
+      },
+      "endTime": "26-01-01T00:01"
     }
   ],
   "jobData": {

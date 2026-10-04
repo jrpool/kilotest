@@ -14,6 +14,7 @@ import {
   checkCommentLength,
   getAgoString,
   getCountString,
+  getEngineIDs,
   getEngineNamesString,
   getMultiReportWhats,
   getPageData,
@@ -237,4 +238,46 @@ test('getEngineNamesString falls back to the ID for an unknown engine', () => {
 test('getMultiReportWhats returns descriptions that have multiple reports', async () => {
   const whats = await getMultiReportWhats();
   assert.ok(whats.includes('Mixed Outcomes Page'));
+});
+
+// Returns a minimal report for testing rule-engine identification.
+const makeEngineReport = (whiches: string[], preventions: Record<string, string>) => ({
+  acts: whiches.map(which => ({type: 'test', which})),
+  jobData: {preventions}
+});
+
+test('getEngineIDs counts a prevented engine, which has an act, once', () => {
+  const ids = getEngineIDs(makeEngineReport(['axe', 'wave'], {wave: 'failed'}));
+  assert.deepEqual(ids.calledIDs.sort(), ['axe', 'wave']);
+  assert.deepEqual(ids.preventedIDs, ['wave']);
+});
+
+test('getEngineIDs counts a prevented engine that has no act', () => {
+  const ids = getEngineIDs(makeEngineReport(['axe'], {alfa: 'failed'}));
+  assert.deepEqual(ids.calledIDs.sort(), ['alfa', 'axe']);
+  assert.deepEqual(ids.preventedIDs, ['alfa']);
+});
+
+test('getEngineIDs counts nuVal and nuVnu as one engine when nuVal succeeds', () => {
+  const ids = getEngineIDs(makeEngineReport(['nuVal', 'nuVnu'], {}));
+  assert.deepEqual(ids.calledIDs, ['nuVal']);
+  assert.deepEqual(ids.preventedIDs, []);
+});
+
+test('getEngineIDs ignores a nuVal prevention when nuVnu succeeds', () => {
+  const ids = getEngineIDs(makeEngineReport(['nuVal', 'nuVnu'], {nuVal: 'failed'}));
+  assert.deepEqual(ids.calledIDs, ['nuVal']);
+  assert.deepEqual(ids.preventedIDs, []);
+});
+
+test('getEngineIDs counts one prevention when both nuVal and nuVnu are prevented', () => {
+  const ids = getEngineIDs(makeEngineReport(['nuVal', 'nuVnu'], {nuVal: 'failed', nuVnu: 'failed'}));
+  assert.deepEqual(ids.calledIDs, ['nuVal']);
+  assert.deepEqual(ids.preventedIDs, ['nuVal']);
+});
+
+test('getEngineIDs counts a nuVal prevention when nuVnu was not called', () => {
+  const ids = getEngineIDs(makeEngineReport(['nuVal'], {nuVal: 'failed'}));
+  assert.deepEqual(ids.calledIDs, ['nuVal']);
+  assert.deepEqual(ids.preventedIDs, ['nuVal']);
 });

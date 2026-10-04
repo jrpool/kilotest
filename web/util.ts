@@ -141,6 +141,32 @@ export const getPathID = (catalog: Catalog, catalogIndex: string, pathID?: strin
   }
   return pathID ?? '/html';
 };
+// Identifies the rule engines called and the rule engines prevented from testing, by a report.
+// Prevented engines have test acts. The nuVal and nuVnu engines are 2 implementations of one
+// engine, so they count as one. A nuVal prevention is ignored if nuVnu then ran successfully.
+export const getEngineIDs = (report: any) => {
+  const preventions = report.jobData?.preventions ?? {};
+  const calledIDs = new Set<string>([
+    ...getTestActs(report).map((act: any) => act.which as string),
+    ...Object.keys(preventions)
+  ]);
+  const preventedIDs = new Set<string>(Object.keys(preventions));
+  // If both implementations were called:
+  if (calledIDs.has('nuVal') && calledIDs.has('nuVnu')) {
+    // Count them as one engine.
+    calledIDs.delete('nuVnu');
+    // If nuVnu was not prevented from testing:
+    if (!preventedIDs.has('nuVnu')) {
+      // Ignore any nuVal prevention.
+      preventedIDs.delete('nuVal');
+    }
+    // Otherwise, i.e. if nuVnu was prevented, count both preventions as one.
+    else {
+      preventedIDs.delete('nuVnu');
+    }
+  }
+  return {calledIDs: Array.from(calledIDs), preventedIDs: Array.from(preventedIDs)};
+};
 // Returns basics about an available report.
 export const getReportData = async (timeStamp: string, jobID: string): Promise<ReportData | {error: string}> => {
   // Get the report.
@@ -169,17 +195,9 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
     preventedEngineCount: 0
   };
   const issueIDSet = new Set<string>();
-  const testedEngineIDSet = new Set<string>();
   const reporterIDSet = new Set<string>();
   const violatorIndexSet = new Set<string>();
-  // For each test act of the report:
-  getTestActs(report).forEach(act => {
-    // Ensure that the rule engine is in the temporary data.
-    testedEngineIDSet.add(act.which!);
-  });
-  const preventedEngineIDs = Object.keys(report.jobData?.preventions || {});
-  // Identify the rule engines called, including those prevented from testing.
-  const calledEngineIDSet = new Set([...testedEngineIDSet, ...preventedEngineIDs]);
+  const {calledIDs, preventedIDs} = getEngineIDs(report);
   // For each violating standard instance of each test act:
   getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
     const {catalogIndex, issueID} = instance;
@@ -201,11 +219,11 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   // Populate the data with the act data.
   data.issueCount = issueIDSet.size;
   data.engineNames = Array
-  .from(calledEngineIDSet)
+  .from(calledIDs)
   .map(id => ruleEngines[id]?.[0] || id)
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
-  data.engineCount = calledEngineIDSet.size;
-  data.testedEngineCount = testedEngineIDSet.size;
+  data.engineCount = calledIDs.length;
+  data.testedEngineCount = calledIDs.length - preventedIDs.length;
   data.reporterNames = Array
   .from(reporterIDSet)
   .map(id => ruleEngines[id]![0])
@@ -213,7 +231,7 @@ export const getReportData = async (timeStamp: string, jobID: string): Promise<R
   data.reporterCount = data.reporterNames.length;
   data.violatorCount = violatorIndexSet.size;
   // Add the names of any prevented rule engines to the data.
-  data.preventedEngineNames = Object.keys(report.jobData?.preventions || {})
+  data.preventedEngineNames = preventedIDs
   .map(engineID => ruleEngines[engineID]?.[0] || engineID)
   .sort((a, b) => a.localeCompare(b, 'en', {sensitivity: 'base'}));
   data.preventedEngineCount = data.preventedEngineNames.length;

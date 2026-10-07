@@ -61,6 +61,18 @@ test('listIssues includes the page description in the HTML for the mixed report'
   assert.ok(result.answerPage.includes('Mixed Outcomes Page'));
 });
 
+test('listIssues interpolates the page description into the AI prompt block quote', async () => {
+  const result = await answer('260101T0000/mix');
+  const html = parse(result.answerPage);
+  const blockQuote = html.querySelector('details blockquote');
+  assert.ok(blockQuote);
+  assert.ok(
+    blockQuote.textContent.startsWith('Kilotest reports defects on the Mixed Outcomes Page web page.')
+  );
+  // No placeholder may remain uninterpolated.
+  assert.ok(!blockQuote.textContent.includes('__target__'));
+});
+
 test('listIssues includes links to listViolators for issues in the mixed report', async () => {
   const result = await answer('260101T0000/mix');
   const html = parse(result.answerPage);

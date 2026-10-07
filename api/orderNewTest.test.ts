@@ -121,7 +121,7 @@ test('orderNewTest rejects an already-tested page', async () => {
   const disposition = body['response content']['disposition of your order'] as any;
   assert.ok(
     disposition['what happens next']
-    .includes('a report about a page with the same description and URL is available.')
+    .includes('a report about a page with the same description or URL is available.')
   );
   assert.equal(disposition['report identifier'], null);
 });

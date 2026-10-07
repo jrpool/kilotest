@@ -126,7 +126,7 @@ test('answer returns an error when a report already exists for the page', {timeo
     'Mixed Outcomes Page', 'https://example.com/mixed', 'Because accessibility'
   );
   assert.equal(result.status, 'error');
-  assert.equal(result.message, 'A report about the page is already available');
+  assert.equal(result.message, 'A report about a page with the same description or URL is already available');
 });
 
 test('answer returns an error with a fallback channel when the request queue is full', {timeout: 500}, async () => {

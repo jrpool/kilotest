@@ -33,12 +33,12 @@ export const answer = async (description: string, url: string, reason: string) =
       message: 'Test request duplicates an already submitted request'
     };
   }
-  // Otherwise, if a report is available about a page with the same description and URL:
+  // Otherwise, if a report is available about a page with the same description or URL:
   else if (result === 'reportExists') {
     // Report this.
     return {
       status: 'error',
-      message: 'A report about the page is already available'
+      message: 'A report about a page with the same description or URL is already available'
     }
   }
   // Otherwise, if the queue of requests awaiting approval is full:

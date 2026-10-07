@@ -84,7 +84,7 @@ export const response = async (args: string[]) => {
         howToCheck: 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
         howWebUserChecks: `A web user can visit ${thisHost}/listReports.html to learn whether the page has been tested and a report is available.`
       },
-      {result: 'reportExists', reason: 'a report about a page with the same description and URL is available.'}
+      {result: 'reportExists', reason: 'a report about a page with the same description or URL is available.'}
     );
   }
   // Create the response content.

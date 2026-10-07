@@ -100,7 +100,7 @@ export const response = async (args: string[]) => {
       requestDisposition = {
         'what happens next': `Your order will not be processed, because ${getRequestFailureReason(
           orderResult.result,
-          {result: 'reportExists', reason: 'a report about a page with the same description and URL is available.'}
+          {result: 'reportExists', reason: 'a report about a page with the same description or URL is available.'}
         )}`,
         'report identifier': null,
         'how you can check for completion': 'Not applicable.',

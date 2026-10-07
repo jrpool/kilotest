@@ -23,7 +23,6 @@ import {
   isReportError,
   getReportPath,
   hiddenReportsPath,
-  isReportAvailable,
   isTimeStamp,
   isJobID,
   isURL,
@@ -949,27 +948,19 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const {description, url, why} = postData as {description?: string; url: string; why?: string};
         // If the request is valid:
         if (description && isURL(url) && why && await isAllowedTarget(url)) {
-          // If a report on the page is already available:
-          if (await isReportAvailable(description, url)) {
-            // Report the error.
-            await serveError({message: 'ERROR: Page has already been tested'}, response, true);
+          // Serve headers for a response.
+          setHeaders('text/html', pathname, 'ultra');
+          // Get the answer data.
+          const answerData = await answer.requestNewTest(description, url, why);
+          // If they are valid:
+          if (answerData.status === 'ok') {
+            // Serve the answer page.
+            response.end(answerData.answerPage);
           }
-          // Otherwise, i.e. if no report on the page is available:
+          // Otherwise, i.e. if they are invalid:
           else {
-            // Serve headers for a response.
-            setHeaders('text/html', pathname, 'ultra');
-            // Get the answer data.
-            const answerData = await answer.requestNewTest(description, url, why);
-            // If they are valid:
-            if (answerData.status === 'ok') {
-              // Serve the answer page.
-              response.end(answerData.answerPage);
-            }
-            // Otherwise, i.e. if they are invalid:
-            else {
-              // Report the error.
-              await serveError({message: answerData.message}, response, true);
-            }
+            // Report the error.
+            await serveError({message: answerData.message}, response, true);
           }
         }
         // Otherwise, i.e. if the request is invalid:

@@ -773,6 +773,21 @@ test('processTestRequest returns a reportExists error when a report already exis
   assert.equal(result, 'reportExists');
 });
 
+test('processTestRequest returns a reportExists error when a report exists about a page with the same description', async () => {
+  const {result} = await processTestRequest(
+    'because accessibility', {description: 'Mixed Outcomes Page', url: 'https://example.com/drifted'}
+  );
+  assert.equal(result, 'reportExists');
+});
+
+test('processTestRequest returns a reportExists error when a report exists about a page with an equivalent URL', async () => {
+  // The URL differs from that of the report only by a www prefix, a trailing slash, and case.
+  const {result} = await processTestRequest(
+    'because accessibility', {description: 'Drifted Page', url: 'https://www.Example.com/mixed/'}
+  );
+  assert.equal(result, 'reportExists');
+});
+
 test('processTestRequest returns a queueFull error once the pending-request queue is full', {timeout: 500}, async () => {
   // Fill testRequests.json with 20 pending requests, all for the same URL, so the total
   // pending count (summed across all URLs' request arrays) reaches the cap directly,
@@ -964,6 +979,23 @@ test('processTestRequest returns "url" for a page matching a queued job by URL',
   try {
     const {result} = await processTestRequest(
       'because', {description: 'A Different Page', url: 'https://example.com/queued-url'}
+    );
+    assert.equal(result, 'url');
+  }
+  finally {
+    await fs.unlink(queuedPath);
+  }
+});
+
+test('processTestRequest returns "url" for a page matching a queued job by an equivalent URL', async () => {
+  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
+  await fs.writeFile(queuedPath, getJSON({
+    target: {what: 'Some Queued Page', url: 'https://example.com/queued-url'}
+  }));
+  try {
+    // The URL differs from that of the job only by a www prefix, a trailing slash, and case.
+    const {result} = await processTestRequest(
+      'because', {description: 'A Different Page', url: 'https://www.Example.com/queued-url/'}
     );
     assert.equal(result, 'url');
   }
@@ -1678,6 +1710,20 @@ test('orderJob enqueues a new-page order directly into the job queue', async () 
 test('orderJob returns a reportExists error when a report already exists for the ordered page', async () => {
   const {result} = await orderJob(
     {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}, 'because accessibility matters here'
+  );
+  assert.equal(result, 'reportExists');
+});
+
+test('orderJob returns a reportExists error when a report exists about a page with the same description', async () => {
+  const {result} = await orderJob(
+    {description: 'Mixed Outcomes Page', url: 'https://example.com/drifted'}, 'because accessibility matters here'
+  );
+  assert.equal(result, 'reportExists');
+});
+
+test('orderJob returns a reportExists error when a report exists about a page with the same URL', async () => {
+  const {result} = await orderJob(
+    {description: 'Drifted Page', url: 'https://example.com/mixed'}, 'because accessibility matters here'
   );
   assert.equal(result, 'reportExists');
 });

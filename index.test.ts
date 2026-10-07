@@ -476,7 +476,7 @@ test('POST /requestNewTest.html with an already-tested URL returns an error', as
     why: 'Because accessibility matters'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('already been tested'));
+  assert.ok(res.body.includes('same description or URL is already available'));
 });
 
 test('POST /requestNewTest.html with invalid data returns an error', async () => {

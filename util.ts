@@ -77,8 +77,8 @@ export type TestRequest = {
 // Test requests by URL.
 export type TestRequests = Record<string, TestRequest[]>;
 
-// Test request addition result. 'reportExists' means a report already exists for a
-// page a newTest request or order named (an outcome), distinct from the 'retest'
+// Test request addition result. 'reportExists' means a report already exists about a
+// page with the description or URL that a newTest request or order named (an outcome), distinct from the 'retest'
 // requestType discriminant elsewhere in this file, which means the caller asked to
 // retest a page that already has a report (a request kind); the two must not be
 // confused with one another.
@@ -842,8 +842,9 @@ const getApprovedJobProperty = async (
       // Return this.
       return 'description';
     }
-    // Otherwise, if a job with the URL is in the category:
-    if (jobsData.some(job => job.url === url)) {
+    // Otherwise, if a job with an equivalent URL is in the category:
+    const miniURL = minifyURL(url);
+    if (jobsData.some(job => minifyURL(job.url) === miniURL)) {
       // Return this.
       return 'url';
     }
@@ -952,13 +953,11 @@ export const processTestRequest = (
       // Return this.
       return {result: 'superseded', description, url};
     }
-    // Otherwise, if the request is to test a new page for which a report already exists:
-    if (requestType === 'newTest') {
-      const reportExtracts = await getReportExtracts();
-      if (reportExtracts.some(report => report.description === description && report.url === url)) {
-        // Return this.
-        return {result: 'reportExists', description, url};
-      }
+    // Otherwise, if the request is to test a new page and a report already exists about a
+    // page with the same description or URL:
+    if (requestType === 'newTest' && await isReportAvailable(description, url)) {
+      // Return this.
+      return {result: 'reportExists', description, url};
     }
     // Otherwise, i.e. if the request is genuinely new, if the queue of requests awaiting
     // approval is already full (a cap of 0 means no limit, so the queue is never full):
@@ -1071,13 +1070,11 @@ export const orderJob = (
       // Return this.
       return {result: 'superseded', description, url};
     }
-    // Otherwise, if the order is to test a new page for which a report already exists:
-    if (!('timeStamp' in target)) {
-      const reportExtracts = await getReportExtracts();
-      if (reportExtracts.some(report => report.description === description && report.url === url)) {
-        // Return this.
-        return {result: 'reportExists', description, url};
-      }
+    // Otherwise, if the order is to test a new page and a report already exists about a
+    // page with the same description or URL:
+    if (!('timeStamp' in target) && await isReportAvailable(description, url)) {
+      // Return this.
+      return {result: 'reportExists', description, url};
     }
     // Otherwise, if the job queue is already full (a cap of 0 means no limit, so the
     // queue is never full):

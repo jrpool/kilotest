@@ -293,6 +293,16 @@ test('getMultiReportWhats returns descriptions that have multiple reports', asyn
   assert.ok(whats.includes('Mixed Outcomes Page'));
 });
 
+test('getMultiReportWhats uses extracts provided by the caller', async () => {
+  const extract = {timeStamp: 't', jobID: 'j', url: 'https://example.com/', reportTime: ''};
+  const whats = await getMultiReportWhats([
+    {...extract, description: 'B'},
+    {...extract, description: 'A'},
+    {...extract, description: 'B'}
+  ]);
+  assert.deepEqual(whats, ['B']);
+});
+
 // Returns a minimal report for testing rule-engine identification.
 const makeEngineReport = (whiches: string[], preventions: Record<string, string>) => ({
   acts: whiches.map(which => ({type: 'test', which})),

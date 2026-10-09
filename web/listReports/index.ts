@@ -97,7 +97,7 @@ const populateQuery = async (query: Record<string, any>) => {
   query.some = (reportCount || jobFileNames.queue.length || jobFileNames.claimed.length)
   ? 'another'
   : 'a';
-  const multiReportWhats = await getMultiReportWhats();
+  const multiReportWhats = await getMultiReportWhats(reportExtracts);
   // Sort them primarily by page description and secondarily by completion time.
   let sortedExtracts = objectSort(reportExtracts, 'reportTime', 'alpha');
   sortedExtracts = objectSort(sortedExtracts, 'description', 'alpha');

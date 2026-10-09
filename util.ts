@@ -793,20 +793,58 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
     };
   }
 };
+// Cache of report extracts, keyed by report file path. Each entry records the modification
+// time and size of the file when it was extracted, so an entry is reused only while the file
+// is unchanged. Reports are mutable (e.g., reannotation rewrites all of them) and may be
+// written, hidden, or deleted by any process, so the cache is validated against the files
+// before every use rather than invalidated by the code that changes them.
+const reportExtractCache = new Map<string, {mtimeMs: number, size: number, extract: ReportExtract}>();
 // Returns extracts of all available reports.
 export const getReportExtracts = async (onlyLatest: boolean = false): Promise<ReportExtract[]> => {
-  // Get the names of the available report files.
-  const reportFileNames = await readdirOrCreate(reportsPath(), 'Reports directory');
+  const reportsDir = reportsPath();
+  // Get the names and paths of the available report files.
+  const reportFileNames = await readdirOrCreate(reportsDir, 'Reports directory');
+  const reportFilePaths = reportFileNames.map(fileName => path.join(reportsDir, fileName));
+  const reportFilePathSet = new Set(reportFilePaths);
+  // Remove from the cache any report that is no longer available (e.g., hidden or deleted).
+  for (const cachedPath of reportExtractCache.keys()) {
+    if (!reportFilePathSet.has(cachedPath)) {
+      reportExtractCache.delete(cachedPath);
+    }
+  }
+  // Get the current modification times and sizes of the report files. A file that disappeared
+  // after the directory was read gets values that match no cache entry, so it is reread, which
+  // fails and removes it from the cache.
+  const reportStats = await Promise.all(
+    reportFilePaths.map(filePath => fs.stat(filePath).catch(() => ({mtimeMs: NaN, size: NaN})))
+  );
   // Initialize an array of extracts.
   const extracts: ReportExtract[] = [];
-  // For each one:
-  for (const reportFileName of reportFileNames) {
+  // For each report file:
+  for (const [index, reportFileName] of reportFileNames.entries()) {
+    const filePath = reportFilePaths[index]!;
+    const stat = reportStats[index]!;
+    const cached = reportExtractCache.get(filePath);
+    // If its cached extract is current:
+    if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+      // Add a copy of the cached extract to the array.
+      extracts.push({...cached.extract});
+      continue;
+    }
+    // Otherwise, get a new extract of it. The stat precedes the read, so a change between
+    // them leaves a stale modification time in the cache and causes a reread next time.
     const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-') as [string, string];
-    // Get an extract of it.
     const extract = await getReportExtract(timeStamp, jobID);
+    // If this succeeded:
     if (!('error' in extract)) {
-      // Add the extract to the array.
-      extracts.push(extract);
+      // Cache it and add a copy of it to the array.
+      reportExtractCache.set(filePath, {mtimeMs: stat.mtimeMs, size: stat.size, extract});
+      extracts.push({...extract});
+    }
+    // Otherwise, i.e. if it failed:
+    else {
+      // Forget any outdated extract of it.
+      reportExtractCache.delete(filePath);
     }
   }
   // Sort the extracts by page description and, secondarily, completion time.

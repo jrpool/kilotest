@@ -1276,7 +1276,7 @@ test('getIssue returns null for a known engine with an unknown variable rule', (
 });
 
 test('getIssue returns an issue ID for a variable rule pattern match', () => {
-  const result = getIssue('nuVal', 'Duplicate attribute foo');
+  const result = getIssue('nuVal', 'Duplicate attribute foo.');
   assert.ok(typeof result === 'string');
   assert.equal(result, 'duplicateAttribute');
 });
@@ -1449,6 +1449,56 @@ test('getReportExtracts with onlyLatest returns only the latest report for each 
   const mixReports = latest.filter(e => e.description === 'Mixed Outcomes Page');
   assert.equal(mixReports.length, 1);
   assert.equal(mixReports[0]!.timeStamp, '260202T0000');
+});
+
+test('getReportExtracts reflects reports added, modified, and removed after a previous call', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-extracts-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  const savedDbDir = process.env.DB_DIR;
+  const sourcePath = path.join(reportsPath(), '260101T0000-mix.json');
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    await fs.mkdir(tmpReportsDir, {recursive: true});
+    const report = JSON.parse(await fs.readFile(sourcePath, 'utf8'));
+    const firstPath = path.join(tmpReportsDir, '260101T0000-aaa.json');
+    await fs.writeFile(firstPath, JSON.stringify(report));
+    let extracts = await getReportExtracts();
+    assert.deepEqual(extracts.map(e => e.description), ['Mixed Outcomes Page']);
+    // Modify the report and give it a later modification time, as reannotation would.
+    report.target.what = 'Revised Page';
+    await fs.writeFile(firstPath, JSON.stringify(report));
+    const later = new Date(Date.now() + 60000);
+    await fs.utimes(firstPath, later, later);
+    extracts = await getReportExtracts();
+    assert.deepEqual(extracts.map(e => e.description), ['Revised Page']);
+    // Add a report.
+    report.target.what = 'Added Page';
+    const secondPath = path.join(tmpReportsDir, '260101T0001-bbb.json');
+    await fs.writeFile(secondPath, JSON.stringify(report));
+    extracts = await getReportExtracts();
+    assert.deepEqual(extracts.map(e => e.description), ['Added Page', 'Revised Page']);
+    // Mutating a returned extract does not affect later results.
+    extracts[0]!.superseded = true;
+    extracts = await getReportExtracts();
+    assert.equal(extracts[0]!.superseded, undefined);
+    // Make a cached report unreadable.
+    await fs.writeFile(secondPath, 'not JSON');
+    extracts = await getReportExtracts();
+    assert.deepEqual(extracts.map(e => e.description), ['Revised Page']);
+    // Restore it.
+    await fs.writeFile(secondPath, JSON.stringify(report));
+    extracts = await getReportExtracts();
+    assert.deepEqual(extracts.map(e => e.description), ['Added Page', 'Revised Page']);
+    // Remove a report, as hiding would.
+    await fs.rm(firstPath);
+    extracts = await getReportExtracts();
+    assert.deepEqual(extracts.map(e => e.description), ['Added Page']);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
+  }
 });
 
 test('getExclusionCookieValue is deterministic for a given AUTH_CODE', async () => {

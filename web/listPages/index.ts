@@ -67,7 +67,6 @@ const populateQuery = async (query: Record<string, any>) => {
   // Get extracts of the latest reports about all tested pages, sorted by page description.
   const latestExtracts = await getReportExtracts(true);
   const pageCount = latestExtracts.length;
-  query.which = pageCount ? 'the following' : 'no';
   // For each tested page:
   for (const extract of latestExtracts) {
     const {jobID, timeStamp, description} = extract;
@@ -77,7 +76,7 @@ const populateQuery = async (query: Record<string, any>) => {
   }
   // Add the lines to the query, as a list if there are any.
   query.testedPages = pageCount
-  ? [`${margin}<ul>`, ...lines.tested, `${margin}</ul>`].join('\n')
+  ? [`${margin}<ul class="nav">`, ...lines.tested, `${margin}</ul>`].join('\n')
   : '';
 };
 // Returns a page listing the tested pages.

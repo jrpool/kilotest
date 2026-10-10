@@ -87,7 +87,7 @@ test('orderRetest rejects a reason longer than 100 characters', async () => {
 });
 
 test('orderRetest rejects a superseded report', async () => {
-  // 260101T0000-mix is an earlier report of "Mixed Outcomes Page" than 260202T0000-new,
+  // 260101T0000-mix is an earlier report of "Mixed Outcomes" than 260202T0000-new,
   // so it is superseded.
   const body = await response(['260101T0000', 'mix', 'A reason that is long enough.']);
   const details = body['response content']['details about your order'] as any;

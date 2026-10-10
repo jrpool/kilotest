@@ -225,7 +225,7 @@ test('orderRetest handler returns content and structuredContent, and enqueues a 
   const {jobsPath} = await import('./util.ts');
   const server = createMCPServer();
   const countBefore = getToolCallCount('orderRetest');
-  // 260202T0000-new is the latest report of "Mixed Outcomes Page" (260101T0000-mix is an
+  // 260202T0000-new is the latest report of "Mixed Outcomes" (260101T0000-mix is an
   // earlier, superseded report of the same page), so this order is accepted.
   const result = await (server as any)._registeredTools.orderRetest.handler({
     timeStamp: '260202T0000',

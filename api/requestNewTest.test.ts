@@ -110,7 +110,7 @@ test('requestNewTest rejects a URL that redirects to a disallowed target, and al
 });
 
 test('requestNewTest rejects an already-tested page', async () => {
-  const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
+  const body = await response(['Mixed Outcomes', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   // A report for this description and URL already exists, so processTestRequest
   // returns 'reportExists' and the failure is reported via the disposition, not details.error.

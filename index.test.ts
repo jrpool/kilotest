@@ -471,7 +471,7 @@ test('POST /requestNewTest.html with valid data returns an HTML page', async () 
 
 test('POST /requestNewTest.html with an already-tested URL returns an error', async () => {
   const res = await formRequest('POST', '/requestNewTest.html', {
-    description: 'Mixed Outcomes Page',
+    description: 'Mixed Outcomes',
     url: 'https://example.com/mixed',
     why: 'Because accessibility matters'
   });

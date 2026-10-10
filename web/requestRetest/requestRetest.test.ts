@@ -102,7 +102,7 @@ test('answer returns an error for a duplicate retest request', async () => {
 
 test('answer returns an error when the cited report has been superseded', async () => {
   const {answer} = await import('./index.ts');
-  // 260101T0000-mix (Mixed Outcomes Page) is superseded by 260202T0000-new.
+  // 260101T0000-mix (Mixed Outcomes) is superseded by 260202T0000-new.
   const result: any = await answer('260101T0000/mix', 'Because changes were made');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'A later report about the page is already available');
@@ -141,4 +141,3 @@ test('answer returns an error with a fallback channel when the request queue is 
   assert.ok(result.message.includes('https://github.com/jrpool/kilotest/issues'));
   assert.ok(result.message.includes('info@kilotest.com'));
 });
-

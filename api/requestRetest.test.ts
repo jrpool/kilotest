@@ -85,7 +85,7 @@ test('requestRetest rejects a malformed timestamp or job identifier', async () =
 });
 
 test('requestRetest rejects a superseded report', async () => {
-  // 260101T0000-mix is an earlier report of "Mixed Outcomes Page" than 260202T0000-new,
+  // 260101T0000-mix is an earlier report of "Mixed Outcomes" than 260202T0000-new,
   // so it is superseded and processTestRequest returns 'superseded', reported via the
   // disposition rather than details.error.
   const body = await response(['260101T0000', 'mix', 'A reason that is long enough.']);
@@ -168,10 +168,10 @@ test('requestRetest accepts a valid retest request for the latest report of a pa
   const body = await response(['260202T0000', 'new', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
-  assert.equal(details['page to be retested'].description, 'Mixed Outcomes Page');
+  assert.equal(details['page to be retested'].description, 'Mixed Outcomes');
   assert.ok(logged.some(line =>
     line.startsWith('WARNING (Kilotest: request for a retest awaits approval)')
-    && line.includes('Mixed Outcomes Page')
+    && line.includes('Mixed Outcomes')
     && line.includes('https://example.com/mixed')
     // The alert reports the resulting queue size, so a maintainer who has been away can
     // see at a glance how close the queue is to full.

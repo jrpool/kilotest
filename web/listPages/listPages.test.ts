@@ -58,7 +58,7 @@ test('listPages lists each of the 7 tested pages once, by description', async ()
       'All CantTell Page',
       'Branch Coverage Page',
       'Empty Results Page',
-      'Mixed Outcomes Page',
+      'Mixed Outcomes',
       'Multi Violator Page',
       'No Outcomes Page',
       'Prevented Page'
@@ -75,7 +75,7 @@ test('listPages introduces the list of tested pages', async () => {
 test('listPages links each page to the issues in its latest report', async () => {
   const result: any = await answer();
   const links = getPageLinks(result.answerPage);
-  const mixedLink = links.find(a => a.text === 'Mixed Outcomes Page');
+  const mixedLink = links.find(a => a.text === 'Mixed Outcomes');
   assert.equal(mixedLink?.getAttribute('href'), 'listIssues.html/260202T0000/new');
   const canttellLink = links.find(a => a.text === 'All CantTell Page');
   assert.equal(canttellLink?.getAttribute('href'), 'listIssues.html/260101T0001/ct');
@@ -107,7 +107,7 @@ test('listPages shows requests when testRequests.json has entries', {timeout: 50
   try {
     const testRequests = {
       'https://example.com/mixed': [
-        {description: 'Mixed Outcomes Page', reason: 'Needs retesting for accessibility'}
+        {description: 'Mixed Outcomes', reason: 'Needs retesting for accessibility'}
       ]
     };
     await fs.writeFile(testRequestsPath, JSON.stringify(testRequests, null, 2));

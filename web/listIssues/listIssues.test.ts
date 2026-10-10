@@ -64,11 +64,11 @@ test('listIssues includes the page description in the HTML for the mixed report'
 test('listIssues interpolates the page description into the AI prompt block quote', async () => {
   const result = await answer('260101T0000/mix');
   const html = parse(result.answerPage);
-  const blockQuote = html.querySelector('details blockquote');
+  const blockQuote = html.querySelector('blockquote');
   assert.ok(blockQuote);
-  assert.ok(
-    blockQuote.textContent.startsWith('Kilotest reports defects on the Mixed Outcomes Page web page.')
-  );
+  assert.ok(blockQuote.textContent.startsWith(
+    'Kilotest reports defects on the Mixed Outcomes Page web page.'
+  ));
   // No placeholder may remain uninterpolated.
   assert.ok(!blockQuote.textContent.includes('__target__'));
 });

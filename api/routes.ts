@@ -17,7 +17,7 @@ import {
   orderNewTestSchema,
   orderRetestSchema,
   awaitTestSchema,
-  listReportsResponseSchema,
+  listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
   listDiagnosesResponseSchema,
@@ -34,11 +34,11 @@ import {
 
 export const routes = [
   {
-    operationId: 'listReports',
+    operationId: 'listPages',
     method: 'get',
-    path: '/api/listReports',
-    summary: 'List all available reports',
-    responseSchema: listReportsResponseSchema
+    path: '/api/listPages',
+    summary: 'List all tested pages',
+    responseSchema: listPagesResponseSchema
   },
   {
     operationId: 'listIssues',

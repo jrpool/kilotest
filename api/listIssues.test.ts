@@ -113,3 +113,35 @@ test('listIssues handles instances with missing issueID and null instances witho
   const ids = issues.map(i => i.identifier);
   assert.ok(ids.includes('duplicateID'));
 });
+
+test('listIssues lists the history of reports about the page, from oldest to latest', async () => {
+  const body = await response(['260101T0000', 'mix']);
+  const history = body['response content']['history of reports about the page']!;
+  assert.deepEqual(history.map(entry => entry.identifier), ['260101T0000-mix', '260202T0000-new']);
+  assert.deepEqual(
+    history.map(entry => [
+      entry['whether it is the oldest report about the page'],
+      entry['whether it is the latest report about the page'],
+      entry['whether it is the report described in this response']
+    ]),
+    [[true, false, true], [false, true, false]]
+  );
+  assert.equal(history[1]!['completion date and time'], '2026-02-02T00:10:00.000Z');
+  assert.equal(typeof history[1]!['days since the report was completed'], 'number');
+  assert.ok(history[1]!['how to get details about the report'].URL.endsWith('/api/listIssues/260202T0000/new'));
+  assert.ok(history[1]!['web users can get details about the report at'].endsWith('/listIssues.html/260202T0000/new'));
+});
+
+test('listIssues gives a one-report history for the only report about a page', async () => {
+  const body = await response(['260101T0001', 'ct']);
+  const history = body['response content']['history of reports about the page']!;
+  assert.equal(history.length, 1);
+  assert.equal(history[0]!['whether it is the oldest report about the page'], true);
+  assert.equal(history[0]!['whether it is the latest report about the page'], true);
+  assert.equal(history[0]!['whether it is the report described in this response'], true);
+});
+
+test('listIssues gives no history for a nonexistent report', async () => {
+  const body = await response(['999999T9999', 'xyz']);
+  assert.equal(body['response content']['history of reports about the page'], null);
+});

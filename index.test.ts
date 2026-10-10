@@ -198,7 +198,7 @@ test('routes has GET and POST arrays', () => {
 // TESTS: smoke-test short-circuit
 
 test('GET with x-kilotest-smoke header returns a perfunctory 200', async () => {
-  const res = await request('GET', '/api/listReports', null, {'x-kilotest-smoke': '1'});
+  const res = await request('GET', '/api/listPages', null, {'x-kilotest-smoke': '1'});
   assert.equal(res.statusCode, 200);
   assert.equal(res.body, '{}');
 });
@@ -210,7 +210,7 @@ test('POST with x-kilotest-smoke header returns a perfunctory 200', async () => 
 });
 
 test('GET without x-kilotest-smoke header executes the handler', async () => {
-  const res = await request('GET', '/api/listReports');
+  const res = await request('GET', '/api/listPages');
   assert.equal(res.statusCode, 200);
   assert.notEqual(res.body, '{}');
 });
@@ -332,13 +332,13 @@ test('GET /favicon.ico serves the favicon as an icon', async () => {
   assert.ok(res.headers['content-type'].includes('image/x-icon'));
 });
 
-test('GET /api/listReports returns JSON with report data and records an API-operation metric', async () => {
-  const countBefore = await getMetricCount('apiOperations', 'listReports');
-  const res = await request('GET', '/api/listReports');
+test('GET /api/listPages returns JSON with report data and records an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'listPages');
+  const res = await request('GET', '/api/listPages');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
-  assert.equal(body['tool name'], 'listReports');
-  assert.equal(await getMetricCount('apiOperations', 'listReports'), countBefore + 1);
+  assert.equal(body['tool name'], 'listPages');
+  assert.equal(await getMetricCount('apiOperations', 'listPages'), countBefore + 1);
 });
 
 test('GET /api/listIssues/260101T0000/mix returns JSON with issue data', async () => {
@@ -688,14 +688,14 @@ test('PUT / returns an invalid method error', async () => {
 
 // TESTS: requestHandler catch boundary
 
-test('GET /listReports.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
+test('GET /listPages.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
   // Corrupt testRequests.json so that getTestRequests throws, an error that should never occur in normal
   // operation and so is not handled by handleRequest itself, only by requestHandler's
   // outer catch boundary.
   const backup = await fs.readFile(testRequestsPath, 'utf8');
   await fs.writeFile(testRequestsPath, 'not valid json');
   try {
-    const res = await request('GET', '/listReports.html');
+    const res = await request('GET', '/listPages.html');
     assert.equal(res.statusCode, 500);
     assert.ok(res.headers['content-type'].includes('application/json'));
     const body = jsonBody(res);
@@ -932,10 +932,22 @@ test('GET /rules.html/<segment> redirects to the equivalent /listRules.html/<seg
   assert.equal(res.headers['location'], '/listRules.html/allCaps');
 });
 
-test('GET /targets.html redirects to /listReports.html', async () => {
+test('GET /targets.html redirects to /listPages.html', async () => {
   const res = await request('GET', '/targets.html', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listReports.html');
+  assert.equal(res.headers['location'], '/listPages.html');
+});
+
+test('GET /listReports.html redirects to /listPages.html', async () => {
+  const res = await request('GET', '/listReports.html', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listPages.html');
+});
+
+test('GET /api/listReports redirects to /api/listPages', async () => {
+  const res = await request('GET', '/api/listReports', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/api/listPages');
 });
 
 test('GET /requestTest.html redirects to /requestNewTest.html', async () => {
@@ -1463,7 +1475,7 @@ test('GET /requestRetest.html/260202T0000/new is rejected as an invalid GET requ
 // tested by the unit tests in web/*/*.test.cjs.
 
 const htmlPagePaths = [
-  '/listReports.html',
+  '/listPages.html',
   '/listViolators.html/linkNoText/260101T0000/mix',
   '/listDiagnoses.html/linkNoText/260101T0000/mix/0',
   '/enqueueForm.html',
@@ -1520,11 +1532,11 @@ test('a request carrying the metrics-exclusion cookie does not record a pageView
   const {getExclusionCookieValue} = await import('./util.ts');
   const cookieHeader = `kilotestExclude=${getExclusionCookieValue()}`;
   const pageViewCountBefore = await getMetricCount('pageViews', 'tutorialWeb');
-  const apiOperationCountBefore = await getMetricCount('apiOperations', 'listReports');
+  const apiOperationCountBefore = await getMetricCount('apiOperations', 'listPages');
   await request('GET', '/tutorialWeb.html', null, {cookie: cookieHeader});
-  await request('GET', '/api/listReports', null, {cookie: cookieHeader});
+  await request('GET', '/api/listPages', null, {cookie: cookieHeader});
   assert.equal(await getMetricCount('pageViews', 'tutorialWeb'), pageViewCountBefore);
-  assert.equal(await getMetricCount('apiOperations', 'listReports'), apiOperationCountBefore);
+  assert.equal(await getMetricCount('apiOperations', 'listPages'), apiOperationCountBefore);
 });
 
 test('a request carrying an invalid exclusion cookie still records metrics normally', async () => {
@@ -1945,7 +1957,7 @@ test('a request logs a single-line JSON record with the expected fields', async 
   const originalLog = console.log;
   console.log = (line: string) => logged.push(line);
   try {
-    await request('GET', '/listReports.html');
+    await request('GET', '/listPages.html');
   }
   finally {
     console.log = originalLog;
@@ -1961,7 +1973,7 @@ test('a request logs a single-line JSON record with the expected fields', async 
   assert.equal(requestLines.length, 1);
   const record = JSON.parse(requestLines[0]!);
   assert.equal(record.method, 'GET');
-  assert.equal(record.path, '/listReports.html');
+  assert.equal(record.path, '/listPages.html');
   assert.equal(record.status, 200);
   assert.ok(record.ip);
   assert.ok(record.userAgent);
@@ -1991,7 +2003,7 @@ test('a smoke-test-flagged request is not logged as a general request', async ()
   const originalLog = console.log;
   console.log = (line: string) => logged.push(line);
   try {
-    await request('GET', '/listReports.html', null, {'x-kilotest-smoke': '1'});
+    await request('GET', '/listPages.html', null, {'x-kilotest-smoke': '1'});
   }
   finally {
     console.log = originalLog;

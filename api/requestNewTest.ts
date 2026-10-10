@@ -81,8 +81,8 @@ export const response = async (args: string[]) => {
       requestResult,
       {
         whatHappensNext: 'Your request is likely to be approved and processed within 1 hour to 1 day.',
-        howToCheck: 'You can call the listReports tool to learn whether the page has been tested and a report is available.',
-        howWebUserChecks: `A web user can visit ${thisHost}/listReports.html to learn whether the page has been tested and a report is available.`
+        howToCheck: 'You can call the listPages tool to learn whether the page has been tested.',
+        howWebUserChecks: `A web user can visit ${thisHost}/listPages.html to learn whether the page has been tested.`
       },
       {result: 'reportExists', reason: 'a report about a page with the same description or URL is available.'}
     );
@@ -106,15 +106,15 @@ export const response = async (args: string[]) => {
         reason
       },
       'closest ancestor request': {
-        'tool name': 'listReports',
-        description: 'Provide basics about all available reports.',
+        'tool name': 'listPages',
+        description: 'Provide basics about all tested pages.',
         method: 'GET',
-        URL: `${thisHost}/api/listReports`
+        URL: `${thisHost}/api/listPages`
       }
     },
     'URLs of similar requests for web users': {
       'this request': `${thisHost}/requestNewTestForm.html`,
-      'closest ancestor request': `${thisHost}/listReports.html`
+      'closest ancestor request': `${thisHost}/listPages.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

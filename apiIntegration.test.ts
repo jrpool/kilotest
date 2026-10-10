@@ -93,11 +93,11 @@ const request = (method: string, requestPath: string, body: any = null): Promise
 
 // TESTS
 
-test('GET /api/listReports returns valid JSON through the HTTP routing layer', {timeout: 500}, async () => {
-  const {body} = await request('GET', '/api/listReports');
-  assert.equal(body['tool name'], 'listReports');
-  const reports = body['response content']['basics about all available reports'];
-  assert.equal(reports.length, 8);
+test('GET /api/listPages returns valid JSON through the HTTP routing layer', {timeout: 500}, async () => {
+  const {body} = await request('GET', '/api/listPages');
+  assert.equal(body['tool name'], 'listPages');
+  const pages = body['response content']['basics about all tested pages'];
+  assert.equal(pages.length, 7);
 });
 
 test('POST /api/requestFeature parses a JSON body and returns a JSON response through the HTTP routing layer', async () => {

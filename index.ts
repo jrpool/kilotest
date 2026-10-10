@@ -54,7 +54,7 @@ import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';
 import {answer as hideReportForm} from './web/hideReportForm/index.ts';
 import {answer as listDiagnosesPage} from './web/listDiagnoses/index.ts';
 import {answer as listIssuesPage} from './web/listIssues/index.ts';
-import {answer as listReportsPage} from './web/listReports/index.ts';
+import {answer as listPagesPage} from './web/listPages/index.ts';
 import {answer as listRules} from './web/listRules/index.ts';
 import {answer as listTopIssues} from './web/listTopIssues/index.ts';
 import {answer as listViolatorsPage} from './web/listViolators/index.ts';
@@ -75,7 +75,7 @@ import {answer as unhideReportForm} from './web/unhideReportForm/index.ts';
 import {response as getReportAPI} from './api/getReport.ts';
 import {response as listDiagnosesAPI} from './api/listDiagnoses.ts';
 import {response as listIssuesAPI} from './api/listIssues.ts';
-import {response as listReportsAPI} from './api/listReports.ts';
+import {response as listPagesAPI} from './api/listPages.ts';
 import {response as listViolatorsAPI} from './api/listViolators.ts';
 import {response as requestFeatureAPI} from './api/requestFeature.ts';
 import {response as requestRetestAPI} from './api/requestRetest.ts';
@@ -112,7 +112,7 @@ const answer: {
   hideReportForm: PageHandler;
   listDiagnoses: PageHandler;
   listIssues: PageHandler;
-  listReports: PageHandler;
+  listPages: PageHandler;
   listRules: PageHandler;
   listTopIssues: PageHandler;
   listViolators: PageHandler;
@@ -143,7 +143,7 @@ const answer: {
   hideReportForm,
   listDiagnoses: listDiagnosesPage,
   listIssues: listIssuesPage,
-  listReports: listReportsPage,
+  listPages: listPagesPage,
   listRules,
   listTopIssues,
   listViolators: listViolatorsPage,
@@ -171,7 +171,7 @@ const apiRespond: {
   getReport: ApiResponder;
   listDiagnoses: ApiResponder;
   listIssues: ApiResponder;
-  listReports: ApiResponder;
+  listPages: ApiResponder;
   listViolators: ApiResponder;
   requestFeature: ApiResponder;
   requestRetest: ApiResponder;
@@ -183,7 +183,7 @@ const apiRespond: {
   getReport: getReportAPI,
   listDiagnoses: listDiagnosesAPI,
   listIssues: listIssuesAPI,
-  listReports: listReportsAPI,
+  listPages: listPagesAPI,
   listViolators: listViolatorsAPI,
   requestFeature: requestFeatureAPI,
   requestRetest: requestRetestAPI,
@@ -291,12 +291,16 @@ const noDirectGetPages = new Set(['unhideReportForm']);
 // on 2026-09-28 (see the newTest/retest naming-ambiguity fix), to distinguish the
 // new-test-only page from bare "test" language used elsewhere.
 // TEMPORARY: retire this redirect after 2027-03-28 once crawlers have re-indexed.
+// listReports was renamed to listPages on 2026-10-09, since it lists tested pages, each
+// linked to its latest report.
+// TEMPORARY: retire this redirect after 2027-04-09 once crawlers have re-indexed.
 const renamedPagePrefixes: Record<string, string> = {
   diagnoses: 'listDiagnoses',
   reportIssue: 'listViolators',
   reportIssues: 'listIssues',
   rules: 'listRules',
-  targets: 'listReports',
+  targets: 'listPages',
+  listReports: 'listPages',
   requestTest: 'requestNewTest',
   requestTestForm: 'requestNewTestForm'
 };
@@ -800,14 +804,21 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for an API service:
     else if (pageName === 'api') {
       const [service, ...specs] = pathTail.split('/');
-      // If the service lists the available reports:
-      if (service === 'listReports') {
+      // If the service lists the tested pages:
+      if (service === 'listPages') {
         // Get the response body.
-        const responseBody = await apiRespond.listReports([]);
-        await recordPageMetric('apiOperations', 'listReports');
+        const responseBody = await apiRespond.listPages([]);
+        await recordPageMetric('apiOperations', 'listPages');
         // Send it.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service has the name that listPages had before 2026-10-09:
+      // TEMPORARY: retire this redirect after 2027-04-09.
+      else if (service === 'listReports') {
+        // Redirect the request to listPages.
+        response.writeHead(301, {Location: '/api/listPages'});
+        response.end();
       }
       // Otherwise, if the service lists the issues in a report:
       else if (service === 'listIssues') {

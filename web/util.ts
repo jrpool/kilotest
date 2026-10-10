@@ -13,7 +13,6 @@ import {
   getAgoDays,
   getDateString,
   getReportEndTime,
-  getReportExtracts,
   getTestActInstances,
   getTestActs,
   htmlSafe,
@@ -21,7 +20,7 @@ import {
 } from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 import type {Catalog} from 'testaro';
-import type {ReportExtract, UsableReport} from '../util.ts';
+import type {UsableReport} from '../util.ts';
 /* c8 ignore stop */
 import wcagMap from '../wcagMap.json' with {type: 'json'};
 
@@ -376,15 +375,4 @@ export const getViolatorFactsLines = (
   lines.push(`${margin}  <li>Reported by ${getEngineNamesString(reporters)}</li>`);
   lines.push(`${margin}</ul>`);
   return lines;
-};
-// Gets the descriptions of multi-report pages, from extracts already obtained, if provided.
-export const getMultiReportWhats = async (
-  reportExtracts?: ReportExtract[]
-): Promise<string[]> => {
-  reportExtracts ??= await getReportExtracts();
-  const sortedDescriptions = reportExtracts.map(extract => extract.description).sort();
-  const multiReportDescriptions = sortedDescriptions.filter(
-    (description, index) => description !== sortedDescriptions[index - 1] && description === sortedDescriptions[index + 1]
-  );
-  return multiReportDescriptions;
 };

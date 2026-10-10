@@ -205,3 +205,79 @@ test('listIssues handles acts with no standardResult instances', async () => {
     await fs.unlink(reportPath).catch(() => {});
   }
 });
+
+// Returns the History section of a listIssues page, from its heading to the next heading.
+const getHistory = (answerPage: string) => {
+  const start = answerPage.indexOf('<h2>History</h2>');
+  const end = answerPage.indexOf('<h2>Issues reported</h2>');
+  assert.ok(start > -1 && end > start, 'History section exists before the issues');
+  return parse(answerPage.slice(start, end));
+};
+
+// Returns the text, and the link destination if any, of each item in a History list.
+const getHistoryItems = (history: ReturnType<typeof parse>) => history
+.querySelectorAll('ol > li')
+.map(li => ({
+  text: li.text.trim(),
+  href: li.querySelector('a')?.getAttribute('href') ?? null
+}));
+
+test('listIssues History of an older report lists all reports, with this one unlinked and no retest question', async () => {
+  const result = await answer('260101T0000/mix');
+  const history = getHistory(result.answerPage);
+  const items = getHistoryItems(history);
+  assert.equal(items.length, 2);
+  assert.match(items[0]!.text, /^\d+ days? ago \(oldest; this report\)$/);
+  assert.equal(items[0]!.href, null);
+  assert.match(items[1]!.text, /^\d+ days? ago \(latest\)$/);
+  assert.equal(items[1]!.href, '/listIssues.html/260202T0000/new');
+  assert.ok(!result.answerPage.includes('Should Kilotest retest the page?'));
+});
+
+test('listIssues History of the latest report ends with the retest question', async () => {
+  const result = await answer('260202T0000/new');
+  const history = getHistory(result.answerPage);
+  const items = getHistoryItems(history);
+  assert.equal(items.length, 2);
+  assert.match(items[0]!.text, /^\d+ days? ago \(oldest\)$/);
+  assert.equal(items[0]!.href, '/listIssues.html/260101T0000/mix');
+  assert.match(items[1]!.text, /^\d+ days? ago \(latest; this report\)$/);
+  assert.equal(items[1]!.href, null);
+  const retestLink = history.querySelector('ol + p > a');
+  assert.equal(retestLink?.text, 'Should Kilotest retest the page?');
+  assert.equal(retestLink?.getAttribute('href'), '/requestRetestForm.html/260202T0000/new');
+});
+
+test('listIssues History of the only report about a page says so and asks about retesting', async () => {
+  const result = await answer('260101T0001/ct');
+  const history = getHistory(result.answerPage);
+  assert.equal(getHistoryItems(history).length, 0);
+  const paragraphs = history.querySelectorAll('p');
+  assert.equal(paragraphs[0]?.text, 'This is the only report about the page.');
+  assert.equal(paragraphs[1]?.querySelector('a')?.getAttribute('href'), '/requestRetestForm.html/260101T0001/ct');
+});
+
+test('listIssues History tags only the ends of a list of 3 reports and the current report', async () => {
+  const fs = await import('node:fs/promises');
+  const mixJSON = await fs.readFile(path.join(realUtil.reportsPath(), '260101T0000-mix.json'), 'utf8');
+  const report = JSON.parse(mixJSON);
+  report.jobData.endTime = '26-01-15T00:10';
+  const reportPath = path.join(realUtil.reportsPath(), '260115T0000-mid.json');
+  await fs.writeFile(reportPath, JSON.stringify(report));
+  try {
+    // From the middle report:
+    let items = getHistoryItems(getHistory((await answer('260115T0000/mid')).answerPage));
+    assert.equal(items.length, 3);
+    assert.match(items[0]!.text, /\(oldest\)$/);
+    assert.match(items[1]!.text, /^\d+ days? ago \(this report\)$/);
+    assert.equal(items[1]!.href, null);
+    assert.match(items[2]!.text, /\(latest\)$/);
+    // From the latest report:
+    items = getHistoryItems(getHistory((await answer('260202T0000/new')).answerPage));
+    assert.match(items[1]!.text, /^\d+ days? ago$/);
+    assert.equal(items[1]!.href, '/listIssues.html/260115T0000/mid');
+  }
+  finally {
+    await fs.unlink(reportPath);
+  }
+});

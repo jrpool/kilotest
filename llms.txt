@@ -4,8 +4,8 @@ Kilotest helps language models and AI platforms to give thorough, accurate and t
 
 ## API
 
-- [List all available reports](/api/listReports) (`GET`)
-- List all issues in one report: `/api/listIssues/{timeStamp}/{jobID}` (`GET`)
+- [List all tested pages, each with its latest report](/api/listPages) (`GET`)
+- List all issues in one report, and all reports about the same page: `/api/listIssues/{timeStamp}/{jobID}` (`GET`)
 - List all elements exhibiting one issue in one report: `/api/listViolators/{issueID}/{timeStamp}/{jobID}` (`GET`)
 - List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}` (`GET`)
 - Get one full report in JSON: `/api/getReport/{timeStamp}/{jobID}` (`GET`)
@@ -22,8 +22,8 @@ Kilotest helps language models and AI platforms to give thorough, accurate and t
 
 ## Web UI
 
-- [List all available reports](https://kilotest.com/listReports.html)
-- List all issues in one report: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
+- [List all tested pages, each linked to its latest report](https://kilotest.com/listPages.html)
+- List all issues in one report, and all reports about the same page: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
 - List all elements exhibiting one issue in one report: `https://kilotest.com/listViolators.html/{issueID}/{timeStamp}/{jobID}`
 - List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
 - Get one full report in JSON: `https://kilotest.com/fullReport.json/{timeStamp}/{jobID}`

@@ -1,7 +1,7 @@
 <!-- sitemap.xml -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://kilotest.com/</loc></url>
-  <url><loc>https://kilotest.com/listReports.html</loc></url>
+  <url><loc>https://kilotest.com/listPages.html</loc></url>
   <url><loc>https://kilotest.com/listTopIssues.html</loc></url>
   <url><loc>https://kilotest.com/requestNewTestForm.html</loc></url>
   <url><loc>https://kilotest.com/manage.html</loc></url>

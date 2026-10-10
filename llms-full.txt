@@ -59,8 +59,8 @@ In the marketplace for MCP servers that test for front-end quality, all servers 
 Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 - [Home page](https://kilotest.com/)
-- [Get summary test results for all tested pages](https://kilotest.com/listReports.html)
-- Get statistics about issues reported in one report: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
+- [Get a list of all tested pages, each linked to its latest report](https://kilotest.com/listPages.html)
+- Get statistics about issues reported in one report, and a history of all reports about the same page: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
 - Get details about one issue reported in one report: `https://kilotest.com/listViolators.html/{issueID}/{timeStamp}/{jobID}`
 - Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
 - [Recommend the testing of a not-yet-tested page](https://kilotest.com/requestNewTestForm.html)
@@ -76,19 +76,19 @@ In the specifications below, the term `report` refers to the records of one sess
 
 Kilotest offers these tools:
 
-- `listReports`
+- `listPages`
   - method: `GET`
-  - purpose: list all available reports
-  - path: `/api/listReports`
+  - purpose: list all tested pages, each with its latest report and its number of reports
+  - path: `/api/listPages`
   - caveat: Cached results are likely to be stale and should not be used
 - `listIssues`
   - method: `GET`
-  - purpose: list all issues in one report
+  - purpose: list all issues in one report, and all reports about the same page, from oldest to latest
   - path: `/api/listIssues/{timeStamp}/{jobID}`
   - parameters
     - `timeStamp`: initial segment of report identifier
     - `jobID`: final segment of report identifier
-  - source of parameters: response to a `listReports` request
+  - source of parameters: response to a `listPages` request, or the history of reports about the page in the response to a `listIssues` request
 - `listViolators`
   - method: `GET`
   - purpose: list all elements exhibiting one issue in one report
@@ -173,8 +173,8 @@ When you request a test or a retest:
   - approval followed by the requested testing
   - rejection
 - how to confirm approval
-  - check test completion by calling `listReports` and looking for the page and completion date in the list
-  - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listReports.html`
+  - check test completion by calling `listPages` and looking for the page and the completion date of its latest report in the list
+  - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listPages.html`
 
 For immediate testing without waiting for manual approval, use `orderNewTest` or `orderRetest` instead of `requestNewTest` or `requestRetest`. Each enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
 

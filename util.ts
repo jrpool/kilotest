@@ -866,6 +866,12 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   // Return the array, excluding extracts of superseded reports if so specified.
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
+// Returns extracts of all available reports about the page with a description, from oldest
+// to latest.
+export const getPageReportExtracts = async (description: string): Promise<ReportExtract[]> => {
+  const reportExtracts = await getReportExtracts();
+  return reportExtracts.filter(extract => extract.description === description);
+};
 // Returns whether a report with a description or URL is available.
 export const isReportAvailable = async (description: string, url: string): Promise<boolean> => {
   const reportExtracts = await getReportExtracts();

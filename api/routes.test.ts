@@ -23,7 +23,7 @@ test('routes includes all expected operation IDs', () => {
     'getReport',
     'listDiagnoses',
     'listIssues',
-    'listReports',
+    'listPages',
     'listViolators',
     'orderNewTest',
     'orderRetest',

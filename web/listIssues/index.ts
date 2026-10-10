@@ -6,6 +6,7 @@
 // IMPORTS
 
 import {
+  getPageReportExtracts,
   getReport,
   getTestActInstances,
   isReportError,
@@ -14,6 +15,7 @@ import {
 } from '../../util.ts';
 import type {UsableReport} from '../../util.ts';
 import {
+  getAgoString,
   getIssueFactsLines,
   getPageDataStrings,
   getPageFactsLines,
@@ -121,6 +123,47 @@ const getIssuesData = (report: UsableReport): ResultsSummary & Record<string, an
   // Return the data.
   return final;
 };
+// Returns the lines of the history of the reports about the page of a report.
+const getHistoryLines = async (
+  timeStamp: string, jobID: string, description: string, margin: string
+): Promise<string[]> => {
+  // Get extracts of all reports about the page, from oldest to latest.
+  const pageExtracts = await getPageReportExtracts(description);
+  const lastIndex = pageExtracts.length - 1;
+  // Initialize the list items and whether the report is the latest about the page.
+  const itemLines: string[] = [];
+  let isLatest = false;
+  // For each report about the page:
+  pageExtracts.forEach((extract, index) => {
+    const isThis = extract.timeStamp === timeStamp && extract.jobID === jobID;
+    isLatest ||= isThis && index === lastIndex;
+    // Get the tags that identify its position and whether it is this report.
+    const tags = [
+      index === 0 ? 'oldest' : '',
+      index === lastIndex ? 'latest' : '',
+      isThis ? 'this report' : ''
+    ]
+    .filter(tag => tag);
+    const tagString = tags.length ? ` (${tags.join('; ')})` : '';
+    const label = `${getAgoString(new Date(extract.reportTime))} ago${tagString}`;
+    // Add a list item describing it, linked unless it is this report, to the items.
+    const href = `/listIssues.html/${extract.timeStamp}/${extract.jobID}`;
+    const content = isThis ? label : `<a href="${href}">${label}</a>`;
+    itemLines.push(`${margin}  <li>${content}</li>`);
+  });
+  // Initialize the lines with a list of the reports, or a statement that there is only one.
+  const lines = itemLines.length > 1
+  ? [`${margin}<ol>`, ...itemLines, `${margin}</ol>`]
+  : [`${margin}<p>This is the only report about the page.</p>`];
+  // If the report is the latest about the page:
+  if (isLatest) {
+    // Add a link to the form for requesting a retest to the lines.
+    const href = `/requestRetestForm.html/${timeStamp}/${jobID}`;
+    lines.push(`${margin}<p><a href="${href}">Should Kilotest retest the page?</a></p>`);
+  }
+  // Return the lines.
+  return lines;
+};
 // Adds parameters to a query for the answer page.
 const populateQuery = async (timeStamp: string, jobID: string, query: Record<string, any>) => {
   // Get the report.
@@ -150,10 +193,9 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   const margin = ' '.repeat(6);
   // Add the page-facts list to the query.
   query.pageFacts = getPageFactsLines(pageInfo, issuesData, margin).join('\n');
+  // Add the history of reports about the page to the query.
+  query.history = (await getHistoryLines(timeStamp, jobID, description, margin)).join('\n');
   const {issues} = issuesData;
-  // Add report data to the query.
-  query.timeStamp = timeStamp;
-  query.jobID = jobID;
   // Add a summary of the issues to the query.
   query.highestCount = issues[4].length;
   query.highCount = issues[3].length;

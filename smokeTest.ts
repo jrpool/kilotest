@@ -14,10 +14,10 @@ import {mcpPath} from './mcp.ts';
 // Concrete paths matching each wildcard pattern in the routes table, for smoke testing.
 const concretePaths: Record<string, Record<string, string>> = {
   GET: {
-    '*.html*': '/listReports.html',
+    '*.html*': '/listPages.html',
     '/': '/',
     '/api-docs': '/api-docs',
-    '/api/*': '/api/listReports',
+    '/api/*': '/api/listPages',
     '/capability.md': '/capability.md',
     '/favicon.*': '/favicon.ico',
     '/fullReport.json/*': '/fullReport.json/260101T0000/mix',

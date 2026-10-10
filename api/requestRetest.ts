@@ -64,8 +64,8 @@ export const response = async (args: string[]) => {
         requestResult,
         {
           whatHappensNext: 'Your request is likely to be approved and processed within 1 hour to 1 day.',
-          howToCheck: 'You can call the listReports tool to learn whether the page has been retested and a new report is available.',
-          howWebUserChecks: `A web user can visit ${thisHost}/listReports.html to learn whether the page has been retested and a new report is available.`
+          howToCheck: 'You can call the listPages tool, or the listIssues tool on the current report, to learn whether the page has been retested and a new report is available.',
+          howWebUserChecks: `A web user can visit ${thisHost}/listPages.html to learn whether the page has been retested and a new report is available.`
         },
         {result: 'superseded', reason: 'a later report about a page with the same description is available.'}
       );

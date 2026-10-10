@@ -51,6 +51,17 @@ test('requestRetestForm shows the fallback message for a nonexistent report', as
   assert.ok(result.answerPage.includes('The specified page is not available for retesting'));
 });
 
+test('requestRetestForm dates the report by its completion time', async () => {
+  const result = await answer('260202T0000/new');
+  assert.ok(result.answerPage.includes('on 2026-02-02 at 00:10'));
+});
+
+test('requestRetestForm describes the time of a nonexistent report as unknown', async () => {
+  const result = await answer('999999T9999/nope');
+  assert.ok(result.answerPage.includes('an unknown number of days ago'));
+  assert.ok(result.answerPage.includes('on an unknown date at an unknown time'));
+});
+
 test('requestRetestForm includes the ago and dateTime placeholders replaced', async () => {
   const result = await answer('260202T0000/new');
   assert.ok(!result.answerPage.includes('__ago__'));

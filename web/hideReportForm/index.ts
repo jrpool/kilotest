@@ -8,6 +8,7 @@
 import {
   getReportExtracts, hiddenReportsPath, isValidAuthCode, populateTemplate, reportsPath
 } from '../../util.ts';
+import {getDateTimeString} from '../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -54,18 +55,19 @@ export const answer = async (_: any, search: string, method: string) => {
   const reportExtracts = await getReportExtracts();
   // For each report:
   for (const reportExtract of reportExtracts) {
-    const {jobID, timeStamp, description} = reportExtract;
+    const {jobID, timeStamp, description, reportTime} = reportExtract;
     // Add the report to the array.
     reportSpecs.push({
       description,
       timeStamp,
-      jobID
+      jobID,
+      reportTime
     });
   }
-  // Sort the data by page name and then by time stamp.
+  // Sort the data by page name and then by completion time.
   reportSpecs.sort((a, b) => {
     if (a.description === b.description) {
-      return a.timeStamp.localeCompare(b.timeStamp);
+      return a.reportTime.localeCompare(b.reportTime);
     }
     return a.description.localeCompare(b.description);
   });
@@ -73,8 +75,9 @@ export const answer = async (_: any, search: string, method: string) => {
   const margin = ' '.repeat(12);
   // For each available report:
   reportSpecs.forEach(spec => {
-    const {jobID, timeStamp, description} = spec;
-    const specString = `${description} (job <code>${jobID}</code> at ${timeStamp})`;
+    const {jobID, timeStamp, description, reportTime} = spec;
+    const when = getDateTimeString(new Date(reportTime));
+    const specString = `${description} (job <code>${timeStamp}-${jobID}</code> completed ${when})`;
     // Add a line with a radio button to hide it.
     lines.push(
       `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`

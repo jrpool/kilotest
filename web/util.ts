@@ -12,7 +12,7 @@ import {
   alphaCompare,
   getAgoDays,
   getDateString,
-  getDateTime,
+  getReportEndTime,
   getReportExtracts,
   getTestActInstances,
   getTestActs,
@@ -56,8 +56,6 @@ export type ReportData = {
   description: string;
   url: string;
   jobName: unknown;
-  creationDate: Date | null;
-  daysAgo: number | null;
   issueCount: number;
   engineNames: string[];
   engineCount: number;
@@ -95,9 +93,9 @@ export const checkCommentLength = (
 const fragmentEncode = (string: string) => {
   return encodeURIComponent(string).replace(/-/g, '%2D');
 };
-// Returns a string describing the time in days since a time stamp.
-export const getAgoString = (timeStamp: string): string => {
-  const agoDays = getAgoDays(timeStamp);
+// Returns a string describing the time in days since a time stamp or date.
+export const getAgoString = (timeArg: string | Date): string => {
+  const agoDays = getAgoDays(timeArg);
   if (agoDays === null) {
     return 'an unknown number of days';
   }
@@ -111,8 +109,20 @@ const getTimeString = (timeStamp: string) => {
   // Return the time string if valid, or null if not.
   return (!isNaN(Date.parse(`2000-01-01T${timeString}Z`))) ? timeString : null;
 };
-// Returns a date-and-time string.
-export const getDateTimeString = (timeStamp: string): string => {
+// Returns a date-and-time string from a time stamp or date.
+export const getDateTimeString = (timeArg: string | Date): string => {
+  let timeStamp: string;
+  // If the argument is a date:
+  if (timeArg instanceof Date) {
+    // Convert it to a time stamp, or to an invalid one if the date is invalid.
+    timeStamp = isNaN(timeArg.getTime())
+      ? ''
+      : timeArg.toISOString().slice(2, 16).replace(/[-:]/g, '');
+  }
+  // Otherwise, i.e. if it is a time stamp:
+  else {
+    timeStamp = timeArg;
+  }
   const dateString = getDateString(timeStamp) || 'an unknown date';
   const timeString = getTimeString(timeStamp) || 'an unknown time';
   const dateTimeString = `${dateString} at ${timeString}`;
@@ -178,15 +188,11 @@ export const getEngineIDs = (report: any) => {
 };
 // Returns basics about an available report.
 export const getReportData = (report: UsableReport): ReportData => {
-  // Identify the report by the time stamp at the start of its job name.
-  const timeStamp = report.id.slice(0, 11);
   // Initialize the data.
   const data = {
     description: report.target.what,
     url: report.target.url,
     jobName: report.id,
-    creationDate: getDateTime(timeStamp),
-    daysAgo: getAgoDays(timeStamp),
     issueCount: 0,
     engineNames: [] as string[],
     engineCount: 0,
@@ -245,9 +251,8 @@ export const getReportData = (report: UsableReport): ReportData => {
 // Returns page data from an available report.
 export const getPageData = (report: UsableReport): PageData => {
   const {what: description, url} = report.target;
-  // Get the elapsed time in days since the report was completed, using the
-  // report content rather than the file system birth time.
-  const daysAgo = getAgoDays(new Date(`20${report.jobData.endTime}Z`));
+  // Get the elapsed time in days since the report was completed.
+  const daysAgo = getAgoDays(getReportEndTime(report));
   // Return the data.
   return {
     description,
@@ -258,8 +263,8 @@ export const getPageData = (report: UsableReport): PageData => {
 // Gets HTML strings for page data from a report.
 export const getPageDataStrings = (report: UsableReport): PageDataStrings => {
   const {daysAgo, url, description} = getPageData(report);
-  // Get a description of the time stamp at the start of the job name.
-  const when = getDateTimeString(report.id.slice(0, 11));
+  // Get a description of the completion time of the report.
+  const when = getDateTimeString(getReportEndTime(report));
   // Return the HTML strings.
   return {
     description,

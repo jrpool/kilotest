@@ -6,8 +6,9 @@
 // IMPORTS
 
 import {
-  hiddenReportsPath, isValidAuthCode, populateTemplate, readdirOrCreate, reportsPath
+  getReportEndTime, hiddenReportsPath, isValidAuthCode, populateTemplate, readdirOrCreate, reportsPath
 } from '../../util.ts';
+import {getDateTimeString} from '../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -64,13 +65,14 @@ export const answer = async (_: any, search: string, method: string) => {
     reportsData.push({
       description,
       timeStamp,
-      jobID
+      jobID,
+      reportTime: getReportEndTime(report)
     });
   }
-  // Sort the data by page name and then by time stamp.
+  // Sort the data by page name and then by completion time.
   reportsData.sort((a, b) => {
     if (a.description === b.description) {
-      return a.timeStamp.localeCompare(b.timeStamp);
+      return a.reportTime.getTime() - b.reportTime.getTime();
     }
     return a.description.localeCompare(b.description, 'en', {sensitivity: 'base'});
   });
@@ -78,8 +80,9 @@ export const answer = async (_: any, search: string, method: string) => {
   const margin = ' '.repeat(12);
   // For each report:
   reportsData.forEach(data => {
-    const {jobID, timeStamp, description} = data;
-    const specString = `${description} (job <code>${jobID}</code> at ${timeStamp})`;
+    const {jobID, timeStamp, description, reportTime} = data;
+    const when = getDateTimeString(reportTime);
+    const specString = `${description} (job <code>${timeStamp}-${jobID}</code> completed ${when})`;
     // Add a line with a radio button to unhide it.
     lines.push(
       `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`

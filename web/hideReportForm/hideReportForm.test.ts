@@ -53,6 +53,11 @@ test('hideReportForm displays a list of reports on a GET request', async () => {
   assert.ok(radios.length > 0);
 });
 
+test('hideReportForm describes each report by its completion time', async () => {
+  const result: any = await answer(null, '', 'GET');
+  assert.ok(result.answerPage.includes('(job <code>260202T0000-new</code> completed 2026-02-02 at 00:10)'));
+});
+
 test('hideReportForm ignores a report query string on a GET request', async () => {
   const reportPath = path.join(reportsPath(), '260101T0009-brd.json');
   const hiddenPath = path.join(hiddenReportsPath(), '260101T0009-brd.json');

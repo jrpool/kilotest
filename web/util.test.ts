@@ -129,7 +129,7 @@ const getFixtureReport = async (timeStamp: string, jobID: string) => {
 
 test('getPageData returns page data for a valid report', async () => {
   const data = getPageData(await getFixtureReport('260101T0000', 'mix'));
-  assert.equal(data.description, 'Mixed Outcomes Page');
+  assert.equal(data.description, 'Mixed Outcomes');
   assert.equal(data.url, 'https://example.com/mixed');
   assert.equal(typeof data.daysAgo, 'number');
 });
@@ -141,7 +141,7 @@ test('getReport returns an error for a nonexistent report', async () => {
 
 test('getPageDataStrings returns HTML strings for a valid report', async () => {
   const strings = getPageDataStrings(await getFixtureReport('260101T0000', 'mix'));
-  assert.equal(strings.description, 'Mixed Outcomes Page');
+  assert.equal(strings.description, 'Mixed Outcomes');
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
   assert.ok(strings.testInfo.includes('by job <code>260101T0000-mix</code>'));

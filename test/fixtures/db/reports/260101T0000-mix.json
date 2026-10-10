@@ -1,6 +1,6 @@
 {
   "id": "260101T0000-mix",
-  "what": "Mixed Outcomes Page",
+  "what": "Mixed Outcomes",
   "strict": false,
   "standard": "only",
   "device": {
@@ -10,7 +10,7 @@
   "creationTimeStamp": "260101T0000",
   "executionTimeStamp": "260101T0000",
   "target": {
-    "what": "Mixed Outcomes Page",
+    "what": "Mixed Outcomes",
     "url": "https://example.com/mixed"
   },
   "sources": {

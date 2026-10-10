@@ -123,7 +123,7 @@ test('answer returns an error when a report already exists for the page', {timeo
   const {answer} = await import('./index.ts');
   // The fixture database already has a report for this description and URL.
   const result: any = await answer(
-    'Mixed Outcomes Page', 'https://example.com/mixed', 'Because accessibility'
+    'Mixed Outcomes', 'https://example.com/mixed', 'Because accessibility'
   );
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'A report about a page with the same description or URL is already available');

@@ -200,7 +200,7 @@ test('listDiagnoses returns an error for an unknown issue with a valid report', 
 
 test('listDiagnoses returns an error when report facts are not obtained', async () => {
   pageDataStringsOverride = {
-    what: 'Mixed Outcomes Page',
+    what: 'Mixed Outcomes',
     url: 'https://example.com/mixed',
     urlLink: '<a href="https://example.com/mixed">https://example.com/mixed</a>'
   };

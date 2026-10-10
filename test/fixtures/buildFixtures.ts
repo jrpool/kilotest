@@ -136,7 +136,7 @@ const main = async () => {
   ];
   await writeJSON(
     path.join(reportsDir, '260101T0000-mix.json'),
-    report('260101T0000-mix', 'Mixed Outcomes Page',
+    report('260101T0000-mix', 'Mixed Outcomes',
       'https://example.com/mixed', mixedActs, mixedCatalog)
   );
 
@@ -188,7 +188,7 @@ const main = async () => {
   ];
   await writeJSON(
     path.join(reportsDir, '260202T0000-new.json'),
-    report('260202T0000-new', 'Mixed Outcomes Page',
+    report('260202T0000-new', 'Mixed Outcomes',
       'https://example.com/mixed', newerActs, mixedCatalog, '26-02-02T00:10')
   );
 

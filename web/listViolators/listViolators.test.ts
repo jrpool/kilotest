@@ -188,7 +188,7 @@ test('listViolators includes take-me-there links for text-linkable violators', a
 
 test('listViolators returns an error when report facts are not obtained', async () => {
   pageDataStringsOverride = {
-    what: 'Mixed Outcomes Page',
+    what: 'Mixed Outcomes',
     url: 'https://example.com/mixed',
     urlLink: '<a href="https://example.com/mixed">https://example.com/mixed</a>'
   };

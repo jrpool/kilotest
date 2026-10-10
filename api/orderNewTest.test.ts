@@ -115,7 +115,7 @@ test('orderNewTest rejects a URL that redirects to a disallowed target, and aler
 });
 
 test('orderNewTest rejects an already-tested page', async () => {
-  const body = await response(['Mixed Outcomes Page', 'https://example.com/mixed', 'A reason that is long enough.']);
+  const body = await response(['Mixed Outcomes', 'https://example.com/mixed', 'A reason that is long enough.']);
   const details = body['response content']['details about your order'] as any;
   assert.equal(details.error, undefined);
   const disposition = body['response content']['disposition of your order'] as any;

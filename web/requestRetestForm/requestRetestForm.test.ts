@@ -35,7 +35,7 @@ test('requestRetestForm returns ok with the page name for a valid report', async
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
   const title = html.querySelector('title')?.text;
-  assert.ok(title?.includes('Mixed Outcomes Page'));
+  assert.ok(title?.includes('Mixed Outcomes'));
 });
 
 test('requestRetestForm populates the form action with the timeStamp and jobID', async () => {

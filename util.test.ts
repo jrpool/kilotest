@@ -769,14 +769,14 @@ test('processTestRequest returns a duplicate error for a repeated request', {tim
 test('processTestRequest returns a reportExists error when a report already exists for the page', async () => {
   // The fixture database already has a report for this description and URL.
   const {result} = await processTestRequest(
-    'because accessibility', {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}
+    'because accessibility', {description: 'Mixed Outcomes', url: 'https://example.com/mixed'}
   );
   assert.equal(result, 'reportExists');
 });
 
 test('processTestRequest returns a reportExists error when a report exists about a page with the same description', async () => {
   const {result} = await processTestRequest(
-    'because accessibility', {description: 'Mixed Outcomes Page', url: 'https://example.com/drifted'}
+    'because accessibility', {description: 'Mixed Outcomes', url: 'https://example.com/drifted'}
   );
   assert.equal(result, 'reportExists');
 });
@@ -908,7 +908,7 @@ test('annotateReportObject handles a test act with no standardResult', async () 
 });
 
 test('isReportAvailable returns true for a known page description', async () => {
-  const result = await isReportAvailable('Mixed Outcomes Page', 'https://example.com/nonexistent');
+  const result = await isReportAvailable('Mixed Outcomes', 'https://example.com/nonexistent');
   assert.equal(result, true);
 });
 
@@ -1435,7 +1435,7 @@ test('getReportExtract returns an extract for a valid report', async () => {
   const extract = await getReportExtract('260101T0000', 'mix') as any;
   assert.equal(extract.timeStamp, '260101T0000');
   assert.equal(extract.jobID, 'mix');
-  assert.equal(extract.description, 'Mixed Outcomes Page');
+  assert.equal(extract.description, 'Mixed Outcomes');
   assert.equal(extract.url, 'https://example.com/mixed');
   assert.ok(extract.reportTime);
 });
@@ -1455,7 +1455,7 @@ test('getReportExtracts returns extracts of all available reports', async () => 
 
 test('getReportExtracts with onlyLatest returns only the latest report for each page', async () => {
   const latest = await getReportExtracts(true);
-  const mixReports = latest.filter(e => e.description === 'Mixed Outcomes Page');
+  const mixReports = latest.filter(e => e.description === 'Mixed Outcomes');
   assert.equal(mixReports.length, 1);
   assert.equal(mixReports[0]!.timeStamp, '260202T0000');
 });
@@ -1473,7 +1473,7 @@ test('getReportExtracts reflects reports added, modified, and removed after a pr
     const firstPath = path.join(tmpReportsDir, '260101T0000-aaa.json');
     await fs.writeFile(firstPath, JSON.stringify(report));
     let extracts = await getReportExtracts();
-    assert.deepEqual(extracts.map(e => e.description), ['Mixed Outcomes Page']);
+    assert.deepEqual(extracts.map(e => e.description), ['Mixed Outcomes']);
     // Modify the report and give it a later modification time, as reannotation would.
     report.target.what = 'Revised Page';
     await fs.writeFile(firstPath, JSON.stringify(report));
@@ -1768,14 +1768,14 @@ test('orderJob enqueues a new-page order directly into the job queue', async () 
 
 test('orderJob returns a reportExists error when a report already exists for the ordered page', async () => {
   const {result} = await orderJob(
-    {description: 'Mixed Outcomes Page', url: 'https://example.com/mixed'}, 'because accessibility matters here'
+    {description: 'Mixed Outcomes', url: 'https://example.com/mixed'}, 'because accessibility matters here'
   );
   assert.equal(result, 'reportExists');
 });
 
 test('orderJob returns a reportExists error when a report exists about a page with the same description', async () => {
   const {result} = await orderJob(
-    {description: 'Mixed Outcomes Page', url: 'https://example.com/drifted'}, 'because accessibility matters here'
+    {description: 'Mixed Outcomes', url: 'https://example.com/drifted'}, 'because accessibility matters here'
   );
   assert.equal(result, 'reportExists');
 });
@@ -1841,7 +1841,7 @@ test('orderJob returns "nonreport" when a retest order cites a report that does 
 });
 
 test('orderJob returns "superseded" when a retest order cites a superseded report', async () => {
-  // 260101T0000-mix is an earlier report of "Mixed Outcomes Page" than 260202T0000-new,
+  // 260101T0000-mix is an earlier report of "Mixed Outcomes" than 260202T0000-new,
   // so it is superseded.
   const {result} = await orderJob(
     {timeStamp: '260101T0000', jobID: 'mix'}, 'because accessibility matters here'
@@ -1854,12 +1854,12 @@ test('orderJob enqueues a retest order for the latest report of a page', async (
     {timeStamp: '260202T0000', jobID: 'new'}, 'because accessibility matters here'
   ) as any;
   assert.equal(result, 'ok');
-  assert.equal(description, 'Mixed Outcomes Page');
+  assert.equal(description, 'Mixed Outcomes');
   assert.equal(url, 'https://example.com/mixed');
   const queuedPath = path.join(jobsPath(), 'queue', `${jobID}.json`);
   try {
     const job = JSON.parse(await fs.readFile(queuedPath, 'utf8'));
-    assert.equal(job.target.what, 'Mixed Outcomes Page');
+    assert.equal(job.target.what, 'Mixed Outcomes');
   }
   finally {
     await fs.unlink(queuedPath);

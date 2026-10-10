@@ -38,7 +38,7 @@ test('listPages returns one entry per tested page, sorted by page description', 
       'All CantTell Page',
       'Branch Coverage Page',
       'Empty Results Page',
-      'Mixed Outcomes Page',
+      'Mixed Outcomes',
       'Multi Violator Page',
       'No Outcomes Page',
       'Prevented Page'
@@ -56,7 +56,7 @@ test('listPages does not include the page of the hidden report', async () => {
 test('listPages describes a multi-report page by its latest report and its report count', async () => {
   const body = await response();
   const pagesBasics = body['response content']['basics about all tested pages'];
-  const mixed = pagesBasics.find(b => b['tested web page'].description === 'Mixed Outcomes Page')!;
+  const mixed = pagesBasics.find(b => b['tested web page'].description === 'Mixed Outcomes')!;
   assert.equal(mixed['number of reports about the page'], 2);
   const latest = mixed['basics about the latest report'];
   assert.equal(latest.identifier, '260202T0000-new');

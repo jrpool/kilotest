@@ -323,7 +323,19 @@ Both logs are rotated; see “PM2 log rotation” above for the application log 
 
 ## Version management
 
-When a new version of the `kilotest` package has been published, the service can be updated as follows:
+When the Kilotest web, API, or MCP interface is revised in a feature branch:
+
+1. Update the version in `package.json`
+1. Update the version in `server.json`
+1. Update the version and any changes in the API in `lhm.plugin.json`
+1. If the API has changed, run the `generate:openapi` script
+1. Execute the command `npx @lobehub/market-cli plugin update --dir .`
+1. Commit and push the changes to the feature branch
+1. Create a pull request to merge the feature branch into `main`
+1. Once the checks succeed, squash and merge the branch into `main`
+1. Execute `npm publish`
+
+When a new version of the `kilotest` package has been published, update the service as follows:
 
 1. Connect to the server: `ssh linuxuser@kilotest.com`
 1. Navigate to the package root: `cd /opt/jpdev/kilotest`
@@ -331,7 +343,6 @@ When a new version of the `kilotest` package has been published, the service can
 1. Delete the record of that discard: `git stash drop`
 1. Fetch and merge the new version: `git pull`
 1. Update the dependencies: `npm update`
-1. Update the Playwright browsers: `npx playwright install`
 1. Restart the service: `pm2 restart kilotest`
 
 ## Branch protection

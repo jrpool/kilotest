@@ -39,6 +39,7 @@ export type PageDataStrings = {
   url: string;
   urlLink: string;
   testInfo: string;
+  fullReportLink: string;
   error?: never;
 };
 // Counts summarizing the results of an available report.
@@ -269,7 +270,8 @@ export const getPageDataStrings = (report: UsableReport): PageDataStrings => {
     description,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${report.id}</code>`
+    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${report.id}</code>`,
+    fullReportLink: `<a href="/fullReport.json/${report.id.replace('-', '/')}">Download the full technical report</a> (JSON)`
   };
 };
 // Returns the lines of a list of facts about the page of an available report.
@@ -295,6 +297,7 @@ export const getPageFactsLines = (
   `${margin}      <li>Issues: ${summary.issueCount}</li>`,
   `${margin}    </ul>`,
   `${margin}  </li>`,
+  `${margin}  <li>${strings.fullReportLink}</li>`,
   `${margin}</ul>`
 ];
 // Returns the lines of a list of facts about an issue in an available report.

@@ -221,6 +221,17 @@ test('getPageFactsLines returns the about-page list lines for a report', async (
   assert.ok(html.includes('<li>Issues: 2</li>'));
 });
 
+test('getPageFactsLines ends with a link to download the full report', async () => {
+  const {getReportData} = await import('./util.ts');
+  const report = await getFixtureReport('260101T0000', 'mix');
+  const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
+  const topItems = parse(lines.join('\n')).querySelectorAll('ul:not(ul ul) > li');
+  const lastItem = topItems[topItems.length - 1]!;
+  assert.ok(topItems[topItems.length - 2]!.text.trim().startsWith('Summary of results:'));
+  assert.equal(lastItem.querySelector('a')?.getAttribute('href'), '/fullReport.json/260101T0000/mix');
+  assert.equal(lastItem.text.trim(), 'Download the full technical report (JSON)');
+});
+
 // Returns the 3 rule-engine amounts and the 3 summary amounts of the page facts of a report.
 const getResultFacts = async (timeStamp: string, jobID: string) => {
   const {getReportData} = await import('./util.ts');

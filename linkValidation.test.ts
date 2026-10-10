@@ -41,7 +41,7 @@ const htmlRoutes = [
   '/tutorialAI.html',
   '/tutorialWebComment.html',
   '/tutorialAIComment.html',
-  '/listReports.html',
+  '/listPages.html',
   '/listTopIssues.html',
   '/listIssues.html',
   '/listDiagnoses.html',
@@ -178,7 +178,7 @@ test('Internal links in index.html resolve to expected paths', () => {
   const expectedLinks = [
     '/tutorialWeb.html',
     '/tutorialAI.html',
-    '/listReports.html',
+    '/listPages.html',
     '/listTopIssues.html',
     '/manage.html',
     '/mcp',

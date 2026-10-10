@@ -209,5 +209,5 @@ test('orderNewTest response omits a web UI URL for this request but includes the
   const body = await response(['Brand New Ordered Page 2', 'https://example.com/brandnewordered2', 'A reason that is long enough.']);
   const similarWeb = body['URLs of similar requests for web users'] as any;
   assert.equal(similarWeb['this request'], null);
-  assert.ok(similarWeb['closest ancestor request'].includes('listReports.html'));
+  assert.ok(similarWeb['closest ancestor request'].includes('listPages.html'));
 });

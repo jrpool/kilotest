@@ -15,7 +15,7 @@ import {
   objectSort,
   ruleEngines
 } from '../util.ts';
-import type {ReportExtract, TestRequestResult} from '../util.ts';
+import type {TestRequestResult} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // TYPES
@@ -51,9 +51,9 @@ export const getResponseMetadata = () => ({
 export const getToolsFacts = () => ({
   'name': 'Kilotest',
   'description': {
-    'what Kilotest does': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against about 1300 rules defined by an ensemble of twelve rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 380 issues. Kilotest makes facts about the issues and the violations retrievable at four levels of granularity.',
+    'what Kilotest does': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and standards conformity) of web pages. A Kilotest job generates findings by using Testaro to test a page against about 1300 rules defined by an ensemble of twelve rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 380 issues. Kilotest makes facts about the tested pages, the issues, and the violations retrievable at four levels of granularity.',
     'how to retrieve findings': {
-      'level 1': 'Use the listReports tool to get a list of available reports.',
+      'level 1': 'Use the listPages tool to get a list of tested pages, each with its latest report. The listIssues output about any report lists all reports about the same page.',
       'level 2': 'Use the listIssues tool to get a list of issues in one report.',
       'level 3': 'Use the listViolators tool to get a list of elements on one page that were reported in one report as exhibiting one issue.',
       'level 4': 'Use the listDiagnoses tool to get a list of diagnoses of how one element on one page exhibited one issue in one report.',
@@ -62,7 +62,7 @@ export const getToolsFacts = () => ({
       'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested.',
       'retesting': 'If the listIssues tool shows that the latest report about a page is obsolete, because the page has been revised or for another reason, use the requestRetest tool to request that the page be retested.',
       'latency': 'Requests for testing and retesting are usually approved and fulfilled within one day.',
-      'confirmation': 'Use the listReports tool to determine whether a requested new report exists. There is currently no process for notification of the outcome of requests.'
+      'confirmation': 'Use the listPages tool to determine whether a requested new report exists. There is currently no process for notification of the outcome of requests.'
     }
   },
   'URL': `${getThisHost()}/mcp`,
@@ -131,49 +131,30 @@ export const getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
   objectSort(ruleEnginesFacts, 'name', 'alpha');
   return ruleEnginesFacts;
 };
-// Returns the basics about a report.
-// Accepts an optional precomputed extract to avoid redundant reads when called
-// in a loop over all reports (e.g. by listReports). When the extract comes from
-// getReportExtracts, it carries a superseded flag; otherwise the flag is computed.
-// With an extract provided, failure is impossible, so the return type narrows
-// to ReportBasics; without one, an error object may be returned.
-// XXX Why are these overloads necessary? Can't we just have one function?
-export function getReportBasics(
-  timeStamp: string, jobID: string, extract: ReportExtract
-): Promise<ReportBasics>;
-export function getReportBasics(
-  timeStamp: string, jobID: string, extract?: ReportExtract | null
-): Promise<ReportBasics | {error: string}>;
-export async function getReportBasics(
-  timeStamp: string, jobID: string, extract: ReportExtract | null = null
-): Promise<ReportBasics | {error: string}> {
-  const extractProvided = !!extract;
-  // If an extract was not provided, verify the report exists and read it.
-  if (!extract) {
-    // Get the creation time of the report.
-    const reportStats = await getReportStats(timeStamp, jobID);
-    // If the  report does not exist:
-    if (!reportStats) {
-      // Log and return this.
-      console.error(`Report ${timeStamp}-${jobID} does not exist.`);
-      return {
-        error: `Report ${timeStamp}-${jobID} could not be retrieved.`
-      };
-    }
-    // Otherwise, i.e. if it exists, get an extract of the report.
-    const fetchedExtract = await getReportExtract(timeStamp, jobID);
-    // If this failed, return why.
-    if ('error' in fetchedExtract) {
-      return fetchedExtract;
-    }
-    extract = fetchedExtract;
+// Returns the basics about a report, or an error object if the report cannot be read.
+export const getReportBasics = async (
+  timeStamp: string, jobID: string
+): Promise<ReportBasics | {error: string}> => {
+  // Verify that the report exists.
+  const reportStats = await getReportStats(timeStamp, jobID);
+  // If it does not exist:
+  if (!reportStats) {
+    // Log and return this.
+    console.error(`Report ${timeStamp}-${jobID} does not exist.`);
+    return {
+      error: `Report ${timeStamp}-${jobID} could not be retrieved.`
+    };
+  }
+  // Otherwise, i.e. if it exists, get an extract of the report.
+  const extract = await getReportExtract(timeStamp, jobID);
+  // If this failed, return why.
+  if ('error' in extract) {
+    return extract;
   }
   const {url, description, reportTime} = extract;
   // Get whether this report has been superseded.
-  const isSuperseded = extractProvided
-    ? extract.superseded === true
-    : (await getReportExtracts(true))
-      .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
+  const isSuperseded = (await getReportExtracts(true))
+  .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
   // Get the basics about the report.
   const basics = {
     identifier: `${timeStamp}-${jobID}`,
@@ -187,7 +168,7 @@ export async function getReportBasics(
   };
   // Return them.
   return basics;
-}
+};
 // Returns the specification of an issue.
 export const getIssueSpec = (issueID: string) => {
   // Get the issue specification.

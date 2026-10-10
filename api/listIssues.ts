@@ -16,7 +16,14 @@ import {
   getThisHost
 } from './util.ts';
 import {
-  getReport, getReportStats, getTestActInstances, getTestActs, isReportError, objectSort
+  getAgoDays,
+  getPageReportExtracts,
+  getReport,
+  getReportStats,
+  getTestActInstances,
+  getTestActs,
+  isReportError,
+  objectSort
 } from '../util.ts';
 import {listIssuesResponseSchema} from './schemas.ts';
 
@@ -38,6 +45,7 @@ export const response = async (args: string[]) => {
   // Initialize the response content.
   const responseContent: ResponseContent = {
     'basics about the report': reportBasics,
+    'history of reports about the page': null,
     'details about the report': null,
     'how to request that the page be retested': null,
     'how a web user can request that the page be retested': null,
@@ -55,6 +63,28 @@ export const response = async (args: string[]) => {
         device = {id: 'default'},
         browserID = null
       } = report;
+      // Get extracts of all reports about the page, from oldest to latest.
+      const pageExtracts = await getPageReportExtracts(report.target.what);
+      const lastIndex = pageExtracts.length - 1;
+      // Add the history of reports about the page to the response content.
+      responseContent['history of reports about the page'] = pageExtracts.map((extract, index) => {
+        const extractTimeStamp = extract.timeStamp;
+        const extractJobID = extract.jobID;
+        return {
+          identifier: `${extractTimeStamp}-${extractJobID}`,
+          'completion date and time': extract.reportTime,
+          'days since the report was completed': getAgoDays(new Date(extract.reportTime)),
+          'whether it is the oldest report about the page': index === 0,
+          'whether it is the latest report about the page': index === lastIndex,
+          'whether it is the report described in this response':
+          extractTimeStamp === timeStamp && extractJobID === jobID,
+          'how to get details about the report': {
+            method: 'GET' as const,
+            URL: `${thisHost}/api/listIssues/${extractTimeStamp}/${extractJobID}`
+          },
+          'web users can get details about the report at': `${thisHost}/listIssues.html/${extractTimeStamp}/${extractJobID}`
+        };
+      });
       // Get details about the job definition.
       const jobDefinitionDetails = {
         'whether the job prohibited redirection': strict,
@@ -159,7 +189,7 @@ export const response = async (args: string[]) => {
       if (reportBasics['whether a later report about the same page exists']) {
         // Add information about requesting a retest to the response content.
         responseContent['how to request that the page be retested'] = {
-          notice: 'A later report about the same page already exists. The listIssues output about that report includes instructions for requesting a retest.'
+          notice: 'A later report about the same page already exists (see the history of reports about the page). The listIssues output about the latest report includes instructions for requesting a retest.'
         };
       }
       // Otherwise, i.e. if the report has not been superseded:
@@ -172,7 +202,7 @@ export const response = async (args: string[]) => {
             reason: '20- to 100-character reason why the page should be retested'
           },
           'how to check whether the request has been fulfilled':
-          'use the listReports tool to determine whether a report about the page has become available (typical wait time: 1 hour to 1 day)'
+          'use the listPages tool to determine whether a later report about the page has become available (typical wait time: 1 hour to 1 day)'
         };
         // Add instructions for a web user to request a retest.
         responseContent['how a web user can request that the page be retested'] = {
@@ -207,19 +237,19 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'listIssues',
     'this request': {
-      description: 'Provide details about one report, including basics about the issues reported in it. The timeStamp and jobID parameters identify the report that I want details about. Those parameters were in the response to my earlier listReports request.',
+      description: 'Provide details about one report, including basics about the issues reported in it. The timeStamp and jobID parameters identify the report that I want details about. Those parameters were in the response to my earlier listPages request, or in the history of reports about the page in an earlier listIssues response.',
       method: 'GET',
       URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
       'closest ancestor request': {
-        'tool name': 'listReports',
-        description: 'Provide basics about all available reports.',
+        'tool name': 'listPages',
+        description: 'Provide basics about all tested pages.',
         method: 'GET',
-        URL: `${thisHost}/api/listReports`,
+        URL: `${thisHost}/api/listPages`,
       }
     },
     'URLs of similar requests for web users': {
       'this request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`,
-      'closest ancestor request': `${thisHost}/listReports.html`
+      'closest ancestor request': `${thisHost}/listPages.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

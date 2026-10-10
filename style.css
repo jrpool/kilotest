@@ -180,20 +180,20 @@ ul {
 ul.pseudoTopLevel {
   list-style: disc;
 }
-ul.nav {
-  padding-inline-start: 0.25rem;
-}
-ul.nav li, ul.headed li {
-  list-style: none;
-}
-ul.nav li > a {
+ul.links li > a, ul.nav li > a {
   display: block;
   box-sizing: border-box;
   min-height: 44px;
   min-width: 44px;
   margin-right: 1rem;
-  padding-left: 1rem;
+  padding-left: 0.25rem;
   padding-top: 0.5rem;
+}
+ul.nav {
+  padding-inline-start: 0.25rem;
+}
+ul.nav li, ul.headed li {
+  list-style: none;
 }
 ul.whereList {
   margin-left: 2rem;

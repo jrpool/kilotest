@@ -43,7 +43,7 @@ export const getReportSchema = {
 
 // requestNewTest: POST /api/requestNewTest
 export const requestNewTestSchema = {
-  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listReports output'),
+  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listPages output'),
   URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
 };
@@ -62,7 +62,7 @@ export const requestFeatureSchema = {
 
 // orderNewTest: POST /api/orderNewTest
 export const orderNewTestSchema = {
-  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listReports output'),
+  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listPages output'),
   URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
 };
@@ -80,7 +80,7 @@ export const awaitTestSchema = {
   jobID: z.string().describe('Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)')
 };
 
-// listReports takes no input; omitted (mcp.ts already uses inputSchema: {}).
+// listPages takes no input; omitted (mcp.ts already uses inputSchema: {}).
 
 // RESPONSE SCHEMAS
 
@@ -194,10 +194,20 @@ const issueBasicsOrErrorSchema = z.union([
   z.object({error: z.string()})
 ]).meta({id: 'IssueBasicsOrError'});
 
-export const listReportsResponseSchema = envelope('GET', z.object({
-  'basics about all available reports': z.array(reportBasicsSchema.extend({
-    'how to get details about the report': z.object({method: z.literal('GET'), URL: z.string()}),
-    'web users can get details about the report at': z.string()
+// Facts about a report among those about one page.
+const reportTimeSchema = z.object({
+  identifier: z.string().describe('timeStamp-jobID identifier of the report.'),
+  'completion date and time': z.string(),
+  'days since the report was completed': z.number().nullable()
+});
+
+export const listPagesResponseSchema = envelope('GET', z.object({
+  'basics about all tested pages': z.array(z.object({
+    'tested web page': z.object({description: z.string(), URL: z.string()}),
+    'number of reports about the page': z.number(),
+    'basics about the latest report': reportTimeSchema,
+    'how to get details about the latest report': z.object({method: z.literal('GET'), URL: z.string()}),
+    'web users can get details about the latest report at': z.string()
   })),
   'how to request that a page with no report be tested': z.object({
     method: z.literal('POST'),
@@ -210,6 +220,13 @@ export const listReportsResponseSchema = envelope('GET', z.object({
 
 export const listIssuesResponseSchema = envelope('GET', z.object({
   'basics about the report': reportBasicsOrErrorSchema,
+  'history of reports about the page': z.array(reportTimeSchema.extend({
+    'whether it is the oldest report about the page': z.boolean(),
+    'whether it is the latest report about the page': z.boolean(),
+    'whether it is the report described in this response': z.boolean(),
+    'how to get details about the report': z.object({method: z.literal('GET'), URL: z.string()}),
+    'web users can get details about the report at': z.string()
+  })).nullable().describe('All reports about the same page, from oldest to latest, or null if the report is unavailable.'),
   'details about the report': z.object({
     'job definition': z.object({
       'whether the job prohibited redirection': z.unknown().describe('Copied from the report (strict); type not guaranteed.'),

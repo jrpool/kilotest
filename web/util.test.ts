@@ -9,6 +9,7 @@ import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import {parse} from 'node-html-parser';
 import {getReport, isReportError, reportsPath} from '../util.ts';
 import {
   checkCommentLength,
@@ -17,7 +18,6 @@ import {
   getDateTimeString,
   getEngineIDs,
   getEngineNamesString,
-  getMultiReportWhats,
   getPageData,
   getPageDataStrings,
   getPageFactsLines,
@@ -115,7 +115,7 @@ test('getWeightName returns the correct name for each weight', () => {
 });
 
 test('makeBreakable inserts wbr before non-initial slashes', () => {
-  assert.equal(makeBreakable('/api/listReports'), '/api<wbr>/listReports');
+  assert.equal(makeBreakable('/api/listPages'), '/api<wbr>/listPages');
 });
 
 // Returns a fixture report, failing the test if it is not usable.
@@ -221,6 +221,73 @@ test('getPageFactsLines returns the about-page list lines for a report', async (
   assert.ok(html.includes('<li>Issues: 2</li>'));
 });
 
+test('getPageFactsLines ends with a link to download the full report', async () => {
+  const {getReportData} = await import('./util.ts');
+  const report = await getFixtureReport('260101T0000', 'mix');
+  const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
+  const topItems = parse(lines.join('\n')).querySelectorAll('ul:not(ul ul) > li');
+  const lastItem = topItems[topItems.length - 1]!;
+  assert.ok(topItems[topItems.length - 2]!.text.trim().startsWith('Summary of results:'));
+  assert.equal(lastItem.querySelector('a')?.getAttribute('href'), '/fullReport.json/260101T0000/mix');
+  assert.equal(lastItem.text.trim(), 'Download the full technical report (JSON)');
+});
+
+// Returns the 3 rule-engine amounts and the 3 summary amounts of the page facts of a report.
+const getResultFacts = async (timeStamp: string, jobID: string) => {
+  const {getReportData} = await import('./util.ts');
+  const report = await getFixtureReport(timeStamp, jobID);
+  const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
+  const items = parse(lines.join('\n')).querySelectorAll('li');
+  const itemTexts: string[] = items.map(li => li.text.trim());
+  const getAmount = (label: string) => {
+    const text = itemTexts.find(t => t.startsWith(`${label}: `));
+    assert.ok(text, `${label} item exists`);
+    return Number(text.slice(label.length + 2));
+  };
+  // The summary item is the parent of the rule-engine item and the 3 amount items.
+  const summaryItem = items.find(li => li.text.trim().startsWith('Summary of results:'));
+  assert.ok(summaryItem, 'Summary of results item exists');
+  const summaryList = summaryItem.querySelector('ul')!;
+  const amountLabels = summaryList.childNodes
+  .filter((node: any) => node.tagName === 'LI')
+  .map(li => li.text.trim().split(':')[0]);
+  return {
+    called: getAmount('Called'),
+    tested: getAmount('Were able to test'),
+    reporters: getAmount('Reported any rule violations'),
+    amountLabels,
+    violations: getAmount('Violations'),
+    violators: getAmount('Violators'),
+    issues: getAmount('Issues')
+  };
+};
+
+// Expected facts, hand-computed from the fixtures.
+const expectedFacts: [string, string, number, number, number, number, number, number][] = [
+  // Time stamp, job ID, engines called, engines able to test, reporting engines, violations, violators, issues.
+  ['260101T0000', 'mix', 2, 2, 2, 3, 2, 2],
+  ['260202T0000', 'new', 1, 1, 1, 1, 1, 1],
+  ['260101T0001', 'ct', 1, 1, 0, 0, 0, 0],
+  ['260101T0002', 'no', 1, 1, 1, 1, 1, 1],
+  ['260101T0005', 'emp', 1, 1, 0, 0, 0, 0],
+  ['260101T0006', 'prv', 2, 1, 1, 1, 1, 1],
+  ['260101T0008', 'mul', 2, 2, 2, 4, 3, 1],
+  ['260101T0009', 'brd', 3, 3, 1, 4, 4, 1]
+];
+
+for (const [timeStamp, jobID, called, tested, reporters, violations, violators, issues] of expectedFacts) {
+  test(`getPageFactsLines gives correct rule-engine and summary amounts for ${timeStamp}-${jobID}`, async () => {
+    const facts = await getResultFacts(timeStamp, jobID);
+    assert.equal(facts.called, called);
+    assert.equal(facts.tested, tested);
+    assert.equal(facts.reporters, reporters);
+    assert.deepEqual(facts.amountLabels, ['Rule engines', 'Violations', 'Violators', 'Issues']);
+    assert.equal(facts.violations, violations);
+    assert.equal(facts.violators, violators);
+    assert.equal(facts.issues, issues);
+  });
+}
+
 test('getIssueFactsLines returns the about-issue list lines for a report', async () => {
   const {getIssueFactsLines} = await import('./util.ts');
   const report = await getFixtureReport('260101T0000', 'mix');
@@ -298,21 +365,6 @@ test('getEngineNamesString returns a sorted +-delimited list of engine names', (
 
 test('getEngineNamesString falls back to the ID for an unknown engine', () => {
   assert.equal(getEngineNamesString(new Set(['unknownEngine'])), 'unknownEngine');
-});
-
-test('getMultiReportWhats returns descriptions that have multiple reports', async () => {
-  const whats = await getMultiReportWhats();
-  assert.ok(whats.includes('Mixed Outcomes Page'));
-});
-
-test('getMultiReportWhats uses extracts provided by the caller', async () => {
-  const extract = {timeStamp: 't', jobID: 'j', url: 'https://example.com/', reportTime: ''};
-  const whats = await getMultiReportWhats([
-    {...extract, description: 'B'},
-    {...extract, description: 'A'},
-    {...extract, description: 'B'}
-  ]);
-  assert.deepEqual(whats, ['B']);
 });
 
 // Returns a minimal report for testing rule-engine identification.

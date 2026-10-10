@@ -127,15 +127,15 @@ export const response = async (args: string[]) => {
         reason
       },
       'closest ancestor request': {
-        'tool name': 'listReports',
-        description: 'Provide basics about all available reports.',
+        'tool name': 'listPages',
+        description: 'Provide basics about all tested pages.',
         method: 'GET',
-        URL: `${thisHost}/api/listReports`
+        URL: `${thisHost}/api/listPages`
       }
     },
     'URLs of similar requests for web users': {
       'this request': null,
-      'closest ancestor request': `${thisHost}/listReports.html`
+      'closest ancestor request': `${thisHost}/listPages.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

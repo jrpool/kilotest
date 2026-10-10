@@ -103,7 +103,7 @@ test('metrics reports recorded counts with a valid auth code on a POST request',
   await fs.writeFile(metricsPath(), getJSON({
     since: '260101T0000',
     pageViews: {tutorialWeb: 3},
-    mcpToolCalls: {listReports: 5},
+    mcpToolCalls: {listPages: 5},
     apiOperations: {},
     managerActivity: {}
   }));
@@ -177,7 +177,7 @@ test('metrics clears all counts and shows a confirmation when clearCounts is sub
   await fs.writeFile(metricsPath(), getJSON({
     since: '260101T0000',
     pageViews: {tutorialWeb: 9},
-    mcpToolCalls: {listReports: 3},
+    mcpToolCalls: {listPages: 3},
     apiOperations: {getReport: 1},
     managerActivity: {reannotate: {ok: 1, error: 2}}
   }));

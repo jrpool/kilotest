@@ -9,7 +9,7 @@ import type {IncomingMessage, ServerResponse} from 'node:http';
 import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {StreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import * as getReportAPI from './api/getReport.ts';
-import * as listReportsAPI from './api/listReports.ts';
+import * as listPagesAPI from './api/listPages.ts';
 import * as listIssuesAPI from './api/listIssues.ts';
 import * as listViolatorsAPI from './api/listViolators.ts';
 import * as listDiagnosesAPI from './api/listDiagnoses.ts';
@@ -33,7 +33,7 @@ import {
   orderNewTestSchema,
   orderRetestSchema,
   awaitTestSchema,
-  listReportsResponseSchema,
+  listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
   listDiagnosesResponseSchema,
@@ -54,15 +54,15 @@ export const mcpPath = '/mcp';
 // description, in the server instructions, and in the getKilotestOverview tool description,
 // because some MCP clients do not propagate server-level instructions or the server
 // description to their models.
-const sharedContext = 'Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as report, then issue, then violator element, then diagnosis.';
+const sharedContext = 'Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.';
 
 // Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by
 // the getKilotestOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
   'Kilotest tests web pages for front-end quality: accessibility, usability, and standards conformity.',
   'Kilotest integrates an ensemble of twelve independent rule engines to test a web page and stores the results as a structured report.',
-  'Results are organized as a hierarchy. A report contains issues. An issue has violators: elements of the tested page reported as exhibiting the issue. A violator has diagnoses: explanations from rule engines of how the element exhibited the issue.',
-  'Typical workflow: call the listReports tool to learn whether a report about the page already exists. If it does, drill down with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. If no report exists, request a test with the requestNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
+  'Results are organized as a hierarchy. A tested page has one or more reports, from oldest to latest. A report contains issues. An issue has violators: elements of the tested page reported as exhibiting the issue. A violator has diagnoses: explanations from rule engines of how the element exhibited the issue.',
+  'Typical workflow: call the listPages tool to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
   'For immediate, automatically approved testing, use the orderNewTest tool (for a new page) or the orderRetest tool (for a page with an obsolete report) instead of requestNewTest or requestRetest. Each enqueues the job right away, with no manual approval step, and returns a report identifier along with a question about whether to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
@@ -81,7 +81,7 @@ export const createMCPServer = (): McpServer => {
     description: 'Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available'
   },
   {
-    instructions: `${sharedContext} Use the listReports tool to start. If it shows that there is a report available about the page you want facts about, drill down with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, or the orderNewTest tool for immediate, automatically approved testing. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate, automatically approved retesting. For detailed documentation, call the getKilotestOverview tool.`
+    instructions: `${sharedContext} Use the listPages tool to start. If it shows that the page you want facts about has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, or the orderNewTest tool for immediate, automatically approved testing. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate, automatically approved retesting. For detailed documentation, call the getKilotestOverview tool.`
   });
   server.registerTool(
     'getKilotestOverview',
@@ -102,13 +102,13 @@ export const createMCPServer = (): McpServer => {
     }
   );
   server.registerTool(
-    'listReports',
+    'listPages',
     {
-      description: toolDoc('Provide basics about all available reports.'),
+      description: toolDoc('Provide basics about all tested pages, including how to get details about the latest report about each.'),
       inputSchema: {},
-      outputSchema: listReportsResponseSchema,
+      outputSchema: listPagesResponseSchema,
       annotations: {
-        title: toolDoc('Provide basics about all available reports.'),
+        title: toolDoc('Provide basics about all tested pages, including how to get details about the latest report about each.'),
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -116,19 +116,19 @@ export const createMCPServer = (): McpServer => {
       }
     },
     async () => {
-      const result = await listReportsAPI.response();
-      await recordMetric('mcpToolCalls', 'listReports');
+      const result = await listPagesAPI.response();
+      await recordMetric('mcpToolCalls', 'listPages');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
     'listIssues',
     {
-      description: toolDoc('Provide details about one report, including basics about the issues reported in it.'),
+      description: toolDoc('Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page.'),
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
-        title: toolDoc('Provide details about one report, including basics about the issues reported in it.'),
+        title: toolDoc('Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page.'),
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,

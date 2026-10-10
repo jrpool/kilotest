@@ -1581,11 +1581,11 @@ test('recordMetric increments an existing count rather than overwriting it', asy
   process.env.DB_DIR = tmpDir;
   try {
     const {recordMetric, metricsPath} = await import('./util.ts');
-    await recordMetric('mcpToolCalls', 'listReports');
-    await recordMetric('mcpToolCalls', 'listReports');
+    await recordMetric('mcpToolCalls', 'listPages');
+    await recordMetric('mcpToolCalls', 'listPages');
     await recordMetric('mcpToolCalls', 'getReport');
     const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
-    assert.equal(metrics.mcpToolCalls.listReports, 2);
+    assert.equal(metrics.mcpToolCalls.listPages, 2);
     assert.equal(metrics.mcpToolCalls.getReport, 1);
   }
   finally {
@@ -1636,11 +1636,11 @@ test('recordMetric keeps categories independent for the same name', async () => 
   process.env.DB_DIR = tmpDir;
   try {
     const {recordMetric, metricsPath} = await import('./util.ts');
-    await recordMetric('apiOperations', 'listReports');
-    await recordMetric('mcpToolCalls', 'listReports');
+    await recordMetric('apiOperations', 'listPages');
+    await recordMetric('mcpToolCalls', 'listPages');
     const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
-    assert.equal(metrics.apiOperations.listReports, 1);
-    assert.equal(metrics.mcpToolCalls.listReports, 1);
+    assert.equal(metrics.apiOperations.listPages, 1);
+    assert.equal(metrics.mcpToolCalls.listPages, 1);
   }
   finally {
     process.env.DB_DIR = savedDbDir;
@@ -1695,7 +1695,7 @@ test('getMetrics backfills categories missing from a metrics.json written before
   // Simulate a metrics.json written before the managerActivity category was added.
   fsSync.writeFileSync(tmpDir + '/metrics.json', JSON.stringify({
     since: '260101T0000',
-    pageViews: {listReports: 1},
+    pageViews: {listPages: 1},
     mcpToolCalls: {},
     apiOperations: {}
   }));
@@ -1707,7 +1707,7 @@ test('getMetrics backfills categories missing from a metrics.json written before
     await recordMetric('managerActivity', 'metrics', 'ok');
     const metrics = JSON.parse(fsSync.readFileSync(metricsPath(), 'utf8'));
     assert.equal(metrics.since, '260101T0000');
-    assert.equal(metrics.pageViews.listReports, 1);
+    assert.equal(metrics.pageViews.listPages, 1);
     assert.deepEqual(metrics.managerActivity.metrics, {ok: 1, error: 0});
   }
   finally {

@@ -43,7 +43,7 @@ test('createMCPServer registers all 12 tools', () => {
   assert.equal(toolNames.length, 12);
   assert.deepEqual(toolNames, [
     'getKilotestOverview',
-    'listReports',
+    'listPages',
     'listIssues',
     'listViolators',
     'listDiagnoses',
@@ -97,14 +97,14 @@ test('client receives instructions, server description, and the overview resourc
   await server.close();
 });
 
-test('listReports handler returns content and structuredContent', async () => {
+test('listPages handler returns content and structuredContent', async () => {
   const server = createMCPServer();
-  const countBefore = getToolCallCount('listReports');
-  const result = await (server as any)._registeredTools.listReports.handler({});
+  const countBefore = getToolCallCount('listPages');
+  const result = await (server as any)._registeredTools.listPages.handler({});
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
-  assert.equal(getToolCallCount('listReports'), countBefore + 1);
+  assert.equal(getToolCallCount('listPages'), countBefore + 1);
 });
 
 test('listIssues handler returns content and structuredContent for a valid report', async () => {
@@ -369,7 +369,7 @@ test('handleMCP lists all 12 tools via tools/list', async () => {
     assert.equal(toolNames.length, 12);
     assert.deepEqual(toolNames, [
       'getKilotestOverview',
-      'listReports',
+      'listPages',
       'listIssues',
       'listViolators',
       'listDiagnoses',
@@ -387,12 +387,12 @@ test('handleMCP lists all 12 tools via tools/list', async () => {
   }
 });
 
-test('handleMCP executes listReports tool via tools/call', async () => {
+test('handleMCP executes listPages tool via tools/call', async () => {
   const server = await startMCPServer();
   try {
     const port = server.address().port;
     const res = await sendMCPRequest(port, 'tools/call', {
-      name: 'listReports',
+      name: 'listPages',
       arguments: {}
     }, 3);
     assert.equal(res.statusCode, 200);

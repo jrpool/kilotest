@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Kilotest API
   description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 12 rule engines to test web pages for front-end quality (accessibility, usability, and standards conformity). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
-  version: 57.2.0
+  version: 58.2.7
   license:
     name: MIT
     identifier: MIT
@@ -15,13 +15,13 @@ servers:
     description: Kilotest production server
 security: []
 paths:
-  /api/listReports:
+  /api/listPages:
     get:
-      operationId: listReports
-      summary: List all available reports
+      operationId: listPages
+      summary: List all tested pages
       responses:
         '200':
-          description: List all available reports
+          description: List all tested pages
           content:
             application/json:
               schema:
@@ -58,20 +58,11 @@ paths:
                   response content:
                     type: object
                     properties:
-                      basics about all available reports:
+                      basics about all tested pages:
                         type: array
                         items:
                           type: object
                           properties:
-                            identifier:
-                              type: string
-                              description: timeStamp-jobID identifier of the report.
-                            completion date and time:
-                              type: string
-                            days since the report was completed:
-                              type:
-                                - number
-                                - 'null'
                             tested web page:
                               type: object
                               properties:
@@ -83,9 +74,26 @@ paths:
                                 - description
                                 - URL
                               additionalProperties: false
-                            whether a later report about the same page exists:
-                              type: boolean
-                            how to get details about the report:
+                            number of reports about the page:
+                              type: number
+                            basics about the latest report:
+                              type: object
+                              properties:
+                                identifier:
+                                  type: string
+                                  description: timeStamp-jobID identifier of the report.
+                                completion date and time:
+                                  type: string
+                                days since the report was completed:
+                                  type:
+                                    - number
+                                    - 'null'
+                              required:
+                                - identifier
+                                - completion date and time
+                                - days since the report was completed
+                              additionalProperties: false
+                            how to get details about the latest report:
                               type: object
                               properties:
                                 method:
@@ -97,16 +105,14 @@ paths:
                                 - method
                                 - URL
                               additionalProperties: false
-                            web users can get details about the report at:
+                            web users can get details about the latest report at:
                               type: string
                           required:
-                            - identifier
-                            - completion date and time
-                            - days since the report was completed
                             - tested web page
-                            - whether a later report about the same page exists
-                            - how to get details about the report
-                            - web users can get details about the report at
+                            - number of reports about the page
+                            - basics about the latest report
+                            - how to get details about the latest report
+                            - web users can get details about the latest report at
                           additionalProperties: false
                       how to request that a page with no report be tested:
                         type: object
@@ -147,7 +153,7 @@ paths:
                           - URL
                         additionalProperties: false
                     required:
-                      - basics about all available reports
+                      - basics about all tested pages
                       - how to request that a page with no report be tested
                       - how a web user can request that the page be tested
                     additionalProperties: false
@@ -219,6 +225,53 @@ paths:
                     properties:
                       basics about the report:
                         $ref: '#/components/schemas/ReportBasicsOrError'
+                      history of reports about the page:
+                        anyOf:
+                          - type: array
+                            items:
+                              type: object
+                              properties:
+                                identifier:
+                                  type: string
+                                  description: timeStamp-jobID identifier of the report.
+                                completion date and time:
+                                  type: string
+                                days since the report was completed:
+                                  type:
+                                    - number
+                                    - 'null'
+                                whether it is the oldest report about the page:
+                                  type: boolean
+                                whether it is the latest report about the page:
+                                  type: boolean
+                                whether it is the report described in this response:
+                                  type: boolean
+                                how to get details about the report:
+                                  type: object
+                                  properties:
+                                    method:
+                                      type: string
+                                      const: GET
+                                    URL:
+                                      type: string
+                                  required:
+                                    - method
+                                    - URL
+                                  additionalProperties: false
+                                web users can get details about the report at:
+                                  type: string
+                              required:
+                                - identifier
+                                - completion date and time
+                                - days since the report was completed
+                                - whether it is the oldest report about the page
+                                - whether it is the latest report about the page
+                                - whether it is the report described in this response
+                                - how to get details about the report
+                                - web users can get details about the report at
+                              additionalProperties: false
+                          - type: 'null'
+                        description: All reports about the same page, from oldest to latest, or null if the report is unavailable.
                       details about the report:
                         anyOf:
                           - type: object
@@ -424,6 +477,7 @@ paths:
                           - type: 'null'
                     required:
                       - basics about the report
+                      - history of reports about the page
                       - details about the report
                       - how to request that the page be retested
                       - how a web user can request that the page be retested
@@ -822,7 +876,7 @@ paths:
               properties:
                 description:
                   type: string
-                  description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
+                  description: 1- to 100-character description of the page conforming to the naming convention used in the listPages output
                 URL:
                   type: string
                   description: 12- to 300-character URL of the page, including the https:// scheme and any query
@@ -860,7 +914,7 @@ paths:
                         properties:
                           description:
                             type: string
-                            description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
+                            description: 1- to 100-character description of the page conforming to the naming convention used in the listPages output
                           URL:
                             type: string
                             description: 12- to 300-character URL of the page, including the https:// scheme and any query
@@ -1193,7 +1247,7 @@ paths:
               properties:
                 description:
                   type: string
-                  description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
+                  description: 1- to 100-character description of the page conforming to the naming convention used in the listPages output
                 URL:
                   type: string
                   description: 12- to 300-character URL of the page, including the https:// scheme and any query
@@ -1231,7 +1285,7 @@ paths:
                         properties:
                           description:
                             type: string
-                            description: 1- to 100-character description of the page conforming to the naming convention used in the listReports output
+                            description: 1- to 100-character description of the page conforming to the naming convention used in the listPages output
                           URL:
                             type: string
                             description: 12- to 300-character URL of the page, including the https:// scheme and any query

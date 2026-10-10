@@ -689,7 +689,7 @@ export const isUsableReport = (report: unknown): report is UsableReport => {
   )
   && typeof r.jobData === 'object'
   && r.jobData.endTime
-  && !isNaN(new Date(`20${r.jobData.endTime}Z`).getTime())
+  && !isNaN(getReportEndTime(r).getTime())
   && typeof r.catalog === 'object';
 };
 // Returns a report.
@@ -754,7 +754,7 @@ export const annotateReportObject = async (report: UsableReport): Promise<void> 
     );
   }
 };
-// Returns the creation time and size of a report.
+// Returns the size of a report, or null if the report does not exist.
 export const getReportStats = async (timeStamp: string, jobID: string) => {
   let reportStat;
   try {
@@ -763,10 +763,15 @@ export const getReportStats = async (timeStamp: string, jobID: string) => {
   catch {
     return null;
   }
-  const reportTime = reportStat.birthtime;
   const reportSize = reportStat.size;
-  return {reportTime, reportSize};
+  return {reportSize};
 };
+// Returns the completion time of a report. This, not the time stamp in the job ID nor the
+// file system time of the report file, is the time of a report. The date is invalid if the
+// report has no valid completion time.
+export const getReportEndTime = (report: {jobData?: {endTime?: string}}): Date => new Date(
+  `20${report.jobData?.endTime}Z`
+);
 
 // Returns an extract of an available report, or an error object if it cannot be read or parsed.
 export const getReportExtract = async (timeStamp: string, jobID: string): Promise<ReportExtract | {error: string}> => {
@@ -784,7 +789,7 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
       jobID,
       description,
       url,
-      reportTime: new Date(`20${jobData.endTime}Z`).toISOString()
+      reportTime: getReportEndTime({jobData}).toISOString()
     };
   }
   catch {

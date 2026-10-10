@@ -38,6 +38,7 @@ import {
   getObject,
   getPlainText,
   getRandomString,
+  getReportEndTime,
   getReportExtract,
   getReportExtracts,
   getReportPath,
@@ -1408,10 +1409,18 @@ test('getReportPath returns the path of a report file', () => {
   assert.ok(result.endsWith('260101T0000-mix.json'));
 });
 
-test('getReportStats returns reportTime and reportSize for a valid report', async () => {
+test('getReportEndTime returns the completion time of a report', () => {
+  const endTime = getReportEndTime({jobData: {endTime: '26-03-04T05:06'}});
+  assert.equal(endTime.toISOString(), '2026-03-04T05:06:00.000Z');
+});
+
+test('getReportEndTime returns an invalid date for a report with no completion time', () => {
+  assert.ok(isNaN(getReportEndTime({}).getTime()));
+});
+
+test('getReportStats returns reportSize for a valid report', async () => {
   const stats = await getReportStats('260101T0000', 'mix');
   assert.ok(stats);
-  assert.ok(stats.reportTime instanceof Date);
   assert.equal(typeof stats.reportSize, 'number');
   assert.ok(stats.reportSize > 0);
 });

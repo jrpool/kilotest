@@ -31,12 +31,14 @@ export const answer = async (pageArgs: string) => {
     // Make the form report the failure.
     target = 'The specified page is not available for retesting';
   }
+  // Get the completion time of the report, or an invalid time if the report is unavailable.
+  const reportTime = new Date(reportExtract?.reportTime ?? NaN);
   const query: Record<string, string> = {
     target,
     timeStamp,
     jobID,
-    ago: getAgoString(timeStamp),
-    dateTime: getDateTimeString(timeStamp)
+    ago: getAgoString(reportTime),
+    dateTime: getDateTimeString(reportTime)
   };
   // Get the recommendation form template.
   const answerPage = await populateTemplate(import.meta.dirname, query);

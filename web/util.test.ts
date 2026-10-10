@@ -14,6 +14,7 @@ import {
   checkCommentLength,
   getAgoString,
   getCountString,
+  getDateTimeString,
   getEngineIDs,
   getEngineNamesString,
   getMultiReportWhats,
@@ -144,14 +145,25 @@ test('getPageDataStrings returns HTML strings for a valid report', async () => {
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
   assert.ok(strings.testInfo.includes('by job <code>260101T0000-mix</code>'));
-  assert.ok(strings.testInfo.includes('2026-01-01 at 00:00'));
+  assert.ok(strings.testInfo.includes('2026-01-01 at 00:10'));
 });
 
-test('getPageDataStrings returns different testInfo for a different timeStamp', async () => {
-  const strings = getPageDataStrings(await getFixtureReport('260101T0001', 'ct'));
+test('getPageDataStrings dates a report by its completion time, not by its job time stamp', async () => {
+  const report = await getFixtureReport('260101T0001', 'ct');
+  report.jobData.endTime = '26-03-04T05:06';
+  const strings = getPageDataStrings(report);
   assert.equal(strings.description, 'All CantTell Page');
   assert.ok(strings.testInfo.includes('by job <code>260101T0001-ct</code>'));
-  assert.ok(strings.testInfo.includes('2026-01-01 at 00:01'));
+  assert.ok(strings.testInfo.includes('2026-03-04 at 05:06'));
+  assert.ok(!strings.testInfo.includes('2026-01-01'));
+});
+
+test('getDateTimeString describes a date', () => {
+  assert.equal(getDateTimeString(new Date('2026-03-04T05:06:07Z')), '2026-03-04 at 05:06');
+});
+
+test('getDateTimeString describes an invalid date as unknown', () => {
+  assert.equal(getDateTimeString(new Date(NaN)), 'an unknown date at an unknown time');
 });
 
 test('getPageDataStrings derives the strings from the report object', async () => {

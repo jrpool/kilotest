@@ -100,21 +100,24 @@ test('unhideReportForm returns an error when unhiding a nonexistent report on a 
   assert.ok(result.message.includes('Unhiding report'));
 });
 
-test('unhideReportForm sorts hidden reports with the same page name by timeStamp', async () => {
+test('unhideReportForm sorts hidden reports with the same page name by completion time', async () => {
   const {hidden} = getPaths();
   // Add a second hidden report with the same what as the existing one.
   const existing = JSON.parse(await fs.readFile(hidden, 'utf8'));
-  // Create a copy with a different timeStamp but same target.what.
+  // Create a copy with a later job time stamp but an earlier completion time.
   const copy = JSON.parse(JSON.stringify(existing));
   copy.id = '260101T0010-hid2';
+  copy.jobData.endTime = '26-01-01T00:05';
   const copyPath = path.join(hiddenReportsPath(), '260101T0010-hid2.json');
   await fs.writeFile(copyPath, JSON.stringify(copy));
   try {
     const result: any = await answer(null, '', 'GET');
     assert.equal(result.status, 'ok');
-    // Both reports should appear in the form.
-    assert.ok(result.answerPage.includes('260101T0007-hid'));
-    assert.ok(result.answerPage.includes('260101T0010-hid2'));
+    // Both reports should appear in the form, in order of completion time.
+    const page: string = result.answerPage;
+    assert.ok(page.includes('(job <code>260101T0007-hid</code> completed 2026-01-01 at 00:10)'));
+    assert.ok(page.includes('(job <code>260101T0010-hid2</code> completed 2026-01-01 at 00:05)'));
+    assert.ok(page.indexOf('260101T0010-hid2') < page.indexOf('260101T0007-hid'));
   }
   finally {
     await fs.unlink(copyPath).catch(() => {});

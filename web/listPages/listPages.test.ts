@@ -66,6 +66,12 @@ test('listPages lists each of the 7 tested pages once, by description', async ()
   );
 });
 
+test('listPages introduces the list of tested pages', async () => {
+  const result: any = await answer();
+  assert.ok(result.answerPage.includes('<p>Get test results for:</p>'));
+  assert.ok(!result.answerPage.includes('No pages have been tested yet.'));
+});
+
 test('listPages links each page to the issues in its latest report', async () => {
   const result: any = await answer();
   const links = getPageLinks(result.answerPage);
@@ -179,7 +185,8 @@ test('listPages shows no-reports message when the database is empty', async () =
     const {answer} = await import('./index.ts');
     const result: any = await answer();
     assert.equal(result.status, 'ok');
-    assert.ok(result.answerPage.includes('Kilotest has tested no pages.'));
+    assert.ok(result.answerPage.includes('<p>No pages have been tested yet.</p>'));
+    assert.ok(!result.answerPage.includes('Get test results for:'));
     assert.equal(getPageLinks(result.answerPage).length, 0);
   }
   finally {

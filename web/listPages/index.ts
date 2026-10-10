@@ -74,10 +74,15 @@ const populateQuery = async (query: Record<string, any>) => {
     const link = `<a href="listIssues.html/${timeStamp}/${jobID}" aria-label="Get test results for ${description}">${description}</a>`;
     lines.tested.push(`${margin}  <li>${link}</li>`);
   }
-  // Add the lines to the query, as a list if there are any.
+  // Add the lines to the query, as an introduced list if there are any, or else a no-pages message.
   query.testedPages = pageCount
-  ? [`${margin}<ul class="links">`, ...lines.tested, `${margin}</ul>`].join('\n')
-  : '';
+  ? [
+    `${margin}<p>Get test results for:</p>`,
+    `${margin}<ul class="links">`,
+    ...lines.tested,
+    `${margin}</ul>`
+  ].join('\n')
+  : `${margin}<p>No pages have been tested yet.</p>`;
 };
 // Returns a page listing the tested pages.
 export const answer = async () => {

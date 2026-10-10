@@ -71,12 +71,12 @@ const populateQuery = async (query: Record<string, any>) => {
   for (const extract of latestExtracts) {
     const {jobID, timeStamp, description} = extract;
     // Add a link to the issues in the latest report about it to the lines.
-    const link = `<a href="listIssues.html/${timeStamp}/${jobID}">${description}</a>`;
+    const link = `<a href="listIssues.html/${timeStamp}/${jobID}" aria-label="Get test results for ${description}">${description}</a>`;
     lines.tested.push(`${margin}  <li>${link}</li>`);
   }
   // Add the lines to the query, as a list if there are any.
   query.testedPages = pageCount
-  ? [`${margin}<ul class="nav">`, ...lines.tested, `${margin}</ul>`].join('\n')
+  ? [`${margin}<ul class="links">`, ...lines.tested, `${margin}</ul>`].join('\n')
   : '';
 };
 // Returns a page listing the tested pages.

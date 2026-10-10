@@ -6,7 +6,7 @@
     "url": "https://github.com/jrpool/kilotest",
     "source": "github"
   },
-  "version": "57.0.0",
+  "version": "59.0.0",
   "remotes": [
     {
       "type": "streamable-http",

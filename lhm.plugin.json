@@ -17,8 +17,27 @@
   ],
   "tools": [
     {
-      "name": "listReports",
-      "description": "Provide basics about all available reports.",
+      "name": "getKilotestOverview",
+      "description": "Explain what Kilotest is, what its tools do, and how its results are structured. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "annotations": {
+        "title": "Explain what Kilotest is, what its tools do, and how its results are structured. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "listPages",
+      "description": "Provide basics about all tested pages, including how to get details about the latest report about each. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -74,21 +93,11 @@
           "response content": {
             "type": "object",
             "properties": {
-              "basics about all available reports": {
+              "basics about all tested pages": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "identifier": {
-                      "type": "string",
-                      "description": "timeStamp-jobID identifier of the report."
-                    },
-                    "completion date and time": {
-                      "type": "string"
-                    },
-                    "days since the report was completed": {
-                      "type": "number"
-                    },
                     "tested web page": {
                       "type": "object",
                       "properties": {
@@ -105,10 +114,34 @@
                       ],
                       "additionalProperties": false
                     },
-                    "whether a later report about the same page exists": {
-                      "type": "boolean"
+                    "number of reports about the page": {
+                      "type": "number"
                     },
-                    "how to get details about the report": {
+                    "basics about the latest report": {
+                      "type": "object",
+                      "properties": {
+                        "identifier": {
+                          "type": "string",
+                          "description": "timeStamp-jobID identifier of the report."
+                        },
+                        "completion date and time": {
+                          "type": "string"
+                        },
+                        "days since the report was completed": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "identifier",
+                        "completion date and time",
+                        "days since the report was completed"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "how to get details about the latest report": {
                       "type": "object",
                       "properties": {
                         "method": {
@@ -125,18 +158,16 @@
                       ],
                       "additionalProperties": false
                     },
-                    "web users can get details about the report at": {
+                    "web users can get details about the latest report at": {
                       "type": "string"
                     }
                   },
                   "required": [
-                    "identifier",
-                    "completion date and time",
-                    "days since the report was completed",
                     "tested web page",
-                    "whether a later report about the same page exists",
-                    "how to get details about the report",
-                    "web users can get details about the report at"
+                    "number of reports about the page",
+                    "basics about the latest report",
+                    "how to get details about the latest report",
+                    "web users can get details about the latest report at"
                   ],
                   "additionalProperties": false
                 }
@@ -197,7 +228,7 @@
               }
             },
             "required": [
-              "basics about all available reports",
+              "basics about all tested pages",
               "how to request that a page with no report be tested",
               "how a web user can request that the page be tested"
             ],
@@ -311,7 +342,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -366,7 +400,7 @@
         }
       },
       "annotations": {
-        "title": "Provide basics about all available reports.",
+        "title": "Provide basics about all tested pages, including how to get details about the latest report about each. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -378,7 +412,7 @@
     },
     {
       "name": "listIssues",
-      "description": "Provide details about one report, including basics about the issues reported in it.",
+      "description": "Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -449,6 +483,75 @@
             "properties": {
               "basics about the report": {
                 "$ref": "#/definitions/ReportBasicsOrError"
+              },
+              "history of reports about the page": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "identifier": {
+                          "type": "string",
+                          "description": "timeStamp-jobID identifier of the report."
+                        },
+                        "completion date and time": {
+                          "type": "string"
+                        },
+                        "days since the report was completed": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "whether it is the oldest report about the page": {
+                          "type": "boolean"
+                        },
+                        "whether it is the latest report about the page": {
+                          "type": "boolean"
+                        },
+                        "whether it is the report described in this response": {
+                          "type": "boolean"
+                        },
+                        "how to get details about the report": {
+                          "type": "object",
+                          "properties": {
+                            "method": {
+                              "type": "string",
+                              "const": "GET"
+                            },
+                            "URL": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "method",
+                            "URL"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "web users can get details about the report at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "identifier",
+                        "completion date and time",
+                        "days since the report was completed",
+                        "whether it is the oldest report about the page",
+                        "whether it is the latest report about the page",
+                        "whether it is the report described in this response",
+                        "how to get details about the report",
+                        "web users can get details about the report at"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "All reports about the same page, from oldest to latest, or null if the report is unavailable."
               },
               "details about the report": {
                 "anyOf": [
@@ -696,70 +799,81 @@
                 ]
               },
               "basics about all issues reported in the report": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "identifier": {
-                      "type": "string"
-                    },
-                    "summary": {
-                      "type": "string"
-                    },
-                    "impact on a user": {
-                      "type": "string"
-                    },
-                    "priority": {
-                      "type": "string",
-                      "enum": [
-                        "lowest",
-                        "low",
-                        "high",
-                        "highest"
-                      ]
-                    },
-                    "rule engines with any violations belonging to the issue": {
-                      "type": "array",
-                      "items": {
-                        "type": "string"
-                      }
-                    },
-                    "how to get details about the issue": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
                       "type": "object",
                       "properties": {
-                        "method": {
-                          "type": "string",
-                          "const": "GET"
+                        "identifier": {
+                          "type": "string"
                         },
-                        "URL": {
+                        "summary": {
+                          "type": "string"
+                        },
+                        "impact on a user": {
+                          "type": "string"
+                        },
+                        "priority": {
+                          "type": "string",
+                          "enum": [
+                            "lowest",
+                            "low",
+                            "high",
+                            "highest"
+                          ]
+                        },
+                        "rule engines with any violations belonging to the issue": {
+                          "type": "array",
+                          "items": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "how to get details about the issue": {
+                          "type": "object",
+                          "properties": {
+                            "method": {
+                              "type": "string",
+                              "const": "GET"
+                            },
+                            "URL": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "method",
+                            "URL"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "web users can get details about the issue at": {
                           "type": "string"
                         }
                       },
                       "required": [
-                        "method",
-                        "URL"
+                        "identifier",
+                        "summary",
+                        "impact on a user",
+                        "priority",
+                        "rule engines with any violations belonging to the issue",
+                        "how to get details about the issue",
+                        "web users can get details about the issue at"
                       ],
                       "additionalProperties": false
-                    },
-                    "web users can get details about the issue at": {
-                      "type": "string"
                     }
                   },
-                  "required": [
-                    "identifier",
-                    "summary",
-                    "impact on a user",
-                    "priority",
-                    "rule engines with any violations belonging to the issue",
-                    "how to get details about the issue",
-                    "web users can get details about the issue at"
-                  ],
-                  "additionalProperties": false
-                }
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
               "basics about the report",
+              "history of reports about the page",
               "details about the report",
               "how to request that the page be retested",
               "how a web user can request that the page be retested",
@@ -877,7 +991,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -959,7 +1076,10 @@
                 "type": "string"
               },
               "days since the report was completed": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "tested web page": {
                 "type": "object",
@@ -1019,7 +1139,7 @@
         }
       },
       "annotations": {
-        "title": "Provide details about one report, including basics about the issues reported in it.",
+        "title": "Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -1031,7 +1151,7 @@
     },
     {
       "name": "listViolators",
-      "description": "Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.",
+      "description": "Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1133,7 +1253,7 @@
                   }
                 ]
               },
-              "basics about all elements reported as exhibiting the issue": {
+              "basics about all elements exhibiting the issue": {
                 "anyOf": [
                   {
                     "type": "array",
@@ -1141,7 +1261,11 @@
                       "type": "object",
                       "properties": {
                         "identifier": {
-                          "type": "string"
+                          "description": "Catalog index of the element in the report; a string or number, copied verbatim.",
+                          "type": [
+                            "string",
+                            "number"
+                          ]
                         },
                         "tag name": {
                           "description": "Copied from the report catalog entry; type not guaranteed."
@@ -1194,7 +1318,7 @@
               "basics about the report",
               "basics about the issue",
               "details about the issue",
-              "basics about all elements reported as exhibiting the issue"
+              "basics about all elements exhibiting the issue"
             ],
             "additionalProperties": false
           }
@@ -1306,7 +1430,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -1388,7 +1515,10 @@
                 "type": "string"
               },
               "days since the report was completed": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "tested web page": {
                 "type": "object",
@@ -1515,7 +1645,7 @@
         }
       },
       "annotations": {
-        "title": "Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.",
+        "title": "Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -1527,7 +1657,7 @@
     },
     {
       "name": "listDiagnoses",
-      "description": "Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.",
+      "description": "Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1685,43 +1815,50 @@
               "diagnoses of how the element exhibited the issue": {
                 "anyOf": [
                   {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "identifier of the violated rule": {
-                          "description": "Copied from the report instance (ruleID); type not guaranteed."
-                        },
-                        "description of the violation": {
-                          "description": "Copied from the report instance (what); type not guaranteed."
-                        },
-                        "severity of the violation on a 0-to-3 scale": {
-                          "description": "Copied from the report instance (ordinalSeverity); type not guaranteed."
-                        },
-                        "count of violations of the rule by the element": {
-                          "type": "number"
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier of the violated rule": {
+                              "description": "Copied from the report instance (ruleID); type not guaranteed."
+                            },
+                            "description of the violation": {
+                              "description": "Copied from the report instance (what); type not guaranteed."
+                            },
+                            "severity of the violation on a 0-to-3 scale": {
+                              "description": "Copied from the report instance (ordinalSeverity); type not guaranteed."
+                            },
+                            "count of violations of the rule by the element": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "identifier of the violated rule",
+                            "description of the violation",
+                            "severity of the violation on a 0-to-3 scale",
+                            "count of violations of the rule by the element"
+                          ],
+                          "additionalProperties": false
                         }
                       },
-                      "required": [
-                        "identifier of the violated rule",
-                        "description of the violation",
-                        "severity of the violation on a 0-to-3 scale",
-                        "count of violations of the rule by the element"
-                      ],
-                      "additionalProperties": false
-                    }
+                      {
+                        "type": "object",
+                        "properties": {
+                          "error": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "error"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
                   },
                   {
-                    "type": "object",
-                    "properties": {
-                      "error": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "error"
-                    ],
-                    "additionalProperties": false
+                    "type": "null"
                   }
                 ]
               }
@@ -1843,7 +1980,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -1925,7 +2065,10 @@
                 "type": "string"
               },
               "days since the report was completed": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "tested web page": {
                 "type": "object",
@@ -2026,7 +2169,7 @@
         }
       },
       "annotations": {
-        "title": "Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.",
+        "title": "Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -2038,7 +2181,7 @@
     },
     {
       "name": "getReport",
-      "description": "Get one full report in JSON.",
+      "description": "Get one full report in JSON. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2231,7 +2374,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -2286,7 +2432,7 @@
         }
       },
       "annotations": {
-        "title": "Get one full report in JSON.",
+        "title": "Get one full report in JSON. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -2298,13 +2444,13 @@
     },
     {
       "name": "requestNewTest",
-      "description": "Process my request to test a page about which no report is available yet.",
+      "description": "Process my request to test a page about which no report is available yet. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "description": {
             "type": "string",
-            "description": "10- to 100-character description of the page conforming to the naming convention used in the listReports output"
+            "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
           },
           "URL": {
             "type": "string",
@@ -2349,7 +2495,7 @@
                 "properties": {
                   "description": {
                     "type": "string",
-                    "description": "10- to 100-character description of the page conforming to the naming convention used in the listReports output"
+                    "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
                   },
                   "URL": {
                     "type": "string",
@@ -2444,10 +2590,38 @@
                     "additionalProperties": false
                   }
                 ]
+              },
+              "disposition of your request": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "what happens next": {
+                        "type": "string"
+                      },
+                      "how you can check for completion": {
+                        "type": "string"
+                      },
+                      "how a web user can check for completion": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "what happens next",
+                      "how you can check for completion",
+                      "how a web user can check for completion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
-              "details about your request"
+              "details about your request",
+              "disposition of your request"
             ],
             "additionalProperties": false
           }
@@ -2559,7 +2733,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -2614,7 +2791,7 @@
         }
       },
       "annotations": {
-        "title": "Process my request to test a page about which no report is available yet.",
+        "title": "Process my request to test a page about which no report is available yet. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
@@ -2626,7 +2803,7 @@
     },
     {
       "name": "requestRetest",
-      "description": "Process my request to retest a page about which a report is available.",
+      "description": "Process my request to retest a page about which a report is available. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2762,10 +2939,38 @@
                     "additionalProperties": false
                   }
                 ]
+              },
+              "disposition of your request": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "what happens next": {
+                        "type": "string"
+                      },
+                      "how you can check for completion": {
+                        "type": "string"
+                      },
+                      "how a web user can check for completion": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "what happens next",
+                      "how you can check for completion",
+                      "how a web user can check for completion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
-              "details about your request"
+              "details about your request",
+              "disposition of your request"
             ],
             "additionalProperties": false
           }
@@ -2877,7 +3082,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -2932,7 +3140,7 @@
         }
       },
       "annotations": {
-        "title": "Process my request to retest a page about which a report is available.",
+        "title": "Process my request to retest a page about which a report is available. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
@@ -2944,13 +3152,13 @@
     },
     {
       "name": "requestFeature",
-      "description": "Process my request to add or improve a feature.",
+      "description": "Process my request to add or improve a feature. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "feature": {
             "type": "string",
-            "description": "description of requested feature improvement or new feature"
+            "description": "20- to 1000-character description of requested feature improvement or new feature"
           }
         },
         "required": [
@@ -2985,7 +3193,7 @@
                 "properties": {
                   "feature": {
                     "type": "string",
-                    "description": "description of requested feature improvement or new feature"
+                    "description": "20- to 1000-character description of requested feature improvement or new feature"
                   }
                 },
                 "required": [
@@ -3168,7 +3376,10 @@
               },
               "method": {
                 "type": "string",
-                "const": "GET"
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
               },
               "URL": {
                 "type": "string"
@@ -3203,8 +3414,1089 @@
         }
       },
       "annotations": {
-        "title": "Process my request to add or improve a feature.",
+        "title": "Process my request to add or improve a feature. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
         "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "orderNewTest",
+      "description": "Process my order to test a page about which no report is available yet, immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
+          },
+          "URL": {
+            "type": "string",
+            "description": "12- to 300-character URL of the page, including the https:// scheme and any query"
+          },
+          "reason": {
+            "type": "string",
+            "description": "20- to 100-character reason why the page should be tested"
+          }
+        },
+        "required": [
+          "description",
+          "URL",
+          "reason"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tool collection": {
+            "$ref": "#/definitions/ToolsFacts"
+          },
+          "tool name": {
+            "type": "string"
+          },
+          "this request": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "const": "POST"
+              },
+              "URL": {
+                "type": "string"
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string",
+                    "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
+                  },
+                  "URL": {
+                    "type": "string",
+                    "description": "12- to 300-character URL of the page, including the https:// scheme and any query"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "20- to 100-character reason why the page should be tested"
+                  }
+                },
+                "required": [
+                  "description",
+                  "URL",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "closest ancestor request": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/RequestReference"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "description",
+              "method",
+              "URL",
+              "body",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "URLs of similar requests for web users": {
+            "type": "object",
+            "properties": {
+              "this request": {
+                "type": "null"
+              },
+              "closest ancestor request": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "this request",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "response metadata": {
+            "$ref": "#/definitions/ResponseMetadata"
+          },
+          "response content": {
+            "type": "object",
+            "properties": {
+              "details about your order": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "error": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "error"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "date and time received": {
+                        "type": "string"
+                      },
+                      "page to be tested": {
+                        "type": "object",
+                        "properties": {
+                          "description": {
+                            "type": "string"
+                          },
+                          "URL": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "description",
+                          "URL"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "reason why the page should be tested": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "date and time received",
+                      "page to be tested",
+                      "reason why the page should be tested"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "disposition of your order": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "what happens next": {
+                        "type": "string"
+                      },
+                      "report identifier": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/definitions/ReportIdentifier"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "how you can check for completion": {
+                        "type": "string"
+                      },
+                      "do you want to wait for completion": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "what happens next",
+                      "report identifier",
+                      "how you can check for completion",
+                      "do you want to wait for completion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "details about your order",
+              "disposition of your order"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tool collection",
+          "tool name",
+          "this request",
+          "URLs of similar requests for web users",
+          "response metadata",
+          "response content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "definitions": {
+          "ToolsFacts": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "object",
+                "properties": {
+                  "what Kilotest does": {
+                    "type": "string"
+                  },
+                  "how to retrieve findings": {
+                    "type": "object",
+                    "properties": {
+                      "level 1": {
+                        "type": "string"
+                      },
+                      "level 2": {
+                        "type": "string"
+                      },
+                      "level 3": {
+                        "type": "string"
+                      },
+                      "level 4": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "level 1",
+                      "level 2",
+                      "level 3",
+                      "level 4"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "how to generate more findings": {
+                    "type": "object",
+                    "properties": {
+                      "new testing": {
+                        "type": "string"
+                      },
+                      "retesting": {
+                        "type": "string"
+                      },
+                      "latency": {
+                        "type": "string"
+                      },
+                      "confirmation": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "new testing",
+                      "retesting",
+                      "latency",
+                      "confirmation"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "what Kilotest does",
+                  "how to retrieve findings",
+                  "how to generate more findings"
+                ],
+                "additionalProperties": false,
+                "description": "Explanation of what Kilotest does and how to use its tools."
+              },
+              "URL": {
+                "type": "string",
+                "description": "URL of the Kilotest MCP server."
+              },
+              "web users can obtain similar functionalities at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "URL",
+              "web users can obtain similar functionalities at"
+            ],
+            "additionalProperties": false
+          },
+          "RequestReference": {
+            "type": "object",
+            "properties": {
+              "tool name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tool name",
+              "description",
+              "method",
+              "URL"
+            ],
+            "additionalProperties": false
+          },
+          "ResponseMetadata": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Unique identifier of this response (timestamp and random suffix)."
+              },
+              "date and time": {
+                "type": "string",
+                "description": "UTC date and time when the response was generated, in ISO 8601 format."
+              }
+            },
+            "required": [
+              "identifier",
+              "date and time"
+            ],
+            "additionalProperties": false
+          },
+          "ReportIdentifier": {
+            "type": "object",
+            "properties": {
+              "timeStamp": {
+                "type": "string",
+                "description": "Timestamp to pass to listIssues once the report is ready."
+              },
+              "jobID": {
+                "type": "string",
+                "description": "Job identifier to pass to listIssues once the report is ready."
+              }
+            },
+            "required": [
+              "timeStamp",
+              "jobID"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "title": "Process my order to test a page about which no report is available yet, immediately and automatically approved. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "orderRetest",
+      "description": "Process my order to retest a page immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "timeStamp": {
+            "type": "string",
+            "description": "Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)"
+          },
+          "jobID": {
+            "type": "string",
+            "description": "Job identifier of the latest report about the page (example: x9z)"
+          },
+          "reason": {
+            "type": "string",
+            "description": "20- to 100-character reason why the page should be retested"
+          }
+        },
+        "required": [
+          "timeStamp",
+          "jobID",
+          "reason"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tool collection": {
+            "$ref": "#/definitions/ToolsFacts"
+          },
+          "tool name": {
+            "type": "string"
+          },
+          "this request": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "const": "POST"
+              },
+              "URL": {
+                "type": "string"
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "20- to 100-character reason why the page should be retested"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "closest ancestor request": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/RequestReference"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "description",
+              "method",
+              "URL",
+              "body",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "URLs of similar requests for web users": {
+            "type": "object",
+            "properties": {
+              "this request": {
+                "type": "null"
+              },
+              "closest ancestor request": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "this request",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "response metadata": {
+            "$ref": "#/definitions/ResponseMetadata"
+          },
+          "response content": {
+            "type": "object",
+            "properties": {
+              "details about your order": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "error": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "error"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "date and time received": {
+                        "type": "string"
+                      },
+                      "page to be retested": {
+                        "type": "object",
+                        "properties": {
+                          "description": {
+                            "type": "string"
+                          },
+                          "URL": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "description",
+                          "URL"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "reason why the page should be retested": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "date and time received",
+                      "page to be retested",
+                      "reason why the page should be retested"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "disposition of your order": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "what happens next": {
+                        "type": "string"
+                      },
+                      "report identifier": {
+                        "anyOf": [
+                          {
+                            "$ref": "#/definitions/ReportIdentifier"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "how you can check for completion": {
+                        "type": "string"
+                      },
+                      "do you want to wait for completion": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "what happens next",
+                      "report identifier",
+                      "how you can check for completion",
+                      "do you want to wait for completion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "details about your order",
+              "disposition of your order"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tool collection",
+          "tool name",
+          "this request",
+          "URLs of similar requests for web users",
+          "response metadata",
+          "response content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "definitions": {
+          "ToolsFacts": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "object",
+                "properties": {
+                  "what Kilotest does": {
+                    "type": "string"
+                  },
+                  "how to retrieve findings": {
+                    "type": "object",
+                    "properties": {
+                      "level 1": {
+                        "type": "string"
+                      },
+                      "level 2": {
+                        "type": "string"
+                      },
+                      "level 3": {
+                        "type": "string"
+                      },
+                      "level 4": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "level 1",
+                      "level 2",
+                      "level 3",
+                      "level 4"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "how to generate more findings": {
+                    "type": "object",
+                    "properties": {
+                      "new testing": {
+                        "type": "string"
+                      },
+                      "retesting": {
+                        "type": "string"
+                      },
+                      "latency": {
+                        "type": "string"
+                      },
+                      "confirmation": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "new testing",
+                      "retesting",
+                      "latency",
+                      "confirmation"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "what Kilotest does",
+                  "how to retrieve findings",
+                  "how to generate more findings"
+                ],
+                "additionalProperties": false,
+                "description": "Explanation of what Kilotest does and how to use its tools."
+              },
+              "URL": {
+                "type": "string",
+                "description": "URL of the Kilotest MCP server."
+              },
+              "web users can obtain similar functionalities at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "URL",
+              "web users can obtain similar functionalities at"
+            ],
+            "additionalProperties": false
+          },
+          "RequestReference": {
+            "type": "object",
+            "properties": {
+              "tool name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tool name",
+              "description",
+              "method",
+              "URL"
+            ],
+            "additionalProperties": false
+          },
+          "ResponseMetadata": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Unique identifier of this response (timestamp and random suffix)."
+              },
+              "date and time": {
+                "type": "string",
+                "description": "UTC date and time when the response was generated, in ISO 8601 format."
+              }
+            },
+            "required": [
+              "identifier",
+              "date and time"
+            ],
+            "additionalProperties": false
+          },
+          "ReportIdentifier": {
+            "type": "object",
+            "properties": {
+              "timeStamp": {
+                "type": "string",
+                "description": "Timestamp to pass to listIssues once the report is ready."
+              },
+              "jobID": {
+                "type": "string",
+                "description": "Job identifier to pass to listIssues once the report is ready."
+              }
+            },
+            "required": [
+              "timeStamp",
+              "jobID"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "title": "Process my order to retest a page immediately and automatically approved. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "awaitTest",
+      "description": "Wait for a job ordered via the orderNewTest or orderRetest tool to complete, using the report identifier either tool returned. Blocks until the report is ready, the job fails, or a maximum wait time elapses; sends no interim notices. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "timeStamp": {
+            "type": "string",
+            "description": "Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)"
+          },
+          "jobID": {
+            "type": "string",
+            "description": "Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)"
+          }
+        },
+        "required": [
+          "timeStamp",
+          "jobID"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tool collection": {
+            "$ref": "#/definitions/ToolsFacts"
+          },
+          "tool name": {
+            "type": "string"
+          },
+          "this request": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "const": "POST"
+              },
+              "URL": {
+                "type": "string"
+              },
+              "closest ancestor request": {
+                "minItems": 2,
+                "maxItems": 2,
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/RequestReference"
+                }
+              }
+            },
+            "required": [
+              "description",
+              "method",
+              "URL",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "URLs of similar requests for web users": {
+            "type": "object",
+            "properties": {
+              "this request": {
+                "type": "null"
+              },
+              "closest ancestor request": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "this request",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "response metadata": {
+            "$ref": "#/definitions/ResponseMetadata"
+          },
+          "response content": {
+            "type": "object",
+            "properties": {
+              "details about your wait": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "error": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "error"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "report identifier": {
+                        "$ref": "#/definitions/ReportIdentifier"
+                      }
+                    },
+                    "required": [
+                      "report identifier"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "disposition of your wait": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "outcome": {
+                        "type": "string",
+                        "enum": [
+                          "completed",
+                          "failed",
+                          "timedOut"
+                        ]
+                      },
+                      "what happened": {
+                        "type": "string"
+                      },
+                      "how you can check for completion": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "outcome",
+                      "what happened",
+                      "how you can check for completion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "details about your wait",
+              "disposition of your wait"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tool collection",
+          "tool name",
+          "this request",
+          "URLs of similar requests for web users",
+          "response metadata",
+          "response content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "definitions": {
+          "ToolsFacts": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "object",
+                "properties": {
+                  "what Kilotest does": {
+                    "type": "string"
+                  },
+                  "how to retrieve findings": {
+                    "type": "object",
+                    "properties": {
+                      "level 1": {
+                        "type": "string"
+                      },
+                      "level 2": {
+                        "type": "string"
+                      },
+                      "level 3": {
+                        "type": "string"
+                      },
+                      "level 4": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "level 1",
+                      "level 2",
+                      "level 3",
+                      "level 4"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "how to generate more findings": {
+                    "type": "object",
+                    "properties": {
+                      "new testing": {
+                        "type": "string"
+                      },
+                      "retesting": {
+                        "type": "string"
+                      },
+                      "latency": {
+                        "type": "string"
+                      },
+                      "confirmation": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "new testing",
+                      "retesting",
+                      "latency",
+                      "confirmation"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "what Kilotest does",
+                  "how to retrieve findings",
+                  "how to generate more findings"
+                ],
+                "additionalProperties": false,
+                "description": "Explanation of what Kilotest does and how to use its tools."
+              },
+              "URL": {
+                "type": "string",
+                "description": "URL of the Kilotest MCP server."
+              },
+              "web users can obtain similar functionalities at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "URL",
+              "web users can obtain similar functionalities at"
+            ],
+            "additionalProperties": false
+          },
+          "RequestReference": {
+            "type": "object",
+            "properties": {
+              "tool name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tool name",
+              "description",
+              "method",
+              "URL"
+            ],
+            "additionalProperties": false
+          },
+          "ResponseMetadata": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Unique identifier of this response (timestamp and random suffix)."
+              },
+              "date and time": {
+                "type": "string",
+                "description": "UTC date and time when the response was generated, in ISO 8601 format."
+              }
+            },
+            "required": [
+              "identifier",
+              "date and time"
+            ],
+            "additionalProperties": false
+          },
+          "ReportIdentifier": {
+            "type": "object",
+            "properties": {
+              "timeStamp": {
+                "type": "string",
+                "description": "Timestamp to pass to listIssues once the report is ready."
+              },
+              "jobID": {
+                "type": "string",
+                "description": "Job identifier to pass to listIssues once the report is ready."
+              }
+            },
+            "required": [
+              "timeStamp",
+              "jobID"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "title": "Wait for a job ordered via the orderNewTest or orderRetest tool to complete. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": false,
         "openWorldHint": false
@@ -3214,5 +4506,5 @@
       }
     }
   ],
-  "version": "2.1.0"
+  "version": "59.0.0"
 }

@@ -21,7 +21,7 @@ The internal features that make Kilotest a collection of tools for language mode
 
 - An API, with specific functional and utility modules in the `api` directory.
 - Tests of the functionalities of the API.
-- A [`JSON-LD`](https://json-ld.org/) script in the `index.html` file, providing structured data about the Kilotest API.
+- A [`JSON-LD`](https://json-ld.org/) script in the `web/home/index.html` file, providing structured data about the Kilotest API.
 - Environment variables in the `env.example` file.
 - An `llms.txt` file and an `llms-full.txt` file, documenting the use of Kilotest by language models, conforming to the [llms-txt](https://llmstxt.org/) specification.
 - A generated `openapi.yaml` file, documenting the Kilotest API, conforming to the [OpenAPI specification](https://spec.openapis.org/oas/v3.1.0).

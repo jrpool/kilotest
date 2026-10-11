@@ -40,6 +40,7 @@ import {handleMCP, mcpPath} from './mcp.ts';
 import fs from 'node:fs/promises';
 import {handleComment as handleTutorialWebComment} from './web/tutorialWeb/index.ts';
 import {answer as tutorialWeb} from './web/tutorialWeb/index.ts';
+import {answer as home} from './web/home/index.ts';
 import {answer as privacy} from './web/privacy/index.ts';
 import {answer as tutorialAI, handleComment as handleTutorialAIComment} from './web/tutorialAI/index.ts';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
@@ -642,10 +643,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     else if (['/', '/index.html'].includes(pathname)) {
       await recordPageMetric('pageViews', 'index');
       // Get the home page.
-      const homePage = await fs.readFile('index.html', 'utf8');
+      const {answerPage} = await home();
       // Serve it.
       setHeaders('text/html', '/index.html', 'medium');
-      response.end(homePage);
+      response.end(answerPage);
     }
     // Otherwise, if it is for the crawler specification:
     else if (pageName === 'robots.txt') {

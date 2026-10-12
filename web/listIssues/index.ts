@@ -26,6 +26,10 @@ import {
 import type {ResultsSummary} from '../util.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
+// VARIABLES
+
+let isLatest: boolean = false;
+
 // FUNCTIONS
 
 // Returns data on the issues reported by a report.
@@ -132,7 +136,6 @@ const getHistoryLines = async (
   const lastIndex = pageExtracts.length - 1;
   // Initialize the list items and whether the report is the latest about the page.
   const itemLines: string[] = [];
-  let isLatest = false;
   // For each report about the page:
   pageExtracts.forEach((extract, index) => {
     const isThis = extract.timeStamp === timeStamp && extract.jobID === jobID;
@@ -191,6 +194,8 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   query.target = description;
   query.testInfo = testInfo;
   const margin = ' '.repeat(6);
+  // Add a warning if the report is not the latest about the page.
+  query.warning = isLatest ? '' : '<p><strong>Warning: This report is not the latest about the page.</strong> See history below.</p>';
   // Add the page-facts list to the query.
   query.pageFacts = getPageFactsLines(pageInfo, issuesData, margin).join('\n');
   // Add the history of reports about the page to the query.

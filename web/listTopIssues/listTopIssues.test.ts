@@ -5,12 +5,31 @@
 
 // IMPORTS
 
-import {test, before, after} from 'node:test';
+import {test, before, after, mock} from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import {parse} from 'node-html-parser';
-import {answer} from './index.ts';
+
+// Mock the util functions called by index.ts before importing it, so that
+// it imports the mocked versions. Other exports delegate to the real module.
+import * as realUtil from '../../util.ts';
+let getReportCallCount = 0;
+let failGetReportOnCall = -1;
+mock.module('../../util.ts', {
+  exports: {
+    ...realUtil,
+    getReport: async (...args: any[]) => {
+      getReportCallCount++;
+      if (getReportCallCount === failGetReportOnCall) {
+        return {error: 'Report is invalid (test override)'};
+      }
+      return (realUtil.getReport as any)(...args);
+    }
+  }
+} as any);
+
+const {answer} = await import('./index.ts') as any;
 
 // SETUP AND TEARDOWN
 
@@ -54,23 +73,36 @@ test('listTopIssues excludes cantTell instances from issue counts', async () => 
   assert.ok(!result.answerPage.includes('focus indication poor'));
 });
 
-test('listTopIssues returns an error when a report file is invalid', async () => {
+test('listTopIssues omits a report that is not usable', async () => {
   const dbDir = (await import('../../test/dbFixture.ts')).fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const invalidReportPath = path.join(reportsDir, '260101T9999-bad.json');
   try {
-    // Valid for getReportExtract (has target and jobData.endTime) but not usable by isUsableReport (no acts or catalog).
+    // Not usable by isUsableReport (no acts or catalog), so it produces no extract
+    // and contributes nothing to the summary.
     const invalidReport = {
       target: {what: 'Invalid TopIssues Report', url: 'https://example.com/invalidtop'},
       jobData: {endTime: '26-01-01T00:10'}
     };
     await fs.writeFile(invalidReportPath, JSON.stringify(invalidReport, null, 2));
     const result: any = await answer();
+    assert.equal(result.status, 'ok');
+  }
+  finally {
+    await fs.unlink(invalidReportPath).catch(() => {});
+  }
+});
+
+test('listTopIssues returns an error when a report read fails', async () => {
+  getReportCallCount = 0;
+  failGetReportOnCall = 1;
+  try {
+    const result: any = await answer();
     assert.equal(result.status, 'error');
     assert.ok(result.message);
   }
   finally {
-    await fs.unlink(invalidReportPath).catch(() => {});
+    failGetReportOnCall = -1;
   }
 });
 

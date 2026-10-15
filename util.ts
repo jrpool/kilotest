@@ -32,6 +32,9 @@ export const testRequestsPath = (): string => path.join(jobsPath(), 'testRequest
 export const reportsPath = (): string => path.join(dbPath(), 'reports');
 // Path of the hidden-reports directory.
 export const hiddenReportsPath = (): string => path.join(dbPath(), 'hiddenReports');
+// Path of the unusable-reports directory, where reports that fail the usability
+// checks are quarantined for a manager to repair or delete.
+export const unusableReportsPath = (): string => path.join(dbPath(), 'unusableReports');
 // Path of the usage-metrics file.
 export const metricsPath = (): string => path.join(dbPath(), 'metrics.json');
 // IDs, names, and sponsors of Testaro rule engines.
@@ -692,7 +695,49 @@ export const isUsableReport = (report: unknown): report is UsableReport => {
   && !isNaN(getReportEndTime(r).getTime())
   && typeof r.catalog === 'object';
 };
-// Returns a report.
+// Minimum age, in milliseconds, of the last modification of a report file for the
+// file to be quarantined. A more recently modified file may still be being written
+// by a worker or a reannotation, so quarantining it could mistake an incomplete write
+// for a defect. Read at call time so tests can shrink it via REPORT_QUARANTINE_MIN_AGE_MS;
+// a value of 0 disables the age check.
+const quarantineMinAgeMs = () => getEnvMax('REPORT_QUARANTINE_MIN_AGE_MS', 60000);
+// Moves a report file from the reports directory to the unusable-reports directory
+// and alerts a manager, if the file exists and is old enough that it can no longer
+// plausibly be mid-write. Called by getReport whenever a report proves defective, so
+// that a defective report is quarantined rather than merely hidden from whichever
+// listing encountered it. Never throws: a failure here must not displace the error
+// that getReport is already reporting.
+export const quarantineReport = async (timeStamp: string, jobID: string, defect: string): Promise<void> => {
+  const jobName = `${timeStamp}-${jobID}`;
+  // Get the modification time of the report file. A missing file needs no move.
+  const stat = await fs.stat(getReportPath(timeStamp, jobID)).catch(() => null);
+  if (!stat) {
+    return;
+  }
+  // Leave a recently modified file alone, since it may still be being written.
+  if (Date.now() - stat.mtimeMs < quarantineMinAgeMs()) {
+    return;
+  }
+  try {
+    await fs.mkdir(unusableReportsPath(), {recursive: true});
+    await fs.rename(
+      getReportPath(timeStamp, jobID), path.join(unusableReportsPath(), `${jobName}.json`)
+    );
+  }
+  catch (error: unknown) {
+    // The report stays excluded regardless, so a failed move is only logged.
+    console.error(`ERROR: Failed to quarantine report ${jobName} (${errorMessage(error)})`);
+    return;
+  }
+  // Alert a manager, who can repair the report in place or delete it.
+  await sendAlert(
+    'Kilotest: unusable report',
+    `Report ${jobName} is ${defect}. It was moved to the unusableReports directory, where a manager can repair or delete it.`
+  );
+};
+// Returns a report, or an error object if it is missing, unreadable, unparsable, or
+// unusable. A report that exists but cannot be read or is unusable is defective, so
+// it is quarantined rather than merely rejected by whichever read encountered it.
 export const getReport = async (timeStamp: string, jobID: string): Promise<UsableReport | {error: string}> => {
   try {
     const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
@@ -702,11 +747,15 @@ export const getReport = async (timeStamp: string, jobID: string): Promise<Usabl
       // Return it.
       return report;
     }
-    // Otherwise, i.e. if it is unusable, return this.
-    return {error: `Report ${timeStamp}-${jobID} is not usable`};
   } catch (error: unknown) {
+    // The file exists but cannot be read or parsed, or is already missing.
+    // quarantineReport ignores a missing file, so no existence check is needed here.
+    await quarantineReport(timeStamp, jobID, 'unreadable or not JSON');
     return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
   }
+  // The report was read but is not usable, so quarantine it.
+  await quarantineReport(timeStamp, jobID, 'not usable');
+  return {error: `Report ${timeStamp}-${jobID} is not usable`};
 };
 // Returns whether a getReport result is an error (rather than a usable report).
 // A type predicate is used instead of `if (report.error)` because UsableReport
@@ -773,30 +822,27 @@ export const getReportEndTime = (report: {jobData?: {endTime?: string}}): Date =
   `20${report.jobData?.endTime}Z`
 );
 
-// Returns an extract of an available report, or an error object if it cannot be read or parsed.
+// Returns an extract of an available report, or an error object if the report cannot
+// be used. An extract exists to expose a report in listings, so it shares getReport's
+// usability bar: a report too defective to expose must produce no extract.
 export const getReportExtract = async (timeStamp: string, jobID: string): Promise<ReportExtract | {error: string}> => {
-  try {
-    // Get the report.
-    const reportJSON = await fs.readFile(
-      path.join(reportsPath(), `${timeStamp}-${jobID}.json`), 'utf8'
-    );
-    const report = JSON.parse(reportJSON);
-    const {target, jobData} = report;
-    const {what: description, url} = target;
-    // Return an extract of it.
-    return {
-      timeStamp,
-      jobID,
-      description,
-      url,
-      reportTime: getReportEndTime({jobData}).toISOString()
-    };
+  const report = await getReport(timeStamp, jobID);
+  // If the report is not usable:
+  if (isReportError(report)) {
+    // Return the reason.
+    return report;
   }
-  catch {
-    return {
-      error: `No report ${timeStamp}-${jobID} is available`
-    };
-  }
+  const {target, jobData} = report;
+  const {what: description, url} = target;
+  // Return an extract of it. Usability has already guaranteed these properties,
+  // including a valid completion time.
+  return {
+    timeStamp,
+    jobID,
+    description,
+    url,
+    reportTime: getReportEndTime({jobData}).toISOString()
+  };
 };
 // Cache of report extracts, keyed by report file path. Each entry records the modification
 // time and size of the file when it was extracted, so an entry is reused only while the file
@@ -804,7 +850,7 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
 // written, hidden, or deleted by any process, so the cache is validated against the files
 // before every use rather than invalidated by the code that changes them.
 const reportExtractCache = new Map<string, {mtimeMs: number, size: number, extract: ReportExtract}>();
-// Returns extracts of all available reports.
+// Returns extracts of all available reports, ordered by page description and completion time.
 export const getReportExtracts = async (onlyLatest: boolean = false): Promise<ReportExtract[]> => {
   const reportsDir = reportsPath();
   // Get the names and paths of the available report files.
@@ -866,8 +912,7 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   // Return the array, excluding extracts of superseded reports if so specified.
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
-// Returns extracts of all available reports about the page with a description, from oldest
-// to latest.
+// Returns extracts of all available reports about a page, from oldest to latest.
 export const getPageReportExtracts = async (description: string): Promise<ReportExtract[]> => {
   const reportExtracts = await getReportExtracts();
   return reportExtracts.filter(extract => extract.description === description);

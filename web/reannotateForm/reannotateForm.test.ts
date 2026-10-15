@@ -6,12 +6,30 @@
 
 // IMPORTS
 
-import {test, before, after, beforeEach} from 'node:test';
+import {test, before, after, beforeEach, mock} from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {parse} from 'node-html-parser';
+
+// Mock the util functions called by index.ts before it is ever imported, so that
+// it imports the mocked versions. Other exports delegate to the real module.
+import * as realUtil from '../../util.ts';
+let getReportCallCount = 0;
+let failGetReportOnCall = -1;
+mock.module('../../util.ts', {
+  exports: {
+    ...realUtil,
+    getReport: async (...args: any[]) => {
+      getReportCallCount++;
+      if (getReportCallCount === failGetReportOnCall) {
+        return {error: 'Report is invalid (test override)'};
+      }
+      return (realUtil.getReport as any)(...args);
+    }
+  }
+} as any);
 
 // CONSTANTS
 
@@ -101,9 +119,9 @@ test('answer returns ok with no-reclassified message when reports have no violat
   }
 });
 
-test('answer returns an error when a report fails to load', async () => {
-  // Create a temporary report file that passes getReportExtract but fails
-  // getReport validation (acts is not an array).
+test('answer ignores a report that is not usable', async () => {
+  // A report that fails getReport validation (acts is not an array) produces no
+  // extract, so it is ignored rather than causing an error.
   const badReportName = '990101T0000-bad.json';
   const badReportPath = path.join(reportsDir, badReportName);
   const badReport = {
@@ -117,8 +135,7 @@ test('answer returns an error when a report fails to load', async () => {
   try {
     const {answer} = await import('./index.ts');
     const result = await answer();
-    assert.equal(result.status, 'error');
-    assert.ok(result.message.includes('not usable'), `Expected message about unusable report, got: ${result.message}`);
+    assert.equal(result.status, 'ok');
   }
   finally {
     try {
@@ -127,5 +144,19 @@ test('answer returns an error when a report fails to load', async () => {
     catch {
       // Ignore cleanup errors for the temporary bad report.
     }
+  }
+});
+
+test('answer returns an error when a report read fails', async () => {
+  getReportCallCount = 0;
+  failGetReportOnCall = 1;
+  try {
+    const {answer} = await import('./index.ts');
+    const result = await answer();
+    assert.equal(result.status, 'error');
+    assert.ok(result.message);
+  }
+  finally {
+    failGetReportOnCall = -1;
   }
 });

@@ -231,7 +231,7 @@ test('listIssues History of an older report lists all reports, with this one unl
   assert.equal(items[0]!.href, null);
   assert.match(items[1]!.text, /^\d+ days? ago \(latest\)$/);
   assert.equal(items[1]!.href, '/listIssues.html/260202T0000/new');
-  assert.ok(!result.answerPage.includes('Should Kilotest retest the page?'));
+  assert.ok(!result.answerPage.includes('Request a retest'));
 });
 
 test('listIssues History of the latest report ends with the retest question', async () => {
@@ -244,7 +244,7 @@ test('listIssues History of the latest report ends with the retest question', as
   assert.match(items[1]!.text, /^\d+ days? ago \(latest; this report\)$/);
   assert.equal(items[1]!.href, null);
   const retestLink = history.querySelector('ol + p > a');
-  assert.equal(retestLink?.text, 'Should Kilotest retest the page?');
+  assert.equal(retestLink?.text, 'Request a retest');
   assert.equal(retestLink?.getAttribute('href'), '/requestRetestForm.html/260202T0000/new');
 });
 
@@ -253,7 +253,7 @@ test('listIssues History of the only report about a page says so and asks about 
   const history = getHistory(result.answerPage);
   assert.equal(getHistoryItems(history).length, 0);
   const paragraphs = history.querySelectorAll('p');
-  assert.equal(paragraphs[0]?.text, 'This is the only report about the page.');
+  assert.equal(paragraphs[0]?.text, 'This is the only available report about the page.');
   assert.equal(paragraphs[1]?.querySelector('a')?.getAttribute('href'), '/requestRetestForm.html/260101T0001/ct');
 });
 

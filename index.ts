@@ -31,7 +31,8 @@ import {
   jobsPath,
   metricsExclusionCookieName,
   recordMetric,
-  reportsPath
+  reportsPath,
+  unusableReportsPath
 } from './util.ts';
 import {sendAlert} from './alerts.ts';
 import {checkBalancesForAlerts} from './balances.ts';
@@ -1387,7 +1388,9 @@ export {requestHandler};
 
 const serve = async (protocolModule: typeof http | typeof https, options: {key?: string; cert?: string}) => {
   // Create any missing directories.
-  for (const path of [queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath()]) {
+  for (const path of [
+    queuePath(), claimedPath(), failedPath(), hiddenReportsPath(), reportsPath(), unusableReportsPath()
+  ]) {
     await fs.mkdir(path, {recursive: true});
   }
   const server = protocolModule === https

@@ -129,8 +129,11 @@ const getHistory = async (
 ): Promise<{isLatest: boolean, lines: string[]}> => {
   // Get extracts of all reports about the page, from oldest to latest.
   const pageExtracts = await getPageReportExtracts(description);
-  const isLatest = pageExtracts[pageExtracts.length - 1]!.timeStamp === timeStamp
-  && pageExtracts[pageExtracts.length - 1]!.jobID === jobID;
+  // The report's own extract may be absent if the report was condemned between the
+  // report read and the extract listing, so an empty list means "not latest".
+  const lastExtract = pageExtracts[pageExtracts.length - 1];
+  const isLatest = lastExtract !== undefined
+  && lastExtract.timeStamp === timeStamp && lastExtract.jobID === jobID;
   // Initialize the history.
   const history = {
     isLatest,
@@ -164,7 +167,7 @@ const getHistory = async (
   // Initialize the lines with a list of the reports, or a statement that there is only one.
   const lines = history.lines.length > 1
   ? [`${margin}<ol>`, ...history.lines, `${margin}</ol>`]
-  : [`${margin}<p>This is the only report about the page.</p>`];
+  : [`${margin}<p>This is the only available report about the page.</p>`];
   // If this report is the latest about the page:
   if (isLatest) {
     // Add a link to the form for requesting a retest to the lines.
@@ -172,6 +175,8 @@ const getHistory = async (
       `${margin}<p><a href="/requestRetestForm.html/${timeStamp}/${jobID}">Request a retest</a></p>`
     );
   }
+  // Replace the bare list items with the assembled section lines.
+  history.lines = lines;
   // Return the history.
   return history;
 };

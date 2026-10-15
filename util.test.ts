@@ -24,6 +24,7 @@ import {
   awaitJob,
   checkCommentDuplicate,
   checkLength,
+  condemnReport,
   createLock,
   dbPath,
   describeMax,
@@ -61,7 +62,8 @@ import {
   processTestRequest,
   testRequestsLock,
   testRequestsPath,
-  reportsPath
+  reportsPath,
+  unusableReportsPath
 } from './util.ts';
 
 // TESTS
@@ -142,7 +144,7 @@ test('dbPath honors DB_DIR when it is set', () => {
   }
 });
 
-test('jobsPath, testRequestsPath, reportsPath, and hiddenReportsPath derive from DB_DIR', () => {
+test('jobsPath, testRequestsPath, reportsPath, hiddenReportsPath, and unusableReportsPath derive from DB_DIR', () => {
   const saved = process.env.DB_DIR;
   process.env.DB_DIR = '/tmp/kilotest-fixtures';
   try {
@@ -150,6 +152,7 @@ test('jobsPath, testRequestsPath, reportsPath, and hiddenReportsPath derive from
     assert.equal(testRequestsPath(), path.join('/tmp/kilotest-fixtures', 'jobs', 'testRequests.json'));
     assert.equal(reportsPath(), path.join('/tmp/kilotest-fixtures', 'reports'));
     assert.equal(hiddenReportsPath(), path.join('/tmp/kilotest-fixtures', 'hiddenReports'));
+    assert.equal(unusableReportsPath(), path.join('/tmp/kilotest-fixtures', 'unusableReports'));
   }
   finally {
     if (saved !== undefined) {
@@ -1443,6 +1446,177 @@ test('getReportExtract returns an extract for a valid report', async () => {
 test('getReportExtract returns an error for a nonexistent report', async () => {
   const extract = await getReportExtract('999999T9999', 'xxx') as any;
   assert.ok(extract.error);
+});
+
+test('getReportExtract returns an error for an unusable report', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-extract-bad-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  await fs.mkdir(tmpReportsDir, {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    // A report with a target and a completion time but no usable acts or catalog is
+    // defective, so it must produce no extract rather than be exposed in listings.
+    await fs.writeFile(
+      path.join(tmpReportsDir, '260101T0000-bad.json'),
+      JSON.stringify({
+        target: {what: 'Defective Page', url: 'https://example.com/defective'},
+        jobData: {endTime: '26-01-01T00:00'}
+      })
+    );
+    const extract = await getReportExtract('260101T0000', 'bad') as any;
+    assert.ok(extract.error);
+  }
+  finally {
+    if (savedDbDir !== undefined) {
+      process.env.DB_DIR = savedDbDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+    await fs.rm(tmpRoot, {recursive: true, force: true});
+  }
+});
+
+test('condemnReport ignores a missing report', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-missing-'));
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    await condemnReport('999999T9999', 'xxx', 'not usable');
+    // Nothing was created or moved.
+    assert.deepEqual(await fs.readdir(tmpRoot), []);
+  }
+  finally {
+    if (savedDbDir !== undefined) {
+      process.env.DB_DIR = savedDbDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+    await fs.rm(tmpRoot, {recursive: true, force: true});
+  }
+});
+
+test('condemnReport leaves a recently modified report in place', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-young-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  await fs.mkdir(tmpReportsDir, {recursive: true});
+  const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
+  await fs.writeFile(filePath, '{}');
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    await condemnReport('260101T0000', 'bad', 'not usable');
+    // The fresh file may still be mid-write, so it was not moved.
+    await fs.access(filePath);
+  }
+  finally {
+    if (savedDbDir !== undefined) {
+      process.env.DB_DIR = savedDbDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+    await fs.rm(tmpRoot, {recursive: true, force: true});
+  }
+});
+
+test('condemnReport quarantines a report old enough to be condemned', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-old-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  await fs.mkdir(tmpReportsDir, {recursive: true});
+  const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
+  await fs.writeFile(filePath, '{}');
+  // Age the file beyond the condemnation threshold.
+  const longAgo = new Date(Date.now() - 120000);
+  await fs.utimes(filePath, longAgo, longAgo);
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    await condemnReport('260101T0000', 'bad', 'not usable');
+    // The file was moved to the unusable-reports directory.
+    await fs.access(filePath).then(
+      () => {throw new Error('Report should have been quarantined');},
+      () => {}
+    );
+    const quarantined = await fs.readdir(path.join(tmpRoot, 'db', 'unusableReports'));
+    assert.deepEqual(quarantined, ['260101T0000-bad.json']);
+  }
+  finally {
+    if (savedDbDir !== undefined) {
+      process.env.DB_DIR = savedDbDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+    await fs.rm(tmpRoot, {recursive: true, force: true});
+  }
+});
+
+test('condemnReport leaves the file and logs when the move fails', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-blocked-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  await fs.mkdir(tmpReportsDir, {recursive: true});
+  const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
+  await fs.writeFile(filePath, '{}');
+  // Age the file beyond the condemnation threshold.
+  const longAgo = new Date(Date.now() - 120000);
+  await fs.utimes(filePath, longAgo, longAgo);
+  // A directory already occupying the destination path makes the rename fail.
+  await fs.mkdir(path.join(tmpRoot, 'db', 'unusableReports', '260101T0000-bad.json'), {recursive: true});
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    await condemnReport('260101T0000', 'bad', 'not usable');
+    // The report stays where it was.
+    await fs.access(filePath);
+  }
+  finally {
+    if (savedDbDir !== undefined) {
+      process.env.DB_DIR = savedDbDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+    await fs.rm(tmpRoot, {recursive: true, force: true});
+  }
+});
+
+test('getReport condemns a malformed report file old enough to be condemned', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-getreport-bad-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  await fs.mkdir(tmpReportsDir, {recursive: true});
+  const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
+  await fs.writeFile(filePath, 'not JSON');
+  // Age the file beyond the condemnation threshold.
+  const longAgo = new Date(Date.now() - 120000);
+  await fs.utimes(filePath, longAgo, longAgo);
+  const savedDbDir = process.env.DB_DIR;
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    const {getReport} = await import('./util.ts');
+    const result = await getReport('260101T0000', 'bad') as any;
+    assert.ok(result.error);
+    // The malformed file was quarantined.
+    const quarantined = await fs.readdir(path.join(tmpRoot, 'db', 'unusableReports'));
+    assert.deepEqual(quarantined, ['260101T0000-bad.json']);
+  }
+  finally {
+    if (savedDbDir !== undefined) {
+      process.env.DB_DIR = savedDbDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+    await fs.rm(tmpRoot, {recursive: true, force: true});
+  }
 });
 
 test('getReportExtracts returns extracts of all available reports', async () => {

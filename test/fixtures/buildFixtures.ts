@@ -114,6 +114,7 @@ const main = async () => {
   await fs.mkdir(path.join(targetDir, 'jobs', 'claimed'), {recursive: true});
   await fs.mkdir(path.join(targetDir, 'jobs', 'failed'), {recursive: true});
   await fs.mkdir(path.join(targetDir, 'hiddenReports'), {recursive: true});
+  await fs.mkdir(path.join(targetDir, 'unusableReports'), {recursive: true});
 
   // Fixture 1: mixedOutcomes. Two rule engines, four instances: two failed (same issue, same violator, two engines), one cantTell (excluded from counts), one failed (different issue, different violator). Two distinct issues (linkNoText weight 4, allCaps weight 1) and two distinct violator catalog indexes (0 and 1).
   const mixedCatalog = {

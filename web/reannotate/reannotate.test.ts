@@ -91,7 +91,7 @@ test('answer returns an error when a report fails annotation', {timeout: 2000}, 
   // in place before it reaches the bad one and returns an error.
   const backups = await backupReports();
   // Create a temporary report file that fails getReport validation
-  // (acts is not an array). It is too fresh to be condemned, so it stays put.
+  // (acts is not an array). It is too fresh to be quarantined, so it stays put.
   const badReportName = '990101T0000-bad.json';
   const badReportPath = path.join(reportsDir, badReportName);
   const badReport = {

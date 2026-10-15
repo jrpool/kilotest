@@ -696,18 +696,18 @@ export const isUsableReport = (report: unknown): report is UsableReport => {
   && typeof r.catalog === 'object';
 };
 // Minimum age, in milliseconds, of the last modification of a report file for the
-// file to be condemnable. A more recently modified file may still be being written
-// by a worker or a reannotation, so condemning it could mistake an incomplete write
-// for a defect. Read at call time so tests can shrink it via REPORT_CONDEMN_MIN_AGE_MS;
+// file to be quarantined. A more recently modified file may still be being written
+// by a worker or a reannotation, so quarantining it could mistake an incomplete write
+// for a defect. Read at call time so tests can shrink it via REPORT_QUARANTINE_MIN_AGE_MS;
 // a value of 0 disables the age check.
-const condemnMinAgeMs = () => getEnvMax('REPORT_CONDEMN_MIN_AGE_MS', 60000);
+const quarantineMinAgeMs = () => getEnvMax('REPORT_QUARANTINE_MIN_AGE_MS', 60000);
 // Moves a report file from the reports directory to the unusable-reports directory
 // and alerts a manager, if the file exists and is old enough that it can no longer
 // plausibly be mid-write. Called by getReport whenever a report proves defective, so
 // that a defective report is quarantined rather than merely hidden from whichever
 // listing encountered it. Never throws: a failure here must not displace the error
 // that getReport is already reporting.
-export const condemnReport = async (timeStamp: string, jobID: string, defect: string): Promise<void> => {
+export const quarantineReport = async (timeStamp: string, jobID: string, defect: string): Promise<void> => {
   const jobName = `${timeStamp}-${jobID}`;
   // Get the modification time of the report file. A missing file needs no move.
   const stat = await fs.stat(getReportPath(timeStamp, jobID)).catch(() => null);
@@ -715,7 +715,7 @@ export const condemnReport = async (timeStamp: string, jobID: string, defect: st
     return;
   }
   // Leave a recently modified file alone, since it may still be being written.
-  if (Date.now() - stat.mtimeMs < condemnMinAgeMs()) {
+  if (Date.now() - stat.mtimeMs < quarantineMinAgeMs()) {
     return;
   }
   try {
@@ -737,7 +737,7 @@ export const condemnReport = async (timeStamp: string, jobID: string, defect: st
 };
 // Returns a report, or an error object if it is missing, unreadable, unparsable, or
 // unusable. A report that exists but cannot be read or is unusable is defective, so
-// it is condemned rather than merely rejected by whichever read encountered it.
+// it is quarantined rather than merely rejected by whichever read encountered it.
 export const getReport = async (timeStamp: string, jobID: string): Promise<UsableReport | {error: string}> => {
   try {
     const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
@@ -749,12 +749,12 @@ export const getReport = async (timeStamp: string, jobID: string): Promise<Usabl
     }
   } catch (error: unknown) {
     // The file exists but cannot be read or parsed, or is already missing.
-    // condemnReport ignores a missing file, so no existence check is needed here.
-    await condemnReport(timeStamp, jobID, 'unreadable or not JSON');
+    // quarantineReport ignores a missing file, so no existence check is needed here.
+    await quarantineReport(timeStamp, jobID, 'unreadable or not JSON');
     return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
   }
-  // The report was read but is not usable, so condemn it.
-  await condemnReport(timeStamp, jobID, 'not usable');
+  // The report was read but is not usable, so quarantine it.
+  await quarantineReport(timeStamp, jobID, 'not usable');
   return {error: `Report ${timeStamp}-${jobID} is not usable`};
 };
 // Returns whether a getReport result is an error (rather than a usable report).

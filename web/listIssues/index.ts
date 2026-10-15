@@ -129,7 +129,7 @@ const getHistory = async (
 ): Promise<{isLatest: boolean, lines: string[]}> => {
   // Get extracts of all reports about the page, from oldest to latest.
   const pageExtracts = await getPageReportExtracts(description);
-  // The report's own extract may be absent if the report was condemned between the
+  // The report's own extract may be absent if the report was quarantined between the
   // report read and the extract listing, so an empty list means "not latest".
   const lastExtract = pageExtracts[pageExtracts.length - 1];
   const isLatest = lastExtract !== undefined

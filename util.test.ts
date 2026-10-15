@@ -24,7 +24,7 @@ import {
   awaitJob,
   checkCommentDuplicate,
   checkLength,
-  condemnReport,
+  quarantineReport,
   createLock,
   dbPath,
   describeMax,
@@ -1479,13 +1479,13 @@ test('getReportExtract returns an error for an unusable report', async () => {
   }
 });
 
-test('condemnReport ignores a missing report', async () => {
+test('quarantineReport ignores a missing report', async () => {
   const os = await import('node:os');
-  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-missing-'));
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-quarantine-missing-'));
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await condemnReport('999999T9999', 'xxx', 'not usable');
+    await quarantineReport('999999T9999', 'xxx', 'not usable');
     // Nothing was created or moved.
     assert.deepEqual(await fs.readdir(tmpRoot), []);
   }
@@ -1500,9 +1500,9 @@ test('condemnReport ignores a missing report', async () => {
   }
 });
 
-test('condemnReport leaves a recently modified report in place', async () => {
+test('quarantineReport leaves a recently modified report in place', async () => {
   const os = await import('node:os');
-  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-young-'));
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-quarantine-young-'));
   const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
   await fs.mkdir(tmpReportsDir, {recursive: true});
   const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
@@ -1510,7 +1510,7 @@ test('condemnReport leaves a recently modified report in place', async () => {
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await condemnReport('260101T0000', 'bad', 'not usable');
+    await quarantineReport('260101T0000', 'bad', 'not usable');
     // The fresh file may still be mid-write, so it was not moved.
     await fs.access(filePath);
   }
@@ -1525,20 +1525,20 @@ test('condemnReport leaves a recently modified report in place', async () => {
   }
 });
 
-test('condemnReport quarantines a report old enough to be condemned', async () => {
+test('quarantineReport quarantines a report old enough to be quarantined', async () => {
   const os = await import('node:os');
-  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-old-'));
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-quarantine-old-'));
   const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
   await fs.mkdir(tmpReportsDir, {recursive: true});
   const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
   await fs.writeFile(filePath, '{}');
-  // Age the file beyond the condemnation threshold.
+  // Age the file beyond the quarantine threshold.
   const longAgo = new Date(Date.now() - 120000);
   await fs.utimes(filePath, longAgo, longAgo);
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await condemnReport('260101T0000', 'bad', 'not usable');
+    await quarantineReport('260101T0000', 'bad', 'not usable');
     // The file was moved to the unusable-reports directory.
     await fs.access(filePath).then(
       () => {throw new Error('Report should have been quarantined');},
@@ -1558,14 +1558,14 @@ test('condemnReport quarantines a report old enough to be condemned', async () =
   }
 });
 
-test('condemnReport leaves the file and logs when the move fails', async () => {
+test('quarantineReport leaves the file and logs when the move fails', async () => {
   const os = await import('node:os');
-  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-condemn-blocked-'));
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-quarantine-blocked-'));
   const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
   await fs.mkdir(tmpReportsDir, {recursive: true});
   const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
   await fs.writeFile(filePath, '{}');
-  // Age the file beyond the condemnation threshold.
+  // Age the file beyond the quarantine threshold.
   const longAgo = new Date(Date.now() - 120000);
   await fs.utimes(filePath, longAgo, longAgo);
   // A directory already occupying the destination path makes the rename fail.
@@ -1573,7 +1573,7 @@ test('condemnReport leaves the file and logs when the move fails', async () => {
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await condemnReport('260101T0000', 'bad', 'not usable');
+    await quarantineReport('260101T0000', 'bad', 'not usable');
     // The report stays where it was.
     await fs.access(filePath);
   }
@@ -1588,14 +1588,14 @@ test('condemnReport leaves the file and logs when the move fails', async () => {
   }
 });
 
-test('getReport condemns a malformed report file old enough to be condemned', async () => {
+test('getReport quarantines a malformed report file old enough to be quarantined', async () => {
   const os = await import('node:os');
   const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-getreport-bad-'));
   const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
   await fs.mkdir(tmpReportsDir, {recursive: true});
   const filePath = path.join(tmpReportsDir, '260101T0000-bad.json');
   await fs.writeFile(filePath, 'not JSON');
-  // Age the file beyond the condemnation threshold.
+  // Age the file beyond the quarantine threshold.
   const longAgo = new Date(Date.now() - 120000);
   await fs.utimes(filePath, longAgo, longAgo);
   const savedDbDir = process.env.DB_DIR;

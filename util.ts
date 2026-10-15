@@ -804,7 +804,7 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
 // written, hidden, or deleted by any process, so the cache is validated against the files
 // before every use rather than invalidated by the code that changes them.
 const reportExtractCache = new Map<string, {mtimeMs: number, size: number, extract: ReportExtract}>();
-// Returns extracts of all available reports.
+// Returns extracts of all available reports, ordered by page description and completion time.
 export const getReportExtracts = async (onlyLatest: boolean = false): Promise<ReportExtract[]> => {
   const reportsDir = reportsPath();
   // Get the names and paths of the available report files.
@@ -866,8 +866,7 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   // Return the array, excluding extracts of superseded reports if so specified.
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
-// Returns extracts of all available reports about the page with a description, from oldest
-// to latest.
+// Returns extracts of all available reports about a page, from oldest to latest.
 export const getPageReportExtracts = async (description: string): Promise<ReportExtract[]> => {
   const reportExtracts = await getReportExtracts();
   return reportExtracts.filter(extract => extract.description === description);

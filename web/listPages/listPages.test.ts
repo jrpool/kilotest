@@ -149,12 +149,12 @@ test('listPages shows queued and claimed jobs when they exist', async () => {
   }
 });
 
-test('listPages lists a page whose report is not usable', {timeout: 500}, async () => {
+test('listPages omits a page whose report is not usable', {timeout: 500}, async () => {
   const dbDir = (await import('../../test/dbFixture.ts')).fixtureDBDir;
   const reportsDir = path.join(dbDir, 'reports');
   const invalidReportPath = path.join(reportsDir, '260101T9999-bad.json');
   try {
-    // Valid for getReportExtract (has target and jobData.endTime) but not usable by isUsableReport (no acts or catalog).
+    // Not usable by isUsableReport (no acts or catalog), so it must not be exposed.
     const invalidReport = {
       target: {what: 'Invalid Report', url: 'https://example.com/invalid'},
       jobData: {endTime: '26-01-01T00:10'}
@@ -163,7 +163,7 @@ test('listPages lists a page whose report is not usable', {timeout: 500}, async 
     const result: any = await answer();
     assert.equal(result.status, 'ok');
     const links = getPageLinks(result.answerPage);
-    assert.ok(links.some(a => a.text === 'Invalid Report'));
+    assert.ok(!links.some(a => a.text === 'Invalid Report'));
   }
   finally {
     await fs.unlink(invalidReportPath).catch(() => {});

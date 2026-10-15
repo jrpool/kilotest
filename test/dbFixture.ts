@@ -24,6 +24,7 @@ fs.cpSync(path.join(import.meta.dirname, 'fixtures', 'db'), fixtureDBDir, {recur
 for (const category of ['queue', 'claimed', 'failed']) {
   fs.mkdirSync(path.join(fixtureDBDir, 'jobs', category), {recursive: true});
 }
+fs.mkdirSync(path.join(fixtureDBDir, 'unusableReports'), {recursive: true});
 
 // Remove the copy when the process exits.
 process.on('exit', () => fs.rmSync(fixtureDBDir, {recursive: true, force: true}));

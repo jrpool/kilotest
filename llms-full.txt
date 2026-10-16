@@ -59,12 +59,12 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 - Get statistics about issues reported in one report, and a history of all reports about the same page: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
 - Get details about one issue reported in one report: `https://kilotest.com/listViolators.html/{issueID}/{timeStamp}/{jobID}`
 - Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
-- [Recommend the testing of a not-yet-tested page](https://kilotest.com/requestNewTestForm.html)
-- Recommend the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{timeStamp}/{jobID}`
+- [Request the testing of a not-yet-tested page](https://kilotest.com/requestNewTestForm.html)
+- Request the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{timeStamp}/{jobID}`
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
 - [Get a list of the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
-- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
-- [Tutorial, “QAI tutorial”](https://kilotest.com/qai/)
+- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
+- [Tutorial, “Connect an AI Platform”](https://kilotest.com/tutorialAI.html)
 
 ### API
 

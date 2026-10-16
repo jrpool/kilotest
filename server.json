@@ -1,12 +1,12 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.jrpool/kilotest",
-  "description": "Ensemble testing of web pages for accessibility, usability, and standards conformity",
+  "description": "Ensemble testing of web pages for accessibility, usability, and web standards",
   "repository": {
     "url": "https://github.com/jrpool/kilotest",
     "source": "github"
   },
-  "version": "59.0.0",
+  "version": "59.1.0",
   "remotes": [
     {
       "type": "streamable-http",

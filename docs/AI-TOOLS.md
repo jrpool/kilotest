@@ -4,7 +4,7 @@
 
 Until 2026 Kilotest was intended, and implemented, as a web application performing a service for human users.
 
-Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could operate as a set of tools for language models to allow them to improve their answers to questions about the front-end quality (accessibility, usability, and standards conformity) of specific web pages.
+Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could operate as a set of tools for language models to allow them to improve their answers to questions about the front-end quality (accessibility, usability, and web standards) of specific web pages.
 
 A decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a provider of tools for language models**.
 

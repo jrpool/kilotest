@@ -50,16 +50,16 @@ import {
 
 export const mcpPath = '/mcp';
 
-// Shared statement of the Kilotest domain and data hierarchy, repeated in every tool
-// description, in the server instructions, and in the getKilotestOverview tool description,
-// because some MCP clients do not propagate server-level instructions or the server
-// description to their models.
-const sharedContext = 'Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.';
+// Shared statement of the Kilotest domain and data hierarchy, repeated in the server
+// instructions and in the getKilotestOverview tool description (but not in the other tool
+// descriptions, to avoid diluting how models read each tool), because some MCP clients do
+// not propagate server-level instructions or the server description to their models.
+const sharedContext = 'Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and web standards). Each test job generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested pages, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages.';
 
 // Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by
 // the getKilotestOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
-  'Kilotest tests web pages for front-end quality: accessibility, usability, and standards conformity.',
+  'Kilotest tests web pages for front-end quality: accessibility, usability, and web standards.',
   'Kilotest integrates an ensemble of twelve independent rule engines to test a web page and stores the results as a structured report.',
   'Results are organized as a hierarchy. A tested page has one or more reports, from oldest to latest. A report contains issues. An issue has violators: elements of the tested page reported as exhibiting the issue. A violator has diagnoses: explanations from rule engines of how the element exhibited the issue.',
   'Typical workflow: call the listPages tool to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
@@ -69,16 +69,12 @@ const kilotestOverview = [
 
 // FUNCTIONS
 
-// Returns a tool description consisting of the tool-specific summary followed by the shared
-// Kilotest domain context.
-const toolDoc = (summary: string): string => `${summary} ${sharedContext}`;
-
 // Creates and returns an McpServer with Kilotest tools registered.
 export const createMCPServer = (): McpServer => {
   const server = new McpServer({
     name: 'Kilotest',
     version,
-    description: 'Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available'
+    description: 'Tools that test web pages for front-end quality (accessibility, usability, and web standards) and make test results available'
   },
   {
     instructions: `${sharedContext} Use the listPages tool to start. If it shows that the page you want facts about has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, or the orderNewTest tool for immediate, automatically approved testing. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate, automatically approved retesting. For detailed documentation, call the getKilotestOverview tool.`
@@ -86,10 +82,10 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getKilotestOverview',
     {
-      description: toolDoc('Explain what Kilotest is, what its tools do, and how its results are structured.'),
+      description: `Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. ${sharedContext}`,
       inputSchema: {},
       annotations: {
-        title: toolDoc('Explain what Kilotest is, what its tools do, and how its results are structured.'),
+        title: 'Explain Kilotest and its tools',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -104,11 +100,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listPages',
     {
-      description: toolDoc('Provide basics about all tested pages, including how to get details about the latest report about each.'),
+      description: 'Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the timestamp and job identifier of its latest available report.',
       inputSchema: {},
       outputSchema: listPagesResponseSchema,
       annotations: {
-        title: toolDoc('Provide basics about all tested pages, including how to get details about the latest report about each.'),
+        title: 'List tested pages',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -124,11 +120,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: toolDoc('Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page.'),
+      description: 'Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to switch to an earlier or later report or to begin examining this report. Returns the history and the basics about this report’s issues.',
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
-        title: toolDoc('Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page.'),
+        title: 'List issues in a report',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -144,11 +140,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listViolators',
     {
-      description: toolDoc('Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.'),
+      description: 'Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue. Returns basics about each violating element.',
       inputSchema: listViolatorsSchema,
       outputSchema: listViolatorsResponseSchema,
       annotations: {
-        title: toolDoc('Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.'),
+        title: 'List elements exhibiting an issue',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -164,11 +160,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listDiagnoses',
     {
-      description: toolDoc('Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.'),
+      description: 'Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine.',
       inputSchema: listDiagnosesSchema,
       outputSchema: listDiagnosesResponseSchema,
       annotations: {
-        title: toolDoc('Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.'),
+        title: 'List diagnoses of a violation',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -184,11 +180,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getReport',
     {
-      description: toolDoc('Get one full report in JSON.'),
+      description: 'Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified timestamp and job identifier. The size of the report is disclosed by the listIssues tool.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
-        title: toolDoc('Get one full report in JSON.'),
+        title: 'Get a full report',
         readOnlyHint: true,
         idempotentHint: true,
         destructiveHint: false,
@@ -204,11 +200,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: toolDoc('Process my request to test a page about which no report is available yet.'),
+      description: 'Submits a request to test a page that has no report yet; queued for manager approval. Use orderNewTest instead for immediate, automatically approved testing. Returns a request confirmation with disposition details.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
-        title: toolDoc('Process my request to test a page about which no report is available yet.'),
+        title: 'Request testing of a new page',
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -224,11 +220,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: toolDoc('Process my request to retest a page about which a report is available.'),
+      description: 'Submits a request to retest a page whose existing report is considered obsolete; queued for manager approval. Use orderRetest instead for immediate, automatically approved retesting. Returns a request confirmation with disposition details.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
-        title: toolDoc('Process my request to retest a page about which a report is available.'),
+        title: 'Request a retest',
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -244,11 +240,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: toolDoc('Process my request to add or improve a feature.'),
+      description: 'Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Returns a request confirmation with disposition details.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
-        title: toolDoc('Process my request to add or improve a feature.'),
+        title: 'Request a feature',
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -264,11 +260,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'orderNewTest',
     {
-      description: toolDoc('Process my order to test a page about which no report is available yet, immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes.'),
+      description: 'Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: orderNewTestSchema,
       outputSchema: orderNewTestResponseSchema,
       annotations: {
-        title: toolDoc('Process my order to test a page about which no report is available yet, immediately and automatically approved.'),
+        title: 'Order immediate testing of a new page',
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -284,11 +280,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'orderRetest',
     {
-      description: toolDoc('Process my order to retest a page immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes.'),
+      description: 'Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: orderRetestSchema,
       outputSchema: orderRetestResponseSchema,
       annotations: {
-        title: toolDoc('Process my order to retest a page immediately and automatically approved.'),
+        title: 'Order an immediate retest',
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
@@ -304,11 +300,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'awaitTest',
     {
-      description: toolDoc('Wait for a job ordered via the orderNewTest or orderRetest tool to complete, using the report identifier either tool returned. Blocks until the report is ready, the job fails, or a maximum wait time elapses; sends no interim notices.'),
+      description: 'Waits for a job ordered via the orderNewTest or orderRetest tool to finish, using the report identifier either tool returned. Use this instead of polling listIssues when an immediate answer is preferred. Blocks until the report is ready, the job fails, or a maximum wait time elapses, sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {
-        title: toolDoc('Wait for a job ordered via the orderNewTest or orderRetest tool to complete.'),
+        title: 'Wait for an ordered job to finish',
         readOnlyHint: true,
         idempotentHint: false,
         destructiveHint: false,

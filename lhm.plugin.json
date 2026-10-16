@@ -1,7 +1,7 @@
 {
   "author": "Jonathan Robert Pool",
   "cloudEndpoint": "https://kilotest.com/mcp",
-  "description": "Tools that test web pages for front-end quality (accessibility, usability, and standards conformity) and make test results available",
+  "description": "Tools that test web pages for front-end quality (accessibility, usability, and web standards) and make test results available",
   "homepage": "https://github.com/jrpool/kilotest",
   "identifier": "jrpool-kilotest",
   "name": "Kilotest",
@@ -18,14 +18,14 @@
   "tools": [
     {
       "name": "getKilotestOverview",
-      "description": "Explain what Kilotest is, what its tools do, and how its results are structured. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and web standards). Each test session generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested pages, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages.",
       "inputSchema": {
         "type": "object",
         "properties": {},
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
       "annotations": {
-        "title": "Explain what Kilotest is, what its tools do, and how its results are structured. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Explain Kilotest and its tools",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -37,7 +37,7 @@
     },
     {
       "name": "listPages",
-      "description": "Provide basics about all tested pages, including how to get details about the latest report about each. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Lists all pages Kilotest has tested. Use this first to discover whether a page already has a report before requesting a test. Returns, for each tested page, its description, URL, and the timestamp and job identifier of its latest report.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -400,7 +400,7 @@
         }
       },
       "annotations": {
-        "title": "Provide basics about all tested pages, including how to get details about the latest report about each. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "List tested pages",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -412,7 +412,7 @@
     },
     {
       "name": "listIssues",
-      "description": "Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to drill into a specific report, identified by its timestamp and job identifier. Returns basics about the report's issues and a list of every report about the same page, from oldest to latest.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1139,7 +1139,7 @@
         }
       },
       "annotations": {
-        "title": "Provide details about one report, including basics about the issues reported in it and the history of all reports about the same page. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "List issues in a report",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -1151,7 +1151,7 @@
     },
     {
       "name": "listViolators",
-      "description": "Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill from an issue down to the elements it affects. Returns basics about each violating element, including its identifier in the page's element catalog.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1645,7 +1645,7 @@
         }
       },
       "annotations": {
-        "title": "Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "List elements exhibiting an issue",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -1657,7 +1657,7 @@
     },
     {
       "name": "listDiagnoses",
-      "description": "Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to drill from an element down to the rule-engine explanations of why it was flagged. Returns, for each rule engine that reported the issue on that element, its diagnosis.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2169,7 +2169,7 @@
         }
       },
       "annotations": {
-        "title": "Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "List diagnoses of a violation",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -2181,7 +2181,7 @@
     },
     {
       "name": "getReport",
-      "description": "Get one full report in JSON. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified timestamp and job identifier.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2432,7 +2432,7 @@
         }
       },
       "annotations": {
-        "title": "Get one full report in JSON. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Get a full report",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": true,
@@ -2444,7 +2444,7 @@
     },
     {
       "name": "requestNewTest",
-      "description": "Process my request to test a page about which no report is available yet. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Submits a request to test a page that has no report yet; queued for manual approval. Use orderNewTest instead for immediate, automatically approved testing. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2791,7 +2791,7 @@
         }
       },
       "annotations": {
-        "title": "Process my request to test a page about which no report is available yet. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Request testing of a new page",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
@@ -2803,7 +2803,7 @@
     },
     {
       "name": "requestRetest",
-      "description": "Process my request to retest a page about which a report is available. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Submits a request to retest a page whose existing report is obsolete; queued for manual approval. Use orderRetest instead for immediate, automatically approved retesting. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3140,7 +3140,7 @@
         }
       },
       "annotations": {
-        "title": "Process my request to retest a page about which a report is available. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Request a retest",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
@@ -3152,7 +3152,7 @@
     },
     {
       "name": "requestFeature",
-      "description": "Process my request to add or improve a feature. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Submits a request to add a new feature or improve an existing one; queued for manual review. There is no immediate-approval alternative for feature requests. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3414,7 +3414,7 @@
         }
       },
       "annotations": {
-        "title": "Process my request to add or improve a feature. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Request a feature",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
@@ -3426,7 +3426,7 @@
     },
     {
       "name": "orderNewTest",
-      "description": "Process my order to test a page about which no report is available yet, immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3798,7 +3798,7 @@
         }
       },
       "annotations": {
-        "title": "Process my order to test a page about which no report is available yet, immediately and automatically approved. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Order immediate testing of a new page",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
@@ -3810,7 +3810,7 @@
     },
     {
       "name": "orderRetest",
-      "description": "Process my order to retest a page immediately and automatically approved, instead of waiting for manual approval. Testing typically takes about 2 minutes and occasionally up to 4 minutes. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4172,7 +4172,7 @@
         }
       },
       "annotations": {
-        "title": "Process my order to retest a page immediately and automatically approved. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Order an immediate retest",
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
@@ -4184,7 +4184,7 @@
     },
     {
       "name": "awaitTest",
-      "description": "Wait for a job ordered via the orderNewTest or orderRetest tool to complete, using the report identifier either tool returned. Blocks until the report is ready, the job fails, or a maximum wait time elapses; sends no interim notices. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+      "description": "Waits for a job ordered via the orderNewTest or orderRetest tool to finish, using the report identifier either tool returned. Use this instead of polling listIssues when an immediate answer is preferred. Blocks until the report is ready, the job fails, or a maximum wait time elapses, sending no interim notices; returns the finished job's status and, if ready, its report identifier.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4495,7 +4495,7 @@
         }
       },
       "annotations": {
-        "title": "Wait for a job ordered via the orderNewTest or orderRetest tool to complete. Kilotest tests web pages for front-end quality (accessibility, usability, and standards conformity); results are organized as tested page, then report, then issue, then violator element, then diagnosis.",
+        "title": "Wait for an ordered job to finish",
         "readOnlyHint": true,
         "destructiveHint": false,
         "idempotentHint": false,

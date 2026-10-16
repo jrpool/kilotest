@@ -1,6 +1,6 @@
 # Kilotest
 
-Kilotest helps language models and AI platforms to give thorough, accurate and truthful answers when users ask about the front-end quality (i.e. accessibility, usability, and web standards) of web pages. Kilotest integrates an ensemble of twelve independent rule engines to test a web page. Kilotest creates a structured report of the results and saves the report for future reference. Kilotest API endpoints and MCP tools can provide multipage, single-page, and element-level test results.
+Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested pages, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages. Kilotest features are available via a web UI, an API, and an MCP server with streamable HTTP and no authentication.
 
 ## API
 

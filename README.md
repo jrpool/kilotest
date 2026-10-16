@@ -10,7 +10,7 @@ An ensemble testing and reporting service for front-end web quality
 
 ## Features
 
-This application uses an ensemble of 12 rule engines to test web pages for front-end quality (i.e. accessibility, usability, and web standards).
+This application uses an ensemble of 12 rule engines to test web pages for front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG (HTML, CSS, ARIA, WCAG)).
 
 The testing paradigm employed by Kilotest is discussed in these papers:
 
@@ -18,11 +18,11 @@ The testing paradigm employed by Kilotest is discussed in these papers:
 - [Testaro: Efficient Ensemble Testing for Web Accessibility](https://arxiv.org/abs/2309.10167)
 - [Accessibility Metatesting: Comparing Nine Testing Tools](https://arxiv.org/abs/2304.07591)
 
-Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access.
+Kilotest acts as a web server for human users, an MCP server (streamable HTTP, no authentication) for AI platforms, and an API for programmatic access.
 
 Testing for Kilotest is performed by one or more workers (testing agents) that obtain jobs from Kilotest, perform them, and send reports of the results back to Kilotest. Those agents are instances of the [Testaro](https://www.npmjs.com/package/testaro) package. Thus, the pages that Kilotest tests need not be on the public Internet. They need only be reachable by the Testaro workers that do the testing for Kilotest. So, one or more Testaro workers running inside a private intranet can test internal pages, as well as any external ones reachable from inside the intranet.
 
-An active production instance of Kilotest may require multiple Testaro workers to handle the load, because testing one web page typically takes about 3 minutes and workers test only one page at a time.
+An active production instance of Kilotest may require multiple Testaro workers to handle the load, because testing one web page typically takes 2 to 4 minutes and workers test only one page at a time.
 
 ## Getting started locally with 1 worker
 

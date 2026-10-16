@@ -2,7 +2,7 @@
 
 ## What Kilotest is
 
-Kilotest is an application that performs ensemble testing of web pages for front-end quality (i.e. accessibility, usability, and standard conformance) and reports the test results.
+Kilotest is an application that performs ensemble testing of web pages for front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) and reports the test results.
 
 ## What Kilotest does for language models
 

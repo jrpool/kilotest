@@ -62,12 +62,12 @@ test('each tool has a description and a handler function', () => {
   const tools = (server as any)._registeredTools;
   for (const [name, tool] of Object.entries(tools) as [string, any][]) {
     assert.ok(tool.description, `${name} has a description`);
-    assert.ok(
-      tool.description.includes('front-end quality'),
-      `${name} description includes the shared domain context`
-    );
     assert.equal(typeof tool.handler, 'function', `${name} has a handler function`);
   }
+  // Only getKilotestOverview repeats the shared domain context in its own description; the
+  // other tools rely on the server instructions for that context, so their descriptions stay
+  // focused on what each tool does, when to use it, and what it returns.
+  assert.ok(tools.getKilotestOverview.description.includes('front-end quality'));
 });
 
 test('getKilotestOverview handler returns overview text and records a metric', async () => {

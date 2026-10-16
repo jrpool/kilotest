@@ -93,7 +93,7 @@ export const response = async (args: string[]) => {
         'what happens next': 'Testing has begun. Once it finishes, the report will be available via the listIssues tool.',
         'report identifier': {timeStamp, jobID: reportJobID},
         'how you can check for completion': `Call the listIssues tool with timeStamp "${timeStamp}" and jobID "${reportJobID}" to learn whether the report is ready.`,
-        'do you want to wait for completion': 'Testing typically takes about 2 minutes and occasionally up to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same timeStamp and jobID.'
+        'do you want to wait for completion': 'Testing typically takes 2 to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same timeStamp and jobID.'
       };
     }
     else {

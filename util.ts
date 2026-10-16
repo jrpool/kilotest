@@ -1205,7 +1205,7 @@ export const orderJob = (
 // waits before giving up. Both are read at call time (not cached), via environment
 // variables, so tests can shrink them well below the real ~2-to-4-minute wait a
 // production caller experiences; AWAIT_JOB_TIMEOUT_MS deliberately exceeds the
-// documented "occasionally up to 4 minutes" a caller is told to expect, leaving margin
+// documented "2 to 4 minutes" a caller is told to expect, leaving margin
 // so a job that is genuinely still running is not mistaken for one that never will
 // finish.
 const awaitJobPollMs = () => getEnvMax('AWAIT_JOB_POLL_MS', 2000);

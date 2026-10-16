@@ -160,7 +160,7 @@ Kilotest offers these tools:
     - `timeStamp`: initial segment of the report identifier returned by `orderNewTest` or `orderRetest`
     - `jobID`: final segment of the report identifier returned by `orderNewTest` or `orderRetest`
   - source of parameters: response to an `orderNewTest` or `orderRetest` request
-  - caveat: testing typically takes about 2 minutes and occasionally up to 4 minutes; sends no interim notices while waiting
+  - caveat: testing typically takes 2 to 4 minutes; sends no interim notices while waiting
 
 ## After a test, retest, or feature request
 

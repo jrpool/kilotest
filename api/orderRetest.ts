@@ -7,7 +7,7 @@
 
 import {z} from 'zod';
 import {getRequestFailureReason, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {checkLength, isJobID, isTimeStamp, orderJob} from '../util.ts';
+import {checkLength, isReportID, orderJob} from '../util.ts';
 import {orderRetestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -19,16 +19,16 @@ type ResponseContent = z.infer<typeof orderRetestResponseSchema>['response conte
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [timeStamp = '', jobID = '', reason = ''] = args;
+  const [reportID = '', reason = ''] = args;
   const thisHost = getThisHost();
   const reasonCheck = checkLength(reason, 20, 100, 'reason');
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your order'];
   let requestDisposition: ResponseContent['disposition of your order'] = null;
-  // If the timestamp or job ID is not syntactically valid:
-  if (!isTimeStamp(timeStamp) || !isJobID(jobID)) {
+  // If the report identifier is not syntactically valid:
+  if (!isReportID(reportID)) {
     requestDetails = {
-      error: 'order invalid: the report timestamp or job identifier is malformed'
+      error: 'order invalid: the reportID is malformed'
     };
   }
   // Otherwise, if the encoded reason is too short or too long:
@@ -43,7 +43,7 @@ export const response = async (args: string[]) => {
     // no manual-approval step, gated only by the lightweight checks orderJob itself
     // performs (the target is not already claimed or queued, and the job queue is not
     // already full). This resolves the cited report's description and URL itself.
-    const orderResult = await orderJob({timeStamp, jobID}, reason);
+    const orderResult = await orderJob({reportID}, reason);
     // If the cited report does not exist:
     if (orderResult.result === 'nonreport') {
       requestDetails = {
@@ -63,12 +63,11 @@ export const response = async (args: string[]) => {
       };
       // Add information about the disposition of the order.
       if (orderResult.result === 'ok') {
-        const [reportTimeStamp, reportJobID] = orderResult.jobID.split('-') as [string, string];
         requestDisposition = {
           'what happens next': 'Testing has begun. Once it finishes, the report will be available via the listIssues tool.',
-          'report identifier': {timeStamp: reportTimeStamp, jobID: reportJobID},
-          'how you can check for completion': `Call the listIssues tool with timeStamp "${reportTimeStamp}" and jobID "${reportJobID}" to learn whether the report is ready.`,
-          'do you want to wait for completion': 'Testing typically takes 2 to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same timeStamp and jobID.'
+          'report identifier': orderResult.reportID,
+          'how you can check for completion': `Call the listIssues tool with reportID "${orderResult.reportID}" to learn whether the report is ready.`,
+          'do you want to wait for completion': 'Testing typically takes 2 to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same reportID.'
         };
       }
       else {
@@ -94,9 +93,9 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'orderRetest',
     'this request': {
-      description: 'Process my order to retest a page, immediately and without manual approval. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listIssues request. The reason property of the request body is the reason why the page should be retested.',
+      description: 'Process my order to retest a page, immediately and without manual approval. The reportID parameter identifies the latest available report about the page. It was in the response to my earlier listIssues request. The reason property of the request body is the reason why the page should be retested.',
       method: 'POST',
-      URL: `${thisHost}/api/orderRetest/${timeStamp}/${jobID}`,
+      URL: `${thisHost}/api/orderRetest/${reportID}`,
       body: {
         reason
       },
@@ -104,12 +103,12 @@ export const response = async (args: string[]) => {
         'tool name': 'listIssues',
         description: 'Provide details about one report, including basics about the issues reported in it.',
         method: 'GET',
-        URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
+        URL: `${thisHost}/api/listIssues/${reportID}`
       }
     },
     'URLs of similar requests for web users': {
       'this request': null,
-      'closest ancestor request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
+      'closest ancestor request': `${thisHost}/listIssues.html/${reportID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

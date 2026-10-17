@@ -28,14 +28,13 @@ import {issues as issueSpecs} from 'testaro-issues';
 // Adds parameters to a query for the answer page.
 const populateQuery = async (
   issueID: string,
-  timeStamp: string,
-  jobID: string,
+  reportID: string,
   catalogIndex: string,
   pathID: string | null,
   query: Record<string, any>
 ) => {
   // Get the report.
-  const report = await getReport(timeStamp, jobID);
+  const report = await getReport(reportID);
   // If this failed:
   if (isReportError(report)) {
     // Populate the query with the reason.
@@ -113,12 +112,12 @@ const populateQuery = async (
 };
 // Returns a page answering the diagnoses question.
 export const answer = async (pageArgs: string, search: string) => {
-  const [issueID, timeStamp, jobID, catalogIndex] = pageArgs.split('/') as [string, string, string, string];
+  const [issueID, reportID, catalogIndex] = pageArgs.split('/') as [string, string, string];
   const params = new URLSearchParams(search);
   const pathID = params.get('pathID');
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
-  await populateQuery(issueID, timeStamp, jobID, catalogIndex, pathID, query);
+  await populateQuery(issueID, reportID, catalogIndex, pathID, query);
   // If this failed:
   if (query.error) {
     // Return why.

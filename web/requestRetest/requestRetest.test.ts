@@ -65,7 +65,7 @@ test('answer returns ok with a populated answer page for a valid retest request'
   // Require the module after DB_DIR is set.
   const {answer} = await import('./index.ts');
   // Use the 260101T0001-ct report (All CantTell Page, https://example.com/canttell).
-  const result: any = await answer('260101T0001/ct', 'Because changes were made');
+  const result: any = await answer('260101T0001-ct', 'Because changes were made');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage, 'answerPage should be present');
   // Verify the description and reason placeholders were replaced with the report target.
@@ -86,7 +86,7 @@ test('answer returns ok with a populated answer page for a valid retest request'
 test('answer returns an error when the report does not exist', async () => {
   const {answer} = await import('./index.ts');
   // Use a nonexistent report timestamp and jobID.
-  const result: any = await answer('990101T0000/xxx', 'Because changes were made');
+  const result: any = await answer('990101T0000-xxx', 'Because changes were made');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Invalid request');
 });
@@ -94,8 +94,8 @@ test('answer returns an error when the report does not exist', async () => {
 test('answer returns an error for a duplicate retest request', async () => {
   const {answer} = await import('./index.ts');
   // Submit the same retest request twice; the second is a duplicate.
-  await answer('260101T0001/ct', 'Because changes were made');
-  const result: any = await answer('260101T0001/ct', 'Because changes were made');
+  await answer('260101T0001-ct', 'Because changes were made');
+  const result: any = await answer('260101T0001-ct', 'Because changes were made');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Test request duplicates an already submitted request');
 });
@@ -103,7 +103,7 @@ test('answer returns an error for a duplicate retest request', async () => {
 test('answer returns an error when the cited report has been superseded', async () => {
   const {answer} = await import('./index.ts');
   // 260101T0000-mix (Mixed Outcomes) is superseded by 260202T0000-new.
-  const result: any = await answer('260101T0000/mix', 'Because changes were made');
+  const result: any = await answer('260101T0000-mix', 'Because changes were made');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'A later report about the page is already available');
 });
@@ -119,7 +119,7 @@ test('answer returns an error when a matching job is already claimed or queued',
     target: {what: 'All CantTell Page', url: 'https://example.com/unrelated'}
   }));
   try {
-    const result: any = await answer('260101T0001/ct', 'Because changes were made');
+    const result: any = await answer('260101T0001-ct', 'Because changes were made');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'A request to test a page with the same description or URL is already approved');
   }
@@ -135,7 +135,7 @@ test('answer returns an error with a fallback channel when the request queue is 
     timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Because filler'
   }));
   await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
-  const result: any = await answer('260101T0001/ct', 'Because changes were made');
+  const result: any = await answer('260101T0001-ct', 'Because changes were made');
   assert.equal(result.status, 'error');
   assert.ok(result.message.startsWith('Too many requests are awaiting approval right now.'));
   assert.ok(result.message.includes('https://github.com/jrpool/kilotest/issues'));

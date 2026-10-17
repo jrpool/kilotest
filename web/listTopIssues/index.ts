@@ -36,9 +36,9 @@ const getIssuesSummary = async () => {
   const latestReportExtracts = await getReportExtracts(true);
   // For each of them:
   for (const reportExtract of latestReportExtracts) {
-    const {timeStamp, jobID} = reportExtract;
+    const {id} = reportExtract;
     // Get the corresponding report.
-    const report = await getReport(timeStamp, jobID);
+    const report = await getReport(id);
     // If this failed:
     if (isReportError(report)) {
       // Populate the summary with the reason.

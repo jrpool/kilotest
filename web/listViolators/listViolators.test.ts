@@ -64,7 +64,7 @@ after(() => {
 // TESTS
 
 test('listViolators returns an ok status with valid HTML for linkNoText in the mixed report', async () => {
-  const result = await answer('linkNoText/260101T0000/mix');
+  const result = await answer('linkNoText/260101T0000-mix');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -72,19 +72,19 @@ test('listViolators returns an ok status with valid HTML for linkNoText in the m
 });
 
 test('listViolators includes the issue summary in the HTML', async () => {
-  const result = await answer('linkNoText/260101T0000/mix');
+  const result = await answer('linkNoText/260101T0000-mix');
   assert.ok(result.answerPage.includes('link not named'));
 });
 
 test('listViolators includes links to listDiagnoses for violators', async () => {
-  const result = await answer('linkNoText/260101T0000/mix');
+  const result = await answer('linkNoText/260101T0000-mix');
   const html = parse(result.answerPage);
   const diagnosisLinks = html.querySelectorAll('a[href*="listDiagnoses.html"]');
   assert.ok(diagnosisLinks.length > 0);
 });
 
 test('listViolators excludes cantTell instances from the violator count', async () => {
-  const result = await answer('focusIndicationBad/260101T0000/mix');
+  const result = await answer('focusIndicationBad/260101T0000-mix');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('<li>Violators: 0</li>'));
   assert.ok(!result.answerPage.includes('<h3>Element'));
@@ -92,12 +92,12 @@ test('listViolators excludes cantTell instances from the violator count', async 
 
 
 test('listViolators returns an error status for a nonexistent report', async () => {
-  const result = await answer('linkNoText/999999T9999/xyz');
+  const result = await answer('linkNoText/999999T9999-xyz');
   assert.equal(result.status, 'error');
 });
 
 test('listViolators returns an error status for an unknown issue', async () => {
-  const result = await answer('nonexistentIssue/260101T0000/mix');
+  const result = await answer('nonexistentIssue/260101T0000-mix');
   assert.equal(result.status, 'error');
 });
 
@@ -105,7 +105,7 @@ test('listViolators returns an error when getReport fails', async () => {
   getReportCallCount = 0;
   failGetReportOnCall = 1;
   try {
-    const result = await answer('linkNoText/260101T0000/mix');
+    const result = await answer('linkNoText/260101T0000-mix');
     assert.equal(result.status, 'error');
     assert.ok(result.message.includes('invalid'));
   }
@@ -117,7 +117,7 @@ test('listViolators returns an error when getReport fails', async () => {
 test('listViolators returns an error when getPageDataStrings fails after getReport succeeds', async () => {
   pageDataStringsOverride = {error: 'Page data strings error'};
   try {
-    const result = await answer('linkNoText/260101T0000/mix');
+    const result = await answer('linkNoText/260101T0000-mix');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Page data strings error');
   }
@@ -176,7 +176,7 @@ test('listViolators includes take-me-there links for text-linkable violators', a
       checkpoints: []
     };
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
-    const result = await answer('linkNoText/260101T0003/tlk');
+    const result = await answer('linkNoText/260101T0003-tlk');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('Take me there'));
     assert.ok(result.answerPage.includes('Take me there</q> links will open'));
@@ -193,7 +193,7 @@ test('listViolators returns an error when report facts are not obtained', async 
     urlLink: '<a href="https://example.com/mixed">https://example.com/mixed</a>'
   };
   try {
-    const result = await answer('linkNoText/260101T0000/mix');
+    const result = await answer('linkNoText/260101T0000-mix');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Report facts not obtained');
   }
@@ -269,7 +269,7 @@ test('listViolators handles instances with missing catalogIndex and acts with no
   };
   await fs.writeFile(reportPath, JSON.stringify(report));
   try {
-    const result = await answer('linkNoText/260101T0004/nvi');
+    const result = await answer('linkNoText/260101T0004-nvi');
     assert.equal(result.status, 'ok');
     // Should show plural violator count.
     assert.ok(result.answerPage.includes('<li>Violators: 2</li>'));
@@ -336,7 +336,7 @@ test('listViolators uses HTML fallback when catalog has no tagName and pathID is
   };
   await fs.writeFile(reportPath, JSON.stringify(report));
   try {
-    const result = await answer('linkNoText/260101T0005/htm');
+    const result = await answer('linkNoText/260101T0005-htm');
     assert.equal(result.status, 'ok');
     // The tagName should fall back to HTML.
     assert.ok(result.answerPage.includes('HTML'));

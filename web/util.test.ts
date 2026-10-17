@@ -119,8 +119,8 @@ test('makeBreakable inserts wbr before non-initial slashes', () => {
 });
 
 // Returns a fixture report, failing the test if it is not usable.
-const getFixtureReport = async (timeStamp: string, jobID: string) => {
-  const report = await getReport(timeStamp, jobID);
+const getFixtureReport = async (reportID: string) => {
+  const report = await getReport(reportID);
   if (isReportError(report)) {
     assert.fail(report.error);
   }
@@ -128,19 +128,19 @@ const getFixtureReport = async (timeStamp: string, jobID: string) => {
 };
 
 test('getPageData returns page data for a valid report', async () => {
-  const data = getPageData(await getFixtureReport('260101T0000', 'mix'));
+  const data = getPageData(await getFixtureReport('260101T0000-mix'));
   assert.equal(data.description, 'Mixed Outcomes');
   assert.equal(data.url, 'https://example.com/mixed');
   assert.equal(typeof data.daysAgo, 'number');
 });
 
 test('getReport returns an error for a nonexistent report', async () => {
-  const report = await getReport('999999T9999', 'xxx');
+  const report = await getReport('999999T9999-xxx');
   assert.ok(isReportError(report));
 });
 
 test('getPageDataStrings returns HTML strings for a valid report', async () => {
-  const strings = getPageDataStrings(await getFixtureReport('260101T0000', 'mix'));
+  const strings = getPageDataStrings(await getFixtureReport('260101T0000-mix'));
   assert.equal(strings.description, 'Mixed Outcomes');
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
@@ -149,7 +149,7 @@ test('getPageDataStrings returns HTML strings for a valid report', async () => {
 });
 
 test('getPageDataStrings dates a report by its completion time, not by its job time stamp', async () => {
-  const report = await getFixtureReport('260101T0001', 'ct');
+  const report = await getFixtureReport('260101T0001-ct');
   report.jobData.endTime = '26-03-04T05:06';
   const strings = getPageDataStrings(report);
   assert.equal(strings.description, 'All CantTell Page');
@@ -167,7 +167,7 @@ test('getDateTimeString describes an invalid date as unknown', () => {
 });
 
 test('getPageDataStrings derives the strings from the report object', async () => {
-  const report = await getFixtureReport('260101T0000', 'mix');
+  const report = await getFixtureReport('260101T0000-mix');
   report.target.what = 'Custom Page';
   const strings = getPageDataStrings(report);
   assert.equal(strings.description, 'Custom Page');
@@ -188,7 +188,7 @@ test('getPageDataStrings reports a 1-day-old report as tested 1 day ago', () => 
 
 test('getReportData returns data for a valid report', async () => {
   const {getReportData} = await import('./util.ts');
-  const result = getReportData(await getFixtureReport('260101T0000', 'mix'));
+  const result = getReportData(await getFixtureReport('260101T0000-mix'));
   assert.equal(result.url, 'https://example.com/mixed');
   assert.equal(result.jobName, '260101T0000-mix');
 });
@@ -201,7 +201,7 @@ test('getReportData falls back to the engine ID for an unknown prevented engine'
   const reportPath = path.join(reportsPath(), '260103T0000-unk.json');
   await fs.writeFile(reportPath, JSON.stringify(reportJSON));
   try {
-    const result = getReportData(await getFixtureReport('260103T0000', 'unk'));
+    const result = getReportData(await getFixtureReport('260103T0000-unk'));
     assert.ok(result.preventedEngineNames.includes('unknownEngine'));
   }
   finally {
@@ -211,7 +211,7 @@ test('getReportData falls back to the engine ID for an unknown prevented engine'
 
 test('getPageFactsLines returns the about-page list lines for a report', async () => {
   const {getReportData} = await import('./util.ts');
-  const report = await getFixtureReport('260101T0000', 'mix');
+  const report = await getFixtureReport('260101T0000-mix');
   const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '  ');
   const html = lines.join('\n');
   assert.ok(html.includes('<li>URL: <a href="https://example.com/mixed">'));
@@ -223,19 +223,19 @@ test('getPageFactsLines returns the about-page list lines for a report', async (
 
 test('getPageFactsLines ends with a link to download the full report', async () => {
   const {getReportData} = await import('./util.ts');
-  const report = await getFixtureReport('260101T0000', 'mix');
+  const report = await getFixtureReport('260101T0000-mix');
   const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
   const topItems = parse(lines.join('\n')).querySelectorAll('ul:not(ul ul) > li');
   const lastItem = topItems[topItems.length - 1]!;
   assert.ok(topItems[topItems.length - 2]!.text.trim().startsWith('Summary of results:'));
-  assert.equal(lastItem.querySelector('a')?.getAttribute('href'), '/fullReport.json/260101T0000/mix');
+  assert.equal(lastItem.querySelector('a')?.getAttribute('href'), '/fullReport.json/260101T0000-mix');
   assert.equal(lastItem.text.trim(), 'Download the full technical report (JSON)');
 });
 
 // Returns the 3 rule-engine amounts and the 3 summary amounts of the page facts of a report.
-const getResultFacts = async (timeStamp: string, jobID: string) => {
+const getResultFacts = async (reportID: string) => {
   const {getReportData} = await import('./util.ts');
-  const report = await getFixtureReport(timeStamp, jobID);
+  const report = await getFixtureReport(reportID);
   const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
   const items = parse(lines.join('\n')).querySelectorAll('li');
   const itemTexts: string[] = items.map(li => li.text.trim());
@@ -263,21 +263,21 @@ const getResultFacts = async (timeStamp: string, jobID: string) => {
 };
 
 // Expected facts, hand-computed from the fixtures.
-const expectedFacts: [string, string, number, number, number, number, number, number][] = [
-  // Time stamp, job ID, engines called, engines able to test, reporting engines, violations, violators, issues.
-  ['260101T0000', 'mix', 2, 2, 2, 3, 2, 2],
-  ['260202T0000', 'new', 1, 1, 1, 1, 1, 1],
-  ['260101T0001', 'ct', 1, 1, 0, 0, 0, 0],
-  ['260101T0002', 'no', 1, 1, 1, 1, 1, 1],
-  ['260101T0005', 'emp', 1, 1, 0, 0, 0, 0],
-  ['260101T0006', 'prv', 2, 1, 1, 1, 1, 1],
-  ['260101T0008', 'mul', 2, 2, 2, 4, 3, 1],
-  ['260101T0009', 'brd', 3, 3, 1, 4, 4, 1]
+const expectedFacts: [string, number, number, number, number, number, number][] = [
+  // Report ID, engines called, engines able to test, reporting engines, violations, violators, issues.
+  ['260101T0000-mix', 2, 2, 2, 3, 2, 2],
+  ['260202T0000-new', 1, 1, 1, 1, 1, 1],
+  ['260101T0001-ct', 1, 1, 0, 0, 0, 0],
+  ['260101T0002-no', 1, 1, 1, 1, 1, 1],
+  ['260101T0005-emp', 1, 1, 0, 0, 0, 0],
+  ['260101T0006-prv', 2, 1, 1, 1, 1, 1],
+  ['260101T0008-mul', 2, 2, 2, 4, 3, 1],
+  ['260101T0009-brd', 3, 3, 1, 4, 4, 1]
 ];
 
-for (const [timeStamp, jobID, called, tested, reporters, violations, violators, issues] of expectedFacts) {
-  test(`getPageFactsLines gives correct rule-engine and summary amounts for ${timeStamp}-${jobID}`, async () => {
-    const facts = await getResultFacts(timeStamp, jobID);
+for (const [reportID, called, tested, reporters, violations, violators, issues] of expectedFacts) {
+  test(`getPageFactsLines gives correct rule-engine and summary amounts for ${reportID}`, async () => {
+    const facts = await getResultFacts(reportID);
     assert.equal(facts.called, called);
     assert.equal(facts.tested, tested);
     assert.equal(facts.reporters, reporters);
@@ -290,7 +290,7 @@ for (const [timeStamp, jobID, called, tested, reporters, violations, violators, 
 
 test('getIssueFactsLines returns the about-issue list lines for a report', async () => {
   const {getIssueFactsLines} = await import('./util.ts');
-  const report = await getFixtureReport('260101T0000', 'mix');
+  const report = await getFixtureReport('260101T0000-mix');
   const lines = getIssueFactsLines(report, 'linkNoText', '  ');
   const html = lines.join('\n');
   assert.ok(html.includes('<li>Why it matters:'));
@@ -303,7 +303,7 @@ test('getIssueFactsLines returns the about-issue list lines for a report', async
 
 test('getViolatorFactsLines returns the about-violator list lines for a report', async () => {
   const {getViolatorFactsLines} = await import('./util.ts');
-  const report = await getFixtureReport('260101T0000', 'mix');
+  const report = await getFixtureReport('260101T0000-mix');
   const lines = getViolatorFactsLines(report, 'linkNoText', '0', null, '  ');
   const html = lines.join('\n');
   assert.ok(html.includes('<li>Tag name: <code>'));

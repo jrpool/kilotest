@@ -59,13 +59,11 @@ export const answer = async (_: any, search: string, method: string) => {
     // Get the report.
     const report = JSON.parse(reportJSON);
     const {id, target} = report;
-    const [timeStamp, jobID] = id.split('-');
     const {what: description} = target;
     // Add its data to the array.
     reportsData.push({
       description,
-      timeStamp,
-      jobID,
+      id,
       reportTime: getReportEndTime(report)
     });
   }
@@ -80,12 +78,12 @@ export const answer = async (_: any, search: string, method: string) => {
   const margin = ' '.repeat(12);
   // For each report:
   reportsData.forEach(data => {
-    const {jobID, timeStamp, description, reportTime} = data;
+    const {id, description, reportTime} = data;
     const when = getDateTimeString(reportTime);
-    const specString = `${description} (job <code>${timeStamp}-${jobID}</code> completed ${when})`;
+    const specString = `${description} (job <code>${id}</code> completed ${when})`;
     // Add a line with a radio button to unhide it.
     lines.push(
-      `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
+      `${margin}<p><input type="radio" name="report" value="${id}"> ${specString}</p>`
     );
   });
   const query: Record<string, string> = {

@@ -36,12 +36,12 @@ type ResponseContent = z.infer<typeof listIssuesResponseSchema>['response conten
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [timeStamp = '', jobID = ''] = args;
+  const [reportID = ''] = args;
   const thisHost = getThisHost();
   // Get the report.
-  const report = await getReport(timeStamp, jobID);
+  const report = await getReport(reportID);
   // Get the basics about the report (which may be only an error message).
-  const reportBasics = isReportError(report) ? report : await getReportBasics(timeStamp, jobID);
+  const reportBasics = isReportError(report) ? report : await getReportBasics(reportID);
   // Initialize the response content.
   const responseContent: ResponseContent = {
     'basics about the report': reportBasics,
@@ -68,21 +68,19 @@ export const response = async (args: string[]) => {
       const lastIndex = pageExtracts.length - 1;
       // Add the history of reports about the page to the response content.
       responseContent['history of reports about the page'] = pageExtracts.map((extract, index) => {
-        const extractTimeStamp = extract.timeStamp;
-        const extractJobID = extract.jobID;
+        const extractID = extract.id;
         return {
-          identifier: `${extractTimeStamp}-${extractJobID}`,
+          identifier: extractID,
           'completion date and time': extract.reportTime,
           'days since the report was completed': getAgoDays(new Date(extract.reportTime)),
           'whether it is the oldest report about the page': index === 0,
           'whether it is the latest report about the page': index === lastIndex,
-          'whether it is the report described in this response':
-          extractTimeStamp === timeStamp && extractJobID === jobID,
+          'whether it is the report described in this response': extractID === reportID,
           'how to get details about the report': {
             method: 'GET' as const,
-            URL: `${thisHost}/api/listIssues/${extractTimeStamp}/${extractJobID}`
+            URL: `${thisHost}/api/listIssues/${extractID}`
           },
-          'web users can get details about the report at': `${thisHost}/listIssues.html/${extractTimeStamp}/${extractJobID}`
+          'web users can get details about the report at': `${thisHost}/listIssues.html/${extractID}`
         };
       });
       // Get details about the job definition.
@@ -165,7 +163,7 @@ export const response = async (args: string[]) => {
         'number of elements reported as violators': violatorIndexes.size
       };
       // Get the size of the report.
-      const reportStats = await getReportStats(timeStamp, jobID);
+      const reportStats = await getReportStats(reportID);
       // If this succeeded:
       if (reportStats) {
         const {reportSize} = reportStats;
@@ -173,11 +171,11 @@ export const response = async (args: string[]) => {
         responseContent['how to get the full report in JSON'] = {
           'size of the report in bytes': reportSize,
           method: 'GET',
-          URL: `${thisHost}/api/getReport/${timeStamp}/${jobID}`
+          URL: `${thisHost}/api/getReport/${reportID}`
         };
         // Add instructions for web users to get the full report to the response content.
         responseContent['how a web user can get the full report in JSON'] = {
-          URL: `${thisHost}/fullReport.json/${timeStamp}/${jobID}`
+          URL: `${thisHost}/fullReport.json/${reportID}`
         };
       }
       // Add the details about the job and test results to the response content.
@@ -197,7 +195,7 @@ export const response = async (args: string[]) => {
         // Add instructions for a retest request to the response content.
         responseContent['how to request that the page be retested'] = {
           method: 'POST',
-          URL: `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
+          URL: `${thisHost}/api/requestRetest/${reportID}`,
           'request body': {
             reason: '20- to 100-character reason why the page should be retested'
           },
@@ -206,7 +204,7 @@ export const response = async (args: string[]) => {
         };
         // Add instructions for a web user to request a retest.
         responseContent['how a web user can request that the page be retested'] = {
-          URL: `${thisHost}/requestRetestForm.html/${timeStamp}/${jobID}`
+          URL: `${thisHost}/requestRetestForm.html/${reportID}`
         };
       }
       // Sort the data about issues by summary.
@@ -223,9 +221,9 @@ export const response = async (args: string[]) => {
           .map(ruleEnginesFact => ruleEnginesFact.name),
           'how to get details about the issue': {
             method: 'GET' as const,
-            URL: `${thisHost}/api/listViolators/${id}/${timeStamp}/${jobID}`
+            URL: `${thisHost}/api/listViolators/${id}/${reportID}`
           },
-          'web users can get details about the issue at': `${thisHost}/listViolators.html/${id}/${timeStamp}/${jobID}`
+          'web users can get details about the issue at': `${thisHost}/listViolators.html/${id}/${reportID}`
         };
       });
       // Add the basics about the issues to the response content.
@@ -237,9 +235,9 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'listIssues',
     'this request': {
-      description: 'Provide details about one report, including basics about the issues reported in it. The timeStamp and jobID parameters identify the report that I want details about. Those parameters were in the response to my earlier listPages request, or in the history of reports about the page in an earlier listIssues response.',
+      description: 'Provide details about one report, including basics about the issues reported in it. The reportID parameter identifies the report that I want details about. It was in the response to my earlier listPages request, or in the history of reports about the page in an earlier listIssues response.',
       method: 'GET',
-      URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`,
+      URL: `${thisHost}/api/listIssues/${reportID}`,
       'closest ancestor request': {
         'tool name': 'listPages',
         description: 'Provide basics about all tested pages.',
@@ -248,7 +246,7 @@ export const response = async (args: string[]) => {
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`,
+      'this request': `${thisHost}/listIssues.html/${reportID}`,
       'closest ancestor request': `${thisHost}/listPages.html`
     },
     'response metadata': getResponseMetadata(),

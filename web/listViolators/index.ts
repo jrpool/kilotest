@@ -27,12 +27,11 @@ import {issues as issueSpecs} from 'testaro-issues';
 // Adds parameters to a query for the answer page.
 const populateQuery = async (
   issueID: string,
-  timeStamp: string,
-  jobID: string,
+  reportID: string,
   query: Record<string, any>
 ) => {
   // Get the report.
-  const report = await getReport(timeStamp, jobID);
+  const report = await getReport(reportID);
   // If this failed:
   if (isReportError(report)) {
     // Populate the query with the reason.
@@ -110,7 +109,7 @@ const populateQuery = async (
       }
     }
     const href
-    = `/listDiagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}?pathID=${pathID}`;
+    = `/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}?pathID=${pathID}`;
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(
@@ -130,10 +129,10 @@ const populateQuery = async (
 };
 // Returns a page answering the violators question.
 export const answer = async (pageArgs: string) => {
-  const [issueID, timeStamp, jobID] = pageArgs.split('/') as [string, string, string];
+  const [issueID, reportID] = pageArgs.split('/') as [string, string];
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
-  await populateQuery(issueID, timeStamp, jobID, query);
+  await populateQuery(issueID, reportID, query);
   // If this failed:
   if (query.error) {
     // Return the error.

@@ -55,12 +55,11 @@ export const answer = async (_: any, search: string, method: string) => {
   const reportExtracts = await getReportExtracts();
   // For each report:
   for (const reportExtract of reportExtracts) {
-    const {jobID, timeStamp, description, reportTime} = reportExtract;
+    const {id, description, reportTime} = reportExtract;
     // Add the report to the array.
     reportSpecs.push({
       description,
-      timeStamp,
-      jobID,
+      id,
       reportTime
     });
   }
@@ -75,12 +74,12 @@ export const answer = async (_: any, search: string, method: string) => {
   const margin = ' '.repeat(12);
   // For each available report:
   reportSpecs.forEach(spec => {
-    const {jobID, timeStamp, description, reportTime} = spec;
+    const {id, description, reportTime} = spec;
     const when = getDateTimeString(new Date(reportTime));
-    const specString = `${description} (job <code>${timeStamp}-${jobID}</code> completed ${when})`;
+    const specString = `${description} (job <code>${id}</code> completed ${when})`;
     // Add a line with a radio button to hide it.
     lines.push(
-      `${margin}<p><input type="radio" name="report" value="${timeStamp}-${jobID}"> ${specString}</p>`
+      `${margin}<p><input type="radio" name="report" value="${id}"> ${specString}</p>`
     );
   });
   const query: Record<string, string> = {

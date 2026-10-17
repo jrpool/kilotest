@@ -69,9 +69,9 @@ const populateQuery = async (query: Record<string, any>) => {
   const pageCount = latestExtracts.length;
   // For each tested page:
   for (const extract of latestExtracts) {
-    const {jobID, timeStamp, description} = extract;
+    const {id, description} = extract;
     // Add a link to the issues in the latest report about it to the lines.
-    const link = `<a href="listIssues.html/${timeStamp}/${jobID}" aria-label="Get test results for ${description}">${description}</a>`;
+    const link = `<a href="listIssues.html/${id}" aria-label="Get test results for ${description}">${description}</a>`;
     lines.tested.push(`${margin}  <li>${link}</li>`);
   }
   // Add the lines to the query, as an introduced list if there are any, or else a no-pages message.

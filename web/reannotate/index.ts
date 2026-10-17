@@ -31,9 +31,9 @@ export const answer = async (authCode: string) => {
     if (reportFileNames.length) {
       // For each report file:
       for (const reportFileName of reportFileNames) {
-        const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-') as [string, string];
+        const reportID = reportFileName.slice(0, -5);
         // Get the report.
-        const report = await getReport(timeStamp, jobID);
+        const report = await getReport(reportID);
         // If this failed:
         if (isReportError(report)) {
           // Return an error page.
@@ -45,7 +45,7 @@ export const answer = async (authCode: string) => {
         // Otherwise, i.e. if it succeeded, reannotate it in place.
         await annotateReportObject(report);
         // Save the reannotated report.
-        await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
+        await fs.writeFile(getReportPath(reportID), getJSON(report));
       }
     }
     // Otherwise, i.e. if it failed:

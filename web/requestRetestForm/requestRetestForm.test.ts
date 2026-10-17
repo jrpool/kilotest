@@ -30,7 +30,7 @@ after(() => {
 // TESTS
 
 test('requestRetestForm returns ok with the page name for a valid report', async () => {
-  const result = await answer('260202T0000/new');
+  const result = await answer('260202T0000-new');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -38,11 +38,11 @@ test('requestRetestForm returns ok with the page name for a valid report', async
   assert.ok(title?.includes('Mixed Outcomes'));
 });
 
-test('requestRetestForm populates the form action with the timeStamp and jobID', async () => {
-  const result = await answer('260202T0000/new');
+test('requestRetestForm populates the form action with the reportID', async () => {
+  const result = await answer('260202T0000-new');
   const html = parse(result.answerPage);
   const form = html.querySelector('form');
-  assert.equal(form?.getAttribute('action'), '/requestRetest.html/260202T0000/new');
+  assert.equal(form?.getAttribute('action'), '/requestRetest.html/260202T0000-new');
 });
 
 test('requestRetestForm shows the fallback message for a nonexistent report', async () => {
@@ -52,7 +52,7 @@ test('requestRetestForm shows the fallback message for a nonexistent report', as
 });
 
 test('requestRetestForm dates the report by its completion time', async () => {
-  const result = await answer('260202T0000/new');
+  const result = await answer('260202T0000-new');
   assert.ok(result.answerPage.includes('on 2026-02-02 at 00:10'));
 });
 
@@ -63,10 +63,9 @@ test('requestRetestForm describes the time of a nonexistent report as unknown', 
 });
 
 test('requestRetestForm includes the ago and dateTime placeholders replaced', async () => {
-  const result = await answer('260202T0000/new');
+  const result = await answer('260202T0000-new');
   assert.ok(!result.answerPage.includes('__ago__'));
   assert.ok(!result.answerPage.includes('__dateTime__'));
   assert.ok(!result.answerPage.includes('__target__'));
-  assert.ok(!result.answerPage.includes('__timeStamp__'));
-  assert.ok(!result.answerPage.includes('__jobID__'));
+  assert.ok(!result.answerPage.includes('__reportID__'));
 });

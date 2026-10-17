@@ -31,7 +31,7 @@ export const response = async () => {
   const pagesBasics: ResponseContent['basics about all tested pages'] = [];
   // For each report:
   reportExtracts.forEach(extract => {
-    const {description, jobID, reportTime, superseded, timeStamp, url} = extract;
+    const {description, id, reportTime, superseded, url} = extract;
     // If it is the latest report about its page:
     if (!superseded) {
       // Add basics about the page, with instructions for getting details, to the array.
@@ -42,15 +42,15 @@ export const response = async () => {
         },
         'number of reports about the page': reportCounts.get(description)!,
         'basics about the latest report': {
-          identifier: `${timeStamp}-${jobID}`,
+          identifier: id,
           'completion date and time': reportTime,
           'days since the report was completed': getAgoDays(new Date(reportTime))
         },
         'how to get details about the latest report': {
           method: 'GET',
-          URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
+          URL: `${thisHost}/api/listIssues/${id}`
         },
-        'web users can get details about the latest report at': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
+        'web users can get details about the latest report at': `${thisHost}/listIssues.html/${id}`
       });
     }
   });

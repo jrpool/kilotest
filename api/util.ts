@@ -133,20 +133,20 @@ export const getRuleEnginesFacts = (ruleEngineIDSet: Iterable<string>) => {
 };
 // Returns the basics about a report, or an error object if the report cannot be read.
 export const getReportBasics = async (
-  timeStamp: string, jobID: string
+  reportID: string
 ): Promise<ReportBasics | {error: string}> => {
   // Verify that the report exists.
-  const reportStats = await getReportStats(timeStamp, jobID);
+  const reportStats = await getReportStats(reportID);
   // If it does not exist:
   if (!reportStats) {
     // Log and return this.
-    console.error(`Report ${timeStamp}-${jobID} does not exist.`);
+    console.error(`Report ${reportID} does not exist.`);
     return {
-      error: `Report ${timeStamp}-${jobID} could not be retrieved.`
+      error: `Report ${reportID} could not be retrieved.`
     };
   }
   // Otherwise, i.e. if it exists, get an extract of the report.
-  const extract = await getReportExtract(timeStamp, jobID);
+  const extract = await getReportExtract(reportID);
   // If this failed, return why.
   if ('error' in extract) {
     return extract;
@@ -154,10 +154,10 @@ export const getReportBasics = async (
   const {url, description, reportTime} = extract;
   // Get whether this report has been superseded.
   const isSuperseded = (await getReportExtracts(true))
-  .every(ex => ex.timeStamp !== timeStamp || ex.jobID !== jobID);
+  .every(ex => ex.id !== reportID);
   // Get the basics about the report.
   const basics = {
-    identifier: `${timeStamp}-${jobID}`,
+    identifier: reportID,
     'completion date and time': reportTime,
     'days since the report was completed': getAgoDays(new Date(reportTime)),
     'tested web page': {

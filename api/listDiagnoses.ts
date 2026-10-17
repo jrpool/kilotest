@@ -27,15 +27,15 @@ type Diagnoses = Extract<ResponseContent['diagnoses of how the element exhibited
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [catalogIndex = '', issueID = '', timeStamp = '', jobID = ''] = args;
+  const [catalogIndex = '', issueID = '', reportID = ''] = args;
   const thisHost = getThisHost();
   // Get the report.
-  const report = await getReport(timeStamp, jobID);
+  const report = await getReport(reportID);
   // Get the specification of the issue.
   const issueSpec = issueID ? getIssueSpec(issueID) : null;
   // Initialize the response content.
   const responseContent: ResponseContent = {
-    'basics about the report': isReportError(report) ? report : await getReportBasics(timeStamp, jobID),
+    'basics about the report': isReportError(report) ? report : await getReportBasics(reportID),
     'basics about the issue': {
       'error': 'No information about the specified issue is available'
     },
@@ -115,19 +115,19 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'listDiagnoses',
     'this request': {
-      description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The catalogIndex, issueID, timeStamp, and jobID parameters identify the element, issue, and report that I want details about. Those parameters were in the response to my earlier listViolators request.',
+      description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The catalogIndex, issueID, and reportID parameters identify the element, issue, and report that I want details about. Those parameters were in the response to my earlier listViolators request.',
       method: 'GET',
-      URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
+      URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${reportID}`,
       'closest ancestor request': {
         'tool name': 'listViolators',
         description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',
         method: 'GET',
-        URL: `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`
+        URL: `${thisHost}/api/listViolators/${issueID}/${reportID}`
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/listDiagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`,
-      'closest ancestor request': `${thisHost}/listViolators.html/${issueID}/${timeStamp}/${jobID}`
+      'this request': `${thisHost}/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}`,
+      'closest ancestor request': `${thisHost}/listViolators.html/${issueID}/${reportID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

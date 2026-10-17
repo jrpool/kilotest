@@ -63,8 +63,8 @@ test('listPages describes a multi-report page by its latest report and its repor
   assert.equal(latest['completion date and time'], '2026-02-02T00:10:00.000Z');
   assert.equal(typeof latest['days since the report was completed'], 'number');
   assert.equal(mixed['how to get details about the latest report'].method, 'GET');
-  assert.ok(mixed['how to get details about the latest report'].URL.endsWith('/api/listIssues/260202T0000/new'));
-  assert.ok(mixed['web users can get details about the latest report at'].endsWith('/listIssues.html/260202T0000/new'));
+  assert.ok(mixed['how to get details about the latest report'].URL.endsWith('/api/listIssues/260202T0000-new'));
+  assert.ok(mixed['web users can get details about the latest report at'].endsWith('/listIssues.html/260202T0000-new'));
 });
 
 test('listPages describes a single-report page', async () => {

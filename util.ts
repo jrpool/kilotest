@@ -89,9 +89,9 @@ export type TestRequestResult
 = 'url' | 'description' | 'reportExists' | 'duplicate' | 'superseded' | 'nonreport' | 'queueFull' | 'ok';
 
 // Target of a new-test or retest request: a description and URL for a new-test request,
-// or the timeStamp and jobID of the cited report for a retest request.
+// or the identifier of the cited report for a retest request.
 export type TestRequestTarget
-= {description: string; url: string} | {timeStamp: string; jobID: string};
+= {description: string; url: string} | {reportID: string};
 
 // Result of processTestRequest. description and url are absent only when the result
 // is 'nonreport', i.e. when the target page could not be resolved; this is a
@@ -134,8 +134,7 @@ export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts
 
 // An extract of an available report.
 export type ReportExtract = {
-  timeStamp: string;
-  jobID: string;
+  id: string;
   description: string;
   url: string;
   reportTime: string;
@@ -451,6 +450,13 @@ export const isJobID = (string: string): boolean => {
 export const isTimeStamp = (string: string): boolean => {
   return !!getDateString(string);
 };
+// Returns whether a string is a report identifier: the identifier of the job
+// that produced the report, composed of the job's creation time stamp and its
+// random suffix, joined with a hyphen (example: 260503T0432-x9z).
+export const isReportID = (string: string): boolean => {
+  const match = /^(\d{6}T\d{4})-([a-z0-9]{3})$/.exec(string);
+  return !!match && isTimeStamp(match[1]!) && isJobID(match[2]!);
+};
 // Returns whether a string is a URL.
 export const isURL = (string: string): boolean => {
   try {
@@ -672,8 +678,8 @@ export const getTestActInstances = (
   return pairs;
 };
 // Returns the path of an available report file.
-export const getReportPath = (timeStamp: string, jobID: string): string => path
-.join(reportsPath(), `${timeStamp}-${jobID}.json`);
+export const getReportPath = (reportID: string): string => path
+.join(reportsPath(), `${reportID}.json`);
 // Returns whether a report is usable by Kilotest.
 export const isUsableReport = (report: unknown): report is UsableReport => {
   // Cast to any for the property checks inside the guard — this is appropriate
@@ -707,10 +713,9 @@ const quarantineMinAgeMs = () => getEnvMax('REPORT_QUARANTINE_MIN_AGE_MS', 60000
 // that a defective report is quarantined rather than merely hidden from whichever
 // listing encountered it. Never throws: a failure here must not displace the error
 // that getReport is already reporting.
-export const quarantineReport = async (timeStamp: string, jobID: string, defect: string): Promise<void> => {
-  const jobName = `${timeStamp}-${jobID}`;
+export const quarantineReport = async (reportID: string, defect: string): Promise<void> => {
   // Get the modification time of the report file. A missing file needs no move.
-  const stat = await fs.stat(getReportPath(timeStamp, jobID)).catch(() => null);
+  const stat = await fs.stat(getReportPath(reportID)).catch(() => null);
   if (!stat) {
     return;
   }
@@ -721,26 +726,26 @@ export const quarantineReport = async (timeStamp: string, jobID: string, defect:
   try {
     await fs.mkdir(unusableReportsPath(), {recursive: true});
     await fs.rename(
-      getReportPath(timeStamp, jobID), path.join(unusableReportsPath(), `${jobName}.json`)
+      getReportPath(reportID), path.join(unusableReportsPath(), `${reportID}.json`)
     );
   }
   catch (error: unknown) {
     // The report stays excluded regardless, so a failed move is only logged.
-    console.error(`ERROR: Failed to quarantine report ${jobName} (${errorMessage(error)})`);
+    console.error(`ERROR: Failed to quarantine report ${reportID} (${errorMessage(error)})`);
     return;
   }
   // Alert a manager, who can repair the report in place or delete it.
   await sendAlert(
     'Kilotest: unusable report',
-    `Report ${jobName} is ${defect}. It was moved to the unusableReports directory, where a manager can repair or delete it.`
+    `Report ${reportID} is ${defect}. It was moved to the unusableReports directory, where a manager can repair or delete it.`
   );
 };
 // Returns a report, or an error object if it is missing, unreadable, unparsable, or
 // unusable. A report that exists but cannot be read or is unusable is defective, so
 // it is quarantined rather than merely rejected by whichever read encountered it.
-export const getReport = async (timeStamp: string, jobID: string): Promise<UsableReport | {error: string}> => {
+export const getReport = async (reportID: string): Promise<UsableReport | {error: string}> => {
   try {
-    const reportJSON = await fs.readFile(getReportPath(timeStamp, jobID), 'utf8');
+    const reportJSON = await fs.readFile(getReportPath(reportID), 'utf8');
     const report = JSON.parse(reportJSON);
     // If it is usable:
     if (isUsableReport(report)) {
@@ -750,12 +755,12 @@ export const getReport = async (timeStamp: string, jobID: string): Promise<Usabl
   } catch (error: unknown) {
     // The file exists but cannot be read or parsed, or is already missing.
     // quarantineReport ignores a missing file, so no existence check is needed here.
-    await quarantineReport(timeStamp, jobID, 'unreadable or not JSON');
-    return {error: `Report ${timeStamp}-${jobID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
+    await quarantineReport(reportID, 'unreadable or not JSON');
+    return {error: `Report ${reportID} is missing, unreadable, or not JSON (${errorMessage(error)})`};
   }
   // The report was read but is not usable, so quarantine it.
-  await quarantineReport(timeStamp, jobID, 'not usable');
-  return {error: `Report ${timeStamp}-${jobID} is not usable`};
+  await quarantineReport(reportID, 'not usable');
+  return {error: `Report ${reportID} is not usable`};
 };
 // Returns whether a getReport result is an error (rather than a usable report).
 // A type predicate is used instead of `if (report.error)` because UsableReport
@@ -804,10 +809,10 @@ export const annotateReportObject = async (report: UsableReport): Promise<void> 
   }
 };
 // Returns the size of a report, or null if the report does not exist.
-export const getReportStats = async (timeStamp: string, jobID: string) => {
+export const getReportStats = async (reportID: string) => {
   let reportStat;
   try {
-    reportStat = await fs.stat(path.join(reportsPath(), `${timeStamp}-${jobID}.json`));
+    reportStat = await fs.stat(path.join(reportsPath(), `${reportID}.json`));
   }
   catch {
     return null;
@@ -825,8 +830,8 @@ export const getReportEndTime = (report: {jobData?: {endTime?: string}}): Date =
 // Returns an extract of an available report, or an error object if the report cannot
 // be used. An extract exists to expose a report in listings, so it shares getReport's
 // usability bar: a report too defective to expose must produce no extract.
-export const getReportExtract = async (timeStamp: string, jobID: string): Promise<ReportExtract | {error: string}> => {
-  const report = await getReport(timeStamp, jobID);
+export const getReportExtract = async (reportID: string): Promise<ReportExtract | {error: string}> => {
+  const report = await getReport(reportID);
   // If the report is not usable:
   if (isReportError(report)) {
     // Return the reason.
@@ -837,8 +842,7 @@ export const getReportExtract = async (timeStamp: string, jobID: string): Promis
   // Return an extract of it. Usability has already guaranteed these properties,
   // including a valid completion time.
   return {
-    timeStamp,
-    jobID,
+    id: reportID,
     description,
     url,
     reportTime: getReportEndTime({jobData}).toISOString()
@@ -884,8 +888,7 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
     }
     // Otherwise, get a new extract of it. The stat precedes the read, so a change between
     // them leaves a stale modification time in the cache and causes a reread next time.
-    const [timeStamp, jobID] = reportFileName.slice(0, -5).split('-') as [string, string];
-    const extract = await getReportExtract(timeStamp, jobID);
+    const extract = await getReportExtract(reportFileName.slice(0, -5));
     // If this succeeded:
     if (!('error' in extract)) {
       // Cache it and add a copy of it to the array.
@@ -950,7 +953,7 @@ const getApprovedJobProperty = async (
   }
 };
 // Processes a new-test or retest request as a transaction and returns the result.
-// For a retest request (target has a timeStamp and jobID), resolves the description
+// For a retest request (target has a reportID), resolves the description
 // and URL of the cited report itself, so a caller never needs its own
 // getReportExtract call. Approvability (whether the request may proceed) and, if so,
 // its addition to testRequests.json are both decided inside the lock, as a single
@@ -995,11 +998,11 @@ export const processTestRequest = (
   // Whether the cited report (for a retest) has been superseded by a later one.
   let superseded = false;
   // If the target identifies a report to retest:
-  if ('timeStamp' in target) {
+  if ('reportID' in target) {
     requestType = 'retest';
-    const {timeStamp, jobID} = target;
+    const {reportID} = target;
     // Get the cited report.
-    const extract = await getReportExtract(timeStamp, jobID);
+    const extract = await getReportExtract(reportID);
     // If it does not exist:
     if ('error' in extract) {
       // Return this.
@@ -1009,7 +1012,7 @@ export const processTestRequest = (
     // Get whether it has been superseded by a later report.
     const reportExtracts = await getReportExtracts();
     superseded = reportExtracts.some(
-      ex => ex.timeStamp === timeStamp && ex.jobID === jobID && ex.superseded
+      ex => ex.id === reportID && ex.superseded
     );
   }
   // Otherwise, i.e. if the target is a page to test for the first time:
@@ -1099,10 +1102,11 @@ const jobQueueMax = () => getEnvMax('JOB_QUEUE_MAX', 20);
 // 'nonreport' (a retest order citing a report that does not exist), matching
 // ProcessRequestResult's own discriminated-union shape. There is no pending approval
 // inbox to compare against, so 'duplicate' (an identical pending request) never applies.
-// jobID (the enqueued job's own identifier, timeStamp-jobID) is present only on 'ok'.
+// reportID (the enqueued job's own identifier, and eventually its report's) is
+// present only on 'ok'.
 export type OrderJobResult
 = {result: 'nonreport'}
-| {result: 'ok'; description: string; url: string; jobID: string}
+| {result: 'ok'; description: string; url: string; reportID: string}
 | {result: Exclude<TestRequestResult, 'nonreport' | 'duplicate' | 'ok'>; description: string; url: string};
 // Orders a test or retest as a transaction: validates the target is not already queued,
 // claimed, or (for a new-page order) reported, then enqueues a job directly into
@@ -1125,10 +1129,10 @@ export const orderJob = (
   // Whether the cited report (for a retest order) has been superseded by a later one.
   let superseded = false;
   // If the target identifies a report to retest:
-  if ('timeStamp' in target) {
-    const {timeStamp, jobID} = target;
+  if ('reportID' in target) {
+    const {reportID} = target;
     // Get the cited report.
-    const extract = await getReportExtract(timeStamp, jobID);
+    const extract = await getReportExtract(reportID);
     // If it does not exist:
     if ('error' in extract) {
       // Return this.
@@ -1138,7 +1142,7 @@ export const orderJob = (
     // Get whether it has been superseded by a later report.
     const reportExtracts = await getReportExtracts();
     superseded = reportExtracts.some(
-      ex => ex.timeStamp === timeStamp && ex.jobID === jobID && ex.superseded
+      ex => ex.id === reportID && ex.superseded
     );
   }
   // Otherwise, i.e. if the target is a page to test for the first time:
@@ -1160,13 +1164,13 @@ export const orderJob = (
       };
     }
     // Otherwise, if the order is to retest a page that has been superseded:
-    if ('timeStamp' in target && superseded) {
+    if ('reportID' in target && superseded) {
       // Return this.
       return {result: 'superseded', description, url};
     }
     // Otherwise, if the order is to test a new page and a report already exists about a
     // page with the same description or URL:
-    if (!('timeStamp' in target) && await isReportAvailable(description, url)) {
+    if (!('reportID' in target) && await isReportAvailable(description, url)) {
       // Return this.
       return {result: 'reportExists', description, url};
     }
@@ -1194,7 +1198,7 @@ export const orderJob = (
     await fs.writeFile(path.join(jobsPath(), 'queue', `${jobName}.json`), getJSON(job));
     console.log(`Test ordered for ${description} as job ${jobName}`);
     // Return success, with the job identifier so the caller can report it.
-    return {result: 'ok', description, url, jobID: jobName};
+    return {result: 'ok', description, url, reportID: jobName};
     // If an error occurred:
   } catch(error) {
     // Throw it.
@@ -1222,14 +1226,14 @@ export type AwaitJobResult = 'completed' | 'failed' | 'timedOut' | 'notFound';
 // polling, if the identifier names neither a completed report nor a job anywhere in the
 // queue/claimed/failed pipeline, since there is then nothing to wait for. No progress
 // notifications are emitted during the wait; this is a pure bounded poll.
-export const awaitJob = async (timeStamp: string, jobID: string): Promise<AwaitJobResult> => {
-  const jobFileName = `${timeStamp}-${jobID}.json`;
+export const awaitJob = async (reportID: string): Promise<AwaitJobResult> => {
+  const jobFileName = `${reportID}.json`;
   const pollMs = awaitJobPollMs();
   const timeoutMs = awaitJobTimeoutMs();
   const deadline = Date.now() + timeoutMs;
   // Returns the job's outcome if it is now determinable, or null if it is still pending.
   const checkOutcome = async (): Promise<AwaitJobResult | null> => {
-    if (await getReportStats(timeStamp, jobID)) {
+    if (await getReportStats(reportID)) {
       return 'completed';
     }
     const jobNames = await getJobNames();

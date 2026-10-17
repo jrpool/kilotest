@@ -111,8 +111,7 @@ test('listIssues handler returns content and structuredContent for a valid repor
   const server = createMCPServer();
   const countBefore = getToolCallCount('listIssues');
   const result = await (server as any)._registeredTools.listIssues.handler({
-    timeStamp: '260101T0000',
-    jobID: 'mix'
+    reportID: '260101T0000-mix'
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -125,8 +124,7 @@ test('listViolators handler returns content and structuredContent for a valid is
   const countBefore = getToolCallCount('listViolators');
   const result = await (server as any)._registeredTools.listViolators.handler({
     issueID: 'linkNoText',
-    timeStamp: '260101T0000',
-    jobID: 'mix'
+    reportID: '260101T0000-mix'
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -140,8 +138,7 @@ test('listDiagnoses handler returns content and structuredContent for a valid di
   const result = await (server as any)._registeredTools.listDiagnoses.handler({
     catalogIndex: '0',
     issueID: 'linkNoText',
-    timeStamp: '260101T0000',
-    jobID: 'mix'
+    reportID: '260101T0000-mix'
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -153,8 +150,7 @@ test('getReport handler returns content and structuredContent for a valid report
   const server = createMCPServer();
   const countBefore = getToolCallCount('getReport');
   const result = await (server as any)._registeredTools.getReport.handler({
-    timeStamp: '260101T0000',
-    jobID: 'mix'
+    reportID: '260101T0000-mix'
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -180,8 +176,7 @@ test('requestRetest handler returns content and structuredContent for a valid re
   const server = createMCPServer();
   const countBefore = getToolCallCount('requestRetest');
   const result = await (server as any)._registeredTools.requestRetest.handler({
-    timeStamp: '260101T0000',
-    jobID: 'mix',
+    reportID: '260101T0000-mix',
     reason: 'Because the report is obsolete'
   });
   assert.ok(result.content);
@@ -217,7 +212,7 @@ test('orderNewTest handler returns content and structuredContent, and enqueues a
   assert.equal(getToolCallCount('orderNewTest'), countBefore + 1);
   const reportIdentifier = result.structuredContent['response content']['disposition of your order']['report identifier'];
   assert.ok(reportIdentifier);
-  const queuedPath = `${jobsPath()}/queue/${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`;
+  const queuedPath = `${jobsPath()}/queue/${reportIdentifier}.json`;
   fs.unlinkSync(queuedPath);
 });
 
@@ -228,8 +223,7 @@ test('orderRetest handler returns content and structuredContent, and enqueues a 
   // 260202T0000-new is the latest report of "Mixed Outcomes" (260101T0000-mix is an
   // earlier, superseded report of the same page), so this order is accepted.
   const result = await (server as any)._registeredTools.orderRetest.handler({
-    timeStamp: '260202T0000',
-    jobID: 'new',
+    reportID: '260202T0000-new',
     reason: 'Because the report is obsolete'
   });
   assert.ok(result.content);
@@ -238,7 +232,7 @@ test('orderRetest handler returns content and structuredContent, and enqueues a 
   assert.equal(getToolCallCount('orderRetest'), countBefore + 1);
   const reportIdentifier = result.structuredContent['response content']['disposition of your order']['report identifier'];
   assert.ok(reportIdentifier);
-  const queuedPath = `${jobsPath()}/queue/${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`;
+  const queuedPath = `${jobsPath()}/queue/${reportIdentifier}.json`;
   fs.unlinkSync(queuedPath);
 });
 
@@ -246,8 +240,7 @@ test('awaitTest handler returns content and structuredContent for an already-com
   const server = createMCPServer();
   const countBefore = getToolCallCount('awaitTest');
   const result = await (server as any)._registeredTools.awaitTest.handler({
-    timeStamp: '260101T0000',
-    jobID: 'mix'
+    reportID: '260101T0000-mix'
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -259,8 +252,7 @@ test('awaitTest handler returns content and structuredContent for an already-com
 test('listIssues handler returns an error for a nonexistent report', async () => {
   const server = createMCPServer();
   const result = await (server as any)._registeredTools.listIssues.handler({
-    timeStamp: '990101T0000',
-    jobID: 'xxx'
+    reportID: '990101T0000-xxx'
   });
   const reportBasics = result.structuredContent['response content']['basics about the report'];
   assert.ok(reportBasics.error);
@@ -270,8 +262,7 @@ test('listViolators handler returns an error for an unknown issue', async () => 
   const server = createMCPServer();
   const result = await (server as any)._registeredTools.listViolators.handler({
     issueID: 'nonexistentIssue',
-    timeStamp: '260101T0000',
-    jobID: 'mix'
+    reportID: '260101T0000-mix'
   });
   const issueBasics = result.structuredContent['response content']['basics about the issue'];
   assert.ok(issueBasics.error);

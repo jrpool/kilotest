@@ -43,7 +43,7 @@ export const routes = [
   {
     operationId: 'listIssues',
     method: 'get',
-    path: '/api/listIssues/{timeStamp}/{jobID}',
+    path: '/api/listIssues/{reportID}',
     summary: 'List basics about the issues in one report',
     pathParamsSchema: z.object(listIssuesSchema),
     responseSchema: listIssuesResponseSchema
@@ -51,7 +51,7 @@ export const routes = [
   {
     operationId: 'listViolators',
     method: 'get',
-    path: '/api/listViolators/{issueID}/{timeStamp}/{jobID}',
+    path: '/api/listViolators/{issueID}/{reportID}',
     summary: 'List elements reported as exhibiting one issue',
     pathParamsSchema: z.object(listViolatorsSchema),
     responseSchema: listViolatorsResponseSchema
@@ -59,7 +59,7 @@ export const routes = [
   {
     operationId: 'listDiagnoses',
     method: 'get',
-    path: '/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}',
+    path: '/api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}',
     summary: 'List diagnoses of how one element exhibited one issue',
     pathParamsSchema: z.object(listDiagnosesSchema),
     responseSchema: listDiagnosesResponseSchema
@@ -67,7 +67,7 @@ export const routes = [
   {
     operationId: 'getReport',
     method: 'get',
-    path: '/api/getReport/{timeStamp}/{jobID}',
+    path: '/api/getReport/{reportID}',
     summary: 'Get one full report in JSON',
     pathParamsSchema: z.object(getReportSchema),
     responseSchema: getReportResponseSchema
@@ -83,11 +83,10 @@ export const routes = [
   {
     operationId: 'requestRetest',
     method: 'post',
-    path: '/api/requestRetest/{timeStamp}/{jobID}',
+    path: '/api/requestRetest/{reportID}',
     summary: 'Request that a page be retested',
     pathParamsSchema: z.object({
-      timeStamp: requestRetestSchema.timeStamp,
-      jobID: requestRetestSchema.jobID
+      reportID: requestRetestSchema.reportID
     }),
     bodySchema: z.object({reason: requestRetestSchema.reason}),
     responseSchema: requestRetestResponseSchema
@@ -111,11 +110,10 @@ export const routes = [
   {
     operationId: 'orderRetest',
     method: 'post',
-    path: '/api/orderRetest/{timeStamp}/{jobID}',
+    path: '/api/orderRetest/{reportID}',
     summary: 'Order that a page be retested immediately, without manual approval',
     pathParamsSchema: z.object({
-      timeStamp: orderRetestSchema.timeStamp,
-      jobID: orderRetestSchema.jobID
+      reportID: orderRetestSchema.reportID
     }),
     bodySchema: z.object({reason: orderRetestSchema.reason}),
     responseSchema: orderRetestResponseSchema
@@ -123,7 +121,7 @@ export const routes = [
   {
     operationId: 'awaitTest',
     method: 'post',
-    path: '/api/awaitTest/{timeStamp}/{jobID}',
+    path: '/api/awaitTest/{reportID}',
     summary: 'Wait for a job ordered via orderNewTest or orderRetest to complete',
     pathParamsSchema: z.object(awaitTestSchema),
     // No caller-supplied fields beyond the path parameters; an empty body schema (rather

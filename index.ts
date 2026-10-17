@@ -23,8 +23,7 @@ import {
   isReportError,
   getReportPath,
   hiddenReportsPath,
-  isTimeStamp,
-  isJobID,
+  isReportID,
   isURL,
   isUsableReport,
   isValidAuthCode,
@@ -306,6 +305,17 @@ const renamedPagePrefixes: Record<string, string> = {
   requestTest: 'requestNewTest',
   requestTestForm: 'requestNewTestForm'
 };
+// Pages whose report-identifying path tails once used two segments (a timeStamp
+// segment and a jobID segment) where they now use one reportID segment. Each value
+// gives the index of the first legacy segment within the path tail and the total
+// segment count of the legacy tail.
+// TEMPORARY: retire these redirects after 2027-04-17 once bookmarked links have aged out.
+const legacyReportTails: Record<string, {idIndex: number; segmentCount: number}> = {
+  listDiagnoses: {idIndex: 1, segmentCount: 4},
+  listIssues: {idIndex: 0, segmentCount: 2},
+  listViolators: {idIndex: 1, segmentCount: 3},
+  requestRetestForm: {idIndex: 0, segmentCount: 2}
+};
 const jobLock = createLock();
 
 // FUNCTIONS
@@ -324,6 +334,24 @@ const matchPath = (pattern: string, pathname: string) => {
 export const isPathAllowed = (method: string, pathname: string): boolean => {
   const patterns = (routes as Record<string, string[]>)[method] || [];
   return patterns.some(pattern => matchPath(pattern, pathname));
+};
+// Returns the single-reportID URL that a legacy two-segment report URL (one whose
+// path tail identifies a report with separate timeStamp and jobID segments)
+// redirects to, or null if the page has no legacy form or the tail lacks its shape.
+const getLegacyReportURL = (topic: string, pathTail: string): string | null => {
+  const legacy = legacyReportTails[topic];
+  if (!legacy) {
+    return null;
+  }
+  const segments = pathTail.split('/');
+  const reportID = `${segments[legacy.idIndex]}-${segments[legacy.idIndex + 1]}`;
+  if (segments.length !== legacy.segmentCount || !isReportID(reportID)) {
+    return null;
+  }
+  const newTail = [
+    ...segments.slice(0, legacy.idIndex), reportID, ...segments.slice(legacy.idIndex + 2)
+  ].join('/');
+  return `/${topic}.html/${newTail}`;
 };
 // Serves or sends an error message.
 export const serveError = async (error: Record<string, unknown>, response: ServerResponse, isHumanUser = true, statusCode = 400): Promise<void> => {
@@ -711,11 +739,19 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
-      const [timeStamp, jobID] = pathTail.split('/') as [string, string, ...string[]];
-      // If the request is syntactically valid:
-      if (isTimeStamp(timeStamp) && isJobID(jobID)) {
+      const segments = pathTail.split('/');
+      const legacyID = `${segments[0]}-${segments[1]}`;
+      // If the request identifies the report with the legacy two-segment form (a
+      // timeStamp segment and a jobID segment), redirect the request permanently to
+      // the single-reportID URL, preserving any query string.
+      if (segments.length === 2 && isReportID(legacyID)) {
+        response.writeHead(301, {Location: `/fullReport.json/${legacyID}${search}`});
+        response.end();
+      }
+      // Otherwise, if the request is syntactically valid:
+      else if (isReportID(pathTail)) {
         // Get it.
-        const report = await getReport(timeStamp, jobID);
+        const report = await getReport(pathTail);
         // If this failed:
         if (isReportError(report)) {
           // This is not necessarily abuse: the link may have been generated (e.g. by
@@ -725,11 +761,11 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           // but alert a manager with the real reason, since a syntactically valid report ID
           // should otherwise always be usable.
           console.error(
-            `Full report ${timeStamp}-${jobID} requested but unavailable (${report.error})`
+            `Full report ${pathTail} requested but unavailable (${report.error})`
           );
           await sendAlert(
             'Kilotest: requested full report unavailable',
-            `Full report ${timeStamp}-${jobID} was requested but could not be retrieved: ${report.error}`
+            `Full report ${pathTail} was requested but could not be retrieved: ${report.error}`
           );
           await serveError({message: 'ERROR: Invalid request'}, response, true);
         }
@@ -738,7 +774,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           // Serve response headers for a JSON download.
           setHeaders('application/json', null, 'low');
           response.setHeader(
-            'content-disposition', `attachment; filename="${timeStamp}-${jobID}.json"`,
+            'content-disposition', `attachment; filename="${pathTail}.json"`,
           );
           // Download the report.
           response.end(getJSON(report));
@@ -753,12 +789,20 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
+      const legacyReportURL = getLegacyReportURL(topic, pathTail);
       // If it is for a page's old, pre-rename name:
       if (renamedPagePrefixes[topic]) {
         // Redirect the client permanently to the current page name, preserving any
         // further path segments and the query string.
         const newLocation = `/${renamedPagePrefixes[topic]}.html${pathTail ? `/${pathTail}` : ''}${search}`;
         response.writeHead(301, {Location: newLocation});
+        response.end();
+      }
+      // Otherwise, if the URL identifies a report with the legacy two-segment form
+      // (a timeStamp segment and a jobID segment), redirect the request permanently
+      // to the URL with the single reportID segment, preserving the query string.
+      else if (legacyReportURL !== null) {
+        response.writeHead(301, {Location: `${legacyReportURL}${search}`});
         response.end();
       }
       // Otherwise, if the page can be generated and is not POST-only (a POST-only path also matches
@@ -985,9 +1029,17 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       // Otherwise, if it is a retest request:
       else if (pageName === 'requestRetest.html') {
         const {why} = postData as {why?: string};
-        const [timeStamp, jobID] = pathTail.split('/') as [string, string, ...string[]];
-        // If the request is valid:
-        if (isTimeStamp(timeStamp) && isJobID(jobID) && why) {
+        const segments = pathTail.split('/');
+        const legacyID = `${segments[0]}-${segments[1]}`;
+        // If the request identifies the report with the legacy two-segment form,
+        // redirect it to the single-reportID URL. A 308 (not 301) keeps the POST
+        // method and body, which a 301 could rewrite to a GET with no body.
+        if (segments.length === 2 && isReportID(legacyID)) {
+          response.writeHead(308, {Location: `/requestRetest.html/${legacyID}`});
+          response.end();
+        }
+        // Otherwise, if the request is valid:
+        else if (isReportID(pathTail) && why) {
           // Serve response headers.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
@@ -1138,9 +1190,8 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
             const reportObj: Partial<Report> = report ?? {};
             const {id, target} = reportObj;
             const {what: description, url} = (target ?? {}) as Partial<NonNullable<Report['target']>>;
-            const [timeStamp, jobID] = (id?.split('-') ?? ['', '']) as [string, string];
             // If the request is syntactically valid:
-            if (id && isTimeStamp(timeStamp) && isJobID(jobID) && description && url) {
+            if (id && isReportID(id) && description && url) {
               // Get the job the report is from. A missing claimed-job file (the job was
               // never claimed, or was already completed) is a normal outcome, handled below
               // as if the job were not assigned to this worker; any other failure to read it
@@ -1186,7 +1237,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
                   // could fail even though the just-written report is fine.
                   await annotateReportObject(reportObj);
                   // Save the annotated report.
-                  await fs.writeFile(getReportPath(timeStamp, jobID), getJSON(report));
+                  await fs.writeFile(getReportPath(id), getJSON(report));
                   console.log(`Testaro report ${id} was annotated and saved`);
                   // Check the monetary balances and send alerts if nearing exhaustion.
                   await checkBalancesForAlerts(report!);

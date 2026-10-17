@@ -10,9 +10,9 @@ import {populateTemplate, processTestRequest} from '../../util.ts';
 // FUNCTIONS
 
 export const answer = async (pageArgs: string, reason: string) => {
-  const [timeStamp, jobID] = pageArgs.split('/') as [string, string];
+  const reportID = pageArgs;
   // Process the request. This resolves the cited report's description and URL itself.
-  const processResult = await processTestRequest(reason, {timeStamp, jobID});
+  const processResult = await processTestRequest(reason, {reportID});
   // If the cited report does not exist:
   if (processResult.result === 'nonreport') {
     // Report this.

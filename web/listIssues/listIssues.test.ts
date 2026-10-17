@@ -49,7 +49,7 @@ after(() => {
 // TESTS
 
 test('listIssues returns an ok status with valid HTML for the mixed report', async () => {
-  const result = await answer('260101T0000/mix');
+  const result = await answer('260101T0000-mix');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -57,12 +57,12 @@ test('listIssues returns an ok status with valid HTML for the mixed report', asy
 });
 
 test('listIssues includes the page description in the HTML for the mixed report', async () => {
-  const result = await answer('260101T0000/mix');
+  const result = await answer('260101T0000-mix');
   assert.ok(result.answerPage.includes('Mixed Outcomes'));
 });
 
 test('listIssues interpolates the page description into the AI prompt block quote', async () => {
-  const result = await answer('260101T0000/mix');
+  const result = await answer('260101T0000-mix');
   const html = parse(result.answerPage);
   const blockQuote = html.querySelector('blockquote');
   assert.ok(blockQuote);
@@ -74,7 +74,7 @@ test('listIssues interpolates the page description into the AI prompt block quot
 });
 
 test('listIssues includes links to listViolators for issues in the mixed report', async () => {
-  const result = await answer('260101T0000/mix');
+  const result = await answer('260101T0000-mix');
   const html = parse(result.answerPage);
   const violatorLinks = html.querySelectorAll('a[href*="listViolators.html"]');
   assert.ok(violatorLinks.length >= 2);
@@ -84,12 +84,12 @@ test('listIssues includes links to listViolators for issues in the mixed report'
 });
 
 test('listIssues returns an error status for a nonexistent report', async () => {
-  const result = await answer('999999T9999/xyz');
+  const result = await answer('999999T9999-xyz');
   assert.equal(result.status, 'error');
 });
 
 test('listIssues for the all-cantTell report shows no issue links', async () => {
-  const result = await answer('260101T0001/ct');
+  const result = await answer('260101T0001-ct');
   assert.equal(result.status, 'ok');
   const html = parse(result.answerPage);
   const violatorLinks = html.querySelectorAll('a[href*="listViolators.html"]');
@@ -97,7 +97,7 @@ test('listIssues for the all-cantTell report shows no issue links', async () => 
 });
 
 test('listIssues for the empty report shows no issue links', async () => {
-  const result = await answer('260101T0005/emp');
+  const result = await answer('260101T0005-emp');
   assert.equal(result.status, 'ok');
   const html = parse(result.answerPage);
   const violatorLinks = html.querySelectorAll('a[href*="listViolators.html"]');
@@ -106,7 +106,7 @@ test('listIssues for the empty report shows no issue links', async () => {
 
 
 test('listIssues counts the prevented rule engine as called but not able to test', async () => {
-  const result = await answer('260101T0006/prv');
+  const result = await answer('260101T0006-prv');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('<li>Called: 2</li>'));
   assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
@@ -114,7 +114,7 @@ test('listIssues counts the prevented rule engine as called but not able to test
 });
 
 test('listIssues counts a rule engine that reported no violations as called and able to test', async () => {
-  const result = await answer('260101T0005/emp');
+  const result = await answer('260101T0005-emp');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('<li>Called: 1</li>'));
   assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
@@ -129,7 +129,7 @@ test('listIssues counts an unknown prevented engine as called but not able to te
   const reportPath = path.join(realUtil.reportsPath(), '260103T0000-unk.json');
   await fs.writeFile(reportPath, JSON.stringify(report));
   try {
-    const result = await answer('260103T0000/unk');
+    const result = await answer('260103T0000-unk');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('<li>Called: 3</li>'));
     assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
@@ -142,7 +142,7 @@ test('listIssues counts an unknown prevented engine as called but not able to te
 test('listIssues returns an error when getPageDataStrings fails after getReport succeeds', async () => {
   pageDataStringsOverride = {error: 'Page data strings error'};
   try {
-    const result = await answer('260101T0000/mix');
+    const result = await answer('260101T0000-mix');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Page data strings error');
   }
@@ -158,7 +158,7 @@ test('listIssues returns an error when report facts are not obtained', async () 
     urlLink: '<a href="https://example.com/mixed">https://example.com/mixed</a>'
   };
   try {
-    const result = await answer('260101T0000/mix');
+    const result = await answer('260101T0000-mix');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Report facts not obtained');
   }
@@ -169,7 +169,7 @@ test('listIssues returns an error when report facts are not obtained', async () 
 
 test('listIssues shows violation and violator counts for an issue with multiple violators', async () => {
   // The mul report has linkNoText with 4 violations by 3 violators.
-  const result = await answer('260101T0008/mul');
+  const result = await answer('260101T0008-mul');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage.includes('<li>Violations: 4</li>'));
   assert.ok(result.answerPage.includes('<li>Violators: 3</li>'));
@@ -198,7 +198,7 @@ test('listIssues handles acts with no standardResult instances', async () => {
   };
   await fs.writeFile(reportPath, JSON.stringify(report));
   try {
-    const result = await answer('260101T0004/nsi');
+    const result = await answer('260101T0004-nsi');
     assert.equal(result.status, 'ok');
   }
   finally {
@@ -223,38 +223,38 @@ const getHistoryItems = (history: ReturnType<typeof parse>) => history
 }));
 
 test('listIssues History of an older report lists all reports, with this one unlinked and no retest question', async () => {
-  const result = await answer('260101T0000/mix');
+  const result = await answer('260101T0000-mix');
   const history = getHistory(result.answerPage);
   const items = getHistoryItems(history);
   assert.equal(items.length, 2);
   assert.match(items[0]!.text, /^\d+ days? ago \(oldest; this report\)$/);
   assert.equal(items[0]!.href, null);
   assert.match(items[1]!.text, /^\d+ days? ago \(latest\)$/);
-  assert.equal(items[1]!.href, '/listIssues.html/260202T0000/new');
+  assert.equal(items[1]!.href, '/listIssues.html/260202T0000-new');
   assert.ok(!result.answerPage.includes('Request a retest'));
 });
 
 test('listIssues History of the latest report ends with the retest question', async () => {
-  const result = await answer('260202T0000/new');
+  const result = await answer('260202T0000-new');
   const history = getHistory(result.answerPage);
   const items = getHistoryItems(history);
   assert.equal(items.length, 2);
   assert.match(items[0]!.text, /^\d+ days? ago \(oldest\)$/);
-  assert.equal(items[0]!.href, '/listIssues.html/260101T0000/mix');
+  assert.equal(items[0]!.href, '/listIssues.html/260101T0000-mix');
   assert.match(items[1]!.text, /^\d+ days? ago \(latest; this report\)$/);
   assert.equal(items[1]!.href, null);
   const retestLink = history.querySelector('ol + p > a');
   assert.equal(retestLink?.text, 'Request a retest');
-  assert.equal(retestLink?.getAttribute('href'), '/requestRetestForm.html/260202T0000/new');
+  assert.equal(retestLink?.getAttribute('href'), '/requestRetestForm.html/260202T0000-new');
 });
 
 test('listIssues History of the only report about a page says so and asks about retesting', async () => {
-  const result = await answer('260101T0001/ct');
+  const result = await answer('260101T0001-ct');
   const history = getHistory(result.answerPage);
   assert.equal(getHistoryItems(history).length, 0);
   const paragraphs = history.querySelectorAll('p');
   assert.equal(paragraphs[0]?.text, 'This is the only available report about the page.');
-  assert.equal(paragraphs[1]?.querySelector('a')?.getAttribute('href'), '/requestRetestForm.html/260101T0001/ct');
+  assert.equal(paragraphs[1]?.querySelector('a')?.getAttribute('href'), '/requestRetestForm.html/260101T0001-ct');
 });
 
 test('listIssues History tags only the ends of a list of 3 reports and the current report', async () => {
@@ -266,16 +266,16 @@ test('listIssues History tags only the ends of a list of 3 reports and the curre
   await fs.writeFile(reportPath, JSON.stringify(report));
   try {
     // From the middle report:
-    let items = getHistoryItems(getHistory((await answer('260115T0000/mid')).answerPage));
+    let items = getHistoryItems(getHistory((await answer('260115T0000-mid')).answerPage));
     assert.equal(items.length, 3);
     assert.match(items[0]!.text, /\(oldest\)$/);
     assert.match(items[1]!.text, /^\d+ days? ago \(this report\)$/);
     assert.equal(items[1]!.href, null);
     assert.match(items[2]!.text, /\(latest\)$/);
     // From the latest report:
-    items = getHistoryItems(getHistory((await answer('260202T0000/new')).answerPage));
+    items = getHistoryItems(getHistory((await answer('260202T0000-new')).answerPage));
     assert.match(items[1]!.text, /^\d+ days? ago$/);
-    assert.equal(items[1]!.href, '/listIssues.html/260115T0000/mid');
+    assert.equal(items[1]!.href, '/listIssues.html/260115T0000-mid');
   }
   finally {
     await fs.unlink(reportPath);

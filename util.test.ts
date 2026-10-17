@@ -1009,8 +1009,8 @@ test('processTestRequest returns "url" for a page matching a queued job by an eq
 });
 
 test('processTestRequest returns "nonreport" when the cited report does not exist', async () => {
-  // Cite a timeStamp/jobID that does not correspond to any available report.
-  const {result} = await processTestRequest('because', {timeStamp: '999999T9999', jobID: 'xxx'});
+  // Cite a reportID that does not correspond to any available report.
+  const {result} = await processTestRequest('because', {reportID: '999999T9999-xxx'});
   assert.equal(result, 'nonreport');
 });
 
@@ -1259,7 +1259,7 @@ test('getReport returns an error for an invalid report', async () => {
   process.env.DB_DIR = tmpDir;
   try {
     const {getReport} = await import('./util.ts');
-    const result = await getReport('260101T0000', 'bad') as any;
+    const result = await getReport('260101T0000-bad') as any;
     assert.ok(result.error);
     assert.ok(result.error.includes('not usable'));
   }
@@ -1408,7 +1408,7 @@ test('testRequestsLock is a function (the lock returned by createLock)', () => {
 });
 
 test('getReportPath returns the path of a report file', () => {
-  const result = getReportPath('260101T0000', 'mix');
+  const result = getReportPath('260101T0000-mix');
   assert.ok(result.endsWith('260101T0000-mix.json'));
 });
 
@@ -1422,29 +1422,28 @@ test('getReportEndTime returns an invalid date for a report with no completion t
 });
 
 test('getReportStats returns reportSize for a valid report', async () => {
-  const stats = await getReportStats('260101T0000', 'mix');
+  const stats = await getReportStats('260101T0000-mix');
   assert.ok(stats);
   assert.equal(typeof stats.reportSize, 'number');
   assert.ok(stats.reportSize > 0);
 });
 
 test('getReportStats returns null for a nonexistent report', async () => {
-  const stats = await getReportStats('999999T9999', 'xxx');
+  const stats = await getReportStats('999999T9999-xxx');
   assert.equal(stats, null);
 });
 
 
 test('getReportExtract returns an extract for a valid report', async () => {
-  const extract = await getReportExtract('260101T0000', 'mix') as any;
-  assert.equal(extract.timeStamp, '260101T0000');
-  assert.equal(extract.jobID, 'mix');
+  const extract = await getReportExtract('260101T0000-mix') as any;
+  assert.equal(extract.id, '260101T0000-mix');
   assert.equal(extract.description, 'Mixed Outcomes');
   assert.equal(extract.url, 'https://example.com/mixed');
   assert.ok(extract.reportTime);
 });
 
 test('getReportExtract returns an error for a nonexistent report', async () => {
-  const extract = await getReportExtract('999999T9999', 'xxx') as any;
+  const extract = await getReportExtract('999999T9999-xxx') as any;
   assert.ok(extract.error);
 });
 
@@ -1465,7 +1464,7 @@ test('getReportExtract returns an error for an unusable report', async () => {
         jobData: {endTime: '26-01-01T00:00'}
       })
     );
-    const extract = await getReportExtract('260101T0000', 'bad') as any;
+    const extract = await getReportExtract('260101T0000-bad') as any;
     assert.ok(extract.error);
   }
   finally {
@@ -1485,7 +1484,7 @@ test('quarantineReport ignores a missing report', async () => {
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await quarantineReport('999999T9999', 'xxx', 'not usable');
+    await quarantineReport('999999T9999-xxx', 'not usable');
     // Nothing was created or moved.
     assert.deepEqual(await fs.readdir(tmpRoot), []);
   }
@@ -1510,7 +1509,7 @@ test('quarantineReport leaves a recently modified report in place', async () => 
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await quarantineReport('260101T0000', 'bad', 'not usable');
+    await quarantineReport('260101T0000-bad', 'not usable');
     // The fresh file may still be mid-write, so it was not moved.
     await fs.access(filePath);
   }
@@ -1538,7 +1537,7 @@ test('quarantineReport quarantines a report old enough to be quarantined', async
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await quarantineReport('260101T0000', 'bad', 'not usable');
+    await quarantineReport('260101T0000-bad', 'not usable');
     // The file was moved to the unusable-reports directory.
     await fs.access(filePath).then(
       () => {throw new Error('Report should have been quarantined');},
@@ -1573,7 +1572,7 @@ test('quarantineReport leaves the file and logs when the move fails', async () =
   const savedDbDir = process.env.DB_DIR;
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
-    await quarantineReport('260101T0000', 'bad', 'not usable');
+    await quarantineReport('260101T0000-bad', 'not usable');
     // The report stays where it was.
     await fs.access(filePath);
   }
@@ -1602,7 +1601,7 @@ test('getReport quarantines a malformed report file old enough to be quarantined
   process.env.DB_DIR = path.join(tmpRoot, 'db');
   try {
     const {getReport} = await import('./util.ts');
-    const result = await getReport('260101T0000', 'bad') as any;
+    const result = await getReport('260101T0000-bad') as any;
     assert.ok(result.error);
     // The malformed file was quarantined.
     const quarantined = await fs.readdir(path.join(tmpRoot, 'db', 'unusableReports'));
@@ -1622,7 +1621,7 @@ test('getReport quarantines a malformed report file old enough to be quarantined
 test('getReportExtracts returns extracts of all available reports', async () => {
   const extracts = await getReportExtracts();
   assert.ok(extracts.length >= 8);
-  const ids = extracts.map(e => `${e.timeStamp}-${e.jobID}`);
+  const ids = extracts.map(e => e.id);
   assert.ok(ids.includes('260101T0000-mix'));
   assert.ok(ids.includes('260101T0001-ct'));
 });
@@ -1631,7 +1630,7 @@ test('getReportExtracts with onlyLatest returns only the latest report for each 
   const latest = await getReportExtracts(true);
   const mixReports = latest.filter(e => e.description === 'Mixed Outcomes');
   assert.equal(mixReports.length, 1);
-  assert.equal(mixReports[0]!.timeStamp, '260202T0000');
+  assert.equal(mixReports[0]!.id, '260202T0000-new');
 });
 
 test('getReportExtracts reflects reports added, modified, and removed after a previous call', async () => {
@@ -1918,14 +1917,14 @@ test('getMetrics backfills every category, and generates a since stamp, from a b
 // TESTS FOR orderJob AND awaitJob (GitHub issue #111)
 
 test('orderJob enqueues a new-page order directly into the job queue', async () => {
-  const {result, description, url, jobID} = await orderJob(
+  const {result, description, url, reportID} = await orderJob(
     {description: 'Ordered Page', url: 'https://example.com/ordered'}, 'because accessibility matters here'
   ) as any;
   assert.equal(result, 'ok');
   assert.equal(description, 'Ordered Page');
   assert.equal(url, 'https://example.com/ordered');
-  assert.match(jobID, /^\d{6}T\d{4}-[a-z0-9]{3}$/);
-  const queuedPath = path.join(jobsPath(), 'queue', `${jobID}.json`);
+  assert.match(reportID, /^\d{6}T\d{4}-[a-z0-9]{3}$/);
+  const queuedPath = path.join(jobsPath(), 'queue', `${reportID}.json`);
   try {
     const job = JSON.parse(await fs.readFile(queuedPath, 'utf8'));
     assert.equal(job.target.what, 'Ordered Page');
@@ -2010,7 +2009,7 @@ test('orderJob throws when a job file in a category directory is defective', asy
 });
 
 test('orderJob returns "nonreport" when a retest order cites a report that does not exist', async () => {
-  const {result} = await orderJob({timeStamp: '999999T9999', jobID: 'xxx'}, 'because accessibility matters here');
+  const {result} = await orderJob({reportID: '999999T9999-xxx'}, 'because accessibility matters here');
   assert.equal(result, 'nonreport');
 });
 
@@ -2018,19 +2017,19 @@ test('orderJob returns "superseded" when a retest order cites a superseded repor
   // 260101T0000-mix is an earlier report of "Mixed Outcomes" than 260202T0000-new,
   // so it is superseded.
   const {result} = await orderJob(
-    {timeStamp: '260101T0000', jobID: 'mix'}, 'because accessibility matters here'
+    {reportID: '260101T0000-mix'}, 'because accessibility matters here'
   );
   assert.equal(result, 'superseded');
 });
 
 test('orderJob enqueues a retest order for the latest report of a page', async () => {
-  const {result, description, url, jobID} = await orderJob(
-    {timeStamp: '260202T0000', jobID: 'new'}, 'because accessibility matters here'
+  const {result, description, url, reportID} = await orderJob(
+    {reportID: '260202T0000-new'}, 'because accessibility matters here'
   ) as any;
   assert.equal(result, 'ok');
   assert.equal(description, 'Mixed Outcomes');
   assert.equal(url, 'https://example.com/mixed');
-  const queuedPath = path.join(jobsPath(), 'queue', `${jobID}.json`);
+  const queuedPath = path.join(jobsPath(), 'queue', `${reportID}.json`);
   try {
     const job = JSON.parse(await fs.readFile(queuedPath, 'utf8'));
     assert.equal(job.target.what, 'Mixed Outcomes');
@@ -2062,12 +2061,12 @@ test('orderJob never returns queueFull when JOB_QUEUE_MAX is 0 (no limit)', asyn
   const fillerPath = path.join(jobsPath(), 'queue', 'fi2.json');
   await fs.writeFile(fillerPath, getJSON({target: {what: 'Filler Queued Page Two', url: 'https://example.com/filler-queued-2'}}));
   try {
-    const {result, jobID} = await orderJob(
+    const {result, reportID} = await orderJob(
       {description: 'One More Order Page', url: 'https://example.com/one-more-order'},
       'because accessibility matters here'
     ) as any;
     assert.equal(result, 'ok');
-    await fs.unlink(path.join(jobsPath(), 'queue', `${jobID}.json`));
+    await fs.unlink(path.join(jobsPath(), 'queue', `${reportID}.json`));
   }
   finally {
     delete process.env.JOB_QUEUE_MAX;
@@ -2076,12 +2075,12 @@ test('orderJob never returns queueFull when JOB_QUEUE_MAX is 0 (no limit)', asyn
 });
 
 test('awaitJob returns "completed" immediately when a report already exists', async () => {
-  const outcome = await awaitJob('260101T0000', 'mix');
+  const outcome = await awaitJob('260101T0000-mix');
   assert.equal(outcome, 'completed');
 });
 
 test('awaitJob returns "notFound" for an identifier naming neither a report nor a pending job', async () => {
-  const outcome = await awaitJob('999999T9999', 'xxx');
+  const outcome = await awaitJob('999999T9999-xxx');
   assert.equal(outcome, 'notFound');
 });
 
@@ -2090,7 +2089,7 @@ test('awaitJob returns "failed" when the job has moved to the failed directory',
   await fs.mkdir(path.dirname(failedPath), {recursive: true});
   await fs.writeFile(failedPath, getJSON({target: {what: 'Failed Await Page', url: 'https://example.com/failed-await'}}));
   try {
-    const outcome = await awaitJob('260101T1111', 'flj');
+    const outcome = await awaitJob('260101T1111-flj');
     assert.equal(outcome, 'failed');
   }
   finally {
@@ -2111,7 +2110,7 @@ test('awaitJob polls until a queued job completes, then returns "completed"', as
     await fs.writeFile(reportPath, getJSON({id: jobName, target: {what: 'Polled Page', url: 'https://example.com/polled'}}));
   }, 50);
   try {
-    const outcome = await awaitJob('260101T2222', 'plj');
+    const outcome = await awaitJob('260101T2222-plj');
     assert.equal(outcome, 'completed');
   }
   finally {
@@ -2129,7 +2128,7 @@ test('awaitJob returns "timedOut" when a claimed job neither completes nor fails
   const claimedPath = path.join(jobsPath(), 'claimed', `${jobName}.json`);
   await fs.writeFile(claimedPath, getJSON({target: {what: 'Stuck Page', url: 'https://example.com/stuck'}}));
   try {
-    const outcome = await awaitJob('260101T3333', 'toj');
+    const outcome = await awaitJob('260101T3333-toj');
     assert.equal(outcome, 'timedOut');
   }
   finally {

@@ -29,7 +29,7 @@ The internal features that make Kilotest a collection of tools for language mode
 - A `server.json` file, conforming to the [MCP server schema](https://modelcontextprotocol.io/), and a GitHub Actions workflow (`publish-mcp.yml`) that authenticates via GitHub OIDC and publishes that file to the official MCP Registry whenever `server.json` or `api/version.ts` changes on the `main` branch.
 - A `capability.md` file with a URL, summarizing what Kilotest tools can do.
 - `mcp`, `mcp-server`, and `modelcontextprotocol` keywords in `package.json`, supporting discovery of the `@jrpool/kilotest` npm package by tools and humans searching the npm registry for MCP servers.
-- An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish`/`update`), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
+- An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish` for the initial listing; thereafter `npm run publish:lhm`, which wraps `lhm plugin update` and also runs from the `postpublish` hook), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
 - A `sitemap.xml` file.
 - Documentation in the `README.md` file.
 - This `AI-TOOLS.md` file.
@@ -62,11 +62,11 @@ The external features that support the use of Kilotest as a collection of AI too
 
 ## Required maintenance
 
-Whenever the `version` property of the `package.json` file is updated:
+Releasing a new version is a two-script procedure:
 
-- Update `openapi.yaml` and the versions of `server.json` and `lhm.plugin.json` (`npm run generate`).
-- Create a pull request and merge to `main` (triggers `publish-mcp.yml` automatically for the MCP Registry).
-- Execute `lhm plugin update --dir .` (for LobeHub).
+- On a feature branch, commit all substantive changes, then execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`). The script bumps `package.json` and `package-lock.json`, regenerates `openapi.yaml` and the versions of `server.json` and `lhm.plugin.json` via the `version` hook, commits and pushes the result, and records the branch name for the next step.
+- Submit a pull request and merge it to `main` (triggers `publish-mcp.yml` automatically for the MCP Registry).
+- Execute `npm run postPR`. The script checks out and pulls `main`, verifies that the merge landed, publishes to npm (whose `postpublish` hook updates the LobeHub listing), deletes the feature branch, and prunes remote-tracking branches. If the LobeHub update fails, retry it alone with `npm run publish:lhm`.
 
 ## Use cases
 

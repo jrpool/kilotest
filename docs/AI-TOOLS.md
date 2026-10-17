@@ -62,7 +62,7 @@ The external features that support the use of Kilotest as a collection of AI too
 
 ## Required maintenance
 
-Whenever the `/api/version.ts` file is updated:
+Whenever the `version` property of the `package.json` file is updated:
 
 - Update the `server.json` file (version field).
 - Update the `lhm.plugin.json` file (version field).

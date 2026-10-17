@@ -14,7 +14,13 @@
     "test": "c8 node --require ./test/setup.ts --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize '**/*.test.ts'",
     "test:smoke": "node smokeTest.ts",
     "checkinfo": "node checkinfo.ts",
-    "generate": "node scripts/generate-openapi.ts && node scripts/update-versions.ts"
+    "generate": "node scripts/generate-openapi.ts && node scripts/update-versions.ts",
+    "version": "npm run generate",
+    "prepublishOnly": "test \"$(git branch --show-current)\" = main",
+    "postpublish": "npm run publish:lhm",
+    "publish:lhm": "npx -y @lobehub/market-cli plugin update --dir .",
+    "prePR": "node scripts/prePR.ts",
+    "postPR": "node scripts/postPR.ts"
   },
   "repository": {
     "type": "git",

@@ -2,7 +2,7 @@
 
 ## Capability
 
-Web-page front-end quality audit. Kilotest tests web pages for front-end quality, namely accessibility, usability, and web standards, and makes structured findings available for retrieval.
+Web-page front-end quality audit. Kilotest tests web pages for front-end quality, namely accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG, and makes structured findings available for retrieval.
 
 ## Purpose
 

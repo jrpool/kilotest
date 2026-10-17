@@ -2,7 +2,7 @@
 
 ## What Kilotest is
 
-Kilotest is an application that performs ensemble testing of web pages for front-end quality (i.e. accessibility, usability, and standard conformance) and reports the test results.
+Kilotest is an application that performs ensemble testing of web pages for front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) and reports the test results.
 
 ## What Kilotest does for language models
 
@@ -14,18 +14,12 @@ Without calling any tool, an LLM can, under some conditions, load web pages and 
 - fragmentary, because of capability limitations, such as inability to run browsers and interact with web pages
 - inaccurate, because of the tendency to replace missing information with hallucinations
 
-To provide a more inexpensive, thorough, and accurate assessment, the agent could, in principle, ask an ensemble of specialized rule engines to test the page. However, selecting and running such rule engines and consolidating their results is itself expensive and difficult, and most available rule engines are not callable as MCP tools. Kilotest assumes responsibility for assembling, integrating, and running several rule engines. Kilotest:
-
-- defines an MCP tool that tests web pages for front-end quality
-- defines MCP tools that report the test results
-- defines connectors to those tools, compatible with major AI platforms
-
-The tool that tests web pages for front-end quality has attributes that no other such tool has. It:
+To provide a more inexpensive, thorough, and accurate assessment, the agent could, in principle, ask an ensemble of specialized rule engines to test the page. However, selecting and running such rule engines and consolidating their results is itself expensive and difficult, and most available rule engines are not callable as MCP tools. Kilotest fills the gap between an LLM and rule engines. Kilotest:
 
 - selects an ensemble of 12 rule engines that implement tests for, in total, more than a thousand rules for front-end quality
 - runs the tests of the rule engines
 - combines the reports of the rule engines into a single integrated report
-- consolidates the 1000+ rules having 12 different naming systems into 300+ “issues” with a uniform naming system
+- consolidates the rules into about 380 “issues” with a uniform naming system
 
 The tools that report test results extract from reports statistics and details at various levels of granularity, as required by an agent to fulfill particular user requests.
 
@@ -46,11 +40,13 @@ The rule engines in the Kilotest ensemble take responsibility for determining wh
 
 ## Kilotest versus other MCP servers
 
-In the marketplace for MCP servers that test for front-end quality, all servers other than that of Kilotest leverage at most 1 rule engine, most often `axe-core`. The Kilotest testing tool leverages `axe-core` plus 11 other rule engines. This has these main effects:
+In the marketplace for MCP servers that test for front-end quality, all servers other than that of Kilotest leverage at most 3 rule engines, most often only `axe-core`. Most other MCP servers also require authentication. Kilotest leverages `axe-core` plus 11 other rule engines, and it does not require authentication.
 
-- For web pages that have not yet been tested, a single-rule-engine MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds or less. The testing tool of Kilotest usually completes its work in 2 to 3 minutes, because all 12 rule engines are run, and some of the tests involve navigation and interaction with the page and LLM inference. Moreover, Kilotest currently allows users (both humans and models) to **recommend** new pages for testing but authorizes only Kilotest managers to make the tool proceed with the testing. The wait for manager action can take up to a day. A feature permitting immediate testing ordered by AI agents is planned, but, until it is implemented, Kilotest will be useful for not-yet-tested pages only in long-running (multi-day) workflows.
-- For web pages about which reports are already available, Kilotest can provide faster results than a single-rule-engine MCP server, because Kilotest stores test results for subsequent retrieval. A retrieval from a Kilotest reporting tool can be completed in less than 2 seconds.
-- Kilotest results are more comprehensive than single-rule-engine MCP server results. Every rule engine provides limited coverage of front-end quality, so false negatives (missed defects) are more common with single-rule-engine MCP servers. This difference [has been documented in research](https://arxiv.org/pdf/2304.07591).
+For web pages that have not yet been tested, a single-rule-engine MCP can provide faster results than Kilotest. A tool running only the `axe-core` tests can complete its work in about 5 seconds. The testing tool of Kilotest usually completes its work in 2 to 4 minutes, because all 12 rule engines are run, and some of the tests involve navigation and interaction with the page and LLM inference.
+
+For web pages about which reports are already available, Kilotest can provide faster results than a single-rule-engine MCP server, because Kilotest stores test results for subsequent retrieval. A retrieval from a Kilotest reporting tool can be completed in less than 2 seconds.
+
+Kilotest results are more comprehensive than single-rule-engine MCP server results. Every rule engine provides limited coverage of front-end quality, so false negatives (missed defects) are more common with single-rule-engine MCP servers. This difference [has been documented in research](https://arxiv.org/pdf/2304.07591).
 
 ## How to use Kilotest
 
@@ -63,12 +59,12 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 - Get statistics about issues reported in one report, and a history of all reports about the same page: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
 - Get details about one issue reported in one report: `https://kilotest.com/listViolators.html/{issueID}/{timeStamp}/{jobID}`
 - Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
-- [Recommend the testing of a not-yet-tested page](https://kilotest.com/requestNewTestForm.html)
-- Recommend the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{timeStamp}/{jobID}`
+- [Request the testing of a not-yet-tested page](https://kilotest.com/requestNewTestForm.html)
+- Request the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{timeStamp}/{jobID}`
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
 - [Get a list of the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
-- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
-- [Tutorial, “QAI tutorial”](https://kilotest.com/qai/)
+- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
+- [Tutorial, “Connect an AI Platform”](https://kilotest.com/tutorialAI.html)
 
 ### API
 
@@ -200,11 +196,11 @@ More information about Kilotest features and internals:
 ### General
 
 - [Introduction to Kilotest](https://kilotest.com/)
-- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
-- [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/)
+- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
+- [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/tutorialAI.html)
 - [README file](https://github.com/jrpool/kilotest/blob/main/README.md)
 - [Summary of Kilotest capabilities](https://kilotest.com/capability.md)
 - [Testaro rule-engine orchestrator](https://github.com/YRA-Tech/testaro)
-- [Testaro rule classifier](https://github.com/YRA-Tech/testaro-issues)
+- [Testaro rule classifier](https://github.com/jrpool/testaro-issues)
 - [Research report on Testaro](https://arxiv.org/abs/2309.10167)
 - [Blog post on the Kilotest use case](https://medium.com/cvs-health-tech-blog/how-to-run-a-thousand-accessibility-tests-63692ad120c3)

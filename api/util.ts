@@ -51,7 +51,7 @@ export const getResponseMetadata = () => ({
 export const getToolsFacts = () => ({
   'name': 'Kilotest',
   'description': {
-    'what Kilotest does': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and web standards) of web pages. A Kilotest job generates findings by using Testaro to test a page against about 1300 rules defined by an ensemble of twelve rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 380 issues. Kilotest makes facts about the tested pages, the issues, and the violations retrievable at four levels of granularity.',
+    'what Kilotest does': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) of web pages. A Kilotest job generates findings by using Testaro to test a page against about 1300 rules defined by an ensemble of twelve rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 380 issues. Kilotest makes facts about the tested pages, the issues, and the violations retrievable at four levels of granularity.',
     'how to retrieve findings': {
       'level 1': 'Use the listPages tool to get a list of tested pages, each with its latest report. The listIssues output about any report lists all reports about the same page.',
       'level 2': 'Use the listIssues tool to get a list of issues in one report.',

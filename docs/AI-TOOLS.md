@@ -4,7 +4,7 @@
 
 Until 2026 Kilotest was intended, and implemented, as a web application performing a service for human users.
 
-Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could operate as a set of tools for language models to allow them to improve their answers to questions about the front-end quality (accessibility, usability, and web standards) of specific web pages.
+Beginning in May 2026, it [became evident](https://github.com/jrpool/kilotest/issues/2) that Kilotest could operate as a set of tools for language models to allow them to improve their answers to questions about the front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) of specific web pages.
 
 A decision was made to **make Kilotest discoverable, usable, and, where appropriate, used as a provider of tools for language models**.
 
@@ -42,7 +42,7 @@ The external features that support the use of Kilotest as a collection of AI too
 - A [pull request](https://github.com/public-apis/public-apis/pull/6346/changes) to add Kilotest to the list of public APIs in the `public-apis` repository.
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
-- Registration of Kilotest as an active server in the [official MCP Registry](https://registry.modelcontextprotocol.io) (`io.github.jrpool/kilotest`), maintained by the [Model Context Protocol](https://modelcontextprotocol.io/) project. The [PulseMCP](https://www.pulsemcp.com/servers) directory and the VS Code MCP gallery both crawl this registry, so Kilotest is discoverable through them with no separate submission.
+- Registration of Kilotest as an active server in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.jrpool/kilotest), maintained by the [Model Context Protocol](https://modelcontextprotocol.io/) project. The [PulseMCP](https://www.pulsemcp.com/servers) directory and the VS Code MCP gallery both crawl this registry, so Kilotest is discoverable through them with no separate submission.
 - Registration of Kilotest with the [Smithery](https://smithery.ai/servers/pool/kilotest) MCP server registry.
 - Registration of Kilotest with the [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest) MCP server registry, including a claim of ownership of the MCP connector by the maintainer via a `TXT` DNS record for `_glama-claim.kilotest.com`, with the value `glama_claim_gVV4HrPdcXr9TEfj1p3icEUBJ3_OVJGX`.
 - Registration of Kilotest with [Awesome MCP Servers](https://www.tensorblock.co/mcp/servers/github-jrpool-kilotest-f518ba36).

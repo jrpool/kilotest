@@ -279,7 +279,7 @@ Update your package.json to feature dense, functional keywords:
 
 `{`
   `"name": "kilotest",`
-  `"description": "Model Context Protocol (MCP) server for Kilotest ensemble web testing. Runs over 1,300 front-end tests across multiple rule engines covering WCAG accessibility, usability, performance, and web standards.",`
+  `"description": "Model Context Protocol (MCP) server for Kilotest ensemble web testing. Runs over 1,300 front-end tests across multiple rule engines covering WCAG accessibility, usability, performance, and web standards, including HTML, CSS, ARIA, and WCAG.",`
   `"keywords": [`
     `"mcp",`
     `"model-context-protocol",`

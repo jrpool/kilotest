@@ -62,7 +62,7 @@ The URL for models using the MCP server is `https://kilotest.com/mcp`. The MCP s
 
 There is additional documentation at:
 
-- [QAI](https://kilotest.com/qai): a tutorial for allowing AI assistants to use Kilotest
+- [Tutorial: authorizing AI assistants to use Kilotest](https://kilotest.com/tutorialAI.html)
 - [AI-TOOLS.md](docs/AI-TOOLS.md): how Kilotest implements the MCP protocol
 - [Summary of Kilotest capabilities](https://kilotest.com/capability.md)
 - [llms.txt](llms.txt): basic documentation for LLMs

@@ -64,9 +64,7 @@ The external features that support the use of Kilotest as a collection of AI too
 
 Whenever the `version` property of the `package.json` file is updated:
 
-- Update the `server.json` file (version field).
-- Update the `lhm.plugin.json` file (version field).
-- Regenerate `openapi.yaml` (`npm run generate:openapi`).
+- Update `openapi.yaml` and the versions of `server.json` and `lhm.plugin.json` (`npm run generate`).
 - Create a pull request and merge to `main` (triggers `publish-mcp.yml` automatically for the MCP Registry).
 - Execute `lhm plugin update --dir .` (for LobeHub).
 

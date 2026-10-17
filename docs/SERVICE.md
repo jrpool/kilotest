@@ -326,9 +326,8 @@ Both logs are rotated; see “PM2 log rotation” above for the application log 
 When the Kilotest web, API, or MCP interface is revised in a feature branch:
 
 1. Update the version in `package.json`
-1. Update the version in `server.json`
-1. Update the version and any changes in the API in `lhm.plugin.json`
-1. If the API has changed, run the `generate:openapi` script
+1. Update any changes in the API in `lhm.plugin.json`
+1. Run the `generate` script
 1. Execute the command `npx @lobehub/market-cli plugin update --dir .`
 1. Commit and push the changes to the feature branch
 1. Create a pull request to merge the feature branch into `main`

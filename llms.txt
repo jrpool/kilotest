@@ -40,4 +40,4 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 - [Privacy policy](https://kilotest.com/privacy.html)
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
 - [Kilotest as connector to and collection of AI Tools](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOLS.md)
-- [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/qai/)
+- [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/tutorialAI.html)

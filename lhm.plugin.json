@@ -10,10 +10,13 @@
   "tags": [
     "accessibility",
     "a11y",
-    "testing",
     "mcp",
     "mcp-server",
-    "modelcontextprotocol"
+    "modelcontextprotocol",
+    "testing",
+    "w3c",
+    "wcag",
+    "web standards"
   ],
   "tools": [
     {
@@ -412,7 +415,7 @@
     },
     {
       "name": "listIssues",
-      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to drill into a specific report, identified by its timestamp and job identifier. Returns basics about the report's issues and a list of every report about the same page, from oldest to latest.",
+      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to drill into a specific report, identified by its timestamp and job identifier. Returns basics about the report’s issues and a list of every report about the same page, from oldest to latest.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1151,7 +1154,7 @@
     },
     {
       "name": "listViolators",
-      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill from an issue down to the elements it affects. Returns basics about each violating element, including its identifier in the page's element catalog.",
+      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill from an issue down to the elements it affects. Returns basics about each violating element, including its identifier in the page’s element catalog.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4184,7 +4187,7 @@
     },
     {
       "name": "awaitTest",
-      "description": "Waits for a job ordered via the orderNewTest or orderRetest tool to finish, using the report identifier either tool returned. Use this instead of polling listIssues when an immediate answer is preferred. Blocks until the report is ready, the job fails, or a maximum wait time elapses, sending no interim notices; returns the finished job's status and, if ready, its report identifier.",
+      "description": "Waits for a job ordered via the orderNewTest or orderRetest tool to finish, using the report identifier either tool returned. Use this instead of polling listIssues when an immediate answer is preferred. Blocks until the report is ready, the job fails, or a maximum wait time elapses, sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4506,5 +4509,5 @@
       }
     }
   ],
-  "version": "59.0.0"
+  "version": "59.1.2"
 }

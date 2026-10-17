@@ -62,11 +62,9 @@ The external features that support the use of Kilotest as a collection of AI too
 
 ## Required maintenance
 
-Whenever the `/api/version.ts` file is updated:
+Whenever the `version` property of the `package.json` file is updated:
 
-- Update the `server.json` file (version field).
-- Update the `lhm.plugin.json` file (version field).
-- Regenerate `openapi.yaml` (`npm run generate:openapi`).
+- Update `openapi.yaml` and the versions of `server.json` and `lhm.plugin.json` (`npm run generate`).
 - Create a pull request and merge to `main` (triggers `publish-mcp.yml` automatically for the MCP Registry).
 - Execute `lhm plugin update --dir .` (for LobeHub).
 
@@ -95,12 +93,11 @@ To-dos recommended by Claude Sonnet 5 Medium on Devin:
 
 - **Other directories not yet targeted.** The [mcp.so](https://mcp.so/submit) directory offers a free tier but steers submitters toward a $39 paid listing; deferred as a commercial decision. The Docker MCP Catalog is not a fit because it requires stdio transport and a Dockerfile, and Kilotest is streamable-http.
 
-- **Client-onboarding friction isn't documented.** Some MCP clients need the `mcp-remote` npx bridge to use a remote streamable-HTTP server like Kilotest's. Ready-made Claude Desktop/Cursor/Windsurf config instructions added to QAI would convert "discovered" into "used" faster, since case 3 of your use cases assumes a technically savvy discoverer but not all users are.
+- **Client-onboarding friction isn't documented.** Some MCP clients need the `mcp-remote` npx bridge to use a remote streamable-HTTP server like Kilotest's. Ready-made Claude Desktop/Cursor/Windsurf config instructions added to the AI tutorial would convert "discovered" into "used" faster, since case 3 of your use cases assumes a technically savvy discoverer but not all users are.
 
 Other future work:
 
-- Add to QAI, or replace much of the current QAI content with, an [Add Custom Connector link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kilotest&connectorUrl=https%3A%2F%2Fkilotest.com%2Fmcp).
-- Consider subscribing to a `Claude.ai` Team plan and submitting Kilotest to the [Claude Connectors Directory](https://claude.com/docs/connectors/building/submission). Details provided by GLM-5.2 High: “If accepted, Kilotest would get a permanent listing URL like `https://claude.ai/directory/connectors/kilotest` with a Connect button, and would appear in Claude’s in-product browse/search and ‘Suggested Connectors’. This is the highest-value listing for your use cases, because it puts Kilotest directly in front of Claude users who have not explicitly searched for it.”
+- Add to the AI tutorial, or replace much of the current AI tutorial content with, an [Add Custom Connector link](https://claude.ai/customize/connectors?modal=add-custom-connector&connectorName=Kilotest&connectorUrl=https%3A%2F%2Fkilotest.com%2Fmcp).
 - Recommended by GLM-5.2 High: Submit a Kilotest-appropriate request to one or more AI platforms and discover whether the model discovers Kilotest and, if so, either uses it or offers to use it in the creation of a response.
 - Recommended by ChatGPT: A general capability manifest that says, in one machine-readable place: Here are the capabilities Kilotest provides; here are all the interfaces through which you can invoke them; here are their requirements and effects. For example:
 

@@ -65,3 +65,36 @@ There is additional documentation at:
 - [llms.txt](llms.txt): basic documentation for LLMs
 - [llms-full.txt](llms-full.txt): comprehensive documentation for LLMs
 - [lhm.plugin.json](lhm.plugin.json): documentation for registration with the LobeHub MCP Market
+
+## Maintenance
+
+These are the routine steps for maintaining Kilotest as currently deployed.
+
+### No API changes
+
+When you make a change in a feature branch **without** any API or tool contract change:
+
+1. Stage, commit, and optionally push all changes.
+2. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
+3. Submit a pull request.
+4. When all checks succeed, squash-merge to `main` and delete the feature branch on GitHub.
+5. Execute `npm run postPR` (with interactive browser authentication).
+6. Wait until `npmjs.com` has processed the publication.
+7. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
+
+### API changes
+
+When you **make an API or tool contract change** in a feature branch:
+
+1. `lhm.plugin.json`: Transform it to match `api/schemas.ts` and `mcp.ts`.
+2. `llms.txt`, `llms-full.txt`, `capability.md`, `README.md`: Update parameter and path names.
+3. Stage, commit, and optionally push all changes.
+4. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
+5. Submit a pull request.
+6. When all checks succeed, squash-merge to `main`.
+7. Execute `npm run postPR` (with interactive browser authentication).
+8. Wait until `npmjs.com` has processed the publication.
+9. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
+10. Visit the [RapidAPI Studio](https://rapidapi.com/studio) and update the API definition at `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI` by uploading the regenerated `openapi-3.0.yaml`.
+
+If any step fails, see the details in `docs/AI-TOOLS.md` for troubleshooting instructions.

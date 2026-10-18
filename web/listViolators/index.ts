@@ -109,7 +109,7 @@ const populateQuery = async (
       }
     }
     const href
-    = `/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}?pathID=${pathID}`;
+    = `/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}?pathID=${encodeURIComponent(pathID)}`;
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(

@@ -1,6 +1,6 @@
 /*
   prePR.ts
-  Prepares a release pull request on the current feature branch: verifies a clean working tree, bumps the package version (the npm "version" hook regenerates openapi.yaml, server.json, and lhm.plugin.json), commits and pushes the result, records the branch name for postPR.ts, and prints the remaining manual steps.
+  Prepares a release pull request on the current feature branch: verifies a clean working tree, bumps the package version, regenerates the generated files (openapi.yaml, openapi-3.0.yaml, server.json, and lhm.plugin.json), commits and pushes the result, records the branch name for postPR.ts, and prints the remaining manual steps. The generation is run explicitly because the project's .npmrc sets ignore-scripts=true, which disables the npm "version" lifecycle hook that would otherwise run it.
 */
 
 // IMPORTS
@@ -57,6 +57,7 @@ if (!branch || branch === 'main') {
 }
 requireCleanTree();
 run('npm', ['version', level, '--no-git-tag-version']);
+run('npm', ['run', 'generate']);
 run('git', ['add', '-A']);
 run('git', ['commit', '-m', 'update version and generated files']);
 run('git', ['push', '-u', 'origin', branch]);

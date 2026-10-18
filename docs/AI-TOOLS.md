@@ -29,7 +29,7 @@ The internal features that make Kilotest a collection of tools for language mode
 - A `server.json` file, conforming to the [MCP server schema](https://modelcontextprotocol.io/), and a GitHub Actions workflow (`publish-mcp.yml`) that authenticates via GitHub OIDC and publishes that file to the official MCP Registry whenever `server.json` or `api/version.ts` changes on the `main` branch.
 - A `capability.md` file with a URL, summarizing what Kilotest tools can do.
 - `mcp`, `mcp-server`, and `modelcontextprotocol` keywords in `package.json`, supporting discovery of the `@jrpool/kilotest` npm package by tools and humans searching the npm registry for MCP servers.
-- An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish` for the initial listing; thereafter `npm run publish:lhm`, which wraps `lhm plugin update` and also runs from the `postpublish` hook), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
+- An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish` for the initial listing; thereafter `npm run publish:lhm`, which wraps `lhm plugin update` and is run by `npm run postPR`), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
 - A `sitemap.xml` file.
 - Documentation in the `README.md` file.
 - This `AI-TOOLS.md` file.
@@ -64,9 +64,11 @@ The external features that support the use of Kilotest as a collection of AI too
 
 Releasing a new version is a two-script procedure:
 
-- On a feature branch, commit all substantive changes, then execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`). The script bumps `package.json` and `package-lock.json`, regenerates `openapi.yaml` and the versions of `server.json` and `lhm.plugin.json` via the `version` hook, commits and pushes the result, and records the branch name for the next step.
+- On a feature branch, commit all substantive changes, then execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`). The script bumps `package.json` and `package-lock.json`, regenerates `openapi.yaml`, `openapi-3.0.yaml`, and the versions of `server.json` and `lhm.plugin.json` by explicitly running `npm run generate`, commits and pushes the result, and records the branch name for the next step.
 - Submit a pull request and merge it to `main` (triggers `publish-mcp.yml`, which publishes `server.json` to the MCP Registry).
-- Execute `npm run postPR`. The script checks out and pulls `main`, verifies that the merge landed, publishes to npm (whose `postpublish` hook updates the LobeHub listing), deletes the feature branch, and prunes remote-tracking branches. If the LobeHub update fails, retry it alone with `npm run publish:lhm`.
+- Execute `npm run postPR`. The script checks out and pulls `main`, verifies that the merge landed, publishes to npm, updates the LobeHub listing via `npm run publish:lhm`, deletes the feature branch, and prunes remote-tracking branches. If the LobeHub update fails, retry it alone with `npm run publish:lhm`.
+
+The project’s `.npmrc` sets `ignore-scripts=true` for supply-chain safety, which disables all npm lifecycle hooks. Do not rely on `version`, `postpublish`, `prepublishOnly`, or other hook scripts: anything a release must do must be run explicitly by `prePR`, `postPR`, or a maintainer command.
 
 ### Contract changes and external registries
 
@@ -90,7 +92,7 @@ A change to the tool or API contract (tool names, parameter names, schemas, resp
 
 #### External registries requiring maintainer action
 
-- The LobeHub MCP Market listing is published from `lhm.plugin.json` and is non-automated, because LobeHub requires browser-based OAuth. A normal release pushes the updated file via the `postpublish` hook; to push a contract update without a release, run `npm run publish:lhm`.
+- The LobeHub MCP Market listing is published from `lhm.plugin.json` and is non-automated, because LobeHub requires browser-based OAuth. A normal release pushes the updated file when `npm run postPR` runs `npm run publish:lhm`; to push a contract update without a release, run `npm run publish:lhm` manually.
 - The RapidAPI Hub listing stores a copy of the API endpoints. Its importer accepts only OpenAPI 3.0 documents, so after releasing a contract change, update the definition in Studio: `My APIs` → the Kilotest API project → `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI`, and upload the regenerated `openapi-3.0.yaml` (not `openapi.yaml`, which is 3.1 and is rejected). The `/publish/…` pages contain only listing metadata, not the spec.
 
 #### Step by step

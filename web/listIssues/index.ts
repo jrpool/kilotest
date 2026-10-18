@@ -165,13 +165,13 @@ const getHistory = async (
   });
   // Initialize the lines with a list of the reports, or a statement that there is only one.
   const lines = history.lines.length > 1
-  ? [`${margin}<ol>`, ...history.lines, `${margin}</ol>`]
+  ? [`${margin}<ol class="links">`, ...history.lines, `${margin}</ol>`]
   : [`${margin}<p>This is the only available report about the page.</p>`];
   // If this report is the latest about the page:
   if (isLatest) {
     // Add a link to the form for requesting a retest to the lines.
     lines.push(
-      `${margin}<p><a href="/requestRetestForm.html/${reportID}">Request a retest</a></p>`
+      `${margin}<p class="links"><a href="/requestRetestForm.html/${reportID}">Request a retest</a></p>`
     );
   }
   // Replace the bare list items with the assembled section lines.
@@ -238,7 +238,7 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
         // Add the start of a list item to the lines.
         detailsLines.push(`${margin}  <li>`);
         // Add a heading summarizing the issue to the lines.
-        detailsLines.push(`${margin}    <h5>${summary}</h5>`);
+        detailsLines.push(`${margin}    <h3>${summary}</h3>`);
         // Add the issue facts to the lines.
         detailsLines.push(
           ...getIssueFactsLines(report, issueID, `${margin}    `, 'pseudoTopLevel')
@@ -246,7 +246,7 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
         // Add the start of a link list to the lines.
         detailsLines.push(`${margin}    <ul class="nav">`);
         const whereQuestionString = 'Where was the issue found?';
-        const labelString = `Where was the ${summary} issue found on the ${description} page?`;
+        const labelString = `The ${description} page exhibits the ${summary} issue. Where was the issue found?`;
         const href = `href="/listViolators.html/${issueID}/${reportID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;

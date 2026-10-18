@@ -68,6 +68,30 @@ Releasing a new version is a two-script procedure:
 - Submit a pull request and merge it to `main` (triggers `publish-mcp.yml` automatically for the MCP Registry).
 - Execute `npm run postPR`. The script checks out and pulls `main`, verifies that the merge landed, publishes to npm (whose `postpublish` hook updates the LobeHub listing), deletes the feature branch, and prunes remote-tracking branches. If the LobeHub update fails, retry it alone with `npm run publish:lhm`.
 
+### Contract changes and external registries
+
+A change to the tool or API contract (tool names, parameter names, schemas, response shapes, or paths) makes every stored copy of the contract stale. Which copies exist and what to do about each:
+
+**In-repository contract copies:**
+
+- `openapi.yaml`: regenerated automatically by the `version` hook during `npm run prePR`; never edit it by hand.
+- `server.json`: contains only the server descriptor (name, description, repository, remotes, version), no tool schemas. Its version is synced by `update-versions.ts`; edit it manually only if the server description or remote URL changes.
+- `lhm.plugin.json`: embeds every tool’s input and output schema and its descriptions, in the LobeHub manifest format. It is hand-maintained, not generated, so transform it to match `api/schemas.ts` and `mcp.ts` whenever the contract changes.
+- `llms.txt`, `llms-full.txt`, `capability.md`, `README.md`: hand-maintained; search them for stale parameter and path names after a contract change.
+
+**External registries that update themselves, needing no maintainer action:**
+
+- The official MCP Registry: `publish-mcp.yml` republishes `server.json` whenever `server.json` or `api/version.ts` changes on `main`, i.e. on every release. The listing contains no tool schemas, so a contract change alone needs nothing extra.
+- PulseMCP and the VS Code MCP gallery: crawl the MCP Registry.
+- Smithery and Glama: derive their tool listings from the deployed server’s own `tools/list` response (and repository scans) on their own crawl schedules. Their listings can lag temporarily behind a contract change, but they correct themselves.
+- `openapi-directory` (APIs.guru): maintains its own copy of `openapi.yaml`, refreshed from the registered source URL on its own schedule.
+- `public-apis`, the WAI evaluation tools list, Awesome MCP Servers, and the Claude connector directory: store only a link or a connector name and remote URL; contract changes do not affect them.
+
+**External registries requiring maintainer action:**
+
+- The LobeHub MCP Market listing is published from `lhm.plugin.json` and is non-automated, because LobeHub requires browser-based OAuth. A normal release pushes the updated file via the `postpublish` hook; to push a contract update without a release, run `npm run publish:lhm`.
+- The RapidAPI Hub listing stores a copy of the API endpoints. After releasing a contract change, open the Kilotest API dashboard on RapidAPI and update the API definition, either by importing the regenerated `openapi.yaml` or by editing the endpoints to match, so the playground reflects the new contract.
+
 ## Use cases
 
 The rationale for Kilotest as a collection of tools for language models is set forth in the `llms-full.txt` file and is not repeated here.

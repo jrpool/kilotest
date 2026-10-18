@@ -1,6 +1,6 @@
 {
   "name": "@jrpool/kilotest",
-  "version": "60.0.1",
+  "version": "60.0.2",
   "description": "Ensemble testing for front-end web quality",
   "type": "module",
   "main": "index.ts",
@@ -15,9 +15,6 @@
     "test:smoke": "node smokeTest.ts",
     "checkinfo": "node checkinfo.ts",
     "generate": "node scripts/generate-openapi.ts && node scripts/update-versions.ts",
-    "version": "npm run generate",
-    "prepublishOnly": "test \"$(git branch --show-current)\" = main",
-    "postpublish": "npm run publish:lhm",
     "publish:lhm": "npx -y @lobehub/market-cli plugin update --dir .",
     "prePR": "node scripts/prePR.ts",
     "postPR": "node scripts/postPR.ts"

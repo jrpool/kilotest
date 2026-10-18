@@ -1,6 +1,6 @@
 /*
   postPR.ts
-  Finalizes a release after the prePR pull request has been merged: checks out main, pulls, verifies that the merge landed, publishes to npm (the "postpublish" hook then updates the LobeHub listing), deletes the feature branch, and prunes remote-tracking branches. The feature-branch name is read from the marker file written by prePR.ts, or from an optional command-line argument.
+  Finalizes a release after the prePR pull request has been merged: checks out main, pulls, verifies that the merge landed, publishes to npm, updates the LobeHub listing, deletes the feature branch, and prunes remote-tracking branches. The feature-branch name is read from the marker file written by prePR.ts, or from an optional command-line argument. Publishing to npm and to LobeHub are run explicitly because the project's .npmrc sets ignore-scripts=true, which disables the npm "postpublish" lifecycle hook that would otherwise update LobeHub.
 */
 
 // IMPORTS
@@ -77,6 +77,7 @@ if (branchVersion !== mainVersion) {
   process.exit(1);
 }
 run('npm', ['publish']);
+run('npm', ['run', 'publish:lhm']);
 // Branch cleanup is best-effort: deletion must precede pruning, because "git branch -d" checks mergedness against the upstream ref, which pruning would remove.
 const deleted = spawnSync('git', ['branch', '-d', branch], {stdio: 'inherit'});
 if (deleted.status !== 0) {

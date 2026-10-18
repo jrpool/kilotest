@@ -105,7 +105,7 @@ When you make a change in a feature branch **without** any API or tool contract 
 4. When all checks succeed, squash-merge to `main` and delete the feature branch on GitHub.
 5. Execute `npm run postPR` (with interactive browser OAuth).
 6. Wait until `npmjs.com` has processed the publication.
-7. Use `git pull`, `npm ci`, and `pm2 restart kilotest` to deploy the revised `main` branch on the public server.
+7. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
 
 When you **make an API or tool contract change** in a feature branch, here are the maintenance steps:
 
@@ -117,7 +117,7 @@ When you **make an API or tool contract change** in a feature branch, here are t
 6. When all checks succeed, squash-merge to `main`.
 7. Execute `npm run postPR` (with interactive browser OAuth).
 8. Wait until `npmjs.com` has processed the publication.
-9. Use `git pull`, `npm ci`, and `pm2 restart kilotest` to deploy the revised `main` branch on the public server.
+9. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
 10. Visit the [RapidAPI Studio](https://rapidapi.com/studio) and update the API definition at `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI` by uploading the regenerated `openapi-3.0.yaml`.
 
 If any step fails, see the details above for troubleshooting instructions.

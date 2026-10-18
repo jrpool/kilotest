@@ -99,7 +99,7 @@ A change to the tool or API contract (tool names, parameter names, schemas, resp
 
 When you make a change in a feature branch **without** any API or tool contract change, here are the maintenance steps:
 
-1. Stage and commit all changes.
+1. Stage, commit, and optionally push all changes.
 2. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
 3. Submit a pull request.
 4. When all checks succeed, squash-merge to `main` and delete the feature branch on GitHub.
@@ -111,7 +111,7 @@ When you **make an API or tool contract change** in a feature branch, here are t
 
 1. `lhm.plugin.json`: Transform it to match `api/schemas.ts` and `mcp.ts`.
 2. `llms.txt`, `llms-full.txt`, `capability.md`, `README.md`: Update parameter and path names.
-3. Stage and commit all changes.
+3. Stage, commit, and optionally push all changes.
 4. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
 5. Submit a pull request.
 6. When all checks succeed, squash-merge to `main`.

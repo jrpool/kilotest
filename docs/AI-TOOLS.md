@@ -62,6 +62,8 @@ The external features that support the use of Kilotest as a collection of AI too
 
 ## Required maintenance
 
+The maintenance routine is prescribed in the [README.md](../README.md) file.
+
 Releasing a new version is a two-script procedure:
 
 - On a feature branch, commit all substantive changes, then execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`). The script bumps `package.json` and `package-lock.json`, regenerates `openapi.yaml`, `openapi-3.0.yaml`, and the versions of `server.json` and `lhm.plugin.json` by explicitly running `npm run generate`, commits and pushes the result, and records the branch name for the next step.
@@ -94,33 +96,6 @@ A change to the tool or API contract (tool names, parameter names, schemas, resp
 
 - The LobeHub MCP Market listing is published from `lhm.plugin.json` and is non-automated, because LobeHub requires browser-based OAuth. A normal release pushes the updated file when `npm run postPR` runs `npm run publish:lhm`; to push a contract update without a release, run `npm run publish:lhm` manually.
 - The RapidAPI Hub listing stores a copy of the API endpoints. Its importer accepts only OpenAPI 3.0 documents, so after releasing a contract change, update the definition in Studio: `My APIs` → the Kilotest API project → `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI`, and upload the regenerated `openapi-3.0.yaml` (not `openapi.yaml`, which is 3.1 and is rejected). The `/publish/…` pages contain only listing metadata, not the spec.
-
-### Step by step
-
-When you make a change in a feature branch **without** any API or tool contract change, here are the maintenance steps:
-
-1. Stage, commit, and optionally push all changes.
-2. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
-3. Submit a pull request.
-4. When all checks succeed, squash-merge to `main` and delete the feature branch on GitHub.
-5. Execute `npm run postPR` (with interactive browser OAuth).
-6. Wait until `npmjs.com` has processed the publication.
-7. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
-
-When you **make an API or tool contract change** in a feature branch, here are the maintenance steps:
-
-1. `lhm.plugin.json`: Transform it to match `api/schemas.ts` and `mcp.ts`.
-2. `llms.txt`, `llms-full.txt`, `capability.md`, `README.md`: Update parameter and path names.
-3. Stage, commit, and optionally push all changes.
-4. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
-5. Submit a pull request.
-6. When all checks succeed, squash-merge to `main`.
-7. Execute `npm run postPR` (with interactive browser OAuth).
-8. Wait until `npmjs.com` has processed the publication.
-9. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
-10. Visit the [RapidAPI Studio](https://rapidapi.com/studio) and update the API definition at `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI` by uploading the regenerated `openapi-3.0.yaml`.
-
-If any step fails, see the details above for troubleshooting instructions.
 
 ## Use cases
 

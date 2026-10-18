@@ -76,12 +76,13 @@ if (branchVersion !== mainVersion) {
   console.error(`main is at version ${mainVersion} but ${branch} is at ${branchVersion}; merge the pull request first`);
   process.exit(1);
 }
+run('npm', ['login']);
 run('npm', ['publish']);
 run('npm', ['run', 'publish:lhm']);
 // Branch cleanup is best-effort: deletion must precede pruning, because "git branch -d" checks mergedness against the upstream ref, which pruning would remove.
 const deleted = spawnSync('git', ['branch', '-d', branch], {stdio: 'inherit'});
 if (deleted.status !== 0) {
-  console.warn(`Could not delete ${branch}; delete it manually after confirming the merge`);
+  console.warn(`Could not delete ${branch}; delete it after confirming the merge`);
 }
 if (spawnSync('git', ['remote', 'prune', 'origin'], {stdio: 'inherit'}).status !== 0) {
   console.warn('git remote prune origin failed');

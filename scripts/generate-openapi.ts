@@ -1,6 +1,6 @@
 /*
   generate-openapi.ts
-  Generates openapi.yaml from the Kilotest API route table (api/routes.ts) and Zod schemas (api/schemas.ts), keeping the OpenAPI document in sync with schemas.ts’s single source of truth.
+  Generates openapi.yaml from the Kilotest API route table (api/routes.ts) and Zod schemas (api/schemas.ts), keeping the OpenAPI document in sync with schemas.ts’s single source of truth. Also generates openapi-3.0.yaml, an OpenAPI 3.0.3 conversion for registries whose importers do not accept 3.1 documents (currently the RapidAPI Hub, which is updated via its Hub Listing > Definitions > CI/CD > Import OpenAPI upload).
 */
 
 // IMPORTS
@@ -17,6 +17,7 @@ import {version} from '../api/version.ts';
 
 const {license} = pkg;
 const outputPath = path.join(import.meta.dirname, '..', 'openapi.yaml');
+const output30Path = path.join(import.meta.dirname, '..', 'openapi-3.0.yaml');
 
 // FUNCTIONS
 
@@ -52,6 +53,84 @@ const buildPaths = () => {
   });
   return paths;
 };
+// Converts a generated OpenAPI 3.1 document in place to an OpenAPI 3.0.3
+// document: 'const' schemas become single-member 'enum's, type arrays lose
+// their 'null' members and gain 'nullable', 'null'-unioned schemas become
+// 'nullable', and 3.1-only info fields are removed. Nullable unions whose
+// branches cannot be merged into one typed schema gain an extra object-typed
+// nullable branch instead, because 3.0 validators require a 'type' wherever
+// 'nullable' appears.
+const downgrade30 = (document: any) => {
+  document.openapi = '3.0.3';
+  document.info.license = {
+    name: license,
+    url: 'https://github.com/jrpool/kilotest/blob/main/LICENSE'
+  };
+  const refType = (ref: string) => {
+    const match = /^#\/components\/schemas\/(.+)$/.exec(ref);
+    const target = match?.[1] && document.components?.schemas?.[match[1]];
+    return target && typeof target === 'object' ? target.type : null;
+  };
+  const walk = (node: any): void => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (!node || typeof node !== 'object') {
+      return;
+    }
+    if ('const' in node) {
+      node.enum = [node.const];
+      delete node.const;
+    }
+    if (Array.isArray(node.type)) {
+      const types = node.type.filter((t: string) => t !== 'null');
+      const hasNull = types.length !== node.type.length;
+      if (types.length === 1) {
+        node.type = types[0];
+      }
+      else {
+        node.oneOf = types.map((t: string) => ({type: t}));
+        delete node.type;
+      }
+      if (hasNull) {
+        node.nullable = true;
+      }
+    }
+    else if (node.type === 'null') {
+      node.type = 'object';
+      node.nullable = true;
+    }
+    if (Array.isArray(node.anyOf)) {
+      const nullIndex = node.anyOf.findIndex(
+        (branch: any) => branch && typeof branch === 'object' && branch.type === 'null'
+      );
+      if (nullIndex !== -1) {
+        const others = node.anyOf.filter((_: any, i: number) => i !== nullIndex);
+        delete node.anyOf;
+        if (others.length === 1 && others[0].$ref) {
+          node.allOf = [others[0]];
+          const type = refType(others[0].$ref);
+          if (type) {
+            node.type = type;
+          }
+          node.nullable = true;
+        }
+        else if (others.length === 1 && others[0].type) {
+          Object.assign(node, others[0]);
+          node.nullable = true;
+        }
+        else {
+          node.anyOf = [...others, {type: 'object', nullable: true}];
+        }
+      }
+    }
+    for (const value of Object.values(node)) {
+      walk(value);
+    }
+  };
+  walk(document);
+};
 // Generates and writes the openapi.yaml file.
 const generate = () => {
   const document = createDocument({
@@ -78,6 +157,9 @@ const generate = () => {
   });
   fs.writeFileSync(outputPath, yaml.dump(document, {noRefs: true, lineWidth: -1}));
   console.log(`Wrote ${outputPath}`);
+  downgrade30(document);
+  fs.writeFileSync(output30Path, yaml.dump(document, {noRefs: true, lineWidth: -1}));
+  console.log(`Wrote ${output30Path}`);
 };
 
 // EXECUTION

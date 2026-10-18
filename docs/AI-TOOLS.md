@@ -104,7 +104,9 @@ When you make an API or tool contract change in a feature branch, here are all t
 5. Submit a pull request.
 6. When all checks succeed, squash-merge to `main`.
 7. Execute `npm run postPR` (with interactive browser OAuth).
-8. Visit the [RapidAPI Studio](https://rapidapi.com/studio) and update the API definition at `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI` by uploading the regenerated `openapi-3.0.yaml`.
+8. Wait until `npmjs.com` has processed the publication.
+9. Use `git pull` and `pm2 restart kilotest` to deploy the revised `main` branch on the public server.
+10. Visit the [RapidAPI Studio](https://rapidapi.com/studio) and update the API definition at `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI` by uploading the regenerated `openapi-3.0.yaml`.
 
 If any step fails, see the details above for troubleshooting instructions.
 

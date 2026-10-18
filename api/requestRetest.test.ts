@@ -71,14 +71,14 @@ after(async () => {
 // TESTS
 
 test('requestRetest rejects a nonexistent report', async () => {
-  const body = await response(['251231T0000', 'zzz', 'A reason that is long enough.']);
+  const body = await response(['251231T0000-zzz', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('does not exist'));
   assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
 test('requestRetest rejects a malformed timestamp or job identifier', async () => {
-  const body = await response(['999999T9999', 'xyz', 'A reason that is long enough.']);
+  const body = await response(['999999T9999-xyz', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('malformed'));
   assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
@@ -88,7 +88,7 @@ test('requestRetest rejects a superseded report', async () => {
   // 260101T0000-mix is an earlier report of "Mixed Outcomes" than 260202T0000-new,
   // so it is superseded and processTestRequest returns 'superseded', reported via the
   // disposition rather than details.error.
-  const body = await response(['260101T0000', 'mix', 'A reason that is long enough.']);
+  const body = await response(['260101T0000-mix', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   const disposition = body['response content']['disposition of your request'] as any;
@@ -99,7 +99,7 @@ test('requestRetest rejects a superseded report', async () => {
 });
 
 test('requestRetest rejects a reason shorter than 20 characters', async () => {
-  const body = await response(['260101T0003', 'ret', 'short']);
+  const body = await response(['260101T0003-ret', 'short']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
   assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
@@ -107,7 +107,7 @@ test('requestRetest rejects a reason shorter than 20 characters', async () => {
 
 test('requestRetest rejects a reason longer than 100 characters', async () => {
   const longReason = 'x'.repeat(101);
-  const body = await response(['260101T0003', 'ret', longReason]);
+  const body = await response(['260101T0003-ret', longReason]);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
   assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
@@ -120,7 +120,7 @@ test('requestRetest rejects a report matching a claimed job by description', asy
     target: {what: 'Retest Fixture Page', url: 'https://example.com/unrelated'}
   }));
   try {
-    const body = await response(['260101T0003', 'ret', 'A reason that is long enough.']);
+    const body = await response(['260101T0003-ret', 'A reason that is long enough.']);
     const details = body['response content']['details about your request'] as any;
     assert.equal(details.error, undefined);
     const disposition = body['response content']['disposition of your request'] as any;
@@ -141,7 +141,7 @@ test('requestRetest rejects a report matching a queued job by URL', async () => 
     target: {what: 'Some Other Page', url: 'https://example.com/retestfixture'}
   }));
   try {
-    const body = await response(['260101T0003', 'ret', 'A reason that is long enough.']);
+    const body = await response(['260101T0003-ret', 'A reason that is long enough.']);
     const details = body['response content']['details about your request'] as any;
     assert.equal(details.error, undefined);
     const disposition = body['response content']['disposition of your request'] as any;
@@ -156,8 +156,8 @@ test('requestRetest rejects a report matching a queued job by URL', async () => 
 });
 
 test('requestRetest rejects a duplicate request', async () => {
-  await response(['260101T0003', 'ret', 'A reason that is long enough.']);
-  const body = await response(['260101T0003', 'ret', 'A reason that is long enough.']);
+  await response(['260101T0003-ret', 'A reason that is long enough.']);
+  const body = await response(['260101T0003-ret', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   const disposition = body['response content']['disposition of your request'] as any;
@@ -165,7 +165,7 @@ test('requestRetest rejects a duplicate request', async () => {
 });
 
 test('requestRetest accepts a valid retest request for the latest report of a page', async () => {
-  const body = await response(['260202T0000', 'new', 'A reason that is long enough.']);
+  const body = await response(['260202T0000-new', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   assert.equal(details['page to be retested'].description, 'Mixed Outcomes');
@@ -185,7 +185,7 @@ test('requestRetest rejects a request with a fallback channel when the queue is 
     timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Filler reason.'
   }));
   await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
-  const body = await response(['260101T0003', 'ret', 'A reason that is long enough.']);
+  const body = await response(['260101T0003-ret', 'A reason that is long enough.']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   const disposition = body['response content']['disposition of your request'] as any;

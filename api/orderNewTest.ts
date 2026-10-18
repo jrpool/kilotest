@@ -88,12 +88,11 @@ export const response = async (args: string[]) => {
     };
     // Add information about the disposition of the order.
     if (orderResult.result === 'ok') {
-      const [timeStamp, reportJobID] = orderResult.jobID.split('-') as [string, string];
       requestDisposition = {
         'what happens next': 'Testing has begun. Once it finishes, the report will be available via the listIssues tool.',
-        'report identifier': {timeStamp, jobID: reportJobID},
-        'how you can check for completion': `Call the listIssues tool with timeStamp "${timeStamp}" and jobID "${reportJobID}" to learn whether the report is ready.`,
-        'do you want to wait for completion': 'Testing typically takes 2 to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same timeStamp and jobID.'
+        'report identifier': orderResult.reportID,
+        'how you can check for completion': `Call the listIssues tool with reportID "${orderResult.reportID}" to learn whether the report is ready.`,
+        'do you want to wait for completion': 'Testing typically takes 2 to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same reportID.'
       };
     }
     else {

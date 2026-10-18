@@ -26,13 +26,13 @@ type ResponseContent = z.infer<typeof listViolatorsResponseSchema>['response con
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [issueID = '', timeStamp = '', jobID = ''] = args;
+  const [issueID = '', reportID = ''] = args;
   const thisHost = getThisHost();
   // Get the report.
-  const report = await getReport(timeStamp, jobID);
+  const report = await getReport(reportID);
   // Initialize the response content.
   const responseContent: ResponseContent = {
-    'basics about the report': isReportError(report) ? report : await getReportBasics(timeStamp, jobID),
+    'basics about the report': isReportError(report) ? report : await getReportBasics(reportID),
     'basics about the issue': {
       'error': 'No information about the specified issue is available'
     },
@@ -105,10 +105,10 @@ export const response = async (args: string[]) => {
           'inner text': catalogItem?.text ?? null,
           'count of rule engines reporting that the element exhibited the issue': reporters.size,
           'how to get details about the element': {
-            URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${timeStamp}/${jobID}`,
+            URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${reportID}`,
             'request method': 'GET' as const
           },
-          'web users can get details about the element at': `${thisHost}/listDiagnoses.html/${issueID}/${timeStamp}/${jobID}/${catalogIndex}`
+          'web users can get details about the element at': `${thisHost}/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}`
         };
       });
       // Add basics about the violators to the response content.
@@ -120,19 +120,19 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'listViolators',
     'this request': {
-      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that exhibited the issue. The issueID, timeStamp, and jobID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
+      description: 'Provide details about one issue in one report, including basics about the elements of the tested page that exhibited the issue. The issueID and reportID parameters identify the issue and report that I want details about. Those parameters were in the response to my earlier listIssues request.',
       method: 'GET',
-      URL: `${thisHost}/api/listViolators/${issueID}/${timeStamp}/${jobID}`,
+      URL: `${thisHost}/api/listViolators/${issueID}/${reportID}`,
       'closest ancestor request': {
         'tool name': 'listIssues',
         description: 'Provide details about one report, including basics about the issues reported in it.',
         method: 'GET',
-        URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
+        URL: `${thisHost}/api/listIssues/${reportID}`
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/listViolators.html/${issueID}/${timeStamp}/${jobID}`,
-      'closest ancestor request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
+      'this request': `${thisHost}/listViolators.html/${issueID}/${reportID}`,
+      'closest ancestor request': `${thisHost}/listIssues.html/${reportID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

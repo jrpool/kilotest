@@ -29,7 +29,7 @@ after(() => {
 // TESTS
 
 test('getReport returns the full report for a valid report', async () => {
-  const body = await response(['260101T0000', 'mix']);
+  const body = await response(['260101T0000-mix']);
   const content = body['response content'];
   assert.equal(typeof content['size of the report in bytes'], 'number');
   assert.ok((content['size of the report in bytes'] as number) > 0);
@@ -41,21 +41,21 @@ test('getReport returns the full report for a valid report', async () => {
 });
 
 test('getReport returns an error for a nonexistent report', async () => {
-  const body = await response(['999999T9999', 'xyz']);
+  const body = await response(['999999T9999-xyz']);
   const content = body['response content'];
   assert.equal(content['full report'], null);
   assert.equal(typeof content['size of the report in bytes'], 'string');
 });
 
 test('getReport returns an error for the hidden report', async () => {
-  const body = await response(['260101T0007', 'hid']);
+  const body = await response(['260101T0007-hid']);
   const content = body['response content'];
   assert.equal(content['full report'], null);
   assert.equal(typeof content['size of the report in bytes'], 'string');
 });
 
 test('getReport includes tool name and metadata', async () => {
-  const body = await response(['260101T0000', 'mix']);
+  const body = await response(['260101T0000-mix']);
   assert.equal(body['tool name'], 'getReport');
   assert.ok(body['response metadata'].identifier);
 });

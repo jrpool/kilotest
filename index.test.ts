@@ -341,29 +341,29 @@ test('GET /api/listPages returns JSON with report data and records an API-operat
   assert.equal(await getMetricCount('apiOperations', 'listPages'), countBefore + 1);
 });
 
-test('GET /api/listIssues/260101T0000/mix returns JSON with issue data', async () => {
-  const res = await request('GET', '/api/listIssues/260101T0000/mix');
+test('GET /api/listIssues/260101T0000-mix returns JSON with issue data', async () => {
+  const res = await request('GET', '/api/listIssues/260101T0000-mix');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['tool name'], 'listIssues');
 });
 
-test('GET /api/listViolators/linkNoText/260101T0000/mix returns JSON', async () => {
-  const res = await request('GET', '/api/listViolators/linkNoText/260101T0000/mix');
+test('GET /api/listViolators/linkNoText/260101T0000-mix returns JSON', async () => {
+  const res = await request('GET', '/api/listViolators/linkNoText/260101T0000-mix');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['tool name'], 'listViolators');
 });
 
-test('GET /api/listDiagnoses/0/linkNoText/260101T0000/mix returns JSON', {timeout: 500}, async () => {
-  const res = await request('GET', '/api/listDiagnoses/0/linkNoText/260101T0000/mix');
+test('GET /api/listDiagnoses/0/linkNoText/260101T0000-mix returns JSON', {timeout: 500}, async () => {
+  const res = await request('GET', '/api/listDiagnoses/0/linkNoText/260101T0000-mix');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['tool name'], 'listDiagnoses');
 });
 
-test('GET /api/getReport/260101T0000/mix returns JSON with the report', async () => {
-  const res = await request('GET', '/api/getReport/260101T0000/mix');
+test('GET /api/getReport/260101T0000-mix returns JSON with the report', async () => {
+  const res = await request('GET', '/api/getReport/260101T0000-mix');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['tool name'], 'getReport');
@@ -376,8 +376,8 @@ test('GET /api/invalidService returns an error', {timeout: 500}, async () => {
   assert.ok(body.error);
 });
 
-test('GET /fullReport.json/260101T0000/mix downloads the report as JSON', async () => {
-  const res = await request('GET', '/fullReport.json/260101T0000/mix');
+test('GET /fullReport.json/260101T0000-mix downloads the report as JSON', async () => {
+  const res = await request('GET', '/fullReport.json/260101T0000-mix');
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('application/json'));
   assert.ok(res.headers['content-disposition'].includes('attachment'));
@@ -392,8 +392,8 @@ test('GET /fullReport.json/invalid/invalid returns an error page', {timeout: 500
   assert.ok(res.body.includes('Invalid report request'));
 });
 
-test('GET /fullReport.json/990101T0000/xxx returns an abuse error for a nonexistent report', async () => {
-  const res = await request('GET', '/fullReport.json/990101T0000/xxx');
+test('GET /fullReport.json/990101T0000-xxx returns an abuse error for a nonexistent report', async () => {
+  const res = await request('GET', '/fullReport.json/990101T0000-xxx');
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Invalid request'));
 });
@@ -495,10 +495,10 @@ test('POST /requestNewTest.html with an unreadable body returns an error', async
   assert.ok(res.body.includes('Unreadable request body'));
 });
 
-test('POST /requestRetest.html/260202T0000/new with valid data returns HTML', async () => {
+test('POST /requestRetest.html/260202T0000-new with valid data returns HTML', async () => {
   // Reset testRequests.json to avoid duplicate-request errors from prior tests.
   await fs.writeFile(testRequestsPath, '{}\n');
-  const res = await formRequest('POST', '/requestRetest.html/260202T0000/new', {
+  const res = await formRequest('POST', '/requestRetest.html/260202T0000-new', {
     why: 'Because the report is obsolete and needs refreshing'
   });
   assert.equal(res.statusCode, 200);
@@ -524,8 +524,8 @@ test('POST /api/requestNewTest with valid JSON returns a JSON response', {timeou
   assert.ok(body['tool name'] || body['response content']);
 });
 
-test('POST /api/requestRetest/260202T0000/new with valid JSON returns a JSON response', async () => {
-  const res = await request('POST', '/api/requestRetest/260202T0000/new', {
+test('POST /api/requestRetest/260202T0000-new with valid JSON returns a JSON response', async () => {
+  const res = await request('POST', '/api/requestRetest/260202T0000-new', {
     reason: 'Because the report is obsolete and needs refreshing'
   });
   assert.equal(res.statusCode, 200);
@@ -557,12 +557,12 @@ test('POST /api/orderNewTest with valid JSON enqueues a job directly and records
   assert.equal(await getMetricCount('apiOperations', 'orderNewTest'), countBefore + 1);
   const reportIdentifier = body['response content']['disposition of your order']['report identifier'];
   assert.ok(reportIdentifier);
-  await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`));
+  await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier}.json`));
 });
 
-test('POST /api/orderRetest/260202T0000/new with valid JSON enqueues a job directly and records an API-operation metric', async () => {
+test('POST /api/orderRetest/260202T0000-new with valid JSON enqueues a job directly and records an API-operation metric', async () => {
   const countBefore = await getMetricCount('apiOperations', 'orderRetest');
-  const res = await request('POST', '/api/orderRetest/260202T0000/new', {
+  const res = await request('POST', '/api/orderRetest/260202T0000-new', {
     reason: 'Because the report is obsolete and needs refreshing'
   });
   assert.equal(res.statusCode, 200);
@@ -571,12 +571,12 @@ test('POST /api/orderRetest/260202T0000/new with valid JSON enqueues a job direc
   assert.equal(await getMetricCount('apiOperations', 'orderRetest'), countBefore + 1);
   const reportIdentifier = body['response content']['disposition of your order']['report identifier'];
   assert.ok(reportIdentifier);
-  await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier.timeStamp}-${reportIdentifier.jobID}.json`));
+  await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier}.json`));
 });
 
-test('POST /api/awaitTest/260101T0000/mix with an already-completed report records an API-operation metric', async () => {
+test('POST /api/awaitTest/260101T0000-mix with an already-completed report records an API-operation metric', async () => {
   const countBefore = await getMetricCount('apiOperations', 'awaitTest');
-  const res = await request('POST', '/api/awaitTest/260101T0000/mix', {});
+  const res = await request('POST', '/api/awaitTest/260101T0000-mix', {});
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['response content']['disposition of your wait'].outcome, 'completed');
@@ -771,8 +771,8 @@ test('POST /tutorialWebComment.html with content returns JSON', async () => {
 
 // TESTS: additional branch coverage
 
-test('GET /fullReport.json/260101T0007/hid returns an error for an unavailable report', async () => {
-  const res = await request('GET', '/fullReport.json/260101T0007/hid');
+test('GET /fullReport.json/260101T0007-hid returns an error for an unavailable report', async () => {
+  const res = await request('GET', '/fullReport.json/260101T0007-hid');
   assert.equal(res.statusCode, 400);
   assert.ok(res.body.includes('Invalid request'));
 });
@@ -906,24 +906,74 @@ test('GET /qai/comments redirects to /tutorialAI.html', async () => {
 
 test('GET /diagnoses.html/<segments> redirects to the equivalent /listDiagnoses.html/<segments>, preserving the query string', async () => {
   const res = await request(
-    'GET', '/diagnoses.html/duplicateID/260426T1741/77w/718?pathID=/html/body', {}, {followRedirects: false}
+    'GET', '/diagnoses.html/duplicateID/260426T1741-77w/718?pathID=/html/body', {}, {followRedirects: false}
   );
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listDiagnoses.html/duplicateID/260426T1741/77w/718?pathID=/html/body');
+  assert.equal(res.headers['location'], '/listDiagnoses.html/duplicateID/260426T1741-77w/718?pathID=/html/body');
 });
 
-test('GET /reportIssues.html/<timeStamp>/<jobID> redirects to the equivalent /listIssues.html/<timeStamp>/<jobID>', async () => {
-  const res = await request('GET', '/reportIssues.html/260101T0000/mix', {}, {followRedirects: false});
+test('GET /reportIssues.html/<reportID> redirects to the equivalent /listIssues.html/<reportID>', async () => {
+  const res = await request('GET', '/reportIssues.html/260101T0000-mix', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listIssues.html/260101T0000/mix');
+  assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
+});
+
+// TESTS: legacy two-segment report-identifier redirects
+// Before the reportID consolidation, report-identifying URL tails used a
+// timeStamp segment and a jobID segment. These verify that each legacy form
+// permanently redirects to the single-reportID form, and that a POST redirect
+// uses 308 to preserve the method and body.
+
+test('GET /listIssues.html/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
+  const res = await request('GET', '/listIssues.html/260101T0000/mix', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
+});
+
+test('GET /listViolators.html/<issueID>/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
+  const res = await request(
+    'GET', '/listViolators.html/linkNoText/260101T0000/mix', {}, {followRedirects: false}
+  );
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listViolators.html/linkNoText/260101T0000-mix');
+});
+
+test('GET /listDiagnoses.html/<issueID>/<timeStamp>/<jobID>/<catalogIndex> redirects to the single-reportID URL, preserving the query string', async () => {
+  const res = await request(
+    'GET', '/listDiagnoses.html/linkNoText/260101T0000/mix/0?pathID=/html/body', {}, {followRedirects: false}
+  );
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000-mix/0?pathID=/html/body');
+});
+
+test('GET /requestRetestForm.html/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
+  const res = await request(
+    'GET', '/requestRetestForm.html/260202T0000/new', {}, {followRedirects: false}
+  );
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/requestRetestForm.html/260202T0000-new');
+});
+
+test('GET /fullReport.json/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
+  const res = await request('GET', '/fullReport.json/260101T0000/mix', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/fullReport.json/260101T0000-mix');
+});
+
+test('POST /requestRetest.html/<timeStamp>/<jobID> redirects with 308 to the single-reportID URL', async () => {
+  const res = await formRequest(
+    'POST', '/requestRetest.html/260202T0000/new', {why: 'Because the report is obsolete and needs refreshing'}
+  );
+  assert.equal(res.statusCode, 308);
+  assert.equal(res.headers['location'], '/requestRetest.html/260202T0000-new');
 });
 
 test('GET /reportIssue.html/<segments> redirects to the equivalent /listViolators.html/<segments>', async () => {
   const res = await request(
-    'GET', '/reportIssue.html/duplicateID/260101T0000/mix', {}, {followRedirects: false}
+    'GET', '/reportIssue.html/duplicateID/260101T0000-mix', {}, {followRedirects: false}
   );
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listViolators.html/duplicateID/260101T0000/mix');
+  assert.equal(res.headers['location'], '/listViolators.html/duplicateID/260101T0000-mix');
 });
 
 test('GET /rules.html/<segment> redirects to the equivalent /listRules.html/<segment>', async () => {
@@ -1007,8 +1057,8 @@ test('POST /requestNewTest.html with a private-address URL returns an error unle
   }
 });
 
-test('POST /requestRetest.html/260202T0000/new with missing why returns an error', async () => {
-  const res = await formRequest('POST', '/requestRetest.html/260202T0000/new', {
+test('POST /requestRetest.html/260202T0000-new with missing why returns an error', async () => {
+  const res = await formRequest('POST', '/requestRetest.html/260202T0000-new', {
     why: ''
   });
   assert.equal(res.statusCode, 400);
@@ -1464,8 +1514,8 @@ test('GET /requestNewTest.html without arguments is rejected as an invalid GET r
   assert.equal(res.statusCode, 400);
 });
 
-test('GET /requestRetest.html/260202T0000/new is rejected as an invalid GET request', async () => {
-  const res = await request('GET', '/requestRetest.html/260202T0000/new');
+test('GET /requestRetest.html/260202T0000-new is rejected as an invalid GET request', async () => {
+  const res = await request('GET', '/requestRetest.html/260202T0000-new');
   assert.equal(res.statusCode, 400);
 });
 
@@ -1476,8 +1526,8 @@ test('GET /requestRetest.html/260202T0000/new is rejected as an invalid GET requ
 
 const htmlPagePaths = [
   '/listPages.html',
-  '/listViolators.html/linkNoText/260101T0000/mix',
-  '/listDiagnoses.html/linkNoText/260101T0000/mix/0',
+  '/listViolators.html/linkNoText/260101T0000-mix',
+  '/listDiagnoses.html/linkNoText/260101T0000-mix/0',
   '/enqueueForm.html',
   '/manage.html',
   '/tutorialWeb.html',
@@ -1839,11 +1889,11 @@ test('POST /requestRetest.html with valid format but duplicate retest returns an
   // First retest to create the recommendation. As above, the reason must match
   // exactly between the two requests for processTestRequest to treat the second as
   // a duplicate rather than a second, independent (and thus also 'ok') request.
-  await formRequest('POST', '/requestRetest.html/260202T0000/new', {
+  await formRequest('POST', '/requestRetest.html/260202T0000-new', {
     why: 'Because the report is obsolete and needs refreshing'
   });
   // Second, identical retest of the same report should get a duplicate error.
-  const res = await formRequest('POST', '/requestRetest.html/260202T0000/new', {
+  const res = await formRequest('POST', '/requestRetest.html/260202T0000-new', {
     why: 'Because the report is obsolete and needs refreshing'
   });
   assert.equal(res.statusCode, 400);
@@ -1985,7 +2035,7 @@ test('a request logs its path without its query string', async () => {
   const originalLog = console.log;
   console.log = (line: string) => logged.push(line);
   try {
-    await request('GET', '/listIssues.html/260101T0000/mix?authCode=secret');
+    await request('GET', '/listIssues.html/260101T0000-mix?authCode=secret');
   }
   finally {
     console.log = originalLog;
@@ -1994,7 +2044,7 @@ test('a request logs its path without its query string', async () => {
   .map(line => { try {return JSON.parse(line);} catch {return null;} })
   .find(parsed => parsed?.type === 'request');
   assert.ok(record);
-  assert.equal(record.path, '/listIssues.html/260101T0000/mix');
+  assert.equal(record.path, '/listIssues.html/260101T0000-mix');
   assert.ok(!JSON.stringify(record).includes('secret'));
 });
 

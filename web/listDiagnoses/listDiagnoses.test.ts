@@ -64,7 +64,7 @@ after(() => {
 // TESTS
 
 test('listDiagnoses returns an ok status with valid HTML for catalogIndex 0, linkNoText, in the mixed report', async () => {
-  const result = await answer('linkNoText/260101T0000/mix/0');
+  const result = await answer('linkNoText/260101T0000-mix/0');
   assert.equal(result.status, 'ok');
   assert.ok(result.answerPage);
   const html = parse(result.answerPage);
@@ -72,34 +72,34 @@ test('listDiagnoses returns an ok status with valid HTML for catalogIndex 0, lin
 });
 
 test('listDiagnoses includes the issue summary in the HTML', async () => {
-  const result = await answer('linkNoText/260101T0000/mix/0');
+  const result = await answer('linkNoText/260101T0000-mix/0');
   assert.ok(result.answerPage.includes('link not named'));
 });
 
 test('listDiagnoses includes the element tag name and text from the catalog', async () => {
-  const result = await answer('linkNoText/260101T0000/mix/0');
+  const result = await answer('linkNoText/260101T0000-mix/0');
   assert.ok(result.answerPage.includes('About Us'));
 });
 
 test('listDiagnoses includes diagnosis descriptions from the rule engines', async () => {
-  const result = await answer('linkNoText/260101T0000/mix/0');
+  const result = await answer('linkNoText/260101T0000-mix/0');
   assert.ok(result.answerPage.includes('The link does not have an accessible name'));
 });
 
 test('listDiagnoses excludes cantTell instances from the diagnoses list', async () => {
-  const result = await answer('focusIndicationBad/260101T0000/mix/0');
+  const result = await answer('focusIndicationBad/260101T0000-mix/0');
   assert.equal(result.status, 'ok');
   assert.ok(!result.answerPage.includes('Focus Visible'));
 });
 
 
 test('listDiagnoses returns an error status for a nonexistent report', async () => {
-  const result = await answer('linkNoText/999999T9999/xyz/0');
+  const result = await answer('linkNoText/999999T9999-xyz/0');
   assert.equal(result.status, 'error');
 });
 
 test('listDiagnoses returns ok with no diagnoses for a nonexistent catalog index', async () => {
-  const result = await answer('linkNoText/260101T0000/mix/999');
+  const result = await answer('linkNoText/260101T0000-mix/999');
   assert.equal(result.status, 'ok');
   const html = parse(result.answerPage);
   const diagnosisItems = html.querySelectorAll('li');
@@ -112,7 +112,7 @@ test('listDiagnoses returns an error when getReport fails', async () => {
   getReportCallCount = 0;
   failGetReportOnCall = 1;
   try {
-    const result = await answer('linkNoText/260101T0000/mix/0');
+    const result = await answer('linkNoText/260101T0000-mix/0');
     assert.equal(result.status, 'error');
     assert.ok(result.message.includes('invalid'));
   }
@@ -124,7 +124,7 @@ test('listDiagnoses returns an error when getReport fails', async () => {
 test('listDiagnoses returns an error when getPageDataStrings fails after getReport succeeds', async () => {
   pageDataStringsOverride = {error: 'Page data strings error'};
   try {
-    const result = await answer('linkNoText/260101T0000/mix/0');
+    const result = await answer('linkNoText/260101T0000-mix/0');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Page data strings error');
   }
@@ -183,7 +183,7 @@ test('listDiagnoses includes a take-me-there link for a text-linkable catalog it
       checkpoints: []
     };
     await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
-    const result = await answer('linkNoText/260101T0003/tlk/0');
+    const result = await answer('linkNoText/260101T0003-tlk/0');
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('Take me there'));
   }
@@ -193,7 +193,7 @@ test('listDiagnoses includes a take-me-there link for a text-linkable catalog it
 });
 
 test('listDiagnoses returns an error for an unknown issue with a valid report', async () => {
-  const result = await answer('nonexistentIssue/260101T0000/mix/0');
+  const result = await answer('nonexistentIssue/260101T0000-mix/0');
   assert.equal(result.status, 'error');
   assert.equal(result.message, 'Issue not found');
 });
@@ -205,7 +205,7 @@ test('listDiagnoses returns an error when report facts are not obtained', async 
     urlLink: '<a href="https://example.com/mixed">https://example.com/mixed</a>'
   };
   try {
-    const result = await answer('linkNoText/260101T0000/mix/0');
+    const result = await answer('linkNoText/260101T0000-mix/0');
     assert.equal(result.status, 'error');
     assert.equal(result.message, 'Report facts not obtained');
   }
@@ -248,7 +248,7 @@ test('listDiagnoses handles acts with no standardResult instances gracefully', a
   };
   await fs.writeFile(reportPath, JSON.stringify(report));
   try {
-    const result = await answer('linkNoText/260101T0004/nst/0');
+    const result = await answer('linkNoText/260101T0004-nst/0');
     assert.equal(result.status, 'ok');
   }
   finally {

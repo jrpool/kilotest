@@ -68,7 +68,7 @@ test('GET /api/requestNewTest returns an error, not a test-request response', as
 });
 
 test('GET /api/requestRetest returns an error, not a retest-request response', async () => {
-  const result = await get('/api/requestRetest/260101T0001/ct');
+  const result = await get('/api/requestRetest/260101T0001-ct');
   assert.ok(result.body.includes('Invalid service request'));
 });
 

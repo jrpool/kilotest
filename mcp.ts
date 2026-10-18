@@ -100,7 +100,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listPages',
     {
-      description: 'Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the timestamp and job identifier of its latest available report.',
+      description: 'Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the identifier of its latest available report.',
       inputSchema: {},
       outputSchema: listPagesResponseSchema,
       annotations: {
@@ -131,8 +131,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({timeStamp, jobID}) => {
-      const result = await listIssuesAPI.response([timeStamp, jobID]);
+    async ({reportID}) => {
+      const result = await listIssuesAPI.response([reportID]);
       await recordMetric('mcpToolCalls', 'listIssues');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -151,8 +151,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({issueID, timeStamp, jobID}) => {
-      const result = await listViolatorsAPI.response([issueID, timeStamp, jobID]);
+    async ({issueID, reportID}) => {
+      const result = await listViolatorsAPI.response([issueID, reportID]);
       await recordMetric('mcpToolCalls', 'listViolators');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -171,8 +171,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({catalogIndex, issueID, timeStamp, jobID}) => {
-      const result = await listDiagnosesAPI.response([catalogIndex, issueID, timeStamp, jobID]);
+    async ({catalogIndex, issueID, reportID}) => {
+      const result = await listDiagnosesAPI.response([catalogIndex, issueID, reportID]);
       await recordMetric('mcpToolCalls', 'listDiagnoses');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -180,7 +180,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getReport',
     {
-      description: 'Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified timestamp and job identifier. The size of the report is disclosed by the listIssues tool.',
+      description: 'Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified report identifier. The size of the report is disclosed by the listIssues tool.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
@@ -191,8 +191,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({timeStamp, jobID}) => {
-      const result = await getReportAPI.response([timeStamp, jobID]);
+    async ({reportID}) => {
+      const result = await getReportAPI.response([reportID]);
       await recordMetric('mcpToolCalls', 'getReport');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -231,8 +231,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({timeStamp, jobID, reason}) => {
-      const result = await requestRetestAPI.response([timeStamp, jobID, reason]);
+    async ({reportID, reason}) => {
+      const result = await requestRetestAPI.response([reportID, reason]);
       await recordMetric('mcpToolCalls', 'requestRetest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -260,7 +260,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'orderNewTest',
     {
-      description: 'Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: orderNewTestSchema,
       outputSchema: orderNewTestResponseSchema,
       annotations: {
@@ -280,7 +280,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'orderRetest',
     {
-      description: 'Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: orderRetestSchema,
       outputSchema: orderRetestResponseSchema,
       annotations: {
@@ -291,8 +291,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({timeStamp, jobID, reason}) => {
-      const result = await orderRetestAPI.response([timeStamp, jobID, reason]);
+    async ({reportID, reason}) => {
+      const result = await orderRetestAPI.response([reportID, reason]);
       await recordMetric('mcpToolCalls', 'orderRetest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -311,8 +311,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({timeStamp, jobID}) => {
-      const result = await awaitTestAPI.response([timeStamp, jobID]);
+    async ({reportID}) => {
+      const result = await awaitTestAPI.response([reportID]);
       await recordMetric('mcpToolCalls', 'awaitTest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }

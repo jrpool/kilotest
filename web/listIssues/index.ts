@@ -125,15 +125,14 @@ const getIssuesData = (report: UsableReport): ResultsSummary & Record<string, an
 };
 // Returns data and HTML lines about the history of the reports about the page of a report.
 const getHistory = async (
-  timeStamp: string, jobID: string, description: string, margin: string = ''
+  reportID: string, description: string, margin: string = ''
 ): Promise<{isLatest: boolean, lines: string[]}> => {
   // Get extracts of all reports about the page, from oldest to latest.
   const pageExtracts = await getPageReportExtracts(description);
   // The report's own extract may be absent if the report was quarantined between the
   // report read and the extract listing, so an empty list means "not latest".
   const lastExtract = pageExtracts[pageExtracts.length - 1];
-  const isLatest = lastExtract !== undefined
-  && lastExtract.timeStamp === timeStamp && lastExtract.jobID === jobID;
+  const isLatest = lastExtract !== undefined && lastExtract.id === reportID;
   // Initialize the history.
   const history = {
     isLatest,
@@ -142,7 +141,7 @@ const getHistory = async (
   // For each report about the page, from oldest to latest:
   pageExtracts.forEach((extract, index) => {
     // Get whether it is this report.
-    const isThis = extract.timeStamp === timeStamp && extract.jobID === jobID;
+    const isThis = extract.id === reportID;
     // Get the tags that identify its position and whether it is this report.
     const tags = [
       index === 0 ? 'oldest' : '',
@@ -158,7 +157,7 @@ const getHistory = async (
       content = label;
     }
     else {
-      const href = `/listIssues.html/${extract.timeStamp}/${extract.jobID}`;
+      const href = `/listIssues.html/${extract.id}`;
       content = `<a href="${href}">${label}</a>`;
     }
     // Add a list item describing the report, linked if not this report, to the history.
@@ -172,7 +171,7 @@ const getHistory = async (
   if (isLatest) {
     // Add a link to the form for requesting a retest to the lines.
     lines.push(
-      `${margin}<p><a href="/requestRetestForm.html/${timeStamp}/${jobID}">Request a retest</a></p>`
+      `${margin}<p><a href="/requestRetestForm.html/${reportID}">Request a retest</a></p>`
     );
   }
   // Replace the bare list items with the assembled section lines.
@@ -181,9 +180,9 @@ const getHistory = async (
   return history;
 };
 // Adds parameters to a query for the answer page.
-const populateQuery = async (timeStamp: string, jobID: string, query: Record<string, any>) => {
+const populateQuery = async (reportID: string, query: Record<string, any>) => {
   // Get the report.
-  const report = await getReport(timeStamp, jobID);
+  const report = await getReport(reportID);
   // If this failed:
   if (isReportError(report)) {
     // Populate the query with the reason.
@@ -207,7 +206,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
   query.target = description;
   query.testInfo = testInfo;
   const margin = ' '.repeat(6);
-  const history = await getHistory(timeStamp, jobID, description, ' '.repeat(8));
+  const history = await getHistory(reportID, description, ' '.repeat(8));
   // Add a warning if the report is not the latest about the page.
   query.oldWarn = history.isLatest
   ? ''
@@ -248,7 +247,7 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
         detailsLines.push(`${margin}    <ul class="nav">`);
         const whereQuestionString = 'Where was the issue found?';
         const labelString = `Where was the ${summary} issue found on the ${description} page?`;
-        const href = `href="/listViolators.html/${issueID}/${timeStamp}/${jobID}"`;
+        const href = `href="/listViolators.html/${issueID}/${reportID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
         // Add a violations link to the lines.
@@ -269,10 +268,10 @@ const populateQuery = async (timeStamp: string, jobID: string, query: Record<str
 };
 // Returns a page answering the target-issues question.
 export const answer = async (pageArgs: string) => {
-  const [timeStamp, jobID] = pageArgs.split('/') as [string, string];
+  const reportID = pageArgs;
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
-  await populateQuery(timeStamp, jobID, query);
+  await populateQuery(reportID, query);
   // If this failed:
   if (query.error) {
     // Return the error.

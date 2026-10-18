@@ -25,8 +25,7 @@ import path from 'node:path';
 
 // A summary of an available report, as shown in a deletion form.
 type ReportSpec = {
-  timeStamp: string;
-  jobID: string;
+  id: string;
   issueCount: number;
   preventedEngineCount: number;
   url: string;
@@ -91,9 +90,9 @@ export const reportDeletionForm = async (
   const reportSpecs: ReportSpec[] = [];
   // For each report:
   for (const reportName of reportNames) {
-    const [timeStamp, jobID] = reportName.slice(0, -5).split('-') as [string, string];
+    const reportID = reportName.slice(0, -5);
     // Get the report.
-    const report = await getReport(timeStamp, jobID);
+    const report = await getReport(reportID);
     // If this failed:
     if (isReportError(report)) {
       // Return why.
@@ -107,29 +106,27 @@ export const reportDeletionForm = async (
     const {issueCount, preventedEngineCount, url} = reportFacts;
     // Otherwise, i.e. if it succeeded, add the summary to the array.
     reportSpecs.push({
-      timeStamp,
-      jobID,
+      id: reportID,
       issueCount,
       preventedEngineCount,
       url
     });
   }
-  // Sort the summaries primarily by URL and secondarily by time stamp.
-  objectSort(reportSpecs, 'timeStamp', 'alpha');
+  // Sort the summaries primarily by URL and secondarily by report identifier.
+  objectSort(reportSpecs, 'id', 'alpha');
   objectSort(reportSpecs, 'url', 'alpha');
   const lines: string[] = [];
   const margin = ' '.repeat(12);
   let anyDeletable = false;
   // For each summary:
   reportSpecs.forEach((reportSpec, index) => {
-    const {timeStamp, jobID, issueCount, preventedEngineCount, url} = reportSpec;
-    const jobName = `${timeStamp}-${jobID}`;
-    const specString = `<code>${url}</code> (<code>${jobName}</code>): preventions ${preventedEngineCount}, issues ${issueCount}`;
+    const {id, issueCount, preventedEngineCount, url} = reportSpec;
+    const specString = `<code>${url}</code> (<code>${id}</code>): preventions ${preventedEngineCount}, issues ${issueCount}`;
     // If its report is deletable:
     if (isDeletable(reportSpecs, index)) {
       // Add a line with a deletion checkbox.
       lines.push(
-        `${margin}<p><input type="checkbox" name="report" value="${jobName}"> ${specString}</p>`
+        `${margin}<p><input type="checkbox" name="report" value="${id}"> ${specString}</p>`
       );
       anyDeletable = true;
     }

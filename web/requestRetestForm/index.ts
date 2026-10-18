@@ -12,12 +12,12 @@ import {getAgoString, getDateTimeString} from '../util.ts';
 
 // Returns a retest recommendation form.
 export const answer = async (pageArgs: string) => {
-  const [timeStamp, jobID] = pageArgs.split('/') as [string, string];
+  const reportID = pageArgs;
   // Get data on the latest available reports.
   const reportExtracts = await getReportExtracts(true);
   // Get data on the report whose page is to be retested.
   const reportExtract = reportExtracts.find(
-    (reportExtract: any) => reportExtract.timeStamp === timeStamp && reportExtract.jobID === jobID
+    (reportExtract: any) => reportExtract.id === reportID
   );
   // Initialize the page description.
   let target: string;
@@ -35,8 +35,7 @@ export const answer = async (pageArgs: string) => {
   const reportTime = new Date(reportExtract?.reportTime ?? NaN);
   const query: Record<string, string> = {
     target,
-    timeStamp,
-    jobID,
+    reportID,
     ago: getAgoString(reportTime),
     dateTime: getDateTimeString(reportTime)
   };

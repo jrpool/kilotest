@@ -7,7 +7,7 @@
 
 import {z} from 'zod';
 import {buildRequestDisposition, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {checkLength, isJobID, isTimeStamp, processTestRequest} from '../util.ts';
+import {checkLength, isReportID, processTestRequest} from '../util.ts';
 import {requestRetestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -19,16 +19,16 @@ type ResponseContent = z.infer<typeof requestRetestResponseSchema>['response con
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [timeStamp = '', jobID = '', reason = ''] = args;
+  const [reportID = '', reason = ''] = args;
   const thisHost = getThisHost();
   const reasonCheck = checkLength(reason, 20, 100, 'reason');
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your request'];
   let requestDisposition: ResponseContent['disposition of your request'] = null;
-  // If the timestamp or job ID is not syntactically valid:
-  if (!isTimeStamp(timeStamp) || !isJobID(jobID)) {
+  // If the report identifier is not syntactically valid:
+  if (!isReportID(reportID)) {
     requestDetails = {
-      error: 'request invalid: the report timestamp or job identifier is malformed'
+      error: 'request invalid: the reportID is malformed'
     };
   }
   // Otherwise, if the encoded reason is too short or too long:
@@ -40,7 +40,7 @@ export const response = async (args: string[]) => {
   // Otherwise, i.e. if the request is facially valid:
   else {
     // Process the request. This resolves the cited report's description and URL itself.
-    const processResult = await processTestRequest(reason, {timeStamp, jobID});
+    const processResult = await processTestRequest(reason, {reportID});
     // If the cited report does not exist:
     if (processResult.result === 'nonreport') {
       requestDetails = {
@@ -81,9 +81,9 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'requestRetest',
     'this request': {
-      description: 'Process my request to retest a page. The timeStamp and jobID parameters identify the latest available report about the page. Those parameters were in the response to my earlier listIssues request. The reason property of the request body is the reason why the page should be retested.',
+      description: 'Process my request to retest a page. The reportID parameter identifies the latest available report about the page. It was in the response to my earlier listIssues request. The reason property of the request body is the reason why the page should be retested.',
       method: 'POST',
-      URL: `${thisHost}/api/requestRetest/${timeStamp}/${jobID}`,
+      URL: `${thisHost}/api/requestRetest/${reportID}`,
       body: {
         reason
       },
@@ -91,12 +91,12 @@ export const response = async (args: string[]) => {
         'tool name': 'listIssues',
         description: 'Provide details about one report, including basics about the issues reported in it.',
         method: 'GET',
-        URL: `${thisHost}/api/listIssues/${timeStamp}/${jobID}`
+        URL: `${thisHost}/api/listIssues/${reportID}`
       }
     },
     'URLs of similar requests for web users': {
-      'this request': `${thisHost}/requestRetestForm.html/${timeStamp}/${jobID}`,
-      'closest ancestor request': `${thisHost}/listIssues.html/${timeStamp}/${jobID}`
+      'this request': `${thisHost}/requestRetestForm.html/${reportID}`,
+      'closest ancestor request': `${thisHost}/listIssues.html/${reportID}`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

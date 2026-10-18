@@ -14,31 +14,27 @@ type ZodTypeAny = import('zod').ZodTypeAny;
 
 // REQUEST SCHEMAS
 
-// listIssues: GET /api/listIssues/{timeStamp}/{jobID}
+// listIssues: GET /api/listIssues/{reportID}
 export const listIssuesSchema = {
-  timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the report (example: x9z)')
+  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
 };
 
-// listViolators: GET /api/listViolators/{issueID}/{timeStamp}/{jobID}
+// listViolators: GET /api/listViolators/{issueID}/{reportID}
 export const listViolatorsSchema = {
   issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
-  timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the report (example: x9z)')
+  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
 };
 
-// listDiagnoses: GET /api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}
+// listDiagnoses: GET /api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}
 export const listDiagnosesSchema = {
   catalogIndex: z.string().describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'),
   issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
-  timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the report (example: x9z)')
+  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
 };
 
-// getReport: GET /api/getReport/{timeStamp}/{jobID}
+// getReport: GET /api/getReport/{reportID}
 export const getReportSchema = {
-  timeStamp: z.string().describe('Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the report (example: x9z)')
+  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
 };
 
 // requestNewTest: POST /api/requestNewTest
@@ -48,10 +44,9 @@ export const requestNewTestSchema = {
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
 };
 
-// requestRetest: POST /api/requestRetest/{timeStamp}/{jobID}
+// requestRetest: POST /api/requestRetest/{reportID}
 export const requestRetestSchema = {
-  timeStamp: z.string().describe('Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the latest report about the page (example: x9z)'),
+  reportID: z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z)'),
   reason: z.string().describe('20- to 100-character reason why the page should be retested')
 };
 
@@ -67,17 +62,15 @@ export const orderNewTestSchema = {
   reason: z.string().describe('20- to 100-character reason why the page should be tested')
 };
 
-// orderRetest: POST /api/orderRetest/{timeStamp}/{jobID}
+// orderRetest: POST /api/orderRetest/{reportID}
 export const orderRetestSchema = {
-  timeStamp: z.string().describe('Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the latest report about the page (example: x9z)'),
+  reportID: z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z)'),
   reason: z.string().describe('20- to 100-character reason why the page should be retested')
 };
 
-// awaitTest: POST /api/awaitTest
+// awaitTest: POST /api/awaitTest/{reportID}
 export const awaitTestSchema = {
-  timeStamp: z.string().describe('Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)'),
-  jobID: z.string().describe('Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)')
+  reportID: z.string().describe('Report identifier returned by orderNewTest or orderRetest (example: 260503T0432-x9z)')
 };
 
 // listPages takes no input; omitted (mcp.ts already uses inputSchema: {}).
@@ -164,7 +157,7 @@ const responseMetadataSchema = z.object({
 
 // Facts about a report, as constructed by Kilotest's own getReportBasics (never copied from a Testaro report).
 const reportBasicsSchema = z.object({
-  identifier: z.string().describe('timeStamp-jobID identifier of the report.'),
+  identifier: z.string().describe('Identifier of the report (example: 260503T0432-x9z).'),
   'completion date and time': z.string(),
   'days since the report was completed': z.number().nullable(),
   'tested web page': z.object({description: z.string(), URL: z.string()}),
@@ -196,7 +189,7 @@ const issueBasicsOrErrorSchema = z.union([
 
 // Facts about a report among those about one page.
 const reportTimeSchema = z.object({
-  identifier: z.string().describe('timeStamp-jobID identifier of the report.'),
+  identifier: z.string().describe('Identifier of the report (example: 260503T0432-x9z).'),
   'completion date and time': z.string(),
   'days since the report was completed': z.number().nullable()
 });
@@ -367,10 +360,7 @@ export const requestFeatureResponseSchema = envelope(
 );
 
 // Identifies the report a successfully ordered or awaited job will produce, once complete.
-const reportIdentifierSchema = z.object({
-  timeStamp: z.string().describe('Timestamp to pass to listIssues once the report is ready.'),
-  jobID: z.string().describe('Job identifier to pass to listIssues once the report is ready.')
-}).meta({id: 'ReportIdentifier'});
+const reportIdentifierSchema = z.string().describe('Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).');
 
 export const orderNewTestResponseSchema = envelope(
   'POST',
@@ -443,7 +433,7 @@ export const awaitTestResponseSchema = envelope(
     'closest ancestor request': z.null()
   }),
   // awaitTest can be reached from either orderNewTest or orderRetest, and its own
-  // parameters (timeStamp/jobID) do not say which one produced them, so both possible
+  // reportID parameter does not say which one produced it, so both possible
   // ancestors are reported, rather than arbitrarily naming just one as "the" ancestor.
   z.array(requestReferenceSchema).length(2)
 );

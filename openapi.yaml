@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Kilotest API
   description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 12 rule engines to test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
-  version: 59.1.3
+  version: 59.1.4
   license:
     name: MIT
     identifier: MIT
@@ -81,7 +81,7 @@ paths:
                               properties:
                                 identifier:
                                   type: string
-                                  description: timeStamp-jobID identifier of the report.
+                                  description: 'Identifier of the report (example: 260503T0432-x9z).'
                                 completion date and time:
                                   type: string
                                 days since the report was completed:
@@ -165,25 +165,18 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/listIssues/{timeStamp}/{jobID}:
+  /api/listIssues/{reportID}:
     get:
       operationId: listIssues
       summary: List basics about the issues in one report
       parameters:
         - in: path
-          name: timeStamp
+          name: reportID
           schema:
             type: string
-            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Identifier of the report (example: 260503T0432-x9z)'
           required: true
-          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
-        - in: path
-          name: jobID
-          schema:
-            type: string
-            description: 'Job identifier of the report (example: x9z)'
-          required: true
-          description: 'Job identifier of the report (example: x9z)'
+          description: 'Identifier of the report (example: 260503T0432-x9z)'
       responses:
         '200':
           description: List basics about the issues in one report
@@ -233,7 +226,7 @@ paths:
                               properties:
                                 identifier:
                                   type: string
-                                  description: timeStamp-jobID identifier of the report.
+                                  description: 'Identifier of the report (example: 260503T0432-x9z).'
                                 completion date and time:
                                   type: string
                                 days since the report was completed:
@@ -493,7 +486,7 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/listViolators/{issueID}/{timeStamp}/{jobID}:
+  /api/listViolators/{issueID}/{reportID}:
     get:
       operationId: listViolators
       summary: List elements reported as exhibiting one issue
@@ -506,19 +499,12 @@ paths:
           required: true
           description: 'Issue identifier (example: contrastPoor)'
         - in: path
-          name: timeStamp
+          name: reportID
           schema:
             type: string
-            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Identifier of the report (example: 260503T0432-x9z)'
           required: true
-          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
-        - in: path
-          name: jobID
-          schema:
-            type: string
-            description: 'Job identifier of the report (example: x9z)'
-          required: true
-          description: 'Job identifier of the report (example: x9z)'
+          description: 'Identifier of the report (example: 260503T0432-x9z)'
       responses:
         '200':
           description: List elements reported as exhibiting one issue
@@ -628,7 +614,7 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}:
+  /api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}:
     get:
       operationId: listDiagnoses
       summary: List diagnoses of how one element exhibited one issue
@@ -648,19 +634,12 @@ paths:
           required: true
           description: 'Issue identifier (example: contrastPoor)'
         - in: path
-          name: timeStamp
+          name: reportID
           schema:
             type: string
-            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Identifier of the report (example: 260503T0432-x9z)'
           required: true
-          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
-        - in: path
-          name: jobID
-          schema:
-            type: string
-            description: 'Job identifier of the report (example: x9z)'
-          required: true
-          description: 'Job identifier of the report (example: x9z)'
+          description: 'Identifier of the report (example: 260503T0432-x9z)'
       responses:
         '200':
           description: List diagnoses of how one element exhibited one issue
@@ -788,25 +767,18 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/getReport/{timeStamp}/{jobID}:
+  /api/getReport/{reportID}:
     get:
       operationId: getReport
       summary: Get one full report in JSON
       parameters:
         - in: path
-          name: timeStamp
+          name: reportID
           schema:
             type: string
-            description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Identifier of the report (example: 260503T0432-x9z)'
           required: true
-          description: 'Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)'
-        - in: path
-          name: jobID
-          schema:
-            type: string
-            description: 'Job identifier of the report (example: x9z)'
-          required: true
-          description: 'Job identifier of the report (example: x9z)'
+          description: 'Identifier of the report (example: 260503T0432-x9z)'
       responses:
         '200':
           description: Get one full report in JSON
@@ -1003,25 +975,18 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/requestRetest/{timeStamp}/{jobID}:
+  /api/requestRetest/{reportID}:
     post:
       operationId: requestRetest
       summary: Request that a page be retested
       parameters:
         - in: path
-          name: timeStamp
+          name: reportID
           schema:
             type: string
-            description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Identifier of the latest report about the page (example: 260503T0432-x9z)'
           required: true
-          description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
-        - in: path
-          name: jobID
-          schema:
-            type: string
-            description: 'Job identifier of the latest report about the page (example: x9z)'
-          required: true
-          description: 'Job identifier of the latest report about the page (example: x9z)'
+          description: 'Identifier of the latest report about the page (example: 260503T0432-x9z)'
       requestBody:
         content:
           application/json:
@@ -1365,7 +1330,8 @@ paths:
                                 type: string
                               report identifier:
                                 anyOf:
-                                  - $ref: '#/components/schemas/ReportIdentifier'
+                                  - type: string
+                                    description: 'Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).'
                                   - type: 'null'
                               how you can check for completion:
                                 type: string
@@ -1390,25 +1356,18 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/orderRetest/{timeStamp}/{jobID}:
+  /api/orderRetest/{reportID}:
     post:
       operationId: orderRetest
       summary: Order that a page be retested immediately, without manual approval
       parameters:
         - in: path
-          name: timeStamp
+          name: reportID
           schema:
             type: string
-            description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Identifier of the latest report about the page (example: 260503T0432-x9z)'
           required: true
-          description: 'Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)'
-        - in: path
-          name: jobID
-          schema:
-            type: string
-            description: 'Job identifier of the latest report about the page (example: x9z)'
-          required: true
-          description: 'Job identifier of the latest report about the page (example: x9z)'
+          description: 'Identifier of the latest report about the page (example: 260503T0432-x9z)'
       requestBody:
         content:
           application/json:
@@ -1519,7 +1478,8 @@ paths:
                                 type: string
                               report identifier:
                                 anyOf:
-                                  - $ref: '#/components/schemas/ReportIdentifier'
+                                  - type: string
+                                    description: 'Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).'
                                   - type: 'null'
                               how you can check for completion:
                                 type: string
@@ -1544,25 +1504,18 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/awaitTest/{timeStamp}/{jobID}:
+  /api/awaitTest/{reportID}:
     post:
       operationId: awaitTest
       summary: Wait for a job ordered via orderNewTest or orderRetest to complete
       parameters:
         - in: path
-          name: timeStamp
+          name: reportID
           schema:
             type: string
-            description: 'Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)'
+            description: 'Report identifier returned by orderNewTest or orderRetest (example: 260503T0432-x9z)'
           required: true
-          description: 'Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)'
-        - in: path
-          name: jobID
-          schema:
-            type: string
-            description: 'Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)'
-          required: true
-          description: 'Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)'
+          description: 'Report identifier returned by orderNewTest or orderRetest (example: 260503T0432-x9z)'
       requestBody:
         content:
           application/json:
@@ -1631,7 +1584,8 @@ paths:
                           - type: object
                             properties:
                               report identifier:
-                                $ref: '#/components/schemas/ReportIdentifier'
+                                type: string
+                                description: 'Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).'
                             required:
                               - report identifier
                             additionalProperties: false
@@ -1792,7 +1746,7 @@ components:
       properties:
         identifier:
           type: string
-          description: timeStamp-jobID identifier of the report.
+          description: 'Identifier of the report (example: 260503T0432-x9z).'
         completion date and time:
           type: string
         days since the report was completed:
@@ -1882,16 +1836,3 @@ components:
           required:
             - error
           additionalProperties: false
-    ReportIdentifier:
-      type: object
-      properties:
-        timeStamp:
-          type: string
-          description: Timestamp to pass to listIssues once the report is ready.
-        jobID:
-          type: string
-          description: Job identifier to pass to listIssues once the report is ready.
-      required:
-        - timeStamp
-        - jobID
-      additionalProperties: false

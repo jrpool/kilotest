@@ -20,9 +20,8 @@ const populateQuery = async (query: Record<string, any>) => {
   const reportExtracts = await getReportExtracts();
   // For each report:
   for (const reportExtract of reportExtracts) {
-    const {jobID, timeStamp} = reportExtract;
     // Get it.
-    const report = await getReport(timeStamp, jobID);
+    const report = await getReport(reportExtract.id);
     // If this failed:
     if (isReportError(report)) {
       // Populate the query with the reason.

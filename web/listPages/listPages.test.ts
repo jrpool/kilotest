@@ -76,9 +76,9 @@ test('listPages links each page to the issues in its latest report', async () =>
   const result: any = await answer();
   const links = getPageLinks(result.answerPage);
   const mixedLink = links.find(a => a.text === 'Mixed Outcomes');
-  assert.equal(mixedLink?.getAttribute('href'), 'listIssues.html/260202T0000/new');
+  assert.equal(mixedLink?.getAttribute('href'), 'listIssues.html/260202T0000-new');
   const canttellLink = links.find(a => a.text === 'All CantTell Page');
-  assert.equal(canttellLink?.getAttribute('href'), 'listIssues.html/260101T0001/ct');
+  assert.equal(canttellLink?.getAttribute('href'), 'listIssues.html/260101T0001-ct');
 });
 
 test('listPages contains no report summaries', async () => {

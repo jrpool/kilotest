@@ -125,7 +125,7 @@
                       "properties": {
                         "identifier": {
                           "type": "string",
-                          "description": "timeStamp-jobID identifier of the report."
+                          "description": "Identifier of the report (example: 260503T0432-x9z)."
                         },
                         "completion date and time": {
                           "type": "string"
@@ -419,18 +419,13 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "timeStamp": {
+          "reportID": {
             "type": "string",
-            "description": "Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)"
-          },
-          "jobID": {
-            "type": "string",
-            "description": "Job identifier of the report (example: x9z)"
+            "description": "Identifier of the report (example: 260503T0432-x9z)"
           }
         },
         "required": [
-          "timeStamp",
-          "jobID"
+          "reportID"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
@@ -496,7 +491,7 @@
                       "properties": {
                         "identifier": {
                           "type": "string",
-                          "description": "timeStamp-jobID identifier of the report."
+                          "description": "Identifier of the report (example: 260503T0432-x9z)."
                         },
                         "completion date and time": {
                           "type": "string"
@@ -1073,7 +1068,7 @@
             "properties": {
               "identifier": {
                 "type": "string",
-                "description": "timeStamp-jobID identifier of the report."
+                "description": "Identifier of the report (example: 260503T0432-x9z)."
               },
               "completion date and time": {
                 "type": "string"
@@ -1162,19 +1157,14 @@
             "type": "string",
             "description": "Issue identifier (example: contrastPoor)"
           },
-          "timeStamp": {
+          "reportID": {
             "type": "string",
-            "description": "Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)"
-          },
-          "jobID": {
-            "type": "string",
-            "description": "Job identifier of the report (example: x9z)"
+            "description": "Identifier of the report (example: 260503T0432-x9z)"
           }
         },
         "required": [
           "issueID",
-          "timeStamp",
-          "jobID"
+          "reportID"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
@@ -1512,7 +1502,7 @@
             "properties": {
               "identifier": {
                 "type": "string",
-                "description": "timeStamp-jobID identifier of the report."
+                "description": "Identifier of the report (example: 260503T0432-x9z)."
               },
               "completion date and time": {
                 "type": "string"
@@ -1672,20 +1662,15 @@
             "type": "string",
             "description": "Issue identifier (example: contrastPoor)"
           },
-          "timeStamp": {
+          "reportID": {
             "type": "string",
-            "description": "Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)"
-          },
-          "jobID": {
-            "type": "string",
-            "description": "Job identifier of the report (example: x9z)"
+            "description": "Identifier of the report (example: 260503T0432-x9z)"
           }
         },
         "required": [
           "catalogIndex",
           "issueID",
-          "timeStamp",
-          "jobID"
+          "reportID"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
@@ -2062,7 +2047,7 @@
             "properties": {
               "identifier": {
                 "type": "string",
-                "description": "timeStamp-jobID identifier of the report."
+                "description": "Identifier of the report (example: 260503T0432-x9z)."
               },
               "completion date and time": {
                 "type": "string"
@@ -2188,18 +2173,13 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "timeStamp": {
+          "reportID": {
             "type": "string",
-            "description": "Timestamp of the report in YYMMDDTHHmm format (example: 260503T0432)"
-          },
-          "jobID": {
-            "type": "string",
-            "description": "Job identifier of the report (example: x9z)"
+            "description": "Identifier of the report (example: 260503T0432-x9z)"
           }
         },
         "required": [
-          "timeStamp",
-          "jobID"
+          "reportID"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
@@ -2810,13 +2790,9 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "timeStamp": {
+          "reportID": {
             "type": "string",
-            "description": "Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)"
-          },
-          "jobID": {
-            "type": "string",
-            "description": "Job identifier of the latest report about the page (example: x9z)"
+            "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)"
           },
           "reason": {
             "type": "string",
@@ -2824,8 +2800,7 @@
           }
         },
         "required": [
-          "timeStamp",
-          "jobID",
+          "reportID",
           "reason"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -3603,7 +3578,8 @@
                       "report identifier": {
                         "anyOf": [
                           {
-                            "$ref": "#/definitions/ReportIdentifier"
+                            "type": "string",
+                            "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
                           },
                           {
                             "type": "null"
@@ -3779,24 +3755,6 @@
               "date and time"
             ],
             "additionalProperties": false
-          },
-          "ReportIdentifier": {
-            "type": "object",
-            "properties": {
-              "timeStamp": {
-                "type": "string",
-                "description": "Timestamp to pass to listIssues once the report is ready."
-              },
-              "jobID": {
-                "type": "string",
-                "description": "Job identifier to pass to listIssues once the report is ready."
-              }
-            },
-            "required": [
-              "timeStamp",
-              "jobID"
-            ],
-            "additionalProperties": false
           }
         }
       },
@@ -3817,13 +3775,9 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "timeStamp": {
+          "reportID": {
             "type": "string",
-            "description": "Timestamp of the latest report about the page in YYMMDDTHHmm format (example: 260503T0432)"
-          },
-          "jobID": {
-            "type": "string",
-            "description": "Job identifier of the latest report about the page (example: x9z)"
+            "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)"
           },
           "reason": {
             "type": "string",
@@ -3831,8 +3785,7 @@
           }
         },
         "required": [
-          "timeStamp",
-          "jobID",
+          "reportID",
           "reason"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
@@ -3977,7 +3930,8 @@
                       "report identifier": {
                         "anyOf": [
                           {
-                            "$ref": "#/definitions/ReportIdentifier"
+                            "type": "string",
+                            "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
                           },
                           {
                             "type": "null"
@@ -4153,24 +4107,6 @@
               "date and time"
             ],
             "additionalProperties": false
-          },
-          "ReportIdentifier": {
-            "type": "object",
-            "properties": {
-              "timeStamp": {
-                "type": "string",
-                "description": "Timestamp to pass to listIssues once the report is ready."
-              },
-              "jobID": {
-                "type": "string",
-                "description": "Job identifier to pass to listIssues once the report is ready."
-              }
-            },
-            "required": [
-              "timeStamp",
-              "jobID"
-            ],
-            "additionalProperties": false
           }
         }
       },
@@ -4191,18 +4127,13 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "timeStamp": {
+          "reportID": {
             "type": "string",
-            "description": "Timestamp of the ordered job, from the report identifier returned by orderNewTest, in YYMMDDTHHmm format (example: 260503T0432)"
-          },
-          "jobID": {
-            "type": "string",
-            "description": "Job identifier of the ordered job, from the report identifier returned by orderNewTest (example: x9z)"
+            "description": "Report identifier returned by orderNewTest or orderRetest (example: 260503T0432-x9z)"
           }
         },
         "required": [
-          "timeStamp",
-          "jobID"
+          "reportID"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
@@ -4285,7 +4216,8 @@
                     "type": "object",
                     "properties": {
                       "report identifier": {
-                        "$ref": "#/definitions/ReportIdentifier"
+                        "type": "string",
+                        "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
                       }
                     },
                     "required": [
@@ -4476,24 +4408,6 @@
               "date and time"
             ],
             "additionalProperties": false
-          },
-          "ReportIdentifier": {
-            "type": "object",
-            "properties": {
-              "timeStamp": {
-                "type": "string",
-                "description": "Timestamp to pass to listIssues once the report is ready."
-              },
-              "jobID": {
-                "type": "string",
-                "description": "Job identifier to pass to listIssues once the report is ready."
-              }
-            },
-            "required": [
-              "timeStamp",
-              "jobID"
-            ],
-            "additionalProperties": false
           }
         }
       },
@@ -4509,5 +4423,5 @@
       }
     }
   ],
-  "version": "59.1.3"
+  "version": "59.1.4"
 }

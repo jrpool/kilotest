@@ -56,11 +56,11 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 - [Home page](https://kilotest.com/)
 - [Get a list of all tested pages, each linked to its latest report](https://kilotest.com/listPages.html)
-- Get statistics about issues reported in one report, and a history of all reports about the same page: `https://kilotest.com/listIssues.html/{timeStamp}/{jobID}`
-- Get details about one issue reported in one report: `https://kilotest.com/listViolators.html/{issueID}/{timeStamp}/{jobID}`
-- Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{timeStamp}/{jobID}/{catalogIndex}`
+- Get statistics about issues reported in one report, and a history of all reports about the same page: `https://kilotest.com/listIssues.html/{reportID}`
+- Get details about one issue reported in one report: `https://kilotest.com/listViolators.html/{issueID}/{reportID}`
+- Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{reportID}/{catalogIndex}`
 - [Request the testing of a not-yet-tested page](https://kilotest.com/requestNewTestForm.html)
-- Request the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{timeStamp}/{jobID}`
+- Request the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{reportID}`
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
 - [Get a list of the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
@@ -80,29 +80,26 @@ Kilotest offers these tools:
 - `listIssues`
   - method: `GET`
   - purpose: list all issues in one report, and all reports about the same page, from oldest to latest
-  - path: `/api/listIssues/{timeStamp}/{jobID}`
+  - path: `/api/listIssues/{reportID}`
   - parameters
-    - `timeStamp`: initial segment of report identifier
-    - `jobID`: final segment of report identifier
+    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
   - source of parameters: response to a `listPages` request, or the history of reports about the page in the response to a `listIssues` request
 - `listViolators`
   - method: `GET`
   - purpose: list all elements exhibiting one issue in one report
-  - path: `/api/listViolators/{issueID}/{timeStamp}/{jobID}`
+  - path: `/api/listViolators/{issueID}/{reportID}`
   - parameters
     - `issueID`: identifier of the issue
-    - `timeStamp`: initial segment of report identifier
-    - `jobID`: final segment of report identifier
+    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
   - source of parameters: response to a `listIssues` request
 - `listDiagnoses`
   - method: `GET`
   - purpose: list all diagnoses of one issue exhibited by one element in one report
-  - path: `/api/listDiagnoses/{catalogIndex}/{issueID}/{timeStamp}/{jobID}`
+  - path: `/api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}`
   - parameters
     - `catalogIndex`: index of the catalog entry of the element
     - `issueID`: identifier of the issue
-    - `timeStamp`: initial segment of report identifier
-    - `jobID`: final segment of report identifier
+    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
   - source of parameters: response to a `listViolators` request
 - `requestNewTest`
   - method: `POST`
@@ -115,10 +112,9 @@ Kilotest offers these tools:
 - `requestRetest`
   - method: `POST`
   - purpose: request retesting of one web page about which a report is available
-  - path: `/api/requestRetest/{timeStamp}/{jobID}`
+  - path: `/api/requestRetest/{reportID}`
   - parameters
-    - `timeStamp`: initial segment of report identifier
-    - `jobID`: final segment of report identifier
+    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
   - source of parameters: response to a `listIssues` request
   - payload properties
     - `reason`: reason for retesting the page
@@ -136,25 +132,23 @@ Kilotest offers these tools:
     - `description`: description of the page to be tested
     - `URL`: URL of the page to be tested
     - `reason`: reason for testing the page
-  - response includes a report identifier (`timeStamp` and `jobID`) once the job is enqueued
+  - response includes a report identifier (`reportID`) once the job is enqueued
 - `orderRetest`
   - method: `POST`
   - purpose: order immediate, automatically approved retesting of one web page about which a report is available, instead of waiting for manual approval
-  - path: `/api/orderRetest/{timeStamp}/{jobID}`
+  - path: `/api/orderRetest/{reportID}`
   - parameters
-    - `timeStamp`: initial segment of report identifier
-    - `jobID`: final segment of report identifier
+    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
   - source of parameters: response to a `listIssues` request
   - payload properties
     - `reason`: reason for retesting the page
-  - response includes a report identifier (`timeStamp` and `jobID`) once the job is enqueued
+  - response includes a report identifier (`reportID`) once the job is enqueued
 - `awaitTest`
   - method: `POST`
   - purpose: wait for a job ordered via `orderNewTest` or `orderRetest` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
-  - path: `/api/awaitTest/{timeStamp}/{jobID}`
+  - path: `/api/awaitTest/{reportID}`
   - parameters
-    - `timeStamp`: initial segment of the report identifier returned by `orderNewTest` or `orderRetest`
-    - `jobID`: final segment of the report identifier returned by `orderNewTest` or `orderRetest`
+    - `reportID`: the report identifier returned by `orderNewTest` or `orderRetest` (example: 260503T0432-x9z)
   - source of parameters: response to an `orderNewTest` or `orderRetest` request
   - caveat: testing typically takes 2 to 4 minutes; sends no interim notices while waiting
 

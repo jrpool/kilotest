@@ -194,8 +194,7 @@ test('orderNewTest accepts a valid new page order and enqueues a job directly', 
   assert.equal(details['page to be tested'].description, 'Brand New Ordered Page');
   const disposition = body['response content']['disposition of your order'] as any;
   assert.ok(disposition['report identifier']);
-  assert.match(disposition['report identifier'].timeStamp, /^\d{6}T\d{4}$/);
-  assert.match(disposition['report identifier'].jobID, /^[a-z0-9]{3}$/);
+  assert.match(disposition['report identifier'], /^\d{6}T\d{4}-[a-z0-9]{3}$/);
   assert.ok(disposition['what happens next'].includes('Testing has begun.'));
   assert.ok(disposition['do you want to wait for completion'].includes('awaitTest'));
   const queuedFiles = await fs.readdir(queuePath);

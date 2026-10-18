@@ -10,7 +10,7 @@ An ensemble testing and reporting service for front-end web quality
 
 ## Features
 
-This application uses an ensemble of 12 rule engines to test web pages for front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG (HTML, CSS, ARIA, WCAG)).
+This application uses an ensemble of 12 rule engines to test web pages for front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG).
 
 The testing paradigm employed by Kilotest is discussed in these papers:
 
@@ -55,10 +55,7 @@ See the [`SERVICE.md`](docs/SERVICE.md) file for instructions on how to make Kil
 
 Kilotest is not only a web application but also an API and an MCP server. AI platforms and models can use Kilotest via those interfaces.
 
-The URL for models using the MCP server is `https://kilotest.com/mcp`. The MCP server is listed at these services:
-
-- [Smithery](https://smithery.ai/servers/pool/kilotest)
-- [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest)
+The public URL for models using the MCP server at `kilotest.com` is `https://kilotest.com/mcp`. The MCP server is registered at several registries. See [AI-TOOLS.md](docs/AI-TOOLS.md#External-features) for details.
 
 There is additional documentation at:
 

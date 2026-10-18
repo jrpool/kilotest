@@ -74,7 +74,7 @@ test('getIssueSpec returns null for the ignorable issue ID', () => {
 
 test('getReportBasics returns an error for a nonexistent report', async () => {
   process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
-  const basics: any = await getReportBasics('999999T9999', 'xyz');
+  const basics: any = await getReportBasics('999999T9999-xyz');
   assert.ok(basics.error);
   if (savedDBDir !== undefined) {
     process.env.DB_DIR = savedDBDir;
@@ -91,7 +91,7 @@ test('getReportBasics returns an error for a report whose extract cannot be read
   const reportPath = path.join(process.env.DB_DIR, 'reports', '888888T8888-bad.json');
   await fs.writeFile(reportPath, '{"malformed": true}\n');
   try {
-    const basics: any = await getReportBasics('888888T8888', 'bad');
+    const basics: any = await getReportBasics('888888T8888-bad');
     assert.ok(basics.error);
   }
   finally {

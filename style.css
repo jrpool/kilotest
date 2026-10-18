@@ -118,6 +118,15 @@ legend {
 li, p {
   line-height: 1.5;
 }
+ol.links li > a, p.links > a, ul.links li > a, ul.nav li > a {
+  display: block;
+  box-sizing: border-box;
+  min-height: 44px;
+  min-width: 44px;
+  margin-right: 1rem;
+  padding-left: 0.25rem;
+  padding-top: 0.5rem;
+}
 p {
   margin: 0.5rem 0;
 }
@@ -179,15 +188,6 @@ ul {
 }
 ul.pseudoTopLevel {
   list-style: disc;
-}
-ul.links li > a, ul.nav li > a {
-  display: block;
-  box-sizing: border-box;
-  min-height: 44px;
-  min-width: 44px;
-  margin-right: 1rem;
-  padding-left: 0.25rem;
-  padding-top: 0.5rem;
 }
 ul.nav {
   padding-inline-start: 0.25rem;

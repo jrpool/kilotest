@@ -99,7 +99,7 @@ When you make an API or tool contract change in a feature branch, here are all t
 
 1. `lhm.plugin.json`: Transform it to match `api/schemas.ts` and `mcp.ts`.
 2. `llms.txt`, `llms-full.txt`, `capability.md`, `README.md`: Update parameter and path names.
-3. Commit all changes.
+3. Stage and commit all changes.
 4. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
 5. Submit a pull request.
 6. When all checks succeed, squash-merge to `main`.

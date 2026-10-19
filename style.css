@@ -334,7 +334,7 @@ body.home details[open] summary {
   border-radius: 0.75rem 0.75rem 0 0;
 }
 body.home details > :not(summary) {
-  margin-inline: 1.5rem;
+  padding-inline: 1.25rem;
 }
 body.home details h2 {
   margin: 1.5rem 0 0.5rem;

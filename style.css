@@ -263,9 +263,6 @@ body.home .header-inner {
   gap: 0.75rem;
 }
 body.home .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
   font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: -0.02em;
@@ -273,6 +270,8 @@ body.home .brand {
 body.home .brand svg {
   width: 1.35rem;
   height: 1.35rem;
+  margin-right: 0.55rem;
+  vertical-align: -0.2em;
 }
 body.home .brand-tag {
   font-size: 0.85rem;

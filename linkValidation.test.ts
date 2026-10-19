@@ -16,6 +16,7 @@ const staticFiles = [
   '/index.html',
   '/style.css',
   '/favicon.ico',
+  '/favicon.svg',
   '/openapi.yaml',
   '/openapi.json',
   '/capability.md',

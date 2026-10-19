@@ -332,6 +332,12 @@ test('GET /favicon.ico serves the favicon as an icon', async () => {
   assert.ok(res.headers['content-type'].includes('image/x-icon'));
 });
 
+test('GET /favicon.svg serves the logo as SVG', async () => {
+  const res = await request('GET', '/favicon.svg');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('image/svg+xml'));
+});
+
 test('GET /api/listPages returns JSON with report data and records an API-operation metric', async () => {
   const countBefore = await getMetricCount('apiOperations', 'listPages');
   const res = await request('GET', '/api/listPages');

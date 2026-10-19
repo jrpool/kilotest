@@ -21,6 +21,8 @@ import {
 import {issues as issueSpecs} from 'testaro-issues';
 import type {Catalog} from 'testaro';
 import type {UsableReport} from '../util.ts';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 /* c8 ignore stop */
 import wcagMap from '../wcagMap.json' with {type: 'json'};
 
@@ -141,6 +143,12 @@ export const getTextFragmentHref = (text: string, url: string): string => {
 export const getEngineNamesString = (engineIDSet: Iterable<string>): string => alphaSort(
   Array.from(engineIDSet).map(engineID => ruleEngines[engineID]?.[0] || engineID)
 ).join(' + ');
+// Returns the Kilotest logo as an inline SVG string, read once and cached.
+let logoCache: string | null = null;
+export const getLogo = async (): Promise<string> => {
+  logoCache ??= await fs.readFile(path.join(import.meta.dirname, '../logo.svg'), 'utf8');
+  return logoCache;
+};
 // Gets the WCAG Understanding link for a numeric WCAG standard identifier.
 export const getWCAGLink = (numericID: string): string => {
   // Return the link.

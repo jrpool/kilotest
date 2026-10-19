@@ -381,7 +381,7 @@ let sharedContent: {head: string, logo: string} | undefined;
 const getSharedContent = async (): Promise<{head: string, logo: string}> => {
   // Trailing newlines are stripped so injection does not add blank lines.
   sharedContent ??= {
-    head: (await fs.readFile(path.join(import.meta.dirname, 'web', 'head.html'), 'utf8')).trimEnd(),
+    head: (await fs.readFile(path.join(import.meta.dirname, 'web', 'head.partial'), 'utf8')).trimEnd(),
     logo: (await fs.readFile(path.join(import.meta.dirname, 'logo.svg'), 'utf8')).trimEnd()
   };
   return sharedContent;

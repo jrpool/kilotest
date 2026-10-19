@@ -300,8 +300,7 @@ body.home .eyebrow::before {
 }
 body.home .hero h1 {
   margin: 0 0 1rem;
-  max-width: 24ch;
-  font-size: clamp(2rem, 4.5vw, 3.1rem);
+  font-size: clamp(2rem, 4.5vw, 2.6rem);
   line-height: 1.5;
   letter-spacing: -0.03em;
 }

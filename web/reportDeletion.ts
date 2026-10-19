@@ -139,7 +139,7 @@ export const reportDeletionForm = async (
   const query: Record<string, string> = {
     reports: lines.join('\n'),
     intro: anyDeletable ? intro : emptyIntro,
-    disabled: anyDeletable ? '' : ' disabled'
+    disabled: anyDeletable ? '' : 'disabled'
   };
   // Return the populated page.
   return {

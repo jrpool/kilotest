@@ -31,7 +31,7 @@ export const answer = async () => {
   const query: Record<string, string> = {
     requests: lines.join('\n'),
     noRequests: urls.length ? '' : 'No requests exist now.',
-    disabled: urls.length ? '' : ' disabled'
+    disabled: urls.length ? '' : 'disabled'
   };
   // Get the populated order form template.
   const answerPage = await populateTemplate(import.meta.dirname, query);

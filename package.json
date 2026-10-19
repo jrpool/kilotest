@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node index.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "npx eslint && out=$(npx markdownlint-cli2 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$out\"; exit $code; fi",
+    "lint": "npx eslint && npx htmlhint web error.html && out=$(npx markdownlint-cli2 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$out\"; exit $code; fi",
     "test": "c8 node --require ./test/setup.ts --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize '**/*.test.ts'",
     "test:smoke": "node smokeTest.ts",
     "checkinfo": "node checkinfo.ts",
@@ -55,6 +55,7 @@
     "c8": "*",
     "eslint": "*",
     "globals": "*",
+    "htmlhint": "^1.9.2",
     "js-yaml": "*",
     "markdownlint-cli2": "^0.23.2",
     "node-html-parser": "*",

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
+  <style>
+    .lens { stroke: #086b6b; }
+    .zero { fill: #12a05c; }
+    @media (prefers-color-scheme: dark) {
+      .lens { stroke: #3fb8b8; }
+      .zero { fill: #4ce0a0; }
+    }
+  </style>
+  <circle class="lens" cx="14" cy="14" r="8.6" fill="none" stroke-width="2.6"/>
+  <path class="lens" d="M20.3 20.3L26.8 26.8" fill="none" stroke-width="2.8" stroke-linecap="round"/>
+  <ellipse class="zero" cx="9.9" cy="14" rx="1.5" ry="1.9"/>
+  <ellipse class="zero" cx="14" cy="14" rx="1.5" ry="1.9"/>
+  <ellipse class="zero" cx="18.1" cy="14" rx="1.5" ry="1.9"/>
+</svg>

@@ -29,6 +29,7 @@ import {
   isValidAuthCode,
   jobsPath,
   metricsExclusionCookieName,
+  populateFile,
   recordMetric,
   reportsPath,
   unusableReportsPath
@@ -367,9 +368,8 @@ export const serveError = async (error: Record<string, unknown>, response: Serve
       response.setHeader('content-location', '/error.html');
       response.setHeader('Access-Control-Allow-Origin', '*');
       response.setHeader('Cache-Control', 'public, max-age=300, stale-while-revalidate=3000');
-      const errorTemplate = await fs.readFile('error.html', 'utf8');
       const errorMessage = typeof error.message === 'string' ? error.message : 'ERROR';
-      const errorPage = errorTemplate.replace(/__error__/, errorMessage);
+      const errorPage = await populateFile('error.html', {error: errorMessage});
       response.end(errorPage);
     }
     // Otherwise, i.e. if it is from an agent:
@@ -942,10 +942,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for the application icon:
     else if (pathname.includes('favicon.')) {
-      // Get the site icon.
-      const icon = await fs.readFile(path.join(import.meta.dirname, 'favicon.ico'));
+      // Get the site icon (logo.svg, the only format served).
+      const icon = await fs.readFile(path.join(import.meta.dirname, 'logo.svg'));
       // Serve it.
-      setHeaders('image/x-icon', null, 'low');
+      setHeaders('image/svg+xml', null, 'low');
       response.write(icon, 'binary');
       response.end('');
     }

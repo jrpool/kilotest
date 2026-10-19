@@ -326,10 +326,16 @@ test('GET /style.css serves the stylesheet as CSS', async () => {
   assert.ok(res.headers['content-type'].includes('text/css'));
 });
 
-test('GET /favicon.ico serves the favicon as an icon', async () => {
+test('GET /favicon.ico serves the logo as SVG', async () => {
   const res = await request('GET', '/favicon.ico');
   assert.equal(res.statusCode, 200);
-  assert.ok(res.headers['content-type'].includes('image/x-icon'));
+  assert.ok(res.headers['content-type'].includes('image/svg+xml'));
+});
+
+test('GET /favicon.svg serves the logo as SVG', async () => {
+  const res = await request('GET', '/favicon.svg');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('image/svg+xml'));
 });
 
 test('GET /api/listPages returns JSON with report data and records an API-operation metric', async () => {

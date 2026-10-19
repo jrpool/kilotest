@@ -208,3 +208,202 @@ ul.xPathList li {
   padding-left: 0;
   overflow-wrap: break-word;
 }
+body.home {
+  --ink: #18212b;
+  --muted: #4c5a66;
+  --accent: #086b6b;
+  --accent-dark: #064f4f;
+  --bg: #f6f8f8;
+  --card: #fff;
+  --line: #dde4e4;
+  --focus: #005fcc;
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg);
+}
+body.home, body.home *, body.home *::before, body.home *::after {
+  box-sizing: border-box;
+}
+body.home a {
+  color: var(--accent);
+  text-underline-offset: 0.15em;
+}
+body.home a:hover {
+  color: var(--accent-dark);
+  background-color: transparent;
+}
+body.home a:focus-visible, body.home summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+body.home h2 {
+  color: var(--ink);
+}
+body.home li, body.home p {
+  line-height: 1.6;
+}
+body.home p {
+  margin: 0.6rem 0;
+}
+body.home header {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+}
+body.home .header-inner {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 1.1rem 1.5rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+body.home .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+body.home .brand svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+body.home .brand-tag {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+body.home .hero {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 4rem 1.5rem 0;
+}
+body.home .eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+body.home .eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 1.4rem;
+  height: 0.16rem;
+  margin: 0 0.5rem 0.22rem 0;
+  background: var(--accent);
+}
+body.home .hero h1 {
+  margin: 0 0 1rem;
+  max-width: 24ch;
+  font-size: clamp(2rem, 4.5vw, 3.1rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+}
+body.home .hero .lede {
+  margin: 0 0 1.75rem;
+  max-width: 52ch;
+  font-size: 1.2rem;
+  color: var(--muted);
+}
+body.home details {
+  max-width: 52rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+body.home summary {
+  min-height: 44px;
+  padding: 0.9rem 1.25rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+body.home summary:hover {
+  background: #eef3f3;
+  border-radius: 0.75rem;
+}
+body.home details[open] summary {
+  border-bottom: 1px solid var(--line);
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+body.home details > :not(summary) {
+  margin-inline: 1.5rem;
+}
+body.home details h2 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.3rem;
+}
+body.home details h3 {
+  margin: 1.35rem 0 0.35rem;
+  font-size: 1.08rem;
+}
+body.home .nav-section {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 2.25rem 1.5rem 0;
+}
+body.home .nav-section:last-child {
+  padding-bottom: 5rem;
+}
+body.home .nav-section h2 {
+  margin: 0 0 1.25rem;
+  font-size: 1.4rem;
+  letter-spacing: -0.01em;
+}
+body.home ul.nav {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+  gap: 1rem;
+}
+body.home ul.nav a {
+  display: block;
+  min-height: 44px;
+  height: 100%;
+  padding: 1.2rem 1.35rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  text-decoration: none;
+  transition: background-color 0.12s ease-out, border-color 0.12s ease-out;
+}
+body.home ul.nav a:hover {
+  background: #eef4f4;
+  border-color: var(--accent);
+}
+body.home .card-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 0.09em;
+  text-underline-offset: 0.2em;
+}
+body.home .card-title::after {
+  content: "\00a0→";
+  display: inline-block;
+  text-decoration: none;
+  font-weight: 700;
+}
+body.home ul.nav a:hover .card-title {
+  text-decoration-thickness: 0.18em;
+}
+body.home .card-desc {
+  display: block;
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  body.home ul.nav a {
+    transition: none;
+  }
+}

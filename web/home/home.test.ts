@@ -14,6 +14,6 @@ import {answer} from './index.ts';
 test('answer returns the home page', async () => {
   const result = await answer();
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('<h1>Kilotest</h1>'));
+  assert.ok(result.answerPage.includes('More than a thousand tests'));
   assert.ok(result.answerPage.includes('application/ld+json'));
 });

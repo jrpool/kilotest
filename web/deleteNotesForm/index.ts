@@ -164,7 +164,7 @@ export const answer = async (
     intro: anyNotes ?
       'Choose the comments and feature requests to delete.' :
       'There are no comments or feature requests to delete.',
-    disabled: anyNotes ? '' : ' disabled'
+    disabled: anyNotes ? '' : 'disabled'
   };
   // Return the populated page.
   return {

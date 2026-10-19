@@ -5,14 +5,13 @@
 
 // IMPORTS
 
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import {populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
 // Returns the privacy policy page.
 export const answer = async () => {
-  const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
+  const answerPage = await populateTemplate(import.meta.dirname, {});
   return {
     status: 'ok',
     answerPage

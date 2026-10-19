@@ -210,8 +210,8 @@ ul.xPathList li {
 }
 body.home {
   --ink: #18212b;
-  --muted: #4c5a66;
-  --accent: #086b6b;
+  --muted: #424e59;
+  --accent: #005c5c;
   --accent-dark: #064f4f;
   --bg: #f6f8f8;
   --card: #fff;
@@ -242,6 +242,7 @@ body.home a:focus-visible, body.home summary:focus-visible {
 }
 body.home h2 {
   color: var(--ink);
+  font-size: 1.4rem;
 }
 body.home li, body.home p {
   line-height: 1.6;
@@ -262,9 +263,6 @@ body.home .header-inner {
   gap: 0.75rem;
 }
 body.home .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
   font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: -0.02em;
@@ -272,6 +270,8 @@ body.home .brand {
 body.home .brand svg {
   width: 1.35rem;
   height: 1.35rem;
+  margin-right: 0.55rem;
+  vertical-align: -0.2em;
 }
 body.home .brand-tag {
   font-size: 0.85rem;
@@ -299,9 +299,8 @@ body.home .eyebrow::before {
 }
 body.home .hero h1 {
   margin: 0 0 1rem;
-  max-width: 24ch;
-  font-size: clamp(2rem, 4.5vw, 3.1rem);
-  line-height: 1.12;
+  font-size: clamp(2rem, 4.5vw, 2.6rem);
+  line-height: 1.5;
   letter-spacing: -0.03em;
 }
 body.home .hero .lede {
@@ -333,11 +332,10 @@ body.home details[open] summary {
   border-radius: 0.75rem 0.75rem 0 0;
 }
 body.home details > :not(summary) {
-  margin-inline: 1.5rem;
+  padding-inline: 1.25rem;
 }
 body.home details h2 {
   margin: 1.5rem 0 0.5rem;
-  font-size: 1.3rem;
 }
 body.home details h3 {
   margin: 1.35rem 0 0.35rem;
@@ -353,7 +351,6 @@ body.home .nav-section:last-child {
 }
 body.home .nav-section h2 {
   margin: 0 0 1.25rem;
-  font-size: 1.4rem;
   letter-spacing: -0.01em;
 }
 body.home ul.nav {

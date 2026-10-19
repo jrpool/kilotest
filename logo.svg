@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" aria-hidden="true">
   <style>
-    .lens { stroke: #086b6b; }
+    .lens { stroke: #005c5c; }
     .zero { fill: #12a05c; }
     @media (prefers-color-scheme: dark) {
       .lens { stroke: #3fb8b8; }

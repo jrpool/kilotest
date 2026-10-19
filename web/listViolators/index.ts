@@ -124,7 +124,7 @@ const populateQuery = async (
   // If any lines contain text-fragment links:
   if (takeMeAdviceNeeded) {
     // Include advice about them in the answer.
-    query.takeMeThere = '<p><q>Take me there</q> links will open the page in a new tab and try to scroll to the element and highlight it. This does not always succeed. You can return here by closing the new tab.</p>';
+    query.takeMeThere = '<p><q>Take me there</q> links will open the page and try to scroll to the element and highlight it. This does not always succeed.</p>';
   }
 };
 // Returns a page answering the violators question.

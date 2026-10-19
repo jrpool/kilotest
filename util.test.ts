@@ -757,6 +757,23 @@ test('processTestRequest succeeds for a valid new-test request', {timeout: 500},
   await fs.writeFile(testRequestsPath(), '{}\n');
 });
 
+test('processTestRequest returns a urlLength error for a URL shorter than 12 characters', {timeout: 500}, async () => {
+  // New-test request URLs must be 12 to 300 characters long; the bound lives
+  // here, not in callers, so it applies on every submission surface.
+  const {result} = await processTestRequest(
+    'because accessibility', {description: 'Short URL Page', url: 'https://a.b'}
+  );
+  assert.equal(result, 'urlLength');
+});
+
+test('processTestRequest returns a urlLength error for a URL longer than 300 characters', {timeout: 500}, async () => {
+  const {result} = await processTestRequest(
+    'because accessibility',
+    {description: 'Long URL Page', url: `https://example.com/${'a'.repeat(300)}`}
+  );
+  assert.equal(result, 'urlLength');
+});
+
 test('processTestRequest returns a duplicate error for a repeated request', {timeout: 500}, async () => {
   // Reset testRequests.json to empty, then make a successful request.
   await fs.writeFile(testRequestsPath(), '{}\n');

@@ -86,7 +86,8 @@ export type TestRequests = Record<string, TestRequest[]>;
 // retest a page that already has a report (a request kind); the two must not be
 // confused with one another.
 export type TestRequestResult
-= 'url' | 'description' | 'reportExists' | 'duplicate' | 'superseded' | 'nonreport' | 'queueFull' | 'ok';
+= 'url' | 'description' | 'reportExists' | 'duplicate' | 'superseded' | 'nonreport' | 'queueFull'
+| 'urlLength' | 'ok';
 
 // Target of a new-test or retest request: a description and URL for a new-test request,
 // or the identifier of the cited report for a retest request.
@@ -1019,6 +1020,12 @@ export const processTestRequest = (
   else {
     requestType = 'newTest';
     ({description, url} = target);
+    // If the URL violates the 12-to-300-character bound on new-test requests:
+    if (url.length < 12 || url.length > 300) {
+      // Reject it here, where every new-test request passes, rather than in each
+      // caller, so the bound applies on every submission surface.
+      return {result: 'urlLength', description, url};
+    }
   }
   try {
     // Get any property the page shares with a claimed job.

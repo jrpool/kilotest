@@ -16,7 +16,7 @@ for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_A
   process.env[key] = '';
 }
 
-import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts} from './util.ts';
+import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, getRequestFailureReason} from './util.ts';
 import {processTestRequest} from '../util.ts';
 
 // SETUP
@@ -135,4 +135,13 @@ test('getToolsFacts returns facts about the Kilotest tool collection', () => {
   assert.ok(facts.description['what Kilotest does']);
   assert.ok(facts.description['how to retrieve findings']);
   assert.ok(facts.description['how to generate more findings']);
+});
+
+test('getRequestFailureReason returns the URL-length reason for a urlLength result', () => {
+  // processTestRequest can return urlLength for a new-test request whose URL is
+  // outside the 12-to-300-character bound. No current caller reaches this
+  // branch, because each checks length itself first, but the mapping must be
+  // correct for any caller that relies on the shared check instead.
+  const reason = getRequestFailureReason('urlLength');
+  assert.equal(reason, 'the URL is not between 12 and 300 characters long.');
 });

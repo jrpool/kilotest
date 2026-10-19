@@ -144,3 +144,24 @@ test('answer returns an error with a fallback channel when the request queue is 
   assert.ok(result.message.includes('https://github.com/jrpool/kilotest/issues'));
   assert.ok(result.message.includes('info@kilotest.com'));
 });
+
+test('answer returns an error for a URL shorter than 12 characters', {timeout: 500}, async () => {
+  const {answer} = await import('./index.ts');
+  // processTestRequest enforces the 12-to-300-character bound stated by the
+  // request form’s minlength/maxlength, so this 11-character URL is rejected.
+  const result: any = await answer(
+    'Short URL Page', 'https://a.b', 'Because accessibility'
+  );
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'The URL must be between 12 and 300 characters long');
+});
+
+test('answer returns an error for a URL longer than 300 characters', {timeout: 500}, async () => {
+  const {answer} = await import('./index.ts');
+  // The same bound rejects this 320-character URL.
+  const result: any = await answer(
+    'Long URL Page', `https://example.com/${'a'.repeat(300)}`, 'Because accessibility'
+  );
+  assert.equal(result.status, 'error');
+  assert.equal(result.message, 'The URL must be between 12 and 300 characters long');
+});

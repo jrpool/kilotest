@@ -70,9 +70,9 @@ export const getToolsFacts = () => ({
 });
 // Returns the human-readable reason a test/retest/instant-test request was not
 // processed, given the result processTestRequest returned. requestResult is always a
-// rejection reason here ('description', 'url', 'queueFull', or an unrecognized value
-// meaning 'duplicate'); callers pass their own extra branch for a requestResult value
-// specific to their own request type ('reportExists' for requestNewTest, 'superseded' for
+// rejection reason here ('description', 'url', 'urlLength', 'queueFull', or an
+// unrecognized value meaning 'duplicate'); callers pass their own extra branch for a
+// requestResult value specific to their own request type ('reportExists' for requestNewTest, 'superseded' for
 // requestRetest), since that is the one branch not shared between them.
 export const getRequestFailureReason = (
   requestResult: Exclude<TestRequestResult, 'ok'>,
@@ -83,6 +83,9 @@ export const getRequestFailureReason = (
   }
   if (requestResult === 'url') {
     return 'a request to test a page with the same URL is already approved.';
+  }
+  if (requestResult === 'urlLength') {
+    return 'the URL is not between 12 and 300 characters long.';
   }
   if (extraBranch && requestResult === extraBranch.result) {
     return extraBranch.reason;

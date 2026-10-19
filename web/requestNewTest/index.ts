@@ -50,6 +50,14 @@ export const answer = async (description: string, url: string, reason: string) =
         'or post your request at https://github.com/jrpool/kilotest/issues or email info@kilotest.com.'
     }
   }
+  // Otherwise, if the URL is shorter than 12 or longer than 300 characters:
+  else if (result === 'urlLength') {
+    // Report this.
+    return {
+      status: 'error',
+      message: 'The URL must be between 12 and 300 characters long'
+    }
+  }
   // Otherwise, i.e. if a request to test a page with the same description or URL is approved:
   else {
     // Report this.

@@ -489,6 +489,30 @@ test('POST /requestNewTest.html with invalid data returns an error', async () =>
   assert.ok(res.body.includes('Invalid test request'));
 });
 
+test('POST /requestNewTest.html with a URL shorter than 12 characters returns an error', async () => {
+  // processTestRequest enforces the 12-to-300-character bound on new-test
+  // request URLs for every surface, so this 11-character URL is rejected even
+  // though it is a syntactically valid https URL.
+  const res = await formRequest('POST', '/requestNewTest.html', {
+    description: `Short URL Page ${uniqueStamp}`,
+    url: 'https://a.b',
+    why: 'Because accessibility matters'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('The URL must be between 12 and 300 characters long'));
+});
+
+test('POST /requestNewTest.html with a URL longer than 300 characters returns an error', async () => {
+  // The same bound rejects this 320-character URL.
+  const res = await formRequest('POST', '/requestNewTest.html', {
+    description: `Long URL Page ${uniqueStamp}`,
+    url: `https://example.com/${'a'.repeat(300)}`,
+    why: 'Because accessibility matters'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('The URL must be between 12 and 300 characters long'));
+});
+
 test('POST /requestNewTest.html with an unreadable body returns an error', async () => {
   const res = await request('POST', '/requestNewTest.html', 'rawbody', {'content-type': 'text/plain'});
   assert.equal(res.statusCode, 400);

@@ -60,9 +60,9 @@ const populateQuery = async (
   // If the violator has a linkable text item, add a take-me-there link.
   if (catalogIndex && catalogItem?.textLinkable) {
     const href = getTextFragmentHref(catalogItem.text as string, url);
-    const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
-    const link = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
-    query.takeMeThere = `${margin}    <p>${link}</p>`;
+    const label = `Take me there (to element ${catalogIndex})`;
+    const link = `<a href="${href}" aria-label="${label}">Take me there</a>`;
+    query.takeMeThere = `${margin}    <li>${link}</li>`;
   }
   else {
     query.takeMeThere = '';

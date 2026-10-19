@@ -19,7 +19,7 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/api-docs': '/api-docs',
     '/api/*': '/api/listPages',
     '/capability.md': '/capability.md',
-    '/favicon.*': '/favicon.ico',
+    '/favicon.*': '/favicon.svg',
     '/fullReport.json/*': '/fullReport.json/260101T0000/mix',
     '/index.html': '/index.html',
     '/llms-full.txt': '/llms-full.txt',

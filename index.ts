@@ -942,11 +942,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for the application icon:
     else if (pathname.includes('favicon.')) {
-      // Get the site icon: the canonical SVG for favicon.svg, else the ICO fallback.
-      const isSVG = pathname.endsWith('.svg');
-      const icon = await fs.readFile(path.join(import.meta.dirname, isSVG ? 'logo.svg' : 'favicon.ico'));
+      // Get the site icon (logo.svg, the only format served).
+      const icon = await fs.readFile(path.join(import.meta.dirname, 'logo.svg'));
       // Serve it.
-      setHeaders(isSVG ? 'image/svg+xml' : 'image/x-icon', null, 'low');
+      setHeaders('image/svg+xml', null, 'low');
       response.write(icon, 'binary');
       response.end('');
     }

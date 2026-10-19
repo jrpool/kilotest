@@ -7,7 +7,7 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {getJSON, isValidAuthCode} from '../../util.ts';
+import {getJSON, isValidAuthCode, populateTemplate} from '../../util.ts';
 
 // FUNCTIONS
 
@@ -38,7 +38,7 @@ export const answer = async (authCode: string) => {
         // Save the map, replacing any existing one.
         await fs.writeFile(path.join(import.meta.dirname, '..', '..', 'wcagMap.json'), getJSON(wcagMap));
         // Get the acknowledgment page.
-        const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
+        const answerPage = await populateTemplate(import.meta.dirname, {});
         // Return it.
         return {
           status: 'ok',

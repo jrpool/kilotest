@@ -12,11 +12,11 @@ import {
   getReportPath,
   isReportError,
   isValidAuthCode,
+  populateTemplate,
   readdirOrCreate,
   reportsPath
 } from '../../util.ts';
 import fs from 'node:fs/promises';
-import path from 'node:path';
 
 // FUNCTIONS
 
@@ -57,7 +57,7 @@ export const answer = async (authCode: string) => {
       };
     }
     // If every annotation succeeded, get the answer page.
-    const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
+    const answerPage = await populateTemplate(import.meta.dirname, {});
     // Return it.
     return {
       status: 'ok',

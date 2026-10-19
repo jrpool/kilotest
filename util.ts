@@ -375,10 +375,26 @@ export const getNowStamp = (): string => {
 export const getPlainText = (string: string): string => string
 .replace(/&/g, '+')
 .replace(/[<>"']/g, ' ');
-// Populates an index.html template in a directory with named values.
-export const populateTemplate = async (dirName: string, query: Record<string, string>): Promise<string> => {
+// Markup shared by populated templates, lazily read once from files.
+let sharedContent: {head: string, logo: string} | undefined;
+// Returns the markup shared by populated templates.
+const getSharedContent = async (): Promise<{head: string, logo: string}> => {
+  // Trailing newlines are stripped so injection does not add blank lines.
+  sharedContent ??= {
+    head: (await fs.readFile(path.join(import.meta.dirname, 'web', 'head.html'), 'utf8')).trimEnd(),
+    logo: (await fs.readFile(path.join(import.meta.dirname, 'logo.svg'), 'utf8')).trimEnd()
+  };
+  return sharedContent;
+};
+// Populates an HTML template file with named values.
+export const populateFile = async (filePath: string, query: Record<string, string>): Promise<string> => {
   // Get the template.
-  let answerPage = await fs.readFile(path.join(dirName, 'index.html'), 'utf8');
+  let answerPage = await fs.readFile(filePath, 'utf8');
+  // Inject the markup shared by all templates.
+  const shared = await getSharedContent();
+  answerPage = answerPage
+  .replace(/__head__/g, () => shared.head)
+  .replace(/__logo__/g, () => shared.logo);
   // Replace its placeholders.
   Object.keys(query).forEach(param => {
     // A replacer function keeps $-patterns in a value from being interpreted.
@@ -386,6 +402,9 @@ export const populateTemplate = async (dirName: string, query: Record<string, st
   });
   return answerPage;
 };
+// Populates an index.html template in a directory with named values.
+export const populateTemplate = (dirName: string, query: Record<string, string>): Promise<string> =>
+  populateFile(path.join(dirName, 'index.html'), query);
 // Returns the data from a POST request. Resolves null for an unrecognized content-type or a
 // malformed JSON body; callers treat null as an unreadable request.
 export const getPOSTData = (request: import('node:http').IncomingMessage): Promise<unknown> => new Promise(resolve => {

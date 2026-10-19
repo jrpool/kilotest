@@ -6,7 +6,14 @@
 // IMPORTS
 
 import {sendAlert} from '../../alerts.ts';
-import {checkCommentDuplicate, describeMax, getEnvMax, getJSON, getNowStamp} from '../../util.ts';
+import {
+  checkCommentDuplicate,
+  describeMax,
+  getEnvMax,
+  getJSON,
+  getNowStamp,
+  populateTemplate
+} from '../../util.ts';
 import {checkCommentLength} from '../util.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -33,7 +40,7 @@ const sanitize = (str: string) => str
 
 // Returns the tutorial page.
 export const answer = async () => {
-  const answerPage = await fs.readFile(path.join(import.meta.dirname, 'index.html'), 'utf8');
+  const answerPage = await populateTemplate(import.meta.dirname, {});
   return {
     status: 'ok',
     answerPage

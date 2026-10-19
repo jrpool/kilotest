@@ -19,7 +19,7 @@ import path from 'node:path';
 
 // Adds parameters to a query for the answer page.
 const populateQuery = async (query: Record<string, any>) => {
-  const margin = ' '.repeat(8);
+  const margin = ' '.repeat(6);
   // Initialize the classes of lines.
   const lines: {requests: string[], queue: string[], claimed: string[], tested: string[]} = {
     requests: [],
@@ -35,17 +35,11 @@ const populateQuery = async (query: Record<string, any>) => {
     testRequests[url]!.forEach((req: any) => {
       const {description, reason} = req;
       // Add a line.
-      lines.requests.push(`${margin}<li><code>${url}</code> (${description}): ${reason}</li>`);
+      lines.requests.push(`${margin}  <li><code>${url}</code> (${description}): ${reason}</li>`);
     });
   });
   // Sort the lines in alphabetical order by URL and secondarily by proposed name.
   lines.requests.sort();
-  // Add the lines to the query.
-  query.requests = lines.requests.join('\n');
-  // Add a no-requests message, if applicable, to the query.
-  query.noRequests = lines.requests.length
-  ? 'Kilotest managers can <a href="enqueueForm.html">approve or reject a request</a>.'
-  : 'No requests await approval now.';
   // Get the file names of all queued and claimed jobs.
   const jobFileNames = await getJobNames();
   // For each job category:
@@ -55,15 +49,41 @@ const populateQuery = async (query: Record<string, any>) => {
       // Get the job.
       const job = await getObject(path.join(jobsPath(), category, fileName)) as {target: {url: string, what: string}};
       // Add a line.
-      lines[category].push(`${margin}<li><code>${job.target.url}</code> (${job.target.what})</li>`);
+      lines[category].push(`${margin}  <li><code>${job.target.url}</code> (${job.target.what})</li>`);
     }
-    // Add the lines to the query.
-    query[category] = lines[category].join('\n');
   }
-  // Add a no-queued message, if applicable, to the query.
-  query.noQueued = lines.queue.length ? '' : 'No pages are queued for testing.';
-  // Add a no-claimed message, if applicable, to the query.
-  query.noClaimed = lines.claimed.length ? '' : 'No pages are being tested now.';
+  // Initialize the conditional activity sections.
+  const sections: string[] = [];
+  // Add a section for the test requests, if there are any.
+  if (lines.requests.length) {
+    sections.push([
+      `${margin}<h2>Requested for testing</h2>`,
+      `${margin}<ol>`,
+      ...lines.requests,
+      `${margin}</ol>`,
+      `${margin}<p>Kilotest managers can <a href="enqueueForm.html">approve or reject a request</a>.</p>`
+    ].join('\n'));
+  }
+  // Add a section for the queued jobs, if there are any.
+  if (lines.queue.length) {
+    sections.push([
+      `${margin}<h2>Queued for testing</h2>`,
+      `${margin}<ol>`,
+      ...lines.queue,
+      `${margin}</ol>`
+    ].join('\n'));
+  }
+  // Add a section for the claimed jobs, if there are any.
+  if (lines.claimed.length) {
+    sections.push([
+      `${margin}<h2>Being tested now</h2>`,
+      `${margin}<ul>`,
+      ...lines.claimed,
+      `${margin}</ul>`
+    ].join('\n'));
+  }
+  // Add the sections to the query.
+  query.jobSections = sections.join('\n');
   // Get extracts of the latest reports about all tested pages, sorted by page description.
   const latestExtracts = await getReportExtracts(true);
   const pageCount = latestExtracts.length;

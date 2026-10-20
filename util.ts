@@ -376,17 +376,20 @@ export const getPlainText = (string: string): string => string
 .replace(/&/g, '+')
 .replace(/[<>"']/g, ' ');
 // Markup shared by populated templates, lazily read once from files.
-let sharedContent: {head: string, header: string, logo: string} | undefined;
+let sharedContent: {head: string, header: string, headerNL: string, logo: string} | undefined;
 // Returns the markup shared by populated templates.
-const getSharedContent = async (): Promise<{head: string, header: string, logo: string}> => {
+const getSharedContent = async (): Promise<{head: string, header: string, headerNL: string, logo: string}> => {
   // Trailing newlines are stripped so injection does not add blank lines.
   if (!sharedContent) {
     const webDir = path.join(import.meta.dirname, 'web');
     const logo = (await fs.readFile(path.join(import.meta.dirname, 'logo.svg'), 'utf8')).trimEnd();
-    const header = (await fs.readFile(path.join(webDir, 'header.partial'), 'utf8')).trimEnd();
+    const header = (await fs.readFile(path.join(webDir, 'header.partial'), 'utf8')).trimEnd()
+    .replace(/__logo__/g, () => logo);
     sharedContent = {
       head: (await fs.readFile(path.join(webDir, 'head.partial'), 'utf8')).trimEnd(),
-      header: header.replace(/__logo__/g, () => logo),
+      header,
+      // The home page gets the same header with its brand as text, not a link to itself.
+      headerNL: header.replace('<a class="brand" href="/">', '<span class="brand">').replace('</a>', '</span>'),
       logo
     };
   }
@@ -400,6 +403,7 @@ export const populateFile = async (filePath: string, query: Record<string, strin
   const shared = await getSharedContent();
   answerPage = answerPage
   .replace(/__head__/g, () => shared.head)
+  .replace(/__headerNL__/g, () => shared.headerNL)
   .replace(/__header__/g, () => shared.header)
   .replace(/__logo__/g, () => shared.logo);
   // Replace its placeholders.

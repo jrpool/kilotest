@@ -5,25 +5,17 @@
     <meta name="keywords" content="report,accessibility,a11y">
     <title>Pages tested | Kilotest</title>
   </head>
-  <body>
-    <main>
-      <h1>Pages tested by <a href="/">Kilotest</a></h1>
-      <h2>Requested for testing</h2>
-      <ol>
-        __requests__
-      </ol>
-      <p>__noRequests__</p>
+  <body class="styled">
+    <header>
+      <div class="header-inner">
+        <a class="brand" href="/">__logo__<span class="brand-name">Kilotest</span></a>
+        <span class="brand-tag">Ensemble front-end testing</span>
+      </div>
+    </header>
+    <main class="page">
+      <h1>Pages tested</h1>
+__jobSections__
       <p>Should Kilotest <a href="requestNewTestForm.html">test a page</a> that is not listed below?</p>
-      <h2>Queued for testing</h2>
-      <ol>
-        __queue__
-      </ol>
-      <p>__noQueued__</p>
-      <h2>Being tested now</h2>
-      <ul>
-        __claimed__
-      </ul>
-      <p>__noClaimed__</p>
       <h2>Already tested</h2>
 __testedPages__
     </main>

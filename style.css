@@ -208,7 +208,7 @@ ul.xPathList li {
   padding-left: 0;
   overflow-wrap: break-word;
 }
-body.home {
+body.styled {
   --ink: #18212b;
   --muted: #424e59;
   --accent: #005c5c;
@@ -224,37 +224,37 @@ body.home {
   color: var(--ink);
   background: var(--bg);
 }
-body.home, body.home *, body.home *::before, body.home *::after {
+body.styled, body.styled *, body.styled *::before, body.styled *::after {
   box-sizing: border-box;
 }
-body.home a {
+body.styled a {
   color: var(--accent);
   text-underline-offset: 0.15em;
 }
-body.home a:hover {
+body.styled a:hover {
   color: var(--accent-dark);
   background-color: transparent;
 }
-body.home a:focus-visible, body.home summary:focus-visible {
+body.styled a:focus-visible, body.styled summary:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
   border-radius: 4px;
 }
-body.home h2 {
+body.styled h2 {
   color: var(--ink);
   font-size: 1.4rem;
 }
-body.home li, body.home p {
+body.styled li, body.styled p {
   line-height: 1.6;
 }
-body.home p {
+body.styled p {
   margin: 0.6rem 0;
 }
-body.home header {
+body.styled header {
   background: var(--card);
   border-bottom: 1px solid var(--line);
 }
-body.home .header-inner {
+body.styled .header-inner {
   max-width: 64rem;
   margin-inline: auto;
   padding: 1.1rem 1.5rem;
@@ -262,34 +262,42 @@ body.home .header-inner {
   align-items: baseline;
   gap: 0.75rem;
 }
-body.home .brand {
+body.styled .brand {
   font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: -0.02em;
 }
-body.home .brand svg {
+body.styled a.brand {
+  color: var(--accent);
+  text-decoration: none;
+}
+body.styled a.brand .brand-name {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+body.styled .brand svg {
   width: 1.35rem;
   height: 1.35rem;
   margin-right: 0.55rem;
   vertical-align: -0.2em;
 }
-body.home .brand-tag {
+body.styled .brand-tag {
   font-size: 0.85rem;
   color: var(--muted);
 }
-body.home .hero {
+body.styled .hero {
   max-width: 64rem;
   margin-inline: auto;
   padding: 4rem 1.5rem 0;
 }
-body.home .eyebrow {
+body.styled .eyebrow {
   margin: 0 0 0.75rem;
   font-size: 0.85rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   color: var(--accent);
 }
-body.home .eyebrow::before {
+body.styled .eyebrow::before {
   content: "";
   display: inline-block;
   width: 1.4rem;
@@ -297,19 +305,19 @@ body.home .eyebrow::before {
   margin: 0 0.5rem 0.22rem 0;
   background: var(--accent);
 }
-body.home .hero h1 {
+body.styled .hero h1 {
   margin: 0 0 1rem;
   font-size: clamp(2rem, 4.5vw, 2.6rem);
   line-height: 1.5;
   letter-spacing: -0.03em;
 }
-body.home .hero .lede {
+body.styled .hero .lede {
   margin: 0 0 1.75rem;
   max-width: 52ch;
   font-size: 1.2rem;
   color: var(--muted);
 }
-body.home details {
+body.styled details {
   max-width: 52rem;
   margin: 0 0 1rem;
   padding: 0;
@@ -317,43 +325,43 @@ body.home details {
   border: 1px solid var(--line);
   border-radius: 0.75rem;
 }
-body.home summary {
+body.styled summary {
   min-height: 44px;
   padding: 0.9rem 1.25rem;
   font-weight: 600;
   cursor: pointer;
 }
-body.home summary:hover {
+body.styled summary:hover {
   background: #eef3f3;
   border-radius: 0.75rem;
 }
-body.home details[open] summary {
+body.styled details[open] summary {
   border-bottom: 1px solid var(--line);
   border-radius: 0.75rem 0.75rem 0 0;
 }
-body.home details > :not(summary) {
+body.styled details > :not(summary) {
   padding-inline: 1.25rem;
 }
-body.home details h2 {
+body.styled details h2 {
   margin: 1.5rem 0 0.5rem;
 }
-body.home details h3 {
+body.styled details h3 {
   margin: 1.35rem 0 0.35rem;
   font-size: 1.08rem;
 }
-body.home .nav-section {
+body.styled .nav-section {
   max-width: 64rem;
   margin-inline: auto;
   padding: 2.25rem 1.5rem 0;
 }
-body.home .nav-section:last-child {
+body.styled .nav-section:last-child {
   padding-bottom: 5rem;
 }
-body.home .nav-section h2 {
+body.styled .nav-section h2 {
   margin: 0 0 1.25rem;
   letter-spacing: -0.01em;
 }
-body.home ul.nav {
+body.styled ul.nav {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -361,7 +369,7 @@ body.home ul.nav {
   grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
   gap: 1rem;
 }
-body.home ul.nav a {
+body.styled ul.nav a {
   display: block;
   min-height: 44px;
   height: 100%;
@@ -372,11 +380,11 @@ body.home ul.nav a {
   text-decoration: none;
   transition: background-color 0.12s ease-out, border-color 0.12s ease-out;
 }
-body.home ul.nav a:hover {
+body.styled ul.nav a:hover {
   background: #eef4f4;
   border-color: var(--accent);
 }
-body.home .card-title {
+body.styled .card-title {
   font-weight: 700;
   font-size: 1.05rem;
   color: var(--accent);
@@ -384,23 +392,47 @@ body.home .card-title {
   text-decoration-thickness: 0.09em;
   text-underline-offset: 0.2em;
 }
-body.home .card-title::after {
+body.styled .card-title::after {
   content: "\00a0→";
   display: inline-block;
   text-decoration: none;
   font-weight: 700;
 }
-body.home ul.nav a:hover .card-title {
+body.styled ul.nav a:hover .card-title {
   text-decoration-thickness: 0.18em;
 }
-body.home .card-desc {
+body.styled .card-desc {
   display: block;
   margin: 0.4rem 0 0;
   font-size: 0.9rem;
   color: var(--muted);
 }
 @media (prefers-reduced-motion: reduce) {
-  body.home ul.nav a {
+  body.styled ul.nav a {
     transition: none;
   }
+}
+body.styled .page {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 2.5rem 1.5rem 3.5rem;
+}
+body.styled .page h1 {
+  margin: 0 0 1.5rem;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+body.styled .page h2 {
+  margin: 2rem 0 0.75rem;
+}
+body.styled .page ol, body.styled .page ul {
+  margin: 0.5rem 0 1rem;
+}
+body.styled ul.links {
+  column-width: 20rem;
+  column-gap: 2.5rem;
+}
+body.styled ul.links li {
+  margin-bottom: 0.4rem;
+  break-inside: avoid;
 }

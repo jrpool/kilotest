@@ -429,7 +429,7 @@ body.styled .page ol, body.styled .page ul {
   margin: 0.5rem 0 1rem;
 }
 body.styled ul.links {
-  column-width: 20rem;
+  columns: 16rem 3;
   column-gap: 2.5rem;
 }
 body.styled ul.links li {

@@ -218,8 +218,8 @@ body.styled {
   --line: #dde4e4;
   --focus: #005fcc;
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 1.0625rem;
+  font-family: Verdana, Tahoma, sans-serif;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--ink);
   background: var(--bg);
@@ -239,6 +239,9 @@ body.styled a:focus-visible, body.styled summary:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
   border-radius: 4px;
+}
+body.styled code {
+  font-family: SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 body.styled h2 {
   color: var(--ink);
@@ -311,7 +314,7 @@ body.styled .eyebrow::before {
 }
 body.styled .hero h1 {
   margin: 0 0 1rem;
-  font-size: clamp(2rem, 4.5vw, 2.6rem);
+  font-size: clamp(2rem, 4.5vw, 2.2rem);
   line-height: 1.5;
   letter-spacing: -0.03em;
 }

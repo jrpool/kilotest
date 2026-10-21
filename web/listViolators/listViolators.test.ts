@@ -86,7 +86,7 @@ test('listViolators includes links to listDiagnoses for violators', async () => 
 test('listViolators excludes cantTell instances from the violator count', async () => {
   const result = await answer('focusIndicationBad/260101T0000-mix');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('<li>Violators: 0</li>'));
+  assert.ok(result.answerPage.includes('<li>Results: 0 violations, 0 violators</li>'));
   assert.ok(!result.answerPage.includes('<h3>Element'));
 });
 
@@ -272,7 +272,7 @@ test('listViolators handles instances with missing catalogIndex and acts with no
     const result = await answer('linkNoText/260101T0004-nvi');
     assert.equal(result.status, 'ok');
     // Should show plural violator count.
-    assert.ok(result.answerPage.includes('<li>Violators: 2</li>'));
+    assert.ok(result.answerPage.includes('<li>Results: 2 violations, 2 violators</li>'));
   }
   finally {
     await fs.unlink(reportPath).catch(() => {});

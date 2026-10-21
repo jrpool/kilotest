@@ -330,7 +330,6 @@ export const getViolatorFactsLines = (
   report: UsableReport,
   issueID: string,
   catalogIndex: string,
-  pathID: string | null,
   margin: string,
   listClass?: string
 ): string[] => {
@@ -342,9 +341,12 @@ export const getViolatorFactsLines = (
   const text = catalogItem?.text;
   // Identify the rule engines that reported the violator for the issue.
   const reporters = new Set<string>();
-  getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex}).forEach(({act}) => {
+  let instancePathID: string | undefined;
+  getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex}).forEach(({act, instance}) => {
     reporters.add(act.which!);
+    instancePathID ??= instance.pathID;
   });
+  const pathID = getPathID(catalog, catalogIndex, instancePathID);
   const lines: string[] = [
     `${margin}<ul${listClass ? ` class="${listClass}"` : ''}>`,
     `${margin}  <li>Tag name: <code>${tagName || 'HTML'}</code></li>`

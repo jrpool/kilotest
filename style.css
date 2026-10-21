@@ -244,6 +244,10 @@ body.styled h2 {
   color: var(--ink);
   font-size: 1.4rem;
 }
+body.styled h3 {
+  color: var(--ink);
+  font-size: 1.2rem;
+}
 body.styled li, body.styled p {
   line-height: 1.6;
 }

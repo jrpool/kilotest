@@ -210,7 +210,7 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
   // Add a warning if the report is not the latest about the page.
   query.oldWarn = history.isLatest
   ? ''
-  : '<p><strong>Warning: This report is not the latest about the page.</strong> See history below.</p>';
+  : '<p class="warn"><strong>Warning: This report is not the latest about the page.</strong> See history below.</p>';
   // Add the page-facts list to the query.
   query.pageFacts = getPageFactsLines(pageInfo, issuesData, margin).join('\n');
   // Add the history of reports about the page to the query.

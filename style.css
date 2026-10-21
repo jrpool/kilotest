@@ -318,12 +318,14 @@ body.styled .hero .lede {
   color: var(--muted);
 }
 body.styled details {
-  max-width: 52rem;
   margin: 0 0 1rem;
   padding: 0;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: 0.75rem;
+}
+body.styled .hero details {
+  max-width: 52rem;
 }
 body.styled summary {
   min-height: 44px;
@@ -342,10 +344,10 @@ body.styled details[open] summary {
 body.styled details > :not(summary) {
   padding-inline: 1.25rem;
 }
-body.styled details h2 {
+body.styled .hero details h2 {
   margin: 1.5rem 0 0.5rem;
 }
-body.styled details h3 {
+body.styled .hero details h3 {
   margin: 1.35rem 0 0.35rem;
   font-size: 1.08rem;
 }
@@ -435,4 +437,25 @@ body.styled ul.links {
 body.styled ul.links li {
   margin-bottom: 0.4rem;
   break-inside: avoid;
+}
+body.styled .page h3 {
+  margin: 1.25rem 0 0.4rem;
+}
+body.styled .page blockquote {
+  margin: 0.75rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--line);
+  color: var(--muted);
+}
+body.styled .page ul.headed > li + li {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+body.styled .warn {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  background: #fdf6e3;
+  border: 1px solid #e8d48b;
+  border-radius: 0.5rem;
 }

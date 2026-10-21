@@ -283,20 +283,8 @@ export const getPageFactsLines = (
   `${margin}<ul>`,
   `${margin}  <li>URL: ${strings.urlLink}</li>`,
   `${margin}  <li>${strings.testInfo}</li>`,
-  `${margin}  <li>Summary of results:`,
-  `${margin}    <ul>`,
-  `${margin}      <li>Rule engines:`,
-  `${margin}        <ul>`,
-  `${margin}          <li>Called: ${summary.engineCount}</li>`,
-  `${margin}          <li>Were able to test: ${summary.testedEngineCount}</li>`,
-  `${margin}          <li>Reported any rule violations: ${summary.reporterCount}</li>`,
-  `${margin}        </ul>`,
-  `${margin}      </li>`,
-  `${margin}      <li>Violations: ${summary.violationCount}</li>`,
-  `${margin}      <li>Violators: ${summary.violatorCount}</li>`,
-  `${margin}      <li>Issues: ${summary.issueCount}</li>`,
-  `${margin}    </ul>`,
-  `${margin}  </li>`,
+  `${margin}  <li>Rule engines: ${summary.engineCount} called, ${summary.testedEngineCount} able to test, ${summary.reporterCount} reported any violations</li>`,
+  `${margin}  <li>Violations: ${summary.violationCount}. Violators: ${summary.violatorCount}. Issues: ${summary.issueCount}</li>`,
   `${margin}  <li>${strings.fullReportLink}</li>`,
   `${margin}</ul>`
 ];
@@ -328,8 +316,7 @@ export const getIssueFactsLines = (
     `${margin}  <li>Priority: ${getWeightName(weight)}</li>`,
     `${margin}  <li>Related WCAG standard: <a href="${getWCAGLink(wcag)}">${wcag}</a></li>`,
     `${margin}  <li>Reported by ${reporterString} (${getEngineNamesString(reporters)})</li>`,
-    `${margin}  <li>Violations: ${violationCount}</li>`,
-    `${margin}  <li>Violators: ${violatorIndexes.size}</li>`,
+    `${margin}  <li>Violations: ${violationCount}. Violators: ${violatorIndexes.size}</li>`,
     `${margin}</ul>`
   ];
 };

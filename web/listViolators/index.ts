@@ -97,7 +97,6 @@ const populateQuery = async (
     lines.push(`${margin}<li><h3>Element ${catalogIndex}</h3>`);
     // Add the violator facts to the lines.
     lines.push(...getViolatorFactsLines(report, issueID, catalogIndex, pathID, `${margin}  `, 'pseudoTopLevel'));
-    lines.push(`${margin}  <ul class="nav">`);
     if (catalogIndex) {
       const catalogItem = catalog[catalogIndex];
       if (catalogItem?.textLinkable) {
@@ -105,7 +104,7 @@ const populateQuery = async (
         const href = getTextFragmentHref(catalogItem.text as string, url);
         const label = `Take me to element ${catalogIndex} on the page (in a new tab)`;
         const takeMeLink = `<a href="${href}" target="_blank" aria-label="${label}">Take me there</a>`;
-        lines.push(`${margin}    <li>${takeMeLink}</li>`);
+        lines.push(`${margin}  <p class="links">${takeMeLink}</p>`);
       }
     }
     const href
@@ -113,9 +112,8 @@ const populateQuery = async (
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(
-      `${margin}    <li><a href="${href}" aria-label="${labelString}">${questionString}?</a></li>`
+      `${margin}  <p class="links"><a href="${href}" aria-label="${labelString}">${questionString}?</a></p>`
     );
-    lines.push(`${margin}  </ul>`);
     lines.push(`${margin}</li>`);
   });
   // Add the lines to the query.

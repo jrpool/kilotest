@@ -243,17 +243,13 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
         detailsLines.push(
           ...getIssueFactsLines(report, issueID, `${margin}    `, 'pseudoTopLevel')
         );
-        // Add the start of a link list to the lines.
-        detailsLines.push(`${margin}    <ul class="nav">`);
+        // Add a violations link to the lines.
         const whereQuestionString = 'Where was the issue found?';
         const labelString = `The ${description} page exhibits the ${summary} issue. Where was the issue found?`;
         const href = `href="/listViolators.html/${issueID}/${reportID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
-        // Add a violations link to the lines.
-        detailsLines.push(`${margin}      <li>${whereLink}</li>`);
-        // Add the end of the link list to the lines.
-        detailsLines.push(`${margin}    </ul>`);
+        detailsLines.push(`${margin}    <p class="links">${whereLink}</p>`);
         // Add the end of the list item to the lines.
         detailsLines.push(`${margin}  </li>`);
       });

@@ -321,7 +321,7 @@ export const getIssueFactsLines = (
     `${margin}  <li>Priority: ${getWeightName(weight)}</li>`,
     `${margin}  <li>Related WCAG standard: <a href="${getWCAGLink(wcag)}">${wcag}</a></li>`,
     `${margin}  <li>Reported by ${reporterString} (${getEngineNamesString(reporters)})</li>`,
-    `${margin}  <li>Violations: ${violationCount}. Violators: ${violatorIndexes.size}</li>`,
+    `${margin}  <li>Results: ${getCountString(violationCount, 'violation', 'violations')}, ${getCountString(violatorIndexes.size, 'violator', 'violators')}</li>`,
     `${margin}</ul>`
   ];
 };

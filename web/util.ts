@@ -252,7 +252,7 @@ export const getReportData = (report: UsableReport): ReportData => {
 export const getPageData = (report: UsableReport): PageData => {
   const {what: description, url} = report.target;
   // Get the elapsed time in days since the report was completed.
-  const daysAgo = getAgoDays(getReportEndTime(report));
+  const daysAgo = getAgoDays(getReportEndTime(report))!;
   // Return the data.
   return {
     description,
@@ -270,7 +270,7 @@ export const getPageDataStrings = (report: UsableReport): PageDataStrings => {
     description,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${report.id}</code>`,
+    testInfo: `Tested ${getCountString(daysAgo!, 'day', 'days')} ago on ${when} by job <code>${report.id}</code>`,
     fullReportLink: `<a href="/fullReport.json/${report.id}">Download the full technical report</a> (JSON)`
   };
 };
@@ -279,27 +279,20 @@ export const getPageFactsLines = (
   strings: PageDataStrings,
   summary: ResultsSummary,
   margin: string
-): string[] => [
-  `${margin}<ul>`,
-  `${margin}  <li>URL: ${strings.urlLink}</li>`,
-  `${margin}  <li>${strings.testInfo}</li>`,
-  `${margin}  <li>Summary of results:`,
-  `${margin}    <ul>`,
-  `${margin}      <li>Rule engines:`,
-  `${margin}        <ul>`,
-  `${margin}          <li>Called: ${summary.engineCount}</li>`,
-  `${margin}          <li>Were able to test: ${summary.testedEngineCount}</li>`,
-  `${margin}          <li>Reported any rule violations: ${summary.reporterCount}</li>`,
-  `${margin}        </ul>`,
-  `${margin}      </li>`,
-  `${margin}      <li>Violations: ${summary.violationCount}</li>`,
-  `${margin}      <li>Violators: ${summary.violatorCount}</li>`,
-  `${margin}      <li>Issues: ${summary.issueCount}</li>`,
-  `${margin}    </ul>`,
-  `${margin}  </li>`,
-  `${margin}  <li>${strings.fullReportLink}</li>`,
-  `${margin}</ul>`
-];
+): string[] => {
+  const {
+    engineCount, issueCount, reporterCount, testedEngineCount, violationCount, violatorCount
+  } = summary;
+  return [
+    `${margin}<ul>`,
+    `${margin}  <li>URL: ${strings.urlLink}</li>`,
+    `${margin}  <li>${strings.testInfo}</li>`,
+    `${margin}  <li>Rule engines: ${engineCount} called, ${testedEngineCount} able to test, ${reporterCount} reported any violations</li>`,
+    `${margin}  <li>Results: ${getCountString(violationCount, 'violation', 'violations')}, ${getCountString(violatorCount, 'violator', 'violators')}, ${getCountString(issueCount, 'issue', 'issues')}</li>`,
+    `${margin}  <li>${strings.fullReportLink}</li>`,
+    `${margin}</ul>`
+  ];
+};
 // Returns the lines of a list of facts about an issue in an available report.
 export const getIssueFactsLines = (
   report: UsableReport,
@@ -328,8 +321,7 @@ export const getIssueFactsLines = (
     `${margin}  <li>Priority: ${getWeightName(weight)}</li>`,
     `${margin}  <li>Related WCAG standard: <a href="${getWCAGLink(wcag)}">${wcag}</a></li>`,
     `${margin}  <li>Reported by ${reporterString} (${getEngineNamesString(reporters)})</li>`,
-    `${margin}  <li>Violations: ${violationCount}</li>`,
-    `${margin}  <li>Violators: ${violatorIndexes.size}</li>`,
+    `${margin}  <li>Results: ${getCountString(violationCount, 'violation', 'violations')}, ${getCountString(violatorIndexes.size, 'violator', 'violators')}</li>`,
     `${margin}</ul>`
   ];
 };
@@ -338,7 +330,6 @@ export const getViolatorFactsLines = (
   report: UsableReport,
   issueID: string,
   catalogIndex: string,
-  pathID: string | null,
   margin: string,
   listClass?: string
 ): string[] => {
@@ -350,9 +341,12 @@ export const getViolatorFactsLines = (
   const text = catalogItem?.text;
   // Identify the rule engines that reported the violator for the issue.
   const reporters = new Set<string>();
-  getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex}).forEach(({act}) => {
+  let instancePathID: string | undefined;
+  getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex}).forEach(({act, instance}) => {
     reporters.add(act.which!);
+    instancePathID ??= instance.pathID;
   });
+  const pathID = catalogItem?.pathID || instancePathID;
   const lines: string[] = [
     `${margin}<ul${listClass ? ` class="${listClass}"` : ''}>`,
     `${margin}  <li>Tag name: <code>${tagName || 'HTML'}</code></li>`

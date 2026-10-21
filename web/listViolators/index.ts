@@ -92,11 +92,11 @@ const populateQuery = async (
   let takeMeAdviceNeeded = false;
   // For each violator:
   violators.forEach((violator: any, index: number) => {
-    const {catalogIndex, pathID} = violator;
+    const {catalogIndex} = violator;
     // Add a heading to the lines.
     lines.push(`${margin}<li><h3>Element ${catalogIndex}</h3>`);
     // Add the violator facts to the lines.
-    lines.push(...getViolatorFactsLines(report, issueID, catalogIndex, pathID, `${margin}  `, 'pseudoTopLevel'));
+    lines.push(...getViolatorFactsLines(report, issueID, catalogIndex, `${margin}  `, 'pseudoTopLevel'));
     if (catalogIndex) {
       const catalogItem = catalog[catalogIndex];
       if (catalogItem?.textLinkable) {
@@ -107,8 +107,7 @@ const populateQuery = async (
         lines.push(`${margin}  <p class="links">${takeMeLink}</p>`);
       }
     }
-    const href
-    = `/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}?pathID=${encodeURIComponent(pathID)}`;
+    const href = `/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}`;
     const questionString = 'What diagnoses were reported';
     const labelString = `${questionString} for violator ${index + 1}?`;
     lines.push(

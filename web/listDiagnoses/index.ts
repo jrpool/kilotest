@@ -30,7 +30,6 @@ const populateQuery = async (
   issueID: string,
   reportID: string,
   catalogIndex: string,
-  pathID: string | null,
   query: Record<string, any>
 ) => {
   // Get the report.
@@ -81,7 +80,7 @@ const populateQuery = async (
   }
   // Otherwise, i.e. if it succeeded, add the issue-facts and violator-facts lists to the query.
   query.issueFacts = getIssueFactsLines(report, issueID, margin).join('\n');
-  query.violatorFacts = getViolatorFactsLines(report, issueID, catalogIndex, pathID, margin).join('\n');
+  query.violatorFacts = getViolatorFactsLines(report, issueID, catalogIndex, margin).join('\n');
   // Initialize an array of diagnoses.
   const diagnoses: any[] = [];
   // For each violating standard instance that pertains to this combination of issue and violator:
@@ -111,13 +110,11 @@ const populateQuery = async (
   query.diagnoses = lines.join('\n');
 };
 // Returns a page answering the diagnoses question.
-export const answer = async (pageArgs: string, search: string) => {
+export const answer = async (pageArgs: string) => {
   const [issueID, reportID, catalogIndex] = pageArgs.split('/') as [string, string, string];
-  const params = new URLSearchParams(search);
-  const pathID = params.get('pathID');
   const query: Record<string, any> = {};
   // Create a query to replace the placeholders.
-  await populateQuery(issueID, reportID, catalogIndex, pathID, query);
+  await populateQuery(issueID, reportID, catalogIndex, query);
   // If this failed:
   if (query.error) {
     // Return why.

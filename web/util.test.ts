@@ -215,10 +215,8 @@ test('getPageFactsLines returns the about-page list lines for a report', async (
   const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '  ');
   const html = lines.join('\n');
   assert.ok(html.includes('<li>URL: <a href="https://example.com/mixed">'));
-  assert.ok(html.includes('<li>Summary of results:'));
-  assert.ok(html.includes('<li>Called: 2</li>'));
-  assert.ok(html.includes('<li>Violations: 3</li>'));
-  assert.ok(html.includes('<li>Issues: 2</li>'));
+  assert.ok(html.includes('<li>Rule engines: 2 called, 2 able to test, 2 reported any violations</li>'));
+  assert.ok(html.includes('<li>Results: 3 violations, 2 violators, 2 issues</li>'));
 });
 
 test('getPageFactsLines ends with a link to download the full report', async () => {
@@ -227,7 +225,7 @@ test('getPageFactsLines ends with a link to download the full report', async () 
   const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
   const topItems = parse(lines.join('\n')).querySelectorAll('ul:not(ul ul) > li');
   const lastItem = topItems[topItems.length - 1]!;
-  assert.ok(topItems[topItems.length - 2]!.text.trim().startsWith('Summary of results:'));
+  assert.ok(topItems[topItems.length - 2]!.text.trim().startsWith('Results:'));
   assert.equal(lastItem.querySelector('a')?.getAttribute('href'), '/fullReport.json/260101T0000-mix');
   assert.equal(lastItem.text.trim(), 'Download the full technical report (JSON)');
 });
@@ -237,28 +235,28 @@ const getResultFacts = async (reportID: string) => {
   const {getReportData} = await import('./util.ts');
   const report = await getFixtureReport(reportID);
   const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
-  const items = parse(lines.join('\n')).querySelectorAll('li');
-  const itemTexts: string[] = items.map(li => li.text.trim());
-  const getAmount = (label: string) => {
-    const text = itemTexts.find(t => t.startsWith(`${label}: `));
-    assert.ok(text, `${label} item exists`);
-    return Number(text.slice(label.length + 2));
-  };
-  // The summary item is the parent of the rule-engine item and the 3 amount items.
-  const summaryItem = items.find(li => li.text.trim().startsWith('Summary of results:'));
-  assert.ok(summaryItem, 'Summary of results item exists');
-  const summaryList = summaryItem.querySelector('ul')!;
-  const amountLabels = summaryList.childNodes
-  .filter((node: any) => node.tagName === 'LI')
-  .map(li => li.text.trim().split(':')[0]);
+  const itemTexts: string[] = parse(lines.join('\n'))
+  .querySelectorAll('li')
+  .map(li => li.text.trim());
+  const enginesItem = itemTexts.find(t => t.startsWith('Rule engines: '));
+  assert.ok(enginesItem, 'Rule engines item exists');
+  const engineAmounts = enginesItem.match(
+    /^Rule engines: (\d+) called, (\d+) able to test, (\d+) reported any violations$/
+  );
+  assert.ok(engineAmounts, 'Rule engines item has the expected format');
+  const resultsItem = itemTexts.find(t => t.startsWith('Results: '));
+  assert.ok(resultsItem, 'Results item exists');
+  const resultAmounts = resultsItem.match(
+    /^Results: (\d+) violations?, (\d+) violators?, (\d+) issues?$/
+  );
+  assert.ok(resultAmounts, 'Results item has the expected format');
   return {
-    called: getAmount('Called'),
-    tested: getAmount('Were able to test'),
-    reporters: getAmount('Reported any rule violations'),
-    amountLabels,
-    violations: getAmount('Violations'),
-    violators: getAmount('Violators'),
-    issues: getAmount('Issues')
+    called: Number(engineAmounts[1]),
+    tested: Number(engineAmounts[2]),
+    reporters: Number(engineAmounts[3]),
+    violations: Number(resultAmounts[1]),
+    violators: Number(resultAmounts[2]),
+    issues: Number(resultAmounts[3])
   };
 };
 
@@ -281,7 +279,6 @@ for (const [reportID, called, tested, reporters, violations, violators, issues] 
     assert.equal(facts.called, called);
     assert.equal(facts.tested, tested);
     assert.equal(facts.reporters, reporters);
-    assert.deepEqual(facts.amountLabels, ['Rule engines', 'Violations', 'Violators', 'Issues']);
     assert.equal(facts.violations, violations);
     assert.equal(facts.violators, violators);
     assert.equal(facts.issues, issues);
@@ -297,14 +294,13 @@ test('getIssueFactsLines returns the about-issue list lines for a report', async
   assert.ok(html.includes('<li>Priority:'));
   assert.ok(html.includes('<li>Related WCAG standard: <a href='));
   assert.ok(html.includes('<li>Reported by'));
-  assert.ok(html.includes('<li>Violations:'));
-  assert.ok(html.includes('<li>Violators:'));
+  assert.ok(/<li>Results: \d+ violations?, \d+ violators?<\/li>/.test(html));
 });
 
 test('getViolatorFactsLines returns the about-violator list lines for a report', async () => {
   const {getViolatorFactsLines} = await import('./util.ts');
   const report = await getFixtureReport('260101T0000-mix');
-  const lines = getViolatorFactsLines(report, 'linkNoText', '0', null, '  ');
+  const lines = getViolatorFactsLines(report, 'linkNoText', '0', '  ');
   const html = lines.join('\n');
   assert.ok(html.includes('<li>Tag name: <code>'));
   assert.ok(html.includes('<li>Text:'));

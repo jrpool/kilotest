@@ -108,17 +108,13 @@ test('listIssues for the empty report shows no issue links', async () => {
 test('listIssues counts the prevented rule engine as called but not able to test', async () => {
   const result = await answer('260101T0006-prv');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('<li>Called: 2</li>'));
-  assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
-  assert.ok(result.answerPage.includes('<li>Reported any rule violations: 1</li>'));
+  assert.ok(result.answerPage.includes('<li>Rule engines: 2 called, 1 able to test, 1 reported any violations</li>'));
 });
 
 test('listIssues counts a rule engine that reported no violations as called and able to test', async () => {
   const result = await answer('260101T0005-emp');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('<li>Called: 1</li>'));
-  assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
-  assert.ok(result.answerPage.includes('<li>Reported any rule violations: 0</li>'));
+  assert.ok(result.answerPage.includes('<li>Rule engines: 1 called, 1 able to test, 0 reported any violations</li>'));
 });
 
 test('listIssues counts an unknown prevented engine as called but not able to test', async () => {
@@ -131,8 +127,7 @@ test('listIssues counts an unknown prevented engine as called but not able to te
   try {
     const result = await answer('260103T0000-unk');
     assert.equal(result.status, 'ok');
-    assert.ok(result.answerPage.includes('<li>Called: 3</li>'));
-    assert.ok(result.answerPage.includes('<li>Were able to test: 1</li>'));
+    assert.ok(result.answerPage.includes('<li>Rule engines: 3 called, 1 able to test, 1 reported any violations</li>'));
   }
   finally {
     await fs.unlink(reportPath);
@@ -171,8 +166,7 @@ test('listIssues shows violation and violator counts for an issue with multiple 
   // The mul report has linkNoText with 4 violations by 3 violators.
   const result = await answer('260101T0008-mul');
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('<li>Violations: 4</li>'));
-  assert.ok(result.answerPage.includes('<li>Violators: 3</li>'));
+  assert.ok(result.answerPage.includes('<li>Results: 4 violations, 3 violators</li>'));
 });
 
 test('listIssues handles acts with no standardResult instances', async () => {

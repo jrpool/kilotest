@@ -62,7 +62,7 @@ const populateQuery = async (
     const href = getTextFragmentHref(catalogItem.text as string, url);
     const label = `Take me there (to element ${catalogIndex})`;
     const link = `<a href="${href}" aria-label="${label}">Take me there</a>`;
-    query.takeMeThere = `${margin}    <li>${link}</li>`;
+    query.takeMeThere = `${margin}<p class="links">${link}</p>`;
   }
   else {
     query.takeMeThere = '';

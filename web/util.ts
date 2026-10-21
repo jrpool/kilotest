@@ -346,7 +346,7 @@ export const getViolatorFactsLines = (
     reporters.add(act.which!);
     instancePathID ??= instance.pathID;
   });
-  const pathID = getPathID(catalog, catalogIndex, instancePathID);
+  const pathID = catalogItem?.pathID || instancePathID;
   const lines: string[] = [
     `${margin}<ul${listClass ? ` class="${listClass}"` : ''}>`,
     `${margin}  <li>Tag name: <code>${tagName || 'HTML'}</code></li>`

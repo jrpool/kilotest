@@ -252,7 +252,7 @@ export const getReportData = (report: UsableReport): ReportData => {
 export const getPageData = (report: UsableReport): PageData => {
   const {what: description, url} = report.target;
   // Get the elapsed time in days since the report was completed.
-  const daysAgo = getAgoDays(getReportEndTime(report));
+  const daysAgo = getAgoDays(getReportEndTime(report))!;
   // Return the data.
   return {
     description,
@@ -270,7 +270,7 @@ export const getPageDataStrings = (report: UsableReport): PageDataStrings => {
     description,
     url,
     urlLink: `<a href="${url}">${url}</a>`,
-    testInfo: `Tested ${daysAgo === 1 ? '1 day' : `${daysAgo} days`} ago on ${when} by job <code>${report.id}</code>`,
+    testInfo: `Tested ${getCountString(daysAgo!, 'day', 'days')} ago on ${when} by job <code>${report.id}</code>`,
     fullReportLink: `<a href="/fullReport.json/${report.id}">Download the full technical report</a> (JSON)`
   };
 };
@@ -279,15 +279,20 @@ export const getPageFactsLines = (
   strings: PageDataStrings,
   summary: ResultsSummary,
   margin: string
-): string[] => [
-  `${margin}<ul>`,
-  `${margin}  <li>URL: ${strings.urlLink}</li>`,
-  `${margin}  <li>${strings.testInfo}</li>`,
-  `${margin}  <li>Rule engines: ${summary.engineCount} called, ${summary.testedEngineCount} able to test, ${summary.reporterCount} reported any violations</li>`,
-  `${margin}  <li>Violations: ${summary.violationCount}. Violators: ${summary.violatorCount}. Issues: ${summary.issueCount}</li>`,
-  `${margin}  <li>${strings.fullReportLink}</li>`,
-  `${margin}</ul>`
-];
+): string[] => {
+  const {
+    engineCount, issueCount, reporterCount, testedEngineCount, violationCount, violatorCount
+  } = summary;
+  return [
+    `${margin}<ul>`,
+    `${margin}  <li>URL: ${strings.urlLink}</li>`,
+    `${margin}  <li>${strings.testInfo}</li>`,
+    `${margin}  <li>Rule engines: ${engineCount} called, ${testedEngineCount} able to test, ${reporterCount} reported any violations</li>`,
+    `${margin}  <li>Results: ${getCountString(violationCount, 'violation', 'violations')}, ${getCountString(violatorCount, 'violator', 'violators')}, ${getCountString(issueCount, 'issue', 'issues')}</li>`,
+    `${margin}  <li>${strings.fullReportLink}</li>`,
+    `${margin}</ul>`
+  ];
+};
 // Returns the lines of a list of facts about an issue in an available report.
 export const getIssueFactsLines = (
   report: UsableReport,

@@ -210,7 +210,7 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
   // Add a warning if the report is not the latest about the page.
   query.oldWarn = history.isLatest
   ? ''
-  : '<p><strong>Warning: This report is not the latest about the page.</strong> See history below.</p>';
+  : '<p class="warn"><strong>Warning: This report is not the latest about the page.</strong> See history below.</p>';
   // Add the page-facts list to the query.
   query.pageFacts = getPageFactsLines(pageInfo, issuesData, margin).join('\n');
   // Add the history of reports about the page to the query.
@@ -243,17 +243,13 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
         detailsLines.push(
           ...getIssueFactsLines(report, issueID, `${margin}    `, 'pseudoTopLevel')
         );
-        // Add the start of a link list to the lines.
-        detailsLines.push(`${margin}    <ul class="nav">`);
+        // Add a violations link to the lines.
         const whereQuestionString = 'Where was the issue found?';
         const labelString = `The ${description} page exhibits the ${summary} issue. Where was the issue found?`;
         const href = `href="/listViolators.html/${issueID}/${reportID}"`;
         const label = `aria-label="${labelString}"`;
         const whereLink = `<a ${href} ${label}>${whereQuestionString}</a>`;
-        // Add a violations link to the lines.
-        detailsLines.push(`${margin}      <li>${whereLink}</li>`);
-        // Add the end of the link list to the lines.
-        detailsLines.push(`${margin}    </ul>`);
+        detailsLines.push(`${margin}    <p class="links">${whereLink}</p>`);
         // Add the end of the list item to the lines.
         detailsLines.push(`${margin}  </li>`);
       });

@@ -13,11 +13,27 @@
       <h2>Purpose</h2>
       <p>This tutorial shows you how to make Kilotest available to assistants powered by artificial intelligence. Suppose:</p>
       <ul>
-        <li>You use an AI platform, like Claude, Mistral Vibe, or Perplexity Pro.</li>
+        <li>You use an AI platform, like ChatGPT, Claude, Gemini, Grok, Manus, Mistral Vibe, or Perplexity Pro.</li>
         <li>You want to audit the quality of a web page.</li>
       </ul>
       <p>Then the models on your AI platform can use Kilotest <strong>if</strong> you make Kilotest available on the platform.</p>
       <h2>Platform instructions</h2>
+      <details id="chatgpt">
+        <summary>ChatGPT Plus or Pro in a browser</summary>
+        <p>These instructions apply to <a href="https://chatgpt.com">ChatGPT</a> on the Plus or Pro plan. Custom-app support on consumer plans is new and still changing; these instructions will be simplified once Kilotest is listed in the ChatGPT app directory.</p>
+        <ol>
+          <li>Open the <q>Plugins</q> page.</li>
+          <li>Click the <q>+</q> button.</li>
+          <li>Click <q>Add custom MCP server</q>.</li>
+          <li>Enter <q>Kilotest</q> into the <q>Name</q> input.</li>
+          <li>Under <q>Connection</q>, enter <q>https://kilotest.com/mcp</q> into the <q>Server URL</q> input.</li>
+          <li>Set the authentication to <q>No authentication</q>.</li>
+          <li>Check the <q>I understand and want to continue</q> checkbox.</li>
+          <li>Click the <q>Create as a plugin</q> button.</li>
+          <li>Review the discovered tools and metadata, then install the plugin.</li>
+        </ol>
+        <p>To use Kilotest in a conversation, enter <q>@</q> in the prompt input and select <q>Kilotest</q>.</p>
+      </details>
       <details id="claude">
         <summary>Claude.ai in a browser or Claude Desktop</summary>
         <p>These instructions apply to <a href="https://claude.ai">Claude.ai in a browser</a> and <a href="https://downloads.claude.com">Claude Desktop</a>.</p>
@@ -30,6 +46,43 @@
           <li>Select <q>Kilotest</q> from the search results.</li>
           <li>Click the <q>Connect to Claude</q> button.</li>
           <li>If you wish, click the <q>Your tool permissions</q> button and adjust the settings for the Kilotest tools.</li>
+        </ol>
+      </details>
+      <details id="gemini">
+        <summary>Google Gemini in a browser</summary>
+        <p>These instructions apply to <a href="https://gemini.google.com">Gemini</a> if you are at least 18 years old, are in the United States, are signed in to a personal (not a work or school) Google Account with the <q>Keep Activity</q> setting on, and are using English. Google is rolling out custom apps gradually; on some plans the <q>Custom apps</q> section requires a Google AI Pro or Ultra subscription.</p>
+        <ol>
+          <li>Click the <q>Settings</q> button at the bottom left.</li>
+          <li>Click <q>Connected Apps</q>. If you do not see it, click <q>Personal Intelligence</q> first.</li>
+          <li>Under <q>Custom apps</q>, click <q>Add a custom app</q>.</li>
+          <li>Enter <q>https://kilotest.com/mcp</q> as the MCP server URL.</li>
+          <li>Click <q>Next</q>.</li>
+          <li>Follow the on-screen instructions and approve the connection.</li>
+        </ol>
+        <p>Once you add Kilotest, it also becomes available in the Gemini app on your mobile device. To make Gemini use Kilotest for a prompt, enter <q>@</q> and select Kilotest.</p>
+      </details>
+      <details id="grok">
+        <summary>Grok</summary>
+        <p>These instructions apply to <a href="https://grok.com">Grok</a> on any plan, including the free plan.</p>
+        <ol>
+          <li>Open the <q>Connectors</q> page.</li>
+          <li>Click the <q>New Connector</q> button.</li>
+          <li>Click <q>Custom</q>.</li>
+          <li>Enter <q>Kilotest</q> as the name.</li>
+          <li>Enter <q>https://kilotest.com/mcp</q> as the server address.</li>
+          <li>Save the connector.</li>
+        </ol>
+      </details>
+      <details id="manus">
+        <summary>Manus</summary>
+        <p>These instructions apply to <a href="https://manus.im">Manus</a>.</p>
+        <ol>
+          <li>Open <q>Connectors</q>.</li>
+          <li>Click <q>Create</q>.</li>
+          <li>Click <q>Add MCP by URL</q>.</li>
+          <li>Enter <q>Kilotest</q> into the <q>Server name</q> input.</li>
+          <li>Enter <q>https://kilotest.com/mcp</q> into the <q>Server URL</q> input.</li>
+          <li>Save the connector.</li>
         </ol>
       </details>
       <details id="vibe">
@@ -49,12 +102,11 @@
         <summary>Perplexity Pro in a browser</summary>
         <p>These instructions apply to <a href="https://www.perplexity.ai/">Perplexity</a> Pro in a browser.</p>
         <ol>
-          <li>After signing in, click the <q>Customize</q> button in the left sidebar.</li>
-          <li>Click the <q>+ Custom connector</q> menu button.</li>
-          <li>Click the <q>Add MCP connector</q> menu item.</li>
+          <li>After signing in, open the <q>Plugins</q> menu.</li>
+          <li>Click <q>Add custom</q>, then <q>Connector</q>.</li>
+          <li>Click <q>Add MCP connector</q>, then <q>Remote</q>.</li>
           <li>Enter <q>Kilotest</q> into the <q>Name</q> input.</li>
           <li>Enter <q>https://kilotest.com/mcp</q> into the <q>MCP server URL</q> input.</li>
-          <li>Click the <q>Advanced</q> menu button to open the advanced settings.</li>
           <li>Under <q>Authentication</q>, change the authentication type to <q>None</q>.</li>
           <li>Check the <q>I understand &hellip;</q> checkbox.</li>
           <li>Click the <q>Add</q> button.</li>

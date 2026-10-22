@@ -351,6 +351,9 @@ body.styled details[open] summary {
 body.styled details > :not(summary) {
   padding-inline: 1.25rem;
 }
+body.styled details > :is(ol, ul):not([class]) {
+  padding-inline-start: 2.75rem;
+}
 body.styled .hero details h2 {
   margin: 1.5rem 0 0.5rem;
 }

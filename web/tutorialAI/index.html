@@ -4,38 +4,35 @@
     __head__
     <meta name="keywords" content="large language models,tools,model context protocol">
     <meta name="description" content="Kilotest tutorial: how to connect an AI platform to Kilotest for technical analysis">
-    <title>Connect an AI Platform | Kilotest</title>
+    <title>Kilotest and AI</title>
   </head>
   <body class="styled">
     __header__
     <main class="page">
-      <h1>Connect an AI Platform</h1>
-      <h2>Purpose</h2>
-      <p>This tutorial shows you how to make Kilotest available to assistants powered by artificial intelligence. Suppose:</p>
-      <ul>
-        <li>You use an AI platform, like ChatGPT, Claude, Gemini, Grok, Manus, Mistral Vibe, or Perplexity Pro.</li>
-        <li>You want to audit the quality of a web page.</li>
-      </ul>
-      <p>Then the models on your AI platform can use Kilotest <strong>if</strong> you make Kilotest available on the platform.</p>
-      <h2>Platform instructions</h2>
+      <h1>Kilotest and AI</h1>
+      <h2>Introduction</h2>
+      <p>Kilotest is designed for use by artificial intelligence. When you ask AI assistants to help you diagnose and improve web quality, they can use Kilotest for the most complete and accurate results. This guide tells you how to make Kilotest available on AI platforms.</p>
+      <h2>Step-by-step instructions</h2>
       <details id="chatgpt">
-        <summary>ChatGPT Plus or Pro in a browser</summary>
-        <p>These instructions apply to <a href="https://chatgpt.com">ChatGPT</a> on the Plus or Pro plan. Custom-app support on consumer plans is new and still changing; these instructions will be simplified once Kilotest is listed in the ChatGPT app directory.</p>
+        <summary>ChatGPT</summary>
+        <p>These instructions apply to <a href="https://chatgpt.com">ChatGPT</a>Plus and Pro plans used in a web browser.</p>
         <ol>
-          <li>Open the <q>Plugins</q> page.</li>
-          <li>Click the <q>+</q> button.</li>
-          <li>Click <q>Add custom MCP server</q>.</li>
-          <li>Enter <q>Kilotest</q> into the <q>Name</q> input.</li>
-          <li>Under <q>Connection</q>, enter <q>https://kilotest.com/mcp</q> into the <q>Server URL</q> input.</li>
-          <li>Set the authentication to <q>No authentication</q>.</li>
-          <li>Check the <q>I understand and want to continue</q> checkbox.</li>
-          <li>Click the <q>Create as a plugin</q> button.</li>
-          <li>Review the discovered tools and metadata, then install the plugin.</li>
+          <li>Click <q>Plugins</q> in the sidebar.</li>
+          <li>In the <q>Add</q> list, select <q>Add custom MCP server</q>.</li>
+          <li>Enter <q>Kilotest</q> as the <q>Name</q>.</li>
+          <li>Enter <q>Test web-page quality</q> as the <q>Description</q>.</li>
+          <li>Enter <q>https://kilotest.com/mcp</q> as the Server URL <q>Connection</q>.</li>
+          <li>Set the <q>Authentication</q> to <q>No authentication</q>.</li>
+          <li>Check <q>I understand and want to continue</q>.</li>
+          <li>Click <q>Create as a plugin</q>.</li>
+          <li>Wait for the plugin to load.</li>
+          <li>Click <q>Connect Kilotest</q>.</li>
+          <li><q>Kilotest is now connected</q> will appear and disappear.</li>
         </ol>
-        <p>To use Kilotest in a conversation, enter <q>@</q> in the prompt input and select <q>Kilotest</q>.</p>
+        <p>ChatGPT can then use Kilotest to answer your questions. To say you want it used, you can enter <q>@ Kilotest</q> as the start of any message.</p>
       </details>
       <details id="claude">
-        <summary>Claude.ai in a browser or Claude Desktop</summary>
+        <summary>Claude</summary>
         <p>These instructions apply to <a href="https://claude.ai">Claude.ai in a browser</a> and <a href="https://downloads.claude.com">Claude Desktop</a>.</p>
         <ol>
           <li><a href="https://claude.ai/new">Start a new task</a>.</li>
@@ -49,8 +46,8 @@
         </ol>
       </details>
       <details id="gemini">
-        <summary>Google Gemini in a browser</summary>
-        <p>These instructions apply to <a href="https://gemini.google.com">Gemini</a> if you are at least 18 years old, are in the United States, are signed in to a personal (not a work or school) Google Account with the <q>Keep Activity</q> setting on, and are using English. Google is rolling out custom apps gradually; on some plans the <q>Custom apps</q> section requires a Google AI Pro or Ultra subscription.</p>
+        <summary>Gemini</summary>
+        <p>These instructions apply to Google <a href="https://gemini.google.com">Gemini</a> in a browser, if you are at least 18 years old, are in the United States, are signed in to a personal (not a work or school) Google Account with the <q>Keep Activity</q> setting on, and are using English. Google is rolling out custom apps gradually; on some plans the <q>Custom apps</q> section requires a Google AI Pro or Ultra subscription.</p>
         <ol>
           <li>Click the <q>Settings</q> button at the bottom left.</li>
           <li>Click <q>Connected Apps</q>. If you do not see it, click <q>Personal Intelligence</q> first.</li>
@@ -86,9 +83,10 @@
         </ol>
       </details>
       <details id="vibe">
-        <summary>Mistral Vibe</summary>
+        <summary>Vibe</summary>
+        <p>These instructions apply to Mistral <a href="https://chat.mistral.ai/work">Vibe</a>.</p>
         <ol>
-          <li>Choose the <a href="https://chat.mistral.ai/work">Work tab</a>.</li>
+          <li>Choose the Work tab.</li>
           <li>Click <q>Connect your apps for better answers</q>.</li>
           <li>Click the <q>+ Add connector</q> button.</li>
           <li>Click the <q>Add a custom connector</q> button.</li>
@@ -99,7 +97,7 @@
         </ol>
       </details>
       <details id="perplexity">
-        <summary>Perplexity Pro in a browser</summary>
+        <summary>Perplexity</summary>
         <p>These instructions apply to <a href="https://www.perplexity.ai/">Perplexity</a> Pro in a browser.</p>
         <ol>
           <li>After signing in, open the <q>Plugins</q> menu.</li>

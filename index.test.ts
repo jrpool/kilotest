@@ -477,6 +477,27 @@ test('GET /media/nonexistent.mp4 returns an error page', async () => {
   assert.ok(res.body.includes('Media file not found'));
 });
 
+test('GET /.well-known serves a well-known resource as text', async () => {
+  // Create a temporary well-known file.
+  const knownPath = path.join(import.meta.dirname, 'well-known', 'test-resource');
+  await fs.writeFile(knownPath, 'test-token-value');
+  try {
+    const res = await request('GET', '/.well-known/test-resource');
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('text/plain'));
+    assert.ok(res.body.includes('test-token-value'));
+  }
+  finally {
+    await fs.unlink(knownPath).catch(() => {});
+  }
+});
+
+test('GET /.well-known/nonexistent returns an error page', async () => {
+  const res = await request('GET', '/.well-known/nonexistent');
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('Well-known resource not found'));
+});
+
 test('GET /nonexistent.html returns an abuse error', {timeout: 500}, async () => {
   const res = await request('GET', '/nonexistent.html');
   assert.equal(res.statusCode, 400);

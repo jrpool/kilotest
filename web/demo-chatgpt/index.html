@@ -20,7 +20,7 @@
         <div class="demo-stage" id="demo-stage" aria-live="polite">
 
           <section class="frame" data-scene="1">
-            <h2>1. Which of its own pages has Kilotest tested?</h2>
+            <h2>1. Listing tested pages of a website</h2>
             <h3>Prompt 1</h3>
             <div class="msg user"><p><span class="mention">@ Kilotest</span> Name all pages of Kilotest that Kilotest has tested. I need only their names and not their URLs, test dates, test results, or any other information.</p></div>
             <div class="msg tool"><p>Used Kilotest — worked for a few seconds</p></div>
@@ -34,7 +34,7 @@
           </section>
 
           <section class="frame" data-scene="2" hidden>
-            <h2>2. What issues were reported in a page&rsquo;s latest report?</h2>
+            <h2>2. Listing issues reported on a page</h2>
             <h3>Prompt 2</h3>
             <div class="msg user"><p><span class="mention">@ Kilotest</span> Name the issues reported in the latest report about the Human Rights Watch contact page. I need only their names and not their descriptions, priorities, or any other information.</p></div>
             <div class="msg tool"><p>Used Kilotest — worked for 9s</p></div>
@@ -97,7 +97,7 @@
           </section>
 
           <section class="frame" data-scene="3" hidden>
-            <h2>3. Which issue did the most rule engines report, and what did they find?</h2>
+            <h2>3. Getting details about an important issue.</h2>
             <h3>Prompt 3</h3>
             <div class="msg user"><p><span class="mention">@ Kilotest</span> In the latest report about the Wikimedia Foundation (home) page, tell me which highest-priority issue was reported by the largest number of rule engines. For that issue, give me the XPath of the element that was reported as a violator by the largest number of rule engines. Finally, for that element and that issue, give me a one-sentence summary of the diagnoses. I do not need an issue explanation, additional information about the element, the number of diagnoses, their full texts, or the number or names of the rule engines that issued them.</p></div>
             <div class="msg tool"><p>Used Kilotest — worked for 21s</p></div>
@@ -114,7 +114,7 @@
           </section>
 
           <section class="frame" data-scene="4" hidden>
-            <h2>4. How do I get an untested page tested?</h2>
+            <h2>4. Getting a new page tested.</h2>
             <h3>Prompt 4</h3>
             <div class="msg user"><p><span class="mention">@ Kilotest</span> Request a Kilotest test of Example12345 (<a href="https://example12345.info">https://example12345.info</a>) and let me know whether the request was accepted. If it was, tell me how long I should expect to wait before the results will be available.</p></div>
             <div class="msg tool"><p>Used Kilotest — worked for 12s</p></div>
@@ -125,7 +125,7 @@
           </section>
 
           <section class="frame" data-scene="5" hidden>
-            <h2>5. Can a page be retested after it has been remediated?</h2>
+            <h2>5. Checking on changes since the last test of a page.</h2>
             <h3>Prompt 5</h3>
             <div class="msg user"><p><span class="mention">@ Kilotest</span> Order a Kilotest retest of the Example page. When the report is completed, compare it with the previous report about that page and give me two lists: one naming any eliminated issues and the other naming any newly reported issues. I do not need the report dates, the issue counts, issue explanations, or any other information. If the order is rejected, or if the report is not completed within 4 minutes, stop waiting and tell me what happened.</p></div>
             <div class="msg tool"><p>Used Kilotest — worked for 1m 12s</p></div>

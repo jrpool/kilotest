@@ -35,6 +35,7 @@ validPathPatterns.add('/api/*');
 validPathPatterns.add('/fullReport.json/*');
 validPathPatterns.add('/tutorialWeb/images/*');
 validPathPatterns.add('/tutorialAI/images/*');
+validPathPatterns.add('/media/*');
 
 // Specific page routes (those that end in .html)
 const htmlRoutes = [

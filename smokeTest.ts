@@ -16,6 +16,7 @@ const concretePaths: Record<string, Record<string, string>> = {
   GET: {
     '*.html*': '/listPages.html',
     '/': '/',
+    '/.well-known/*': '/.well-known/openai-apps-challenge',
     '/api-docs': '/api-docs',
     '/api/*': '/api/listPages',
     '/capability.md': '/capability.md',

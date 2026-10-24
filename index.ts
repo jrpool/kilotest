@@ -211,6 +211,7 @@ export const routes = {
   GET: [
     '*.html*',
     '/',
+    '/.well-known/*',
     '/api-docs',
     '/api/*',
     '/capability.md',
@@ -916,6 +917,20 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else {
         // Report this.
         await serveError({message: 'Invalid service request'}, response, false);
+      }
+    }
+    // Otherwise, if it is for a well-known resource (e.g. the OpenAI domain-verification
+    // challenge token):
+    else if (pathname.startsWith('/.well-known/')) {
+      const knownFile = pathname.slice('/.well-known/'.length);
+      const knownPath = path.join(import.meta.dirname, 'well-known', knownFile);
+      try {
+        const known = await fs.readFile(knownPath);
+        setHeaders('text/plain', null, 'low');
+        response.end(known);
+      }
+      catch {
+        await serveError({message: 'ERROR: Well-known resource not found'}, response, true);
       }
     }
     // Otherwise, if it is for a media file (e.g. a demonstration video):

@@ -451,6 +451,32 @@ test('GET /tutorialAI/images/nonexistent.png returns an error page', async () =>
   assert.ok(res.body.includes('Image not found'));
 });
 
+test('GET /media/demo-chatgpt.mp4 serves the video', async () => {
+  const res = await request('GET', '/media/demo-chatgpt.mp4');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('video/mp4'));
+});
+
+test('GET /media with an unknown extension serves octet-stream', async () => {
+  // Create a temporary media file with an unknown extension.
+  const mediaPath = path.join(import.meta.dirname, 'media', 'test.xyz');
+  await fs.writeFile(mediaPath, 'fake media data');
+  try {
+    const res = await request('GET', '/media/test.xyz');
+    assert.equal(res.statusCode, 200);
+    assert.ok(res.headers['content-type'].includes('application/octet-stream'));
+  }
+  finally {
+    await fs.unlink(mediaPath).catch(() => {});
+  }
+});
+
+test('GET /media/nonexistent.mp4 returns an error page', async () => {
+  const res = await request('GET', '/media/nonexistent.mp4');
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('Media file not found'));
+});
+
 test('GET /nonexistent.html returns an abuse error', {timeout: 500}, async () => {
   const res = await request('GET', '/nonexistent.html');
   assert.equal(res.statusCode, 400);

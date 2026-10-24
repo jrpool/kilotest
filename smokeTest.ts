@@ -25,6 +25,7 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/llms-full.txt': '/llms-full.txt',
     '/llms.txt': '/llms.txt',
     '/mcp': '/mcp',
+    '/media/*': '/media/demo-chatgpt.mp4',
     '/openapi.json': '/openapi.json',
     '/openapi.yaml': '/openapi.yaml',
     '/qai': '/qai',

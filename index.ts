@@ -42,6 +42,7 @@ import fs from 'node:fs/promises';
 import {handleComment as handleTutorialWebComment} from './web/tutorialWeb/index.ts';
 import {answer as tutorialWeb} from './web/tutorialWeb/index.ts';
 import {answer as accessibility} from './web/accessibility/index.ts';
+import {answer as demoChatgpt} from './web/demo-chatgpt/index.ts';
 import {answer as home} from './web/home/index.ts';
 import {answer as privacy} from './web/privacy/index.ts';
 import {answer as terms} from './web/terms/index.ts';
@@ -111,6 +112,7 @@ const answer: {
   accessibility: PageHandler;
   ai0BalanceForm: PageHandler;
   deleteNotesForm: PageHandler;
+  'demo-chatgpt': PageHandler;
   enqueue: PageHandler;
   enqueueForm: PageHandler;
   expungeReportsForm: PageHandler;
@@ -144,6 +146,7 @@ const answer: {
   accessibility,
   ai0BalanceForm,
   deleteNotesForm,
+  'demo-chatgpt': demoChatgpt,
   enqueue,
   enqueueForm,
   expungeReportsForm,
@@ -217,6 +220,7 @@ export const routes = {
     '/llms-full.txt',
     '/llms.txt',
     '/mcp',
+    '/media/*',
     '/openapi.json',
     '/openapi.yaml',
     '/qai',
@@ -912,6 +916,27 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       else {
         // Report this.
         await serveError({message: 'Invalid service request'}, response, false);
+      }
+    }
+    // Otherwise, if it is for a media file (e.g. a demonstration video):
+    else if (pathname.startsWith('/media/')) {
+      const mediaFile = pathname.slice('/media/'.length);
+      const mediaPath = path.join(import.meta.dirname, 'media', mediaFile);
+      try {
+        const media = await fs.readFile(mediaPath);
+        const ext = path.extname(mediaFile).toLowerCase();
+        const mimeTypes: Record<string, string> = {
+          '.mp4': 'video/mp4',
+          '.webm': 'video/webm',
+          '.mov': 'video/quicktime',
+          '.m4v': 'video/mp4'
+        };
+        const mimeType = mimeTypes[ext] || 'application/octet-stream';
+        setHeaders(mimeType, null, 'low');
+        response.end(media);
+      }
+      catch {
+        await serveError({message: 'ERROR: Media file not found'}, response, true);
       }
     }
     // Otherwise, if it is for a tutorial image:

@@ -41,8 +41,10 @@ import {handleMCP, mcpPath} from './mcp.ts';
 import fs from 'node:fs/promises';
 import {handleComment as handleTutorialWebComment} from './web/tutorialWeb/index.ts';
 import {answer as tutorialWeb} from './web/tutorialWeb/index.ts';
+import {answer as accessibility} from './web/accessibility/index.ts';
 import {answer as home} from './web/home/index.ts';
 import {answer as privacy} from './web/privacy/index.ts';
+import {answer as terms} from './web/terms/index.ts';
 import {answer as tutorialAI, handleComment as handleTutorialAIComment} from './web/tutorialAI/index.ts';
 import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
@@ -106,6 +108,7 @@ type AnswerData = {
 type PageHandler = (...args: any[]) => Promise<AnswerData>;
 
 const answer: {
+  accessibility: PageHandler;
   ai0BalanceForm: PageHandler;
   deleteNotesForm: PageHandler;
   enqueue: PageHandler;
@@ -134,9 +137,11 @@ const answer: {
   requestNewTestForm: PageHandler;
   rewindReportsForm: PageHandler;
   showHiddenReportsForm: PageHandler;
+  terms: PageHandler;
   unhideReportForm: PageHandler;
   [key: string]: PageHandler | undefined;
 } = {
+  accessibility,
   ai0BalanceForm,
   deleteNotesForm,
   enqueue,
@@ -165,6 +170,7 @@ const answer: {
   requestNewTestForm,
   rewindReportsForm,
   showHiddenReportsForm,
+  terms,
   unhideReportForm
 };
 // Response functions of the API services.

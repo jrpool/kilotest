@@ -2778,7 +2778,7 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
-        "openWorldHint": false
+        "openWorldHint": true
       },
       "execution": {
         "taskSupport": "forbidden"
@@ -3122,7 +3122,7 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
-        "openWorldHint": false
+        "openWorldHint": true
       },
       "execution": {
         "taskSupport": "forbidden"
@@ -3763,7 +3763,7 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
-        "openWorldHint": false
+        "openWorldHint": true
       },
       "execution": {
         "taskSupport": "forbidden"
@@ -4115,7 +4115,7 @@
         "readOnlyHint": false,
         "destructiveHint": false,
         "idempotentHint": false,
-        "openWorldHint": false
+        "openWorldHint": true
       },
       "execution": {
         "taskSupport": "forbidden"
@@ -4423,5 +4423,5 @@
       }
     }
   ],
-  "version": "60.4.1"
+  "version": "60.5.0"
 }

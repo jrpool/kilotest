@@ -74,6 +74,25 @@ fieldset {
 form {
   margin-top: 1rem;
 }
+footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: solid 0.1rem #000;
+}
+.footer-inner ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.footer-inner li {
+  display: inline-block;
+}
+.footer-inner a {
+  display: inline-block;
+  min-height: 44px;
+  padding: 0.5rem 0.25rem;
+  margin-right: 1.5rem;
+}
 h4, h5, h6 {
   margin-top: 1rem;
   margin-bottom: 0;
@@ -468,4 +487,26 @@ body.styled .warn {
   background: #fdf6e3;
   border: 1px solid #e8d48b;
   border-radius: 0.5rem;
+}
+body.styled footer {
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+body.styled .footer-inner {
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 1rem 1.5rem;
+}
+body.styled .footer-inner ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.75rem;
+}
+body.styled .footer-inner a {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+body.styled .footer-inner a:hover {
+  color: var(--accent);
+  background-color: transparent;
 }

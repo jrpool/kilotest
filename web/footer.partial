@@ -1,0 +1,9 @@
+<footer>
+      <nav class="footer-inner" aria-label="Site">
+        <ul>
+          <li><a href="/privacy.html">Privacy policy</a></li>
+          <li><a href="/terms.html">Terms of service</a></li>
+          <li><a href="/accessibility.html">Accessibility statement</a></li>
+        </ul>
+      </nav>
+    </footer>

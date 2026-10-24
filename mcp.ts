@@ -208,7 +208,7 @@ export const createMCPServer = (): McpServer => {
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
-        openWorldHint: false
+        openWorldHint: true
       }
     },
     async ({description, URL, reason}) => {
@@ -228,7 +228,7 @@ export const createMCPServer = (): McpServer => {
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
-        openWorldHint: false
+        openWorldHint: true
       }
     },
     async ({reportID, reason}) => {
@@ -268,7 +268,7 @@ export const createMCPServer = (): McpServer => {
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
-        openWorldHint: false
+        openWorldHint: true
       }
     },
     async ({description, URL, reason}) => {
@@ -288,7 +288,7 @@ export const createMCPServer = (): McpServer => {
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
-        openWorldHint: false
+        openWorldHint: true
       }
     },
     async ({reportID, reason}) => {

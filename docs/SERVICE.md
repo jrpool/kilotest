@@ -259,7 +259,7 @@ kilotest.com {
   # Specify the only paths of forwardable requests.
   @allowedGET {
     method GET
-    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorialWeb/images/* /tutorialAI/images/* /qai /qai/comments /favicon.* /style.css /sitemap.xml
+    path /mcp / /index.html /robots.txt /openapi.yaml /openapi.json /swagger.yaml /swagger.json /api-docs /llms.txt /llms-full.txt /capability.md *.html* /fullReport.json/* /api/* /tutorialWeb/images/* /tutorialAI/images/* /media/* /qai /qai/comments /favicon.* /style.css /sitemap.xml
   }
   # UptimeRobot's uptime check is the only known HEAD caller, and it targets only the site
   # root (see "Health monitoring" below), so HEAD is forwarded only for that path, not the

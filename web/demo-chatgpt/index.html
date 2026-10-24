@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    __head__
+    <meta name="description" content="Kilotest demonstration: a step-through walkthrough of ChatGPT using the Kilotest tools">
+    <title>ChatGPT demonstration | Kilotest</title>
+  </head>
+  <body class="styled">
+    __header__
+    <main class="page">
+      <h1>ChatGPT demonstration</h1>
+      <p>This page shows how ChatGPT uses Kilotest to answer questions about the front-end quality of web pages. Each of the five scenarios below reproduces a real interaction. Step through them at your own pace with the Previous and Next buttons, or press Play to advance automatically. The same interaction is also available as a <a href="/media/demo-chatgpt.mp4">video recording</a>.</p>
+      <div class="demo" id="demo">
+        <div class="demo-controls">
+          <button type="button" id="demo-play" aria-pressed="false"><span aria-hidden="true">▶</span> Play</button>
+          <button type="button" id="demo-prev"><span aria-hidden="true">◀</span> Previous</button>
+          <button type="button" id="demo-next">Next <span aria-hidden="true">▶</span></button>
+          <span id="demo-status" role="status">Scene 1 of 5</span>
+        </div>
+        <div class="demo-stage" id="demo-stage" aria-live="polite">
+
+          <section class="frame" data-scene="1">
+            <h2>1. Which of its own pages has Kilotest tested?</h2>
+            <h3>Prompt 1</h3>
+            <div class="msg user"><p><span class="mention">@ Kilotest</span> Name all pages of Kilotest that Kilotest has tested. I need only their names and not their URLs, test dates, test results, or any other information.</p></div>
+            <div class="msg tool"><p>Used Kilotest — worked for a few seconds</p></div>
+            <h3>Response 1</h3>
+            <div class="msg assistant"><p>The assistant at first listed every tested page, not only the Kilotest pages.</p></div>
+            <h3>Corrective prompt 1</h3>
+            <div class="msg user"><p>You answered the wrong question. I asked you to name all pages of Kilotest that Kilotest has tested. I did not ask you to name all pages that Kilotest has tested.</p></div>
+            <div class="msg tool"><p>Used Kilotest — worked for 13s</p></div>
+            <h3>Corrected response 1</h3>
+            <div class="msg assistant"><ul><li>Kilotest</li><li>Kilotest list diagnoses</li><li>Kilotest list issues</li><li>Kilotest list pages</li><li>Kilotest list violators</li></ul></div>
+          </section>
+
+          <section class="frame" data-scene="2" hidden>
+            <h2>2. What issues were reported in a page&rsquo;s latest report?</h2>
+            <h3>Prompt 2</h3>
+            <div class="msg user"><p><span class="mention">@ Kilotest</span> Name the issues reported in the latest report about the Human Rights Watch contact page. I need only their names and not their descriptions, priorities, or any other information.</p></div>
+            <div class="msg tool"><p>Used Kilotest — worked for 9s</p></div>
+            <h3>Response 2</h3>
+            <div class="msg assistant">
+              <ul class="issue-list">
+                <li>abbr title missing</li>
+                <li>all-capital text</li>
+                <li>aria reference invalid</li>
+                <li>attribute invalid</li>
+                <li>attribute obsolete</li>
+                <li>attribute value invalid</li>
+                <li>autocomplete invalid</li>
+                <li>box size absolute</li>
+                <li>button name not visible</li>
+                <li>code invalid</li>
+                <li>contrast poor</li>
+                <li>double br use dubious</li>
+                <li>element focusability and operability conflict</li>
+                <li>fieldset missing?</li>
+                <li>focus indication improvable</li>
+                <li>focusable element hidden</li>
+                <li>forms not distinctly named</li>
+                <li>heading level skipped</li>
+                <li>heading structure illogical</li>
+                <li>hovering changes content</li>
+                <li>ID empty</li>
+                <li>ID not unique</li>
+                <li>iframe not named</li>
+                <li>image not named</li>
+                <li>inconsistent heading, link, or button styles</li>
+                <li>itemid invalid</li>
+                <li>label location dubious</li>
+                <li>large visible-element count</li>
+                <li>line height low</li>
+                <li>link destination not URL</li>
+                <li>link href missing</li>
+                <li>link indication poor</li>
+                <li>link not named</li>
+                <li>links named identically</li>
+                <li>links not grouped as nav</li>
+                <li>list-like br use dubious</li>
+                <li>menu navigation nonstandard</li>
+                <li>parent invalid</li>
+                <li>requirement invalid</li>
+                <li>role assigned instead of implicit</li>
+                <li>role redundant</li>
+                <li>small targets too near to each other</li>
+                <li>summary has explicit role</li>
+                <li>svg image not named</li>
+                <li>tab-opening link action unstated?</li>
+                <li>target small</li>
+                <li>target very small</li>
+                <li>text contrast improvable</li>
+                <li>text contrast not testable</li>
+                <li>title attribute invalid</li>
+                <li>z-index not zero</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="frame" data-scene="3" hidden>
+            <h2>3. Which issue did the most rule engines report, and what did they find?</h2>
+            <h3>Prompt 3</h3>
+            <div class="msg user"><p><span class="mention">@ Kilotest</span> In the latest report about the Wikimedia Foundation (home) page, tell me which highest-priority issue was reported by the largest number of rule engines. For that issue, give me the XPath of the element that was reported as a violator by the largest number of rule engines. Finally, for that element and that issue, give me a one-sentence summary of the diagnoses. I do not need an issue explanation, additional information about the element, the number of diagnoses, their full texts, or the number or names of the rule engines that issued them.</p></div>
+            <div class="msg tool"><p>Used Kilotest — worked for 21s</p></div>
+            <h3>Response 3</h3>
+            <div class="msg assistant">
+              <p><strong>Highest-priority issue:</strong> Link not named</p>
+              <p><strong>XPath(s) tied for the most rule-engine reports:</strong></p>
+              <ul>
+                <li><code>/html/body/div[2]/footer[1]/div[1]/div[2]/div[1]/figure[1]/a[1]</code></li>
+                <li><code>/html/body/div[2]/footer[1]/div[1]/div[2]/div[1]/figure[2]/a[1]</code></li>
+              </ul>
+              <p><strong>Diagnosis summary:</strong> Both links lack an accessible name, such as discernible text or an equivalent text alternative, making their purpose unclear to screen-reader users.</p>
+            </div>
+          </section>
+
+          <section class="frame" data-scene="4" hidden>
+            <h2>4. How do I get an untested page tested?</h2>
+            <h3>Prompt 4</h3>
+            <div class="msg user"><p><span class="mention">@ Kilotest</span> Request a Kilotest test of Example12345 (<a href="https://example12345.info">https://example12345.info</a>) and let me know whether the request was accepted. If it was, tell me how long I should expect to wait before the results will be available.</p></div>
+            <div class="msg tool"><p>Used Kilotest — worked for 12s</p></div>
+            <h3>Response 4</h3>
+            <div class="msg assistant"><p>Kilotest <strong>did not accept the request</strong> to test Example12345 (<code>https://example12345.info</code>).</p>
+            <p>The reason given was that the URL does not resolve to a page that this Kilotest deployment can test.</p>
+            <p>Since the request was rejected, there is no expected wait time for results.</p></div>
+          </section>
+
+          <section class="frame" data-scene="5" hidden>
+            <h2>5. Can a page be retested after it has been remediated?</h2>
+            <h3>Prompt 5</h3>
+            <div class="msg user"><p><span class="mention">@ Kilotest</span> Order a Kilotest retest of the Example page. When the report is completed, compare it with the previous report about that page and give me two lists: one naming any eliminated issues and the other naming any newly reported issues. I do not need the report dates, the issue counts, issue explanations, or any other information. If the order is rejected, or if the report is not completed within 4 minutes, stop waiting and tell me what happened.</p></div>
+            <div class="msg tool"><p>Used Kilotest — worked for 1m 12s</p></div>
+            <h3>Response 5</h3>
+            <div class="msg assistant">
+              <p>Kilotest accepted the retest order, and the report was completed within 4 minutes.</p>
+              <p><strong>Eliminated issues</strong></p>
+              <p>– None</p>
+              <p><strong>Newly reported issues</strong></p>
+              <p>– None</p>
+            </div>
+          </section>
+
+        </div>
+      </div>
+      <p>Each scenario corresponds to a real capability of the Kilotest tools: discovering tested pages, listing issues, drilling down to elements and diagnoses, requesting tests, and ordering retests. The responses above reproduce real Kilotest report data.</p>
+    </main>
+    <script>
+      const frames = Array.from(document.querySelectorAll('#demo-stage .frame'));
+      const playBtn = document.getElementById('demo-play');
+      const prevBtn = document.getElementById('demo-prev');
+      const nextBtn = document.getElementById('demo-next');
+      const status = document.getElementById('demo-status');
+      let current = 0;
+      let timer = null;
+
+      function show(index) {
+        current = Math.max(0, Math.min(frames.length - 1, index));
+        frames.forEach((frame, i) => { frame.hidden = i !== current; });
+        status.textContent = 'Scene ' + (current + 1) + ' of ' + frames.length;
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current === frames.length - 1;
+      }
+
+      function stop() {
+        if (timer) { clearInterval(timer); timer = null; }
+        playBtn.innerHTML = '<span aria-hidden="true">▶</span> Play';
+        playBtn.setAttribute('aria-pressed', 'false');
+      }
+
+      playBtn.addEventListener('click', function () {
+        if (timer) { stop(); return; }
+        if (current === frames.length - 1) { show(0); }
+        playBtn.innerHTML = '<span aria-hidden="true">⏸</span> Pause';
+        playBtn.setAttribute('aria-pressed', 'true');
+        timer = setInterval(function () {
+          if (current >= frames.length - 1) { stop(); return; }
+          show(current + 1);
+        }, 6000);
+      });
+
+      prevBtn.addEventListener('click', function () { stop(); show(current - 1); });
+      nextBtn.addEventListener('click', function () { stop(); show(current + 1); });
+      show(0);
+    </script>
+    <style>
+      .demo-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      .demo-controls button {
+        min-height: 44px;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        font-family: inherit;
+        border: solid 1px var(--line);
+        border-radius: 0.375rem;
+        background: var(--card);
+        color: inherit;
+        cursor: pointer;
+      }
+      .demo-controls button:hover {
+        border-color: var(--accent);
+      }
+      .demo-controls button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      .demo-controls button:disabled:hover {
+        border-color: var(--line);
+      }
+      #demo-status {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      .demo-stage .frame {
+        border: solid 1px var(--line);
+        border-radius: 0.5rem;
+        padding: 1rem 1.25rem;
+        background: var(--card);
+      }
+      .demo-stage .frame h2 {
+        margin-top: 0;
+        font-size: 1.15rem;
+      }
+      .demo-stage .frame h3 {
+        margin: 1rem 0 0.25rem;
+        font-size: 0.95rem;
+        color: var(--accent);
+      }
+      .msg {
+        margin: 0.75rem 0;
+        max-width: 52rem;
+      }
+      .msg p {
+        margin: 0;
+      }
+      .msg.user {
+        display: flex;
+        justify-content: flex-end;
+      }
+      .msg.user p {
+        max-width: 42rem;
+        padding: 0.55rem 1.1rem;
+        background: #e9e9e9;
+        border-radius: 1.4rem;
+      }
+      .msg.tool {
+        font-size: 0.9rem;
+        color: #888;
+      }
+      .msg.tool p {
+        padding: 0.2rem 0;
+      }
+      .msg.tool p::after {
+        content: "  \203A";
+      }
+      .mention {
+        display: inline-block;
+        padding: 0.05rem 0.5rem;
+        margin-right: 0.25rem;
+        font-size: 0.85rem;
+        background: #ddf0e8;
+        border-radius: 0.4rem;
+      }
+      .msg.assistant {
+        padding: 0.6rem 0;
+      }
+      .issue-list {
+        columns: 14rem 3;
+        column-gap: 2rem;
+        font-size: 0.9rem;
+        margin: 0.5rem 0 0;
+      }
+    </style>
+    __footer__
+  </body>
+</html>

@@ -47,5 +47,5 @@ When reporting test results to users:
 
 ## Further documentation
 
-- https://kilotest.com/llms.txt
-- https://kilotest.com/llms-full.txt
+- `https://kilotest.com/llms.txt`
+- `https://kilotest.com/llms-full.txt`

@@ -1,0 +1,133 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "kilotest",
+  "version": "1.0.0",
+  "description": "Test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) with an ensemble of 12 rule engines, and inspect the structured reports.",
+  "author": {
+    "name": "Jonathan Robert Pool",
+    "email": "info@kilotest.com",
+    "url": "https://kilotest.com"
+  },
+  "homepage": "https://kilotest.com",
+  "repository": "https://github.com/jrpool/kilotest",
+  "license": "MIT",
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "usability",
+    "wcag",
+    "web-standards",
+    "testing"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Kilotest",
+        "shortDescription": "Test web-page quality",
+        "longDescription": "Kilotest tests public web pages for front-end quality: accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG. It runs an ensemble of 12 independent rule engines and combines their results into structured reports organized as page, report, issue, violator element, and diagnosis. Use it to check whether a page has been tested, inspect the reported issues down to the violating elements and rule-engine diagnoses, and request or order new tests and retests. Kilotest testing emulates unprivileged public users and therefore produces no side effects other than those that human users could produce.",
+        "developerName": "Jonathan Robert Pool",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Test web pages",
+          "Inspect test reports",
+          "Request tests and retests"
+        ],
+        "websiteURL": "https://kilotest.com",
+        "supportURL": "https://github.com/jrpool/kilotest/issues",
+        "privacyPolicyURL": "https://kilotest.com/privacy.html",
+        "termsOfServiceURL": "https://kilotest.com/terms.html",
+        "defaultPrompt": [
+          "Has Kilotest tested https://example.com? If so, summarize the issues in its latest report.",
+          "Show which elements on this page Kilotest reported as violating accessibility rules, and what the rule engines diagnosed.",
+          "Order a Kilotest test of https://example.org and wait for the report."
+        ],
+        "brandColor": "#005C5C",
+        "composerIcon": "./assets/logo.svg",
+        "logo": "./assets/logo.svg"
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Discover which pages of a named entity have been tested",
+              "prompt": "Name all pages of Kilotest that Kilotest has tested. I need only their names and not their URLs, test dates, test results, or any other information.",
+              "tools_triggered": "listPages",
+              "expected_behavior": "List the names of all Kilotest pages that Kilotest has tested."
+            },
+            {
+              "description": "Name the issues in a report",
+              "prompt": "Name the issues reported in the latest report about the Human Rights Watch contact page. I need only their names and not their descriptions, priorities, or any other information.",
+              "tools_triggered": "listPages, listIssues",
+              "expected_behavior": "Locate the latest report about the Human Rights Watch contact page and name all the issues reported in the report."
+            },
+            {
+              "description": "Drill down from a page to issues, violators, and diagnoses",
+              "prompt": "In the latest report about the Wikimedia Foundation (home) page, tell me which highest-priority issue was reported by the largest number of rule engines. For that issue, give me the XPath of the element that was reported as a violator by the largest number of rule engines. Finally, for that element and that issue, give me a one-sentence summary of the diagnoses. I do not need an issue explanation, additional information about the element, the number of diagnoses, their full texts, or the number or names of the rule engines that issued them.",
+              "tools_triggered": "listPages, listIssues, listViolators, listDiagnoses",
+              "expected_behavior": "Locate the latest report about the Wikimedia Foundation home page, find and name the highest-priority issue reported by the largest number of rule engines, find the element that was reported as a violator of that issue by the largest number of rule engines, name the XPath of that element, and summarize in one sentence the diagnoses of the violations of that issue by that element."
+            },
+            {
+              "description": "Request a test of an untested page",
+              "prompt": "Request a Kilotest test of Example12345 (https://example12345.info) and let me know whether the request was accepted. If it was, tell me how long I should expect to wait before the results will be available.",
+              "tools_triggered": "listPages, requestNewTest",
+              "expected_behavior": "Submit the request and reply that the results are likely to be available within one day, or that the request was rejected."
+            },
+            {
+              "description": "Order a retest to check on changes in test results",
+              "prompt": "Order a Kilotest retest of the Example page. When the report is completed, compare it with the previous report about that page and give me two lists: one naming any eliminated issues and the other naming any newly reported issues. I do not need the report dates, the issue counts, issue explanations, or any other information. If the order is rejected, or if the report is not completed within 4 minutes, stop waiting and tell me what happened.",
+              "tools_triggered": "listPages, orderRetest, awaitTest, listIssues",
+              "expected_behavior": "Locate the latest report about the Example page, order a retest of it, wait for the new report, compare it with the earlier report, and provide lists of the names of any issues reported by only the previous report and the names of any issues reported by only the new report. If the order is rejected, state that. If the order is accepted but the report is not completed within 4 minutes, state that and stop waiting."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Test a private-network address",
+              "prompt": "Order a Kilotest test of http://192.168.1.1/admin."
+            },
+            {
+              "description": "Modify a tested page",
+              "prompt": "Remediate the accessibility problems Kilotest found on https://example.com."
+            },
+            {
+              "description": "Out-of-scope task",
+              "prompt": "Book a flight to Chicago for next Friday."
+            }
+          ]
+        },
+        "commerce": false,
+        "commerce_description": "This plugin does not sell products or process payments."
+      },
+      "publication": {
+        "countries": [
+          "US",
+          "CA",
+          "GB",
+          "IE",
+          "AU",
+          "NZ",
+          "DE",
+          "FR",
+          "NL",
+          "BE",
+          "AT",
+          "CH",
+          "ES",
+          "PT",
+          "IT",
+          "SE",
+          "NO",
+          "DK",
+          "FI",
+          "PL",
+          "CZ",
+          "JP",
+          "IN",
+          "BR",
+          "MX",
+          "IL"
+        ],
+        "release_notes": "Initial release: Kilotest MCP server plus an overview-and-workflow skill."
+      }
+    }
+  }
+}

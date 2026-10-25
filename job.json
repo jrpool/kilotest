@@ -3,7 +3,6 @@
   "what": "Kilotest job",
   "strict": false,
   "standard": "only",
-  "imageColor": 0,
   "observe": false,
   "device": {
     "id": "default",
@@ -26,13 +25,13 @@
       "type": "test",
       "launch": {},
       "which": "alfa",
-      "what": "Alfa"
+      "what": "Alfa by Siteimprove"
     },
     {
       "type": "test",
       "launch": {},
       "which": "aslint",
-      "what": "ASLint"
+      "what": "ASLint by eSSENTIAL Accessibility"
     },
     {
       "type": "test",

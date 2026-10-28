@@ -51,18 +51,20 @@ export const getResponseMetadata = () => ({
 export const getToolsFacts = () => ({
   'name': 'Kilotest',
   'description': {
-    'what Kilotest does': 'Kilotest tools generate and make available findings about the front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) of web pages. A Kilotest job generates findings by using Testaro to test a page against about 1300 rules defined by an ensemble of twelve rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 380 issues. Kilotest makes facts about the tested pages, the issues, and the violations retrievable at four levels of granularity.',
+    'what Kilotest does': 'Kilotest tools generate findings about the front-end quality (i.e. accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG of W3C) of web pages. A Kilotest job generates findings by using Testaro to test a page against about 1300 rules defined by an ensemble of twelve rule engines. Testaro produces a report of the job. The report describes violations of the rules. Kilotest uses Testilo to enhance the report with a classification of the rule violations into about 380 issues and then saves the report for public retrieval. Kilotest makes facts about the tested pages, the issues, and the violations retrievable at four levels of granularity.',
     'how to retrieve findings': {
-      'level 1': 'Use the listPages tool to get a list of tested pages, each with its latest report. The listIssues output about any report lists all reports about the same page.',
-      'level 2': 'Use the listIssues tool to get a list of issues in one report.',
-      'level 3': 'Use the listViolators tool to get a list of elements on one page that were reported in one report as exhibiting one issue.',
+      'level 1': 'Use the listPages tool to get a list of tested pages, each with the identifier of its latest report, for use with the listIssues tool.',
+      'level 2': 'Use the listIssues tool to get a list of issues in one report, each with a link to the level-3 results for that issue. The response also includes a history of reports about the page, each with a link to its own level-2 results.',
+      'level 3': 'Use the listViolators tool to get a list of elements on one page that were reported in one report as exhibiting one issue, each with a link to the level-4 results for that violator.',
       'level 4': 'Use the listDiagnoses tool to get a list of diagnoses of how one element on one page exhibited one issue in one report.',
     },
     'how to generate more findings': {
-      'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested.',
-      'retesting': 'If the listIssues tool shows that the latest report about a page is obsolete, because the page has been revised or for another reason, use the requestRetest tool to request that the page be retested.',
-      'latency': 'Requests for testing and retesting are usually approved and fulfilled within one day.',
-      'confirmation': 'Use the listPages tool to determine whether a requested new report exists. There is currently no process for notification of the outcome of requests.'
+      'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested, or the orderNewTest tool for immediate testing.',
+      'retesting': 'If you believe that the latest report about a page is obsolete (e.g., because the page has been revised), use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate retesting.',
+      'approval': 'Requests are manager-reviewed, usually in 1 hour to one day. Orders are automatically reviewed. Reviews result in approval or rejection.',
+      'latency': 'An approved test typically finishes in 2 to 4 minutes.',
+      'request confirmation': 'After submitting a request and waiting for manager review, you can use the listPages tool to determine whether the request has been fulfilled: a new-test request adds a page entry linking to its results, and a retest request adds a later report about the page.',
+      'order confirmation': 'After ordering a test or retest, you will receive a rejection or a report identifier, which you can use to call the awaitTest tool. That tool blocks until the test completes, fails, or a maximum wait time elapses, and then returns the outcome. If you do not call awaitTest, you can wait 2 to 4 minutes and then, if the test is complete, the listIssues tool called with the report identifier will succeed.'
     }
   },
   'URL': `${getThisHost()}/mcp`,

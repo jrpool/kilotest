@@ -74,7 +74,7 @@ Kilotest offers these tools:
 
 - `listPages`
   - method: `GET`
-  - purpose: list all tested pages, each with its latest report and its number of reports
+  - purpose: list all tested pages, each with the identifier of its latest report
   - path: `/api/listPages`
   - caveat: Cached results are likely to be stale and should not be used
 - `listIssues`
@@ -163,7 +163,7 @@ When you request a test or a retest:
   - approval followed by the requested testing
   - rejection
 - how to confirm approval
-  - check test completion by calling `listPages` and looking for the page and the completion date of its latest report in the list
+  - check test completion by calling `listPages` and looking for the page in the list
   - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listPages.html`
 
 For immediate testing without waiting for manual approval, use `orderNewTest` or `orderRetest` instead of `requestNewTest` or `requestRetest`. Each enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.

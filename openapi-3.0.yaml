@@ -60,61 +60,39 @@ paths:
                   response content:
                     type: object
                     properties:
+                      how to get test results about a page:
+                        type: object
+                        properties:
+                          method:
+                            type: string
+                            enum:
+                              - GET
+                          URL:
+                            type: string
+                            description: URL template; replace {identifier} with the identifier of the latest report about the page.
+                        required:
+                          - method
+                          - URL
+                        additionalProperties: false
+                      web users can get test results about a page at:
+                        type: string
+                        description: URL template; replace {identifier} with the identifier of the latest report about the page.
                       basics about all tested pages:
                         type: array
                         items:
                           type: object
                           properties:
-                            tested web page:
-                              type: object
-                              properties:
-                                description:
-                                  type: string
-                                URL:
-                                  type: string
-                              required:
-                                - description
-                                - URL
-                              additionalProperties: false
-                            number of reports about the page:
-                              type: number
-                            basics about the latest report:
-                              type: object
-                              properties:
-                                identifier:
-                                  type: string
-                                  description: 'Identifier of the report (example: 260503T0432-x9z).'
-                                completion date and time:
-                                  type: string
-                                days since the report was completed:
-                                  type: number
-                                  nullable: true
-                              required:
-                                - identifier
-                                - completion date and time
-                                - days since the report was completed
-                              additionalProperties: false
-                            how to get details about the latest report:
-                              type: object
-                              properties:
-                                method:
-                                  type: string
-                                  enum:
-                                    - GET
-                                URL:
-                                  type: string
-                              required:
-                                - method
-                                - URL
-                              additionalProperties: false
-                            web users can get details about the latest report at:
+                            description:
                               type: string
+                            URL:
+                              type: string
+                            identifier:
+                              type: string
+                              description: 'Identifier of the latest report about the page (example: 260503T0432-x9z).'
                           required:
-                            - tested web page
-                            - number of reports about the page
-                            - basics about the latest report
-                            - how to get details about the latest report
-                            - web users can get details about the latest report at
+                            - description
+                            - URL
+                            - identifier
                           additionalProperties: false
                       how to request that a page with no report be tested:
                         type: object
@@ -156,6 +134,8 @@ paths:
                           - URL
                         additionalProperties: false
                     required:
+                      - how to get test results about a page
+                      - web users can get test results about a page at
                       - basics about all tested pages
                       - how to request that a page with no report be tested
                       - how a web user can request that the page be tested

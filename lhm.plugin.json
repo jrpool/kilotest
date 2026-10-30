@@ -263,18 +263,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -907,18 +915,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -1341,18 +1357,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -1886,18 +1910,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -2275,18 +2307,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -2634,18 +2674,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -2978,18 +3026,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -3272,18 +3328,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -3602,18 +3666,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -3969,18 +4041,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -4321,18 +4401,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -4622,18 +4710,26 @@
                       "retesting": {
                         "type": "string"
                       },
+                      "approval": {
+                        "type": "string"
+                      },
                       "latency": {
                         "type": "string"
                       },
-                      "confirmation": {
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
                         "type": "string"
                       }
                     },
                     "required": [
                       "new testing",
                       "retesting",
+                      "approval",
                       "latency",
-                      "confirmation"
+                      "request confirmation",
+                      "order confirmation"
                     ],
                     "additionalProperties": false
                   }
@@ -4722,5 +4818,5 @@
       }
     }
   ],
-  "version": "62.0.0"
+  "version": "63.0.0"
 }

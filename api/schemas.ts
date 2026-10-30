@@ -95,7 +95,7 @@ const ruleEngineFactsSchema = z.object({
 }).meta({id: 'RuleEngineFacts'});
 
 // Facts about the Kilotest tool collection, included in every response.
-const toolsFactsSchema = z.object({
+export const toolsFactsSchema = z.object({
   name: z.string(),
   description: z.object({
     'what Kilotest does': z.string(),
@@ -108,8 +108,10 @@ const toolsFactsSchema = z.object({
     'how to generate more findings': z.object({
       'new testing': z.string(),
       'retesting': z.string(),
+      'approval': z.string(),
       'latency': z.string(),
-      'confirmation': z.string()
+      'request confirmation': z.string(),
+      'order confirmation': z.string()
     })
   }).describe('Explanation of what Kilotest does and how to use its tools.'),
   URL: z.string().describe('URL of the Kilotest MCP server.'),

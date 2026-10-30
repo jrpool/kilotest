@@ -29,6 +29,7 @@ before(() => {
 });
 
 import {response} from './awaitTest.ts';
+import {awaitTestResponseSchema} from './schemas.ts';
 
 after(() => {
   delete process.env.AWAIT_JOB_POLL_MS;
@@ -111,4 +112,12 @@ test('awaitTest reports both orderNewTest and orderRetest as possible ancestors'
   for (const ancestor of ancestors) {
     assert.equal(ancestor.method, 'POST');
   }
+});
+
+test('awaitTest response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['999999T9999-xyz']);
+  assert.deepEqual(awaitTestResponseSchema.parse(body), body);
 });

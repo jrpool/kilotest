@@ -1529,7 +1529,19 @@ export {serve};
 
 // Starts the server using the configured protocol and credentials.
 export const startServer = async () => {
+  // Fail fast on missing required environment variables. THIS_KILOTEST_HOST is read raw
+  // by getThisHost and interpolated into URLs in every response; KEY and CERT are
+  // required only for HTTPS. Other env vars have documented defaults or designed
+  // degradation (see env.example and docs/SERVICE.md) and are deliberately not required.
+  const requiredEnvVars = ['THIS_KILOTEST_HOST'];
   const startProtocol = process.env.PROTOCOL || 'http';
+  if (startProtocol === 'https') {
+    requiredEnvVars.push('KEY', 'CERT');
+  }
+  const missingEnvVars = requiredEnvVars.filter(name => !process.env[name]);
+  if (missingEnvVars.length) {
+    throw new Error(`Missing required environment variable(s): ${missingEnvVars.join(', ')}`);
+  }
   if (startProtocol === 'http') {
     console.log('Starting HTTP server');
     return serve(http, {});
@@ -1545,7 +1557,10 @@ export const startServer = async () => {
 // Runs the server if the module was loaded directly (not required by a test). The starter is a parameter so tests can inject a spy, since ESM module exports cannot be monkey-patched.
 export const runIfMain = (mainModule: unknown, currentModule: unknown, starter: () => Promise<unknown> = startServer) => {
   if (mainModule === currentModule) {
-    starter().catch(error => console.log(errorMessage(error)));
+    starter().catch(error => {
+      console.log(errorMessage(error));
+      process.exitCode = 1;
+    });
   }
 };
 

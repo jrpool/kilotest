@@ -42,6 +42,7 @@ beforeEach(async () => {
 });
 
 import {response} from './reportDisagreement.ts';
+import {reportDisagreementResponseSchema} from './schemas.ts';
 
 after(async () => {
   console.log = originalLog;
@@ -205,4 +206,12 @@ test('reportDisagreement includes tool name and metadata', async () => {
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'The element does have an accessible name']);
   assert.equal(body['tool name'], 'reportDisagreement');
   assert.ok(body['response metadata'].identifier);
+});
+
+test('reportDisagreement response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'A reason submitted only for schema conformance.']);
+  assert.deepEqual(reportDisagreementResponseSchema.parse(body), body);
 });

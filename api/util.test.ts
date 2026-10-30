@@ -17,6 +17,7 @@ for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_A
 }
 
 import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, getRequestFailureReason} from './util.ts';
+import {toolsFactsSchema} from './schemas.ts';
 import {processTestRequest} from '../util.ts';
 
 // SETUP
@@ -135,6 +136,14 @@ test('getToolsFacts returns facts about the Kilotest tool collection', () => {
   assert.ok(facts.description['what Kilotest does']);
   assert.ok(facts.description['how to retrieve findings']);
   assert.ok(facts.description['how to generate more findings']);
+});
+
+test('getToolsFacts output conforms to toolsFactsSchema', () => {
+  // parse() catches missing or mistyped keys, and comparing the parsed result to
+  // the original catches extra keys that zod strips but that the strict JSON
+  // schema advertised to MCP clients (additionalProperties: false) rejects.
+  const facts = getToolsFacts();
+  assert.deepEqual(toolsFactsSchema.parse(facts), facts);
 });
 
 test('getRequestFailureReason returns the URL-length reason for a urlLength result', () => {

@@ -58,6 +58,19 @@
         </ol>
         <p>Once you add Kilotest, it also becomes available in the Gemini app on your mobile device. To make Gemini use Kilotest for a prompt, enter <q>@</q> and select Kilotest.</p>
       </details>
+      <details id="github-copilot">
+        <summary>GitHub Copilot</summary>
+        <p>These instructions apply to <a href="https://github.com/features/copilot">GitHub Copilot</a> in the <a href="https://code.visualstudio.com">Visual Studio Code</a> application, version 1.99 or later, on any Copilot plan, including the Copilot Free plan. As prerequisites, you must have <a href="https://code.visualstudio.com/docs/setup/copilot">enabled Copilot</a> in the application, and you must be signed in to your GitHub account.</p>
+        <ol>
+          <li>Open the Command Palette and run <q>MCP: Add Server</q>.</li>
+          <li>Select <q>HTTP (HTTP or Server-Sent Events)</q>.</li>
+          <li>Enter <q>https://kilotest.com/mcp</q> as the server URL.</li>
+          <li>Enter <q>kilotest</q> as the server ID.</li>
+          <li>Select <q>Global</q> (and <q>Copilot Global</q>, if prompted) to make Kilotest available in all your workspaces.</li>
+          <li>Accept the prompt to trust and start the server.</li>
+        </ol>
+        <p>In the Copilot Chat view, select the <q>Agent</q> mode; the Kilotest tools then become available to Copilot. In Visual Studio 2022 version 17.14 or later, you can instead open the chat tool picker, select the <q>+</q> button, and choose <q>Add custom MCP server</q> to enter the same name and URL.</p>
+      </details>
       <details id="grok">
         <summary>Grok</summary>
         <p>These instructions apply to <a href="https://grok.com">Grok</a> on any plan, including the free plan.</p>
@@ -81,6 +94,21 @@
           <li>Enter <q>https://kilotest.com/mcp</q> into the <q>Server URL</q> input.</li>
           <li>Save the connector.</li>
         </ol>
+      </details>
+      <details id="microsoft-foundry">
+        <summary>Microsoft Foundry</summary>
+        <p>These instructions apply to <a href="https://ai.azure.com">Microsoft Foundry</a> (formerly Azure AI Foundry), where agents are billed pay-as-you-go through an Azure subscription. A new Azure account currently includes a US$200 credit. Before connecting Kilotest, you need a Foundry project with a deployed model and an agent.</p>
+        <ol>
+          <li>In the Foundry portal, select the <q>Build</q> tab and select your agent.</li>
+          <li>In the <q>Playground</q> tab, expand the <q>Tools</q> dropdown and select <q>Add</q>.</li>
+          <li>In the <q>Custom</q> tab, select <q>Model Context Protocol (MCP)</q>, then <q>Create</q>.</li>
+          <li>Enter <q>Kilotest</q> as the <q>Name</q>.</li>
+          <li>Enter <q>https://kilotest.com/mcp</q> as the <q>Remote MCP Server endpoint</q>.</li>
+          <li>Set the <q>Authentication</q> to <q>Unauthenticated</q>.</li>
+          <li>Select <q>Connect</q>.</li>
+          <li>Select <q>Save</q> to save the tool configuration in your agent.</li>
+        </ol>
+        <p>When your agent wants to call a Kilotest tool, review the tool name and arguments and select <q>Approve</q> to allow the call.</p>
       </details>
       <details id="perplexity">
         <summary>Perplexity</summary>
@@ -114,7 +142,7 @@
       <h2>Demonstration</h2>
       <p>A <a href="/demo-chatgpt.html">step-through demonstration</a> shows ChatGPT using Kilotest to discover tested pages, inspect reported issues, and request tests and retests.</p>
       <h2 id="other">Other AI platforms</h2>
-      <p>You can connect Kilotest to some other AI platforms, too. The instructions above are limited to consumer platforms that are either free or relatively inexpensive (US$20 per month or less). Business platforms such as ChatGPT Business, and developer platforms such as Devin Desktop, also permit you to enable Kilotest.</p>
+      <p>You can connect Kilotest to some other AI platforms, too. The instructions above are limited to platforms available to individuals that are free, relatively inexpensive (US$20 per month or less), or billed pay-as-you-go. Business platforms such as ChatGPT Business and Microsoft Copilot Studio, and developer platforms such as Devin Desktop, also permit you to enable Kilotest.</p>
       <p>Feel free to submit a comment below about empowering any AI platform to use Kilotest.</p>
       <p>You can also submit an issue on the <a href="https://github.com/jrpool/kilotest/issues">Kilotest GitHub repository</a>.</p>
       <section id="suggest-improvement">

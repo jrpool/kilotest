@@ -37,6 +37,7 @@ beforeEach(async () => {
 });
 
 import {response} from './requestFeature.ts';
+import {requestFeatureResponseSchema} from './schemas.ts';
 
 after(async () => {
   console.log = originalLog;
@@ -185,4 +186,12 @@ test('requestFeature accepts a feature request that differs from an existing one
   assert.equal(details.error, undefined);
   const featureRequests = JSON.parse(await fs.readFile(process.env.FEATURE_REQUESTS_PATH!, 'utf8'));
   assert.equal(featureRequests.length, 2);
+});
+
+test('requestFeature response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['A feature request submitted only for schema conformance.']);
+  assert.deepEqual(requestFeatureResponseSchema.parse(body), body);
 });

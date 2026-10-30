@@ -16,11 +16,13 @@ import {requestHandler} from './index.ts';
 
 const port = 3998;
 const featureRequestsPath = path.join(import.meta.dirname, 'test/fixtures/apiIntegration/featureRequests.json');
+const disagreementsPath = path.join(import.meta.dirname, 'test/fixtures/apiIntegration/disagreements.json');
 
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
 const savedFeatureRequestsPath = process.env.FEATURE_REQUESTS_PATH;
+const savedDisagreementsPath = process.env.DISAGREEMENTS_PATH;
 let server: http.Server;
 
 before(async () => {
@@ -31,6 +33,9 @@ before(async () => {
   process.env.FEATURE_REQUESTS_PATH = featureRequestsPath;
   await fs.mkdir(path.dirname(featureRequestsPath), {recursive: true});
   await fs.writeFile(featureRequestsPath, '[]\n');
+  // The same for diagnosis disagreements.
+  process.env.DISAGREEMENTS_PATH = disagreementsPath;
+  await fs.writeFile(disagreementsPath, '[]\n');
   server = http.createServer(requestHandler);
   await new Promise<void>(resolve => server.listen(port, () => resolve()));
 });
@@ -47,6 +52,12 @@ after(async () => {
   }
   else {
     delete process.env.FEATURE_REQUESTS_PATH;
+  }
+  if (savedDisagreementsPath !== undefined) {
+    process.env.DISAGREEMENTS_PATH = savedDisagreementsPath;
+  }
+  else {
+    delete process.env.DISAGREEMENTS_PATH;
   }
   await fs.rm(path.dirname(featureRequestsPath), {recursive: true, force: true});
   server.closeAllConnections?.();
@@ -102,6 +113,17 @@ test('GET /api/listPages returns valid JSON through the HTTP routing layer', {ti
 
 test('POST /api/requestFeature parses a JSON body and returns a JSON response through the HTTP routing layer', async () => {
   const {body} = await request('POST', '/api/requestFeature', {feature: 'Add a dark mode toggle'});
+  const details = body['response content']['details about your request'];
+  assert.equal(details.error, undefined);
+  assert.equal(details.disposition, 'received and logged; manager notified');
+});
+
+test('POST /api/reportDisagreement parses path parameters and a JSON body and returns a JSON response through the HTTP routing layer', async () => {
+  const {body} = await request('POST', '/api/reportDisagreement/linkNoText/260101T0000-mix/0', {
+    engineID: 'axe',
+    ruleID: 'r11',
+    reason: 'The element does have an accessible name'
+  });
   const details = body['response content']['details about your request'];
   assert.equal(details.error, undefined);
   assert.equal(details.disposition, 'received and logged; manager notified');

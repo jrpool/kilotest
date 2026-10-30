@@ -409,9 +409,11 @@ Alerts are sent to the maintainer in the following conditions:
 
 7. **MCP feature request received**: When a user submits a feature request via the MCP server's `requestFeature` tool, an alert is sent with subject `"MCP feature request received"`, including the text of the feature request, and the request is also appended to `db/featureRequests.json`, the same way tutorial comments are appended to their own files (see item 1), so that a manager can review or delete it later via `/deleteNotesForm.html`.
 
-8. **WAVE balance low**: When Kilotest detects that the account balance for the WAVE API service (used for accessibility testing) has fallen below a threshold, an alert is sent with subject `"Kilotest: WAVE balance low"`, indicating the number of credits remaining.
+8. **Diagnosis disagreement received**: When a user reports disagreement with a diagnosis via the API’s or MCP server’s `reportDisagreement` operation, an alert is sent with subject `"Kilotest: diagnosis disagreement received"`, including the reason, the disputed diagnosis (rule engine, rule, issue, element, and report), and the disagreement is also appended to `db/disagreements.json`, so that a manager can review it and, when warranted, propose a correction to the `testaro-issues` classification (see item 3 for how such corrections take effect).
 
-9. **AI service balance low**: When Kilotest detects that the account balance for an AI service account (such as Anthropic) has fallen below a threshold, an alert is sent with subject `"Kilotest: AI service [N] balance low"`, indicating the approximate remaining balance in dollars and the estimated cost per job.
+9. **WAVE balance low**: When Kilotest detects that the account balance for the WAVE API service (used for accessibility testing) has fallen below a threshold, an alert is sent with subject `"Kilotest: WAVE balance low"`, indicating the number of credits remaining.
+
+10. **AI service balance low**: When Kilotest detects that the account balance for an AI service account (such as Anthropic) has fallen below a threshold, an alert is sent with subject `"Kilotest: AI service [N] balance low"`, indicating the approximate remaining balance in dollars and the estimated cost per job.
 
 ### Alert configuration
 
@@ -427,7 +429,7 @@ If any of these five variables is missing or empty at alert time, the alert is n
 
 ### Inbox size limits
 
-Four submission types (test requests and retest requests together, web tutorial comments, AI tutorial comments, and MCP feature requests) are each held in a pending "inbox" (`db/jobs/testRequests.json`, `db/comments/tutorialWeb.json`, `db/comments/tutorialAI.json`, and `db/featureRequests.json` respectively) awaiting manual review by the maintainer. Each inbox has a maximum size; once reached, a new, distinct submission is rejected (with a message suggesting the requester instead post to the [GitHub issues page](https://github.com/jrpool/kilotest/issues) or email `info@kilotest.com`) rather than added, so neither the inbox file nor the manager alert emails it generates can grow without bound (see GitHub issue #3, abuse type 3, repeated/automated submissions). This is modeled on a full mailbox rejecting new mail, rather than on a submission rate limit: it is the backlog size itself, not how quickly it grows, that costs the maintainer review time and risks unbounded storage. Every alert sent for an accepted submission reports the resulting inbox count against its cap, so a maintainer returning after an absence can immediately see how close an inbox is to full.
+Five submission types (test requests and retest requests together, web tutorial comments, AI tutorial comments, MCP feature requests, and diagnosis disagreements) are each held in a pending "inbox" (`db/jobs/testRequests.json`, `db/comments/tutorialWeb.json`, `db/comments/tutorialAI.json`, `db/featureRequests.json`, and `db/disagreements.json` respectively) awaiting manual review by the maintainer. Each inbox has a maximum size; once reached, a new, distinct submission is rejected (with a message suggesting the requester instead post to the [GitHub issues page](https://github.com/jrpool/kilotest/issues) or email `info@kilotest.com`) rather than added, so neither the inbox file nor the manager alert emails it generates can grow without bound (see GitHub issue #3, abuse type 3, repeated/automated submissions). This is modeled on a full mailbox rejecting new mail, rather than on a submission rate limit: it is the backlog size itself, not how quickly it grows, that costs the maintainer review time and risks unbounded storage. Every alert sent for an accepted submission reports the resulting inbox count against its cap, so a maintainer returning after an absence can immediately see how close an inbox is to full.
 
 Each cap defaults to 20 and can be set independently via an environment variable:
 
@@ -435,6 +437,7 @@ Each cap defaults to 20 and can be set independently via an environment variable
 2. **`TUTORIAL_WEB_COMMENTS_MAX`**: The maximum number of comments held on the web tutorial page (`/tutorialWeb.html`).
 3. **`TUTORIAL_AI_COMMENTS_MAX`**: The maximum number of comments held on the AI agent tutorial page (`/tutorialAI.html`).
 4. **`FEATURE_REQUESTS_MAX`**: The maximum number of feature requests held via the MCP server's `requestFeature` tool.
+5. **`DISAGREEMENTS_MAX`**: The maximum number of disagreements with diagnoses held via the API’s or MCP server’s `reportDisagreement` operation.
 
 Each variable, if set, must be a non-negative integer; if unset, empty, or not a non-negative integer, the default of 20 is used instead. A value of `0` means no limit: that inbox is never treated as full, regardless of size. Unlike the alert-configuration variables above, these are not required: an unset value never disables the limit, it only selects the default size.
 

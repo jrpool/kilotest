@@ -73,6 +73,16 @@ export const awaitTestSchema = {
   reportID: z.string().describe('Report identifier returned by orderNewTest or orderRetest (example: 260503T0432-x9z)')
 };
 
+// reportDisagreement: POST /api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}
+export const reportDisagreementSchema = {
+  issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
+  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)'),
+  catalogIndex: z.string().describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'),
+  engineID: z.string().describe('Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'),
+  ruleID: z.string().describe('Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'),
+  reason: z.string().describe('20- to 1000-character explanation of why the diagnosis is disputed')
+};
+
 // listPages takes no input; omitted (mcp.ts already uses inputSchema: {}).
 
 // RESPONSE SCHEMAS
@@ -278,7 +288,7 @@ export const listViolatorsResponseSchema = envelope('GET', z.object({
     'tag name': z.unknown().describe('Copied from the report catalog entry; type not guaranteed.'),
     'inner text': z.unknown().describe('Copied from the report catalog entry; type not guaranteed.'),
     'count of rule engines reporting that the element exhibited the issue': z.number(),
-    'how to get details about the element': z.object({URL: z.string(), 'request method': z.literal('GET')}),
+    'how to get details about the element': z.object({method: z.literal('GET'), URL: z.string()}),
     'web users can get details about the element at': z.string()
   })).nullable()
 }));
@@ -297,10 +307,20 @@ export const listDiagnosesResponseSchema = envelope('GET', z.object({
     'x, y, width, and height of bounding box': z.unknown().describe('Copied from the report catalog entry; type not guaranteed.')
   }).nullable(),
   'diagnoses of how the element exhibited the issue': z.array(z.object({
+    'identifier of the rule engine': z.unknown().describe('Copied from the report act (which); type not guaranteed.'),
     'identifier of the violated rule': z.unknown().describe('Copied from the report instance (ruleID); type not guaranteed.'),
     'description of the violation': z.unknown().describe('Copied from the report instance (what); type not guaranteed.'),
     'severity of the violation on a 0-to-3 scale': z.unknown().describe('Copied from the report instance (ordinalSeverity); type not guaranteed.'),
-    'count of violations of the rule by the element': z.number()
+    'count of violations of the rule by the element': z.number(),
+    'how to report that you disagree with this diagnosis': z.object({
+      method: z.literal('POST'),
+      URL: z.string(),
+      'request body': z.object({
+        engineID: z.string(),
+        ruleID: z.string(),
+        reason: z.string()
+      })
+    })
   })).or(z.object({error: z.string()})).nullable()
 }));
 
@@ -359,6 +379,28 @@ export const requestFeatureResponseSchema = envelope(
     })
   ])}),
   z.object(requestFeatureSchema),
+  z.null()
+);
+
+export const reportDisagreementResponseSchema = envelope(
+  'POST',
+  z.object({'details about your request': z.union([
+    z.object({error: z.string()}),
+    z.object({
+      'date and time received': z.string(),
+      'diagnosis you disagree with': z.object({
+        'issue identifier': z.string(),
+        'identifier of the rule engine': z.string(),
+        'identifier of the violated rule': z.string()
+      }),
+      disposition: z.string()
+    })
+  ])}),
+  z.object({
+    engineID: reportDisagreementSchema.engineID,
+    ruleID: reportDisagreementSchema.ruleID,
+    reason: reportDisagreementSchema.reason
+  }),
   z.null()
 );
 

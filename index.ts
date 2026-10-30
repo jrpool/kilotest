@@ -88,6 +88,7 @@ import {response as requestNewTestAPI} from './api/requestNewTest.ts';
 import {response as orderNewTestAPI} from './api/orderNewTest.ts';
 import {response as orderRetestAPI} from './api/orderRetest.ts';
 import {response as awaitTestAPI} from './api/awaitTest.ts';
+import {response as reportDisagreementAPI} from './api/reportDisagreement.ts';
 
 // ENVIRONMENT
 
@@ -190,6 +191,7 @@ const apiRespond: {
   orderNewTest: ApiResponder;
   orderRetest: ApiResponder;
   awaitTest: ApiResponder;
+  reportDisagreement: ApiResponder;
 } = {
   getReport: getReportAPI,
   listDiagnoses: listDiagnosesAPI,
@@ -201,7 +203,8 @@ const apiRespond: {
   requestNewTest: requestNewTestAPI,
   orderNewTest: orderNewTestAPI,
   orderRetest: orderRetestAPI,
-  awaitTest: awaitTestAPI
+  awaitTest: awaitTestAPI,
+  reportDisagreement: reportDisagreementAPI
 };
 
 // CONSTANTS
@@ -1392,6 +1395,16 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           // Get the response body.
           const responseBody = await apiRespond.requestFeature([feature]);
           await recordPageMetric('apiOperations', 'requestFeature');
+          // Send it.
+          setHeaders('application/json', null, 'ultra');
+          response.end(JSON.stringify(responseBody));
+        }
+        // Otherwise, if the service is to receive a disagreement with a diagnosis:
+        else if (segments[0] === 'reportDisagreement') {
+          const {engineID, ruleID, reason} = postData as {engineID: string; ruleID: string; reason: string};
+          // Get the response body.
+          const responseBody = await apiRespond.reportDisagreement(segments.slice(1).concat(engineID, ruleID, reason));
+          await recordPageMetric('apiOperations', 'reportDisagreement');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

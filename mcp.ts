@@ -19,6 +19,7 @@ import * as requestFeatureAPI from './api/requestFeature.ts';
 import * as orderNewTestAPI from './api/orderNewTest.ts';
 import * as orderRetestAPI from './api/orderRetest.ts';
 import * as awaitTestAPI from './api/awaitTest.ts';
+import * as reportDisagreementAPI from './api/reportDisagreement.ts';
 import {version} from './api/version.ts';
 import {recordMetric} from './util.ts';
 
@@ -33,6 +34,7 @@ import {
   orderNewTestSchema,
   orderRetestSchema,
   awaitTestSchema,
+  reportDisagreementSchema,
   listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
@@ -43,7 +45,8 @@ import {
   requestFeatureResponseSchema,
   orderNewTestResponseSchema,
   orderRetestResponseSchema,
-  awaitTestResponseSchema
+  awaitTestResponseSchema,
+  reportDisagreementResponseSchema
 } from './api/schemas.ts';
 
 // CONSTANTS
@@ -254,6 +257,26 @@ export const createMCPServer = (): McpServer => {
     async ({feature}) => {
       const result = await requestFeatureAPI.response([feature]);
       await recordMetric('mcpToolCalls', 'requestFeature');
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
+    }
+  );
+  server.registerTool(
+    'reportDisagreement',
+    {
+      description: 'Reports that you disagree with a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the engineID and ruleID shown in the diagnosis and your reason. Returns a confirmation with disposition details.',
+      inputSchema: reportDisagreementSchema,
+      outputSchema: reportDisagreementResponseSchema,
+      annotations: {
+        title: 'Report disagreement with a diagnosis',
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({issueID, reportID, catalogIndex, engineID, ruleID, reason}) => {
+      const result = await reportDisagreementAPI.response([issueID, reportID, catalogIndex, engineID, ruleID, reason]);
+      await recordMetric('mcpToolCalls', 'reportDisagreement');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );

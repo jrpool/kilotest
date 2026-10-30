@@ -124,6 +124,19 @@ Kilotest offers these tools:
   - path: `/api/requestFeature`
   - payload properties
     - `feature`: description and motivation of the feature improvement or the new feature
+- `reportDisagreement`
+  - method: `POST`
+  - purpose: report disagreement with a diagnosis shown by `listDiagnoses` of how an element exhibited an issue
+  - path: `/api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}`
+  - parameters
+    - `issueID`: identifier of the issue
+    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
+    - `catalogIndex`: index of the catalog entry of the element
+  - source of parameters: response to a `listDiagnoses` request
+  - payload properties
+    - `engineID`: identifier of the rule engine that produced the disputed diagnosis, shown in the `listDiagnoses` response
+    - `ruleID`: identifier of the rule whose diagnosis is disputed, shown in the `listDiagnoses` response, or, if it is null, the description of the violation
+    - `reason`: 20- to 1000-character explanation of why the diagnosis is disputed
 - `orderNewTest`
   - method: `POST`
   - purpose: order immediate, automatically approved testing of one web page about which no report is available, instead of waiting for manual approval

@@ -17,6 +17,7 @@ import {
   orderNewTestSchema,
   orderRetestSchema,
   awaitTestSchema,
+  reportDisagreementSchema,
   listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
@@ -27,7 +28,8 @@ import {
   requestFeatureResponseSchema,
   orderNewTestResponseSchema,
   orderRetestResponseSchema,
-  awaitTestResponseSchema
+  awaitTestResponseSchema,
+  reportDisagreementResponseSchema
 } from './schemas.ts';
 
 // ROUTES
@@ -98,6 +100,23 @@ export const routes = [
     summary: 'Request a feature improvement or new feature',
     bodySchema: z.object(requestFeatureSchema),
     responseSchema: requestFeatureResponseSchema
+  },
+  {
+    operationId: 'reportDisagreement',
+    method: 'post',
+    path: '/api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}',
+    summary: 'Report disagreement with a diagnosis',
+    pathParamsSchema: z.object({
+      issueID: reportDisagreementSchema.issueID,
+      reportID: reportDisagreementSchema.reportID,
+      catalogIndex: reportDisagreementSchema.catalogIndex
+    }),
+    bodySchema: z.object({
+      engineID: reportDisagreementSchema.engineID,
+      ruleID: reportDisagreementSchema.ruleID,
+      reason: reportDisagreementSchema.reason
+    }),
+    responseSchema: reportDisagreementResponseSchema
   },
   {
     operationId: 'orderNewTest',

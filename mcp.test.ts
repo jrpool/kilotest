@@ -37,10 +37,10 @@ test('mcpPath is /mcp', () => {
   assert.equal(mcpPath, '/mcp');
 });
 
-test('createMCPServer registers all 12 tools', () => {
+test('createMCPServer registers all 13 tools', () => {
   const server = createMCPServer();
   const toolNames = Object.keys((server as any)._registeredTools);
-  assert.equal(toolNames.length, 12);
+  assert.equal(toolNames.length, 13);
   assert.deepEqual(toolNames, [
     'getKilotestOverview',
     'listPages',
@@ -51,6 +51,7 @@ test('createMCPServer registers all 12 tools', () => {
     'requestNewTest',
     'requestRetest',
     'requestFeature',
+    'reportDisagreement',
     'orderNewTest',
     'orderRetest',
     'awaitTest'
@@ -195,6 +196,23 @@ test('requestFeature handler returns content and structuredContent', async () =>
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
   assert.equal(getToolCallCount('requestFeature'), countBefore + 1);
+});
+
+test('reportDisagreement handler returns content and structuredContent', async () => {
+  const server = createMCPServer();
+  const countBefore = getToolCallCount('reportDisagreement');
+  const result = await (server as any)._registeredTools.reportDisagreement.handler({
+    issueID: 'linkNoText',
+    reportID: '260101T0000-mix',
+    catalogIndex: '0',
+    engineID: 'axe',
+    ruleID: 'r11',
+    reason: 'The element does have an accessible name'
+  });
+  assert.ok(result.content);
+  assert.equal(result.content[0].type, 'text');
+  assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('reportDisagreement'), countBefore + 1);
 });
 
 test('orderNewTest handler returns content and structuredContent, and enqueues a job', async () => {
@@ -349,7 +367,7 @@ test('handleMCP responds to initialize with server info', async () => {
   }
 });
 
-test('handleMCP lists all 12 tools via tools/list', async () => {
+test('handleMCP lists all 13 tools via tools/list', async () => {
   const server = await startMCPServer();
   try {
     const port = server.address().port;
@@ -357,7 +375,7 @@ test('handleMCP lists all 12 tools via tools/list', async () => {
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);
     const toolNames = result.result.tools.map((t: any) => t.name);
-    assert.equal(toolNames.length, 12);
+    assert.equal(toolNames.length, 13);
     assert.deepEqual(toolNames, [
       'getKilotestOverview',
       'listPages',
@@ -368,6 +386,7 @@ test('handleMCP lists all 12 tools via tools/list', async () => {
       'requestNewTest',
       'requestRetest',
       'requestFeature',
+      'reportDisagreement',
       'orderNewTest',
       'orderRetest',
       'awaitTest'

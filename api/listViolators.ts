@@ -21,6 +21,8 @@ import {listViolatorsResponseSchema} from './schemas.ts';
 
 // The response content defined by the response schema.
 type ResponseContent = z.infer<typeof listViolatorsResponseSchema>['response content'];
+// The basics about one element exhibiting the issue.
+type ViolatorBasics = NonNullable<ResponseContent['basics about all elements exhibiting the issue']>[number];
 
 // FUNCTIONS
 
@@ -96,7 +98,7 @@ export const response = async (args: string[]) => {
       );
       // Get basics about the violators.
       const violatorsBasics = sortedViolatorData
-      .map(violator => {
+      .map((violator): ViolatorBasics => {
         const {catalogIndex, reporters} = violator;
         const catalogItem = catalog[catalogIndex];
         return {
@@ -105,8 +107,8 @@ export const response = async (args: string[]) => {
           'inner text': catalogItem?.text ?? null,
           'count of rule engines reporting that the element exhibited the issue': reporters.size,
           'how to get details about the element': {
-            URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${reportID}`,
-            'request method': 'GET' as const
+            method: 'GET',
+            URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${reportID}`
           },
           'web users can get details about the element at': `${thisHost}/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}`
         };

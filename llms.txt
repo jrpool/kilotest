@@ -12,6 +12,7 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 - Request testing of a web page: `/api/requestNewTest` (`POST`)
 - Request retesting of a web page: `/api/requestRetest/{reportID}` (`POST`)
 - Request adding or improving a feature: `/api/requestFeature` (`POST`)
+- Report disagreement with a diagnosis: `/api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}` (`POST`)
 - Order immediate, automatically approved testing of a web page: `/api/orderNewTest` (`POST`)
 - Order immediate, automatically approved retesting of a web page: `/api/orderRetest/{reportID}` (`POST`)
 - Wait for a job ordered via orderNewTest or orderRetest to complete: `/api/awaitTest/{reportID}` (`POST`)

@@ -31,6 +31,10 @@ import {listIssuesResponseSchema} from './schemas.ts';
 
 // The response content defined by the response schema.
 type ResponseContent = z.infer<typeof listIssuesResponseSchema>['response content'];
+// One entry of the history of reports about the page.
+type ReportHistoryEntry = NonNullable<ResponseContent['history of reports about the page']>[number];
+// The basics about one issue in the report.
+type IssueBasics = NonNullable<ResponseContent['basics about all issues reported in the report']>[number];
 
 // FUNCTIONS
 
@@ -67,7 +71,7 @@ export const response = async (args: string[]) => {
       const pageExtracts = await getPageReportExtracts(report.target.what);
       const lastIndex = pageExtracts.length - 1;
       // Add the history of reports about the page to the response content.
-      responseContent['history of reports about the page'] = pageExtracts.map((extract, index) => {
+      responseContent['history of reports about the page'] = pageExtracts.map((extract, index): ReportHistoryEntry => {
         const extractID = extract.id;
         return {
           identifier: extractID,
@@ -77,7 +81,7 @@ export const response = async (args: string[]) => {
           'whether it is the latest report about the page': index === lastIndex,
           'whether it is the report described in this response': extractID === reportID,
           'how to get details about the report': {
-            method: 'GET' as const,
+            method: 'GET',
             URL: `${thisHost}/api/listIssues/${extractID}`
           },
           'web users can get details about the report at': `${thisHost}/listIssues.html/${extractID}`
@@ -210,7 +214,7 @@ export const response = async (args: string[]) => {
       // Sort the data about issues by summary.
       const sortedIssuesData = objectSort(Object.values(issuesData), 'summary', 'alpha');
       // Get the basics about the issues.
-      const issuesBasics = sortedIssuesData.map(issueData => {
+      const issuesBasics = sortedIssuesData.map((issueData): IssueBasics => {
         const {id, summary, weight, why, reporterIDs} = issueData;
         return {
           identifier: id,
@@ -220,7 +224,7 @@ export const response = async (args: string[]) => {
           'rule engines with any violations belonging to the issue': getRuleEnginesFacts(reporterIDs)
           .map(ruleEnginesFact => ruleEnginesFact.name),
           'how to get details about the issue': {
-            method: 'GET' as const,
+            method: 'GET',
             URL: `${thisHost}/api/listViolators/${id}/${reportID}`
           },
           'web users can get details about the issue at': `${thisHost}/listViolators.html/${id}/${reportID}`

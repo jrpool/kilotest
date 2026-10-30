@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Kilotest API
   description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 12 rule engines to test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.'
-  version: 61.0.0
+  version: 62.0.0
   license:
     name: MIT
     identifier: MIT
@@ -559,14 +559,14 @@ paths:
                                 how to get details about the element:
                                   type: object
                                   properties:
-                                    URL:
-                                      type: string
-                                    request method:
+                                    method:
                                       type: string
                                       const: GET
+                                    URL:
+                                      type: string
                                   required:
+                                    - method
                                     - URL
-                                    - request method
                                   additionalProperties: false
                                 web users can get details about the element at:
                                   type: string
@@ -709,6 +709,8 @@ paths:
                                 items:
                                   type: object
                                   properties:
+                                    identifier of the rule engine:
+                                      description: Copied from the report act (which); type not guaranteed.
                                     identifier of the violated rule:
                                       description: Copied from the report instance (ruleID); type not guaranteed.
                                     description of the violation:
@@ -717,11 +719,40 @@ paths:
                                       description: Copied from the report instance (ordinalSeverity); type not guaranteed.
                                     count of violations of the rule by the element:
                                       type: number
+                                    how to report that you disagree with this diagnosis:
+                                      type: object
+                                      properties:
+                                        method:
+                                          type: string
+                                          const: POST
+                                        URL:
+                                          type: string
+                                        request body:
+                                          type: object
+                                          properties:
+                                            engineID:
+                                              type: string
+                                            ruleID:
+                                              type: string
+                                            reason:
+                                              type: string
+                                          required:
+                                            - engineID
+                                            - ruleID
+                                            - reason
+                                          additionalProperties: false
+                                      required:
+                                        - method
+                                        - URL
+                                        - request body
+                                      additionalProperties: false
                                   required:
+                                    - identifier of the rule engine
                                     - identifier of the violated rule
                                     - description of the violation
                                     - severity of the violation on a 0-to-3 scale
                                     - count of violations of the rule by the element
+                                    - how to report that you disagree with this diagnosis
                                   additionalProperties: false
                               - type: object
                                 properties:
@@ -1166,6 +1197,153 @@ paths:
                                 type: string
                             required:
                               - date and time received
+                              - disposition
+                            additionalProperties: false
+                    required:
+                      - details about your request
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}:
+    post:
+      operationId: reportDisagreement
+      summary: Report disagreement with a diagnosis
+      parameters:
+        - in: path
+          name: issueID
+          schema:
+            type: string
+            description: 'Issue identifier (example: contrastPoor)'
+          required: true
+          description: 'Issue identifier (example: contrastPoor)'
+        - in: path
+          name: reportID
+          schema:
+            type: string
+            description: 'Identifier of the report (example: 260503T0432-x9z)'
+          required: true
+          description: 'Identifier of the report (example: 260503T0432-x9z)'
+        - in: path
+          name: catalogIndex
+          schema:
+            type: string
+            description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'
+          required: true
+          description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                engineID:
+                  type: string
+                  description: 'Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'
+                ruleID:
+                  type: string
+                  description: 'Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'
+                reason:
+                  type: string
+                  description: 20- to 1000-character explanation of why the diagnosis is disputed
+              required:
+                - engineID
+                - ruleID
+                - reason
+      responses:
+        '200':
+          description: Report disagreement with a diagnosis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          engineID:
+                            type: string
+                            description: 'Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'
+                          ruleID:
+                            type: string
+                            description: 'Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'
+                          reason:
+                            type: string
+                            description: 20- to 1000-character explanation of why the diagnosis is disputed
+                        required:
+                          - engineID
+                          - ruleID
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: 'null'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              diagnosis you disagree with:
+                                type: object
+                                properties:
+                                  issue identifier:
+                                    type: string
+                                  identifier of the rule engine:
+                                    type: string
+                                  identifier of the violated rule:
+                                    type: string
+                                required:
+                                  - issue identifier
+                                  - identifier of the rule engine
+                                  - identifier of the violated rule
+                                additionalProperties: false
+                              disposition:
+                                type: string
+                            required:
+                              - date and time received
+                              - diagnosis you disagree with
                               - disposition
                             additionalProperties: false
                     required:

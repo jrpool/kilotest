@@ -94,14 +94,24 @@ export const response = async (args: string[]) => {
         const diagnoses: Diagnoses = [];
         // For each instance reporting a violation of the issue by the violator:
         getTestActInstances(report, {violationsOnly: true, issueID, catalogIndex})
-        .forEach(({instance}) => {
+        .forEach(({act, instance}) => {
           const {count, ordinalSeverity, ruleID, what} = instance;
           // Get the diagnosis.
-          const diagnosis = {
+          const diagnosis: Diagnoses[number] = {
+            'identifier of the rule engine': act.which!,
             'identifier of the violated rule': ruleID !== what ? ruleID : null,
             'description of the violation': what,
             'severity of the violation on a 0-to-3 scale': ordinalSeverity,
-            'count of violations of the rule by the element': count ?? 1
+            'count of violations of the rule by the element': count ?? 1,
+            'how to report that you disagree with this diagnosis': {
+              method: 'POST',
+              URL: `${thisHost}/api/reportDisagreement/${issueID}/${reportID}/${catalogIndex}`,
+              'request body': {
+                engineID: 'the identifier of the rule engine shown in this diagnosis',
+                ruleID: 'the identifier of the violated rule shown in this diagnosis, or, if it is null, the description of the violation',
+                reason: '20- to 1000-character explanation of why you disagree with this diagnosis'
+              }
+            }
           }
           diagnoses.push(diagnosis);
         });

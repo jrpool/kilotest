@@ -2402,3 +2402,25 @@ test('runIfMain does not call startServer when mainModule differs from currentMo
   await new Promise<void>(resolve => setImmediate(resolve));
   assert.equal(called, false);
 });
+
+test('runIfMain logs the error and sets a failing exit code when the starter rejects', async () => {
+  const savedExitCode = process.exitCode;
+  const logged: string[] = [];
+  const originalLog = console.log;
+  console.log = (line: string) => logged.push(line);
+  const starter = async () => {
+    throw new Error('injected startup failure');
+  };
+  const fakeModule = {};
+  try {
+    runIfMain(fakeModule, fakeModule, starter);
+    // Wait for the rejection handler's microtasks to run.
+    await new Promise<void>(resolve => setImmediate(resolve));
+    assert.ok(logged.some(line => line.includes('injected startup failure')));
+    assert.equal(process.exitCode, 1);
+  }
+  finally {
+    console.log = originalLog;
+    process.exitCode = savedExitCode;
+  }
+});

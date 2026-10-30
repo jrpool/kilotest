@@ -981,12 +981,12 @@ test('GET /qai/comments redirects to /tutorialAI.html', async () => {
   assert.equal(res.headers['location'], '/tutorialAI.html');
 });
 
-test('GET /diagnoses.html/<segments> redirects to the equivalent /listDiagnoses.html/<segments>, preserving the query string', async () => {
+test('GET /diagnoses.html/<issueID>/<timeStamp>/<jobID>/<catalogIndex> with a query string redirects in one step to the canonical /listDiagnoses.html URL', async () => {
   const res = await request(
-    'GET', '/diagnoses.html/duplicateID/260426T1741-77w/718?pathID=/html/body', {}, {followRedirects: false}
+    'GET', '/diagnoses.html/linkNoText/260101T0000/mix/0?pathID=/html/body', {}, {followRedirects: false}
   );
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listDiagnoses.html/duplicateID/260426T1741-77w/718?pathID=/html/body');
+  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000-mix/0');
 });
 
 test('GET /reportIssues.html/<reportID> redirects to the equivalent /listIssues.html/<reportID>', async () => {
@@ -1015,12 +1015,12 @@ test('GET /listViolators.html/<issueID>/<timeStamp>/<jobID> redirects to the sin
   assert.equal(res.headers['location'], '/listViolators.html/linkNoText/260101T0000-mix');
 });
 
-test('GET /listDiagnoses.html/<issueID>/<timeStamp>/<jobID>/<catalogIndex> redirects to the single-reportID URL, preserving the query string', async () => {
+test('GET /listDiagnoses.html/<issueID>/<timeStamp>/<jobID>/<catalogIndex> with a query string redirects in one step to the canonical single-reportID URL', async () => {
   const res = await request(
     'GET', '/listDiagnoses.html/linkNoText/260101T0000/mix/0?pathID=/html/body', {}, {followRedirects: false}
   );
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000-mix/0?pathID=/html/body');
+  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000-mix/0');
 });
 
 test('GET /requestRetestForm.html/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
@@ -1075,6 +1075,33 @@ test('GET /api/listReports redirects to /api/listPages', async () => {
   const res = await request('GET', '/api/listReports', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
   assert.equal(res.headers['location'], '/api/listPages');
+});
+
+// TESTS: query-string canonicalization
+// No GET page handler reads the query string, so a request with a query returns a
+// duplicate of the queryless page. These verify that such requests permanently
+// redirect to the queryless URL.
+
+test('GET /listDiagnoses.html/<segments> with a query string redirects to the queryless URL', async () => {
+  const res = await request(
+    'GET', '/listDiagnoses.html/linkNoText/260101T0000-mix/0?pathID=/html/body', {}, {followRedirects: false}
+  );
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000-mix/0');
+});
+
+test('GET /listIssues.html/<reportID> with a query string redirects to the queryless URL', async () => {
+  const res = await request(
+    'GET', '/listIssues.html/260101T0000-mix?foo=bar', {}, {followRedirects: false}
+  );
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
+});
+
+test('GET / with a query string redirects to /', async () => {
+  const res = await request('GET', '/?utm_source=example', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/');
 });
 
 test('GET /requestTest.html redirects to /requestNewTest.html', async () => {
@@ -1647,12 +1674,15 @@ test('POST /metrics.html with a valid authCode sets a metrics-exclusion cookie',
   assert.ok(setCookie.includes('HttpOnly'));
 });
 
-test('GET /metrics.html with a valid authCode in the query string does not set a cookie or show the counts', async () => {
+test('GET /metrics.html with a valid authCode in the query string redirects to the queryless URL, which does not set a cookie or show the counts', async () => {
   const res = await request('GET', '/metrics.html?authCode=test-auth-code');
-  assert.equal(res.statusCode, 200);
-  assert.equal(res.headers['set-cookie'], undefined);
-  assert.ok(res.body.includes('Authorization code'));
-  assert.ok(!res.body.includes('Web page views'));
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/metrics.html');
+  const redirected = await request('GET', res.headers['location']);
+  assert.equal(redirected.statusCode, 200);
+  assert.equal(redirected.headers['set-cookie'], undefined);
+  assert.ok(redirected.body.includes('Authorization code'));
+  assert.ok(!redirected.body.includes('Web page views'));
 });
 
 test('a request carrying the metrics-exclusion cookie does not record a pageViews or apiOperations metric', async () => {

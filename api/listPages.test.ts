@@ -31,7 +31,7 @@ after(() => {
 test('listPages returns one entry per tested page, sorted by page description', async () => {
   const body = await response();
   const pagesBasics = body['response content']['basics about all tested pages'];
-  const descriptions = pagesBasics.map(b => b['tested web page'].description);
+  const descriptions = pagesBasics.map(b => b.description);
   assert.deepEqual(
     descriptions,
     [
@@ -49,31 +49,32 @@ test('listPages returns one entry per tested page, sorted by page description', 
 test('listPages does not include the page of the hidden report', async () => {
   const body = await response();
   const pagesBasics = body['response content']['basics about all tested pages'];
-  const ids = pagesBasics.map(b => b['basics about the latest report'].identifier);
+  const ids = pagesBasics.map(b => b.identifier);
   assert.ok(!ids.includes('260101T0007-hid'), 'hidden report must not appear in listPages');
 });
 
-test('listPages describes a multi-report page by its latest report and its report count', async () => {
+test('listPages identifies a multi-report page by its latest report', async () => {
   const body = await response();
   const pagesBasics = body['response content']['basics about all tested pages'];
-  const mixed = pagesBasics.find(b => b['tested web page'].description === 'Mixed Outcomes')!;
-  assert.equal(mixed['number of reports about the page'], 2);
-  const latest = mixed['basics about the latest report'];
-  assert.equal(latest.identifier, '260202T0000-new');
-  assert.equal(latest['completion date and time'], '2026-02-02T00:10:00.000Z');
-  assert.equal(typeof latest['days since the report was completed'], 'number');
-  assert.equal(mixed['how to get details about the latest report'].method, 'GET');
-  assert.ok(mixed['how to get details about the latest report'].URL.endsWith('/api/listIssues/260202T0000-new'));
-  assert.ok(mixed['web users can get details about the latest report at'].endsWith('/listIssues.html/260202T0000-new'));
+  const mixed = pagesBasics.find(b => b.description === 'Mixed Outcomes')!;
+  assert.equal(mixed.identifier, '260202T0000-new');
+  assert.equal(mixed.URL, 'https://example.com/mixed');
 });
 
 test('listPages describes a single-report page', async () => {
   const body = await response();
   const pagesBasics = body['response content']['basics about all tested pages'];
-  const canttell = pagesBasics.find(b => b['tested web page'].description === 'All CantTell Page')!;
-  assert.equal(canttell['number of reports about the page'], 1);
-  assert.equal(canttell['tested web page'].URL, 'https://example.com/canttell');
-  assert.equal(canttell['basics about the latest report'].identifier, '260101T0001-ct');
+  const canttell = pagesBasics.find(b => b.description === 'All CantTell Page')!;
+  assert.equal(canttell.URL, 'https://example.com/canttell');
+  assert.equal(canttell.identifier, '260101T0001-ct');
+});
+
+test('listPages includes result-retrieval instructions with an identifier placeholder', async () => {
+  const body = await response();
+  const content = body['response content'];
+  assert.equal(content['how to get test results about a page'].method, 'GET');
+  assert.ok(content['how to get test results about a page'].URL.endsWith('/api/listIssues/{identifier}'));
+  assert.ok(content['web users can get test results about a page at'].endsWith('/listIssues.html/{identifier}'));
 });
 
 test('listPages includes request-test instructions', async () => {

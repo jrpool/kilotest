@@ -7,7 +7,7 @@
 
 import {z} from 'zod';
 import {getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {getAgoDays, getReportExtracts} from '../util.ts';
+import {getReportExtracts} from '../util.ts';
 import {listPagesResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -20,42 +20,20 @@ type ResponseContent = z.infer<typeof listPagesResponseSchema>['response content
 // Returns the response body.
 export const response = async () => {
   const thisHost = getThisHost();
-  // Get extracts of all available reports, sorted by page description and completion time.
-  const reportExtracts = await getReportExtracts();
-  // Get the number of reports about each page.
-  const reportCounts = new Map<string, number>();
-  reportExtracts.forEach(({description}) => {
-    reportCounts.set(description, (reportCounts.get(description) ?? 0) + 1);
-  });
-  // Initialize an array of basics about the pages.
-  const pagesBasics: ResponseContent['basics about all tested pages'] = [];
-  // For each report:
-  reportExtracts.forEach(extract => {
-    const {description, id, reportTime, superseded, url} = extract;
-    // If it is the latest report about its page:
-    if (!superseded) {
-      // Add basics about the page, with instructions for getting details, to the array.
-      pagesBasics.push({
-        'tested web page': {
-          description,
-          URL: url
-        },
-        'number of reports about the page': reportCounts.get(description)!,
-        'basics about the latest report': {
-          identifier: id,
-          'completion date and time': reportTime,
-          'days since the report was completed': getAgoDays(new Date(reportTime))
-        },
-        'how to get details about the latest report': {
-          method: 'GET',
-          URL: `${thisHost}/api/listIssues/${id}`
-        },
-        'web users can get details about the latest report at': `${thisHost}/listIssues.html/${id}`
-      });
-    }
-  });
+  // Get extracts of the latest reports about all tested pages, sorted by page description.
+  const reportExtracts = await getReportExtracts(true);
+  // Get the basics about each tested page: its description, URL, and the identifier of
+  // its latest report, which the result-retrieval instructions below use as a placeholder.
+  const pagesBasics: ResponseContent['basics about all tested pages'] = reportExtracts.map(
+    ({description, id, url}) => ({description, URL: url, identifier: id})
+  );
   // Create the response content.
   const responseContent: ResponseContent = {
+    'how to get test results about a page': {
+      method: 'GET',
+      URL: `${thisHost}/api/listIssues/{identifier}`
+    },
+    'web users can get test results about a page at': `${thisHost}/listIssues.html/{identifier}`,
     'basics about all tested pages': pagesBasics,
     'how to request that a page with no report be tested': {
       method: 'POST',

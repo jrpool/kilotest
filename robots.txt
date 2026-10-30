@@ -14,4 +14,7 @@ Disallow: /rewindReportsForm.html
 Disallow: /expungeReportsForm.html
 Disallow: /renewWCAGForm.html
 Disallow: /renewWCAG.html
+# JSON endpoints, whose contents are not indexable pages; crawling them is pointless.
+Disallow: /api/
+Disallow: /fullReport.json
 Sitemap: https://kilotest.com/sitemap.xml

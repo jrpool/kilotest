@@ -347,9 +347,10 @@ export const isPathAllowed = (method: string, pathname: string): boolean => {
   const patterns = (routes as Record<string, string[]>)[method] || [];
   return patterns.some(pattern => matchPath(pattern, pathname));
 };
-// Returns the single-reportID URL that a legacy two-segment report URL (one whose
-// path tail identifies a report with separate timeStamp and jobID segments)
-// redirects to, or null if the page has no legacy form or the tail lacks its shape.
+// Returns the single-reportID path that a legacy two-segment report path tail (one
+// identifying a report with separate timeStamp and jobID segments) canonicalizes to
+// for a page under its current name, or null if the page has no legacy form or the
+// tail lacks its shape.
 const getLegacyReportURL = (topic: string, pathTail: string): string | null => {
   const legacy = legacyReportTails[topic];
   if (!legacy) {
@@ -681,12 +682,21 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for the home page:
     else if (['/', '/index.html'].includes(pathname)) {
-      await recordPageMetric('pageViews', 'index');
-      // Get the home page.
-      const {answerPage} = await home();
-      // Serve it.
-      setHeaders('text/html', '/index.html', 'medium');
-      response.end(answerPage);
+      // If the URL has a query string, redirect the request permanently to the
+      // queryless URL (see the same redirect for .html pages below).
+      if (search) {
+        response.writeHead(301, {Location: pathname});
+        response.end();
+      }
+      // Otherwise, i.e. if the URL has no query string:
+      else {
+        await recordPageMetric('pageViews', 'index');
+        // Get the home page.
+        const {answerPage} = await home();
+        // Serve it.
+        setHeaders('text/html', '/index.html', 'medium');
+        response.end(answerPage);
+      }
     }
     // Otherwise, if it is for the crawler specification:
     else if (pageName === 'robots.txt') {
@@ -766,17 +776,14 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // If this failed:
         if (isReportError(report)) {
           // This is not necessarily abuse: the link may have been generated (e.g. by
-          // listIssues.html) before the report was pruned or rewound, or the stored report
-          // may have become unreadable or unusable, none of which is the requester's fault.
-          // So tell the requester only that the request was invalid, without accusing them,
-          // but alert a manager with the real reason, since a syntactically valid report ID
-          // should otherwise always be usable.
+          // listIssues.html) before the report was pruned or rewound, or the identifier
+          // may have been scraped from the API documentation's examples, none of which
+          // is the requester's fault. So tell the requester only that the request was
+          // invalid, without accusing them. No manager alert is sent: a missing report
+          // is a routine miss, and a report that exists but is unreadable or unusable
+          // has already been quarantined and alerted on by getReport.
           console.error(
             `Full report ${pathTail} requested but unavailable (${report.error})`
-          );
-          await sendAlert(
-            'Kilotest: requested full report unavailable',
-            `Full report ${pathTail} was requested but could not be retrieved: ${report.error}`
           );
           await serveError({message: 'ERROR: Invalid request'}, response, true);
         }
@@ -800,20 +807,24 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
-      const legacyReportURL = getLegacyReportURL(topic, pathTail);
-      // If it is for a page's old, pre-rename name:
-      if (renamedPagePrefixes[topic]) {
-        // Redirect the client permanently to the current page name, preserving any
-        // further path segments and the query string.
-        const newLocation = `/${renamedPagePrefixes[topic]}.html${pathTail ? `/${pathTail}` : ''}${search}`;
-        response.writeHead(301, {Location: newLocation});
-        response.end();
-      }
-      // Otherwise, if the URL identifies a report with the legacy two-segment form
-      // (a timeStamp segment and a jobID segment), redirect the request permanently
-      // to the URL with the single reportID segment, preserving the query string.
-      else if (legacyReportURL !== null) {
-        response.writeHead(301, {Location: `${legacyReportURL}${search}`});
+      // Compute the path in the current request signature: the current name if the
+      // page name is a pre-rename one, and the single-reportID tail if the tail
+      // identifies a report with the legacy two-segment form (a timeStamp segment
+      // and a jobID segment).
+      const canonicalTopic = renamedPagePrefixes[topic] ?? topic;
+      const canonicalPath = getLegacyReportURL(canonicalTopic, pathTail) ??
+        `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
+      // If the request signature contains any obsolete element (a pre-rename page
+      // name, a legacy two-segment report tail, or a query string, which no GET
+      // page handler reads, since the search argument passed to answer() is
+      // consumed only for POST requests, where it is reconstructed from the
+      // request body), convert all of them at once by redirecting the request
+      // permanently to the canonical path with no query string. A request with a
+      // query otherwise returns a byte-identical duplicate of the queryless page,
+      // which search engines report as a duplicate without a user-selected
+      // canonical (e.g. the pathID queries still requested on listDiagnoses URLs).
+      if (canonicalPath !== pathname || search) {
+        response.writeHead(301, {Location: canonicalPath});
         response.end();
       }
       // Otherwise, if the page can be generated and is not POST-only (a POST-only path also matches

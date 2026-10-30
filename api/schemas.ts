@@ -195,12 +195,15 @@ const reportTimeSchema = z.object({
 });
 
 export const listPagesResponseSchema = envelope('GET', z.object({
+  'how to get test results about a page': z.object({
+    method: z.literal('GET'),
+    URL: z.string().describe('URL template; replace {identifier} with the identifier of the latest report about the page.')
+  }),
+  'web users can get test results about a page at': z.string().describe('URL template; replace {identifier} with the identifier of the latest report about the page.'),
   'basics about all tested pages': z.array(z.object({
-    'tested web page': z.object({description: z.string(), URL: z.string()}),
-    'number of reports about the page': z.number(),
-    'basics about the latest report': reportTimeSchema,
-    'how to get details about the latest report': z.object({method: z.literal('GET'), URL: z.string()}),
-    'web users can get details about the latest report at': z.string()
+    description: z.string(),
+    URL: z.string(),
+    identifier: z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z).')
   })),
   'how to request that a page with no report be tested': z.object({
     method: z.literal('POST'),

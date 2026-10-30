@@ -17,3 +17,7 @@ for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_A
 // to pass the resolution check that isAllowedTarget performs. A test of that check
 // itself sets this env var back to unset (or false) around the specific call being tested.
 process.env.ALLOW_INTERNAL_TARGETS = 'true';
+// Give every response a deterministic host. Without this, getThisHost returns
+// undefined, so URL-valued response fields fail schema validation; setting it here
+// rather than relying on a developer's .env keeps tests independent of the environment.
+process.env.THIS_KILOTEST_HOST = 'https://kilotest.example.com';

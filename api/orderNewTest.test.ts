@@ -45,6 +45,7 @@ beforeEach(async () => {
 });
 
 import {response} from './orderNewTest.ts';
+import {orderNewTestResponseSchema} from './schemas.ts';
 
 after(() => {
   console.log = originalLog;
@@ -209,4 +210,12 @@ test('orderNewTest response omits a web UI URL for this request but includes the
   const similarWeb = body['URLs of similar requests for web users'] as any;
   assert.equal(similarWeb['this request'], null);
   assert.ok(similarWeb['closest ancestor request'].includes('listPages.html'));
+});
+
+test('orderNewTest response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['Schema Conformance Ordered Page', 'https://example.com/schema-ordered', 'A reason that is long enough.']);
+  assert.deepEqual(orderNewTestResponseSchema.parse(body), body);
 });

@@ -1832,15 +1832,21 @@ components:
                   type: string
                 retesting:
                   type: string
+                approval:
+                  type: string
                 latency:
                   type: string
-                confirmation:
+                request confirmation:
+                  type: string
+                order confirmation:
                   type: string
               required:
                 - new testing
                 - retesting
+                - approval
                 - latency
-                - confirmation
+                - request confirmation
+                - order confirmation
               additionalProperties: false
           required:
             - what Kilotest does

@@ -8,6 +8,7 @@
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {response} from './listIssues.ts';
+import {listIssuesResponseSchema} from './schemas.ts';
 
 // SETUP AND TEARDOWN
 
@@ -144,4 +145,12 @@ test('listIssues gives a one-report history for the only report about a page', a
 test('listIssues gives no history for a nonexistent report', async () => {
   const body = await response(['999999T9999-xyz']);
   assert.equal(body['response content']['history of reports about the page'], null);
+});
+
+test('listIssues response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['260101T0000-mix']);
+  assert.deepEqual(listIssuesResponseSchema.parse(body), body);
 });

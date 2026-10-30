@@ -48,6 +48,7 @@ beforeEach(async () => {
 });
 
 import {response} from './orderRetest.ts';
+import {orderRetestResponseSchema} from './schemas.ts';
 
 after(async () => {
   await fs.unlink(retestFixturePath);
@@ -176,4 +177,12 @@ test('orderRetest response omits a web UI URL for this request but includes the 
   const similarWeb = body['URLs of similar requests for web users'] as any;
   assert.equal(similarWeb['this request'], null);
   assert.ok(similarWeb['closest ancestor request'].includes('listIssues.html'));
+});
+
+test('orderRetest response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['260101T0004-ord', 'A reason that is long enough.']);
+  assert.deepEqual(orderRetestResponseSchema.parse(body), body);
 });

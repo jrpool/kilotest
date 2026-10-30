@@ -8,6 +8,7 @@
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {response} from './listDiagnoses.ts';
+import {listDiagnosesResponseSchema} from './schemas.ts';
 
 // SETUP AND TEARDOWN
 
@@ -128,4 +129,12 @@ test('listDiagnoses returns issue error for a falsy issue ID', async () => {
   const body = await response(['0', '', '260101T0009-brd']);
   const issueBasics = body['response content']['basics about the issue'] as any;
   assert.ok(issueBasics.error);
+});
+
+test('listDiagnoses response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['0', 'linkNoText', '260101T0000-mix']);
+  assert.deepEqual(listDiagnosesResponseSchema.parse(body), body);
 });

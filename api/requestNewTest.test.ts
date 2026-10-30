@@ -42,6 +42,7 @@ beforeEach(async () => {
 });
 
 import {response} from './requestNewTest.ts';
+import {requestNewTestResponseSchema} from './schemas.ts';
 
 after(() => {
   console.log = originalLog;
@@ -207,4 +208,12 @@ test('requestNewTest rejects a request with a fallback channel when the queue is
   assert.ok(disposition['what happens next'].includes('too many requests are awaiting approval right now.'));
   assert.ok(disposition['what happens next'].includes('https://github.com/jrpool/kilotest/issues'));
   assert.ok(disposition['what happens next'].includes('info@kilotest.com'));
+});
+
+test('requestNewTest response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['Schema Conformance Page', 'https://example.com/schema-conformance', 'A reason that is long enough.']);
+  assert.deepEqual(requestNewTestResponseSchema.parse(body), body);
 });

@@ -2334,6 +2334,50 @@ test('startServer starts an HTTPS server when protocol is https', {timeout: 2000
   }
 });
 
+test('startServer throws when THIS_KILOTEST_HOST is unset', async () => {
+  const savedHost = process.env.THIS_KILOTEST_HOST;
+  const savedProtocol = process.env.PROTOCOL;
+  delete process.env.THIS_KILOTEST_HOST;
+  delete process.env.PROTOCOL;
+  try {
+    await assert.rejects(startServer(), /THIS_KILOTEST_HOST/);
+  }
+  finally {
+    if (savedHost !== undefined) {
+      process.env.THIS_KILOTEST_HOST = savedHost;
+    }
+    if (savedProtocol !== undefined) {
+      process.env.PROTOCOL = savedProtocol;
+    }
+  }
+});
+
+test('startServer throws when PROTOCOL is https and KEY and CERT are unset', async () => {
+  const savedProtocol = process.env.PROTOCOL;
+  const savedKey = process.env.KEY;
+  const savedCert = process.env.CERT;
+  process.env.PROTOCOL = 'https';
+  delete process.env.KEY;
+  delete process.env.CERT;
+  try {
+    await assert.rejects(startServer(), /KEY.*CERT|CERT.*KEY/);
+  }
+  finally {
+    if (savedProtocol !== undefined) {
+      process.env.PROTOCOL = savedProtocol;
+    }
+    else {
+      delete process.env.PROTOCOL;
+    }
+    if (savedKey !== undefined) {
+      process.env.KEY = savedKey;
+    }
+    if (savedCert !== undefined) {
+      process.env.CERT = savedCert;
+    }
+  }
+});
+
 test('runIfMain calls startServer when mainModule matches currentModule', async () => {
   let called = false;
   const starter = async () => {

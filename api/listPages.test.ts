@@ -8,6 +8,7 @@
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {response} from './listPages.ts';
+import {listPagesResponseSchema} from './schemas.ts';
 
 // SETUP AND TEARDOWN
 
@@ -90,4 +91,12 @@ test('listPages includes tool name and metadata', async () => {
   assert.equal(body['tool name'], 'listPages');
   assert.ok(body['response metadata'].identifier);
   assert.ok(body['response metadata']['date and time']);
+});
+
+test('listPages response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response();
+  assert.deepEqual(listPagesResponseSchema.parse(body), body);
 });

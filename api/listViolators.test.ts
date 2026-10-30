@@ -8,6 +8,7 @@
 import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import {response} from './listViolators.ts';
+import {listViolatorsResponseSchema} from './schemas.ts';
 
 // SETUP AND TEARDOWN
 
@@ -104,4 +105,12 @@ test('listViolators returns an error for a falsy issue ID', async () => {
   const body = await response(['', '260101T0009-brd']);
   const issueBasics = body['response content']['basics about the issue'] as any;
   assert.ok(issueBasics.error);
+});
+
+test('listViolators response conforms to its response schema', async () => {
+  // parse() catches missing or mistyped keys; comparing the parsed result to the
+  // original catches extra keys that zod strips but that the strict JSON schema
+  // advertised to MCP clients (additionalProperties: false) rejects.
+  const body = await response(['linkNoText', '260101T0000-mix']);
+  assert.deepEqual(listViolatorsResponseSchema.parse(body), body);
 });

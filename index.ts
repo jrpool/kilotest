@@ -776,17 +776,14 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // If this failed:
         if (isReportError(report)) {
           // This is not necessarily abuse: the link may have been generated (e.g. by
-          // listIssues.html) before the report was pruned or rewound, or the stored report
-          // may have become unreadable or unusable, none of which is the requester's fault.
-          // So tell the requester only that the request was invalid, without accusing them,
-          // but alert a manager with the real reason, since a syntactically valid report ID
-          // should otherwise always be usable.
+          // listIssues.html) before the report was pruned or rewound, or the identifier
+          // may have been scraped from the API documentation's examples, none of which
+          // is the requester's fault. So tell the requester only that the request was
+          // invalid, without accusing them. No manager alert is sent: a missing report
+          // is a routine miss, and a report that exists but is unreadable or unusable
+          // has already been quarantined and alerted on by getReport.
           console.error(
             `Full report ${pathTail} requested but unavailable (${report.error})`
-          );
-          await sendAlert(
-            'Kilotest: requested full report unavailable',
-            `Full report ${pathTail} was requested but could not be retrieved: ${report.error}`
           );
           await serveError({message: 'ERROR: Invalid request'}, response, true);
         }

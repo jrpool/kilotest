@@ -14,5 +14,14 @@
     }
   ],
   "title": "Kilotest",
-  "websiteUrl": "https://kilotest.com"
+  "websiteUrl": "https://kilotest.com",
+  "icons": [
+    {
+      "src": "https://kilotest.com/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    }
+  ]
 }

@@ -97,5 +97,6 @@ When you **make an API or tool contract change** in a feature branch:
 8. Wait until `npmjs.com` has processed the publication.
 9. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
 10. Visit the [RapidAPI Studio](https://rapidapi.com/studio) and update the API definition at `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI` by uploading the regenerated `openapi-3.0.yaml`.
+11. Visit the [Claude directory](https://claude.ai/directory/manage/kilotest?tab=edit), edit any changed entries, and submit the changes.
 
 If any step fails, see the details in `docs/AI-TOOLS.md` for troubleshooting instructions.

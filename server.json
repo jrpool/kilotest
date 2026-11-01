@@ -6,7 +6,7 @@
     "url": "https://github.com/jrpool/kilotest",
     "source": "github"
   },
-  "version": "63.0.0",
+  "version": "63.1.0",
   "remotes": [
     {
       "type": "streamable-http",
@@ -14,5 +14,14 @@
     }
   ],
   "title": "Kilotest",
-  "websiteUrl": "https://kilotest.com"
+  "websiteUrl": "https://kilotest.com",
+  "icons": [
+    {
+      "src": "https://kilotest.com/favicon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    }
+  ]
 }

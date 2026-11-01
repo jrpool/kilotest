@@ -49,6 +49,7 @@ The external features that support the use of Kilotest as a collection of AI too
 - Registration of Kilotest with [Awesome MCP Servers](https://www.tensorblock.co/mcp/servers/github-jrpool-kilotest-f518ba36).
 - Registration of Kilotest with the [RapidAPI](https://rapidapi.com/jrpool/api/kilotest/playground/apiendpoint_0f03577a-ff9a-472a-a0ed-533bd198981a) Hub.
 - Registration of Kilotest with the [LobeHub MCP Market](https://lobehub.com/mcp) (identifier: `jrpool-kilotest`), enabled with an `lhm.plugin.json` file.
+- Registration of Kilotest with [MCPTry](https://mcptry.com/servers/io.github.jrpool/kilotest).
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.
 - Submission of the MCP server to the [Claude directory of plugins and connectors](https://claude.ai/directory/manage).
 - Configuration of Claude Desktop on the local development host and the `claude.ai` web application to connect Claude Desktop models to the Kilotest MCP server. The configuration was performed in the UI of each platform with the addition of Kilotest as a _connector_. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:

@@ -15,6 +15,7 @@
     "test:smoke": "node smokeTest.ts",
     "checkinfo": "node checkinfo.ts",
     "generate": "node scripts/generate-openapi.ts && node scripts/update-versions.ts",
+    "build:media": "node scripts/buildDemoVideo.ts",
     "publish:lhm": "npx -y @lobehub/market-cli plugin update --dir .",
     "prePR": "node scripts/prePR.ts",
     "postPR": "node scripts/postPR.ts"

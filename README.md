@@ -6,6 +6,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/jrpool/kilotest?label=stars)](https://github.com/jrpool/kilotest/stargazers)
 [![Indexed on TensorBlock MCP Index](https://mcp-index.tensorblock.co/v1/servers/github-jrpool-kilotest-f518ba36/badge.svg)](https://tensorblock.co/mcp/servers/github-jrpool-kilotest-f518ba36)
 [![mcptry](https://mcptry.com/badge/io.github.jrpool/kilotest)](https://mcptry.com/servers/io.github.jrpool/kilotest)
+[![SealKeeper Service SEAL](https://api.sealkeeper.run/v1/agents/HCFS-LZg1xY73zOW-p_w9G8Shaq-hSsD512Q235VE2c/badge.svg)](https://sealkeeper.run/agents/kilotest.com/kilotest-com)
 
 An ensemble testing and reporting service for front-end web quality
 

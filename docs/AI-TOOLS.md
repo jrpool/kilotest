@@ -30,6 +30,7 @@ The internal features that make Kilotest a collection of tools for language mode
 - A `capability.md` file with a URL, summarizing what Kilotest tools can do.
 - `mcp`, `mcp-server`, and `modelcontextprotocol` keywords in `package.json`, supporting discovery of the `@jrpool/kilotest` npm package by tools and humans searching the npm registry for MCP servers.
 - An `lhm.plugin.json` file, conforming to the [LobeHub plugin manifest format](https://market.lobehub.com/s/publish-mcp/references/manifest), declaring Kilotest as a plugin in the [LobeHub MCP Market](https://lobehub.com/mcp). Publishing and updating are non-automated (`lhm plugin publish` for the initial listing; thereafter `npm run publish:lhm`, which wraps `lhm plugin update` and is run by `npm run postPR`), because LobeHub requires browser-based OAuth and does not support machine-to-machine publishing.
+- Files in the `well-known` directory for ownership verification to AI registries, including OpenAI and Sealkeeper.
 - A `sitemap.xml` file.
 - Documentation in the `README.md` file.
 - This `AI-TOOLS.md` file.

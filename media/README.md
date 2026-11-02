@@ -1,6 +1,6 @@
 # Media
 
-This folder holds the ChatGPT demonstration video, `demo-chatgpt.mp4`, which the web page `/demo-chatgpt.html` offers as an alternative to its step-through slideshow. The video is served at `/media/demo-chatgpt.mp4`.
+This directory holds the ChatGPT demonstration video, `demo-chatgpt.mp4`, which the web page `/demo-chatgpt.html` offers as an alternative to its step-through slideshow. The video is served at `/media/demo-chatgpt.mp4`.
 
 ## Source
 
@@ -23,7 +23,7 @@ npm run build:media
 
 The script writes `media/demo-chatgpt.mp4`. Its length is the sum of the durations, and it is encoded at one frame per second.
 
-To write the video somewhere else for comparison, pass a path:
+To write the video somewhere else, pass a path:
 
 ```bash
 npm run build:media -- /path/to/output.mp4

@@ -933,8 +933,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         await serveError({message: 'Invalid service request'}, response, false);
       }
     }
-    // Otherwise, if it is for a well-known resource (e.g. the OpenAI domain-verification
-    // challenge token):
+    // Otherwise, if it is for a well-known resource:
     else if (pathname.startsWith('/.well-known/')) {
       const knownFile = pathname.slice('/.well-known/'.length);
       const knownPath = path.join(import.meta.dirname, 'well-known', knownFile);

@@ -13,7 +13,7 @@ The final line of `demo_list.txt` repeats the last frame without a duration. ffm
 
 ## Changing durations
 
-1. Edit the `duration` lines in `demo-chatgpt-src/demo_list.txt`. Durations are whole or fractional seconds.
+1. Edit the `duration` lines in `demo-chatgpt-src/demo_list.txt`. Durations must be whole numbers of seconds, because the video has one frame per second.
 2. To change the slides themselves, add or replace frame files in `demo-chatgpt-src/labeled/` and update the `file` lines to match.
 3. Rebuild the video from the repository root:
 
@@ -21,7 +21,7 @@ The final line of `demo_list.txt` repeats the last frame without a duration. ffm
 npm run build:media
 ```
 
-The script writes `media/demo-chatgpt.mp4`. Its length is the sum of the durations, and it is encoded at 30 frames per second.
+The script writes `media/demo-chatgpt.mp4`. Its length is the sum of the durations, and it is encoded at one frame per second.
 
 To write the video somewhere else for comparison, pass a path:
 

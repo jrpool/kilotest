@@ -1,6 +1,6 @@
 /*
   buildDemoVideo.ts
-  Rebuilds the ChatGPT demonstration video, media/demo-chatgpt.mp4, from the slide frames and durations listed in media/demo-chatgpt-src/demo_list.txt. Each listed frame is shown for its duration in seconds. The video is encoded at a constant 30 frames per second, and its length is set to the sum of the durations.
+  Rebuilds the ChatGPT demonstration video, media/demo-chatgpt.mp4, from the slide frames and durations listed in media/demo-chatgpt-src/demo_list.txt. Each listed frame is shown for its duration in whole seconds. The video is encoded at one frame per second, which keeps the file small because the slides are static, and its length is set to the sum of the durations.
 
   Usage:
     npm run build:media [outputPath]
@@ -21,7 +21,8 @@ const repoDir = path.join(import.meta.dirname, '..');
 const sourceDir = path.join(repoDir, 'media', 'demo-chatgpt-src');
 const listPath = path.join(sourceDir, 'demo_list.txt');
 const outputPath = path.resolve(process.argv[2] ?? path.join(repoDir, 'media', 'demo-chatgpt.mp4'));
-const FRAME_RATE = 30;
+// One frame per second suffices because durations are whole seconds and the slides do not animate.
+const FRAME_RATE = 1;
 
 // FUNCTIONS
 
@@ -31,7 +32,7 @@ const readEntries = (): {fileName: string; seconds?: number}[] => {
   const lines = fs.readFileSync(listPath, 'utf8').split('\n').map(line => line.trim()).filter(line => line !== '');
   for (const line of lines) {
     const fileMatch = line.match(/^file '(.+)'$/);
-    const durationMatch = line.match(/^duration (\d+(?:\.\d+)?)$/);
+    const durationMatch = line.match(/^duration (\d+)$/);
     const previous = entries.at(-1);
     if (fileMatch) {
       if (previous && previous.seconds === undefined) {

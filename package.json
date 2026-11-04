@@ -58,7 +58,7 @@
     "globals": "*",
     "htmlhint": "^1.9.2",
     "js-yaml": "*",
-    "markdownlint-cli2": "^0.23.2",
+    "markdownlint-cli2": "*",
     "node-html-parser": "*",
     "testaro": "*",
     "typescript": "*",
@@ -108,6 +108,7 @@
     "branches": 100
   },
   "overrides": {
-    "smol-toml": "^1.8.0"
+    "smol-toml": "^1.8.0",
+    "re2js": "^2.9.1"
   }
 }

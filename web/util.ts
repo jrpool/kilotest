@@ -287,7 +287,7 @@ export const getPageFactsLines = (
     `${margin}<ul>`,
     `${margin}  <li>URL: ${strings.urlLink}</li>`,
     `${margin}  <li>${strings.testInfo}</li>`,
-    `${margin}  <li>Rule engines: ${engineCount} called, ${testedEngineCount} able to test, ${reporterCount} reported any violations</li>`,
+    `${margin}  <li>Rule engines: ${engineCount} called, ${testedEngineCount} able to test, ${reporterCount} reported violations</li>`,
     `${margin}  <li>Results: ${getCountString(violationCount, 'violation', 'violations')}, ${getCountString(violatorCount, 'violator', 'violators')}, ${getCountString(issueCount, 'issue', 'issues')}</li>`,
     `${margin}  <li>${strings.fullReportLink}</li>`,
     `${margin}</ul>`

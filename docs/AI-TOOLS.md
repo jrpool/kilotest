@@ -40,6 +40,8 @@ The internal features that make Kilotest a collection of tools for language mode
 
 The external features that support the use of Kilotest as a collection of AI tools are:
 
+### Registrations
+
 - A [pull request](https://github.com/public-apis/public-apis/pull/6346/changes) to add Kilotest to the list of public APIs in the `public-apis` repository.
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
@@ -51,17 +53,27 @@ The external features that support the use of Kilotest as a collection of AI too
 - Registration of Kilotest with the [RapidAPI](https://rapidapi.com/jrpool/api/kilotest/playground/apiendpoint_0f03577a-ff9a-472a-a0ed-533bd198981a) Hub.
 - Registration of Kilotest with the [LobeHub MCP Market](https://lobehub.com/mcp) (identifier: `jrpool-kilotest`), enabled with an `lhm.plugin.json` file.
 - Registration of Kilotest with [MCPTry](https://mcptry.com/servers/io.github.jrpool/kilotest).
+- Registration of the MCP server as a community connector in the [Claude directory of plugins and connectors](https://claude.ai/directory/kilotest).
+- Registration of Kilotest and its sitemap at [Google Search Console](https://search.google.com/search-console?resource_id=sc-domain:kilotest.com) and [Bing Webmaster Tools](https://www.bing.com/webmasters/home?siteUrl=https://kilotest.com/).
+- Submission of the MCP server to `mcp.directory`.
+- Submission of the MCP server to [MCP.so](https://mcp.so/). The submission is in review.
+
+### Deployment
+
 - Deployment of an MCP server in HTTP mode on the Kilotest service host.
-- Submission of the MCP server to the [Claude directory of plugins and connectors](https://claude.ai/directory/manage).
+
+### Local configuration
+
 - Configuration of Claude Desktop on the local development host and the `claude.ai` web application to connect Claude Desktop models to the Kilotest MCP server. The configuration was performed in the UI of each platform with the addition of Kilotest as a _connector_. The user used the `Customize/Connectors/Add connector/Add custom connector` interface, providing these data before activating the `Add` button:
 
   - Name: Kilotest
   - Remote MCP server URL: `https://kilotest.com/mcp`
 
+### Documentation
+
 - MCP-related topics added to the [repository details](https://github.com/jrpool/kilotest).
-- An [MCP Registry badge](https://registry.modelcontextprotocol.io/v0/servers?search=kilotest) added to the `README.md` file.
+- Registry badges added to the `README.md` file.
 - A link to the MCP server on the `README.md` page of the [`testaro-issues`](https://github.com/jrpool/testaro-issues) repository.
-- Registration of Kilotest and its sitemap at [Google Search Console](https://search.google.com/search-console?resource_id=sc-domain:kilotest.com) and [Bing Webmaster Tools](https://www.bing.com/webmasters/home?siteUrl=https://kilotest.com/).
 
 ## Required maintenance
 
@@ -123,7 +135,7 @@ To-dos recommended by Claude Sonnet 5 Medium on Devin:
 
 - **No content/backlink outreach.** Registrations are passive listings; there's no blog post, Show HN, or subreddit post (r/modelcontextprotocol, r/accessibility, r/webdev) building external backlinks and social-discovery signal, which the doc's own "difficult problem…lack of standardization" framing suggests is exactly the gap left for the **human**-driven parts of discoverability.
 
-- **Other directories not yet targeted.** The [mcp.so](https://mcp.so/submit) directory offers a free tier but steers submitters toward a $39 paid listing; deferred as a commercial decision. The Docker MCP Catalog is not a fit because it requires stdio transport and a Dockerfile, and Kilotest is streamable-http.
+- **Other directories not yet targeted.** The Docker MCP Catalog is not a fit because it requires stdio transport and a Dockerfile, and Kilotest is streamable-http.
 
 - **Client-onboarding friction isn't documented.** Some MCP clients need the `mcp-remote` npx bridge to use a remote streamable-HTTP server like Kilotest's. Ready-made Claude Desktop/Cursor/Windsurf config instructions added to the AI tutorial would convert "discovered" into "used" faster, since case 3 of your use cases assumes a technically savvy discoverer but not all users are.
 

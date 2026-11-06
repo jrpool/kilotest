@@ -18,7 +18,7 @@
     "wcag",
     "web standards"
   ],
-  "version": "63.2.0",
+  "version": "63.2.1",
   "description": "Tools that test web pages with an ensemble of 12 rule engines for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG)",
   "tools": [
     {

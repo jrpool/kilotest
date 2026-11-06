@@ -12,6 +12,7 @@ import {createDocument} from 'zod-openapi';
 import pkg from '../package.json' with {type: 'json'};
 import {routes} from '../api/routes.ts';
 import {version} from '../api/version.ts';
+import {sharedContext} from '../content.ts';
 
 // CONSTANTS
 
@@ -137,7 +138,7 @@ const generate = () => {
     openapi: '3.1.0',
     info: {
       title: 'Kilotest API',
-      description: 'Kilotest is an ensemble testing and reporting service for front-end web quality. It uses an ensemble of 12 rule engines to test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG). Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.',
+      description: `${sharedContext} Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, and incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.`,
       version,
       license: {
         name: license,

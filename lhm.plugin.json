@@ -1,7 +1,7 @@
 {
   "author": "Jonathan Robert Pool",
   "cloudEndpoint": "https://kilotest.com/mcp",
-  "description": "Tools that test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) and make test results available",
+  "description": "Tools that test web pages with an ensemble of 12 rule engines for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG)",
   "homepage": "https://github.com/jrpool/kilotest",
   "identifier": "jrpool-kilotest",
   "name": "Kilotest",
@@ -21,7 +21,7 @@
   "tools": [
     {
       "name": "getKilotestOverview",
-      "description": "Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG). Each test session generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested pages, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages.",
+      "description": "Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested pages, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -30,8 +30,8 @@
       "annotations": {
         "title": "Explain Kilotest and its tools",
         "readOnlyHint": true,
-        "destructiveHint": false,
         "idempotentHint": true,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -40,7 +40,7 @@
     },
     {
       "name": "listPages",
-      "description": "Lists all pages Kilotest has tested. Use this first to discover whether a page already has a report before requesting a test. Returns, for each tested page, its description, URL, and the timestamp and job identifier of its latest report.",
+      "description": "Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the identifier of its latest available report.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -382,8 +382,8 @@
       "annotations": {
         "title": "List tested pages",
         "readOnlyHint": true,
-        "destructiveHint": false,
         "idempotentHint": true,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -392,7 +392,7 @@
     },
     {
       "name": "listIssues",
-      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to drill into a specific report, identified by its timestamp and job identifier. Returns basics about the report’s issues and a list of every report about the same page, from oldest to latest.",
+      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to switch to an earlier or later report or to begin examining this report. Returns the history and the basics about this report’s issues.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1124,8 +1124,8 @@
       "annotations": {
         "title": "List issues in a report",
         "readOnlyHint": true,
-        "destructiveHint": false,
         "idempotentHint": true,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -1134,7 +1134,7 @@
     },
     {
       "name": "listViolators",
-      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill from an issue down to the elements it affects. Returns basics about each violating element, including its identifier in the page’s element catalog.",
+      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue. Returns basics about each violating element.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1633,8 +1633,8 @@
       "annotations": {
         "title": "List elements exhibiting an issue",
         "readOnlyHint": true,
-        "destructiveHint": false,
         "idempotentHint": true,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -1643,7 +1643,7 @@
     },
     {
       "name": "listDiagnoses",
-      "description": "Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to drill from an element down to the rule-engine explanations of why it was flagged. Returns, for each rule engine that reported the issue on that element, its diagnosis.",
+      "description": "Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1802,6 +1802,9 @@
                         "items": {
                           "type": "object",
                           "properties": {
+                            "identifier of the rule engine": {
+                              "description": "Copied from the report act (which); type not guaranteed."
+                            },
                             "identifier of the violated rule": {
                               "description": "Copied from the report instance (ruleID); type not guaranteed."
                             },
@@ -1813,13 +1816,53 @@
                             },
                             "count of violations of the rule by the element": {
                               "type": "number"
+                            },
+                            "how to report that you disagree with this diagnosis": {
+                              "type": "object",
+                              "properties": {
+                                "method": {
+                                  "type": "string",
+                                  "const": "POST"
+                                },
+                                "URL": {
+                                  "type": "string"
+                                },
+                                "request body": {
+                                  "type": "object",
+                                  "properties": {
+                                    "engineID": {
+                                      "type": "string"
+                                    },
+                                    "ruleID": {
+                                      "type": "string"
+                                    },
+                                    "reason": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "engineID",
+                                    "ruleID",
+                                    "reason"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "method",
+                                "URL",
+                                "request body"
+                              ],
+                              "additionalProperties": false
                             }
                           },
                           "required": [
+                            "identifier of the rule engine",
                             "identifier of the violated rule",
                             "description of the violation",
                             "severity of the violation on a 0-to-3 scale",
-                            "count of violations of the rule by the element"
+                            "count of violations of the rule by the element",
+                            "how to report that you disagree with this diagnosis"
                           ],
                           "additionalProperties": false
                         }
@@ -2160,8 +2203,8 @@
       "annotations": {
         "title": "List diagnoses of a violation",
         "readOnlyHint": true,
-        "destructiveHint": false,
         "idempotentHint": true,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -2170,7 +2213,7 @@
     },
     {
       "name": "getReport",
-      "description": "Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified timestamp and job identifier.",
+      "description": "Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified report identifier. The size of the report is disclosed by the listIssues tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2426,8 +2469,8 @@
       "annotations": {
         "title": "Get a full report",
         "readOnlyHint": true,
-        "destructiveHint": false,
         "idempotentHint": true,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -2436,7 +2479,7 @@
     },
     {
       "name": "requestNewTest",
-      "description": "Submits a request to test a page that has no report yet; queued for manual approval. Use orderNewTest instead for immediate, automatically approved testing. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to test a page that has no report yet; queued for manager approval. Use orderNewTest instead for immediate, automatically approved testing. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2793,8 +2836,8 @@
       "annotations": {
         "title": "Request testing of a new page",
         "readOnlyHint": false,
-        "destructiveHint": false,
         "idempotentHint": false,
+        "destructiveHint": false,
         "openWorldHint": true
       },
       "execution": {
@@ -2803,7 +2846,7 @@
     },
     {
       "name": "requestRetest",
-      "description": "Submits a request to retest a page whose existing report is obsolete; queued for manual approval. Use orderRetest instead for immediate, automatically approved retesting. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to retest a page whose existing report is considered obsolete; queued for manager approval. Use orderRetest instead for immediate, automatically approved retesting. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3145,8 +3188,8 @@
       "annotations": {
         "title": "Request a retest",
         "readOnlyHint": false,
-        "destructiveHint": false,
         "idempotentHint": false,
+        "destructiveHint": false,
         "openWorldHint": true
       },
       "execution": {
@@ -3155,7 +3198,7 @@
     },
     {
       "name": "requestFeature",
-      "description": "Submits a request to add a new feature or improve an existing one; queued for manual review. There is no immediate-approval alternative for feature requests. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3427,8 +3470,8 @@
       "annotations": {
         "title": "Request a feature",
         "readOnlyHint": false,
-        "destructiveHint": false,
         "idempotentHint": false,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -3765,8 +3808,8 @@
       "annotations": {
         "title": "Report disagreement with a diagnosis",
         "readOnlyHint": false,
-        "destructiveHint": false,
         "idempotentHint": false,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -3775,7 +3818,7 @@
     },
     {
       "name": "orderNewTest",
-      "description": "Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.",
+      "description": "Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4140,8 +4183,8 @@
       "annotations": {
         "title": "Order immediate testing of a new page",
         "readOnlyHint": false,
-        "destructiveHint": false,
         "idempotentHint": false,
+        "destructiveHint": false,
         "openWorldHint": true
       },
       "execution": {
@@ -4150,7 +4193,7 @@
     },
     {
       "name": "orderRetest",
-      "description": "Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier (timestamp and job identifier) and a question about whether to wait for completion with the awaitTest tool.",
+      "description": "Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4500,8 +4543,8 @@
       "annotations": {
         "title": "Order an immediate retest",
         "readOnlyHint": false,
-        "destructiveHint": false,
         "idempotentHint": false,
+        "destructiveHint": false,
         "openWorldHint": true
       },
       "execution": {
@@ -4809,8 +4852,8 @@
       "annotations": {
         "title": "Wait for an ordered job to finish",
         "readOnlyHint": true,
-        "destructiveHint": false,
         "idempotentHint": false,
+        "destructiveHint": false,
         "openWorldHint": false
       },
       "execution": {
@@ -4818,5 +4861,5 @@
       }
     }
   ],
-  "version": "63.1.8"
+  "version": "63.2.0"
 }

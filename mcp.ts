@@ -22,6 +22,7 @@ import * as awaitTestAPI from './api/awaitTest.ts';
 import * as reportDisagreementAPI from './api/reportDisagreement.ts';
 import {version} from './api/version.ts';
 import {recordMetric} from './util.ts';
+import {collectionDescription, sharedContext} from './content.ts';
 
 import {
   getReportSchema,
@@ -53,12 +54,6 @@ import {
 
 export const mcpPath = '/mcp';
 
-// Shared statement of the Kilotest domain and data hierarchy, repeated in the server
-// instructions and in the getKilotestOverview tool description (but not in the other tool
-// descriptions, to avoid diluting how models read each tool), because some MCP clients do
-// not propagate server-level instructions or the server description to their models.
-const sharedContext = 'Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested pages, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages.';
-
 // Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by
 // the getKilotestOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
@@ -77,7 +72,7 @@ export const createMCPServer = (): McpServer => {
   const server = new McpServer({
     name: 'Kilotest',
     version,
-    description: 'Tools that test web pages for front-end quality (accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG) and make test results available'
+    description: collectionDescription
   },
   {
     instructions: `${sharedContext} Use the listPages tool to start. If it shows that the page you want facts about has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, or the orderNewTest tool for immediate, automatically approved testing. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate, automatically approved retesting. For detailed documentation, call the getKilotestOverview tool.`

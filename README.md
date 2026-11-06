@@ -88,8 +88,8 @@ When you make a change in a feature branch **without** any API or tool contract 
 
 When you **make an API or tool contract change** in a feature branch:
 
-1. `lhm.plugin.json`: Transform it to match `api/schemas.ts` and `mcp.ts`.
-2. `llms.txt`, `llms-full.txt`, `capability.md`, `README.md`: Update parameter and path names.
+1. `llms.txt`, `llms-full.txt`: Update narrative descriptions of the changed tools or parameters.
+2. `capability.md` and `README.md`: Update their prose to describe the changed behavior.
 3. Stage, commit, and optionally push all changes.
 4. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
 5. Submit a pull request.

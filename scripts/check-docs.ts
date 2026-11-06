@@ -1,0 +1,59 @@
+/*
+  check-docs.ts
+  Verifies that the `/api/...` path templates (including path-parameter names and order)
+  quoted in llms.txt and llms-full.txt match api/routes.ts, the single source of truth for
+  API methods and paths. Fails with a listing of mismatches if any API path in those files is
+  missing, stale, or renders a route not present in api/routes.ts, and fails if any route in
+  api/routes.ts is not documented in a file. Run via `npm run lint`.
+*/
+
+// IMPORTS
+
+import fs from 'node:fs';
+import path from 'node:path';
+import {routes} from '../api/routes.ts';
+
+// CONSTANTS
+
+const rootDir = path.join(import.meta.dirname, '..');
+const targetFiles = ['llms.txt', 'llms-full.txt'];
+const apiPathPattern = /\/api\/[A-Za-z]+(?:\/\{[A-Za-z]+\})*/g;
+const expectedPaths = new Set(routes.map(route => route.path));
+
+// FUNCTIONS
+
+// Returns the operationId of a path template, i.e. the segment right after "/api/".
+const operationIdOf = (apiPath: string): string => apiPath.split('/')[2] ?? '';
+
+// EXECUTION
+
+const errors: string[] = [];
+for (const fileName of targetFiles) {
+  const filePath = path.join(rootDir, fileName);
+  const content = fs.readFileSync(filePath, 'utf8');
+  const found = new Set(content.match(apiPathPattern) ?? []);
+  for (const apiPath of found) {
+    if (!expectedPaths.has(apiPath)) {
+      const operationId = operationIdOf(apiPath);
+      const route = routes.find(candidate => candidate.operationId === operationId);
+      errors.push(
+        route
+          ? `${fileName}: "${apiPath}" does not match api/routes.ts, which defines ${operationId} as "${route.path}"`
+          : `${fileName}: "${apiPath}" does not match any operationId in api/routes.ts`
+      );
+    }
+  }
+  for (const route of routes) {
+    if (!found.has(route.path)) {
+      errors.push(`${fileName}: missing the path "${route.path}" documented in api/routes.ts for ${route.operationId}`);
+    }
+  }
+}
+if (errors.length) {
+  console.error('Documentation path/parameter mismatches found:');
+  for (const error of errors) {
+    console.error(`  ${error}`);
+  }
+  process.exit(1);
+}
+console.log(`API paths in ${targetFiles.join(' and ')} match api/routes.ts.`);

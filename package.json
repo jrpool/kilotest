@@ -10,11 +10,11 @@
   "scripts": {
     "start": "node index.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "npx eslint && npx htmlhint web error.html && out=$(npx markdownlint-cli2 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$out\"; exit $code; fi",
+    "lint": "npx eslint && npx htmlhint web error.html && out=$(npx markdownlint-cli2 2>&1); code=$?; if [ $code -ne 0 ]; then echo \"$out\"; exit $code; fi && node scripts/check-docs.ts",
     "test": "c8 node --require ./test/setup.ts --experimental-test-module-mocks --test --test-concurrency=1 --test-randomize '**/*.test.ts'",
     "test:smoke": "node smokeTest.ts",
     "checkinfo": "node checkinfo.ts",
-    "generate": "node scripts/generate-openapi.ts && node scripts/generate-lhm.ts && node scripts/update-versions.ts",
+    "generate": "node scripts/generate-openapi.ts && node scripts/generate-lhm.ts && node scripts/generate-llms.ts && node scripts/update-versions.ts",
     "build:media": "node scripts/buildDemoVideo.ts",
     "publish:lhm": "npx -y @lobehub/market-cli plugin update --dir .",
     "prePR": "node scripts/prePR.ts",

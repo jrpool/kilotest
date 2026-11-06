@@ -57,8 +57,7 @@ export const mcpPath = '/mcp';
 // Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by
 // the getKilotestOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
-  'Kilotest tests web pages for front-end quality: accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG.',
-  'Kilotest integrates an ensemble of twelve independent rule engines to test a web page and stores the results as a structured report.',
+  sharedContext,
   'Results are organized as a hierarchy: tested pages; for each tested page, reports from the tests of the page; for each report, issues reported; for each issue, violators of rules belonging to the issue (a violator is an element or the whole page); for each violator, diagnoses by rule engines of its violations.',
   'Typical workflow: call the listPages tool to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool or order a test with the orderNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool or order a retest with the orderRetest tool.',
   'The request tools submit requests for manager approval. The order tools obtain automated review and approval or rejection. Approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',

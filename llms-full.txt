@@ -101,6 +101,13 @@ Kilotest offers these tools:
     - `issueID`: identifier of the issue
     - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
   - source of parameters: response to a `listViolators` request
+- `getReport`
+  - method: `GET`
+  - purpose: get one full report in JSON
+  - path: `/api/getReport/{reportID}`
+  - parameters
+    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
+  - source of parameters: response to a `listIssues` request
 - `requestNewTest`
   - method: `POST`
   - purpose: request testing of one web page about which no report is available

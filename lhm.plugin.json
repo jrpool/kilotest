@@ -1,7 +1,7 @@
 {
+  "_generated": "Do not edit the _generated, version, description, or tools property. They are automatically generated from content.ts, api/schemas.ts/mcp.ts, scripts/generate-lhm.ts, and scripts/update-versions.ts.",
   "author": "Jonathan Robert Pool",
   "cloudEndpoint": "https://kilotest.com/mcp",
-  "description": "Tools that test web pages with an ensemble of 12 rule engines for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG)",
   "homepage": "https://github.com/jrpool/kilotest",
   "identifier": "jrpool-kilotest",
   "name": "Kilotest",
@@ -18,6 +18,8 @@
     "wcag",
     "web standards"
   ],
+  "version": "63.2.1",
+  "description": "Tools that test web pages with an ensemble of 12 rule engines for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG)",
   "tools": [
     {
       "name": "getKilotestOverview",
@@ -4860,6 +4862,5 @@
         "taskSupport": "forbidden"
       }
     }
-  ],
-  "version": "63.2.0"
+  ]
 }

@@ -53,7 +53,7 @@ Contributions are welcome! You can use GitHub issues to initiate discussions and
 
 See the [`SERVICE.md`](docs/SERVICE.md) file for instructions on how to make Kilotest a service.
 
-## Using Kilotest as an AI tool
+## Using the Kilotest API and MCP server
 
 Kilotest is not only a web application but also an API and an MCP server. AI platforms and models can use Kilotest via those interfaces.
 
@@ -61,7 +61,7 @@ The public URL for models using the MCP server at `kilotest.com` is `https://kil
 
 There is additional documentation at:
 
-- [Tutorial: authorizing AI assistants to use Kilotest](https://kilotest.com/tutorialAI.html)
+- [Tutorial: Kilotest and AI](https://kilotest.com/tutorialAI.html)
 - [AI-TOOLS.md](docs/AI-TOOLS.md): how Kilotest implements the MCP protocol
 - [Summary of Kilotest capabilities](https://kilotest.com/capability.md)
 - [llms.txt](llms.txt): basic documentation for LLMs
@@ -88,7 +88,7 @@ When you make a change in a feature branch **without** any API or tool contract 
 
 When you **make an API or tool contract change** in a feature branch:
 
-1. `llms.txt`: Update entries in the “API” section as needed.
+1. `llms.txt`: Update entries in the “API” section as needed. The initial pagagraph is generated, so do not edit it.
 2. `llms-full.txt`: Update descriptions as needed.
 3. `capability.md` and `README.md`: Update their prose to describe the changed behavior.
 4. Stage, commit, and optionally push all changes.

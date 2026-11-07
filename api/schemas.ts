@@ -14,73 +14,79 @@ type ZodTypeAny = import('zod').ZodTypeAny;
 
 // REQUEST SCHEMAS
 
+// Shape of a report identifier: the creating job's YYMMDDTHHMM time stamp and 3-character suffix joined with a hyphen. The pattern validates month, day-of-month (per month length), hour, and minute; the API layer's isReportID additionally rejects February 29 in non-leap years, which this pattern does not express.
+const reportIDPattern = /^\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\d|30)|02(?:0[1-9]|1\d|2[0-9]))T(?:[01]\d|2[0-3])[0-5]\d-[a-z0-9]{3}$/;
+
+// Shape of a catalog index: a decimal position in the report's catalog of elements.
+const catalogIndexPattern = /^\d+$/;
+
+// Description of a reportID parameter identifying an existing report, reused across schemas below.
+const reportIDDescription = 'Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history';
+
+// Description of a reportID parameter identifying the retestable latest report of a page.
+const latestReportIDDescription = 'Identifier of the latest report about the page, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z); a superseded identifier is rejected';
+
 // listIssues: GET /api/listIssues/{reportID}
 export const listIssuesSchema = {
-  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
+  reportID: z.string().regex(reportIDPattern).describe(reportIDDescription)
 };
 
 // listViolators: GET /api/listViolators/{issueID}/{reportID}
 export const listViolatorsSchema = {
-  issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
-  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
+  issueID: z.string().describe('Issue identifier (example: contrastPoor), as listed in the listIssues output for the same report'),
+  reportID: z.string().regex(reportIDPattern).describe(reportIDDescription)
 };
 
 // listDiagnoses: GET /api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}
 export const listDiagnosesSchema = {
-  catalogIndex: z.string().describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'),
-  issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
-  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
+  catalogIndex: z.string().regex(catalogIndexPattern).describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output'),
+  issueID: z.string().describe('Issue identifier (example: contrastPoor), as listed in the listIssues output for the same report'),
+  reportID: z.string().regex(reportIDPattern).describe(reportIDDescription)
 };
 
 // getReport: GET /api/getReport/{reportID}
 export const getReportSchema = {
-  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)')
+  reportID: z.string().regex(reportIDPattern).describe(reportIDDescription)
+};
+
+// Which review path a test or retest request takes: true for automated review with immediate approval or rejection and immediate enqueueing if approved, false or omitted to queue the request for manager approval. Optional, defaulting to manager review.
+const immediateAutomatedReviewField = {
+  immediateAutomatedReview: z.boolean().optional().describe('true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval')
 };
 
 // requestNewTest: POST /api/requestNewTest
 export const requestNewTestSchema = {
-  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listPages output'),
-  URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
-  reason: z.string().describe('20- to 100-character reason why the page should be tested')
+  description: z.string().min(1).max(100).describe('1- to 100-character name for the page, unique among tested pages and conforming to the naming convention used in the listPages output'),
+  URL: z.string().min(12).max(300).regex(/^https:\/\//).describe('12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address'),
+  reason: z.string().min(20).max(100).describe('20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview'),
+  ...immediateAutomatedReviewField
 };
 
 // requestRetest: POST /api/requestRetest/{reportID}
 export const requestRetestSchema = {
-  reportID: z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z)'),
-  reason: z.string().describe('20- to 100-character reason why the page should be retested')
+  reportID: z.string().regex(reportIDPattern).describe(latestReportIDDescription),
+  reason: z.string().min(20).max(100).describe('20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview'),
+  ...immediateAutomatedReviewField
 };
 
 // requestFeature: POST /api/requestFeature
 export const requestFeatureSchema = {
-  feature: z.string().describe('20- to 1000-character description of requested feature improvement or new feature')
-};
-
-// orderNewTest: POST /api/orderNewTest
-export const orderNewTestSchema = {
-  description: z.string().describe('1- to 100-character description of the page conforming to the naming convention used in the listPages output'),
-  URL: z.string().describe('12- to 300-character URL of the page, including the https:// scheme and any query'),
-  reason: z.string().describe('20- to 100-character reason why the page should be tested')
-};
-
-// orderRetest: POST /api/orderRetest/{reportID}
-export const orderRetestSchema = {
-  reportID: z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z)'),
-  reason: z.string().describe('20- to 100-character reason why the page should be retested')
+  feature: z.string().min(20).max(1000).describe('20- to 1000-character proposal for a new feature or a feature improvement, evaluated by the reviewing manager')
 };
 
 // awaitTest: POST /api/awaitTest/{reportID}
 export const awaitTestSchema = {
-  reportID: z.string().describe('Report identifier returned by orderNewTest or orderRetest (example: 260503T0432-x9z)')
+  reportID: z.string().regex(reportIDPattern).describe('Report identifier returned by an immediately reviewed test or retest submission for a job pending or in progress (example: 260503T0432-x9z); on completion it remains usable with listIssues and getReport')
 };
 
 // reportDisagreement: POST /api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}
 export const reportDisagreementSchema = {
-  issueID: z.string().describe('Issue identifier (example: contrastPoor)'),
-  reportID: z.string().describe('Identifier of the report (example: 260503T0432-x9z)'),
-  catalogIndex: z.string().describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)'),
+  issueID: z.string().describe('Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis'),
+  reportID: z.string().regex(reportIDPattern).describe('Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis'),
+  catalogIndex: z.string().regex(catalogIndexPattern).describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis'),
   engineID: z.string().describe('Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'),
   ruleID: z.string().describe('Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'),
-  reason: z.string().describe('20- to 1000-character explanation of why the diagnosis is disputed')
+  reason: z.string().min(20).max(1000).describe('20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager')
 };
 
 // listPages takes no input; omitted (mcp.ts already uses inputSchema: {}).
@@ -331,22 +337,43 @@ export const getReportResponseSchema = envelope('GET', z.object({
   'full report': z.unknown().describe('The full raw Testaro/Testilo report JSON, copied verbatim, or an error object if it could not be retrieved.')
 }));
 
+// Identifies the report a successfully ordered or awaited job will produce, once complete.
+const reportIdentifierSchema = z.string().describe('Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).');
+
+// Details object common to the manager-review and automated-review variants of a new-test confirmation.
+const newTestDetailsSchema = z.union([
+  z.object({error: z.string()}),
+  z.object({
+    'date and time received': z.string(),
+    'page to be tested': z.object({description: z.string(), URL: z.string()}),
+    'reason why the page should be tested': z.string()
+  })
+]);
+
+// Same, for a retest confirmation.
+const retestDetailsSchema = z.union([
+  z.object({error: z.string()}),
+  z.object({
+    'date and time received': z.string(),
+    'page to be retested': z.object({description: z.string(), URL: z.string()}),
+    'reason why the page should be retested': z.string()
+  })
+]);
+
+// Disposition of a consolidated request: a superset of the manager-review fields ('how a web user can check for completion') and the automated-review fields ('report identifier', 'do you want to wait for completion'). Null when the submission itself was invalid.
+const submissionDispositionSchema = z.object({
+  'what happens next': z.string(),
+  'report identifier': reportIdentifierSchema.nullable().optional(),
+  'how you can check for completion': z.string(),
+  'how a web user can check for completion': z.string().optional(),
+  'do you want to wait for completion': z.string().optional()
+}).nullable();
+
 export const requestNewTestResponseSchema = envelope(
   'POST',
   z.object({
-    'details about your request': z.union([
-      z.object({error: z.string()}),
-      z.object({
-        'date and time received': z.string(),
-        'page to be tested': z.object({description: z.string(), URL: z.string()}),
-        'reason why the page should be tested': z.string()
-      })
-    ]),
-    'disposition of your request': z.object({
-      'what happens next': z.string(),
-      'how you can check for completion': z.string(),
-      'how a web user can check for completion': z.string()
-    }).nullable()
+    'details about your request': newTestDetailsSchema,
+    'disposition of your request': submissionDispositionSchema
   }),
   z.object(requestNewTestSchema)
 );
@@ -354,21 +381,10 @@ export const requestNewTestResponseSchema = envelope(
 export const requestRetestResponseSchema = envelope(
   'POST',
   z.object({
-    'details about your request': z.union([
-      z.object({error: z.string()}),
-      z.object({
-        'date and time received': z.string(),
-        'page to be retested': z.object({description: z.string(), URL: z.string()}),
-        'reason why the page should be retested': z.string()
-      })
-    ]),
-    'disposition of your request': z.object({
-      'what happens next': z.string(),
-      'how you can check for completion': z.string(),
-      'how a web user can check for completion': z.string()
-    }).nullable()
+    'details about your request': retestDetailsSchema,
+    'disposition of your request': submissionDispositionSchema
   }),
-  z.object({reason: requestRetestSchema.reason})
+  z.object({reason: requestRetestSchema.reason, immediateAutomatedReview: requestRetestSchema.immediateAutomatedReview})
 );
 
 export const requestFeatureResponseSchema = envelope(
@@ -404,59 +420,6 @@ export const reportDisagreementResponseSchema = envelope(
     reason: reportDisagreementSchema.reason
   }),
   z.null()
-);
-
-// Identifies the report a successfully ordered or awaited job will produce, once complete.
-const reportIdentifierSchema = z.string().describe('Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).');
-
-export const orderNewTestResponseSchema = envelope(
-  'POST',
-  z.object({
-    'details about your order': z.union([
-      z.object({error: z.string()}),
-      z.object({
-        'date and time received': z.string(),
-        'page to be tested': z.object({description: z.string(), URL: z.string()}),
-        'reason why the page should be tested': z.string()
-      })
-    ]),
-    'disposition of your order': z.object({
-      'what happens next': z.string(),
-      'report identifier': reportIdentifierSchema.nullable(),
-      'how you can check for completion': z.string(),
-      'do you want to wait for completion': z.string()
-    }).nullable()
-  }),
-  z.object(orderNewTestSchema),
-  z.object({
-    'this request': z.null(),
-    'closest ancestor request': z.string().nullable()
-  })
-);
-
-export const orderRetestResponseSchema = envelope(
-  'POST',
-  z.object({
-    'details about your order': z.union([
-      z.object({error: z.string()}),
-      z.object({
-        'date and time received': z.string(),
-        'page to be retested': z.object({description: z.string(), URL: z.string()}),
-        'reason why the page should be retested': z.string()
-      })
-    ]),
-    'disposition of your order': z.object({
-      'what happens next': z.string(),
-      'report identifier': reportIdentifierSchema.nullable(),
-      'how you can check for completion': z.string(),
-      'do you want to wait for completion': z.string()
-    }).nullable()
-  }),
-  z.object({reason: orderRetestSchema.reason}),
-  z.object({
-    'this request': z.null(),
-    'closest ancestor request': z.string().nullable()
-  })
 );
 
 export const awaitTestResponseSchema = envelope(

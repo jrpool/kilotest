@@ -22,8 +22,8 @@
   "description": "Tools that test web pages with an ensemble of 12 rule engines for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG)",
   "tools": [
     {
-      "name": "getKilotestOverview",
-      "description": "Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested pages, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages.",
+      "name": "getOverview",
+      "description": "Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear; it is unnecessary once you know which tool you need. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest tests web pages for front-end quality with an ensemble of rule engines.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -42,7 +42,7 @@
     },
     {
       "name": "listPages",
-      "description": "Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the identifier of its latest available report.",
+      "description": "Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the identifier of its latest available report. Entries are sorted by page description and are not paginated.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -394,13 +394,14 @@
     },
     {
       "name": "listIssues",
-      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to switch to an earlier or later report or to begin examining this report. Returns the history and the basics about this report’s issues.",
+      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to switch to an earlier or later report or to begin examining this report. The reportID is the latest report’s identifier from listPages or an earlier identifier from the history this tool returns. Returns the history and the basics about this report’s issues, sorted by summary and not paginated; an unknown or malformed reportID produces an error. The returned issue identifiers are inputs to the listViolators tool. Use getReport instead when the entire report is needed in one call.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "reportID": {
             "type": "string",
-            "description": "Identifier of the report (example: 260503T0432-x9z)"
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history"
           }
         },
         "required": [
@@ -1136,17 +1137,18 @@
     },
     {
       "name": "listViolators",
-      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue. Returns basics about each violating element.",
+      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue; the issueID must be one of the issue identifiers listIssues returned for the same reportID; call listIssues first if you do not have an issueID. Returns basics about each violating element, sorted by catalog index and not paginated; an unknown issueID or reportID produces an error.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "issueID": {
             "type": "string",
-            "description": "Issue identifier (example: contrastPoor)"
+            "description": "Issue identifier (example: contrastPoor), as listed in the listIssues output for the same report"
           },
           "reportID": {
             "type": "string",
-            "description": "Identifier of the report (example: 260503T0432-x9z)"
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history"
           }
         },
         "required": [
@@ -1645,21 +1647,23 @@
     },
     {
       "name": "listDiagnoses",
-      "description": "Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine.",
+      "description": "Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue; the catalogIndex is the element’s identifier in the listViolators output for that issue and report. Use getReport instead when all diagnoses in the report are needed at once. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine; an unknown report, issue, or element produces an error.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "catalogIndex": {
             "type": "string",
-            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)"
+            "pattern": "^\\d+$",
+            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output"
           },
           "issueID": {
             "type": "string",
-            "description": "Issue identifier (example: contrastPoor)"
+            "description": "Issue identifier (example: contrastPoor), as listed in the listIssues output for the same report"
           },
           "reportID": {
             "type": "string",
-            "description": "Identifier of the report (example: 260503T0432-x9z)"
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history"
           }
         },
         "required": [
@@ -2215,13 +2219,14 @@
     },
     {
       "name": "getReport",
-      "description": "Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified report identifier. The size of the report is disclosed by the listIssues tool.",
+      "description": "Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call; for only part of a report, drill down with those tools instead. The reportID comes from listPages or from the report history that listIssues returns, and an unknown or malformed one produces an error. The report can exceed 1 MB; its exact size is disclosed by the listIssues tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "reportID": {
             "type": "string",
-            "description": "Identifier of the report (example: 260503T0432-x9z)"
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history"
           }
         },
         "required": [
@@ -2481,21 +2486,32 @@
     },
     {
       "name": "requestNewTest",
-      "description": "Submits a request to test a page that has no report yet; queued for manager approval. Use orderNewTest instead for immediate, automatically approved testing. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to test a page that has no report yet. Set immediateAutomatedReview to true for automated review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for manager approval, which typically takes 1 hour to 1 day. The description uniquely names the page in later listPages output and the reason is what the reviewer evaluates. A refusal, such as an existing report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on automated approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "description": {
             "type": "string",
-            "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "1- to 100-character name for the page, unique among tested pages and conforming to the naming convention used in the listPages output"
           },
           "URL": {
             "type": "string",
-            "description": "12- to 300-character URL of the page, including the https:// scheme and any query"
+            "minLength": 12,
+            "maxLength": 300,
+            "pattern": "^https:\\/\\/",
+            "description": "12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address"
           },
           "reason": {
             "type": "string",
-            "description": "20- to 100-character reason why the page should be tested"
+            "minLength": 20,
+            "maxLength": 100,
+            "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+          },
+          "immediateAutomatedReview": {
+            "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2532,15 +2548,26 @@
                 "properties": {
                   "description": {
                     "type": "string",
-                    "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "1- to 100-character name for the page, unique among tested pages and conforming to the naming convention used in the listPages output"
                   },
                   "URL": {
                     "type": "string",
-                    "description": "12- to 300-character URL of the page, including the https:// scheme and any query"
+                    "minLength": 12,
+                    "maxLength": 300,
+                    "pattern": "^https:\\/\\/",
+                    "description": "12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address"
                   },
                   "reason": {
                     "type": "string",
-                    "description": "20- to 100-character reason why the page should be tested"
+                    "minLength": 20,
+                    "maxLength": 100,
+                    "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+                  },
+                  "immediateAutomatedReview": {
+                    "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -2636,17 +2663,30 @@
                       "what happens next": {
                         "type": "string"
                       },
+                      "report identifier": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "how you can check for completion": {
                         "type": "string"
                       },
                       "how a web user can check for completion": {
                         "type": "string"
+                      },
+                      "do you want to wait for completion": {
+                        "type": "string"
                       }
                     },
                     "required": [
                       "what happens next",
-                      "how you can check for completion",
-                      "how a web user can check for completion"
+                      "how you can check for completion"
                     ],
                     "additionalProperties": false
                   },
@@ -2848,17 +2888,24 @@
     },
     {
       "name": "requestRetest",
-      "description": "Submits a request to retest a page whose existing report is considered obsolete; queued for manager approval. Use orderRetest instead for immediate, automatically approved retesting. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to retest a page whose existing report is considered obsolete. Set immediateAutomatedReview to true for automated review with immediate approval or rejection and immediate enqueuing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for manager approval, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on automated approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "reportID": {
             "type": "string",
-            "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)"
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Identifier of the latest report about the page, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z); a superseded identifier is rejected"
           },
           "reason": {
             "type": "string",
-            "description": "20- to 100-character reason why the page should be retested"
+            "minLength": 20,
+            "maxLength": 100,
+            "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+          },
+          "immediateAutomatedReview": {
+            "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+            "type": "boolean"
           }
         },
         "required": [
@@ -2894,7 +2941,13 @@
                 "properties": {
                   "reason": {
                     "type": "string",
-                    "description": "20- to 100-character reason why the page should be retested"
+                    "minLength": 20,
+                    "maxLength": 100,
+                    "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+                  },
+                  "immediateAutomatedReview": {
+                    "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -2988,17 +3041,30 @@
                       "what happens next": {
                         "type": "string"
                       },
+                      "report identifier": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "how you can check for completion": {
                         "type": "string"
                       },
                       "how a web user can check for completion": {
                         "type": "string"
+                      },
+                      "do you want to wait for completion": {
+                        "type": "string"
                       }
                     },
                     "required": [
                       "what happens next",
-                      "how you can check for completion",
-                      "how a web user can check for completion"
+                      "how you can check for completion"
                     ],
                     "additionalProperties": false
                   },
@@ -3200,13 +3266,15 @@
     },
     {
       "name": "requestFeature",
-      "description": "Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Use reportDisagreement instead to dispute a specific diagnosis shown by listDiagnoses. The feature text is the proposal the manager evaluates; a request identical to one already submitted is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "feature": {
             "type": "string",
-            "description": "20- to 1000-character description of requested feature improvement or new feature"
+            "minLength": 20,
+            "maxLength": 1000,
+            "description": "20- to 1000-character proposal for a new feature or a feature improvement, evaluated by the reviewing manager"
           }
         },
         "required": [
@@ -3241,7 +3309,9 @@
                 "properties": {
                   "feature": {
                     "type": "string",
-                    "description": "20- to 1000-character description of requested feature improvement or new feature"
+                    "minLength": 20,
+                    "maxLength": 1000,
+                    "description": "20- to 1000-character proposal for a new feature or a feature improvement, evaluated by the reviewing manager"
                   }
                 },
                 "required": [
@@ -3482,21 +3552,23 @@
     },
     {
       "name": "reportDisagreement",
-      "description": "Reports that you disagree with a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the engineID and ruleID shown in the diagnosis and your reason. Returns a confirmation with disposition details.",
+      "description": "Reports that you disagree with a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "issueID": {
             "type": "string",
-            "description": "Issue identifier (example: contrastPoor)"
+            "description": "Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis"
           },
           "reportID": {
             "type": "string",
-            "description": "Identifier of the report (example: 260503T0432-x9z)"
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis"
           },
           "catalogIndex": {
             "type": "string",
-            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372)"
+            "pattern": "^\\d+$",
+            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis"
           },
           "engineID": {
             "type": "string",
@@ -3508,7 +3580,9 @@
           },
           "reason": {
             "type": "string",
-            "description": "20- to 1000-character explanation of why the diagnosis is disputed"
+            "minLength": 20,
+            "maxLength": 1000,
+            "description": "20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager"
           }
         },
         "required": [
@@ -3556,7 +3630,9 @@
                   },
                   "reason": {
                     "type": "string",
-                    "description": "20- to 1000-character explanation of why the diagnosis is disputed"
+                    "minLength": 20,
+                    "maxLength": 1000,
+                    "description": "20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager"
                   }
                 },
                 "required": [
@@ -3819,749 +3895,15 @@
       }
     },
     {
-      "name": "orderNewTest",
-      "description": "Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "description": {
-            "type": "string",
-            "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
-          },
-          "URL": {
-            "type": "string",
-            "description": "12- to 300-character URL of the page, including the https:// scheme and any query"
-          },
-          "reason": {
-            "type": "string",
-            "description": "20- to 100-character reason why the page should be tested"
-          }
-        },
-        "required": [
-          "description",
-          "URL",
-          "reason"
-        ],
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "tool collection": {
-            "$ref": "#/definitions/ToolsFacts"
-          },
-          "tool name": {
-            "type": "string"
-          },
-          "this request": {
-            "type": "object",
-            "properties": {
-              "description": {
-                "type": "string"
-              },
-              "method": {
-                "type": "string",
-                "const": "POST"
-              },
-              "URL": {
-                "type": "string"
-              },
-              "body": {
-                "type": "object",
-                "properties": {
-                  "description": {
-                    "type": "string",
-                    "description": "1- to 100-character description of the page conforming to the naming convention used in the listPages output"
-                  },
-                  "URL": {
-                    "type": "string",
-                    "description": "12- to 300-character URL of the page, including the https:// scheme and any query"
-                  },
-                  "reason": {
-                    "type": "string",
-                    "description": "20- to 100-character reason why the page should be tested"
-                  }
-                },
-                "required": [
-                  "description",
-                  "URL",
-                  "reason"
-                ],
-                "additionalProperties": false
-              },
-              "closest ancestor request": {
-                "anyOf": [
-                  {
-                    "$ref": "#/definitions/RequestReference"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "description",
-              "method",
-              "URL",
-              "body",
-              "closest ancestor request"
-            ],
-            "additionalProperties": false
-          },
-          "URLs of similar requests for web users": {
-            "type": "object",
-            "properties": {
-              "this request": {
-                "type": "null"
-              },
-              "closest ancestor request": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "this request",
-              "closest ancestor request"
-            ],
-            "additionalProperties": false
-          },
-          "response metadata": {
-            "$ref": "#/definitions/ResponseMetadata"
-          },
-          "response content": {
-            "type": "object",
-            "properties": {
-              "details about your order": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "error": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "error"
-                    ],
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "date and time received": {
-                        "type": "string"
-                      },
-                      "page to be tested": {
-                        "type": "object",
-                        "properties": {
-                          "description": {
-                            "type": "string"
-                          },
-                          "URL": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "description",
-                          "URL"
-                        ],
-                        "additionalProperties": false
-                      },
-                      "reason why the page should be tested": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "date and time received",
-                      "page to be tested",
-                      "reason why the page should be tested"
-                    ],
-                    "additionalProperties": false
-                  }
-                ]
-              },
-              "disposition of your order": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "what happens next": {
-                        "type": "string"
-                      },
-                      "report identifier": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "how you can check for completion": {
-                        "type": "string"
-                      },
-                      "do you want to wait for completion": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "what happens next",
-                      "report identifier",
-                      "how you can check for completion",
-                      "do you want to wait for completion"
-                    ],
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "details about your order",
-              "disposition of your order"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "tool collection",
-          "tool name",
-          "this request",
-          "URLs of similar requests for web users",
-          "response metadata",
-          "response content"
-        ],
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "additionalProperties": false,
-        "definitions": {
-          "ToolsFacts": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "object",
-                "properties": {
-                  "what Kilotest does": {
-                    "type": "string"
-                  },
-                  "how to retrieve findings": {
-                    "type": "object",
-                    "properties": {
-                      "level 1": {
-                        "type": "string"
-                      },
-                      "level 2": {
-                        "type": "string"
-                      },
-                      "level 3": {
-                        "type": "string"
-                      },
-                      "level 4": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "level 1",
-                      "level 2",
-                      "level 3",
-                      "level 4"
-                    ],
-                    "additionalProperties": false
-                  },
-                  "how to generate more findings": {
-                    "type": "object",
-                    "properties": {
-                      "new testing": {
-                        "type": "string"
-                      },
-                      "retesting": {
-                        "type": "string"
-                      },
-                      "approval": {
-                        "type": "string"
-                      },
-                      "latency": {
-                        "type": "string"
-                      },
-                      "request confirmation": {
-                        "type": "string"
-                      },
-                      "order confirmation": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "new testing",
-                      "retesting",
-                      "approval",
-                      "latency",
-                      "request confirmation",
-                      "order confirmation"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "what Kilotest does",
-                  "how to retrieve findings",
-                  "how to generate more findings"
-                ],
-                "additionalProperties": false,
-                "description": "Explanation of what Kilotest does and how to use its tools."
-              },
-              "URL": {
-                "type": "string",
-                "description": "URL of the Kilotest MCP server."
-              },
-              "web users can obtain similar functionalities at": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "name",
-              "description",
-              "URL",
-              "web users can obtain similar functionalities at"
-            ],
-            "additionalProperties": false
-          },
-          "RequestReference": {
-            "type": "object",
-            "properties": {
-              "tool name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "method": {
-                "type": "string",
-                "enum": [
-                  "GET",
-                  "POST"
-                ]
-              },
-              "URL": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "tool name",
-              "description",
-              "method",
-              "URL"
-            ],
-            "additionalProperties": false
-          },
-          "ResponseMetadata": {
-            "type": "object",
-            "properties": {
-              "identifier": {
-                "type": "string",
-                "description": "Unique identifier of this response (timestamp and random suffix)."
-              },
-              "date and time": {
-                "type": "string",
-                "description": "UTC date and time when the response was generated, in ISO 8601 format."
-              }
-            },
-            "required": [
-              "identifier",
-              "date and time"
-            ],
-            "additionalProperties": false
-          }
-        }
-      },
-      "annotations": {
-        "title": "Order immediate testing of a new page",
-        "readOnlyHint": false,
-        "idempotentHint": false,
-        "destructiveHint": false,
-        "openWorldHint": true
-      },
-      "execution": {
-        "taskSupport": "forbidden"
-      }
-    },
-    {
-      "name": "orderRetest",
-      "description": "Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "reportID": {
-            "type": "string",
-            "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)"
-          },
-          "reason": {
-            "type": "string",
-            "description": "20- to 100-character reason why the page should be retested"
-          }
-        },
-        "required": [
-          "reportID",
-          "reason"
-        ],
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "tool collection": {
-            "$ref": "#/definitions/ToolsFacts"
-          },
-          "tool name": {
-            "type": "string"
-          },
-          "this request": {
-            "type": "object",
-            "properties": {
-              "description": {
-                "type": "string"
-              },
-              "method": {
-                "type": "string",
-                "const": "POST"
-              },
-              "URL": {
-                "type": "string"
-              },
-              "body": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "type": "string",
-                    "description": "20- to 100-character reason why the page should be retested"
-                  }
-                },
-                "required": [
-                  "reason"
-                ],
-                "additionalProperties": false
-              },
-              "closest ancestor request": {
-                "anyOf": [
-                  {
-                    "$ref": "#/definitions/RequestReference"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "description",
-              "method",
-              "URL",
-              "body",
-              "closest ancestor request"
-            ],
-            "additionalProperties": false
-          },
-          "URLs of similar requests for web users": {
-            "type": "object",
-            "properties": {
-              "this request": {
-                "type": "null"
-              },
-              "closest ancestor request": {
-                "type": [
-                  "string",
-                  "null"
-                ]
-              }
-            },
-            "required": [
-              "this request",
-              "closest ancestor request"
-            ],
-            "additionalProperties": false
-          },
-          "response metadata": {
-            "$ref": "#/definitions/ResponseMetadata"
-          },
-          "response content": {
-            "type": "object",
-            "properties": {
-              "details about your order": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "error": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "error"
-                    ],
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "date and time received": {
-                        "type": "string"
-                      },
-                      "page to be retested": {
-                        "type": "object",
-                        "properties": {
-                          "description": {
-                            "type": "string"
-                          },
-                          "URL": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "description",
-                          "URL"
-                        ],
-                        "additionalProperties": false
-                      },
-                      "reason why the page should be retested": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "date and time received",
-                      "page to be retested",
-                      "reason why the page should be retested"
-                    ],
-                    "additionalProperties": false
-                  }
-                ]
-              },
-              "disposition of your order": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "what happens next": {
-                        "type": "string"
-                      },
-                      "report identifier": {
-                        "anyOf": [
-                          {
-                            "type": "string",
-                            "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
-                          },
-                          {
-                            "type": "null"
-                          }
-                        ]
-                      },
-                      "how you can check for completion": {
-                        "type": "string"
-                      },
-                      "do you want to wait for completion": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "what happens next",
-                      "report identifier",
-                      "how you can check for completion",
-                      "do you want to wait for completion"
-                    ],
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "details about your order",
-              "disposition of your order"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "tool collection",
-          "tool name",
-          "this request",
-          "URLs of similar requests for web users",
-          "response metadata",
-          "response content"
-        ],
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "additionalProperties": false,
-        "definitions": {
-          "ToolsFacts": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "object",
-                "properties": {
-                  "what Kilotest does": {
-                    "type": "string"
-                  },
-                  "how to retrieve findings": {
-                    "type": "object",
-                    "properties": {
-                      "level 1": {
-                        "type": "string"
-                      },
-                      "level 2": {
-                        "type": "string"
-                      },
-                      "level 3": {
-                        "type": "string"
-                      },
-                      "level 4": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "level 1",
-                      "level 2",
-                      "level 3",
-                      "level 4"
-                    ],
-                    "additionalProperties": false
-                  },
-                  "how to generate more findings": {
-                    "type": "object",
-                    "properties": {
-                      "new testing": {
-                        "type": "string"
-                      },
-                      "retesting": {
-                        "type": "string"
-                      },
-                      "approval": {
-                        "type": "string"
-                      },
-                      "latency": {
-                        "type": "string"
-                      },
-                      "request confirmation": {
-                        "type": "string"
-                      },
-                      "order confirmation": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "new testing",
-                      "retesting",
-                      "approval",
-                      "latency",
-                      "request confirmation",
-                      "order confirmation"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "what Kilotest does",
-                  "how to retrieve findings",
-                  "how to generate more findings"
-                ],
-                "additionalProperties": false,
-                "description": "Explanation of what Kilotest does and how to use its tools."
-              },
-              "URL": {
-                "type": "string",
-                "description": "URL of the Kilotest MCP server."
-              },
-              "web users can obtain similar functionalities at": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "name",
-              "description",
-              "URL",
-              "web users can obtain similar functionalities at"
-            ],
-            "additionalProperties": false
-          },
-          "RequestReference": {
-            "type": "object",
-            "properties": {
-              "tool name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "method": {
-                "type": "string",
-                "enum": [
-                  "GET",
-                  "POST"
-                ]
-              },
-              "URL": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "tool name",
-              "description",
-              "method",
-              "URL"
-            ],
-            "additionalProperties": false
-          },
-          "ResponseMetadata": {
-            "type": "object",
-            "properties": {
-              "identifier": {
-                "type": "string",
-                "description": "Unique identifier of this response (timestamp and random suffix)."
-              },
-              "date and time": {
-                "type": "string",
-                "description": "UTC date and time when the response was generated, in ISO 8601 format."
-              }
-            },
-            "required": [
-              "identifier",
-              "date and time"
-            ],
-            "additionalProperties": false
-          }
-        }
-      },
-      "annotations": {
-        "title": "Order an immediate retest",
-        "readOnlyHint": false,
-        "idempotentHint": false,
-        "destructiveHint": false,
-        "openWorldHint": true
-      },
-      "execution": {
-        "taskSupport": "forbidden"
-      }
-    },
-    {
       "name": "awaitTest",
-      "description": "Waits for a job ordered via the orderNewTest or orderRetest tool to finish, using the report identifier either tool returned. Use this instead of polling listIssues when an immediate answer is preferred. Blocks until the report is ready, the job fails, or a maximum wait time elapses, sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
+      "description": "Waits for a job that a requestNewTest or requestRetest call with immediateAutomatedReview set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
       "inputSchema": {
         "type": "object",
         "properties": {
           "reportID": {
             "type": "string",
-            "description": "Report identifier returned by orderNewTest or orderRetest (example: 260503T0432-x9z)"
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Report identifier returned by an immediately reviewed test or retest submission for a job pending or in progress (example: 260503T0432-x9z); on completion it remains usable with listIssues and getReport"
           }
         },
         "required": [

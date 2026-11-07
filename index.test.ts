@@ -621,32 +621,34 @@ test('POST /api/requestFeature with valid JSON returns a JSON response and recor
   assert.equal(await getMetricCount('apiOperations', 'requestFeature'), countBefore + 1);
 });
 
-test('POST /api/orderNewTest with valid JSON enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
-  const countBefore = await getMetricCount('apiOperations', 'orderNewTest');
-  const res = await request('POST', '/api/orderNewTest', {
+test('POST /api/requestNewTest with immediateAutomatedReview enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
+  const countBefore = await getMetricCount('apiOperations', 'requestNewTest');
+  const res = await request('POST', '/api/requestNewTest', {
     description: `API Ordered Page ${uniqueStamp}`,
     URL: `https://example.com/api-ordered-${uniqueStamp}`,
-    reason: 'Because accessibility matters here'
+    reason: 'Because accessibility matters here',
+    immediateAutomatedReview: true
   });
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.ok(body['tool name'] || body['response content']);
-  assert.equal(await getMetricCount('apiOperations', 'orderNewTest'), countBefore + 1);
-  const reportIdentifier = body['response content']['disposition of your order']['report identifier'];
+  assert.equal(await getMetricCount('apiOperations', 'requestNewTest'), countBefore + 1);
+  const reportIdentifier = body['response content']['disposition of your request']['report identifier'];
   assert.ok(reportIdentifier);
   await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier}.json`));
 });
 
-test('POST /api/orderRetest/260202T0000-new with valid JSON enqueues a job directly and records an API-operation metric', async () => {
-  const countBefore = await getMetricCount('apiOperations', 'orderRetest');
-  const res = await request('POST', '/api/orderRetest/260202T0000-new', {
-    reason: 'Because the report is obsolete and needs refreshing'
+test('POST /api/requestRetest/260202T0000-new with immediateAutomatedReview enqueues a job directly and records an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'requestRetest');
+  const res = await request('POST', '/api/requestRetest/260202T0000-new', {
+    reason: 'Because the report is obsolete and needs refreshing',
+    immediateAutomatedReview: true
   });
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.ok(body['tool name'] || body['response content']);
-  assert.equal(await getMetricCount('apiOperations', 'orderRetest'), countBefore + 1);
-  const reportIdentifier = body['response content']['disposition of your order']['report identifier'];
+  assert.equal(await getMetricCount('apiOperations', 'requestRetest'), countBefore + 1);
+  const reportIdentifier = body['response content']['disposition of your request']['report identifier'];
   assert.ok(reportIdentifier);
   await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier}.json`));
 });
@@ -969,24 +971,19 @@ test('POST /tutorialAIComment.html with empty content returns a JSON error', {ti
   assert.ok(res.headers['content-type'].includes('application/json'));
 });
 
-test('GET /qai redirects to /tutorialAI.html', async () => {
+test('GET /qai and /qai/comments return the invalid-page error', async () => {
   const res = await request('GET', '/qai', {}, {followRedirects: false});
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/tutorialAI.html');
+  assert.notEqual(res.statusCode, 301);
+  const res2 = await request('GET', '/qai/comments', {}, {followRedirects: false});
+  assert.notEqual(res2.statusCode, 301);
 });
 
-test('GET /qai/comments redirects to /tutorialAI.html', async () => {
-  const res = await request('GET', '/qai/comments', {}, {followRedirects: false});
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/tutorialAI.html');
-});
-
-test('GET /diagnoses.html/<issueID>/<timeStamp>/<jobID>/<catalogIndex> with a query string redirects in one step to the canonical /listDiagnoses.html URL', async () => {
+test('GET /diagnoses.html/<segments> with a query string redirects to the renamed page with the tail unchanged', async () => {
   const res = await request(
     'GET', '/diagnoses.html/linkNoText/260101T0000/mix/0?pathID=/html/body', {}, {followRedirects: false}
   );
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000-mix/0');
+  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000/mix/0');
 });
 
 test('GET /reportIssues.html/<reportID> redirects to the equivalent /listIssues.html/<reportID>', async () => {
@@ -995,54 +992,16 @@ test('GET /reportIssues.html/<reportID> redirects to the equivalent /listIssues.
   assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
 });
 
-// TESTS: legacy two-segment report-identifier redirects
-// Before the reportID consolidation, report-identifying URL tails used a
-// timeStamp segment and a jobID segment. These verify that each legacy form
-// permanently redirects to the single-reportID form, and that a POST redirect
-// uses 308 to preserve the method and body.
-
-test('GET /listIssues.html/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
-  const res = await request('GET', '/listIssues.html/260101T0000/mix', {}, {followRedirects: false});
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
-});
-
-test('GET /listViolators.html/<issueID>/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
-  const res = await request(
-    'GET', '/listViolators.html/linkNoText/260101T0000/mix', {}, {followRedirects: false}
+test('no renamedPagePrefixes redirect is past its retireAfter date', () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const expired = Object.keys(indexModule.renamedPagePrefixes).filter(
+    name => indexModule.renamedPagePrefixes[name]!.retireAfter < today
   );
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listViolators.html/linkNoText/260101T0000-mix');
-});
-
-test('GET /listDiagnoses.html/<issueID>/<timeStamp>/<jobID>/<catalogIndex> with a query string redirects in one step to the canonical single-reportID URL', async () => {
-  const res = await request(
-    'GET', '/listDiagnoses.html/linkNoText/260101T0000/mix/0?pathID=/html/body', {}, {followRedirects: false}
+  assert.deepEqual(
+    expired,
+    [],
+    `Expired renamedPagePrefixes redirects in index.ts: ${expired.join(', ')}. Remove each expired entry and any test in index.test.ts that exercises it, or extend its retireAfter date if retirement must be postponed.`
   );
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listDiagnoses.html/linkNoText/260101T0000-mix/0');
-});
-
-test('GET /requestRetestForm.html/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
-  const res = await request(
-    'GET', '/requestRetestForm.html/260202T0000/new', {}, {followRedirects: false}
-  );
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/requestRetestForm.html/260202T0000-new');
-});
-
-test('GET /fullReport.json/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
-  const res = await request('GET', '/fullReport.json/260101T0000/mix', {}, {followRedirects: false});
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/fullReport.json/260101T0000-mix');
-});
-
-test('POST /requestRetest.html/<timeStamp>/<jobID> redirects with 308 to the single-reportID URL', async () => {
-  const res = await formRequest(
-    'POST', '/requestRetest.html/260202T0000/new', {why: 'Because the report is obsolete and needs refreshing'}
-  );
-  assert.equal(res.statusCode, 308);
-  assert.equal(res.headers['location'], '/requestRetest.html/260202T0000-new');
 });
 
 test('GET /reportIssue.html/<segments> redirects to the equivalent /listViolators.html/<segments>', async () => {
@@ -1071,10 +1030,9 @@ test('GET /listReports.html redirects to /listPages.html', async () => {
   assert.equal(res.headers['location'], '/listPages.html');
 });
 
-test('GET /api/listReports redirects to /api/listPages', async () => {
+test('GET /api/listReports returns the invalid-service error', async () => {
   const res = await request('GET', '/api/listReports', {}, {followRedirects: false});
-  assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/api/listPages');
+  assert.notEqual(res.statusCode, 301);
 });
 
 // TESTS: query-string canonicalization
@@ -1116,24 +1074,20 @@ test('GET /requestTestForm.html redirects to /requestNewTestForm.html', async ()
   assert.equal(res.headers['location'], '/requestNewTestForm.html');
 });
 
-test('POST /api/requestTest redirects (308, preserving method) to /api/requestNewTest', async () => {
+test('POST /api/requestTest and /api/orderTest return the invalid-service error', async () => {
   const res = await request('POST', '/api/requestTest', {
     description: `Old Path Page ${uniqueStamp}`,
     URL: `https://example.com/old-path-${uniqueStamp}`,
     reason: 'Because accessibility matters'
   }, {followRedirects: false});
-  assert.equal(res.statusCode, 308);
-  assert.equal(res.headers['location'], '/api/requestNewTest');
-});
-
-test('POST /api/orderTest redirects (308, preserving method) to /api/orderNewTest', async () => {
-  const res = await request('POST', '/api/orderTest', {
+  assert.notEqual(res.statusCode, 308);
+  assert.notEqual(res.statusCode, 200);
+  const res2 = await request('POST', '/api/orderTest', {
     description: `Old Path Ordered Page ${uniqueStamp}`,
     URL: `https://example.com/old-path-ordered-${uniqueStamp}`,
     reason: 'Because accessibility matters'
   }, {followRedirects: false});
-  assert.equal(res.statusCode, 308);
-  assert.equal(res.headers['location'], '/api/orderNewTest');
+  assert.notEqual(res2.statusCode, 200);
 });
 
 test('POST /requestNewTest.html with non-https URL returns an error', async () => {

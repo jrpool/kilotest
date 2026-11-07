@@ -59,8 +59,8 @@ export const getToolsFacts = () => ({
       'level 4': 'Use the listDiagnoses tool to get a list of diagnoses of how one element on one page exhibited one issue in one report.',
     },
     'how to generate more findings': {
-      'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested, or the orderNewTest tool for immediate testing.',
-      'retesting': 'If you believe that the latest report about a page is obsolete (e.g., because the page has been revised), use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate retesting.',
+      'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested; for immediate testing set its immediateAutomatedReview parameter to true.',
+      'retesting': 'If you believe that the latest report about a page is obsolete (e.g., because the page has been revised), use the requestRetest tool to request that the page be retested; for immediate retesting set its immediateAutomatedReview parameter to true.',
       'approval': 'Requests are manager-reviewed, usually in 1 hour to one day. Orders are automatically reviewed. Reviews result in approval or rejection.',
       'latency': 'An approved test typically finishes in 2 to 4 minutes.',
       'request confirmation': 'After submitting a request and waiting for manager review, you can use the listPages tool to determine whether the request has been fulfilled: a new-test request adds a page entry linking to its results, and a retest request adds a later report about the page.',
@@ -100,7 +100,7 @@ export const getRequestFailureReason = (
 };
 // Returns the disposition of a test/retest/instant-test request: an 'ok' disposition
 // describing how to check for completion, or a rejection disposition naming why the
-// request was not processed. Shared by requestNewTest, requestRetest, and orderNewTest,
+// request was not processed. Shared by requestNewTest and requestRetest,
 // whose only differences are the wording of the 3 completion-related sentences and, for
 // a rejection, the one extra requestResult branch getRequestFailureReason takes.
 export const buildRequestDisposition = (

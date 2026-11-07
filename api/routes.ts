@@ -14,8 +14,6 @@ import {
   requestNewTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
-  orderNewTestSchema,
-  orderRetestSchema,
   awaitTestSchema,
   reportDisagreementSchema,
   listPagesResponseSchema,
@@ -26,8 +24,6 @@ import {
   requestNewTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
-  orderNewTestResponseSchema,
-  orderRetestResponseSchema,
   awaitTestResponseSchema,
   reportDisagreementResponseSchema
 } from './schemas.ts';
@@ -119,29 +115,10 @@ export const routes = [
     responseSchema: reportDisagreementResponseSchema
   },
   {
-    operationId: 'orderNewTest',
-    method: 'post',
-    path: '/api/orderNewTest',
-    summary: 'Order that a page be tested immediately, without manual approval',
-    bodySchema: z.object(orderNewTestSchema),
-    responseSchema: orderNewTestResponseSchema
-  },
-  {
-    operationId: 'orderRetest',
-    method: 'post',
-    path: '/api/orderRetest/{reportID}',
-    summary: 'Order that a page be retested immediately, without manual approval',
-    pathParamsSchema: z.object({
-      reportID: orderRetestSchema.reportID
-    }),
-    bodySchema: z.object({reason: orderRetestSchema.reason}),
-    responseSchema: orderRetestResponseSchema
-  },
-  {
     operationId: 'awaitTest',
     method: 'post',
     path: '/api/awaitTest/{reportID}',
-    summary: 'Wait for a job ordered via orderNewTest or orderRetest to complete',
+    summary: 'Wait for a job ordered via an immediately reviewed test or retest request to complete',
     pathParamsSchema: z.object(awaitTestSchema),
     // No caller-supplied fields beyond the path parameters; an empty body schema (rather
     // than omitting bodySchema) keeps this route consistent with the "every POST route

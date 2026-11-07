@@ -26,8 +26,6 @@ import {
   requestNewTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
-  orderNewTestSchema,
-  orderRetestSchema,
   awaitTestSchema,
   reportDisagreementSchema,
   listPagesResponseSchema,
@@ -38,8 +36,6 @@ import {
   requestNewTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
-  orderNewTestResponseSchema,
-  orderRetestResponseSchema,
   awaitTestResponseSchema,
   reportDisagreementResponseSchema
 } from '../api/schemas.ts';
@@ -57,7 +53,7 @@ const generatedWarning = 'Do not edit the _generated, version, description, or t
 
 // The input and output schemas mcp.ts passes to registerTool for each tool, keyed by tool name, matching mcp.ts's own registerTool calls (mcp.ts remains the source for descriptions and annotations, read at runtime below via createMCPServer).
 const toolSchemas: Record<string, {input: ZodRawShape; output?: z.ZodTypeAny}> = {
-  getKilotestOverview: {input: {}},
+  getOverview: {input: {}},
   listPages: {input: {}, output: listPagesResponseSchema},
   listIssues: {input: listIssuesSchema, output: listIssuesResponseSchema},
   listViolators: {input: listViolatorsSchema, output: listViolatorsResponseSchema},
@@ -67,8 +63,6 @@ const toolSchemas: Record<string, {input: ZodRawShape; output?: z.ZodTypeAny}> =
   requestRetest: {input: requestRetestSchema, output: requestRetestResponseSchema},
   requestFeature: {input: requestFeatureSchema, output: requestFeatureResponseSchema},
   reportDisagreement: {input: reportDisagreementSchema, output: reportDisagreementResponseSchema},
-  orderNewTest: {input: orderNewTestSchema, output: orderNewTestResponseSchema},
-  orderRetest: {input: orderRetestSchema, output: orderRetestResponseSchema},
   awaitTest: {input: awaitTestSchema, output: awaitTestResponseSchema}
 };
 

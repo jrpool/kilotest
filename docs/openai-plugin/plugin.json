@@ -75,7 +75,7 @@
             {
               "description": "Order a retest to check on changes in test results",
               "prompt": "Order a Kilotest retest of the Example page. When the report is completed, compare it with the previous report about that page and give me two lists: one naming any eliminated issues and the other naming any newly reported issues. I do not need the report dates, the issue counts, issue explanations, or any other information. If the order is rejected, or if the report is not completed within 4 minutes, stop waiting and tell me what happened.",
-              "tools_triggered": "listPages, orderRetest, awaitTest, listIssues",
+              "tools_triggered": "listPages, requestRetest, awaitTest, listIssues",
               "expected_behavior": "Locate the latest report about the Example page, order a retest of it, wait for the new report, compare it with the earlier report, and provide lists of the names of any issues reported by only the previous report and the names of any issues reported by only the new report. If the order is rejected, state that. If the order is accepted but the report is not completed within 4 minutes, state that and stop waiting."
             }
           ],

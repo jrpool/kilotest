@@ -27,9 +27,9 @@ Results are organized as a hierarchy:
    - Use `listViolators` to inspect elements violating rules belonging to an issue.
    - Use `listDiagnoses` to inspect diagnoses by rule engines of violations of applicable rules by an element.
    - Use `getReport` to retrieve an entire JSON report.
-   - Use `requestRetest` or `orderRetest` if the latest report is obsolete and you want the page retested.
+   - Use `requestRetest` if the latest report is obsolete and you want the page retested, setting `immediateAutomatedReview` to true for immediate, automatically reviewed retesting.
 3. If the page has not been tested:
-   - Use `requestNewTest` or `orderNewTest` if you want the page tested.
+   - Use `requestNewTest` if you want the page tested, setting `immediateAutomatedReview` to true for immediate, automatically reviewed testing.
 
 ## Test request and order processing
 

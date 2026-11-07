@@ -2,7 +2,7 @@
   generate-llms.ts
   Regenerates the opening paragraph of llms.txt from content.ts's sharedContext, the single
   source of truth content.ts already documents that paragraph as reusing (along with the MCP
-  server instructions, the openapi.yaml description, and the getKilotestOverview tool
+  server instructions, the openapi.yaml description, and the getOverview tool
   description). Leaves the rest of llms.txt untouched, because it has no canonical source
   elsewhere in the repository.
 */

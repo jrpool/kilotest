@@ -116,6 +116,7 @@ Kilotest offers these tools:
     - `description`: description of the page to be tested
     - `URL`: URL of the page to be tested
     - `reason`: reason for testing the page
+    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted queues the request for manager approval
 - `requestRetest`
   - method: `POST`
   - purpose: request retesting of one web page about which a report is available
@@ -125,6 +126,7 @@ Kilotest offers these tools:
   - source of parameters: response to a `listIssues` request
   - payload properties
     - `reason`: reason for retesting the page
+    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted queues the request for manager approval
 - `requestFeature`
   - method: `POST`
   - purpose: request a feature improvement or a new feature
@@ -144,32 +146,13 @@ Kilotest offers these tools:
     - `engineID`: identifier of the rule engine that produced the disputed diagnosis, shown in the `listDiagnoses` response
     - `ruleID`: identifier of the rule whose diagnosis is disputed, shown in the `listDiagnoses` response, or, if it is null, the description of the violation
     - `reason`: 20- to 1000-character explanation of why the diagnosis is disputed
-- `orderNewTest`
-  - method: `POST`
-  - purpose: order immediate, automatically approved testing of one web page about which no report is available, instead of waiting for manual approval
-  - path: `/api/orderNewTest`
-  - payload properties
-    - `description`: description of the page to be tested
-    - `URL`: URL of the page to be tested
-    - `reason`: reason for testing the page
-  - response includes a report identifier (`reportID`) once the job is enqueued
-- `orderRetest`
-  - method: `POST`
-  - purpose: order immediate, automatically approved retesting of one web page about which a report is available, instead of waiting for manual approval
-  - path: `/api/orderRetest/{reportID}`
-  - parameters
-    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
-  - source of parameters: response to a `listIssues` request
-  - payload properties
-    - `reason`: reason for retesting the page
-  - response includes a report identifier (`reportID`) once the job is enqueued
 - `awaitTest`
   - method: `POST`
-  - purpose: wait for a job ordered via `orderNewTest` or `orderRetest` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
+  - purpose: wait for a job ordered via a `requestNewTest` or `requestRetest` request with `immediateAutomatedReview` set to `true` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
   - path: `/api/awaitTest/{reportID}`
   - parameters
-    - `reportID`: the report identifier returned by `orderNewTest` or `orderRetest` (example: 260503T0432-x9z)
-  - source of parameters: response to an `orderNewTest` or `orderRetest` request
+    - `reportID`: the report identifier returned by an immediately reviewed `requestNewTest` or `requestRetest` request (example: 260503T0432-x9z)
+  - source of parameters: response to an immediately reviewed `requestNewTest` or `requestRetest` request
   - caveat: testing typically takes 2 to 4 minutes; sends no interim notices while waiting
 
 ## After a test, retest, or feature request
@@ -186,7 +169,7 @@ When you request a test or a retest:
   - check test completion by calling `listPages` and looking for the page in the list
   - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listPages.html`
 
-For immediate testing without waiting for manual approval, use `orderNewTest` or `orderRetest` instead of `requestNewTest` or `requestRetest`. Each enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
+For immediate testing without waiting for manual approval, set `immediateAutomatedReview` to `true` in a `requestNewTest` or `requestRetest` request. That enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 

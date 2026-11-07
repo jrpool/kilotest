@@ -361,8 +361,8 @@ test('GET /api/listViolators/linkNoText/260101T0000-mix returns JSON', async () 
   assert.equal(body['tool name'], 'listViolators');
 });
 
-test('GET /api/listDiagnoses/0/linkNoText/260101T0000-mix returns JSON', {timeout: 500}, async () => {
-  const res = await request('GET', '/api/listDiagnoses/0/linkNoText/260101T0000-mix');
+test('GET /api/listDiagnoses/linkNoText/260101T0000-mix/0 returns JSON', {timeout: 500}, async () => {
+  const res = await request('GET', '/api/listDiagnoses/linkNoText/260101T0000-mix/0');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['tool name'], 'listDiagnoses');
@@ -990,6 +990,12 @@ test('GET /reportIssues.html/<reportID> redirects to the equivalent /listIssues.
   const res = await request('GET', '/reportIssues.html/260101T0000-mix', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
   assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
+});
+
+test('GET /tutorial.html redirects to /tutorialWeb.html', async () => {
+  const res = await request('GET', '/tutorial.html', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/tutorialWeb.html');
 });
 
 test('no renamedPagePrefixes redirect is past its retireAfter date', () => {

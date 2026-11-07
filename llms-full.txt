@@ -16,12 +16,11 @@ Without calling any tool, an LLM can, under some conditions, load web pages and 
 
 To provide a more inexpensive, thorough, and accurate assessment, the agent could, in principle, ask an ensemble of specialized rule engines to test the page. However, selecting and running such rule engines and consolidating their results is itself expensive and difficult, and most available rule engines are not callable as MCP tools. Kilotest fills the gap between an LLM and rule engines. Kilotest:
 
-- selects an ensemble of 12 rule engines that implement tests for, in total, more than a thousand rules for front-end quality
-- runs the tests of the rule engines
+- uses an ensemble of 12 rule engines to perform about 1,300 tests for front-end quality
 - combines the reports of the rule engines into a single integrated report
-- consolidates the rules into about 380 “issues” with a uniform naming system
+- consolidates the rule violations into about 380 “issues” with a uniform naming system
 
-The tools that report test results extract from reports statistics and details at various levels of granularity, as required by an agent to fulfill particular user requests.
+The tools that report test results provide statistics and details at various levels of granularity specified by an agent to fulfill particular user requests.
 
 ## What Kilotest does **not** do for language models
 
@@ -55,34 +54,35 @@ Kilotest results are more comprehensive than single-rule-engine MCP server resul
 Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 - [Home page](https://kilotest.com/)
-- [Get a list of all tested pages, each linked to its latest report](https://kilotest.com/listPages.html)
-- Get statistics about issues reported in one report, and a history of all reports about the same page: `https://kilotest.com/listIssues.html/{reportID}`
-- Get details about one issue reported in one report: `https://kilotest.com/listViolators.html/{issueID}/{reportID}`
-- Get diagnoses by rule engines of rule violations for one HTML element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{reportID}/{catalogIndex}`
-- [Request the testing of a not-yet-tested page](https://kilotest.com/requestNewTestForm.html)
-- Request the retesting of a previously tested page: `https://kilotest.com/requestRetestForm.html/{reportID}`
+- [List all tested pages, with links to test results](https://kilotest.com/listPages.html)
+- List all issues in one report, and all reports about the same page: `https://kilotest.com/listIssues.html/{reportID}`
+- List all elements exhibiting one issue in one report: `https://kilotest.com/listViolators.html/{issueID}/{reportID}`
+- List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{reportID}/{catalogIndex}`
+- Get one full report in JSON: `https://kilotest.com/fullReport.json/{reportID}`
+- [Request testing of a not-yet-tested web page](https://kilotest.com/requestNewTestForm.html)
+- Request retesting of a web page: `https://kilotest.com/requestRetestForm.html/{reportID}`
+- [List the operations available to Kilotest managers](https://kilotest.com/manage.html)
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
-- [Get a list of the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
-- [Tutorial, “Connect an AI Platform”](https://kilotest.com/tutorialAI.html)
+- [Tutorial, “Kilotest and AI”](https://kilotest.com/tutorialAI.html)
 
 ### API
 
-In the specifications below, the term `report` refers to the records of one session in which a web page is tested.
+In the specifications below, the term `report` refers to the records of one session in which a web page is tested. Each report has a unique identifier with a `YYMMDDTHHmm` initial and a 3-character final segment (example: 260503T0432-x9z).
 
 Kilotest offers these tools:
 
 - `listPages`
   - method: `GET`
-  - purpose: list all tested pages, each with the identifier of its latest report
+  - purpose: list all tested pages, with links to test results
   - path: `/api/listPages`
   - caveat: Cached results are likely to be stale and should not be used
 - `listIssues`
   - method: `GET`
-  - purpose: list all issues in one report, and all reports about the same page, from oldest to latest
+  - purpose: list all issues in one report, and all reports about the same page
   - path: `/api/listIssues/{reportID}`
   - parameters
-    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
+    - `reportID`: identifier of the report
   - source of parameters: response to a `listPages` request, or the history of reports about the page in the response to a `listIssues` request
 - `listViolators`
   - method: `GET`
@@ -90,68 +90,68 @@ Kilotest offers these tools:
   - path: `/api/listViolators/{issueID}/{reportID}`
   - parameters
     - `issueID`: identifier of the issue
-    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
+    - `reportID`: identifier of the report
   - source of parameters: response to a `listIssues` request
 - `listDiagnoses`
   - method: `GET`
   - purpose: list all diagnoses of one issue exhibited by one element in one report
-  - path: `/api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}`
+  - path: `/api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}`
   - parameters
-    - `catalogIndex`: index of the catalog entry of the element
     - `issueID`: identifier of the issue
-    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
+    - `reportID`: identifier of the report
+    - `catalogIndex`: index of the catalog entry of the element (a string representation of an integer)
   - source of parameters: response to a `listViolators` request
+- `questionDiagnosis`
+  - method: `POST`
+  - purpose: question or contest a diagnosis shown by `listDiagnoses`
+  - path: `/api/questionDiagnosis/{issueID}/{reportID}/{catalogIndex}`
+  - parameters
+    - `issueID`: identifier of the issue
+    - `reportID`: identifier of the report
+    - `catalogIndex`: index of the catalog entry of the element
+  - source of parameters: response to a `listDiagnoses` request
+  - payload properties
+    - `engineID`: identifier of the rule engine that produced the disputed diagnosis, shown in the `listDiagnoses` response
+    - `ruleID`: identifier of the rule whose diagnosis is disputed, shown in the `listDiagnoses` response, or, if it is null, the description of the violation
+    - `reason`: 20- to 1000-character explanation of why the diagnosis is questioned
 - `getReport`
   - method: `GET`
   - purpose: get one full report in JSON
   - path: `/api/getReport/{reportID}`
   - parameters
-    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
+    - `reportID`: identifier of the report
   - source of parameters: response to a `listIssues` request
 - `requestNewTest`
   - method: `POST`
-  - purpose: request testing of one web page about which no report is available
+  - purpose: request testing of a not-yet-tested page
   - path: `/api/requestNewTest`
   - payload properties
     - `description`: description of the page to be tested
     - `URL`: URL of the page to be tested
     - `reason`: reason for testing the page
-    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted queues the request for manager approval
+    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for manager review
 - `requestRetest`
   - method: `POST`
-  - purpose: request retesting of one web page about which a report is available
+  - purpose: request retesting of a page about which a report is available
   - path: `/api/requestRetest/{reportID}`
   - parameters
-    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
+    - `reportID`: identifier of the latest report about the page
   - source of parameters: response to a `listIssues` request
   - payload properties
     - `reason`: reason for retesting the page
-    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted queues the request for manager approval
+    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for manager review
 - `requestFeature`
   - method: `POST`
   - purpose: request a feature improvement or a new feature
   - path: `/api/requestFeature`
   - payload properties
     - `feature`: description and motivation of the feature improvement or the new feature
-- `reportDisagreement`
-  - method: `POST`
-  - purpose: report disagreement with a diagnosis shown by `listDiagnoses` of how an element exhibited an issue
-  - path: `/api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}`
-  - parameters
-    - `issueID`: identifier of the issue
-    - `reportID`: identifier of the report, with YYMMDDTHHmm format for its initial segment (example: 260503T0432-x9z)
-    - `catalogIndex`: index of the catalog entry of the element
-  - source of parameters: response to a `listDiagnoses` request
-  - payload properties
-    - `engineID`: identifier of the rule engine that produced the disputed diagnosis, shown in the `listDiagnoses` response
-    - `ruleID`: identifier of the rule whose diagnosis is disputed, shown in the `listDiagnoses` response, or, if it is null, the description of the violation
-    - `reason`: 20- to 1000-character explanation of why the diagnosis is disputed
 - `awaitTest`
   - method: `POST`
-  - purpose: wait for a job ordered via a `requestNewTest` or `requestRetest` request with `immediateAutomatedReview` set to `true` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
+  - purpose: wait for a job ordered via the `requestNewTest` or `requestRetest` tool with `immediateAutomatedReview` set to `true` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
   - path: `/api/awaitTest/{reportID}`
   - parameters
-    - `reportID`: the report identifier returned by an immediately reviewed `requestNewTest` or `requestRetest` request (example: 260503T0432-x9z)
+    - `reportID`: the report identifier returned by an immediately reviewed `requestNewTest` or `requestRetest` request
   - source of parameters: response to an immediately reviewed `requestNewTest` or `requestRetest` request
   - caveat: testing typically takes 2 to 4 minutes; sends no interim notices while waiting
 

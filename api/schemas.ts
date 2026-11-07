@@ -37,11 +37,11 @@ export const listViolatorsSchema = {
   reportID: z.string().regex(reportIDPattern).describe(reportIDDescription)
 };
 
-// listDiagnoses: GET /api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}
+// listDiagnoses: GET /api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}
 export const listDiagnosesSchema = {
-  catalogIndex: z.string().regex(catalogIndexPattern).describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output'),
   issueID: z.string().describe('Issue identifier (example: contrastPoor), as listed in the listIssues output for the same report'),
-  reportID: z.string().regex(reportIDPattern).describe(reportIDDescription)
+  reportID: z.string().regex(reportIDPattern).describe(reportIDDescription),
+  catalogIndex: z.string().regex(catalogIndexPattern).describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output')
 };
 
 // getReport: GET /api/getReport/{reportID}
@@ -79,8 +79,8 @@ export const awaitTestSchema = {
   reportID: z.string().regex(reportIDPattern).describe('Report identifier returned by an immediately reviewed test or retest submission for a job pending or in progress (example: 260503T0432-x9z); on completion it remains usable with listIssues and getReport')
 };
 
-// reportDisagreement: POST /api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}
-export const reportDisagreementSchema = {
+// questionDiagnosis: POST /api/questionDiagnosis/{issueID}/{reportID}/{catalogIndex}
+export const questionDiagnosisSchema = {
   issueID: z.string().describe('Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis'),
   reportID: z.string().regex(reportIDPattern).describe('Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis'),
   catalogIndex: z.string().regex(catalogIndexPattern).describe('Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis'),
@@ -320,7 +320,7 @@ export const listDiagnosesResponseSchema = envelope('GET', z.object({
     'description of the violation': z.unknown().describe('Copied from the report instance (what); type not guaranteed.'),
     'severity of the violation on a 0-to-3 scale': z.unknown().describe('Copied from the report instance (ordinalSeverity); type not guaranteed.'),
     'count of violations of the rule by the element': z.number(),
-    'how to report that you disagree with this diagnosis': z.object({
+    'how to question this diagnosis': z.object({
       method: z.literal('POST'),
       URL: z.string(),
       'request body': z.object({
@@ -400,13 +400,13 @@ export const requestFeatureResponseSchema = envelope(
   z.null()
 );
 
-export const reportDisagreementResponseSchema = envelope(
+export const questionDiagnosisResponseSchema = envelope(
   'POST',
   z.object({'details about your request': z.union([
     z.object({error: z.string()}),
     z.object({
       'date and time received': z.string(),
-      'diagnosis you disagree with': z.object({
+      'diagnosis you question': z.object({
         'issue identifier': z.string(),
         'identifier of the rule engine': z.string(),
         'identifier of the violated rule': z.string()
@@ -415,9 +415,9 @@ export const reportDisagreementResponseSchema = envelope(
     })
   ])}),
   z.object({
-    engineID: reportDisagreementSchema.engineID,
-    ruleID: reportDisagreementSchema.ruleID,
-    reason: reportDisagreementSchema.reason
+    engineID: questionDiagnosisSchema.engineID,
+    ruleID: questionDiagnosisSchema.ruleID,
+    reason: questionDiagnosisSchema.reason
   }),
   z.null()
 );

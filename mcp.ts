@@ -17,7 +17,7 @@ import * as requestNewTestAPI from './api/requestNewTest.ts';
 import * as requestRetestAPI from './api/requestRetest.ts';
 import * as requestFeatureAPI from './api/requestFeature.ts';
 import * as awaitTestAPI from './api/awaitTest.ts';
-import * as reportDisagreementAPI from './api/reportDisagreement.ts';
+import * as questionDiagnosisAPI from './api/questionDiagnosis.ts';
 import {version} from './api/version.ts';
 import {recordMetric} from './util.ts';
 import {collectionDescription, sharedContext} from './content.ts';
@@ -31,7 +31,7 @@ import {
   requestRetestSchema,
   requestFeatureSchema,
   awaitTestSchema,
-  reportDisagreementSchema,
+  questionDiagnosisSchema,
   listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
@@ -41,7 +41,7 @@ import {
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
   awaitTestResponseSchema,
-  reportDisagreementResponseSchema
+  questionDiagnosisResponseSchema
 } from './api/schemas.ts';
 
 // CONSTANTS
@@ -162,9 +162,29 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({catalogIndex, issueID, reportID}) => {
-      const result = await listDiagnosesAPI.response([catalogIndex, issueID, reportID]);
+    async ({issueID, reportID, catalogIndex}) => {
+      const result = await listDiagnosesAPI.response([issueID, reportID, catalogIndex]);
       await recordMetric('mcpToolCalls', 'listDiagnoses');
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
+    }
+  );
+  server.registerTool(
+    'questionDiagnosis',
+    {
+      description: 'Questions or contests a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.',
+      inputSchema: questionDiagnosisSchema,
+      outputSchema: questionDiagnosisResponseSchema,
+      annotations: {
+        title: 'Question a diagnosis',
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({issueID, reportID, catalogIndex, engineID, ruleID, reason}) => {
+      const result = await questionDiagnosisAPI.response([issueID, reportID, catalogIndex, engineID, ruleID, reason]);
+      await recordMetric('mcpToolCalls', 'questionDiagnosis');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -231,7 +251,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Use reportDisagreement instead to dispute a specific diagnosis shown by listDiagnoses. The feature text is the proposal the manager evaluates; a request identical to one already submitted is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.',
+      description: 'Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text is the proposal the manager evaluates; a request identical to one already submitted is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
@@ -245,26 +265,6 @@ export const createMCPServer = (): McpServer => {
     async ({feature}) => {
       const result = await requestFeatureAPI.response([feature]);
       await recordMetric('mcpToolCalls', 'requestFeature');
-      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
-    }
-  );
-  server.registerTool(
-    'reportDisagreement',
-    {
-      description: 'Reports that you disagree with a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.',
-      inputSchema: reportDisagreementSchema,
-      outputSchema: reportDisagreementResponseSchema,
-      annotations: {
-        title: 'Report disagreement with a diagnosis',
-        readOnlyHint: false,
-        idempotentHint: false,
-        destructiveHint: false,
-        openWorldHint: false
-      }
-    },
-    async ({issueID, reportID, catalogIndex, engineID, ruleID, reason}) => {
-      const result = await reportDisagreementAPI.response([issueID, reportID, catalogIndex, engineID, ruleID, reason]);
-      await recordMetric('mcpToolCalls', 'reportDisagreement');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );

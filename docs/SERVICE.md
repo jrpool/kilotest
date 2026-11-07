@@ -409,7 +409,7 @@ Alerts are sent to the maintainer in the following conditions:
 
 7. **MCP feature request received**: When a user submits a feature request via the MCP server's `requestFeature` tool, an alert is sent with subject `"MCP feature request received"`, including the text of the feature request, and the request is also appended to `db/featureRequests.json`, the same way tutorial comments are appended to their own files (see item 1), so that a manager can review or delete it later via `/deleteNotesForm.html`.
 
-8. **Diagnosis disagreement received**: When a user reports disagreement with a diagnosis via the API’s or MCP server’s `reportDisagreement` operation, an alert is sent with subject `"Kilotest: diagnosis disagreement received"`, including the reason, the disputed diagnosis (rule engine, rule, issue, element, and report), and the disagreement is also appended to `db/disagreements.json`, so that a manager can review it and, when warranted, propose a correction to the `testaro-issues` classification (see item 3 for how such corrections take effect).
+8. **Diagnosis disagreement received**: When a user questions a diagnosis via the API’s or MCP server’s `questionDiagnosis` operation, an alert is sent with subject `"Kilotest: diagnosis disagreement received"`, including the reason, the disputed diagnosis (rule engine, rule, issue, element, and report), and the disagreement is also appended to `db/disagreements.json`, so that a manager can review it and, when warranted, propose a correction to the `testaro-issues` classification (see item 3 for how such corrections take effect).
 
 9. **WAVE balance low**: When Kilotest detects that the account balance for the WAVE API service (used for accessibility testing) has fallen below a threshold, an alert is sent with subject `"Kilotest: WAVE balance low"`, indicating the number of credits remaining.
 
@@ -437,7 +437,7 @@ Each cap defaults to 20 and can be set independently via an environment variable
 2. **`TUTORIAL_WEB_COMMENTS_MAX`**: The maximum number of comments held on the web tutorial page (`/tutorialWeb.html`).
 3. **`TUTORIAL_AI_COMMENTS_MAX`**: The maximum number of comments held on the AI agent tutorial page (`/tutorialAI.html`).
 4. **`FEATURE_REQUESTS_MAX`**: The maximum number of feature requests held via the MCP server's `requestFeature` tool.
-5. **`DISAGREEMENTS_MAX`**: The maximum number of disagreements with diagnoses held via the API’s or MCP server’s `reportDisagreement` operation.
+5. **`DISAGREEMENTS_MAX`**: The maximum number of disagreements with diagnoses held via the API’s or MCP server’s `questionDiagnosis` operation.
 
 Each variable, if set, must be a non-negative integer; if unset, empty, or not a non-negative integer, the default of 20 is used instead. A value of `0` means no limit: that inbox is never treated as full, regardless of size. Unlike the alert-configuration variables above, these are not required: an unset value never disables the limit, it only selects the default size.
 

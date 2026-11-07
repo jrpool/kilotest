@@ -595,19 +595,11 @@ paths:
                   - response metadata
                   - response content
                 additionalProperties: false
-  /api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}:
+  /api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}:
     get:
       operationId: listDiagnoses
       summary: List diagnoses of how one element exhibited one issue
       parameters:
-        - in: path
-          name: catalogIndex
-          schema:
-            type: string
-            pattern: ^\d+$
-            description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output'
-          required: true
-          description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output'
         - in: path
           name: issueID
           schema:
@@ -623,6 +615,14 @@ paths:
             description: 'Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history'
           required: true
           description: 'Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history'
+        - in: path
+          name: catalogIndex
+          schema:
+            type: string
+            pattern: ^\d+$
+            description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output'
+          required: true
+          description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output'
       responses:
         '200':
           description: List diagnoses of how one element exhibited one issue
@@ -723,7 +723,7 @@ paths:
                                       description: Copied from the report instance (ordinalSeverity); type not guaranteed.
                                     count of violations of the rule by the element:
                                       type: number
-                                    how to report that you disagree with this diagnosis:
+                                    how to question this diagnosis:
                                       type: object
                                       properties:
                                         method:
@@ -756,7 +756,7 @@ paths:
                                     - description of the violation
                                     - severity of the violation on a 0-to-3 scale
                                     - count of violations of the rule by the element
-                                    - how to report that you disagree with this diagnosis
+                                    - how to question this diagnosis
                                   additionalProperties: false
                               - type: object
                                 properties:
@@ -772,6 +772,159 @@ paths:
                       - basics about the element
                       - details about the element
                       - diagnoses of how the element exhibited the issue
+                    additionalProperties: false
+                required:
+                  - tool collection
+                  - tool name
+                  - this request
+                  - URLs of similar requests for web users
+                  - response metadata
+                  - response content
+                additionalProperties: false
+  /api/questionDiagnosis/{issueID}/{reportID}/{catalogIndex}:
+    post:
+      operationId: questionDiagnosis
+      summary: Question a diagnosis
+      parameters:
+        - in: path
+          name: issueID
+          schema:
+            type: string
+            description: 'Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis'
+          required: true
+          description: 'Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis'
+        - in: path
+          name: reportID
+          schema:
+            type: string
+            pattern: ^\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\d|30)|02(?:0[1-9]|1\d|2[0-9]))T(?:[01]\d|2[0-3])[0-5]\d-[a-z0-9]{3}$
+            description: 'Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis'
+          required: true
+          description: 'Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis'
+        - in: path
+          name: catalogIndex
+          schema:
+            type: string
+            pattern: ^\d+$
+            description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis'
+          required: true
+          description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                engineID:
+                  type: string
+                  description: 'Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'
+                ruleID:
+                  type: string
+                  description: 'Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'
+                reason:
+                  type: string
+                  minLength: 20
+                  maxLength: 1000
+                  description: 20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager
+              required:
+                - engineID
+                - ruleID
+                - reason
+      responses:
+        '200':
+          description: Question a diagnosis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool collection:
+                    $ref: '#/components/schemas/ToolsFacts'
+                  tool name:
+                    type: string
+                  this request:
+                    type: object
+                    properties:
+                      description:
+                        type: string
+                      method:
+                        type: string
+                        const: POST
+                      URL:
+                        type: string
+                      body:
+                        type: object
+                        properties:
+                          engineID:
+                            type: string
+                            description: 'Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'
+                          ruleID:
+                            type: string
+                            description: 'Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'
+                          reason:
+                            type: string
+                            minLength: 20
+                            maxLength: 1000
+                            description: 20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager
+                        required:
+                          - engineID
+                          - ruleID
+                          - reason
+                        additionalProperties: false
+                      closest ancestor request:
+                        anyOf:
+                          - $ref: '#/components/schemas/RequestReference'
+                          - type: 'null'
+                    required:
+                      - description
+                      - method
+                      - URL
+                      - body
+                      - closest ancestor request
+                    additionalProperties: false
+                  URLs of similar requests for web users:
+                    type: 'null'
+                  response metadata:
+                    $ref: '#/components/schemas/ResponseMetadata'
+                  response content:
+                    type: object
+                    properties:
+                      details about your request:
+                        anyOf:
+                          - type: object
+                            properties:
+                              error:
+                                type: string
+                            required:
+                              - error
+                            additionalProperties: false
+                          - type: object
+                            properties:
+                              date and time received:
+                                type: string
+                              diagnosis you question:
+                                type: object
+                                properties:
+                                  issue identifier:
+                                    type: string
+                                  identifier of the rule engine:
+                                    type: string
+                                  identifier of the violated rule:
+                                    type: string
+                                required:
+                                  - issue identifier
+                                  - identifier of the rule engine
+                                  - identifier of the violated rule
+                                additionalProperties: false
+                              disposition:
+                                type: string
+                            required:
+                              - date and time received
+                              - diagnosis you question
+                              - disposition
+                            additionalProperties: false
+                    required:
+                      - details about your request
                     additionalProperties: false
                 required:
                   - tool collection
@@ -1246,159 +1399,6 @@ paths:
                                 type: string
                             required:
                               - date and time received
-                              - disposition
-                            additionalProperties: false
-                    required:
-                      - details about your request
-                    additionalProperties: false
-                required:
-                  - tool collection
-                  - tool name
-                  - this request
-                  - URLs of similar requests for web users
-                  - response metadata
-                  - response content
-                additionalProperties: false
-  /api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}:
-    post:
-      operationId: reportDisagreement
-      summary: Report disagreement with a diagnosis
-      parameters:
-        - in: path
-          name: issueID
-          schema:
-            type: string
-            description: 'Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis'
-          required: true
-          description: 'Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis'
-        - in: path
-          name: reportID
-          schema:
-            type: string
-            pattern: ^\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\d|30)|02(?:0[1-9]|1\d|2[0-9]))T(?:[01]\d|2[0-3])[0-5]\d-[a-z0-9]{3}$
-            description: 'Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis'
-          required: true
-          description: 'Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis'
-        - in: path
-          name: catalogIndex
-          schema:
-            type: string
-            pattern: ^\d+$
-            description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis'
-          required: true
-          description: 'Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                engineID:
-                  type: string
-                  description: 'Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'
-                ruleID:
-                  type: string
-                  description: 'Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'
-                reason:
-                  type: string
-                  minLength: 20
-                  maxLength: 1000
-                  description: 20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager
-              required:
-                - engineID
-                - ruleID
-                - reason
-      responses:
-        '200':
-          description: Report disagreement with a diagnosis
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  tool collection:
-                    $ref: '#/components/schemas/ToolsFacts'
-                  tool name:
-                    type: string
-                  this request:
-                    type: object
-                    properties:
-                      description:
-                        type: string
-                      method:
-                        type: string
-                        const: POST
-                      URL:
-                        type: string
-                      body:
-                        type: object
-                        properties:
-                          engineID:
-                            type: string
-                            description: 'Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output'
-                          ruleID:
-                            type: string
-                            description: 'Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead'
-                          reason:
-                            type: string
-                            minLength: 20
-                            maxLength: 1000
-                            description: 20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager
-                        required:
-                          - engineID
-                          - ruleID
-                          - reason
-                        additionalProperties: false
-                      closest ancestor request:
-                        anyOf:
-                          - $ref: '#/components/schemas/RequestReference'
-                          - type: 'null'
-                    required:
-                      - description
-                      - method
-                      - URL
-                      - body
-                      - closest ancestor request
-                    additionalProperties: false
-                  URLs of similar requests for web users:
-                    type: 'null'
-                  response metadata:
-                    $ref: '#/components/schemas/ResponseMetadata'
-                  response content:
-                    type: object
-                    properties:
-                      details about your request:
-                        anyOf:
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
-                          - type: object
-                            properties:
-                              date and time received:
-                                type: string
-                              diagnosis you disagree with:
-                                type: object
-                                properties:
-                                  issue identifier:
-                                    type: string
-                                  identifier of the rule engine:
-                                    type: string
-                                  identifier of the violated rule:
-                                    type: string
-                                required:
-                                  - issue identifier
-                                  - identifier of the rule engine
-                                  - identifier of the violated rule
-                                additionalProperties: false
-                              disposition:
-                                type: string
-                            required:
-                              - date and time received
-                              - diagnosis you disagree with
                               - disposition
                             additionalProperties: false
                     required:

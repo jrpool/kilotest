@@ -1651,11 +1651,6 @@
       "inputSchema": {
         "type": "object",
         "properties": {
-          "catalogIndex": {
-            "type": "string",
-            "pattern": "^\\d+$",
-            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output"
-          },
           "issueID": {
             "type": "string",
             "description": "Issue identifier (example: contrastPoor), as listed in the listIssues output for the same report"
@@ -1664,12 +1659,17 @@
             "type": "string",
             "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
             "description": "Identifier of the report, formatted YYMMDDTHHMM-xxx (example: 260503T0432-x9z), as shown in the listPages output or a listIssues report history"
+          },
+          "catalogIndex": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as shown in the listViolators output"
           }
         },
         "required": [
-          "catalogIndex",
           "issueID",
-          "reportID"
+          "reportID",
+          "catalogIndex"
         ],
         "$schema": "http://json-schema.org/draft-07/schema#"
       },
@@ -1823,7 +1823,7 @@
                             "count of violations of the rule by the element": {
                               "type": "number"
                             },
-                            "how to report that you disagree with this diagnosis": {
+                            "how to question this diagnosis": {
                               "type": "object",
                               "properties": {
                                 "method": {
@@ -1868,7 +1868,7 @@
                             "description of the violation",
                             "severity of the violation on a 0-to-3 scale",
                             "count of violations of the rule by the element",
-                            "how to report that you disagree with this diagnosis"
+                            "how to question this diagnosis"
                           ],
                           "additionalProperties": false
                         }
@@ -2210,6 +2210,350 @@
         "title": "List diagnoses of a violation",
         "readOnlyHint": true,
         "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "questionDiagnosis",
+      "description": "Questions or contests a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "issueID": {
+            "type": "string",
+            "description": "Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis"
+          },
+          "reportID": {
+            "type": "string",
+            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
+            "description": "Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis"
+          },
+          "catalogIndex": {
+            "type": "string",
+            "pattern": "^\\d+$",
+            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis"
+          },
+          "engineID": {
+            "type": "string",
+            "description": "Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output"
+          },
+          "ruleID": {
+            "type": "string",
+            "description": "Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 1000,
+            "description": "20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager"
+          }
+        },
+        "required": [
+          "issueID",
+          "reportID",
+          "catalogIndex",
+          "engineID",
+          "ruleID",
+          "reason"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tool collection": {
+            "$ref": "#/definitions/ToolsFacts"
+          },
+          "tool name": {
+            "type": "string"
+          },
+          "this request": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "const": "POST"
+              },
+              "URL": {
+                "type": "string"
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "engineID": {
+                    "type": "string",
+                    "description": "Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output"
+                  },
+                  "ruleID": {
+                    "type": "string",
+                    "description": "Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 1000,
+                    "description": "20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager"
+                  }
+                },
+                "required": [
+                  "engineID",
+                  "ruleID",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "closest ancestor request": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/RequestReference"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "description",
+              "method",
+              "URL",
+              "body",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "URLs of similar requests for web users": {
+            "type": "null"
+          },
+          "response metadata": {
+            "$ref": "#/definitions/ResponseMetadata"
+          },
+          "response content": {
+            "type": "object",
+            "properties": {
+              "details about your request": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "error": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "error"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "date and time received": {
+                        "type": "string"
+                      },
+                      "diagnosis you question": {
+                        "type": "object",
+                        "properties": {
+                          "issue identifier": {
+                            "type": "string"
+                          },
+                          "identifier of the rule engine": {
+                            "type": "string"
+                          },
+                          "identifier of the violated rule": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "issue identifier",
+                          "identifier of the rule engine",
+                          "identifier of the violated rule"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "disposition": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "date and time received",
+                      "diagnosis you question",
+                      "disposition"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "required": [
+              "details about your request"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tool collection",
+          "tool name",
+          "this request",
+          "URLs of similar requests for web users",
+          "response metadata",
+          "response content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "definitions": {
+          "ToolsFacts": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "object",
+                "properties": {
+                  "what Kilotest does": {
+                    "type": "string"
+                  },
+                  "how to retrieve findings": {
+                    "type": "object",
+                    "properties": {
+                      "level 1": {
+                        "type": "string"
+                      },
+                      "level 2": {
+                        "type": "string"
+                      },
+                      "level 3": {
+                        "type": "string"
+                      },
+                      "level 4": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "level 1",
+                      "level 2",
+                      "level 3",
+                      "level 4"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "how to generate more findings": {
+                    "type": "object",
+                    "properties": {
+                      "new testing": {
+                        "type": "string"
+                      },
+                      "retesting": {
+                        "type": "string"
+                      },
+                      "approval": {
+                        "type": "string"
+                      },
+                      "latency": {
+                        "type": "string"
+                      },
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "new testing",
+                      "retesting",
+                      "approval",
+                      "latency",
+                      "request confirmation",
+                      "order confirmation"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "what Kilotest does",
+                  "how to retrieve findings",
+                  "how to generate more findings"
+                ],
+                "additionalProperties": false,
+                "description": "Explanation of what Kilotest does and how to use its tools."
+              },
+              "URL": {
+                "type": "string",
+                "description": "URL of the Kilotest MCP server."
+              },
+              "web users can obtain similar functionalities at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "URL",
+              "web users can obtain similar functionalities at"
+            ],
+            "additionalProperties": false
+          },
+          "RequestReference": {
+            "type": "object",
+            "properties": {
+              "tool name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tool name",
+              "description",
+              "method",
+              "URL"
+            ],
+            "additionalProperties": false
+          },
+          "ResponseMetadata": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Unique identifier of this response (timestamp and random suffix)."
+              },
+              "date and time": {
+                "type": "string",
+                "description": "UTC date and time when the response was generated, in ISO 8601 format."
+              }
+            },
+            "required": [
+              "identifier",
+              "date and time"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "title": "Question a diagnosis",
+        "readOnlyHint": false,
+        "idempotentHint": false,
         "destructiveHint": false,
         "openWorldHint": false
       },
@@ -3266,7 +3610,7 @@
     },
     {
       "name": "requestFeature",
-      "description": "Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Use reportDisagreement instead to dispute a specific diagnosis shown by listDiagnoses. The feature text is the proposal the manager evaluates; a request identical to one already submitted is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text is the proposal the manager evaluates; a request identical to one already submitted is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3541,350 +3885,6 @@
       },
       "annotations": {
         "title": "Request a feature",
-        "readOnlyHint": false,
-        "idempotentHint": false,
-        "destructiveHint": false,
-        "openWorldHint": false
-      },
-      "execution": {
-        "taskSupport": "forbidden"
-      }
-    },
-    {
-      "name": "reportDisagreement",
-      "description": "Reports that you disagree with a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.",
-      "inputSchema": {
-        "type": "object",
-        "properties": {
-          "issueID": {
-            "type": "string",
-            "description": "Issue identifier (example: contrastPoor), as in the listDiagnoses output that showed the disputed diagnosis"
-          },
-          "reportID": {
-            "type": "string",
-            "pattern": "^\\d{2}(?:(?:0[13578]|1[02])(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)(?:0[1-9]|[12]\\d|30)|02(?:0[1-9]|1\\d|2[0-9]))T(?:[01]\\d|2[0-3])[0-5]\\d-[a-z0-9]{3}$",
-            "description": "Identifier of the report (example: 260503T0432-x9z), as in the listDiagnoses output that showed the disputed diagnosis"
-          },
-          "catalogIndex": {
-            "type": "string",
-            "pattern": "^\\d+$",
-            "description": "Identifier of the issue-exhibiting element in the catalog of elements on the page (example: 372), as in the listDiagnoses output that showed the disputed diagnosis"
-          },
-          "engineID": {
-            "type": "string",
-            "description": "Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output"
-          },
-          "ruleID": {
-            "type": "string",
-            "description": "Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead"
-          },
-          "reason": {
-            "type": "string",
-            "minLength": 20,
-            "maxLength": 1000,
-            "description": "20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager"
-          }
-        },
-        "required": [
-          "issueID",
-          "reportID",
-          "catalogIndex",
-          "engineID",
-          "ruleID",
-          "reason"
-        ],
-        "$schema": "http://json-schema.org/draft-07/schema#"
-      },
-      "outputSchema": {
-        "type": "object",
-        "properties": {
-          "tool collection": {
-            "$ref": "#/definitions/ToolsFacts"
-          },
-          "tool name": {
-            "type": "string"
-          },
-          "this request": {
-            "type": "object",
-            "properties": {
-              "description": {
-                "type": "string"
-              },
-              "method": {
-                "type": "string",
-                "const": "POST"
-              },
-              "URL": {
-                "type": "string"
-              },
-              "body": {
-                "type": "object",
-                "properties": {
-                  "engineID": {
-                    "type": "string",
-                    "description": "Identifier of the rule engine that produced the disputed diagnosis (example: axe), as shown in the listDiagnoses output"
-                  },
-                  "ruleID": {
-                    "type": "string",
-                    "description": "Identifier of the rule whose diagnosis is disputed, as shown in the listDiagnoses output (example: color-contrast); if that output shows null for the rule identifier, use its description of the violation instead"
-                  },
-                  "reason": {
-                    "type": "string",
-                    "minLength": 20,
-                    "maxLength": 1000,
-                    "description": "20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager"
-                  }
-                },
-                "required": [
-                  "engineID",
-                  "ruleID",
-                  "reason"
-                ],
-                "additionalProperties": false
-              },
-              "closest ancestor request": {
-                "anyOf": [
-                  {
-                    "$ref": "#/definitions/RequestReference"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
-            },
-            "required": [
-              "description",
-              "method",
-              "URL",
-              "body",
-              "closest ancestor request"
-            ],
-            "additionalProperties": false
-          },
-          "URLs of similar requests for web users": {
-            "type": "null"
-          },
-          "response metadata": {
-            "$ref": "#/definitions/ResponseMetadata"
-          },
-          "response content": {
-            "type": "object",
-            "properties": {
-              "details about your request": {
-                "anyOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "error": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "error"
-                    ],
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "date and time received": {
-                        "type": "string"
-                      },
-                      "diagnosis you disagree with": {
-                        "type": "object",
-                        "properties": {
-                          "issue identifier": {
-                            "type": "string"
-                          },
-                          "identifier of the rule engine": {
-                            "type": "string"
-                          },
-                          "identifier of the violated rule": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "issue identifier",
-                          "identifier of the rule engine",
-                          "identifier of the violated rule"
-                        ],
-                        "additionalProperties": false
-                      },
-                      "disposition": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "date and time received",
-                      "diagnosis you disagree with",
-                      "disposition"
-                    ],
-                    "additionalProperties": false
-                  }
-                ]
-              }
-            },
-            "required": [
-              "details about your request"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "tool collection",
-          "tool name",
-          "this request",
-          "URLs of similar requests for web users",
-          "response metadata",
-          "response content"
-        ],
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "additionalProperties": false,
-        "definitions": {
-          "ToolsFacts": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "object",
-                "properties": {
-                  "what Kilotest does": {
-                    "type": "string"
-                  },
-                  "how to retrieve findings": {
-                    "type": "object",
-                    "properties": {
-                      "level 1": {
-                        "type": "string"
-                      },
-                      "level 2": {
-                        "type": "string"
-                      },
-                      "level 3": {
-                        "type": "string"
-                      },
-                      "level 4": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "level 1",
-                      "level 2",
-                      "level 3",
-                      "level 4"
-                    ],
-                    "additionalProperties": false
-                  },
-                  "how to generate more findings": {
-                    "type": "object",
-                    "properties": {
-                      "new testing": {
-                        "type": "string"
-                      },
-                      "retesting": {
-                        "type": "string"
-                      },
-                      "approval": {
-                        "type": "string"
-                      },
-                      "latency": {
-                        "type": "string"
-                      },
-                      "request confirmation": {
-                        "type": "string"
-                      },
-                      "order confirmation": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "new testing",
-                      "retesting",
-                      "approval",
-                      "latency",
-                      "request confirmation",
-                      "order confirmation"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "required": [
-                  "what Kilotest does",
-                  "how to retrieve findings",
-                  "how to generate more findings"
-                ],
-                "additionalProperties": false,
-                "description": "Explanation of what Kilotest does and how to use its tools."
-              },
-              "URL": {
-                "type": "string",
-                "description": "URL of the Kilotest MCP server."
-              },
-              "web users can obtain similar functionalities at": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "name",
-              "description",
-              "URL",
-              "web users can obtain similar functionalities at"
-            ],
-            "additionalProperties": false
-          },
-          "RequestReference": {
-            "type": "object",
-            "properties": {
-              "tool name": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
-              "method": {
-                "type": "string",
-                "enum": [
-                  "GET",
-                  "POST"
-                ]
-              },
-              "URL": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "tool name",
-              "description",
-              "method",
-              "URL"
-            ],
-            "additionalProperties": false
-          },
-          "ResponseMetadata": {
-            "type": "object",
-            "properties": {
-              "identifier": {
-                "type": "string",
-                "description": "Unique identifier of this response (timestamp and random suffix)."
-              },
-              "date and time": {
-                "type": "string",
-                "description": "UTC date and time when the response was generated, in ISO 8601 format."
-              }
-            },
-            "required": [
-              "identifier",
-              "date and time"
-            ],
-            "additionalProperties": false
-          }
-        }
-      },
-      "annotations": {
-        "title": "Report disagreement with a diagnosis",
         "readOnlyHint": false,
         "idempotentHint": false,
         "destructiveHint": false,

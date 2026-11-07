@@ -86,7 +86,7 @@ import {response as requestFeatureAPI} from './api/requestFeature.ts';
 import {response as requestRetestAPI} from './api/requestRetest.ts';
 import {response as requestNewTestAPI} from './api/requestNewTest.ts';
 import {response as awaitTestAPI} from './api/awaitTest.ts';
-import {response as reportDisagreementAPI} from './api/reportDisagreement.ts';
+import {response as questionDiagnosisAPI} from './api/questionDiagnosis.ts';
 
 // ENVIRONMENT
 
@@ -187,7 +187,7 @@ const apiRespond: {
   requestRetest: ApiResponder;
   requestNewTest: ApiResponder;
   awaitTest: ApiResponder;
-  reportDisagreement: ApiResponder;
+  questionDiagnosis: ApiResponder;
 } = {
   getReport: getReportAPI,
   listDiagnoses: listDiagnosesAPI,
@@ -198,7 +198,7 @@ const apiRespond: {
   requestRetest: requestRetestAPI,
   requestNewTest: requestNewTestAPI,
   awaitTest: awaitTestAPI,
-  reportDisagreement: reportDisagreementAPI
+  questionDiagnosis: questionDiagnosisAPI
 };
 
 // CONSTANTS
@@ -303,7 +303,8 @@ export const renamedPagePrefixes: Record<string, {to: string; renameDate: string
   targets: {to: 'listPages', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
   listReports: {to: 'listPages', renameDate: '2026-10-09', retireAfter: '2027-04-09'},
   requestTest: {to: 'requestNewTest', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
-  requestTestForm: {to: 'requestNewTestForm', renameDate: '2026-09-28', retireAfter: '2027-03-28'}
+  requestTestForm: {to: 'requestNewTestForm', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
+  tutorial: {to: 'tutorialWeb', renameDate: '2026-11-06', retireAfter: '2027-05-06'}
 };
 const jobLock = createLock();
 
@@ -1302,12 +1303,12 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
         }
-        // Otherwise, if the service is to receive a disagreement with a diagnosis:
-        else if (segments[0] === 'reportDisagreement') {
+        // Otherwise, if the service is to receive a questioning of a diagnosis:
+        else if (segments[0] === 'questionDiagnosis') {
           const {engineID, ruleID, reason} = postData as {engineID: string; ruleID: string; reason: string};
           // Get the response body.
-          const responseBody = await apiRespond.reportDisagreement(segments.slice(1).concat(engineID, ruleID, reason));
-          await recordPageMetric('apiOperations', 'reportDisagreement');
+          const responseBody = await apiRespond.questionDiagnosis(segments.slice(1).concat(engineID, ruleID, reason));
+          await recordPageMetric('apiOperations', 'questionDiagnosis');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

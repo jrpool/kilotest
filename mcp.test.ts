@@ -47,11 +47,11 @@ test('createMCPServer registers all 11 tools', () => {
     'listIssues',
     'listViolators',
     'listDiagnoses',
+    'questionDiagnosis',
     'getReport',
     'requestNewTest',
     'requestRetest',
     'requestFeature',
-    'reportDisagreement',
     'awaitTest'
   ]);
 });
@@ -198,10 +198,10 @@ test('requestFeature handler returns content and structuredContent', async () =>
   assert.equal(getToolCallCount('requestFeature'), countBefore + 1);
 });
 
-test('reportDisagreement handler returns content and structuredContent', async () => {
+test('questionDiagnosis handler returns content and structuredContent', async () => {
   const server = createMCPServer();
-  const countBefore = getToolCallCount('reportDisagreement');
-  const result = await (server as any)._registeredTools.reportDisagreement.handler({
+  const countBefore = getToolCallCount('questionDiagnosis');
+  const result = await (server as any)._registeredTools.questionDiagnosis.handler({
     issueID: 'linkNoText',
     reportID: '260101T0000-mix',
     catalogIndex: '0',
@@ -212,7 +212,7 @@ test('reportDisagreement handler returns content and structuredContent', async (
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
-  assert.equal(getToolCallCount('reportDisagreement'), countBefore + 1);
+  assert.equal(getToolCallCount('questionDiagnosis'), countBefore + 1);
 });
 
 test('requestNewTest handler with immediateAutomatedReview enqueues a job and returns request-vocabulary keys', async () => {
@@ -390,11 +390,11 @@ test('handleMCP lists all 11 tools via tools/list', async () => {
       'listIssues',
       'listViolators',
       'listDiagnoses',
+      'questionDiagnosis',
       'getReport',
       'requestNewTest',
       'requestRetest',
       'requestFeature',
-      'reportDisagreement',
       'awaitTest'
     ]);
   }

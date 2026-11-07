@@ -27,7 +27,7 @@ import {
   requestRetestSchema,
   requestFeatureSchema,
   awaitTestSchema,
-  reportDisagreementSchema,
+  questionDiagnosisSchema,
   listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
@@ -37,7 +37,7 @@ import {
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
   awaitTestResponseSchema,
-  reportDisagreementResponseSchema
+  questionDiagnosisResponseSchema
 } from '../api/schemas.ts';
 
 // TYPES
@@ -58,11 +58,11 @@ const toolSchemas: Record<string, {input: ZodRawShape; output?: z.ZodTypeAny}> =
   listIssues: {input: listIssuesSchema, output: listIssuesResponseSchema},
   listViolators: {input: listViolatorsSchema, output: listViolatorsResponseSchema},
   listDiagnoses: {input: listDiagnosesSchema, output: listDiagnosesResponseSchema},
+  questionDiagnosis: {input: questionDiagnosisSchema, output: questionDiagnosisResponseSchema},
   getReport: {input: getReportSchema, output: getReportResponseSchema},
   requestNewTest: {input: requestNewTestSchema, output: requestNewTestResponseSchema},
   requestRetest: {input: requestRetestSchema, output: requestRetestResponseSchema},
   requestFeature: {input: requestFeatureSchema, output: requestFeatureResponseSchema},
-  reportDisagreement: {input: reportDisagreementSchema, output: reportDisagreementResponseSchema},
   awaitTest: {input: awaitTestSchema, output: awaitTestResponseSchema}
 };
 

@@ -25,7 +25,7 @@ test('routes includes all expected operation IDs', () => {
     'listIssues',
     'listPages',
     'listViolators',
-    'reportDisagreement',
+    'questionDiagnosis',
     'requestFeature',
     'requestNewTest',
     'requestRetest'

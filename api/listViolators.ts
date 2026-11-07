@@ -108,7 +108,7 @@ export const response = async (args: string[]) => {
           'count of rule engines reporting that the element exhibited the issue': reporters.size,
           'how to get details about the element': {
             method: 'GET',
-            URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${reportID}`
+            URL: `${thisHost}/api/listDiagnoses/${issueID}/${reportID}/${catalogIndex}`
           },
           'web users can get details about the element at': `${thisHost}/listDiagnoses.html/${issueID}/${reportID}/${catalogIndex}`
         };

@@ -69,6 +69,21 @@ test('requestNewTest rejects a description longer than 100 characters', async ()
   assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
 });
 
+test('requestNewTest rejects a reason shorter than 20 characters', async () => {
+  const body = await response(['Test Page', 'https://example.com/test', 'short']);
+  const details = body['response content']['details about your request'] as any;
+  assert.ok(details.error.includes('reason'));
+  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
+});
+
+test('requestNewTest rejects a reason longer than 100 characters', async () => {
+  const longReason = 'x'.repeat(101);
+  const body = await response(['Test Page', 'https://example.com/test', longReason]);
+  const details = body['response content']['details about your request'] as any;
+  assert.ok(details.error.includes('reason'));
+  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
+});
+
 test('requestNewTest rejects a URL shorter than 12 characters', async () => {
   const body = await response(['Test Page', 'short', 'A reason that is long enough.']);
   assert.ok((body['response content']['details about your request'] as any).error);
@@ -122,6 +137,20 @@ test('requestNewTest rejects an already-tested page', async () => {
     .includes('a report about a page with the same description or URL is available.')
   );
   assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
+});
+
+test('requestNewTest rejects an already-tested page under immediateAutomatedReview', async () => {
+  // The same reportExists failure as the manager-review test above, but reported by the
+  // automated review's orderJob path (fourth argument 'true').
+  const body = await response(['Mixed Outcomes', 'https://example.com/mixed', 'A reason that is long enough.', 'true']);
+  const details = body['response content']['details about your request'] as any;
+  assert.equal(details.error, undefined);
+  const disposition = body['response content']['disposition of your request'] as any;
+  assert.ok(
+    disposition['what happens next']
+    .includes('a report about a page with the same description or URL is available.')
+  );
+  assert.equal(disposition['report identifier'], null);
 });
 
 test('requestNewTest rejects a page matching a claimed job by description', async () => {

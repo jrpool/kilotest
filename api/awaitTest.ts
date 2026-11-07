@@ -75,24 +75,24 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'awaitTest',
     'this request': {
-      description: 'Wait for a job ordered via the orderNewTest or orderRetest tool to complete. The reportID parameter is the report identifier that orderNewTest or orderRetest returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
+      description: 'Wait for a job ordered via a requestNewTest or requestRetest request with reviewImmediately set to true to complete. The reportID parameter is the report identifier that request returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
       method: 'POST',
       URL: `${thisHost}/api/awaitTest/${reportID}`,
-      // awaitTest's own parameters do not say whether the job was ordered via orderNewTest
-      // or orderRetest, so both are reported as possible ancestors, rather than
-      // arbitrarily naming just one.
+      // awaitTest's own parameters do not say whether the job was ordered via
+      // requestNewTest or requestRetest, so both are reported as possible ancestors,
+      // rather than arbitrarily naming just one.
       'closest ancestor request': [
         {
-          'tool name': 'orderNewTest',
-          description: 'Fulfill or reject my order to test a page about which no report is available yet.',
+          'tool name': 'requestNewTest',
+          description: 'Fulfill or reject my request to test a page about which no report is available yet, with reviewImmediately set to true.',
           method: 'POST',
-          URL: `${thisHost}/api/orderNewTest`
+          URL: `${thisHost}/api/requestNewTest`
         },
         {
-          'tool name': 'orderRetest',
-          description: 'Fulfill or reject my order to retest a page.',
+          'tool name': 'requestRetest',
+          description: 'Fulfill or reject my request to retest a page, with reviewImmediately set to true.',
           method: 'POST',
-          URL: `${thisHost}/api/orderRetest`
+          URL: `${thisHost}/api/requestRetest/${reportID}`
         }
       ]
     },

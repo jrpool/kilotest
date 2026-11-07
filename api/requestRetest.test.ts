@@ -99,6 +99,19 @@ test('requestRetest rejects a superseded report', async () => {
   assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
+test('requestRetest rejects a superseded report under reviewImmediately', async () => {
+  // The same superseded failure as the management-review test above, but reported by the
+  // immediate review's orderJob path (third argument 'true').
+  const body = await response(['260101T0000-mix', 'A reason that is long enough.', 'true']);
+  const details = body['response content']['details about your request'] as any;
+  assert.equal(details.error, undefined);
+  const disposition = body['response content']['disposition of your request'] as any;
+  assert.ok(
+    disposition['what happens next'].includes('a later report about a page with the same description is available.')
+  );
+  assert.equal(disposition['report identifier'], null);
+});
+
 test('requestRetest rejects a reason shorter than 20 characters', async () => {
   const body = await response(['260101T0003-ret', 'short']);
   const details = body['response content']['details about your request'] as any;

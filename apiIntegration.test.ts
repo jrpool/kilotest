@@ -118,8 +118,8 @@ test('POST /api/requestFeature parses a JSON body and returns a JSON response th
   assert.equal(details.disposition, 'received and logged; manager notified');
 });
 
-test('POST /api/reportDisagreement parses path parameters and a JSON body and returns a JSON response through the HTTP routing layer', async () => {
-  const {body} = await request('POST', '/api/reportDisagreement/linkNoText/260101T0000-mix/0', {
+test('POST /api/questionDiagnosis parses path parameters and a JSON body and returns a JSON response through the HTTP routing layer', async () => {
+  const {body} = await request('POST', '/api/questionDiagnosis/linkNoText/260101T0000-mix/0', {
     engineID: 'axe',
     ruleID: 'r11',
     reason: 'The element does have an accessible name'

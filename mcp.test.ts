@@ -37,23 +37,21 @@ test('mcpPath is /mcp', () => {
   assert.equal(mcpPath, '/mcp');
 });
 
-test('createMCPServer registers all 13 tools', () => {
+test('createMCPServer registers all 11 tools', () => {
   const server = createMCPServer();
   const toolNames = Object.keys((server as any)._registeredTools);
-  assert.equal(toolNames.length, 13);
+  assert.equal(toolNames.length, 11);
   assert.deepEqual(toolNames, [
-    'getKilotestOverview',
+    'getOverview',
     'listPages',
     'listIssues',
     'listViolators',
     'listDiagnoses',
+    'questionDiagnosis',
     'getReport',
     'requestNewTest',
     'requestRetest',
     'requestFeature',
-    'reportDisagreement',
-    'orderNewTest',
-    'orderRetest',
     'awaitTest'
   ]);
 });
@@ -65,20 +63,20 @@ test('each tool has a description and a handler function', () => {
     assert.ok(tool.description, `${name} has a description`);
     assert.equal(typeof tool.handler, 'function', `${name} has a handler function`);
   }
-  // Only getKilotestOverview repeats the shared domain context in its own description; the
+  // Only getOverview carries a one-line domain summary in its own description; the
   // other tools rely on the server instructions for that context, so their descriptions stay
   // focused on what each tool does, when to use it, and what it returns.
-  assert.ok(tools.getKilotestOverview.description.includes('front-end quality'));
+  assert.ok(tools.getOverview.description.includes('front-end quality'));
 });
 
-test('getKilotestOverview handler returns overview text and records a metric', async () => {
+test('getOverview handler returns overview text and records a metric', async () => {
   const server = createMCPServer();
-  const countBefore = getToolCallCount('getKilotestOverview');
-  const result = await (server as any)._registeredTools.getKilotestOverview.handler({});
+  const countBefore = getToolCallCount('getOverview');
+  const result = await (server as any)._registeredTools.getOverview.handler({});
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.content[0].text.includes('front-end quality'));
-  assert.equal(getToolCallCount('getKilotestOverview'), countBefore + 1);
+  assert.equal(getToolCallCount('getOverview'), countBefore + 1);
 });
 
 test('client receives instructions, server description, and the overview resource', async () => {
@@ -165,7 +163,8 @@ test('requestNewTest handler returns content and structuredContent', async () =>
   const result = await (server as any)._registeredTools.requestNewTest.handler({
     description: 'Test Page',
     URL: 'https://example.com/test',
-    reason: 'Because accessibility matters'
+    reason: 'Because accessibility matters',
+    reviewImmediately: false
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -178,7 +177,8 @@ test('requestRetest handler returns content and structuredContent for a valid re
   const countBefore = getToolCallCount('requestRetest');
   const result = await (server as any)._registeredTools.requestRetest.handler({
     reportID: '260101T0000-mix',
-    reason: 'Because the report is obsolete'
+    reason: 'Because the report is obsolete',
+    reviewImmediately: false
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -198,10 +198,10 @@ test('requestFeature handler returns content and structuredContent', async () =>
   assert.equal(getToolCallCount('requestFeature'), countBefore + 1);
 });
 
-test('reportDisagreement handler returns content and structuredContent', async () => {
+test('questionDiagnosis handler returns content and structuredContent', async () => {
   const server = createMCPServer();
-  const countBefore = getToolCallCount('reportDisagreement');
-  const result = await (server as any)._registeredTools.reportDisagreement.handler({
+  const countBefore = getToolCallCount('questionDiagnosis');
+  const result = await (server as any)._registeredTools.questionDiagnosis.handler({
     issueID: 'linkNoText',
     reportID: '260101T0000-mix',
     catalogIndex: '0',
@@ -212,43 +212,51 @@ test('reportDisagreement handler returns content and structuredContent', async (
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
-  assert.equal(getToolCallCount('reportDisagreement'), countBefore + 1);
+  assert.equal(getToolCallCount('questionDiagnosis'), countBefore + 1);
 });
 
-test('orderNewTest handler returns content and structuredContent, and enqueues a job', async () => {
+test('requestNewTest handler with reviewImmediately enqueues a job and returns request-vocabulary keys', async () => {
   const {jobsPath} = await import('./util.ts');
   const server = createMCPServer();
-  const countBefore = getToolCallCount('orderNewTest');
-  const result = await (server as any)._registeredTools.orderNewTest.handler({
+  const countBefore = getToolCallCount('requestNewTest');
+  const result = await (server as any)._registeredTools.requestNewTest.handler({
     description: 'MCP Ordered Page',
     URL: 'https://example.com/mcp-ordered',
-    reason: 'Because accessibility matters here'
+    reason: 'Because accessibility matters here',
+    reviewImmediately: true
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
-  assert.equal(getToolCallCount('orderNewTest'), countBefore + 1);
-  const reportIdentifier = result.structuredContent['response content']['disposition of your order']['report identifier'];
+  assert.equal(getToolCallCount('requestNewTest'), countBefore + 1);
+  const content = result.structuredContent['response content'];
+  assert.equal(content['details about your order'], undefined);
+  assert.equal(content['disposition of your order'], undefined);
+  const reportIdentifier = content['disposition of your request']['report identifier'];
   assert.ok(reportIdentifier);
   const queuedPath = `${jobsPath()}/queue/${reportIdentifier}.json`;
   fs.unlinkSync(queuedPath);
 });
 
-test('orderRetest handler returns content and structuredContent, and enqueues a job', async () => {
+test('requestRetest handler with reviewImmediately enqueues a job and returns request-vocabulary keys', async () => {
   const {jobsPath} = await import('./util.ts');
   const server = createMCPServer();
-  const countBefore = getToolCallCount('orderRetest');
+  const countBefore = getToolCallCount('requestRetest');
   // 260202T0000-new is the latest report of "Mixed Outcomes" (260101T0000-mix is an
-  // earlier, superseded report of the same page), so this order is accepted.
-  const result = await (server as any)._registeredTools.orderRetest.handler({
+  // earlier, superseded report of the same page), so the immediate review accepts it.
+  const result = await (server as any)._registeredTools.requestRetest.handler({
     reportID: '260202T0000-new',
-    reason: 'Because the report is obsolete'
+    reason: 'Because the report is obsolete',
+    reviewImmediately: true
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
-  assert.equal(getToolCallCount('orderRetest'), countBefore + 1);
-  const reportIdentifier = result.structuredContent['response content']['disposition of your order']['report identifier'];
+  assert.equal(getToolCallCount('requestRetest'), countBefore + 1);
+  const content = result.structuredContent['response content'];
+  assert.equal(content['details about your order'], undefined);
+  assert.equal(content['disposition of your order'], undefined);
+  const reportIdentifier = content['disposition of your request']['report identifier'];
   assert.ok(reportIdentifier);
   const queuedPath = `${jobsPath()}/queue/${reportIdentifier}.json`;
   fs.unlinkSync(queuedPath);
@@ -367,7 +375,7 @@ test('handleMCP responds to initialize with server info', async () => {
   }
 });
 
-test('handleMCP lists all 13 tools via tools/list', async () => {
+test('handleMCP lists all 11 tools via tools/list', async () => {
   const server = await startMCPServer();
   try {
     const port = server.address().port;
@@ -375,20 +383,18 @@ test('handleMCP lists all 13 tools via tools/list', async () => {
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);
     const toolNames = result.result.tools.map((t: any) => t.name);
-    assert.equal(toolNames.length, 13);
+    assert.equal(toolNames.length, 11);
     assert.deepEqual(toolNames, [
-      'getKilotestOverview',
+      'getOverview',
       'listPages',
       'listIssues',
       'listViolators',
       'listDiagnoses',
+      'questionDiagnosis',
       'getReport',
       'requestNewTest',
       'requestRetest',
       'requestFeature',
-      'reportDisagreement',
-      'orderNewTest',
-      'orderRetest',
       'awaitTest'
     ]);
   }

@@ -16,10 +16,8 @@ import * as listDiagnosesAPI from './api/listDiagnoses.ts';
 import * as requestNewTestAPI from './api/requestNewTest.ts';
 import * as requestRetestAPI from './api/requestRetest.ts';
 import * as requestFeatureAPI from './api/requestFeature.ts';
-import * as orderNewTestAPI from './api/orderNewTest.ts';
-import * as orderRetestAPI from './api/orderRetest.ts';
 import * as awaitTestAPI from './api/awaitTest.ts';
-import * as reportDisagreementAPI from './api/reportDisagreement.ts';
+import * as questionDiagnosisAPI from './api/questionDiagnosis.ts';
 import {version} from './api/version.ts';
 import {recordMetric} from './util.ts';
 import {collectionDescription, sharedContext} from './content.ts';
@@ -32,10 +30,8 @@ import {
   requestNewTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
-  orderNewTestSchema,
-  orderRetestSchema,
   awaitTestSchema,
-  reportDisagreementSchema,
+  questionDiagnosisSchema,
   listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
@@ -44,10 +40,8 @@ import {
   requestNewTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
-  orderNewTestResponseSchema,
-  orderRetestResponseSchema,
   awaitTestResponseSchema,
-  reportDisagreementResponseSchema
+  questionDiagnosisResponseSchema
 } from './api/schemas.ts';
 
 // CONSTANTS
@@ -59,8 +53,8 @@ export const mcpPath = '/mcp';
 const kilotestOverview = [
   sharedContext,
   'Results are organized as a hierarchy: tested pages; for each tested page, reports from the tests of the page; for each report, issues reported; for each issue, violators of rules belonging to the issue (a violator is an element or the whole page); for each violator, diagnoses by rule engines of its violations.',
-  'Typical workflow: call the listPages tool to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool or order a test with the orderNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool or order a retest with the orderRetest tool.',
-  'The request tools submit requests for manager approval. The order tools obtain automated review and approval or rejection. Approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
+  'Typical workflow: call the listPages tool to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
+  'The requestNewTest and requestRetest tools take a reviewImmediately parameter: set it to true for immediate review with immediate approval or rejection and immediate enqueueing if approved, or to false to queue the request for review by management. Immediate approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
 
@@ -74,12 +68,12 @@ export const createMCPServer = (): McpServer => {
     description: collectionDescription
   },
   {
-    instructions: `${sharedContext} Use the listPages tool to start. If it shows that the page you want facts about has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, or the orderNewTest tool for immediate, automatically approved testing. If the latest report about the page is obsolete, use the requestRetest tool to request that the page be retested, or the orderRetest tool for immediate, automatically approved retesting. For detailed documentation, call the getKilotestOverview tool.`
+    instructions: `${sharedContext} Use the listPages tool to start. If it shows that the page you want facts about has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, setting its reviewImmediately parameter to true for immediate review. If the latest report about the page is obsolete, use the requestRetest tool the same way. For detailed documentation, call the getOverview tool.`
   });
   server.registerTool(
-    'getKilotestOverview',
+    'getOverview',
     {
-      description: `Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. ${sharedContext}`,
+      description: 'Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear; it is unnecessary once you know which tool you need. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest tests web pages for front-end quality with an ensemble of rule engines.',
       inputSchema: {},
       annotations: {
         title: 'Explain Kilotest and its tools',
@@ -90,14 +84,14 @@ export const createMCPServer = (): McpServer => {
       }
     },
     async () => {
-      await recordMetric('mcpToolCalls', 'getKilotestOverview');
+      await recordMetric('mcpToolCalls', 'getOverview');
       return {content: [{type: 'text', text: kilotestOverview}]};
     }
   );
   server.registerTool(
     'listPages',
     {
-      description: 'Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the identifier of its latest available report.',
+      description: 'Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the identifier of its latest available report. Entries are sorted by page description and are not paginated.',
       inputSchema: {},
       outputSchema: listPagesResponseSchema,
       annotations: {
@@ -117,7 +111,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: 'Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to switch to an earlier or later report or to begin examining this report. Returns the history and the basics about this report’s issues.',
+      description: 'Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to switch to an earlier or later report or to begin examining this report. The reportID is the latest report’s identifier from listPages or an earlier identifier from the history this tool returns. Returns the history and the basics about this report’s issues, sorted by summary and not paginated; an unknown or malformed reportID produces an error. The returned issue identifiers are inputs to the listViolators tool. Use getReport instead when the entire report is needed in one call.',
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
@@ -137,7 +131,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listViolators',
     {
-      description: 'Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue. Returns basics about each violating element.',
+      description: 'Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue; the issueID must be one of the issue identifiers listIssues returned for the same reportID; call listIssues first if you do not have an issueID. Returns basics about each violating element, sorted by catalog index and not paginated; an unknown issueID or reportID produces an error.',
       inputSchema: listViolatorsSchema,
       outputSchema: listViolatorsResponseSchema,
       annotations: {
@@ -157,7 +151,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listDiagnoses',
     {
-      description: 'Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine.',
+      description: 'Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue; the catalogIndex is the element’s identifier in the listViolators output for that issue and report. Use getReport instead when all diagnoses in the report are needed at once. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine; an unknown report, issue, or element produces an error.',
       inputSchema: listDiagnosesSchema,
       outputSchema: listDiagnosesResponseSchema,
       annotations: {
@@ -168,16 +162,36 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: false
       }
     },
-    async ({catalogIndex, issueID, reportID}) => {
-      const result = await listDiagnosesAPI.response([catalogIndex, issueID, reportID]);
+    async ({issueID, reportID, catalogIndex}) => {
+      const result = await listDiagnosesAPI.response([issueID, reportID, catalogIndex]);
       await recordMetric('mcpToolCalls', 'listDiagnoses');
+      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
+    }
+  );
+  server.registerTool(
+    'questionDiagnosis',
+    {
+      description: 'Questions or contests a diagnosis shown by the listDiagnoses tool; queued for review by management. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.',
+      inputSchema: questionDiagnosisSchema,
+      outputSchema: questionDiagnosisResponseSchema,
+      annotations: {
+        title: 'Question a diagnosis',
+        readOnlyHint: false,
+        idempotentHint: false,
+        destructiveHint: false,
+        openWorldHint: false
+      }
+    },
+    async ({issueID, reportID, catalogIndex, engineID, ruleID, reason}) => {
+      const result = await questionDiagnosisAPI.response([issueID, reportID, catalogIndex, engineID, ruleID, reason]);
+      await recordMetric('mcpToolCalls', 'questionDiagnosis');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
   server.registerTool(
     'getReport',
     {
-      description: 'Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call. Returns the complete report data for the specified report identifier. The size of the report is disclosed by the listIssues tool.',
+      description: 'Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call; for only part of a report, drill down with those tools instead. The reportID comes from listPages or from the report history that listIssues returns, and an unknown or malformed one produces an error. The report can exceed 1 MB; its exact size is disclosed by the listIssues tool.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
@@ -197,7 +211,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Submits a request to test a page that has no report yet; queued for manager approval. Use orderNewTest instead for immediate, automatically approved testing. Returns a request confirmation with disposition details.',
+      description: 'Submits a request to test a page that has no report yet. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The description uniquely names the page in later listPages output and the reason is what the reviewer evaluates. A refusal, such as an existing report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
@@ -208,8 +222,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: true
       }
     },
-    async ({description, URL, reason}) => {
-      const result = await requestNewTestAPI.response([description, URL, reason]);
+    async ({description, URL, reason, reviewImmediately = false}) => {
+      const result = await requestNewTestAPI.response([description, URL, reason, String(reviewImmediately === true)]);
       await recordMetric('mcpToolCalls', 'requestNewTest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -217,7 +231,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Submits a request to retest a page whose existing report is considered obsolete; queued for manager approval. Use orderRetest instead for immediate, automatically approved retesting. Returns a request confirmation with disposition details.',
+      description: 'Submits a request to retest a page whose existing report is considered obsolete. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
@@ -228,8 +242,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: true
       }
     },
-    async ({reportID, reason}) => {
-      const result = await requestRetestAPI.response([reportID, reason]);
+    async ({reportID, reason, reviewImmediately = false}) => {
+      const result = await requestRetestAPI.response([reportID, reason, String(reviewImmediately === true)]);
       await recordMetric('mcpToolCalls', 'requestRetest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -237,7 +251,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Returns a request confirmation with disposition details.',
+      description: 'Submits a request to add a new feature or improve an existing one; queued for review by management. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text describes the proposed feature or improvement. A request identical to one awaiting review is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
@@ -255,69 +269,9 @@ export const createMCPServer = (): McpServer => {
     }
   );
   server.registerTool(
-    'reportDisagreement',
-    {
-      description: 'Reports that you disagree with a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the engineID and ruleID shown in the diagnosis and your reason. Returns a confirmation with disposition details.',
-      inputSchema: reportDisagreementSchema,
-      outputSchema: reportDisagreementResponseSchema,
-      annotations: {
-        title: 'Report disagreement with a diagnosis',
-        readOnlyHint: false,
-        idempotentHint: false,
-        destructiveHint: false,
-        openWorldHint: false
-      }
-    },
-    async ({issueID, reportID, catalogIndex, engineID, ruleID, reason}) => {
-      const result = await reportDisagreementAPI.response([issueID, reportID, catalogIndex, engineID, ruleID, reason]);
-      await recordMetric('mcpToolCalls', 'reportDisagreement');
-      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
-    }
-  );
-  server.registerTool(
-    'orderNewTest',
-    {
-      description: 'Orders testing of a page that has no report yet, with automated approval or rejection and immediate enqueueing if approved. Use this instead of requestNewTest when immediate testing is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
-      inputSchema: orderNewTestSchema,
-      outputSchema: orderNewTestResponseSchema,
-      annotations: {
-        title: 'Order immediate testing of a new page',
-        readOnlyHint: false,
-        idempotentHint: false,
-        destructiveHint: false,
-        openWorldHint: true
-      }
-    },
-    async ({description, URL, reason}) => {
-      const result = await orderNewTestAPI.response([description, URL, reason]);
-      await recordMetric('mcpToolCalls', 'orderNewTest');
-      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
-    }
-  );
-  server.registerTool(
-    'orderRetest',
-    {
-      description: 'Orders a retest of a page whose existing report is considered obsolete, with automated approval or rejection and immediate enqueuing if approved. Use this instead of requestRetest when immediate retesting is wanted; testing typically takes 2 to 4 minutes. Returns an order confirmation and disposition details, including, if approved, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
-      inputSchema: orderRetestSchema,
-      outputSchema: orderRetestResponseSchema,
-      annotations: {
-        title: 'Order an immediate retest',
-        readOnlyHint: false,
-        idempotentHint: false,
-        destructiveHint: false,
-        openWorldHint: true
-      }
-    },
-    async ({reportID, reason}) => {
-      const result = await orderRetestAPI.response([reportID, reason]);
-      await recordMetric('mcpToolCalls', 'orderRetest');
-      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
-    }
-  );
-  server.registerTool(
     'awaitTest',
     {
-      description: 'Waits for a job ordered via the orderNewTest or orderRetest tool to finish, using the report identifier either tool returned. Use this instead of polling listIssues when an immediate answer is preferred. Blocks until the report is ready, the job fails, or a maximum wait time elapses, sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
+      description: 'Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {

@@ -4,18 +4,16 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 
 ## API
 
-- [List all tested pages, each with its latest report](/api/listPages) (`GET`)
+- [List all tested pages, with links to test results](/api/listPages) (`GET`)
 - List all issues in one report, and all reports about the same page: `/api/listIssues/{reportID}` (`GET`)
 - List all elements exhibiting one issue in one report: `/api/listViolators/{issueID}/{reportID}` (`GET`)
-- List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{catalogIndex}/{issueID}/{reportID}` (`GET`)
+- List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}` (`GET`)
+- Question a diagnosis: `/api/questionDiagnosis/{issueID}/{reportID}/{catalogIndex}` (`POST`)
 - Get one full report in JSON: `/api/getReport/{reportID}` (`GET`)
 - Request testing of a web page: `/api/requestNewTest` (`POST`)
 - Request retesting of a web page: `/api/requestRetest/{reportID}` (`POST`)
+- Wait for a job to complete: `/api/awaitTest/{reportID}` (`POST`)
 - Request adding or improving a feature: `/api/requestFeature` (`POST`)
-- Report disagreement with a diagnosis: `/api/reportDisagreement/{issueID}/{reportID}/{catalogIndex}` (`POST`)
-- Order immediate, automatically approved testing of a web page: `/api/orderNewTest` (`POST`)
-- Order immediate, automatically approved retesting of a web page: `/api/orderRetest/{reportID}` (`POST`)
-- Wait for a job ordered via orderNewTest or orderRetest to complete: `/api/awaitTest/{reportID}` (`POST`)
 
 ## MCP Server
 
@@ -23,16 +21,17 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 
 ## Web UI
 
-- [List all tested pages, each linked to its latest report](https://kilotest.com/listPages.html)
+- [List all tested pages, with links to test results](https://kilotest.com/listPages.html)
 - List all issues in one report, and all reports about the same page: `https://kilotest.com/listIssues.html/{reportID}`
 - List all elements exhibiting one issue in one report: `https://kilotest.com/listViolators.html/{issueID}/{reportID}`
 - List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{reportID}/{catalogIndex}`
 - Get one full report in JSON: `https://kilotest.com/fullReport.json/{reportID}`
-- [Request testing of a web page](https://kilotest.com/requestNewTestForm.html)
+- [Request testing of a not-yet-tested web page](https://kilotest.com/requestNewTestForm.html)
 - Request retesting of a web page: `https://kilotest.com/requestRetestForm.html/{reportID}`
-- [List the operations that Kilotest managers are authorized to request](https://kilotest.com/manage.html)
-- [Provide statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
-- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorial.html)
+- [List the operations available to Kilotest managers](https://kilotest.com/manage.html)
+- [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
+- [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
+- [Tutorial, “Kilotest and AI”](https://kilotest.com/tutorialAI.html)
 
 ## More documents
 

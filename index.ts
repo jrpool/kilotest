@@ -85,10 +85,8 @@ import {response as listViolatorsAPI} from './api/listViolators.ts';
 import {response as requestFeatureAPI} from './api/requestFeature.ts';
 import {response as requestRetestAPI} from './api/requestRetest.ts';
 import {response as requestNewTestAPI} from './api/requestNewTest.ts';
-import {response as orderNewTestAPI} from './api/orderNewTest.ts';
-import {response as orderRetestAPI} from './api/orderRetest.ts';
 import {response as awaitTestAPI} from './api/awaitTest.ts';
-import {response as reportDisagreementAPI} from './api/reportDisagreement.ts';
+import {response as questionDiagnosisAPI} from './api/questionDiagnosis.ts';
 
 // ENVIRONMENT
 
@@ -188,10 +186,8 @@ const apiRespond: {
   requestFeature: ApiResponder;
   requestRetest: ApiResponder;
   requestNewTest: ApiResponder;
-  orderNewTest: ApiResponder;
-  orderRetest: ApiResponder;
   awaitTest: ApiResponder;
-  reportDisagreement: ApiResponder;
+  questionDiagnosis: ApiResponder;
 } = {
   getReport: getReportAPI,
   listDiagnoses: listDiagnosesAPI,
@@ -201,10 +197,8 @@ const apiRespond: {
   requestFeature: requestFeatureAPI,
   requestRetest: requestRetestAPI,
   requestNewTest: requestNewTestAPI,
-  orderNewTest: orderNewTestAPI,
-  orderRetest: orderRetestAPI,
   awaitTest: awaitTestAPI,
-  reportDisagreement: reportDisagreementAPI
+  questionDiagnosis: questionDiagnosisAPI
 };
 
 // CONSTANTS
@@ -227,8 +221,6 @@ export const routes = {
     '/media/*',
     '/openapi.json',
     '/openapi.yaml',
-    '/qai',
-    '/qai/comments',
     '/robots.txt',
     '/sitemap.xml',
     '/style.css',
@@ -294,42 +286,25 @@ const selfSubmittingManagerPages = new Set([
   'deleteNotesForm',
   'metrics'
 ]);
-// The subset of selfSubmittingManagerPages that must never be served on a direct GET
-// request, only as the response to another page's successful submission (here,
-// unhideReportForm is served only by showHiddenReportsForm, once a valid authorization code
-// has been submitted), so that the names of hidden reports are never disclosed without one.
+// The self-submitting manager pages that must never be served on a direct GET, so that
+// the names of hidden reports are never disclosed without an authorization code:
+// unhideReportForm is served only by showHiddenReportsForm, as the response to a
+// successfully submitted code.
 const noDirectGetPages = new Set(['unhideReportForm']);
-// Old page names, from before a 2026-08-31 rename (see GitHub issue #3), that search
-// engines and other crawlers are still requesting. Redirecting them lets crawlers update
-// their own indexes, rather than leaving them to repeat the same dead request indefinitely.
-// TEMPORARY: retire this redirect after 2027-04-01 once crawlers have re-indexed.
-// requestTest and requestTestForm were renamed to requestNewTest and requestNewTestForm
-// on 2026-09-28 (see the newTest/retest naming-ambiguity fix), to distinguish the
-// new-test-only page from bare "test" language used elsewhere.
-// TEMPORARY: retire this redirect after 2027-03-28 once crawlers have re-indexed.
-// listReports was renamed to listPages on 2026-10-09, since it lists tested pages, each
-// linked to its latest report.
-// TEMPORARY: retire this redirect after 2027-04-09 once crawlers have re-indexed.
-const renamedPagePrefixes: Record<string, string> = {
-  diagnoses: 'listDiagnoses',
-  reportIssue: 'listViolators',
-  reportIssues: 'listIssues',
-  rules: 'listRules',
-  targets: 'listPages',
-  listReports: 'listPages',
-  requestTest: 'requestNewTest',
-  requestTestForm: 'requestNewTestForm'
-};
-// Pages whose report-identifying path tails once used two segments (a timeStamp
-// segment and a jobID segment) where they now use one reportID segment. Each value
-// gives the index of the first legacy segment within the path tail and the total
-// segment count of the legacy tail.
-// TEMPORARY: retire these redirects after 2027-04-17 once bookmarked links have aged out.
-const legacyReportTails: Record<string, {idIndex: number; segmentCount: number}> = {
-  listDiagnoses: {idIndex: 1, segmentCount: 4},
-  listIssues: {idIndex: 0, segmentCount: 2},
-  listViolators: {idIndex: 1, segmentCount: 3},
-  requestRetestForm: {idIndex: 0, segmentCount: 2}
+// Old page names that search engines and other crawlers still request; redirecting them
+// lets crawlers re-index instead of repeating dead requests indefinitely. Each entry
+// maps an old name to its current name, its rename date, and the date after which the
+// redirect is to be retired.
+export const renamedPagePrefixes: Record<string, {to: string; renameDate: string; retireAfter: string}> = {
+  diagnoses: {to: 'listDiagnoses', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
+  reportIssue: {to: 'listViolators', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
+  reportIssues: {to: 'listIssues', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
+  rules: {to: 'listRules', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
+  targets: {to: 'listPages', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
+  listReports: {to: 'listPages', renameDate: '2026-10-09', retireAfter: '2027-04-09'},
+  requestTest: {to: 'requestNewTest', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
+  requestTestForm: {to: 'requestNewTestForm', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
+  tutorial: {to: 'tutorialWeb', renameDate: '2026-11-06', retireAfter: '2027-05-06'}
 };
 const jobLock = createLock();
 
@@ -349,25 +324,6 @@ const matchPath = (pattern: string, pathname: string) => {
 export const isPathAllowed = (method: string, pathname: string): boolean => {
   const patterns = (routes as Record<string, string[]>)[method] || [];
   return patterns.some(pattern => matchPath(pattern, pathname));
-};
-// Returns the single-reportID path that a legacy two-segment report path tail (one
-// identifying a report with separate timeStamp and jobID segments) canonicalizes to
-// for a page under its current name, or null if the page has no legacy form or the
-// tail lacks its shape.
-const getLegacyReportURL = (topic: string, pathTail: string): string | null => {
-  const legacy = legacyReportTails[topic];
-  if (!legacy) {
-    return null;
-  }
-  const segments = pathTail.split('/');
-  const reportID = `${segments[legacy.idIndex]}-${segments[legacy.idIndex + 1]}`;
-  if (segments.length !== legacy.segmentCount || !isReportID(reportID)) {
-    return null;
-  }
-  const newTail = [
-    ...segments.slice(0, legacy.idIndex), reportID, ...segments.slice(legacy.idIndex + 2)
-  ].join('/');
-  return `/${topic}.html/${newTail}`;
 };
 // Serves or sends an error message.
 export const serveError = async (error: Record<string, unknown>, response: ServerResponse, isHumanUser = true, statusCode = 400): Promise<void> => {
@@ -721,18 +677,6 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       response.writeHead(301, {Location: '/openapi.yaml'});
       response.end();
     }
-    // Otherwise, if it is for the old QAI comments path:
-    else if (pathname === '/qai/comments') {
-      // Redirect the client permanently to the new tutorial path (comments are now integrated).
-      response.writeHead(301, {Location: '/tutorialAI.html'});
-      response.end();
-    }
-    // Otherwise, if it is for the old QAI root path:
-    else if (pathname === '/qai') {
-      // Redirect the client permanently to the new tutorial path.
-      response.writeHead(301, {Location: '/tutorialAI.html'});
-      response.end();
-    }
     // Otherwise, if it is for the large-language-model summary guide:
     else if (pageName === 'llms.txt') {
       const llms = await fs.readFile('llms.txt', 'utf8');
@@ -763,17 +707,8 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
-      const segments = pathTail.split('/');
-      const legacyID = `${segments[0]}-${segments[1]}`;
-      // If the request identifies the report with the legacy two-segment form (a
-      // timeStamp segment and a jobID segment), redirect the request permanently to
-      // the single-reportID URL, preserving any query string.
-      if (segments.length === 2 && isReportID(legacyID)) {
-        response.writeHead(301, {Location: `/fullReport.json/${legacyID}${search}`});
-        response.end();
-      }
-      // Otherwise, if the request is syntactically valid:
-      else if (isReportID(pathTail)) {
+      // If the request is syntactically valid:
+      if (isReportID(pathTail)) {
         // Get it.
         const report = await getReport(pathTail);
         // If this failed:
@@ -811,14 +746,11 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
       // Compute the path in the current request signature: the current name if the
-      // page name is a pre-rename one, and the single-reportID tail if the tail
-      // identifies a report with the legacy two-segment form (a timeStamp segment
-      // and a jobID segment).
-      const canonicalTopic = renamedPagePrefixes[topic] ?? topic;
-      const canonicalPath = getLegacyReportURL(canonicalTopic, pathTail) ??
-        `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
+      // page name is a pre-rename one.
+      const canonicalTopic = renamedPagePrefixes[topic]?.to ?? topic;
+      const canonicalPath = `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
       // If the request signature contains any obsolete element (a pre-rename page
-      // name, a legacy two-segment report tail, or a query string, which no GET
+      // name or a query string, which no GET
       // page handler reads, since the search argument passed to answer() is
       // consumed only for POST requests, where it is reconstructed from the
       // request body), convert all of them at once by redirecting the request
@@ -883,13 +815,6 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         // Send it.
         setHeaders('application/json', null, 'ultra');
         response.end(JSON.stringify(responseBody));
-      }
-      // Otherwise, if the service has the name that listPages had before 2026-10-09:
-      // TEMPORARY: retire this redirect after 2027-04-09.
-      else if (service === 'listReports') {
-        // Redirect the request to listPages.
-        response.writeHead(301, {Location: '/api/listPages'});
-        response.end();
       }
       // Otherwise, if the service lists the issues in a report:
       else if (service === 'listIssues') {
@@ -1088,17 +1013,8 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       // Otherwise, if it is a retest request:
       else if (pageName === 'requestRetest.html') {
         const {why} = postData as {why?: string};
-        const segments = pathTail.split('/');
-        const legacyID = `${segments[0]}-${segments[1]}`;
-        // If the request identifies the report with the legacy two-segment form,
-        // redirect it to the single-reportID URL. A 308 (not 301) keeps the POST
-        // method and body, which a 301 could rewrite to a GET with no body.
-        if (segments.length === 2 && isReportID(legacyID)) {
-          response.writeHead(308, {Location: `/requestRetest.html/${legacyID}`});
-          response.end();
-        }
-        // Otherwise, if the request is valid:
-        else if (isReportID(pathTail) && why) {
+        // If the request is valid:
+        if (isReportID(pathTail) && why) {
           // Serve response headers.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
@@ -1359,30 +1275,19 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const segments = pathTail.split('/');
         // If the service is to receive a test request:
         if (segments[0] === 'requestNewTest') {
-          const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
+          const {description, URL, reason, reviewImmediately = false} = postData as {description: string; URL: string; reason: string; reviewImmediately?: boolean};
           // Get the response body.
-          const responseBody = await apiRespond.requestNewTest([description, URL, reason]);
+          const responseBody = await apiRespond.requestNewTest([description, URL, reason, String(reviewImmediately === true)]);
           await recordPageMetric('apiOperations', 'requestNewTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
         }
-        // Otherwise, if the request uses the old, pre-rename requestTest path name: redirect
-        // permanently to the new path name. requestTest takes no path parameters (its
-        // arguments are body fields), so there is no further path to preserve, unlike the
-        // renamedPagePrefixes GET-page redirects above. 308 (not 301) is used here because
-        // 301 is defined to let clients rewrite a POST redirect as a GET, which would drop
-        // this request's body; 308 preserves both the method and the body.
-        // TEMPORARY: retire this redirect after 2027-03-28 once callers have updated.
-        else if (segments[0] === 'requestTest') {
-          response.writeHead(308, {Location: '/api/requestNewTest'});
-          response.end();
-        }
         // Otherwise, if the service is to receive a retest request:
         else if (segments[0] === 'requestRetest') {
-          const {reason} = postData as {reason: string};
+          const {reason, reviewImmediately = false} = postData as {reason: string; reviewImmediately?: boolean};
           // Get the response body.
-          const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason));
+          const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason, String(reviewImmediately === true)));
           await recordPageMetric('apiOperations', 'requestRetest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
@@ -1398,41 +1303,12 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));
         }
-        // Otherwise, if the service is to receive a disagreement with a diagnosis:
-        else if (segments[0] === 'reportDisagreement') {
+        // Otherwise, if the service is to receive a questioning of a diagnosis:
+        else if (segments[0] === 'questionDiagnosis') {
           const {engineID, ruleID, reason} = postData as {engineID: string; ruleID: string; reason: string};
           // Get the response body.
-          const responseBody = await apiRespond.reportDisagreement(segments.slice(1).concat(engineID, ruleID, reason));
-          await recordPageMetric('apiOperations', 'reportDisagreement');
-          // Send it.
-          setHeaders('application/json', null, 'ultra');
-          response.end(JSON.stringify(responseBody));
-        }
-        // Otherwise, if the service is to order an immediate, automatically approved test:
-        else if (segments[0] === 'orderNewTest') {
-          const {description, URL, reason} = postData as {description: string; URL: string; reason: string};
-          // Get the response body.
-          const responseBody = await apiRespond.orderNewTest([description, URL, reason]);
-          await recordPageMetric('apiOperations', 'orderNewTest');
-          // Send it.
-          setHeaders('application/json', null, 'ultra');
-          response.end(JSON.stringify(responseBody));
-        }
-        // Otherwise, if the request uses the old, pre-rename orderTest path name: redirect
-        // permanently to the new path name. orderTest likewise takes no path parameters.
-        // See the requestTest redirect above for why 308 (not 301) is used for these
-        // POST-only API redirects.
-        // TEMPORARY: retire this redirect after 2027-03-28 once callers have updated.
-        else if (segments[0] === 'orderTest') {
-          response.writeHead(308, {Location: '/api/orderNewTest'});
-          response.end();
-        }
-        // Otherwise, if the service is to order an immediate, automatically approved retest:
-        else if (segments[0] === 'orderRetest') {
-          const {reason} = postData as {reason: string};
-          // Get the response body.
-          const responseBody = await apiRespond.orderRetest(segments.slice(1).concat(reason));
-          await recordPageMetric('apiOperations', 'orderRetest');
+          const responseBody = await apiRespond.questionDiagnosis(segments.slice(1).concat(engineID, ruleID, reason));
+          await recordPageMetric('apiOperations', 'questionDiagnosis');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

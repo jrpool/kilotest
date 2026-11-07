@@ -6,8 +6,8 @@
 // IMPORTS
 
 import {z} from 'zod';
-import {buildRequestDisposition, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {checkLength, isReportID, processTestRequest} from '../util.ts';
+import {buildRequestDisposition, getRequestFailureReason, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
+import {checkLength, isReportID, orderJob, processTestRequest} from '../util.ts';
 import {requestRetestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -19,7 +19,8 @@ type ResponseContent = z.infer<typeof requestRetestResponseSchema>['response con
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [reportID = '', reason = ''] = args;
+  const [reportID = '', reason = '', review = ''] = args;
+  const reviewImmediately = review === 'true';
   const thisHost = getThisHost();
   const reasonCheck = checkLength(reason, 20, 100, 'reason');
   // Initialize the response-content properties.
@@ -39,8 +40,14 @@ export const response = async (args: string[]) => {
   }
   // Otherwise, i.e. if the request is facially valid:
   else {
-    // Process the request. This resolves the cited report's description and URL itself.
-    const processResult = await processTestRequest(reason, {reportID});
+    // If immediate review was requested, order the retest: enqueue the job directly, with no
+    // management-approval step, gated only by the lightweight checks orderJob itself performs
+    // (the target is not already claimed or queued, and the job queue is not already full).
+    // Otherwise process the request for approval by management. Either path resolves the
+    // cited report's description and URL itself.
+    const processResult = reviewImmediately
+      ? await orderJob({reportID}, reason)
+      : await processTestRequest(reason, {reportID});
     // If the cited report does not exist:
     if (processResult.result === 'nonreport') {
       requestDetails = {
@@ -59,16 +66,43 @@ export const response = async (args: string[]) => {
         },
         'reason why the page should be retested': reason
       };
-      // Add information about the disposition of the request.
-      requestDisposition = buildRequestDisposition(
-        requestResult,
-        {
-          whatHappensNext: 'Your request is likely to be approved and processed within 1 hour to 1 day.',
-          howToCheck: 'You can call the listPages tool, or the listIssues tool on the current report, to learn whether the page has been retested and a new report is available.',
-          howWebUserChecks: `A web user can visit ${thisHost}/listPages.html to learn whether the page has been retested and a new report is available.`
-        },
-        {result: 'superseded', reason: 'a later report about a page with the same description is available.'}
-      );
+      // If immediate review ran:
+      if (reviewImmediately) {
+        // Add information about the disposition of the request.
+        if (requestResult === 'ok' && 'reportID' in processResult && typeof processResult.reportID === 'string') {
+          const orderedReportID = processResult.reportID;
+          requestDisposition = {
+            'what happens next': 'Testing has begun. Once it finishes, the report will be available via the listIssues tool.',
+            'report identifier': orderedReportID,
+            'how you can check for completion': `Call the listIssues tool with reportID "${orderedReportID}" to learn whether the report is ready.`,
+            'do you want to wait for completion': 'Testing typically takes 2 to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same reportID.'
+          };
+        }
+        else {
+          requestDisposition = {
+            'what happens next': `Your request will not be processed, because ${getRequestFailureReason(
+              requestResult as Exclude<typeof requestResult, 'ok'>,
+              {result: 'superseded', reason: 'a later report about a page with the same description is available.'}
+            )}`,
+            'report identifier': null,
+            'how you can check for completion': 'Not applicable.',
+            'do you want to wait for completion': 'Not applicable.'
+          };
+        }
+      }
+      // Otherwise, i.e. if management review ran:
+      else {
+        // Add information about the disposition of the request.
+        requestDisposition = buildRequestDisposition(
+          requestResult,
+          {
+            whatHappensNext: 'Your request is likely to be approved and processed within 1 hour to 1 day.',
+            howToCheck: 'You can call the listPages tool, or the listIssues tool on the current report, to learn whether the page has been retested and a new report is available.',
+            howWebUserChecks: `A web user can visit ${thisHost}/listPages.html to learn whether the page has been retested and a new report is available.`
+          },
+          {result: 'superseded', reason: 'a later report about a page with the same description is available.'}
+        );
+      }
     }
   }
   // Create the response content.
@@ -85,7 +119,8 @@ export const response = async (args: string[]) => {
       method: 'POST',
       URL: `${thisHost}/api/requestRetest/${reportID}`,
       body: {
-        reason
+        reason,
+        reviewImmediately
       },
       'closest ancestor request': {
         'tool name': 'listIssues',

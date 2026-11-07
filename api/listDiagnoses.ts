@@ -27,7 +27,7 @@ type Diagnoses = Extract<ResponseContent['diagnoses of how the element exhibited
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [catalogIndex = '', issueID = '', reportID = ''] = args;
+  const [issueID = '', reportID = '', catalogIndex = ''] = args;
   const thisHost = getThisHost();
   // Get the report.
   const report = await getReport(reportID);
@@ -103,13 +103,13 @@ export const response = async (args: string[]) => {
             'description of the violation': what,
             'severity of the violation on a 0-to-3 scale': ordinalSeverity,
             'count of violations of the rule by the element': count ?? 1,
-            'how to report that you disagree with this diagnosis': {
+            'how to question this diagnosis': {
               method: 'POST',
-              URL: `${thisHost}/api/reportDisagreement/${issueID}/${reportID}/${catalogIndex}`,
+              URL: `${thisHost}/api/questionDiagnosis/${issueID}/${reportID}/${catalogIndex}`,
               'request body': {
                 engineID: 'the identifier of the rule engine shown in this diagnosis',
                 ruleID: 'the identifier of the violated rule shown in this diagnosis, or, if it is null, the description of the violation',
-                reason: '20- to 1000-character explanation of why you disagree with this diagnosis'
+                reason: '20- to 1000-character explanation of why you question this diagnosis'
               }
             }
           }
@@ -125,9 +125,9 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'listDiagnoses',
     'this request': {
-      description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The catalogIndex, issueID, and reportID parameters identify the element, issue, and report that I want details about. Those parameters were in the response to my earlier listViolators request.',
+      description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue. The issueID, reportID, and catalogIndex parameters identify the issue, report, and element that I want details about. Those parameters were in the response to my earlier listViolators request.',
       method: 'GET',
-      URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${reportID}`,
+      URL: `${thisHost}/api/listDiagnoses/${issueID}/${reportID}/${catalogIndex}`,
       'closest ancestor request': {
         'tool name': 'listViolators',
         description: 'Provide details about one issue in one report, including basics about the elements of the tested page that were reported as exhibiting the issue.',

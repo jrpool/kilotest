@@ -1,6 +1,6 @@
 /*
-  reportDisagreement.test.ts
-  Tests for api/reportDisagreement.ts using the fixture corpus, with mocked side effects.
+  questionDiagnosis.test.ts
+  Tests for api/questionDiagnosis.ts using the fixture corpus, with mocked side effects.
 */
 
 // IMPORTS
@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-// Blank the alert configuration unconditionally, before ./reportDisagreement.ts (which
+// Blank the alert configuration unconditionally, before ./questionDiagnosis.ts (which
 // calls sendAlert) is ever imported below, so this file sends no real alert emails
 // even when run directly rather than via `npm test`.
 for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
@@ -41,8 +41,8 @@ beforeEach(async () => {
   await fs.writeFile(process.env.DISAGREEMENTS_PATH!, '[]\n');
 });
 
-import {response} from './reportDisagreement.ts';
-import {reportDisagreementResponseSchema} from './schemas.ts';
+import {response} from './questionDiagnosis.ts';
+import {questionDiagnosisResponseSchema} from './schemas.ts';
 
 after(async () => {
   console.log = originalLog;
@@ -57,7 +57,7 @@ after(async () => {
 
 // TESTS
 
-test('reportDisagreement rejects a reason shorter than 20 characters', async () => {
+test('questionDiagnosis rejects a reason shorter than 20 characters', async () => {
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'Too short']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
@@ -66,25 +66,25 @@ test('reportDisagreement rejects a reason shorter than 20 characters', async () 
   );
 });
 
-test('reportDisagreement rejects a reason longer than 1000 characters', async () => {
+test('questionDiagnosis rejects a reason longer than 1000 characters', async () => {
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'x'.repeat(1001)]);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('reason'));
 });
 
-test('reportDisagreement rejects a nonexistent report', async () => {
+test('questionDiagnosis rejects a nonexistent report', async () => {
   const body = await response(['linkNoText', '999999T9999-xyz', '0', 'axe', 'r11', 'This diagnosis is wrong, in my opinion']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('report'));
 });
 
-test('reportDisagreement rejects an element not in the report', async () => {
+test('questionDiagnosis rejects an element not in the report', async () => {
   const body = await response(['linkNoText', '260101T0000-mix', '999', 'axe', 'r11', 'This diagnosis is wrong, in my opinion']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('element'));
 });
 
-test('reportDisagreement rejects a diagnosis no rule engine reported', async () => {
+test('questionDiagnosis rejects a diagnosis no rule engine reported', async () => {
   // The mixed report has axe and alfa diagnoses of rule r11 for element 0 and issue
   // linkNoText, but no ibm diagnosis, so this engineID/ruleID pair matches nothing.
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'ibm', 'r11', 'This diagnosis is wrong, in my opinion']);
@@ -92,19 +92,19 @@ test('reportDisagreement rejects a diagnosis no rule engine reported', async () 
   assert.ok(details.error.includes('no such diagnosis'));
 });
 
-test('reportDisagreement rejects a rule ID reported only under a different issue', async () => {
+test('questionDiagnosis rejects a rule ID reported only under a different issue', async () => {
   const body = await response(['focusIndicationBad', '260101T0000-mix', '0', 'axe', 'r11', 'This diagnosis is wrong, in my opinion']);
   const details = body['response content']['details about your request'] as any;
   assert.ok(details.error.includes('no such diagnosis'));
 });
 
-test('reportDisagreement accepts a valid disagreement and notifies the manager', async () => {
+test('questionDiagnosis accepts a valid disagreement and notifies the manager', async () => {
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'The element does have an accessible name']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);
   assert.ok(details['date and time received']);
-  assert.equal(details['diagnosis you disagree with']['identifier of the rule engine'], 'axe');
-  assert.equal(details['diagnosis you disagree with']['identifier of the violated rule'], 'r11');
+  assert.equal(details['diagnosis you question']['identifier of the rule engine'], 'axe');
+  assert.equal(details['diagnosis you question']['identifier of the violated rule'], 'r11');
   assert.equal(details.disposition, 'received and logged; manager notified');
   assert.ok(logged.some(line =>
     line.startsWith('WARNING (Kilotest: diagnosis disagreement received)')
@@ -112,7 +112,7 @@ test('reportDisagreement accepts a valid disagreement and notifies the manager',
   ));
 });
 
-test('reportDisagreement records a valid disagreement to the disagreements file', async () => {
+test('questionDiagnosis records a valid disagreement to the disagreements file', async () => {
   await response(['linkNoText', '260101T0000-mix', '0', 'alfa', 'r11', 'The element does have an accessible name']);
   const disagreements = JSON.parse(await fs.readFile(process.env.DISAGREEMENTS_PATH!, 'utf8'));
   assert.equal(disagreements.length, 1);
@@ -122,7 +122,7 @@ test('reportDisagreement records a valid disagreement to the disagreements file'
   assert.ok(disagreements[0].timeStamp);
 });
 
-test('reportDisagreement rejects a disagreement identical to one already on file', async () => {
+test('questionDiagnosis rejects a disagreement identical to one already on file', async () => {
   const args = ['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'The element does have an accessible name'];
   const firstBody = await response(args);
   const firstDetails = firstBody['response content']['details about your request'] as any;
@@ -135,7 +135,7 @@ test('reportDisagreement rejects a disagreement identical to one already on file
   assert.equal(disagreements.length, 1);
 });
 
-test('reportDisagreement accepts the same reason about a different diagnosis', async () => {
+test('questionDiagnosis accepts the same reason about a different diagnosis', async () => {
   await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'The element does have an accessible name']);
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'alfa', 'r11', 'The element does have an accessible name']);
   const details = body['response content']['details about your request'] as any;
@@ -144,14 +144,14 @@ test('reportDisagreement accepts the same reason about a different diagnosis', a
   assert.equal(disagreements.length, 2);
 });
 
-test('reportDisagreement creates the disagreements file when it does not exist', async () => {
+test('questionDiagnosis creates the disagreements file when it does not exist', async () => {
   await fs.unlink(process.env.DISAGREEMENTS_PATH!);
   await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'The element does have an accessible name']);
   const disagreements = JSON.parse(await fs.readFile(process.env.DISAGREEMENTS_PATH!, 'utf8'));
   assert.equal(disagreements.length, 1);
 });
 
-test('reportDisagreement rejects a disagreement with a fallback channel when the inbox is full', async () => {
+test('questionDiagnosis rejects a disagreement with a fallback channel when the inbox is full', async () => {
   // Fill disagreements.json with 20 distinct disagreements, reaching the cap.
   const filler = Array.from({length: 20}, (_, i) => ({
     timeStamp: '260101T0000',
@@ -173,7 +173,7 @@ test('reportDisagreement rejects a disagreement with a fallback channel when the
   assert.equal(disagreements.length, 20);
 });
 
-test('reportDisagreement never rejects for a full inbox when DISAGREEMENTS_MAX is 0 (no limit)', async () => {
+test('questionDiagnosis never rejects for a full inbox when DISAGREEMENTS_MAX is 0 (no limit)', async () => {
   process.env.DISAGREEMENTS_MAX = '0';
   try {
     // Fill disagreements.json past the default cap.
@@ -196,22 +196,22 @@ test('reportDisagreement never rejects for a full inbox when DISAGREEMENTS_MAX i
   }
 });
 
-test('reportDisagreement does not record an invalid disagreement', async () => {
+test('questionDiagnosis does not record an invalid disagreement', async () => {
   await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'short']);
   const disagreements = JSON.parse(await fs.readFile(process.env.DISAGREEMENTS_PATH!, 'utf8'));
   assert.equal(disagreements.length, 0);
 });
 
-test('reportDisagreement includes tool name and metadata', async () => {
+test('questionDiagnosis includes tool name and metadata', async () => {
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'The element does have an accessible name']);
-  assert.equal(body['tool name'], 'reportDisagreement');
+  assert.equal(body['tool name'], 'questionDiagnosis');
   assert.ok(body['response metadata'].identifier);
 });
 
-test('reportDisagreement response conforms to its response schema', async () => {
+test('questionDiagnosis response conforms to its response schema', async () => {
   // parse() catches missing or mistyped keys; comparing the parsed result to the
   // original catches extra keys that zod strips but that the strict JSON schema
   // advertised to MCP clients (additionalProperties: false) rejects.
   const body = await response(['linkNoText', '260101T0000-mix', '0', 'axe', 'r11', 'A reason submitted only for schema conformance.']);
-  assert.deepEqual(reportDisagreementResponseSchema.parse(body), body);
+  assert.deepEqual(questionDiagnosisResponseSchema.parse(body), body);
 });

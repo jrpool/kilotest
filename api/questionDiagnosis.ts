@@ -1,6 +1,6 @@
 /*
-  reportDisagreement.ts
-  Processes a report that the requester disagrees with a diagnosis and returns an acknowledgement.
+  questionDiagnosis.ts
+  Processes a questioning of a diagnosis and returns an acknowledgement.
 */
 
 // IMPORTS
@@ -18,14 +18,14 @@ import {
   getTestActInstances,
   isReportError
 } from '../util.ts';
-import {reportDisagreementResponseSchema} from './schemas.ts';
+import {questionDiagnosisResponseSchema} from './schemas.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 // TYPES
 
 // The response content defined by the response schema.
-type ResponseContent = z.infer<typeof reportDisagreementResponseSchema>['response content'];
+type ResponseContent = z.infer<typeof questionDiagnosisResponseSchema>['response content'];
 
 // A stored disagreement with a diagnosis.
 type Disagreement = {
@@ -167,7 +167,7 @@ export const response = async (args: string[]) => {
           responseContent = {
             'details about your request': {
               'date and time received': new Date().toISOString(),
-              'diagnosis you disagree with': {
+              'diagnosis you question': {
                 'issue identifier': issueID,
                 'identifier of the rule engine': engineID,
                 'identifier of the violated rule': ruleID
@@ -182,11 +182,11 @@ export const response = async (args: string[]) => {
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),
-    'tool name': 'reportDisagreement',
+    'tool name': 'questionDiagnosis',
     'this request': {
-      description: 'Process my report that I disagree with a diagnosis. The issueID, reportID, and catalogIndex parameters identify the issue, report, and element of the diagnosis. They were in the response to my earlier listDiagnoses request. The engineID and ruleID properties of the request body identify which diagnosis I disagree with, and the reason property explains why I disagree with it.',
+      description: 'Process my questioning of a diagnosis. The issueID, reportID, and catalogIndex parameters identify the issue, report, and element of the diagnosis. They were in the response to my earlier listDiagnoses request. The engineID and ruleID properties of the request body identify which diagnosis I question, and the reason property explains why I question it.',
       method: 'POST',
-      URL: `${thisHost}/api/reportDisagreement/${issueID}/${reportID}/${catalogIndex}`,
+      URL: `${thisHost}/api/questionDiagnosis/${issueID}/${reportID}/${catalogIndex}`,
       body: {
         engineID,
         ruleID,
@@ -196,7 +196,7 @@ export const response = async (args: string[]) => {
         'tool name': 'listDiagnoses',
         description: 'Provide details about one element reported as exhibiting one issue in one report, including the diagnoses provided by rule engines about how the element exhibited the issue.',
         method: 'GET',
-        URL: `${thisHost}/api/listDiagnoses/${catalogIndex}/${issueID}/${reportID}`
+        URL: `${thisHost}/api/listDiagnoses/${issueID}/${reportID}/${catalogIndex}`
       }
     },
     'URLs of similar requests for web users': null,

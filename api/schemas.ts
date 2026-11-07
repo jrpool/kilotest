@@ -49,24 +49,24 @@ export const getReportSchema = {
   reportID: z.string().regex(reportIDPattern).describe(reportIDDescription)
 };
 
-// Which review path a test or retest request takes: true for automated review with immediate approval or rejection and immediate enqueueing if approved, false or omitted to queue the request for manager approval. Optional, defaulting to manager review.
-const immediateAutomatedReviewField = {
-  immediateAutomatedReview: z.boolean().optional().describe('true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval')
+// Which review path a test or retest request takes: true for immediate review with immediate approval or rejection and immediate enqueueing if approved, false or omitted to queue the request for review by management. Optional, defaulting to management review.
+const reviewImmediatelyField = {
+  reviewImmediately: z.boolean().optional().describe('true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management')
 };
 
 // requestNewTest: POST /api/requestNewTest
 export const requestNewTestSchema = {
   description: z.string().min(1).max(100).describe('1- to 100-character name for the page, unique among tested pages and conforming to the naming convention used in the listPages output'),
   URL: z.string().min(12).max(300).regex(/^https:\/\//).describe('12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address'),
-  reason: z.string().min(20).max(100).describe('20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview'),
-  ...immediateAutomatedReviewField
+  reason: z.string().min(20).max(100).describe('20- to 100-character justification evaluated by the reviewer selected by reviewImmediately'),
+  ...reviewImmediatelyField
 };
 
 // requestRetest: POST /api/requestRetest/{reportID}
 export const requestRetestSchema = {
   reportID: z.string().regex(reportIDPattern).describe(latestReportIDDescription),
-  reason: z.string().min(20).max(100).describe('20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview'),
-  ...immediateAutomatedReviewField
+  reason: z.string().min(20).max(100).describe('20- to 100-character justification evaluated by the reviewer selected by reviewImmediately'),
+  ...reviewImmediatelyField
 };
 
 // requestFeature: POST /api/requestFeature
@@ -126,8 +126,8 @@ export const toolsFactsSchema = z.object({
 
 // Identifies a related request (e.g., the closest ancestor request in the drill-down
 // hierarchy). method is usually GET (every drill-down tool's ancestor is a read), except
-// for orderNewTest/orderRetest, whose own ancestor is a GET, and awaitTest, whose ancestors
-// (orderNewTest and orderRetest) are both POST (they create a job).
+// for requestNewTest/requestRetest, whose own ancestor is a GET, and awaitTest, whose ancestors
+// (requestNewTest and requestRetest) are both POST (they create a job).
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
   description: z.string(),
@@ -137,7 +137,7 @@ const requestReferenceSchema = z.object({
 
 // GET endpoints have no 'body'; POST endpoints get a request-specific body schema.
 // ancestorSchema overrides the default single-ancestor shape for a tool whose closest
-// ancestor is not unique: awaitTest can be reached from either orderNewTest or orderRetest,
+// ancestor is not unique: awaitTest can be reached from either requestNewTest or requestRetest,
 // and the identifier alone does not say which, so it reports both as an array rather
 // than arbitrarily picking one.
 const thisRequestSchema = (method: string, bodySchema?: ZodTypeAny, ancestorSchema: ZodTypeAny = requestReferenceSchema.nullable()) => z.object({
@@ -340,7 +340,7 @@ export const getReportResponseSchema = envelope('GET', z.object({
 // Identifies the report a successfully ordered or awaited job will produce, once complete.
 const reportIdentifierSchema = z.string().describe('Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).');
 
-// Details object common to the manager-review and automated-review variants of a new-test confirmation.
+// Details object common to the management-review and immediate-review variants of a new-test confirmation.
 const newTestDetailsSchema = z.union([
   z.object({error: z.string()}),
   z.object({
@@ -360,7 +360,7 @@ const retestDetailsSchema = z.union([
   })
 ]);
 
-// Disposition of a consolidated request: a superset of the manager-review fields ('how a web user can check for completion') and the automated-review fields ('report identifier', 'do you want to wait for completion'). Null when the submission itself was invalid.
+// Disposition of a consolidated request: a superset of the management-review fields ('how a web user can check for completion') and the immediate-review fields ('report identifier', 'do you want to wait for completion'). Null when the submission itself was invalid.
 const submissionDispositionSchema = z.object({
   'what happens next': z.string(),
   'report identifier': reportIdentifierSchema.nullable().optional(),
@@ -384,7 +384,7 @@ export const requestRetestResponseSchema = envelope(
     'details about your request': retestDetailsSchema,
     'disposition of your request': submissionDispositionSchema
   }),
-  z.object({reason: requestRetestSchema.reason, immediateAutomatedReview: requestRetestSchema.immediateAutomatedReview})
+  z.object({reason: requestRetestSchema.reason, reviewImmediately: requestRetestSchema.reviewImmediately})
 );
 
 export const requestFeatureResponseSchema = envelope(
@@ -442,7 +442,7 @@ export const awaitTestResponseSchema = envelope(
     'this request': z.null(),
     'closest ancestor request': z.null()
   }),
-  // awaitTest can be reached from either orderNewTest or orderRetest, and its own
+  // awaitTest can be reached from either requestNewTest or requestRetest, and its own
   // reportID parameter does not say which one produced it, so both possible
   // ancestors are reported, rather than arbitrarily naming just one as "the" ancestor.
   z.array(requestReferenceSchema).length(2)

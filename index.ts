@@ -1275,9 +1275,9 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const segments = pathTail.split('/');
         // If the service is to receive a test request:
         if (segments[0] === 'requestNewTest') {
-          const {description, URL, reason, immediateAutomatedReview = false} = postData as {description: string; URL: string; reason: string; immediateAutomatedReview?: boolean};
+          const {description, URL, reason, reviewImmediately = false} = postData as {description: string; URL: string; reason: string; reviewImmediately?: boolean};
           // Get the response body.
-          const responseBody = await apiRespond.requestNewTest([description, URL, reason, String(immediateAutomatedReview === true)]);
+          const responseBody = await apiRespond.requestNewTest([description, URL, reason, String(reviewImmediately === true)]);
           await recordPageMetric('apiOperations', 'requestNewTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
@@ -1285,9 +1285,9 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         }
         // Otherwise, if the service is to receive a retest request:
         else if (segments[0] === 'requestRetest') {
-          const {reason, immediateAutomatedReview = false} = postData as {reason: string; immediateAutomatedReview?: boolean};
+          const {reason, reviewImmediately = false} = postData as {reason: string; reviewImmediately?: boolean};
           // Get the response body.
-          const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason, String(immediateAutomatedReview === true)));
+          const responseBody = await apiRespond.requestRetest(segments.slice(1).concat(reason, String(reviewImmediately === true)));
           await recordPageMetric('apiOperations', 'requestRetest');
           // Send it.
           setHeaders('application/json', null, 'ultra');

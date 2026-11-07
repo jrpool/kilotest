@@ -1,8 +1,8 @@
 /*
   requestNewTest.ts
   Processes a request to test an untested page and returns an acknowledgement. The
-  immediateAutomatedReview flag selects the review path: automated review with immediate
-  enqueueing if approved (true), or the manager-approval queue (false or omitted).
+  reviewImmediately flag selects the review path: immediate review with immediate
+  enqueueing if approved (true), or the management-approval queue (false or omitted).
 */
 
 // IMPORTS
@@ -23,7 +23,7 @@ type ResponseContent = z.infer<typeof requestNewTestResponseSchema>['response co
 // Returns the response body.
 export const response = async (args: string[]) => {
   const [description = '', url = '', reason = '', review = ''] = args;
-  const immediateAutomatedReview = review === 'true';
+  const reviewImmediately = review === 'true';
   const thisHost = getThisHost();
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your request'];
@@ -84,11 +84,11 @@ export const response = async (args: string[]) => {
       },
       'reason why the page should be tested': reason
     };
-    // If automated review was requested, order the test: enqueue the job directly, with no
-    // manual-approval step, gated only by the lightweight checks orderJob itself performs
+    // If immediate review was requested, order the test: enqueue the job directly, with no
+    // management-approval step, gated only by the lightweight checks orderJob itself performs
     // (the target is not already claimed, queued, or reported, and the job queue is not
     // already full).
-    if (immediateAutomatedReview) {
+    if (reviewImmediately) {
       const orderResult = await orderJob({description, url}, reason);
       // Add information about the disposition of the request.
       if (orderResult.result === 'ok') {
@@ -111,7 +111,7 @@ export const response = async (args: string[]) => {
         };
       }
     }
-    // Otherwise, i.e. if manager review was requested or defaulted:
+    // Otherwise, i.e. if management review was requested or defaulted:
     else {
       // Process the request.
       const {result: requestResult} = await processTestRequest(reason, {description, url});
@@ -144,7 +144,7 @@ export const response = async (args: string[]) => {
         description,
         URL: url,
         reason,
-        immediateAutomatedReview
+        reviewImmediately
       },
       'closest ancestor request': {
         'tool name': 'listPages',

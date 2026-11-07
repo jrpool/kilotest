@@ -20,7 +20,7 @@ type ResponseContent = z.infer<typeof requestRetestResponseSchema>['response con
 // Returns the response body.
 export const response = async (args: string[]) => {
   const [reportID = '', reason = '', review = ''] = args;
-  const immediateAutomatedReview = review === 'true';
+  const reviewImmediately = review === 'true';
   const thisHost = getThisHost();
   const reasonCheck = checkLength(reason, 20, 100, 'reason');
   // Initialize the response-content properties.
@@ -40,12 +40,12 @@ export const response = async (args: string[]) => {
   }
   // Otherwise, i.e. if the request is facially valid:
   else {
-    // If automated review was requested, order the retest: enqueue the job directly, with no
-    // manual-approval step, gated only by the lightweight checks orderJob itself performs
+    // If immediate review was requested, order the retest: enqueue the job directly, with no
+    // management-approval step, gated only by the lightweight checks orderJob itself performs
     // (the target is not already claimed or queued, and the job queue is not already full).
-    // Otherwise process the request for manager approval. Either path resolves the cited
-    // report's description and URL itself.
-    const processResult = immediateAutomatedReview
+    // Otherwise process the request for approval by management. Either path resolves the
+    // cited report's description and URL itself.
+    const processResult = reviewImmediately
       ? await orderJob({reportID}, reason)
       : await processTestRequest(reason, {reportID});
     // If the cited report does not exist:
@@ -66,8 +66,8 @@ export const response = async (args: string[]) => {
         },
         'reason why the page should be retested': reason
       };
-      // If automated review ran:
-      if (immediateAutomatedReview) {
+      // If immediate review ran:
+      if (reviewImmediately) {
         // Add information about the disposition of the request.
         if (requestResult === 'ok' && 'reportID' in processResult && typeof processResult.reportID === 'string') {
           const orderedReportID = processResult.reportID;
@@ -90,7 +90,7 @@ export const response = async (args: string[]) => {
           };
         }
       }
-      // Otherwise, i.e. if manager review ran:
+      // Otherwise, i.e. if management review ran:
       else {
         // Add information about the disposition of the request.
         requestDisposition = buildRequestDisposition(
@@ -120,7 +120,7 @@ export const response = async (args: string[]) => {
       URL: `${thisHost}/api/requestRetest/${reportID}`,
       body: {
         reason,
-        immediateAutomatedReview
+        reviewImmediately
       },
       'closest ancestor request': {
         'tool name': 'listIssues',

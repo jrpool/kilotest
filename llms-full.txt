@@ -129,7 +129,7 @@ Kilotest offers these tools:
     - `description`: description of the page to be tested
     - `URL`: URL of the page to be tested
     - `reason`: reason for testing the page
-    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for manager review
+    - `reviewImmediately`: optional; `true` selects immediate review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for review by management
 - `requestRetest`
   - method: `POST`
   - purpose: request retesting of a page about which a report is available
@@ -139,7 +139,7 @@ Kilotest offers these tools:
   - source of parameters: response to a `listIssues` request
   - payload properties
     - `reason`: reason for retesting the page
-    - `immediateAutomatedReview`: optional; `true` selects automated review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for manager review
+    - `reviewImmediately`: optional; `true` selects immediate review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for review by management
 - `requestFeature`
   - method: `POST`
   - purpose: request a feature improvement or a new feature
@@ -148,7 +148,7 @@ Kilotest offers these tools:
     - `feature`: description and motivation of the feature improvement or the new feature
 - `awaitTest`
   - method: `POST`
-  - purpose: wait for a job ordered via the `requestNewTest` or `requestRetest` tool with `immediateAutomatedReview` set to `true` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
+  - purpose: wait for a job ordered via the `requestNewTest` or `requestRetest` tool with `reviewImmediately` set to `true` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
   - path: `/api/awaitTest/{reportID}`
   - parameters
     - `reportID`: the report identifier returned by an immediately reviewed `requestNewTest` or `requestRetest` request
@@ -169,7 +169,7 @@ When you request a test or a retest:
   - check test completion by calling `listPages` and looking for the page in the list
   - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listPages.html`
 
-For immediate testing without waiting for manual approval, set `immediateAutomatedReview` to `true` in a `requestNewTest` or `requestRetest` request. That enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
+For immediate testing without waiting for review by management, set `reviewImmediately` to `true` in a `requestNewTest` or `requestRetest` request. That enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 

@@ -99,9 +99,9 @@ test('requestRetest rejects a superseded report', async () => {
   assert.ok(!logged.some(line => line.includes('request for a retest awaits approval')));
 });
 
-test('requestRetest rejects a superseded report under immediateAutomatedReview', async () => {
-  // The same superseded failure as the manager-review test above, but reported by the
-  // automated review's orderJob path (third argument 'true').
+test('requestRetest rejects a superseded report under reviewImmediately', async () => {
+  // The same superseded failure as the management-review test above, but reported by the
+  // immediate review's orderJob path (third argument 'true').
   const body = await response(['260101T0000-mix', 'A reason that is long enough.', 'true']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);

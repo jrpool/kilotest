@@ -27,15 +27,15 @@ Results are organized as a hierarchy:
    - Use `listViolators` to inspect elements violating rules belonging to an issue.
    - Use `listDiagnoses` to inspect diagnoses by rule engines of violations of applicable rules by an element.
    - Use `getReport` to retrieve an entire JSON report.
-   - Use `requestRetest` if the latest report is obsolete and you want the page retested, setting `immediateAutomatedReview` to true for immediate, automatically reviewed retesting.
+   - Use `requestRetest` if the latest report is obsolete and you want the page retested, setting `reviewImmediately` to true for immediate review.
 3. If the page has not been tested:
-   - Use `requestNewTest` if you want the page tested, setting `immediateAutomatedReview` to true for immediate, automatically reviewed testing.
+   - Use `requestNewTest` if you want the page tested, setting `reviewImmediately` to true for immediate review.
 
 ## Test request and order processing
 
-A test or retest **request** is reviewed by a manager. If approved, the testing is typically performed within a day.
+A test or retest **request** is reviewed by management. If approved, the testing is typically performed within a day.
 
-A test or retest **order** is reviewed automatically and immediately. If it is approved, you get a report identifier. You can then use `awaitTest`, with the identifier, to await test completion, which typically takes 2 to 4 minutes, or you can later use `listIssues` with the identifier to check the status.
+A test or retest **order** is reviewed immediately. If it is approved, you get a report identifier. You can then use `awaitTest`, with the identifier, to await test completion, which typically takes 2 to 4 minutes, or you can later use `listIssues` with the identifier to check the status.
 
 ## Reporting to users
 

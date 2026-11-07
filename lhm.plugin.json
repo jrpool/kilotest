@@ -2219,7 +2219,7 @@
     },
     {
       "name": "questionDiagnosis",
-      "description": "Questions or contests a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.",
+      "description": "Questions or contests a diagnosis shown by the listDiagnoses tool; queued for review by management. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2830,7 +2830,7 @@
     },
     {
       "name": "requestNewTest",
-      "description": "Submits a request to test a page that has no report yet. Set immediateAutomatedReview to true for automated review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for manager approval, which typically takes 1 hour to 1 day. The description uniquely names the page in later listPages output and the reason is what the reviewer evaluates. A refusal, such as an existing report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on automated approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
+      "description": "Submits a request to test a page that has no report yet. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The description uniquely names the page in later listPages output and the reason is what the reviewer evaluates. A refusal, such as an existing report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2851,10 +2851,10 @@
             "type": "string",
             "minLength": 20,
             "maxLength": 100,
-            "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+            "description": "20- to 100-character justification evaluated by the reviewer selected by reviewImmediately"
           },
-          "immediateAutomatedReview": {
-            "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+          "reviewImmediately": {
+            "description": "true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management",
             "type": "boolean"
           }
         },
@@ -2907,10 +2907,10 @@
                     "type": "string",
                     "minLength": 20,
                     "maxLength": 100,
-                    "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+                    "description": "20- to 100-character justification evaluated by the reviewer selected by reviewImmediately"
                   },
-                  "immediateAutomatedReview": {
-                    "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+                  "reviewImmediately": {
+                    "description": "true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management",
                     "type": "boolean"
                   }
                 },
@@ -3232,7 +3232,7 @@
     },
     {
       "name": "requestRetest",
-      "description": "Submits a request to retest a page whose existing report is considered obsolete. Set immediateAutomatedReview to true for automated review with immediate approval or rejection and immediate enqueuing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for manager approval, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on automated approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
+      "description": "Submits a request to retest a page whose existing report is considered obsolete. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3245,10 +3245,10 @@
             "type": "string",
             "minLength": 20,
             "maxLength": 100,
-            "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+            "description": "20- to 100-character justification evaluated by the reviewer selected by reviewImmediately"
           },
-          "immediateAutomatedReview": {
-            "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+          "reviewImmediately": {
+            "description": "true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management",
             "type": "boolean"
           }
         },
@@ -3287,10 +3287,10 @@
                     "type": "string",
                     "minLength": 20,
                     "maxLength": 100,
-                    "description": "20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview"
+                    "description": "20- to 100-character justification evaluated by the reviewer selected by reviewImmediately"
                   },
-                  "immediateAutomatedReview": {
-                    "description": "true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval",
+                  "reviewImmediately": {
+                    "description": "true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management",
                     "type": "boolean"
                   }
                 },
@@ -3610,7 +3610,7 @@
     },
     {
       "name": "requestFeature",
-      "description": "Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text is the proposal the manager evaluates; a request identical to one already submitted is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.",
+      "description": "Submits a request to add a new feature or improve an existing one; queued for review by management. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text describes the proposed feature or improvement. A request identical to one awaiting review is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3896,7 +3896,7 @@
     },
     {
       "name": "awaitTest",
-      "description": "Waits for a job that a requestNewTest or requestRetest call with immediateAutomatedReview set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
+      "description": "Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
       "inputSchema": {
         "type": "object",
         "properties": {

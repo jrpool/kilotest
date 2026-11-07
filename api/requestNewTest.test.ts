@@ -139,9 +139,9 @@ test('requestNewTest rejects an already-tested page', async () => {
   assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
 });
 
-test('requestNewTest rejects an already-tested page under immediateAutomatedReview', async () => {
-  // The same reportExists failure as the manager-review test above, but reported by the
-  // automated review's orderJob path (fourth argument 'true').
+test('requestNewTest rejects an already-tested page under reviewImmediately', async () => {
+  // The same reportExists failure as the management-review test above, but reported by the
+  // immediate review's orderJob path (fourth argument 'true').
   const body = await response(['Mixed Outcomes', 'https://example.com/mixed', 'A reason that is long enough.', 'true']);
   const details = body['response content']['details about your request'] as any;
   assert.equal(details.error, undefined);

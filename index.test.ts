@@ -621,13 +621,13 @@ test('POST /api/requestFeature with valid JSON returns a JSON response and recor
   assert.equal(await getMetricCount('apiOperations', 'requestFeature'), countBefore + 1);
 });
 
-test('POST /api/requestNewTest with immediateAutomatedReview enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
+test('POST /api/requestNewTest with reviewImmediately enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
   const countBefore = await getMetricCount('apiOperations', 'requestNewTest');
   const res = await request('POST', '/api/requestNewTest', {
     description: `API Ordered Page ${uniqueStamp}`,
     URL: `https://example.com/api-ordered-${uniqueStamp}`,
     reason: 'Because accessibility matters here',
-    immediateAutomatedReview: true
+    reviewImmediately: true
   });
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
@@ -638,11 +638,11 @@ test('POST /api/requestNewTest with immediateAutomatedReview enqueues a job dire
   await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier}.json`));
 });
 
-test('POST /api/requestRetest/260202T0000-new with immediateAutomatedReview enqueues a job directly and records an API-operation metric', async () => {
+test('POST /api/requestRetest/260202T0000-new with reviewImmediately enqueues a job directly and records an API-operation metric', async () => {
   const countBefore = await getMetricCount('apiOperations', 'requestRetest');
   const res = await request('POST', '/api/requestRetest/260202T0000-new', {
     reason: 'Because the report is obsolete and needs refreshing',
-    immediateAutomatedReview: true
+    reviewImmediately: true
   });
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);

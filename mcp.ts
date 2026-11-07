@@ -54,7 +54,7 @@ const kilotestOverview = [
   sharedContext,
   'Results are organized as a hierarchy: tested pages; for each tested page, reports from the tests of the page; for each report, issues reported; for each issue, violators of rules belonging to the issue (a violator is an element or the whole page); for each violator, diagnoses by rule engines of its violations.',
   'Typical workflow: call the listPages tool to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
-  'The requestNewTest and requestRetest tools take an immediateAutomatedReview parameter: set it to true for automated review with immediate approval or rejection and immediate enqueueing if approved, or to false to queue the request for manager approval. Automated approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
+  'The requestNewTest and requestRetest tools take a reviewImmediately parameter: set it to true for immediate review with immediate approval or rejection and immediate enqueueing if approved, or to false to queue the request for review by management. Immediate approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
 
@@ -68,7 +68,7 @@ export const createMCPServer = (): McpServer => {
     description: collectionDescription
   },
   {
-    instructions: `${sharedContext} Use the listPages tool to start. If it shows that the page you want facts about has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, setting its immediateAutomatedReview parameter to true for immediate, automatically reviewed testing. If the latest report about the page is obsolete, use the requestRetest tool the same way. For detailed documentation, call the getOverview tool.`
+    instructions: `${sharedContext} Use the listPages tool to start. If it shows that the page you want facts about has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, setting its reviewImmediately parameter to true for immediate review. If the latest report about the page is obsolete, use the requestRetest tool the same way. For detailed documentation, call the getOverview tool.`
   });
   server.registerTool(
     'getOverview',
@@ -171,7 +171,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'questionDiagnosis',
     {
-      description: 'Questions or contests a diagnosis shown by the listDiagnoses tool; queued for manager review. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.',
+      description: 'Questions or contests a diagnosis shown by the listDiagnoses tool; queued for review by management. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.',
       inputSchema: questionDiagnosisSchema,
       outputSchema: questionDiagnosisResponseSchema,
       annotations: {
@@ -211,7 +211,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Submits a request to test a page that has no report yet. Set immediateAutomatedReview to true for automated review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for manager approval, which typically takes 1 hour to 1 day. The description uniquely names the page in later listPages output and the reason is what the reviewer evaluates. A refusal, such as an existing report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on automated approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Submits a request to test a page that has no report yet. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The description uniquely names the page in later listPages output and the reason is what the reviewer evaluates. A refusal, such as an existing report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
@@ -222,8 +222,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: true
       }
     },
-    async ({description, URL, reason, immediateAutomatedReview = false}) => {
-      const result = await requestNewTestAPI.response([description, URL, reason, String(immediateAutomatedReview === true)]);
+    async ({description, URL, reason, reviewImmediately = false}) => {
+      const result = await requestNewTestAPI.response([description, URL, reason, String(reviewImmediately === true)]);
       await recordMetric('mcpToolCalls', 'requestNewTest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -231,7 +231,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Submits a request to retest a page whose existing report is considered obsolete. Set immediateAutomatedReview to true for automated review with immediate approval or rejection and immediate enqueuing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for manager approval, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on automated approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Submits a request to retest a page whose existing report is considered obsolete. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
@@ -242,8 +242,8 @@ export const createMCPServer = (): McpServer => {
         openWorldHint: true
       }
     },
-    async ({reportID, reason, immediateAutomatedReview = false}) => {
-      const result = await requestRetestAPI.response([reportID, reason, String(immediateAutomatedReview === true)]);
+    async ({reportID, reason, reviewImmediately = false}) => {
+      const result = await requestRetestAPI.response([reportID, reason, String(reviewImmediately === true)]);
       await recordMetric('mcpToolCalls', 'requestRetest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -251,7 +251,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Submits a request to add a new feature or improve an existing one; queued for manager review. There is no immediate-approval alternative for feature requests. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text is the proposal the manager evaluates; a request identical to one already submitted is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.',
+      description: 'Submits a request to add a new feature or improve an existing one; queued for review by management. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text describes the proposed feature or improvement. A request identical to one awaiting review is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
@@ -271,7 +271,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'awaitTest',
     {
-      description: 'Waits for a job that a requestNewTest or requestRetest call with immediateAutomatedReview set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
+      description: 'Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {

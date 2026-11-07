@@ -59,11 +59,11 @@ export const getToolsFacts = () => ({
       'level 4': 'Use the listDiagnoses tool to get a list of diagnoses of how one element on one page exhibited one issue in one report.',
     },
     'how to generate more findings': {
-      'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested; for immediate testing set its immediateAutomatedReview parameter to true.',
-      'retesting': 'If you believe that the latest report about a page is obsolete (e.g., because the page has been revised), use the requestRetest tool to request that the page be retested; for immediate retesting set its immediateAutomatedReview parameter to true.',
-      'approval': 'Requests are manager-reviewed, usually in 1 hour to one day. Orders are automatically reviewed. Reviews result in approval or rejection.',
+      'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested; for immediate testing set its reviewImmediately parameter to true.',
+      'retesting': 'If you believe that the latest report about a page is obsolete (e.g., because the page has been revised), use the requestRetest tool to request that the page be retested; for immediate retesting set its reviewImmediately parameter to true.',
+      'approval': 'Requests are reviewed by management, usually in 1 hour to one day. Orders are reviewed immediately. Reviews result in approval or rejection.',
       'latency': 'An approved test typically finishes in 2 to 4 minutes.',
-      'request confirmation': 'After submitting a request and waiting for manager review, you can use the listPages tool to determine whether the request has been fulfilled: a new-test request adds a page entry linking to its results, and a retest request adds a later report about the page.',
+      'request confirmation': 'After submitting a request and waiting for review by management, you can use the listPages tool to determine whether the request has been fulfilled: a new-test request adds a page entry linking to its results, and a retest request adds a later report about the page.',
       'order confirmation': 'After ordering a test or retest, you will receive a rejection or a report identifier, which you can use to call the awaitTest tool. That tool blocks until the test completes, fails, or a maximum wait time elapses, and then returns the outcome. If you do not call awaitTest, you can wait 2 to 4 minutes and then, if the test is complete, the listIssues tool called with the report identifier will succeed.'
     }
   },

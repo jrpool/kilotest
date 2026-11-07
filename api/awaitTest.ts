@@ -75,7 +75,7 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'awaitTest',
     'this request': {
-      description: 'Wait for a job ordered via a requestNewTest or requestRetest request with immediateAutomatedReview set to true to complete. The reportID parameter is the report identifier that request returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
+      description: 'Wait for a job ordered via a requestNewTest or requestRetest request with reviewImmediately set to true to complete. The reportID parameter is the report identifier that request returned. This call blocks until the report is ready, the job fails, or a maximum wait time elapses.',
       method: 'POST',
       URL: `${thisHost}/api/awaitTest/${reportID}`,
       // awaitTest's own parameters do not say whether the job was ordered via
@@ -84,13 +84,13 @@ export const response = async (args: string[]) => {
       'closest ancestor request': [
         {
           'tool name': 'requestNewTest',
-          description: 'Fulfill or reject my request to test a page about which no report is available yet, with immediateAutomatedReview set to true.',
+          description: 'Fulfill or reject my request to test a page about which no report is available yet, with reviewImmediately set to true.',
           method: 'POST',
           URL: `${thisHost}/api/requestNewTest`
         },
         {
           'tool name': 'requestRetest',
-          description: 'Fulfill or reject my request to retest a page, with immediateAutomatedReview set to true.',
+          description: 'Fulfill or reject my request to retest a page, with reviewImmediately set to true.',
           method: 'POST',
           URL: `${thisHost}/api/requestRetest/${reportID}`
         }

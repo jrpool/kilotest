@@ -164,7 +164,7 @@ test('requestNewTest handler returns content and structuredContent', async () =>
     description: 'Test Page',
     URL: 'https://example.com/test',
     reason: 'Because accessibility matters',
-    immediateAutomatedReview: false
+    reviewImmediately: false
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -178,7 +178,7 @@ test('requestRetest handler returns content and structuredContent for a valid re
   const result = await (server as any)._registeredTools.requestRetest.handler({
     reportID: '260101T0000-mix',
     reason: 'Because the report is obsolete',
-    immediateAutomatedReview: false
+    reviewImmediately: false
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -215,7 +215,7 @@ test('questionDiagnosis handler returns content and structuredContent', async ()
   assert.equal(getToolCallCount('questionDiagnosis'), countBefore + 1);
 });
 
-test('requestNewTest handler with immediateAutomatedReview enqueues a job and returns request-vocabulary keys', async () => {
+test('requestNewTest handler with reviewImmediately enqueues a job and returns request-vocabulary keys', async () => {
   const {jobsPath} = await import('./util.ts');
   const server = createMCPServer();
   const countBefore = getToolCallCount('requestNewTest');
@@ -223,7 +223,7 @@ test('requestNewTest handler with immediateAutomatedReview enqueues a job and re
     description: 'MCP Ordered Page',
     URL: 'https://example.com/mcp-ordered',
     reason: 'Because accessibility matters here',
-    immediateAutomatedReview: true
+    reviewImmediately: true
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
@@ -238,16 +238,16 @@ test('requestNewTest handler with immediateAutomatedReview enqueues a job and re
   fs.unlinkSync(queuedPath);
 });
 
-test('requestRetest handler with immediateAutomatedReview enqueues a job and returns request-vocabulary keys', async () => {
+test('requestRetest handler with reviewImmediately enqueues a job and returns request-vocabulary keys', async () => {
   const {jobsPath} = await import('./util.ts');
   const server = createMCPServer();
   const countBefore = getToolCallCount('requestRetest');
   // 260202T0000-new is the latest report of "Mixed Outcomes" (260101T0000-mix is an
-  // earlier, superseded report of the same page), so the automated review accepts it.
+  // earlier, superseded report of the same page), so the immediate review accepts it.
   const result = await (server as any)._registeredTools.requestRetest.handler({
     reportID: '260202T0000-new',
     reason: 'Because the report is obsolete',
-    immediateAutomatedReview: true
+    reviewImmediately: true
   });
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');

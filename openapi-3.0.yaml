@@ -1040,9 +1040,9 @@ paths:
                   type: string
                   minLength: 20
                   maxLength: 100
-                  description: 20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview
-                immediateAutomatedReview:
-                  description: true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval
+                  description: 20- to 100-character justification evaluated by the reviewer selected by reviewImmediately
+                reviewImmediately:
+                  description: true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management
                   type: boolean
               required:
                 - description
@@ -1089,9 +1089,9 @@ paths:
                             type: string
                             minLength: 20
                             maxLength: 100
-                            description: 20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview
-                          immediateAutomatedReview:
-                            description: true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval
+                            description: 20- to 100-character justification evaluated by the reviewer selected by reviewImmediately
+                          reviewImmediately:
+                            description: true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management
                             type: boolean
                         required:
                           - description
@@ -1203,7 +1203,7 @@ paths:
                   type: string
                   minLength: 20
                   maxLength: 100
-                  description: 20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview
+                  description: 20- to 100-character justification evaluated by the reviewer selected by reviewImmediately
               required:
                 - reason
       responses:
@@ -1236,9 +1236,9 @@ paths:
                             type: string
                             minLength: 20
                             maxLength: 100
-                            description: 20- to 100-character justification evaluated by the reviewer selected by immediateAutomatedReview
-                          immediateAutomatedReview:
-                            description: true for automated review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for manager approval
+                            description: 20- to 100-character justification evaluated by the reviewer selected by reviewImmediately
+                          reviewImmediately:
+                            description: true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management
                             type: boolean
                         required:
                           - reason

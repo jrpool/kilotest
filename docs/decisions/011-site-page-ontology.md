@@ -104,9 +104,9 @@ These rules govern both the migration and later reviews.
 ### Migration
 
 1. A dry-run script (`scripts/propose-site-mapping.ts`, writing `db/siteMapping.json` by default) reads every report in `db/reports` and `db/hiddenReports`, proposes a site and page for each distinct description by longest-prefix matching against other descriptions, and writes a reviewable mapping file. It flags low-confidence proposals: no home-page entry, one name on different domains, near-duplicate names, and pages whose host differs from their site’s home page. It changes no reports.
-1. The maintainer edits the mapping file to resolve flagged cases according to the site-assignment rules.
+1. The maintainer edits the mapping file to resolve flagged cases according to the site-assignment rules. Entries with identical site and page values are thereby merged into one page, whose report history combines theirs; this is how two descriptions of the same page (for example, of the home page of one site reached at two domains) are unified.
 1. Before the migration runs, both `rclone copy` commands documented in `SERVICE.md` are run manually so that R2 is current, and a local archive of both report directories is made.
-1. The migration script creates `db/sites.json` and adds the four `sources` properties to every report, changing nothing else. It is idempotent: it skips reports that already have identifiers, so it can be rerun after any restoration from an older backup.
+1. The migration script creates `db/sites.json` and adds the four `sources` properties to every report, changing nothing else. It first validates the edited mapping file and refuses to run if any report has a description with no entry, or if any entry has an empty site or page value. It then previews its plan, listing every merge of several descriptions into one page so that an accidental merge can be noticed, and proceeds only on confirmation. It is idempotent: it skips reports that already have identifiers, so it can be rerun after any restoration from an older backup.
 1. Both `rclone copy` commands are run again immediately. Because every report changes, R2 moves every pre-migration copy into the dated `-old` folders, which become the rollback set. The log is checked to confirm this.
 1. `db/reportsExtract.json` is deleted so that it is regenerated with the new fields.
 

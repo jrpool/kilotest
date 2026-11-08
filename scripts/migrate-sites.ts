@@ -17,7 +17,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'node:readline/promises';
-import {dbPath, getJSON, getRandomString, hiddenReportsPath, reportsPath} from '../util.ts';
+import {getNewID, registryPath} from '../registry.ts';
+import type {Registry} from '../registry.ts';
+import {getJSON, hiddenReportsPath, reportsPath} from '../util.ts';
 
 // TYPES
 
@@ -26,23 +28,6 @@ export type MappingEntry = {
   description: string;
   site: string;
   page: string;
-};
-// A site in the registry.
-export type SiteRecord = {
-  name: string;
-  created: string | null;
-};
-// A page in the registry.
-export type PageRecord = {
-  sites: string[];
-  name: string;
-  url: string;
-  created: string | null;
-};
-// The site registry.
-export type Registry = {
-  sites: Record<string, SiteRecord>;
-  pages: Record<string, PageRecord>;
 };
 // A report file and its content.
 export type ReportFile = {
@@ -68,26 +53,8 @@ export type Plan = {
   alreadyMigrated: number;
 };
 
-// CONSTANTS
-
-// Lengths of the random parts of site and page identifiers.
-const siteIDLength = 6;
-const pageIDLength = 8;
-
 // FUNCTIONS
 
-// Returns the path of the site registry.
-export const registryPath = (): string => path.join(dbPath(), 'sites.json');
-// Returns a time stamp in the job format (YYMMDDTHHmm, UTC) as an ISO date and time, or null if it is not one.
-export const stampToISO = (stamp: unknown): string | null => {
-  // If the stamp has the job format:
-  const match = typeof stamp === 'string' ? stamp.match(/^(\d{2})(\d{2})(\d{2})T(\d{2})(\d{2})$/) : null;
-  if (match) {
-    const [, year, month, day, hour, minute] = match;
-    return `20${year}-${month}-${day}T${hour}:${minute}:00.000Z`;
-  }
-  return null;
-};
 // Returns the mapping entries in a parsed mapping file, or an error describing why it is invalid.
 export const getMappingEntries = (mapping: unknown): MappingEntry[] | {error: string} => {
   const pages = (mapping as any)?.pages;
@@ -144,15 +111,6 @@ export const getReportFiles = (dir: string): {files: ReportFile[]; unreadable: s
   }
   return {files, unreadable};
 };
-// Returns a new identifier with a prefix and a random part of a length, not already used in a set.
-const getNewID = (prefix: string, length: number, used: Set<string>): string => {
-  let id: string;
-  do {
-    id = `${prefix}${getRandomString(length)}`;
-  } while (used.has(id));
-  used.add(id);
-  return id;
-};
 // Returns the plan of a migration, given the mapping entries, the report files, and the existing registry.
 export const getPlan = (
   entries: MappingEntry[], reportFiles: ReportFile[], existingRegistry: Registry
@@ -208,12 +166,11 @@ export const getPlan = (
   const updates: Plan['updates'] = [];
   // For each site:
   for (const [siteName, sitePages] of groups) {
-    const siteReports = [...sitePages.values()].flat().flatMap(entry => reportsByDescription.get(entry.description)!);
     // Get its identifier, creating a site if none has its name.
-    let siteID = Object.keys(registry.sites).find(id => registry.sites[id]!.name === siteName);
+    let siteID = Object.keys(registry.sites).find(id => registry.sites[id] === siteName);
     if (!siteID) {
-      siteID = getNewID('s-', siteIDLength, usedIDs);
-      registry.sites[siteID] = {name: siteName, created: getEarliest(siteReports)};
+      siteID = getNewID('site', usedIDs);
+      registry.sites[siteID] = siteName;
       newSiteIDs.push(siteID);
     }
     // For each page of the site:
@@ -227,13 +184,8 @@ export const getPlan = (
       let pageID = Object.keys(registry.pages)
       .find(id => registry.pages[id]!.name === pageName && registry.pages[id]!.sites.includes(siteID));
       if (!pageID) {
-        pageID = getNewID('p-', pageIDLength, usedIDs);
-        registry.pages[pageID] = {
-          sites: [siteID],
-          name: pageName,
-          url: getLatestURL(pageReports),
-          created: getEarliest(pageReports)
-        };
+        pageID = getNewID('page', usedIDs);
+        registry.pages[pageID] = {sites: [siteID], name: pageName, url: getLatestURL(pageReports)};
         newPageIDs.push(pageID);
       }
       // Plan the update of each of its reports.
@@ -244,11 +196,6 @@ export const getPlan = (
   }
   return {errors, warnings, registry, newSiteIDs, newPageIDs, merges, updates, alreadyMigrated};
 };
-// Returns the earliest job creation time of reports as an ISO date and time, or null if none has one.
-const getEarliest = (reportFiles: ReportFile[]): string | null => reportFiles
-.map(({report}) => stampToISO(report?.creationTimeStamp))
-.filter((time): time is string => time !== null)
-.sort()[0] ?? null;
 // Returns the URL of the report with the latest completion time, or of the last report if none has one.
 const getLatestURL = (reportFiles: ReportFile[]): string => {
   const sorted = [...reportFiles]
@@ -271,7 +218,7 @@ export const applyPlan = (plan: Plan): void => {
   }
 };
 // Returns the existing registry, or an empty one if there is none.
-export const getRegistry = (): Registry => fs.existsSync(registryPath())
+export const getRegistrySync = (): Registry => fs.existsSync(registryPath())
   ? JSON.parse(fs.readFileSync(registryPath(), 'utf8'))
   : {sites: {}, pages: {}};
 
@@ -294,7 +241,7 @@ if (import.meta.main) {
   const reports = getReportFiles(reportsPath());
   const hiddenReports = getReportFiles(hiddenReportsPath());
   const unreadable = [...reports.unreadable, ...hiddenReports.unreadable];
-  const plan = getPlan(entries, [...reports.files, ...hiddenReports.files], getRegistry());
+  const plan = getPlan(entries, [...reports.files, ...hiddenReports.files], getRegistrySync());
   plan.errors.unshift(...unreadable.map(filePath => `${filePath} is unreadable or not JSON.`));
   // Preview the plan.
   console.log(`Mapping: ${mappingPath}`);

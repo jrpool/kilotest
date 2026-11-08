@@ -14,7 +14,11 @@
     "url": "https://example.com/mixed"
   },
   "sources": {
-    "worker": "test-worker"
+    "worker": "test-worker",
+    "siteID": "s-fixtur",
+    "pageID": "p-mixedout",
+    "siteName": "Fixture Site",
+    "pageName": "Mixed Outcomes"
   },
   "acts": [
     {

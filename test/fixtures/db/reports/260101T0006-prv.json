@@ -14,7 +14,11 @@
     "url": "https://example.com/prevented"
   },
   "sources": {
-    "worker": "test-worker"
+    "worker": "test-worker",
+    "siteID": "s-fixtur",
+    "pageID": "p-prevente",
+    "siteName": "Fixture Site",
+    "pageName": "Prevented Page"
   },
   "acts": [
     {

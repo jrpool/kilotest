@@ -32,7 +32,7 @@ const retestFixtureReport = {
   id: '260101T0003-ret',
   what: 'Retest Fixture Page',
   target: {what: 'Retest Fixture Page', url: 'https://example.com/retestfixture'},
-  sources: {worker: 'test-worker'},
+  sources: {worker: 'test-worker', pageID: 'p-retestfx'},
   acts: [],
   jobData: {startTime: '26-01-01T00:00', endTime: '26-01-01T00:10', elapsedSeconds: 600, preventions: {}, issuelessRules: []},
   catalog: {},

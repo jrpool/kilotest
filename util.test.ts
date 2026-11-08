@@ -41,7 +41,9 @@ import {
   getRandomString,
   getReportEndTime,
   getReportExtract,
+  getPageReportExtracts,
   getReportExtracts,
+  getReportPageID,
   getReportPath,
   getReportStats,
   getTimeStamp,
@@ -1671,8 +1673,9 @@ test('getReportExtracts reflects reports added, modified, and removed after a pr
     await fs.utimes(firstPath, later, later);
     extracts = await getReportExtracts();
     assert.deepEqual(extracts.map(e => e.description), ['Revised Page']);
-    // Add a report.
+    // Add a report about another page.
     report.target.what = 'Added Page';
+    report.sources.pageID = 'p-addedpag';
     const secondPath = path.join(tmpReportsDir, '260101T0001-bbb.json');
     await fs.writeFile(secondPath, JSON.stringify(report));
     extracts = await getReportExtracts();
@@ -2152,5 +2155,51 @@ test('awaitJob returns "timedOut" when a claimed job neither completes nor fails
     delete process.env.AWAIT_JOB_POLL_MS;
     delete process.env.AWAIT_JOB_TIMEOUT_MS;
     await fs.unlink(claimedPath);
+  }
+});
+
+test('getReportPageID returns the page identifier of a report, or an empty string if it has none', () => {
+  assert.equal(getReportPageID({sources: {pageID: 'p-mixedout'}}), 'p-mixedout');
+  assert.equal(getReportPageID({sources: {pageID: 7}}), '');
+  assert.equal(getReportPageID({}), '');
+});
+
+test('report extracts group reports by page identifier, not description, and omit unmigrated reports', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-pages-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  const savedDbDir = process.env.DB_DIR;
+  const sourcePath = path.join(reportsPath(), '260101T0000-mix.json');
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    await fs.mkdir(tmpReportsDir, {recursive: true});
+    const report = JSON.parse(await fs.readFile(sourcePath, 'utf8'));
+    // Write two reports about one page with different descriptions, the later one with the earlier description.
+    report.target.what = 'Zeta Page';
+    report.jobData.endTime = '26-01-01T00:10';
+    await fs.writeFile(path.join(tmpReportsDir, '260101T0000-aaa.json'), JSON.stringify(report));
+    report.target.what = 'Alpha Page';
+    report.jobData.endTime = '26-02-01T00:10';
+    await fs.writeFile(path.join(tmpReportsDir, '260201T0000-bbb.json'), JSON.stringify(report));
+    // Write a report without a page identifier.
+    delete report.sources.pageID;
+    await fs.writeFile(path.join(tmpReportsDir, '260301T0000-ccc.json'), JSON.stringify(report));
+    const extracts = await getReportExtracts();
+    assert.deepEqual(
+      extracts.map(({id, superseded}) => [id, superseded]),
+      [['260201T0000-bbb', undefined], ['260101T0000-aaa', true]]
+    );
+    assert.deepEqual((await getReportExtracts(true)).map(({id}) => id), ['260201T0000-bbb']);
+    // The page history is chronological, whatever the descriptions.
+    assert.deepEqual(
+      (await getPageReportExtracts('p-mixedout')).map(({id}) => id), ['260101T0000-aaa', '260201T0000-bbb']
+    );
+    assert.deepEqual(await getPageReportExtracts(''), []);
+    // The unmigrated report was not quarantined.
+    assert.equal((await fs.readdir(tmpReportsDir)).includes('260301T0000-ccc.json'), true);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
   }
 });

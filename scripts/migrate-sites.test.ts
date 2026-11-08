@@ -10,8 +10,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {applyPlan, getMappingEntries, getPlan, getRegistry, getReportFiles, registryPath, stampToISO} from './migrate-sites.ts';
-import type {MappingEntry, Registry} from './migrate-sites.ts';
+import {applyPlan, getMappingEntries, getPlan, getRegistrySync, getReportFiles} from './migrate-sites.ts';
+import type {MappingEntry} from './migrate-sites.ts';
+import {registryPath} from '../registry.ts';
+import type {Registry} from '../registry.ts';
 
 // FUNCTIONS
 
@@ -80,11 +82,6 @@ const hiddenReports = {
 
 // TESTS
 
-test('stampToISO converts job time stamps and rejects anything else', () => {
-  assert.equal(stampToISO('261012T1913'), '2026-10-12T19:13:00.000Z');
-  assert.equal(stampToISO('26-10-12T19:13'), null);
-  assert.equal(stampToISO(undefined), null);
-});
 test('getMappingEntries accepts a valid mapping and strips other properties', () => {
   const result = getMappingEntries({pages: [{description: 'A', site: 'A', page: 'home', flags: [], urls: []}]});
   assert.deepEqual(result, [{description: 'A', site: 'A', page: 'home'}]);
@@ -130,12 +127,13 @@ test('getPlan merges descriptions with identical sites and pages and covers hidd
       assert.match(pageID, /^p-[0-9a-z]{8}$/);
     }
     const fireHome = Object.values(plan.registry.pages).find(page => page.name === 'home' && page.url.includes('fire'));
-    // The merged page takes the URL of its latest report and the creation time of its earliest.
-    assert.deepEqual(fireHome && [fireHome.url, fireHome.created], ['https://www.thefire.org/', '2026-05-03T17:04:00.000Z']);
-    const fireSite = Object.values(plan.registry.sites).find(site => site.name.startsWith('Foundation'));
-    assert.equal(fireSite?.created, '2026-05-03T17:04:00.000Z');
+    // A merged page takes the URL of its latest report.
+    assert.deepEqual(fireHome, {sites: [fireHome?.sites[0]], name: 'home', url: 'https://www.thefire.org/'});
+    assert.deepEqual(
+      Object.values(plan.registry.sites).sort(), ['Farm Sanctuary', 'Foundation for Individual Rights and Expression']
+    );
     const farmHome = Object.values(plan.registry.pages).find(page => page.url.includes('farm'));
-    assert.deepEqual(farmHome && [farmHome.url, farmHome.created], ['https://www.farmsanctuary.org/home', '2026-01-01T00:00:00.000Z']);
+    assert.equal(farmHome?.url, 'https://www.farmsanctuary.org/home');
   });
 });
 test('getPlan refuses reports with unmapped, missing, or unregistered identities', () => {
@@ -166,9 +164,9 @@ test('getPlan warns about mapping entries that no report needs', () => {
 });
 test('applyPlan writes the registry and adds only the four sources properties', () => {
   withDB(reports, hiddenReports, dbDir => {
-    const plan = getPlan(entries, getAllReportFiles(dbDir), getRegistry());
+    const plan = getPlan(entries, getAllReportFiles(dbDir), getRegistrySync());
     applyPlan(plan);
-    const registry: Registry = getRegistry();
+    const registry: Registry = getRegistrySync();
     assert.deepEqual(registry, plan.registry);
     const before = reports.r2;
     const after = readReport(dbDir, 'reports', 'r2');
@@ -179,7 +177,7 @@ test('applyPlan writes the registry and adds only the four sources properties', 
     assert.equal(sources.worker, beforeSources.worker);
     assert.equal(sources.siteName, 'Foundation for Individual Rights and Expression');
     assert.equal(sources.pageName, 'home');
-    assert.equal(registry.sites[sources.siteID]?.name, sources.siteName);
+    assert.equal(registry.sites[sources.siteID], sources.siteName);
     assert.deepEqual(registry.pages[sources.pageID]?.sites, [sources.siteID]);
     // The merged descriptions share one page.
     assert.equal(readReport(dbDir, 'reports', 'r1').sources.pageID, sources.pageID);
@@ -192,8 +190,8 @@ test('applyPlan writes the registry and adds only the four sources properties', 
 });
 test('a rerun after restoration reuses the registry identifiers and changes nothing else', () => {
   withDB(reports, hiddenReports, dbDir => {
-    applyPlan(getPlan(entries, getAllReportFiles(dbDir), getRegistry()));
-    const registry = getRegistry();
+    applyPlan(getPlan(entries, getAllReportFiles(dbDir), getRegistrySync()));
+    const registry = getRegistrySync();
     const migratedR3 = readReport(dbDir, 'reports', 'r3');
     // Restore one report from an older backup, without identifiers.
     fs.writeFileSync(path.join(dbDir, 'reports', 'r3.json'), JSON.stringify(reports.r3));
@@ -203,7 +201,7 @@ test('a rerun after restoration reuses the registry identifiers and changes noth
     assert.deepEqual([plan.newSiteIDs, plan.newPageIDs], [[], []]);
     assert.equal(plan.updates.length, 1);
     applyPlan(plan);
-    assert.deepEqual(getRegistry(), registry);
+    assert.deepEqual(getRegistrySync(), registry);
     assert.deepEqual(readReport(dbDir, 'reports', 'r3').sources, migratedR3.sources);
   });
 });

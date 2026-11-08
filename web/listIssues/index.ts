@@ -7,6 +7,7 @@
 
 import {
   getPageReportExtracts,
+  getReportPageID,
   getReport,
   getTestActInstances,
   isReportError,
@@ -125,10 +126,10 @@ const getIssuesData = (report: UsableReport): ResultsSummary & Record<string, an
 };
 // Returns data and HTML lines about the history of the reports about the page of a report.
 const getHistory = async (
-  reportID: string, description: string, margin: string = ''
+  reportID: string, pageID: string, margin: string = ''
 ): Promise<{isLatest: boolean, lines: string[]}> => {
   // Get extracts of all reports about the page, from oldest to latest.
-  const pageExtracts = await getPageReportExtracts(description);
+  const pageExtracts = await getPageReportExtracts(pageID);
   // The report's own extract may be absent if the report was quarantined between the
   // report read and the extract listing, so an empty list means "not latest".
   const lastExtract = pageExtracts[pageExtracts.length - 1];
@@ -206,7 +207,7 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
   query.target = description;
   query.testInfo = testInfo;
   const margin = ' '.repeat(6);
-  const history = await getHistory(reportID, description, ' '.repeat(8));
+  const history = await getHistory(reportID, getReportPageID(report), ' '.repeat(8));
   // Add a warning if the report is not the latest about the page.
   query.oldWarn = history.isLatest
   ? ''

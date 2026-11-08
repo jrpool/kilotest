@@ -115,6 +115,7 @@ test('listTopIssues handles reports with unclassified issue IDs', async () => {
       id: '260101T0004-unc',
       what: 'Unclassified Issue Page',
       target: {what: 'Unclassified Issue Page', url: 'https://example.com/unclassified'},
+      sources: {pageID: 'p-unclassi'},
       acts: [
         {
           type: 'test',

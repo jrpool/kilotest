@@ -18,6 +18,7 @@ import {
 import {
   getAgoDays,
   getPageReportExtracts,
+  getReportPageID,
   getReport,
   getReportStats,
   getTestActInstances,
@@ -68,7 +69,7 @@ export const response = async (args: string[]) => {
         browserID = null
       } = report;
       // Get extracts of all reports about the page, from oldest to latest.
-      const pageExtracts = await getPageReportExtracts(report.target.what);
+      const pageExtracts = await getPageReportExtracts(getReportPageID(report));
       const lastIndex = pageExtracts.length - 1;
       // Add the history of reports about the page to the response content.
       responseContent['history of reports about the page'] = pageExtracts.map((extract, index): ReportHistoryEntry => {

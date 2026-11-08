@@ -14,7 +14,11 @@
     "url": "https://example.com/canttell"
   },
   "sources": {
-    "worker": "test-worker"
+    "worker": "test-worker",
+    "siteID": "s-fixtur",
+    "pageID": "p-canttell",
+    "siteName": "Fixture Site",
+    "pageName": "All CantTell Page"
   },
   "acts": [
     {

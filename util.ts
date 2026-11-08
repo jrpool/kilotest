@@ -136,6 +136,7 @@ export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts
 // An extract of an available report.
 export type ReportExtract = {
   id: string;
+  pageID: string;
   description: string;
   url: string;
   reportTime: string;
@@ -860,9 +861,17 @@ export const getReportEndTime = (report: {jobData?: {endTime?: string}}): Date =
   `20${report.jobData?.endTime}Z`
 );
 
+// Returns the page identifier of a report, or an empty string if it has none (as is true of a
+// report from before the site/page migration that has been restored without being migrated).
+export const getReportPageID = (report: unknown): string => {
+  const pageID = (report as {sources?: {pageID?: unknown}}).sources?.pageID;
+  return typeof pageID === 'string' ? pageID : '';
+};
 // Returns an extract of an available report, or an error object if the report cannot
 // be used. An extract exists to expose a report in listings, so it shares getReport's
-// usability bar: a report too defective to expose must produce no extract.
+// usability bar: a report too defective to expose must produce no extract. A report
+// without a page identifier also produces no extract, because its page is unknown, but
+// it is not quarantined, because rerunning the site/page migration gives it one.
 export const getReportExtract = async (reportID: string): Promise<ReportExtract | {error: string}> => {
   const report = await getReport(reportID);
   // If the report is not usable:
@@ -870,12 +879,19 @@ export const getReportExtract = async (reportID: string): Promise<ReportExtract 
     // Return the reason.
     return report;
   }
+  const pageID = getReportPageID(report);
+  // If the report has no page identifier:
+  if (!pageID) {
+    // Return this.
+    return {error: `Report ${reportID} has no page identifier`};
+  }
   const {target, jobData} = report;
   const {what: description, url} = target;
   // Return an extract of it. Usability has already guaranteed these properties,
   // including a valid completion time.
   return {
     id: reportID,
+    pageID,
     description,
     url,
     reportTime: getReportEndTime({jobData}).toISOString()
@@ -937,21 +953,34 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   // Sort the extracts by page description and, secondarily, completion time.
   objectSort(extracts, 'reportTime', 'alpha');
   objectSort(extracts, 'description', 'alpha');
+  // Get the latest extract about each page. Extracts about one page may have different
+  // descriptions, so the latest is found by page identifier, not by adjacency; among
+  // extracts with equal completion times, the last in the sorted order is the latest.
+  const latestExtracts = new Map<string, ReportExtract>();
+  for (const extract of extracts) {
+    const latest = latestExtracts.get(extract.pageID);
+    if (!latest || extract.reportTime >= latest.reportTime) {
+      latestExtracts.set(extract.pageID, extract);
+    }
+  }
   // For each extract:
-  extracts.forEach((extract, index) => {
+  for (const extract of extracts) {
     // If it is superseded:
-    if (extract.description === extracts[index + 1]?.description) {
+    if (latestExtracts.get(extract.pageID) !== extract) {
       // Mark it as such.
       extract.superseded = true;
     }
-  });
+  }
   // Return the array, excluding extracts of superseded reports if so specified.
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
-// Returns extracts of all available reports about a page, from oldest to latest.
-export const getPageReportExtracts = async (description: string): Promise<ReportExtract[]> => {
+// Returns extracts of all available reports about a page, from oldest to latest, or none if
+// the page identifier is empty.
+export const getPageReportExtracts = async (pageID: string): Promise<ReportExtract[]> => {
   const reportExtracts = await getReportExtracts();
-  return reportExtracts.filter(extract => extract.description === description);
+  const pageExtracts = reportExtracts.filter(extract => pageID && extract.pageID === pageID);
+  objectSort(pageExtracts, 'reportTime', 'alpha');
+  return pageExtracts;
 };
 // Returns whether a report with a description or URL is available.
 export const isReportAvailable = async (description: string, url: string): Promise<boolean> => {

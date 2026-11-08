@@ -84,7 +84,7 @@ test('changeRegistry writes only when the change says so', async () => {
     });
     assert.deepEqual(await getRegistry(), {sites: {'s-aaaaaa': 'A'}, pages: {}});
     // No temporary file remains.
-    assert.deepEqual(fs.readdirSync(dbDir), ['sites.json']);
+    assert.deepEqual(fs.readdirSync(dbDir), ['registry.json']);
   });
 });
 test('addPage creates or reuses sites and refuses missing sites and duplicate pages', async () => {

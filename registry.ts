@@ -1,6 +1,6 @@
 /*
   registry.ts
-  Reads and changes the site registry (sites.json in the data directory), as described in docs/decisions/011-site-page-ontology.md. The registry maps each site identifier to the site name, and each page identifier to the identifiers of the sites the page belongs to, the page name, and the page URL. It is the sole authority on which sites exist and which pages belong to them.
+  Reads and changes the site and page registry (registry.json in the data directory), as described in docs/decisions/011-site-page-ontology.md. The registry maps each site identifier to the site name, and each page identifier to the identifiers of the sites the page belongs to, the page name, and the page URL. It is the sole authority on which sites exist and which pages belong to them.
 */
 
 // IMPORTS
@@ -49,7 +49,7 @@ let registryLock: ReturnType<typeof createLock> | undefined;
 // FUNCTIONS
 
 // Returns the path of the registry.
-export const registryPath = (): string => path.join(dbPath(), 'sites.json');
+export const registryPath = (): string => path.join(dbPath(), 'registry.json');
 // Returns whether a value is a valid site identifier.
 export const isSiteID = (value: unknown): value is string => typeof value === 'string' && siteIDPattern.test(value);
 // Returns whether a value is a valid page identifier.

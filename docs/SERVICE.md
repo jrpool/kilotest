@@ -577,7 +577,7 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 ### Report protection
 
-Jobs, reports, and the site registry (`db/sites.json`) are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. The registry is the sole record of which sites exist and which pages belong to them, and every report since the site/page migration refers to it by identifier (see [ADR 011](decisions/011-site-page-ontology.md)). Therefore, reports and the registry risk loss unless duplicates are made externally. Other files, including application code and dependencies, are not at risk, because they can be pushed from the local repository or regenerated.
+Jobs, reports, and the site and page registry (`db/registry.json`) are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. The registry is the sole record of which sites exist and which pages belong to them, and every report since the site/page migration refers to it by identifier (see [ADR 011](decisions/011-site-page-ontology.md)). Therefore, reports and the registry risk loss unless duplicates are made externally. Other files, including application code and dependencies, are not at risk, because they can be pushed from the local repository or regenerated.
 
 Reports and the registry on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created six *buckets* (`kilotest-reports`, `kilotest-hidden-reports`, and `kilotest-registry`, each with a counterpart whose name ends with `-old`), and has created an API token in the account-management interface, scoped to those buckets with object read-write permissions, access and secret access keys for S3 clients, and a restriction to the IPv4 and IPv6 addresses of the server. Because the `rclone` configuration sets `no_check_bucket`, `rclone` does not create buckets, so each bucket must be created on R2 before it is used.
 
@@ -600,7 +600,7 @@ The other file is the `crontab` configuration file for `linuxuser`, which is man
 ```crontab
 11 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/hiddenReports r2:kilotest-hidden-reports/ -v --backup-dir r2:kilotest-hidden-reports-old/$(date +\%F) > /home/linuxuser/kilotest-to-r2.log 2>&1
 12 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/reports r2:kilotest-reports/ -v --backup-dir r2:kilotest-reports-old/$(date +\%F) >> /home/linuxuser/kilotest-to-r2.log 2>&1
-13 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/sites.json r2:kilotest-registry/ -v --backup-dir r2:kilotest-registry-old/$(date +\%F) >> /home/linuxuser/kilotest-to-r2.log 2>&1
+13 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/registry.json r2:kilotest-registry/ -v --backup-dir r2:kilotest-registry-old/$(date +\%F) >> /home/linuxuser/kilotest-to-r2.log 2>&1
 ```
 
 This configuration every morning (UTC) copies reports and the registry to R2 as follows:

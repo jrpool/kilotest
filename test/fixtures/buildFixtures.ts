@@ -361,7 +361,7 @@ const main = async () => {
   await writeJSON(path.join(reportsDir, '260101T0009-brd.json'), brdReport);
 
   // Write the registry of the fixture site and pages.
-  await writeJSON(path.join(targetDir, 'sites.json'), {
+  await writeJSON(path.join(targetDir, 'registry.json'), {
     sites: {[fixtureSiteID]: fixtureSiteName},
     pages: Object.fromEntries(Object.entries(fixtureDescriptionsByID()).map(([pageID, name]) => [
       pageID, {sites: [fixtureSiteID], name, url: fixturePageURLs[pageID]}

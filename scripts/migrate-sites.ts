@@ -1,6 +1,6 @@
 /*
   migrate-sites.ts
-  Step 4 of the site/page migration described in docs/decisions/011-site-page-ontology.md. Reads a reviewed site mapping and every report in the reports and hidden-reports directories, validates the mapping against the reports, and previews the plan: the sites and pages to be created, the merges of several descriptions into one page, and the reports to be updated. With --apply, after confirmation, it writes the site registry (sites.json in the data directory) and adds sources.siteID, sources.pageID, sources.siteName, and sources.pageName to every report that lacks them, changing nothing else.
+  Step 4 of the site/page migration described in docs/decisions/011-site-page-ontology.md. Reads a reviewed site mapping and every report in the reports and hidden-reports directories, validates the mapping against the reports, and previews the plan: the sites and pages to be created, the merges of several descriptions into one page, and the reports to be updated. With --apply, after confirmation, it writes the site and page registry (registry.json in the data directory) and adds sources.siteID, sources.pageID, sources.siteName, and sources.pageName to every report that lacks them, changing nothing else.
 
   Usage:
     node scripts/migrate-sites.ts [--mapping path] [--apply] [--yes]

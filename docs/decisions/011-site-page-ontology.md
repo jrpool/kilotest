@@ -59,7 +59,7 @@ Either kind can be added later without changing reports or the `sites` list in t
 
 ### Registry
 
-- `db/sites.json` is the registry. It maps each site identifier to the current site name, and each page identifier to a record of the list of identifiers of the sites it belongs to, its current page name, and its current URL.
+- `db/registry.json` is the registry. It maps each site identifier to the current site name, and each page identifier to a record of the list of identifiers of the sites it belongs to, its current page name, and its current URL.
 - The registry records no creation times. Nothing would use them except a cleanup of _orphan_ records (those of sites and pages whose jobs all failed), and an orphan can be identified without them: a page with no available or hidden report and no queued or claimed job referring to it. A creation time would also be ambiguous, because a migrated record could only approximate it with the time of its earliest report. If a site later needs more properties, its value becomes an object, which changes only the registry file and the module that reads and writes it.
 - A site record and a page record are created when the first job for them is created (on request approval), not when a request is received, so rejected requests leave no records.
 - Listings show only sites and pages with at least one available report, matching the current behavior of `listPages`. A record whose first job fails therefore remains invisible until a later job succeeds.
@@ -108,18 +108,18 @@ These rules govern both the migration and later reviews.
 1. A dry-run script (`scripts/propose-site-mapping.ts`, writing `db/siteMapping.json` by default) reads every report in `db/reports` and `db/hiddenReports`, proposes a site and page for each distinct description by longest-prefix matching against other descriptions, and writes a reviewable mapping file. It flags low-confidence proposals: no home-page entry, one name on different domains, near-duplicate names, and pages whose host differs from their site’s home page. It changes no reports.
 1. The maintainer edits the mapping file to resolve flagged cases according to the site-assignment rules. The reviewed mapping is kept under version control as `docs/decisions/011-site-mapping.json`, which records how each former description became a site and page, and the migration script reads it from a path given as an option. Entries with identical site and page values are thereby merged into one page, whose report history combines theirs; this is how two descriptions of the same page (for example, of the home page of one site reached at two domains) are unified.
 1. Before the migration runs, both `rclone copy` commands documented in `SERVICE.md` are run manually so that R2 is current, and a local archive of both report directories is made.
-1. The migration script (`scripts/migrate-sites.ts`, which only previews unless given `--apply`) creates `db/sites.json` and adds the four `sources` properties to every report, changing nothing else. It first validates the edited mapping file and refuses to run if any report has a description with no entry, or if any entry has an empty site or page value. It then previews its plan, listing every merge of several descriptions into one page so that an accidental merge can be noticed, and proceeds only on confirmation. Because reports created before the migration have no site or page names of their own, their `sources.siteName` and `sources.pageName` record the names in the mapping. It is idempotent: it skips reports that already have identifiers, so it can be rerun after any restoration from an older backup.
+1. The migration script (`scripts/migrate-sites.ts`, which only previews unless given `--apply`) creates `db/registry.json` and adds the four `sources` properties to every report, changing nothing else. It first validates the edited mapping file and refuses to run if any report has a description with no entry, or if any entry has an empty site or page value. It then previews its plan, listing every merge of several descriptions into one page so that an accidental merge can be noticed, and proceeds only on confirmation. Because reports created before the migration have no site or page names of their own, their `sources.siteName` and `sources.pageName` record the names in the mapping. It is idempotent: it skips reports that already have identifiers, so it can be rerun after any restoration from an older backup.
 1. Both `rclone copy` commands are run again immediately. Because every report changes, R2 moves every pre-migration copy into the dated `-old` folders, which become the rollback set. The log is checked to confirm this.
 
 ### Backup
 
-`db/sites.json` is server-generated and irreplaceable, like reports, so a third cron line copies it to R2 with its own `--backup-dir`. The “Report protection” section of `SERVICE.md` is updated to describe this and the rerun-migration-after-restore step.
+`db/registry.json` is server-generated and irreplaceable, like reports, so a third cron line copies it to R2 with its own `--backup-dir`. The “Report protection” section of `SERVICE.md` is updated to describe this and the rerun-migration-after-restore step.
 
 ### Confirmation
 
 To confirm the correctness of the implementation:
 
-- Verify that every report in `db/reports` and `db/hiddenReports` has all four `sources` properties, that every `siteID` and `pageID` exists in `db/sites.json`, and that every page in the registry belongs to at least one site.
+- Verify that every report in `db/reports` and `db/hiddenReports` has all four `sources` properties, that every `siteID` and `pageID` exists in `db/registry.json`, and that every page in the registry belongs to at least one site.
 - Verify that no code groups or filters reports by `sources.siteID`, and that every API object describing a page has a `sites` list.
 - Verify that the report history of every migrated page in `listIssues` contains the same reports as before the migration.
 - Verify that R2 holds the pre-migration copies of all reports in the dated `-old` folders.

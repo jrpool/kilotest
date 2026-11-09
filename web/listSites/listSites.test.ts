@@ -50,7 +50,7 @@ test('listSites lists the tested sites with their counts of tested pages', async
   const links = getSiteLinks(result.answerPage);
   assert.deepEqual(links.map(a => [a.text, a.getAttribute('href')]), [['Fixture Site', '/listPages.html/s-fixtur']]);
   assert.ok(result.answerPage.includes('Fixture Site</a> (7 pages)'));
-  assert.ok(result.answerPage.includes('<p>Get the tested pages of:</p>'));
+  assert.ok(result.answerPage.includes('<p>Get test results for:</p>'));
 });
 
 test('listSites counts a single tested page in the singular and omits sites with no tested pages', async () => {

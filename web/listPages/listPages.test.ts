@@ -59,7 +59,7 @@ test('listPages lists each tested page of the site once, by name, with its URL',
     'No Outcomes Page',
     'Prevented Page'
   ]);
-  assert.ok(result.answerPage.includes('(<code>https://example.com/mixed</code>)'));
+  assert.ok(result.answerPage.includes('</a> <code>https://example.com/mixed</code>'));
   assert.ok(result.answerPage.includes('<p>Get test results for:</p>'));
   // A page with only hidden reports is not a tested page.
   assert.ok(!result.answerPage.includes('Hidden Page'));

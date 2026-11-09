@@ -49,7 +49,7 @@ test('listSites lists the tested sites with their counts of tested pages', async
   const result: any = await answer();
   const links = getSiteLinks(result.answerPage);
   assert.deepEqual(links.map(a => [a.text, a.getAttribute('href')]), [['Fixture Site', '/listPages.html/s-fixtur']]);
-  assert.ok(result.answerPage.includes('Fixture Site</a> (7 pages)'));
+  assert.ok(result.answerPage.includes('Fixture Site</a> 7 pages'));
   assert.ok(result.answerPage.includes('<p>Get the tested pages of:</p>'));
 });
 
@@ -64,8 +64,8 @@ test('listSites counts a single tested page in the singular and omits sites with
     registry.sites['s-untest'] = 'Untested Site';
     await fs.writeFile(registryPath, JSON.stringify(registry));
     const result: any = await answer();
-    assert.ok(result.answerPage.includes('Single Site</a> (1 page)'));
-    assert.ok(result.answerPage.includes('Fixture Site</a> (6 pages)'));
+    assert.ok(result.answerPage.includes('Single Site</a> 1 page'));
+    assert.ok(result.answerPage.includes('Fixture Site</a> 6 pages'));
     assert.ok(!result.answerPage.includes('Untested Site'));
   }
   finally {

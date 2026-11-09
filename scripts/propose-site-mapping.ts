@@ -15,6 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {hiddenReportsPath, minifyURL, reportsPath} from '../util.ts';
+import {getDomain, getHost, getSiteKey, normalizeName} from '../registry.ts';
 
 // TYPES
 
@@ -66,46 +67,11 @@ export const flagExplanations: Record<FlagCode, string> = {
   sharedDomain: 'The home page of its proposed site has the same domain as the home page of another proposed site.',
   hiddenOnly: 'All reports with this description are hidden, so the page is not a tested page.'
 };
-// Second-level labels that, under a two-letter top-level domain, are part of a registrable domain (as in example.co.uk).
-const secondLevelLabels = new Set(['ac', 'co', 'com', 'edu', 'gov', 'net', 'org']);
 
 // FUNCTIONS
 
-// Returns a name normalized for matching: apostrophe and quotation-mark variants unified, white space collapsed, and letters lowercased.
-export const normalizeName = (name: string): string => name
-.normalize('NFC')
-.replace(/[‘’ʼ`]/g, '\'')
-.replace(/[“”]/g, '"')
-.replace(/\s+/g, ' ')
-.trim()
-.toLowerCase();
 // Returns the words of a name.
 const getWords = (name: string): string[] => name.trim().split(/\s+/);
-// Returns a key under which near-duplicate site names coincide: the normalized name without parenthesized parts or characters other than letters and digits.
-export const getSiteKey = (name: string): string => normalizeName(name)
-.replace(/\([^)]*\)/g, '')
-.replace(/[^\p{L}\p{N}]/gu, '');
-// Returns the host of a URL, or an empty string if the URL is invalid.
-const getHost = (url: string): string => {
-  try {
-    return new URL(url).hostname.toLowerCase();
-  }
-  catch {
-    return '';
-  }
-};
-// Returns an approximation of the registrable domain of a host, sufficient for flagging proposals for review but not for any decision.
-export const getDomain = (host: string): string => {
-  const labels = host.replace(/^www\./, '').split('.');
-  const [tld = '', second = ''] = [labels.at(-1), labels.at(-2)];
-  // If the host is under a second-level label of a two-letter top-level domain:
-  if (tld.length === 2 && secondLevelLabels.has(second) && labels.length > 2) {
-    // Return its last three labels.
-    return labels.slice(-3).join('.');
-  }
-  // Otherwise, return its last two labels.
-  return labels.slice(-2).join('.');
-};
 // Returns whether the path of a URL is that of a home page.
 const isHomeURL = (url: string): boolean => {
   try {

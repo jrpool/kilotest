@@ -1,17 +1,15 @@
 /*
   requestNewTest.ts
-  Processes a request to test an untested page and returns an acknowledgement. The
-  reviewImmediately flag selects the review path: immediate review with immediate
-  enqueueing if approved (true), or the management-approval queue (false or omitted).
+  Processes a request to test a page of a site that is not yet registered, and returns an acknowledgement. The reviewImmediately flag selects the review path: immediate review with immediate enqueueing if approved (true), or the management-approval queue (false or omitted).
 */
 
 // IMPORTS
 
 import {z} from 'zod';
-import {buildRequestDisposition, getRequestFailureReason, getResponseMetadata, getThisHost, getToolsFacts} from './util.ts';
-import {checkLength, isAllowedRedirectTarget, isAllowedTarget, isURL, orderJob, processTestRequest} from '../util.ts';
+import {buildSubmissionDisposition, checkNewPage, getResponseMetadata, getThisHost, getToolsFacts, viewPage} from './util.ts';
+import {normalizeSpace, submitTestRequest} from '../requests.ts';
+import type {SubmitResult} from '../requests.ts';
 import {requestNewTestResponseSchema} from './schemas.ts';
-import {sendAlert} from '../alerts.ts';
 
 // TYPES
 
@@ -22,110 +20,38 @@ type ResponseContent = z.infer<typeof requestNewTestResponseSchema>['response co
 
 // Returns the response body.
 export const response = async (args: string[]) => {
-  const [description = '', url = '', reason = '', review = ''] = args;
+  const [rawSiteName = '', rawPageName = '', url = '', reason = '', review = ''] = args;
+  const siteName = normalizeSpace(rawSiteName);
+  const pageName = normalizeSpace(rawPageName);
   const reviewImmediately = review === 'true';
   const thisHost = getThisHost();
   // Initialize the response-content properties.
   let requestDetails: ResponseContent['details about your request'];
   let requestDisposition: ResponseContent['disposition of your request'] = null;
-  const descriptionCheck = checkLength(description, 1, 100, 'description of the page');
-  const reasonCheck = checkLength(reason, 20, 100, 'reason');
-  // If the description is invalid:
-  if (descriptionCheck.status === 'error') {
-    requestDetails = {
-      error: `request invalid: your ${descriptionCheck.message}`
-    };
+  const check = await checkNewPage({siteName, pageName, url, reason});
+  // If the request is invalid:
+  if ('error' in check) {
+    requestDetails = {error: check.error};
   }
-  // Otherwise, if the reason is too short or too long:
-  else if (reasonCheck.status === 'error') {
-    requestDetails = {
-      error: `request invalid: your ${reasonCheck.message}`
-    };
-  }
-  // Otherwise, i.e. if the URL is too short or too long:
-  else if (url.length < 12 || url.length > 300) {
-    requestDetails = {
-      error: 'request invalid: you specified a URL for the page that is not between 12 and 300 characters long'
-    };
-  }
-  // Otherwise, i.e. if the URL is invalid:
-  else if (!isURL(url)) {
-    requestDetails = {
-      error: 'request invalid: you specified an invalid URL for the page'
-    };
-  }
-  // Otherwise, i.e. if the URL does not resolve to an allowed target:
-  else if (!(await isAllowedTarget(url))) {
-    requestDetails = {
-      error: 'request invalid: the URL you specified does not resolve to a page that this deployment can test'
-    };
-  }
-  // Otherwise, i.e. if the URL redirects to a target this deployment does not allow:
-  else if (!(await isAllowedRedirectTarget(url))) {
-    requestDetails = {
-      error: 'request invalid: the URL you specified does not resolve to a page that this deployment can test'
-    };
-    // Alert a manager, since a redirect to a disallowed target on a request that
-    // itself named an allowed hostname suggests an attempted or accidental SSRF,
-    // rather than an ordinary mistake by a legitimate submitter.
-    await sendAlert(
-      'Kilotest: request rejected for redirecting to a disallowed target',
-      `A request to test ${url} (described as "${description}") was rejected because it redirects to a target this deployment does not allow (e.g. a private, loopback, or link-local address).`
-    );
-  }
-  // Otherwise, i.e. if the description, reason, and URL are valid:
+  // Otherwise, i.e. if the request is valid:
   else {
+    // Submit it.
+    const result = await submitTestRequest({
+      target: {siteName, pageName, url}, reason, reviewImmediately, finalURL: check.finalURL
+    }) as Exclude<SubmitResult, {result: 'nonreport'}>;
     // Add details about the request.
     requestDetails = {
       'date and time received': new Date().toISOString(),
-      'page to be tested': {
-        description,
-        URL: url
-      },
+      'page to be tested': viewPage('page' in result ? result.page : {
+        siteID: null, siteName, pageID: null, pageName, url
+      }),
       'reason why the page should be tested': reason
     };
-    // If immediate review was requested, order the test: enqueue the job directly, with no
-    // management-approval step, gated only by the lightweight checks orderJob itself performs
-    // (the target is not already claimed, queued, or reported, and the job queue is not
-    // already full).
-    if (reviewImmediately) {
-      const orderResult = await orderJob({description, url}, reason);
-      // Add information about the disposition of the request.
-      if (orderResult.result === 'ok') {
-        requestDisposition = {
-          'what happens next': 'Testing has begun. Once it finishes, the report will be available via the listIssues tool.',
-          'report identifier': orderResult.reportID,
-          'how you can check for completion': `Call the listIssues tool with reportID "${orderResult.reportID}" to learn whether the report is ready.`,
-          'do you want to wait for completion': 'Testing typically takes 2 to 4 minutes. Do you want to wait (and be notified of completion) instead of checking back later? If so, call the awaitTest tool with the same reportID.'
-        };
-      }
-      else {
-        requestDisposition = {
-          'what happens next': `Your request will not be processed, because ${getRequestFailureReason(
-            orderResult.result,
-            {result: 'reportExists', reason: 'a report about a page with the same description or URL is available.'}
-          )}`,
-          'report identifier': null,
-          'how you can check for completion': 'Not applicable.',
-          'do you want to wait for completion': 'Not applicable.'
-        };
-      }
-    }
-    // Otherwise, i.e. if management review was requested or defaulted:
-    else {
-      // Process the request.
-      const {result: requestResult} = await processTestRequest(reason, {description, url});
-      // Add information about the disposition of the request.
-      requestDisposition = buildRequestDisposition(
-        requestResult,
-        {
-          whatHappensNext: 'Your request is likely to be approved and processed within 1 hour to 1 day.',
-          howToCheck: 'You can call the listPages tool to learn whether the page has been tested.',
-          howWebUserChecks: `A web user can visit ${thisHost}/listPages.html to learn whether the page has been tested.`
-        },
-        {result: 'reportExists', reason: 'a report about a page with the same description or URL is available.'}
-      );
-    }
+    // Add information about the disposition of the request.
+    requestDisposition = await buildSubmissionDisposition(result, {
+      howToCheck: 'You can call the listSites tool to learn whether the site has been tested, and then the listPages tool with its identifier to find the page.',
+      howWebUserChecks: `A web user can visit ${thisHost}/listSites.html to learn whether the site has been tested.`
+    });
   }
   // Create the response content.
   const responseContent: ResponseContent = {
@@ -137,25 +63,26 @@ export const response = async (args: string[]) => {
     'tool collection': getToolsFacts(),
     'tool name': 'requestNewTest',
     'this request': {
-      description: 'Process my request to test a page about which no report is available yet. I have provided a description and the URL of the page and a reason why it should be tested.',
+      description: 'Process my request to test a page of a site that is not in the listSites output. I have provided the names of the site and the page, the URL of the page, and a reason why it should be tested.',
       method: 'POST',
       URL: `${thisHost}/api/requestNewTest`,
       body: {
-        description,
+        siteName: rawSiteName,
+        pageName: rawPageName,
         URL: url,
         reason,
         reviewImmediately
       },
       'closest ancestor request': {
-        'tool name': 'listPages',
-        description: 'Provide basics about all tested pages.',
+        'tool name': 'listSites',
+        description: 'Provide basics about all tested sites.',
         method: 'GET',
-        URL: `${thisHost}/api/listPages`
+        URL: `${thisHost}/api/listSites`
       }
     },
     'URLs of similar requests for web users': {
       'this request': `${thisHost}/requestNewTestForm.html`,
-      'closest ancestor request': `${thisHost}/listPages.html`
+      'closest ancestor request': `${thisHost}/listSites.html`
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

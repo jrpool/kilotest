@@ -11,17 +11,21 @@ import {
   listViolatorsSchema,
   listDiagnosesSchema,
   getReportSchema,
+  listPagesSchema,
   requestNewTestSchema,
+  requestPageTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
   awaitTestSchema,
   questionDiagnosisSchema,
+  listSitesResponseSchema,
   listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
   listDiagnosesResponseSchema,
   getReportResponseSchema,
   requestNewTestResponseSchema,
+  requestPageTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
   awaitTestResponseSchema,
@@ -32,10 +36,18 @@ import {
 
 export const routes = [
   {
+    operationId: 'listSites',
+    method: 'get',
+    path: '/api/listSites',
+    summary: 'List all tested sites',
+    responseSchema: listSitesResponseSchema
+  },
+  {
     operationId: 'listPages',
     method: 'get',
-    path: '/api/listPages',
-    summary: 'List all tested pages',
+    path: '/api/listPages/{siteID}',
+    summary: 'List the tested pages of one site',
+    pathParamsSchema: z.object(listPagesSchema),
     responseSchema: listPagesResponseSchema
   },
   {
@@ -91,9 +103,25 @@ export const routes = [
     operationId: 'requestNewTest',
     method: 'post',
     path: '/api/requestNewTest',
-    summary: 'Request that a page be tested',
+    summary: 'Request that a page of a new site be tested',
     bodySchema: z.object(requestNewTestSchema),
     responseSchema: requestNewTestResponseSchema
+  },
+  {
+    operationId: 'requestPageTest',
+    method: 'post',
+    path: '/api/requestPageTest/{siteID}',
+    summary: 'Request that a page of a tested site be tested',
+    pathParamsSchema: z.object({
+      siteID: requestPageTestSchema.siteID
+    }),
+    bodySchema: z.object({
+      pageName: requestPageTestSchema.pageName,
+      URL: requestPageTestSchema.URL,
+      reason: requestPageTestSchema.reason,
+      reviewImmediately: requestPageTestSchema.reviewImmediately
+    }),
+    responseSchema: requestPageTestResponseSchema
   },
   {
     operationId: 'requestRetest',

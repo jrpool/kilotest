@@ -107,7 +107,15 @@ test('listPages shows requests when testRequests.json has entries', {timeout: 50
   try {
     const testRequests = {
       'https://example.com/mixed': [
-        {description: 'Mixed Outcomes', reason: 'Needs retesting for accessibility'}
+        {
+          id: 'q-aaaaaa',
+          timeStamp: '260101T0000',
+          target: {pageID: 'p-mixedout'},
+          reason: 'Needs retesting for accessibility',
+          referred: false,
+          possibleDuplicates: [],
+          similarSites: []
+        }
       ]
     };
     await fs.writeFile(testRequestsPath, JSON.stringify(testRequests, null, 2));
@@ -115,6 +123,7 @@ test('listPages shows requests when testRequests.json has entries', {timeout: 50
     assert.equal(result.status, 'ok');
     assert.ok(result.answerPage.includes('https://example.com/mixed'));
     assert.ok(result.answerPage.includes('Needs retesting for accessibility'));
+    assert.ok(result.answerPage.includes('Fixture Site Mixed Outcomes (retest)'));
   }
   finally {
     await fs.writeFile(testRequestsPath, originalTestRequests);

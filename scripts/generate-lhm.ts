@@ -8,7 +8,8 @@
   copies it from package.json. Every remaining property (author, cloudEndpoint, homepage,
   identifier, name, prompts, resources, tags, and each tool's execution block) has no
   generator anywhere in the repository, so it is left untouched here and is meant to be
-  edited by hand.
+  edited by hand. The tools are listed in the order of their registration in mcp.ts, and a
+  newly registered tool receives the execution block that every existing tool has.
 */
 
 // IMPORTS
@@ -23,17 +24,21 @@ import {
   listViolatorsSchema,
   listDiagnosesSchema,
   getReportSchema,
+  listPagesSchema,
   requestNewTestSchema,
+  requestPageTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
   awaitTestSchema,
   questionDiagnosisSchema,
+  listSitesResponseSchema,
   listPagesResponseSchema,
   listIssuesResponseSchema,
   listViolatorsResponseSchema,
   listDiagnosesResponseSchema,
   getReportResponseSchema,
   requestNewTestResponseSchema,
+  requestPageTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
   awaitTestResponseSchema,
@@ -54,13 +59,15 @@ const generatedWarning = 'Do not edit the _generated, version, description, or t
 // The input and output schemas mcp.ts passes to registerTool for each tool, keyed by tool name, matching mcp.ts's own registerTool calls (mcp.ts remains the source for descriptions and annotations, read at runtime below via createMCPServer).
 const toolSchemas: Record<string, {input: ZodRawShape; output?: z.ZodTypeAny}> = {
   getOverview: {input: {}},
-  listPages: {input: {}, output: listPagesResponseSchema},
+  listSites: {input: {}, output: listSitesResponseSchema},
+  listPages: {input: listPagesSchema, output: listPagesResponseSchema},
   listIssues: {input: listIssuesSchema, output: listIssuesResponseSchema},
   listViolators: {input: listViolatorsSchema, output: listViolatorsResponseSchema},
   listDiagnoses: {input: listDiagnosesSchema, output: listDiagnosesResponseSchema},
   questionDiagnosis: {input: questionDiagnosisSchema, output: questionDiagnosisResponseSchema},
   getReport: {input: getReportSchema, output: getReportResponseSchema},
   requestNewTest: {input: requestNewTestSchema, output: requestNewTestResponseSchema},
+  requestPageTest: {input: requestPageTestSchema, output: requestPageTestResponseSchema},
   requestRetest: {input: requestRetestSchema, output: requestRetestResponseSchema},
   requestFeature: {input: requestFeatureSchema, output: requestFeatureResponseSchema},
   awaitTest: {input: awaitTestSchema, output: awaitTestResponseSchema}
@@ -96,19 +103,23 @@ const parsedManifest = JSON.parse(fs.readFileSync(outputPath, 'utf8'));
 const manifest = {_generated: generatedWarning, ...parsedManifest};
 manifest._generated = generatedWarning;
 manifest.description = collectionDescription;
-manifest.tools = manifest.tools.map((tool: {name: string; execution: unknown}) => {
-  const registered = registeredTools[tool.name];
-  const schemas = toolSchemas[tool.name];
-  if (!registered || !schemas) {
-    throw new Error(`No registration or schema mapping found for lhm.plugin.json tool "${tool.name}"`);
+// The execution properties of the tools already in the manifest, by tool name.
+const executions = new Map<string, unknown>(
+  manifest.tools.map((tool: {name: string; execution: unknown}) => [tool.name, tool.execution])
+);
+// Lists the tools in the order of their registration in mcp.ts, so that a newly registered tool is added. A new tool gets the execution property that every existing tool has.
+manifest.tools = Object.entries(registeredTools).map(([name, registered]) => {
+  const schemas = toolSchemas[name];
+  if (!schemas) {
+    throw new Error(`No schema mapping found for registered tool "${name}"`);
   }
   return {
-    name: tool.name,
+    name,
     description: registered.description,
     inputSchema: buildInputSchema(schemas.input),
     ...(schemas.output ? {outputSchema: buildOutputSchema(schemas.output)} : {}),
     annotations: registered.annotations,
-    execution: tool.execution
+    execution: executions.get(name) ?? {taskSupport: 'forbidden'}
   };
 });
 fs.writeFileSync(outputPath, `${JSON.stringify(manifest, null, 2)}\n`);

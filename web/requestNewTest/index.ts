@@ -1,21 +1,36 @@
 /*
   index.ts
-  Records a test request.
+  Records a request for a test of a page of a new site.
 */
 
 // IMPORTS
 
-import {populateTemplate, processTestRequest} from '../../util.ts';
+import {checkLength, populateTemplate} from '../../util.ts';
+import {getRegistry} from '../../registry.ts';
+import {describeRefusal, nameBounds, normalizeSpace, submitTestRequest} from '../../requests.ts';
+import type {SubmitResult} from '../../requests.ts';
 
 // FUNCTIONS
 
-export const answer = async (description: string, url: string, reason: string) => {
-  // Process the request.
-  const {result} = await processTestRequest(reason, {description, url});
+export const answer = async (rawSiteName: string, rawPageName: string, url: string, reason: string) => {
+  const siteName = normalizeSpace(rawSiteName);
+  const pageName = normalizeSpace(rawPageName);
+  const nameCheck = [
+    checkLength(siteName, nameBounds.site.min, nameBounds.site.max, 'site name'),
+    checkLength(pageName, nameBounds.page.min, nameBounds.page.max, 'page name')
+  ].find(check => check.status === 'error');
+  // If a name is too short or too long:
+  if (nameCheck?.status === 'error') {
+    return {status: 'error', message: nameCheck.message};
+  }
+  // Submit the request for management review.
+  const result = await submitTestRequest({
+    target: {siteName, pageName, url}, reason, reviewImmediately: false
+  }) as Exclude<SubmitResult, {result: 'nonreport'}>;
   // If the request was recorded:
-  if (result === 'ok') {
+  if (result.result === 'pending') {
     const query = {
-      description,
+      description: `${result.page.siteName} ${result.page.pageName}`,
       url,
       reason
     };
@@ -25,45 +40,10 @@ export const answer = async (description: string, url: string, reason: string) =
       answerPage: await populateTemplate(import.meta.dirname, query)
     };
   }
-  // Otherwise, if the request is a duplicate:
-  else if (result === 'duplicate') {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'Test request duplicates an already submitted request'
-    };
-  }
-  // Otherwise, if a report is available about a page with the same description or URL:
-  else if (result === 'reportExists') {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'A report about a page with the same description or URL is already available'
-    }
-  }
-  // Otherwise, if the queue of requests awaiting approval is full:
-  else if (result === 'queueFull') {
-    // Report this, with a fallback channel, since this request cannot be queued here.
-    return {
-      status: 'error',
-      message: 'Too many requests are awaiting approval right now. Please try again later, ' +
-        'or post your request at https://github.com/jrpool/kilotest/issues or email info@kilotest.com.'
-    }
-  }
-  // Otherwise, if the URL is shorter than 12 or longer than 300 characters:
-  else if (result === 'urlLength') {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'The URL must be between 12 and 300 characters long'
-    }
-  }
-  // Otherwise, i.e. if a request to test a page with the same description or URL is approved:
-  else {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'A request to test a page with the same description or URL is already approved'
-    }
-  }
+  // Otherwise, i.e. if the request was refused, report why.
+  const why = describeRefusal(result as Exclude<typeof result, {result: 'ordered'}>, await getRegistry());
+  return {
+    status: 'error',
+    message: `Your request will not be processed, because ${why}`
+  };
 };

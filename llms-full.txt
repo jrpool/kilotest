@@ -68,14 +68,22 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 ### API
 
-In the specifications below, the term `report` refers to the records of one session in which a web page is tested. Each report has a unique identifier with a `YYMMDDTHHmm` initial and a 3-character final segment (example: 260503T0432-x9z).
+In the specifications below, the term `report` refers to the records of one session in which a web page is tested. Each report has a unique identifier with a `YYMMDDTHHmm` initial and a 3-character final segment (example: 260503T0432-x9z). Each tested page belongs to a site. A site has an identifier formatted `s-` followed by 6 characters (example: s-2fw2ea), and a page has an identifier formatted `p-` followed by 8 characters (example: p-l6vni7ua).
 
 Kilotest offers these tools:
 
+- `listSites`
+  - method: `GET`
+  - purpose: list all tested sites, each with its identifier and its count of tested pages
+  - path: `/api/listSites`
+  - caveat: Cached results are likely to be stale and should not be used
 - `listPages`
   - method: `GET`
-  - purpose: list all tested pages, with links to test results
-  - path: `/api/listPages`
+  - purpose: list the tested pages of one site, each with the identifier of its latest report
+  - path: `/api/listPages/{siteID}`
+  - parameters
+    - `siteID`: identifier of the site
+  - source of parameters: response to a `listSites` request
   - caveat: Cached results are likely to be stale and should not be used
 - `listIssues`
   - method: `GET`
@@ -123,10 +131,23 @@ Kilotest offers these tools:
   - source of parameters: response to a `listIssues` request
 - `requestNewTest`
   - method: `POST`
-  - purpose: request testing of a not-yet-tested page
+  - purpose: request testing of a page of a site not yet tested
   - path: `/api/requestNewTest`
   - payload properties
-    - `description`: description of the page to be tested
+    - `siteName`: 1- to 80-character name of the site, which must not match the name of a tested site (ignoring case, white space, and punctuation)
+    - `pageName`: 1- to 120-character name of the page (for a home page, `home`)
+    - `URL`: URL of the page to be tested
+    - `reason`: reason for testing the page
+    - `reviewImmediately`: optional; `true` selects immediate review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for review by management
+- `requestPageTest`
+  - method: `POST`
+  - purpose: request testing of a not-yet-tested page of a tested site
+  - path: `/api/requestPageTest/{siteID}`
+  - parameters
+    - `siteID`: identifier of the site
+  - source of parameters: response to a `listSites` request
+  - payload properties
+    - `pageName`: 1- to 120-character name of the page, differing from the names of the other pages of the site
     - `URL`: URL of the page to be tested
     - `reason`: reason for testing the page
     - `reviewImmediately`: optional; `true` selects immediate review with immediate approval or rejection and immediate enqueueing if approved; `false` or omitted queues the request for review by management
@@ -148,11 +169,11 @@ Kilotest offers these tools:
     - `feature`: description and motivation of the feature improvement or the new feature
 - `awaitTest`
   - method: `POST`
-  - purpose: wait for a job ordered via the `requestNewTest` or `requestRetest` tool with `reviewImmediately` set to `true` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
+  - purpose: wait for a job ordered via the `requestNewTest`, `requestPageTest`, or `requestRetest` tool with `reviewImmediately` set to `true` to complete; blocks until the report is ready, the job fails, or a maximum wait time elapses, then returns
   - path: `/api/awaitTest/{reportID}`
   - parameters
-    - `reportID`: the report identifier returned by an immediately reviewed `requestNewTest` or `requestRetest` request
-  - source of parameters: response to an immediately reviewed `requestNewTest` or `requestRetest` request
+    - `reportID`: the report identifier returned by an immediately reviewed `requestNewTest`, `requestPageTest`, or `requestRetest` request
+  - source of parameters: response to an immediately reviewed `requestNewTest`, `requestPageTest`, or `requestRetest` request
   - caveat: testing typically takes 2 to 4 minutes; sends no interim notices while waiting
 
 ## After a test, retest, or feature request
@@ -166,10 +187,10 @@ When you request a test or a retest:
   - approval followed by the requested testing
   - rejection
 - how to confirm approval
-  - check test completion by calling `listPages` and looking for the page in the list
+  - check test completion by calling `listSites` and `listPages` and looking for the page in the list
   - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listPages.html`
 
-For immediate testing without waiting for review by management, set `reviewImmediately` to `true` in a `requestNewTest` or `requestRetest` request. That enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
+For immediate testing without waiting for review by management, set `reviewImmediately` to `true` in a `requestNewTest`, `requestPageTest`, or `requestRetest` request. If the page or its site may already have been tested, the request is referred to management review, and the response lists the possible duplicates and similar sites, whose results you can use at once. Otherwise, that enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
 
 An [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml) is available.
 

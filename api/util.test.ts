@@ -9,16 +9,15 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 
 // Blank the alert configuration unconditionally, before ../util.ts (which
-// processTestRequest calls sendAlert from) is ever imported below, so this file sends
+// requests.ts calls sendAlert from) is ever imported below, so this file sends
 // no real alert emails even when run directly (e.g. `npx tsx --test api/util.test.ts`)
 // rather than via `npm test`, which normally guards against this via test/setup.ts.
 for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
   process.env[key] = '';
 }
 
-import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts, getRequestFailureReason} from './util.ts';
+import {getReportBasics, getResponseMetadata, getRuleEngineFacts, getRuleEnginesFacts, getIssueSpec, getToolsFacts} from './util.ts';
 import {toolsFactsSchema} from './schemas.ts';
-import {processTestRequest} from '../util.ts';
 
 // SETUP
 
@@ -106,21 +105,6 @@ test('getReportBasics returns an error for a report whose extract cannot be read
   }
 });
 
-test('processTestRequest returns an error for a duplicate request', async () => {
-  process.env.DB_DIR = (await import('../test/dbFixture.ts')).fixtureDBDir;
-  // Submit the same request twice; the second should be a duplicate.
-  const target = {description: 'Dup Page', url: 'https://example.com/dup'};
-  await processTestRequest('A reason that is long enough.', target);
-  const {result} = await processTestRequest('A reason that is long enough.', target);
-  assert.equal(result, 'duplicate');
-  if (savedDBDir !== undefined) {
-    process.env.DB_DIR = savedDBDir;
-  }
-  else {
-    delete process.env.DB_DIR;
-  }
-});
-
 test('getResponseMetadata returns an identifier and date string', () => {
   const meta = getResponseMetadata();
   assert.ok(meta.identifier);
@@ -144,13 +128,4 @@ test('getToolsFacts output conforms to toolsFactsSchema', () => {
   // schema advertised to MCP clients (additionalProperties: false) rejects.
   const facts = getToolsFacts();
   assert.deepEqual(toolsFactsSchema.parse(facts), facts);
-});
-
-test('getRequestFailureReason returns the URL-length reason for a urlLength result', () => {
-  // processTestRequest can return urlLength for a new-test request whose URL is
-  // outside the 12-to-300-character bound. No current caller reaches this
-  // branch, because each checks length itself first, but the mapping must be
-  // correct for any caller that relies on the shared check instead.
-  const reason = getRequestFailureReason('urlLength');
-  assert.equal(reason, 'the URL is not between 12 and 300 characters long.');
 });

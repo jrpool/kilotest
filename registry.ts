@@ -22,13 +22,26 @@ export type Registry = {
   sites: Record<string, string>;
   pages: Record<string, PageRecord>;
 };
-// A request to add a page, to an existing site identified by siteID, or to a site named siteName that is created unless a site already has that name.
-export type NewPage = ({siteID: string} | {siteName: string}) & {
+// The target of a test request: a new page of a site to be created (by site name), a new page of an existing site (by site identifier), or an existing page (by page identifier).
+export type PageTarget
+= {siteName: string; pageName: string; url: string}
+| {siteID: string; pageName: string; url: string}
+| {pageID: string};
+// A page that a target resolves to. Its site and page identifiers are null if the site or page does not exist yet.
+export type PlannedPage = {
+  siteID: string | null;
+  siteName: string;
+  pageID: string | null;
   pageName: string;
   url: string;
 };
-// The result of an attempt to add a page.
-export type AddPageResult = {siteID: string; pageID: string} | {error: 'noSite' | 'pageExists'};
+// A page that a target resolves to, once registered.
+export type RegisteredPage = PlannedPage & {siteID: string; pageID: string};
+// The reason why a target cannot be resolved: The identified site or page does not exist, a site has a name that matches the requested site name, or the site has a page with the requested page name.
+export type PageError
+= {result: 'noSite' | 'noPage'}
+| {result: 'siteExists'; siteID: string}
+| {result: 'pageExists'; pageID: string};
 
 // CONSTANTS
 
@@ -37,6 +50,8 @@ const idFormats = {
   site: {prefix: 's-', length: 6},
   page: {prefix: 'p-', length: 8}
 } as const;
+// Second-level labels that, under a two-letter top-level domain, are part of a registrable domain (as in example.co.uk).
+const secondLevelLabels = new Set(['ac', 'co', 'com', 'edu', 'gov', 'net', 'org']);
 // Patterns of valid site and page identifiers.
 const siteIDPattern = new RegExp(`^${idFormats.site.prefix}[0-9a-z]{${idFormats.site.length}}$`);
 const pageIDPattern = new RegExp(`^${idFormats.page.prefix}[0-9a-z]{${idFormats.page.length}}$`);
@@ -48,6 +63,39 @@ let registryLock: ReturnType<typeof createLock> | undefined;
 
 // FUNCTIONS
 
+// Returns a name normalized for matching: apostrophe and quotation-mark variants unified, white space collapsed, and letters lowercased.
+export const normalizeName = (name: string): string => name
+.normalize('NFC')
+.replace(/[‘’ʼ`]/g, '\'')
+.replace(/[“”]/g, '"')
+.replace(/\s+/g, ' ')
+.trim()
+.toLowerCase();
+// Returns a key under which site names that differ only in case, apostrophes, white space, or punctuation coincide: the normalized name without characters other than letters and digits. Matching keys make a requested site name unacceptable.
+export const getNameKey = (name: string): string => normalizeName(name).replace(/[^\p{L}\p{N}]/gu, '');
+// Returns a looser key, under which near-duplicate site names coincide: the name key of the name without its parenthesized parts. Matching keys make a site similar to a requested one.
+export const getSiteKey = (name: string): string => getNameKey(name.replace(/\([^)]*\)/g, ''));
+// Returns the host of a URL, or an empty string if the URL is invalid.
+export const getHost = (url: string): string => {
+  try {
+    return new URL(url).hostname.toLowerCase();
+  }
+  catch {
+    return '';
+  }
+};
+// Returns an approximation of the registrable domain of a host, sufficient for flagging similarities but not for any decision.
+export const getDomain = (host: string): string => {
+  const labels = host.replace(/^www\./, '').split('.');
+  const [tld = '', second = ''] = [labels.at(-1), labels.at(-2)];
+  // If the host is under a second-level label of a two-letter top-level domain:
+  if (tld.length === 2 && secondLevelLabels.has(second) && labels.length > 2) {
+    // Return its last three labels.
+    return labels.slice(-3).join('.');
+  }
+  // Otherwise, return its last two labels.
+  return labels.slice(-2).join('.');
+};
 // Returns the path of the registry.
 export const registryPath = (): string => path.join(dbPath(), 'registry.json');
 // Returns whether a value is a valid site identifier.
@@ -110,44 +158,70 @@ export const getSitePages = (registry: Registry, siteID: string): [string, PageR
 .entries(registry.pages)
 .filter(([, page]) => page.sites.includes(siteID))
 .sort(([, a], [, b]) => a.name.localeCompare(b.name, 'en', {sensitivity: 'base'}));
-// Adds a page, and if necessary its site, to the registry as a transaction. A page cannot be added to a nonexistent site, nor with the name of a page the site already has.
-export const addPage = (newPage: NewPage): Promise<AddPageResult> => changeRegistry(
-  (registry): {write: boolean; result: AddPageResult} => {
-    const usedIDs = new Set([...Object.keys(registry.sites), ...Object.keys(registry.pages)]);
-    let siteID: string;
-    // Name of the site to be created, if any.
-    let newSiteName: string | undefined;
-    // If the site is identified:
-    if ('siteID' in newPage) {
-      // If it does not exist:
-      if (!(newPage.siteID in registry.sites)) {
-        return {write: false, result: {error: 'noSite'}};
-      }
-      ({siteID} = newPage);
+// Returns the page that a target resolves to in a registry, or the reason why it cannot be resolved. A page cannot be added to a nonexistent site, nor with a name that, after normalization, is that of a page the site already has, and a site cannot be created with a name whose name key is that of an existing site.
+export const planPage = (registry: Registry, target: PageTarget): PlannedPage | PageError => {
+  // If the target is an existing page:
+  if ('pageID' in target) {
+    const page = registry.pages[target.pageID];
+    // If it does not exist:
+    if (!page) {
+      return {result: 'noPage'};
     }
-    // Otherwise, i.e. if the site is named, get the site with the name, or a new identifier if none has it.
-    else {
-      const existingID = Object.keys(registry.sites).find(id => registry.sites[id] === newPage.siteName);
-      if (existingID) {
-        siteID = existingID;
-      }
-      else {
-        siteID = getNewID('site', usedIDs);
-        newSiteName = newPage.siteName;
-      }
+    const siteID = page.sites[0] as string;
+    return {
+      siteID, siteName: registry.sites[siteID] as string, pageID: target.pageID, pageName: page.name, url: page.url
+    };
+  }
+  const {pageName, url} = target;
+  // If the target is a new page of an existing site:
+  if ('siteID' in target) {
+    const {siteID} = target;
+    const siteName = registry.sites[siteID];
+    // If the site does not exist:
+    if (siteName === undefined) {
+      return {result: 'noSite'};
     }
+    const pageKey = normalizeName(pageName);
+    const namesake = getSitePages(registry, siteID).find(([, page]) => normalizeName(page.name) === pageKey);
     // If the site already has a page with the name:
-    if (getSitePages(registry, siteID).some(([, page]) => page.name === newPage.pageName)) {
-      return {write: false, result: {error: 'pageExists'}};
+    if (namesake) {
+      return {result: 'pageExists', pageID: namesake[0]};
     }
+    return {siteID, siteName, pageID: null, pageName, url};
+  }
+  // Otherwise, i.e. if the target is a new page of a new site:
+  const nameKey = getNameKey(target.siteName);
+  const namesakeID = Object.keys(registry.sites).find(id => getNameKey(registry.sites[id] as string) === nameKey);
+  // If a site has a matching name:
+  if (namesakeID) {
+    return {result: 'siteExists', siteID: namesakeID};
+  }
+  return {siteID: null, siteName: target.siteName, pageID: null, pageName, url};
+};
+// Returns whether the resolution of a target is an error.
+export const isPageError = (page: PlannedPage | PageError): page is PageError => 'result' in page;
+// Registers the page that a target resolves to, and if necessary its site, as a transaction, and returns the page or the reason why the target cannot be resolved.
+export const registerPage = (target: PageTarget): Promise<RegisteredPage | PageError> => changeRegistry(
+  (registry): {write: boolean; result: RegisteredPage | PageError} => {
+    const page = planPage(registry, target);
+    // If the target cannot be resolved:
+    if (isPageError(page)) {
+      return {write: false, result: page};
+    }
+    // If the page already exists:
+    if (page.siteID && page.pageID) {
+      return {write: false, result: page as RegisteredPage};
+    }
+    const usedIDs = new Set([...Object.keys(registry.sites), ...Object.keys(registry.pages)]);
     // If the site is new:
-    if (newSiteName !== undefined) {
+    if (!page.siteID) {
       // Create it.
-      registry.sites[siteID] = newSiteName;
+      page.siteID = getNewID('site', usedIDs);
+      registry.sites[page.siteID] = page.siteName;
     }
     // Create the page.
     const pageID = getNewID('page', usedIDs);
-    registry.pages[pageID] = {sites: [siteID], name: newPage.pageName, url: newPage.url};
-    return {write: true, result: {siteID, pageID}};
+    registry.pages[pageID] = {sites: [page.siteID], name: page.pageName, url: page.url};
+    return {write: true, result: {...page, siteID: page.siteID, pageID}};
   }
 );

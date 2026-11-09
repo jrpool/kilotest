@@ -29,12 +29,13 @@ test('requestNewTestForm includes a form that posts to /requestNewTest.html', as
   assert.equal(form.getAttribute('method'), 'post');
 });
 
-test('requestNewTestForm includes required inputs for description, url, and why', async () => {
+test('requestNewTestForm includes required inputs for siteName, pageName, url, and why', async () => {
   const result = await answer();
   const html = parse(result.answerPage);
   const inputs = html.querySelectorAll('input');
   const names = inputs.map(input => input.getAttribute('name'));
-  assert.ok(names.includes('description'));
+  assert.ok(names.includes('siteName'));
+  assert.ok(names.includes('pageName'));
   assert.ok(names.includes('url'));
   assert.ok(names.includes('why'));
 });

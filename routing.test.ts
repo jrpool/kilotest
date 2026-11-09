@@ -77,10 +77,10 @@ test('GET /api/requestFeature returns an error, not a feature-request response',
   assert.ok(result.body.includes('Invalid service request'));
 });
 
-test('GET /api/listPages returns a valid JSON response', async () => {
-  const result = await get('/api/listPages');
+test('GET /api/listPages/s-fixtur returns a valid JSON response', async () => {
+  const result = await get('/api/listPages/s-fixtur');
   const body = JSON.parse(result.body);
   assert.equal(body['tool name'], 'listPages');
-  const pages = body['response content']['basics about all tested pages'];
+  const pages = body['response content']['basics about all tested pages of the site'];
   assert.equal(pages.length, 7);
 });

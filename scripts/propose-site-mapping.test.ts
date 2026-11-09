@@ -10,7 +10,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {getDomain, getPageRecords, getSiteKey, normalizeName, proposeMapping} from './propose-site-mapping.ts';
+import {getPageRecords, proposeMapping} from './propose-site-mapping.ts';
+import {getDomain, getSiteKey, normalizeName} from '../registry.ts';
 import type {PageRecord} from './propose-site-mapping.ts';
 
 // FUNCTIONS

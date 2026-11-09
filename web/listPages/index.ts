@@ -9,11 +9,13 @@ import {
   getJobNames,
   getObject,
   getReportExtracts,
-  getTestRequests,
+  htmlSafe,
   jobsPath,
   populateTemplate
 } from '../../util.ts';
 import path from 'node:path';
+import {getRegistry} from '../../registry.ts';
+import {getTargetLabel, getTestRequests} from '../../requests.ts';
 
 // FUNCTIONS
 
@@ -29,13 +31,14 @@ const populateQuery = async (query: Record<string, any>) => {
   };
   // Get the test requests.
   const testRequests = await getTestRequests();
+  const registry = await getRegistry();
   // For each requested URL:
   Object.keys(testRequests).forEach(url => {
     // For each of its requests:
-    testRequests[url]!.forEach((req: any) => {
-      const {description, reason} = req;
+    testRequests[url]!.forEach(request => {
+      const label = htmlSafe(getTargetLabel(registry, request.target));
       // Add a line.
-      lines.requests.push(`${margin}  <li><code>${url}</code> (${description}): ${reason}</li>`);
+      lines.requests.push(`${margin}  <li><code>${htmlSafe(url)}</code> (${label}): ${htmlSafe(request.reason)}</li>`);
     });
   });
   // Sort the lines in alphabetical order by URL and secondarily by proposed name.

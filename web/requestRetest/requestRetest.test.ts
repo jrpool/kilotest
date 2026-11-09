@@ -1,143 +1,56 @@
 /*
   requestRetest.test.ts
-  Unit tests for web/requestRetest/index.ts, covering the success path of answer.
+  Unit tests for web/requestRetest/index.ts.
 */
 
 // IMPORTS
 
-import {test, before, after, beforeEach} from 'node:test';
+import {test, before, beforeEach, after} from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import {parse} from 'node-html-parser';
-
-// CONSTANTS
-
 import {fixtureDBDir} from '../../test/dbFixture.ts';
-const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
+import {resetRequestState, writeFixtureJob} from '../../test/requestState.ts';
+import {answer} from './index.ts';
 
 // SETUP AND TEARDOWN
 
-before(async () => {
+const savedDBDir = process.env.DB_DIR;
+const reason = 'A reason that is long enough.';
+
+before(() => {
   process.env.DB_DIR = fixtureDBDir;
-  process.env.AUTH_CODE = 'test-auth-code';
 });
 
-beforeEach(async () => {
-  // Reset testRequests.json and clean job directories before each test.
-  await fs.writeFile(testRequestsPath, '{}\n');
-  for (const sub of ['claimed', 'queue', 'failed']) {
-    const dir = path.join(fixtureDBDir, 'jobs', sub);
-    await fs.mkdir(dir, {recursive: true});
-    const files = await fs.readdir(dir).catch(() => []);
-    for (const file of files) {
-      try {
-        await fs.unlink(path.join(dir, file));
-      }
-      catch {
-        // Ignore cleanup errors for files that may not exist.
-      }
-    }
+beforeEach(() => {
+  resetRequestState();
+});
+
+after(() => {
+  resetRequestState();
+  if (savedDBDir !== undefined) {
+    process.env.DB_DIR = savedDBDir;
   }
-});
-
-after(async () => {
-  // Restore testRequests.json and clean job directories after all tests.
-  await fs.writeFile(testRequestsPath, '{}\n');
-  for (const sub of ['claimed', 'queue', 'failed']) {
-    const dir = path.join(fixtureDBDir, 'jobs', sub);
-    await fs.mkdir(dir, {recursive: true});
-    const files = await fs.readdir(dir).catch(() => []);
-    for (const file of files) {
-      try {
-        await fs.unlink(path.join(dir, file));
-      }
-      catch {
-        // Ignore cleanup errors for files that may not exist.
-      }
-    }
+  else {
+    delete process.env.DB_DIR;
   }
 });
 
 // TESTS
 
 test('answer returns ok with a populated answer page for a valid retest request', async () => {
-  // Require the module after DB_DIR is set.
-  const {answer} = await import('./index.ts');
-  // Use the 260101T0001-ct report (All CantTell Page, https://example.com/canttell).
-  const result: any = await answer('260101T0001-ct', 'Because changes were made');
+  const result: any = await answer('260202T0000-new', reason);
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage, 'answerPage should be present');
-  // Verify the description and reason placeholders were replaced with the report target.
-  // (Note: the template's <title> uses __target__, a placeholder query never supplies;
-  // that pre-existing template mismatch is out of scope here and left unasserted.)
-  assert.ok(result.answerPage.includes('All CantTell Page'));
-  assert.ok(result.answerPage.includes('Because changes were made'));
-  assert.ok(!result.answerPage.includes('__description__'));
-  assert.ok(!result.answerPage.includes('__url__'));
-  assert.ok(!result.answerPage.includes('__reason__'));
-  // Verify the HTML is well-formed.
-  const doc = parse(result.answerPage);
-  const h1 = doc.querySelector('h1');
-  assert.ok(h1);
-  assert.ok(h1.textContent.includes('All CantTell Page'));
+  assert.ok(result.answerPage.includes('Fixture Site Mixed Outcomes'));
+  assert.ok(result.answerPage.includes('https://example.com/mixed'));
 });
 
 test('answer returns an error when the report does not exist', async () => {
-  const {answer} = await import('./index.ts');
-  // Use a nonexistent report timestamp and jobID.
-  const result: any = await answer('990101T0000-xxx', 'Because changes were made');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Invalid request');
+  assert.deepEqual(await answer('990101T0000-zzz', reason), {status: 'error', message: 'Invalid request'});
 });
 
-test('answer returns an error for a duplicate retest request', async () => {
-  const {answer} = await import('./index.ts');
-  // Submit the same retest request twice; the second is a duplicate.
-  await answer('260101T0001-ct', 'Because changes were made');
-  const result: any = await answer('260101T0001-ct', 'Because changes were made');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Test request duplicates an already submitted request');
-});
-
-test('answer returns an error when the cited report has been superseded', async () => {
-  const {answer} = await import('./index.ts');
-  // 260101T0000-mix (Mixed Outcomes) is superseded by 260202T0000-new.
-  const result: any = await answer('260101T0000-mix', 'Because changes were made');
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'A later report about the page is already available');
-});
-
-test('answer returns an error when a matching job is already claimed or queued', async () => {
-  const {answer} = await import('./index.ts');
-  // Create a claimed job sharing the description of the cited report
-  // (260101T0001-ct, "All CantTell Page").
-  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
-  const jobPath = path.join(claimedDir, 'claimedJob.json');
-  await fs.writeFile(jobPath, JSON.stringify({
-    id: 'claimedJob',
-    target: {what: 'All CantTell Page', url: 'https://example.com/unrelated'}
-  }));
-  try {
-    const result: any = await answer('260101T0001-ct', 'Because changes were made');
-    assert.equal(result.status, 'error');
-    assert.equal(result.message, 'A request to test a page with the same description or URL is already approved');
-  }
-  finally {
-    await fs.unlink(jobPath).catch(() => {});
-  }
-});
-
-test('answer returns an error with a fallback channel when the request queue is full', async () => {
-  const {answer} = await import('./index.ts');
-  // Fill testRequests.json with 20 pending requests, all for one URL, to reach the cap.
-  const filler = Array.from({length: 20}, (_, i) => ({
-    timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Because filler'
-  }));
-  await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
-  const result: any = await answer('260101T0001-ct', 'Because changes were made');
-  assert.equal(result.status, 'error');
-  assert.ok(result.message.startsWith('Too many requests are awaiting approval right now.'));
-  assert.ok(result.message.includes('https://github.com/jrpool/kilotest/issues'));
-  assert.ok(result.message.includes('info@kilotest.com'));
+test('answer returns an error explaining a refusal', async () => {
+  const superseded: any = await answer('260101T0000-mix', reason);
+  assert.ok(superseded.message.includes('a later report about the page is available.'));
+  writeFixtureJob('claimed', 'claimed', {sources: {pageID: 'p-branchco'}, target: {url: 'https://example.com/branch'}});
+  const claimed: any = await answer('260101T0009-brd', reason);
+  assert.ok(claimed.message.includes('a test of the page is already approved'));
 });

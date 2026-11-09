@@ -41,8 +41,8 @@
       }
     },
     {
-      "name": "listPages",
-      "description": "Lists all pages Kilotest has tested. Use this first to discover whether a page already has any reports before requesting a test. Returns, for each tested page, its description, URL, and the identifier of its latest available report. Entries are sorted by page description and are not paginated.",
+      "name": "listSites",
+      "description": "Lists all sites of which Kilotest has tested pages. Use this first to discover whether the site of a page has been tested, and then listPages with the site identifier to discover whether the page has been tested, before requesting a test. Returns, for each tested site, its identifier, name, and count of tested pages. Entries are sorted by site name and are not paginated.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -98,7 +98,7 @@
           "response content": {
             "type": "object",
             "properties": {
-              "how to get test results about a page": {
+              "how to list the tested pages of a site": {
                 "type": "object",
                 "properties": {
                   "method": {
@@ -107,7 +107,7 @@
                   },
                   "URL": {
                     "type": "string",
-                    "description": "URL template; replace {identifier} with the identifier of the latest report about the page."
+                    "description": "URL template; replace {identifier} with the identifier of the site."
                   }
                 },
                 "required": [
@@ -116,35 +116,17 @@
                 ],
                 "additionalProperties": false
               },
-              "web users can get test results about a page at": {
+              "web users can list the tested pages of a site at": {
                 "type": "string",
-                "description": "URL template; replace {identifier} with the identifier of the latest report about the page."
+                "description": "URL template; replace {identifier} with the identifier of the site."
               },
-              "basics about all tested pages": {
+              "basics about all tested sites": {
                 "type": "array",
                 "items": {
-                  "type": "object",
-                  "properties": {
-                    "description": {
-                      "type": "string"
-                    },
-                    "URL": {
-                      "type": "string"
-                    },
-                    "identifier": {
-                      "type": "string",
-                      "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)."
-                    }
-                  },
-                  "required": [
-                    "description",
-                    "URL",
-                    "identifier"
-                  ],
-                  "additionalProperties": false
+                  "$ref": "#/definitions/SiteFacts"
                 }
               },
-              "how to request that a page with no report be tested": {
+              "how to request a test of a page of a site not in this list": {
                 "type": "object",
                 "properties": {
                   "method": {
@@ -157,7 +139,10 @@
                   "request body": {
                     "type": "object",
                     "properties": {
-                      "description": {
+                      "siteName": {
+                        "type": "string"
+                      },
+                      "pageName": {
                         "type": "string"
                       },
                       "URL": {
@@ -165,12 +150,17 @@
                       },
                       "reason": {
                         "type": "string"
+                      },
+                      "reviewImmediately": {
+                        "type": "string"
                       }
                     },
                     "required": [
-                      "description",
+                      "siteName",
+                      "pageName",
                       "URL",
-                      "reason"
+                      "reason",
+                      "reviewImmediately"
                     ],
                     "additionalProperties": false
                   },
@@ -186,7 +176,7 @@
                 ],
                 "additionalProperties": false
               },
-              "how a web user can request that the page be tested": {
+              "how a web user can request a test of a page of a site not in this list": {
                 "type": "object",
                 "properties": {
                   "URL": {
@@ -200,11 +190,11 @@
               }
             },
             "required": [
-              "how to get test results about a page",
-              "web users can get test results about a page at",
-              "basics about all tested pages",
-              "how to request that a page with no report be tested",
-              "how a web user can request that the page be tested"
+              "how to list the tested pages of a site",
+              "web users can list the tested pages of a site at",
+              "basics about all tested sites",
+              "how to request a test of a page of a site not in this list",
+              "how a web user can request a test of a page of a site not in this list"
             ],
             "additionalProperties": false
           }
@@ -378,11 +368,469 @@
               "date and time"
             ],
             "additionalProperties": false
+          },
+          "SiteFacts": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Identifier of the site (example: s-2fw2ea)."
+              },
+              "name": {
+                "type": "string"
+              },
+              "count of tested pages": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "identifier",
+              "name",
+              "count of tested pages"
+            ],
+            "additionalProperties": false
           }
         }
       },
       "annotations": {
-        "title": "List tested pages",
+        "title": "List tested sites",
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "destructiveHint": false,
+        "openWorldHint": false
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "listPages",
+      "description": "Lists the tested pages of one site. Use this after listSites to discover whether a page of the site already has any reports before requesting a test. The siteID comes from listSites; an unknown or malformed one produces an error. Returns, for each tested page of the site, its identifier, name, URL, sites, and the identifier of its latest available report. Entries are sorted by page name and are not paginated.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "siteID": {
+            "type": "string",
+            "pattern": "^s-[0-9a-z]{6}$",
+            "description": "Identifier of the site, formatted s-xxxxxx (example: s-2fw2ea), as shown in the listSites output"
+          }
+        },
+        "required": [
+          "siteID"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tool collection": {
+            "$ref": "#/definitions/ToolsFacts"
+          },
+          "tool name": {
+            "type": "string"
+          },
+          "this request": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "const": "GET"
+              },
+              "URL": {
+                "type": "string"
+              },
+              "closest ancestor request": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/RequestReference"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "description",
+              "method",
+              "URL",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "URLs of similar requests for web users": {
+            "$ref": "#/definitions/SimilarWebRequests"
+          },
+          "response metadata": {
+            "$ref": "#/definitions/ResponseMetadata"
+          },
+          "response content": {
+            "type": "object",
+            "properties": {
+              "basics about the site": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "identifier": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "identifier",
+                      "name"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "error": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "error"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "how to get test results about a page": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "type": "string",
+                    "const": "GET"
+                  },
+                  "URL": {
+                    "type": "string",
+                    "description": "URL template; replace {identifier} with the identifier of the latest report about the page."
+                  }
+                },
+                "required": [
+                  "method",
+                  "URL"
+                ],
+                "additionalProperties": false
+              },
+              "web users can get test results about a page at": {
+                "type": "string",
+                "description": "URL template; replace {identifier} with the identifier of the latest report about the page."
+              },
+              "basics about all tested pages of the site": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/PageFacts"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The tested pages of the site, ordered by name, or null if the site does not exist."
+              },
+              "how to request a test of a page of this site not in this list": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "method": {
+                        "type": "string",
+                        "const": "POST"
+                      },
+                      "URL": {
+                        "type": "string"
+                      },
+                      "request body": {
+                        "type": "object",
+                        "properties": {
+                          "pageName": {
+                            "type": "string"
+                          },
+                          "URL": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "reviewImmediately": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "pageName",
+                          "URL",
+                          "reason",
+                          "reviewImmediately"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "how to check whether the request has been fulfilled": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "method",
+                      "URL",
+                      "request body",
+                      "how to check whether the request has been fulfilled"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "how a web user can request a test of a page of this site not in this list": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "URL": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "URL"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "basics about the site",
+              "how to get test results about a page",
+              "web users can get test results about a page at",
+              "basics about all tested pages of the site",
+              "how to request a test of a page of this site not in this list",
+              "how a web user can request a test of a page of this site not in this list"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tool collection",
+          "tool name",
+          "this request",
+          "URLs of similar requests for web users",
+          "response metadata",
+          "response content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "definitions": {
+          "ToolsFacts": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "object",
+                "properties": {
+                  "what Kilotest does": {
+                    "type": "string"
+                  },
+                  "how to retrieve findings": {
+                    "type": "object",
+                    "properties": {
+                      "level 1": {
+                        "type": "string"
+                      },
+                      "level 2": {
+                        "type": "string"
+                      },
+                      "level 3": {
+                        "type": "string"
+                      },
+                      "level 4": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "level 1",
+                      "level 2",
+                      "level 3",
+                      "level 4"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "how to generate more findings": {
+                    "type": "object",
+                    "properties": {
+                      "new testing": {
+                        "type": "string"
+                      },
+                      "retesting": {
+                        "type": "string"
+                      },
+                      "approval": {
+                        "type": "string"
+                      },
+                      "latency": {
+                        "type": "string"
+                      },
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "new testing",
+                      "retesting",
+                      "approval",
+                      "latency",
+                      "request confirmation",
+                      "order confirmation"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "what Kilotest does",
+                  "how to retrieve findings",
+                  "how to generate more findings"
+                ],
+                "additionalProperties": false,
+                "description": "Explanation of what Kilotest does and how to use its tools."
+              },
+              "URL": {
+                "type": "string",
+                "description": "URL of the Kilotest MCP server."
+              },
+              "web users can obtain similar functionalities at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "URL",
+              "web users can obtain similar functionalities at"
+            ],
+            "additionalProperties": false
+          },
+          "RequestReference": {
+            "type": "object",
+            "properties": {
+              "tool name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tool name",
+              "description",
+              "method",
+              "URL"
+            ],
+            "additionalProperties": false
+          },
+          "SimilarWebRequests": {
+            "type": "object",
+            "properties": {
+              "this request": {
+                "type": "string",
+                "description": "URL of the equivalent web UI page for this request."
+              },
+              "closest ancestor request": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "this request",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "ResponseMetadata": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Unique identifier of this response (timestamp and random suffix)."
+              },
+              "date and time": {
+                "type": "string",
+                "description": "UTC date and time when the response was generated, in ISO 8601 format."
+              }
+            },
+            "required": [
+              "identifier",
+              "date and time"
+            ],
+            "additionalProperties": false
+          },
+          "PageFacts": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Identifier of the page (example: p-l6vni7ua)."
+              },
+              "name": {
+                "type": "string",
+                "description": "Name of the page, distinguishing it from the other pages of its site."
+              },
+              "URL": {
+                "type": "string"
+              },
+              "sites": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Identifiers of the sites that the page belongs to (currently always one)."
+              },
+              "identifier of the latest report": {
+                "type": "string",
+                "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)."
+              }
+            },
+            "required": [
+              "identifier",
+              "name",
+              "URL",
+              "sites",
+              "identifier of the latest report"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "title": "List the tested pages of a site",
         "readOnlyHint": true,
         "idempotentHint": true,
         "destructiveHint": false,
@@ -394,7 +842,7 @@
     },
     {
       "name": "listIssues",
-      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to switch to an earlier or later report or to begin examining this report. The reportID is the latest report’s identifier from listPages or an earlier identifier from the history this tool returns. Returns the history and the basics about this report’s issues, sorted by summary and not paginated; an unknown or malformed reportID produces an error. The returned issue identifiers are inputs to the listViolators tool. Use getReport instead when the entire report is needed in one call.",
+      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to begin examining the latest report about a page, or to switch to an earlier or later report or to begin examining this report. The reportID is the latest report’s identifier from listPages or an earlier identifier from the history this tool returns. Returns the history and the basics about this report’s issues, sorted by summary and not paginated; an unknown or malformed reportID produces an error. The returned issue identifiers are inputs to the listViolators tool. Use getReport instead when the entire report is needed in one call.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2830,15 +3278,21 @@
     },
     {
       "name": "requestNewTest",
-      "description": "Submits a request to test a page that has no report yet. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The description uniquely names the page in later listPages output and the reason is what the reviewer evaluates. A refusal, such as an existing report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
+      "description": "Submits a request to test a page of a site that is not in the listSites output; for a page of a site in that output, use requestPageTest instead. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The siteName and pageName become the names of the site and page in later listSites and listPages output, and the reason is what the reviewer evaluates. A site name matching that of a tested site (ignoring case, white space, and punctuation) is refused. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates and similar sites. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
-          "description": {
+          "siteName": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 100,
-            "description": "1- to 100-character name for the page, unique among tested pages and conforming to the naming convention used in the listPages output"
+            "maxLength": 80,
+            "description": "1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation"
+          },
+          "pageName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)"
           },
           "URL": {
             "type": "string",
@@ -2859,7 +3313,8 @@
           }
         },
         "required": [
-          "description",
+          "siteName",
+          "pageName",
           "URL",
           "reason"
         ],
@@ -2890,11 +3345,17 @@
               "body": {
                 "type": "object",
                 "properties": {
-                  "description": {
+                  "siteName": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 100,
-                    "description": "1- to 100-character name for the page, unique among tested pages and conforming to the naming convention used in the listPages output"
+                    "maxLength": 80,
+                    "description": "1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation"
+                  },
+                  "pageName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "description": "1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)"
                   },
                   "URL": {
                     "type": "string",
@@ -2915,7 +3376,8 @@
                   }
                 },
                 "required": [
-                  "description",
+                  "siteName",
+                  "pageName",
                   "URL",
                   "reason"
                 ],
@@ -2971,20 +3433,7 @@
                         "type": "string"
                       },
                       "page to be tested": {
-                        "type": "object",
-                        "properties": {
-                          "description": {
-                            "type": "string"
-                          },
-                          "URL": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "description",
-                          "URL"
-                        ],
-                        "additionalProperties": false
+                        "$ref": "#/definitions/RequestedPage"
                       },
                       "reason why the page should be tested": {
                         "type": "string"
@@ -3026,6 +3475,82 @@
                       },
                       "do you want to wait for completion": {
                         "type": "string"
+                      },
+                      "whether your request was referred to management review": {
+                        "description": "true if immediate review was requested but the request was referred to management review because of possible duplicates or similar sites.",
+                        "type": "boolean"
+                      },
+                      "possible duplicates": {
+                        "description": "Tested pages that may be the requested page. If one is, its latest report can be used at once.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string",
+                              "description": "Identifier of the page (example: p-l6vni7ua)."
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Name of the page, distinguishing it from the other pages of its site."
+                            },
+                            "URL": {
+                              "type": "string"
+                            },
+                            "sites": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Identifiers of the sites that the page belongs to (currently always one)."
+                            },
+                            "identifier of the latest report": {
+                              "type": "string",
+                              "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)."
+                            },
+                            "reason for suspicion": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identifier",
+                            "name",
+                            "URL",
+                            "sites",
+                            "identifier of the latest report",
+                            "reason for suspicion"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "similar sites": {
+                        "description": "Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestPageTest.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string",
+                              "description": "Identifier of the site (example: s-2fw2ea)."
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "count of tested pages": {
+                              "type": "number"
+                            },
+                            "reason for suspicion": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identifier",
+                            "name",
+                            "count of tested pages",
+                            "reason for suspicion"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
                     },
                     "required": [
@@ -3216,11 +3741,554 @@
               "date and time"
             ],
             "additionalProperties": false
+          },
+          "RequestedPage": {
+            "type": "object",
+            "properties": {
+              "site identifier": {
+                "description": "Identifier of the site, or null if the site does not exist yet.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "site name": {
+                "type": "string"
+              },
+              "page identifier": {
+                "description": "Identifier of the page, or null if the page does not exist yet.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "page name": {
+                "type": "string"
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "site identifier",
+              "site name",
+              "page identifier",
+              "page name",
+              "URL"
+            ],
+            "additionalProperties": false
           }
         }
       },
       "annotations": {
-        "title": "Request testing of a new page",
+        "title": "Request testing of a page of a new site",
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "destructiveHint": false,
+        "openWorldHint": true
+      },
+      "execution": {
+        "taskSupport": "forbidden"
+      }
+    },
+    {
+      "name": "requestPageTest",
+      "description": "Submits a request to test a page, not yet tested, of a site in the listSites output; for a page of another site, use requestNewTest instead. The siteID comes from listSites, and the listPages output for it shows the tested pages of the site, so check it first. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The pageName becomes the name of the page in later listPages output and must differ from the names of the other pages of the site, and the reason is what the reviewer evaluates. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "siteID": {
+            "type": "string",
+            "pattern": "^s-[0-9a-z]{6}$",
+            "description": "Identifier of the site, formatted s-xxxxxx (example: s-2fw2ea), as shown in the listSites output"
+          },
+          "pageName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)"
+          },
+          "URL": {
+            "type": "string",
+            "minLength": 12,
+            "maxLength": 300,
+            "pattern": "^https:\\/\\/",
+            "description": "12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20,
+            "maxLength": 100,
+            "description": "20- to 100-character justification evaluated by the reviewer selected by reviewImmediately"
+          },
+          "reviewImmediately": {
+            "description": "true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "siteID",
+          "pageName",
+          "URL",
+          "reason"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "tool collection": {
+            "$ref": "#/definitions/ToolsFacts"
+          },
+          "tool name": {
+            "type": "string"
+          },
+          "this request": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "const": "POST"
+              },
+              "URL": {
+                "type": "string"
+              },
+              "body": {
+                "type": "object",
+                "properties": {
+                  "pageName": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120,
+                    "description": "1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)"
+                  },
+                  "URL": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 300,
+                    "pattern": "^https:\\/\\/",
+                    "description": "12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 100,
+                    "description": "20- to 100-character justification evaluated by the reviewer selected by reviewImmediately"
+                  },
+                  "reviewImmediately": {
+                    "description": "true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "pageName",
+                  "URL",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              "closest ancestor request": {
+                "anyOf": [
+                  {
+                    "$ref": "#/definitions/RequestReference"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "description",
+              "method",
+              "URL",
+              "body",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "URLs of similar requests for web users": {
+            "$ref": "#/definitions/SimilarWebRequests"
+          },
+          "response metadata": {
+            "$ref": "#/definitions/ResponseMetadata"
+          },
+          "response content": {
+            "type": "object",
+            "properties": {
+              "details about your request": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "error": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "error"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "date and time received": {
+                        "type": "string"
+                      },
+                      "page to be tested": {
+                        "$ref": "#/definitions/RequestedPage"
+                      },
+                      "reason why the page should be tested": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "date and time received",
+                      "page to be tested",
+                      "reason why the page should be tested"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "disposition of your request": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "what happens next": {
+                        "type": "string"
+                      },
+                      "report identifier": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "description": "Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z)."
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "how you can check for completion": {
+                        "type": "string"
+                      },
+                      "how a web user can check for completion": {
+                        "type": "string"
+                      },
+                      "do you want to wait for completion": {
+                        "type": "string"
+                      },
+                      "whether your request was referred to management review": {
+                        "description": "true if immediate review was requested but the request was referred to management review because of possible duplicates or similar sites.",
+                        "type": "boolean"
+                      },
+                      "possible duplicates": {
+                        "description": "Tested pages that may be the requested page. If one is, its latest report can be used at once.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string",
+                              "description": "Identifier of the page (example: p-l6vni7ua)."
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Name of the page, distinguishing it from the other pages of its site."
+                            },
+                            "URL": {
+                              "type": "string"
+                            },
+                            "sites": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Identifiers of the sites that the page belongs to (currently always one)."
+                            },
+                            "identifier of the latest report": {
+                              "type": "string",
+                              "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)."
+                            },
+                            "reason for suspicion": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identifier",
+                            "name",
+                            "URL",
+                            "sites",
+                            "identifier of the latest report",
+                            "reason for suspicion"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "similar sites": {
+                        "description": "Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestPageTest.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string",
+                              "description": "Identifier of the site (example: s-2fw2ea)."
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "count of tested pages": {
+                              "type": "number"
+                            },
+                            "reason for suspicion": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identifier",
+                            "name",
+                            "count of tested pages",
+                            "reason for suspicion"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "what happens next",
+                      "how you can check for completion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "details about your request",
+              "disposition of your request"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "tool collection",
+          "tool name",
+          "this request",
+          "URLs of similar requests for web users",
+          "response metadata",
+          "response content"
+        ],
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "additionalProperties": false,
+        "definitions": {
+          "ToolsFacts": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "object",
+                "properties": {
+                  "what Kilotest does": {
+                    "type": "string"
+                  },
+                  "how to retrieve findings": {
+                    "type": "object",
+                    "properties": {
+                      "level 1": {
+                        "type": "string"
+                      },
+                      "level 2": {
+                        "type": "string"
+                      },
+                      "level 3": {
+                        "type": "string"
+                      },
+                      "level 4": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "level 1",
+                      "level 2",
+                      "level 3",
+                      "level 4"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "how to generate more findings": {
+                    "type": "object",
+                    "properties": {
+                      "new testing": {
+                        "type": "string"
+                      },
+                      "retesting": {
+                        "type": "string"
+                      },
+                      "approval": {
+                        "type": "string"
+                      },
+                      "latency": {
+                        "type": "string"
+                      },
+                      "request confirmation": {
+                        "type": "string"
+                      },
+                      "order confirmation": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "new testing",
+                      "retesting",
+                      "approval",
+                      "latency",
+                      "request confirmation",
+                      "order confirmation"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "what Kilotest does",
+                  "how to retrieve findings",
+                  "how to generate more findings"
+                ],
+                "additionalProperties": false,
+                "description": "Explanation of what Kilotest does and how to use its tools."
+              },
+              "URL": {
+                "type": "string",
+                "description": "URL of the Kilotest MCP server."
+              },
+              "web users can obtain similar functionalities at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "URL",
+              "web users can obtain similar functionalities at"
+            ],
+            "additionalProperties": false
+          },
+          "RequestReference": {
+            "type": "object",
+            "properties": {
+              "tool name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "method": {
+                "type": "string",
+                "enum": [
+                  "GET",
+                  "POST"
+                ]
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "tool name",
+              "description",
+              "method",
+              "URL"
+            ],
+            "additionalProperties": false
+          },
+          "SimilarWebRequests": {
+            "type": "object",
+            "properties": {
+              "this request": {
+                "type": "string",
+                "description": "URL of the equivalent web UI page for this request."
+              },
+              "closest ancestor request": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "this request",
+              "closest ancestor request"
+            ],
+            "additionalProperties": false
+          },
+          "ResponseMetadata": {
+            "type": "object",
+            "properties": {
+              "identifier": {
+                "type": "string",
+                "description": "Unique identifier of this response (timestamp and random suffix)."
+              },
+              "date and time": {
+                "type": "string",
+                "description": "UTC date and time when the response was generated, in ISO 8601 format."
+              }
+            },
+            "required": [
+              "identifier",
+              "date and time"
+            ],
+            "additionalProperties": false
+          },
+          "RequestedPage": {
+            "type": "object",
+            "properties": {
+              "site identifier": {
+                "description": "Identifier of the site, or null if the site does not exist yet.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "site name": {
+                "type": "string"
+              },
+              "page identifier": {
+                "description": "Identifier of the page, or null if the page does not exist yet.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "page name": {
+                "type": "string"
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "site identifier",
+              "site name",
+              "page identifier",
+              "page name",
+              "URL"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "annotations": {
+        "title": "Request testing of a new page of a tested site",
         "readOnlyHint": false,
         "idempotentHint": false,
         "destructiveHint": false,
@@ -3349,20 +4417,7 @@
                         "type": "string"
                       },
                       "page to be retested": {
-                        "type": "object",
-                        "properties": {
-                          "description": {
-                            "type": "string"
-                          },
-                          "URL": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "description",
-                          "URL"
-                        ],
-                        "additionalProperties": false
+                        "$ref": "#/definitions/RequestedPage"
                       },
                       "reason why the page should be retested": {
                         "type": "string"
@@ -3404,6 +4459,82 @@
                       },
                       "do you want to wait for completion": {
                         "type": "string"
+                      },
+                      "whether your request was referred to management review": {
+                        "description": "true if immediate review was requested but the request was referred to management review because of possible duplicates or similar sites.",
+                        "type": "boolean"
+                      },
+                      "possible duplicates": {
+                        "description": "Tested pages that may be the requested page. If one is, its latest report can be used at once.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string",
+                              "description": "Identifier of the page (example: p-l6vni7ua)."
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "Name of the page, distinguishing it from the other pages of its site."
+                            },
+                            "URL": {
+                              "type": "string"
+                            },
+                            "sites": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Identifiers of the sites that the page belongs to (currently always one)."
+                            },
+                            "identifier of the latest report": {
+                              "type": "string",
+                              "description": "Identifier of the latest report about the page (example: 260503T0432-x9z)."
+                            },
+                            "reason for suspicion": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identifier",
+                            "name",
+                            "URL",
+                            "sites",
+                            "identifier of the latest report",
+                            "reason for suspicion"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "similar sites": {
+                        "description": "Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestPageTest.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "identifier": {
+                              "type": "string",
+                              "description": "Identifier of the site (example: s-2fw2ea)."
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "count of tested pages": {
+                              "type": "number"
+                            },
+                            "reason for suspicion": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "identifier",
+                            "name",
+                            "count of tested pages",
+                            "reason for suspicion"
+                          ],
+                          "additionalProperties": false
+                        }
                       }
                     },
                     "required": [
@@ -3592,6 +4723,42 @@
             "required": [
               "identifier",
               "date and time"
+            ],
+            "additionalProperties": false
+          },
+          "RequestedPage": {
+            "type": "object",
+            "properties": {
+              "site identifier": {
+                "description": "Identifier of the site, or null if the site does not exist yet.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "site name": {
+                "type": "string"
+              },
+              "page identifier": {
+                "description": "Identifier of the page, or null if the page does not exist yet.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "page name": {
+                "type": "string"
+              },
+              "URL": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "site identifier",
+              "site name",
+              "page identifier",
+              "page name",
+              "URL"
             ],
             "additionalProperties": false
           }
@@ -3896,7 +5063,7 @@
     },
     {
       "name": "awaitTest",
-      "description": "Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
+      "description": "Waits for a job that a requestNewTest, requestPageTest, or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
       "inputSchema": {
         "type": "object",
         "properties": {

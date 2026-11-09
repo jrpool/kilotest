@@ -1,167 +1,66 @@
 /*
   requestNewTest.test.ts
-  Unit tests for web/requestNewTest/index.ts, covering the success path of answer.
+  Unit tests for web/requestNewTest/index.ts.
 */
 
 // IMPORTS
 
-import {test, before, after, beforeEach} from 'node:test';
+import {test, before, beforeEach, after} from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import {parse} from 'node-html-parser';
-
-// CONSTANTS
-
 import {fixtureDBDir} from '../../test/dbFixture.ts';
-const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
+import {resetRequestState, writeFixtureJob} from '../../test/requestState.ts';
+import {answer} from './index.ts';
 
 // SETUP AND TEARDOWN
 
-before(async () => {
+const savedDBDir = process.env.DB_DIR;
+const reason = 'A reason that is long enough.';
+
+before(() => {
   process.env.DB_DIR = fixtureDBDir;
-  process.env.AUTH_CODE = 'test-auth-code';
 });
 
-beforeEach(async () => {
-  // Reset testRequests.json and clean job directories before each test.
-  await fs.writeFile(testRequestsPath, '{}\n');
-  for (const sub of ['claimed', 'queue', 'failed']) {
-    const dir = path.join(fixtureDBDir, 'jobs', sub);
-    await fs.mkdir(dir, {recursive: true});
-    const files = await fs.readdir(dir).catch(() => []);
-    for (const file of files) {
-      try {
-        await fs.unlink(path.join(dir, file));
-      }
-      catch {
-        // Ignore cleanup errors for files that may not exist.
-      }
-    }
+beforeEach(() => {
+  resetRequestState();
+});
+
+after(() => {
+  resetRequestState();
+  if (savedDBDir !== undefined) {
+    process.env.DB_DIR = savedDBDir;
   }
-});
-
-after(async () => {
-  // Restore testRequests.json and clean job directories after all tests.
-  await fs.writeFile(testRequestsPath, '{}\n');
-  for (const sub of ['claimed', 'queue', 'failed']) {
-    const dir = path.join(fixtureDBDir, 'jobs', sub);
-    await fs.mkdir(dir, {recursive: true});
-    const files = await fs.readdir(dir).catch(() => []);
-    for (const file of files) {
-      try {
-        await fs.unlink(path.join(dir, file));
-      }
-      catch {
-        // Ignore cleanup errors for files that may not exist.
-      }
-    }
+  else {
+    delete process.env.DB_DIR;
   }
 });
 
 // TESTS
 
-test('answer returns ok with a populated answer page for a valid test request', {timeout: 500}, async () => {
-  // Require the module after DB_DIR is set.
-  const {answer} = await import('./index.ts');
-  const result: any = await answer(
-    'Test Page', 'https://example.com/test-success', 'Because accessibility'
-  );
+test('answer returns ok with a populated answer page for a valid request', async () => {
+  const result: any = await answer('  New   Web Org ', 'home', 'https://example.com/web-new', reason);
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage, 'answerPage should be present');
-  // Verify the placeholders were replaced.
-  assert.ok(result.answerPage.includes('Test Page'));
-  assert.ok(result.answerPage.includes('Because accessibility'));
-  assert.ok(!result.answerPage.includes('__description__'));
-  assert.ok(!result.answerPage.includes('__url__'));
-  assert.ok(!result.answerPage.includes('__reason__'));
-  // Verify the HTML is well-formed.
-  const doc = parse(result.answerPage);
-  const h1 = doc.querySelector('h1');
-  assert.ok(h1);
-  assert.ok(h1.textContent.includes('Test Page'));
+  assert.ok(result.answerPage.includes('New Web Org home'));
+  assert.ok(result.answerPage.includes('https://example.com/web-new'));
+  assert.ok(result.answerPage.includes(reason));
 });
 
-test('answer returns an error when the URL is already queued', {timeout: 500}, async () => {
-  const {answer} = await import('./index.ts');
-  // Create a queued job with the target URL.
-  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
-  const jobPath = path.join(queueDir, 'queuedJob.json');
-  await fs.writeFile(jobPath, JSON.stringify({
-    id: 'queuedJob',
-    target: {what: 'Queued Page', url: 'https://example.com/queued'}
-  }));
-  try {
-    const result: any = await answer(
-      'Queued Page', 'https://example.com/queued', 'Because accessibility'
-    );
-    assert.equal(result.status, 'error');
-    assert.equal(result.message, 'A request to test a page with the same description or URL is already approved');
-  }
-  finally {
-    try {
-      await fs.unlink(jobPath);
-    }
-    catch {
-      // Ignore cleanup errors.
-    }
-  }
+test('answer returns an error for a site or page name of invalid length', async () => {
+  const longSite: any = await answer('x'.repeat(81), 'home', 'https://example.com/web-new', reason);
+  assert.equal(longSite.message, 'The site name must be between 1 and 80 characters long');
+  const emptyPage: any = await answer('Org', ' ', 'https://example.com/web-new', reason);
+  assert.equal(emptyPage.message, 'The page name must be between 1 and 120 characters long');
 });
 
-test('answer returns an error for a duplicate request', {timeout: 500}, async () => {
-  const {answer} = await import('./index.ts');
-  // Submit the same request twice; the second is a duplicate.
-  await answer('Duplicate Page', 'https://example.com/duplicate', 'Because accessibility');
-  const result: any = await answer(
-    'Duplicate Page', 'https://example.com/duplicate', 'Because accessibility'
-  );
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'Test request duplicates an already submitted request');
-});
-
-test('answer returns an error when a report already exists for the page', {timeout: 500}, async () => {
-  const {answer} = await import('./index.ts');
-  // The fixture database already has a report for this description and URL.
-  const result: any = await answer(
-    'Mixed Outcomes', 'https://example.com/mixed', 'Because accessibility'
-  );
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'A report about a page with the same description or URL is already available');
-});
-
-test('answer returns an error with a fallback channel when the request queue is full', {timeout: 500}, async () => {
-  const {answer} = await import('./index.ts');
-  // Fill testRequests.json with 20 pending requests, all for one URL, to reach the cap.
-  const filler = Array.from({length: 20}, (_, i) => ({
-    timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Because filler'
-  }));
-  await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
-  const result: any = await answer(
-    'One Too Many Page', 'https://example.com/one-too-many', 'Because accessibility'
-  );
-  assert.equal(result.status, 'error');
-  assert.ok(result.message.startsWith('Too many requests are awaiting approval right now.'));
-  assert.ok(result.message.includes('https://github.com/jrpool/kilotest/issues'));
-  assert.ok(result.message.includes('info@kilotest.com'));
-});
-
-test('answer returns an error for a URL shorter than 12 characters', {timeout: 500}, async () => {
-  const {answer} = await import('./index.ts');
-  // processTestRequest enforces the 12-to-300-character bound stated by the
-  // request form’s minlength/maxlength, so this 11-character URL is rejected.
-  const result: any = await answer(
-    'Short URL Page', 'https://a.b', 'Because accessibility'
-  );
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'The URL must be between 12 and 300 characters long');
-});
-
-test('answer returns an error for a URL longer than 300 characters', {timeout: 500}, async () => {
-  const {answer} = await import('./index.ts');
-  // The same bound rejects this 320-character URL.
-  const result: any = await answer(
-    'Long URL Page', `https://example.com/${'a'.repeat(300)}`, 'Because accessibility'
-  );
-  assert.equal(result.status, 'error');
-  assert.equal(result.message, 'The URL must be between 12 and 300 characters long');
+test('answer returns an error explaining a refusal', async () => {
+  const existing: any = await answer('Fixture Site', 'home', 'https://example.com/web-new', reason);
+  assert.equal(existing.status, 'error');
+  assert.ok(existing.message.startsWith('Your request will not be processed, because a site named “Fixture Site”'));
+  writeFixtureJob('queue', 'queued', {target: {url: 'https://example.com/web-queued'}});
+  const queued: any = await answer('Org', 'home', 'https://example.com/web-queued', reason);
+  assert.ok(queued.message.includes('equivalent URL is already approved'));
+  const short: any = await answer('Org', 'home', 'https://x.c', reason);
+  assert.ok(short.message.includes('not between 12 and 300 characters long'));
+  await answer('Dup Org', 'home', 'https://example.com/web-dup', reason);
+  const duplicate: any = await answer('Dup Org', 'home', 'https://example.com/web-dup', reason);
+  assert.ok(duplicate.message.includes('an identical request is already awaiting approval.'));
 });

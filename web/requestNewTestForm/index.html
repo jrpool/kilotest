@@ -8,11 +8,15 @@
   <body>
     <main>
       <h1><a href="/">Kilotest</a>: Test request</h1>
-      <p>You may request that a web page be tested by submitting the following form. All answers are required.</p>
+      <p>You may request that a web page of a site not yet tested be tested by submitting the following form. All answers are required.</p>
       <form action="/requestNewTest.html" method="post">
         <p><label>
-          Propose a name for the page.<br>
-          <input size="50" maxlength="70" name="description" required>
+          What is the name of the site (usually the name of the organization or brand that presents it)?<br>
+          <input size="50" maxlength="80" name="siteName" required>
+        </label></p>
+        <p><label>
+          What is the name of the page (for the home page, <q>home</q>)?<br>
+          <input size="50" maxlength="120" name="pageName" required>
         </label></p>
         <p><label>
           What is the URL (starting with <code>https://</code>)?<br>

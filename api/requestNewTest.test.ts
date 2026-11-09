@@ -7,42 +7,36 @@
 
 import {test, before, beforeEach, after} from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import {fixtureDBDir} from '../test/dbFixture.ts';
+import {readFixtureRequests, resetRequestState, writeFixtureJob} from '../test/requestState.ts';
 
-// Blank the alert configuration unconditionally, before ./requestNewTest.ts (whose
-// processTestRequest calls sendAlert) is ever imported below, so this file sends no
-// real alert emails even when run directly rather than via `npm test`.
+// Blank the alert configuration unconditionally, before ./requestNewTest.ts (whose submissions call sendAlert) is ever imported below, so this file sends no real alert emails even when run directly rather than via `npm test`.
 for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
   process.env[key] = '';
 }
-// Allow internal targets by default, so tests that submit an ordinary https://example.com/...
-// URL do not depend on real DNS/network access to pass the resolution check that
-// isAllowedTarget performs. The test of the check itself (below) overrides this.
+// Allow internal targets by default, so tests that submit an ordinary https://example.com/... URL do not depend on real DNS/network access. The tests of the check itself override this.
 process.env.ALLOW_INTERNAL_TARGETS = 'true';
+
+import {response} from './requestNewTest.ts';
+import {requestNewTestResponseSchema} from './schemas.ts';
 
 // SETUP AND TEARDOWN
 
 const savedDBDir = process.env.DB_DIR;
-const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
-let logged: any[] = [];
+const reason = 'A reason that is long enough.';
+let logged: string[] = [];
 const originalLog = console.log;
 
 before(() => {
   process.env.DB_DIR = fixtureDBDir;
 });
 
-// Reset the test-requests file and capture console.log, so the alert that
-// processTestRequest emits can be observed and tests are order-independent.
-beforeEach(async () => {
-  await fs.writeFile(testRequestsPath, '{}\n');
+// Reset the request state and capture console.log, so the alerts that submissions emit can be observed and tests are order-independent.
+beforeEach(() => {
+  resetRequestState();
   logged = [];
   console.log = (...args) => logged.push(args.join(' '));
 });
-
-import {response} from './requestNewTest.ts';
-import {requestNewTestResponseSchema} from './schemas.ts';
 
 after(() => {
   console.log = originalLog;
@@ -54,57 +48,45 @@ after(() => {
   }
 });
 
+// FUNCTIONS
+
+// Returns the details and disposition of a response.
+const getContent = (body: Awaited<ReturnType<typeof response>>) => ({
+  details: body['response content']['details about your request'] as any,
+  disposition: body['response content']['disposition of your request'] as any
+});
+// Returns whether an alert about a pending request was logged.
+const alerted = () => logged.some(line => line.includes('request for a new test awaits approval'));
+
 // TESTS
 
-test('requestNewTest rejects an empty description', async () => {
-  const body = await response(['', 'https://example.com/test', 'A reason that is long enough.']);
-  assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
-});
-
-test('requestNewTest rejects a description longer than 100 characters', async () => {
-  const longWhat = 'x'.repeat(101);
-  const body = await response([longWhat, 'https://example.com/test', 'A reason that is long enough.']);
-  assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
-});
-
-test('requestNewTest rejects a reason shorter than 20 characters', async () => {
-  const body = await response(['Test Page', 'https://example.com/test', 'short']);
-  const details = body['response content']['details about your request'] as any;
-  assert.ok(details.error.includes('reason'));
-  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
-});
-
-test('requestNewTest rejects a reason longer than 100 characters', async () => {
-  const longReason = 'x'.repeat(101);
-  const body = await response(['Test Page', 'https://example.com/test', longReason]);
-  const details = body['response content']['details about your request'] as any;
-  assert.ok(details.error.includes('reason'));
-  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
-});
-
-test('requestNewTest rejects a URL shorter than 12 characters', async () => {
-  const body = await response(['Test Page', 'short', 'A reason that is long enough.']);
-  assert.ok((body['response content']['details about your request'] as any).error);
-  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
-});
-
-test('requestNewTest rejects a syntactically invalid URL with the correct length', async () => {
-  const body = await response(['Test Page', 'not-a-valid-url', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'] as any;
-  assert.ok(details.error.includes('invalid URL'));
-  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
+test('requestNewTest rejects names, reasons, and URLs of invalid length or form', async () => {
+  const cases: [string[], string][] = [
+    [['', 'home', 'https://example.org/', reason], 'site name'],
+    [['x'.repeat(81), 'home', 'https://example.org/', reason], 'site name'],
+    [['Org', '  ', 'https://example.org/', reason], 'page name'],
+    [['Org', 'x'.repeat(121), 'https://example.org/', reason], 'page name'],
+    [['Org', 'home', 'https://example.org/', 'short'], 'reason'],
+    [['Org', 'home', 'https://example.org/', 'x'.repeat(101)], 'reason'],
+    [['Org', 'home', 'short', reason], '12 and 300'],
+    [['Org', 'home', 'not-a-valid-url', reason], 'invalid URL']
+  ];
+  for (const [args, fragment] of cases) {
+    const {details, disposition} = getContent(await response(args));
+    assert.ok(details.error.includes(fragment), `${args.join('|')}: ${details.error}`);
+    assert.equal(disposition, null);
+  }
+  assert.ok(!alerted());
 });
 
 test('requestNewTest rejects a private-address URL unless internal targets are allowed', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   try {
-    const body = await response(['Internal Page', 'https://192.168.1.1/page', 'A reason that is long enough.']);
-    const details = body['response content']['details about your request'] as any;
+    const {details} = getContent(await response(['Internal', 'home', 'https://192.168.1.1/page', reason]));
     assert.ok(details.error.includes('does not resolve to a page that this deployment can test'));
-    assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
-  } finally {
+    assert.ok(!alerted());
+  }
+  finally {
     process.env.ALLOW_INTERNAL_TARGETS = 'true';
   }
 });
@@ -113,136 +95,131 @@ test('requestNewTest rejects a URL that redirects to a disallowed target, and al
   delete process.env.ALLOW_INTERNAL_TARGETS;
   t.mock.method(globalThis, 'fetch', async () => ({url: 'https://10.0.0.5/page'}) as Response);
   try {
-    const body = await response(['Redirecting Page', 'https://example.com/redirector', 'A reason that is long enough.']);
-    const details = body['response content']['details about your request'] as any;
+    const {details} = getContent(await response(['Redirector', 'home', 'https://example.com/redirector', reason]));
     assert.ok(details.error.includes('does not resolve to a page that this deployment can test'));
     assert.ok(logged.some(line =>
       line.includes('WARNING (Kilotest: request rejected for redirecting to a disallowed target)')
       && line.includes('https://example.com/redirector')
     ));
-  } finally {
+  }
+  finally {
     process.env.ALLOW_INTERNAL_TARGETS = 'true';
   }
 });
 
-test('requestNewTest rejects an already-tested page', async () => {
-  const body = await response(['Mixed Outcomes', 'https://example.com/mixed', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'] as any;
-  // A report for this description and URL already exists, so processTestRequest
-  // returns 'reportExists' and the failure is reported via the disposition, not details.error.
-  assert.equal(details.error, undefined);
-  const disposition = body['response content']['disposition of your request'] as any;
-  assert.ok(
-    disposition['what happens next']
-    .includes('a report about a page with the same description or URL is available.')
-  );
-  assert.ok(!logged.some(line => line.includes('request for a new test awaits approval')));
-});
-
-test('requestNewTest rejects an already-tested page under reviewImmediately', async () => {
-  // The same reportExists failure as the management-review test above, but reported by the
-  // immediate review's orderJob path (fourth argument 'true').
-  const body = await response(['Mixed Outcomes', 'https://example.com/mixed', 'A reason that is long enough.', 'true']);
-  const details = body['response content']['details about your request'] as any;
-  assert.equal(details.error, undefined);
-  const disposition = body['response content']['disposition of your request'] as any;
-  assert.ok(
-    disposition['what happens next']
-    .includes('a report about a page with the same description or URL is available.')
-  );
-  assert.equal(disposition['report identifier'], null);
-});
-
-test('requestNewTest rejects a page matching a claimed job by description', async () => {
-  const claimedPath = path.join(fixtureDBDir, 'jobs', 'claimed', 'clm.json');
-  await fs.writeFile(claimedPath, JSON.stringify({
-    target: {what: 'Claimed Test Page', url: 'https://example.com/claimed-job'}
-  }));
+test('requestNewTest compares the URL to which the requested URL redirects with the URLs of tested pages', async (t) => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  t.mock.method(globalThis, 'fetch', async () => ({url: 'https://example.com/mixed'}) as Response);
   try {
-    const body = await response(['Claimed Test Page', 'https://example.com/other-url', 'A reason that is long enough.']);
-    const details = body['response content']['details about your request'] as any;
-    assert.equal(details.error, undefined);
-    const disposition = body['response content']['disposition of your request'] as any;
-    assert.ok(
-      disposition['what happens next']
-      .includes('a request to test a page with the same description is already approved.')
-    );
+    const {disposition} = getContent(await response(['Redirector', 'home', 'https://example.com/redirector', reason]));
+    assert.equal(disposition['possible duplicates'][0].identifier, 'p-mixedout');
+    assert.equal(disposition['possible duplicates'][0]['identifier of the latest report'], '260202T0000-new');
   }
   finally {
-    await fs.unlink(claimedPath);
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
   }
 });
 
-test('requestNewTest rejects a page matching a queued job by URL', async () => {
-  const queuedPath = path.join(fixtureDBDir, 'jobs', 'queue', 'que.json');
-  await fs.writeFile(queuedPath, JSON.stringify({
-    target: {what: 'Some Other Page', url: 'https://example.com/queued-url'}
-  }));
-  try {
-    const body = await response(['A Different Page', 'https://example.com/queued-url', 'A reason that is long enough.']);
-    const details = body['response content']['details about your request'] as any;
-    assert.equal(details.error, undefined);
-    const disposition = body['response content']['disposition of your request'] as any;
-    assert.ok(
-      disposition['what happens next']
-      .includes('a request to test a page with the same URL is already approved.')
-    );
-  }
-  finally {
-    await fs.unlink(queuedPath);
-  }
+test('requestNewTest refuses a site name matching that of an existing site', async () => {
+  const {details, disposition} = getContent(await response(['  fixture   SITE. ', 'home', 'https://fixture.example/', reason]));
+  assert.equal(details['page to be tested']['site name'], 'fixture SITE.');
+  assert.ok(disposition['what happens next'].includes('a site named “Fixture Site” (identifier s-fixtur) already exists'));
+  assert.ok(!alerted());
 });
 
-test('requestNewTest rejects a duplicate request', async () => {
-  await response(['Duplicate API Page', 'https://example.com/dup-api', 'A reason that is long enough.']);
-  const body = await response(['Duplicate API Page', 'https://example.com/dup-api', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'] as any;
-  assert.equal(details.error, undefined);
-  const disposition = body['response content']['disposition of your request'] as any;
+test('requestNewTest refuses a page whose URL is that of a queued job', async () => {
+  writeFixtureJob('queue', 'queued', {target: {url: 'https://example.com/queued-url'}});
+  const {disposition} = getContent(await response(['Queued Org', 'home', 'https://example.com/queued-url', reason]));
+  assert.ok(disposition['what happens next'].includes('a page with an equivalent URL is already approved'));
+});
+
+test('requestNewTest refuses a duplicate request', async () => {
+  await response(['Dup Org', 'home', 'https://example.com/dup-api', reason]);
+  const {disposition} = getContent(await response(['Dup Org', 'home', 'https://example.com/dup-api', reason]));
   assert.ok(disposition['what happens next'].includes('an identical request is already awaiting approval.'));
 });
 
-test('requestNewTest accepts a valid new page request', async () => {
-  const body = await response(['Brand New Page', 'https://example.com/brandnew', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'] as any;
-  assert.equal(details.error, undefined);
-  assert.equal(details['page to be tested'].description, 'Brand New Page');
+test('requestNewTest records a valid request for management review and alerts a manager', async () => {
+  const body = await response(['Brand New Org', 'home', 'https://example.com/brandnew', reason]);
+  const {details, disposition} = getContent(body);
+  assert.deepEqual(details['page to be tested'], {
+    'site identifier': null,
+    'site name': 'Brand New Org',
+    'page identifier': null,
+    'page name': 'home',
+    URL: 'https://example.com/brandnew'
+  });
+  assert.equal(disposition['whether your request was referred to management review'], false);
+  assert.ok(disposition['how you can check for completion'].includes('listSites'));
   assert.ok(logged.some(line =>
     line.startsWith('WARNING (Kilotest: request for a new test awaits approval)')
-    && line.includes('Brand New Page')
-    && line.includes('https://example.com/brandnew')
-    // The alert reports the resulting queue size, so a maintainer who has been away can
-    // see at a glance how close the queue is to full.
+    && line.includes('Brand New Org')
     && line.includes('Requests now awaiting approval: 1 of 20')
   ));
-});
-
-test('requestNewTest includes disposition information for a valid request', async () => {
-  const body = await response(['Brand New Page', 'https://example.com/brandnew', 'A reason that is long enough.']);
-  const disposition = body['response content']['disposition of your request'];
-  assert.ok(disposition);
-  assert.ok(disposition['what happens next']);
-});
-
-test('requestNewTest rejects a request with a fallback channel when the queue is full', async () => {
-  // Fill testRequests.json with 20 pending requests, all for one URL, to reach the cap.
-  const filler = Array.from({length: 20}, (_, i) => ({
-    timeStamp: '260101T0000', description: `Filler Page ${i}`, reason: 'Filler reason.'
-  }));
-  await fs.writeFile(testRequestsPath, JSON.stringify({'https://example.com/filler': filler}));
-  const body = await response(['One Too Many Page', 'https://example.com/one-too-many', 'A reason that is long enough.']);
-  const details = body['response content']['details about your request'] as any;
-  assert.equal(details.error, undefined);
-  const disposition = body['response content']['disposition of your request'] as any;
-  assert.ok(disposition['what happens next'].includes('too many requests are awaiting approval right now.'));
-  assert.ok(disposition['what happens next'].includes('https://github.com/jrpool/kilotest/issues'));
-  assert.ok(disposition['what happens next'].includes('info@kilotest.com'));
-});
-
-test('requestNewTest response conforms to its response schema', async () => {
-  // parse() catches missing or mistyped keys; comparing the parsed result to the
-  // original catches extra keys that zod strips but that the strict JSON schema
-  // advertised to MCP clients (additionalProperties: false) rejects.
-  const body = await response(['Schema Conformance Page', 'https://example.com/schema-conformance', 'A reason that is long enough.']);
   assert.deepEqual(requestNewTestResponseSchema.parse(body), body);
+});
+
+test('requestNewTest refers a request for immediate review with a possible duplicate to management review', async () => {
+  const body = await response(['Mixed Org', 'home', 'https://www.example.com/mixed/', reason, 'true']);
+  const {disposition} = getContent(body);
+  assert.ok(disposition['what happens next'].startsWith('Your request was referred to management review'));
+  assert.equal(disposition['whether your request was referred to management review'], true);
+  assert.deepEqual(disposition['possible duplicates'], [{
+    identifier: 'p-mixedout',
+    name: 'Mixed Outcomes',
+    URL: 'https://example.com/mixed',
+    sites: ['s-fixtur'],
+    'identifier of the latest report': '260202T0000-new',
+    'reason for suspicion': 'Its URL is equivalent to the requested URL.'
+  }]);
+  assert.deepEqual(disposition['similar sites'], []);
+  assert.equal(readFixtureRequests()['https://www.example.com/mixed/']?.[0]?.referred, true);
+  assert.deepEqual(requestNewTestResponseSchema.parse(body), body);
+});
+
+test('requestNewTest lists similar sites with their counts of tested pages', async () => {
+  const {disposition} = getContent(await response(['Fixture Site (FS)', 'home', 'https://fs.example/', reason, 'true']));
+  assert.deepEqual(disposition['similar sites'], [{
+    identifier: 's-fixtur',
+    name: 'Fixture Site',
+    'count of tested pages': 7,
+    'reason for suspicion': 'Its name differs from the requested site name only in case, punctuation, or a parenthesized part.'
+  }]);
+});
+
+test('requestNewTest orders a test of a request that passes every check under immediate review', async () => {
+  const body = await response(['Instant Org', 'home', 'https://example.com/instant', reason, 'true']);
+  const {details, disposition} = getContent(body);
+  assert.match(details['page to be tested']['site identifier'], /^s-[0-9a-z]{6}$/);
+  assert.match(details['page to be tested']['page identifier'], /^p-[0-9a-z]{8}$/);
+  assert.match(disposition['report identifier'], /^\d{6}T\d{4}-[0-9a-z]{3}$/);
+  assert.ok(disposition['do you want to wait for completion'].includes('awaitTest'));
+  assert.deepEqual(requestNewTestResponseSchema.parse(body), body);
+});
+
+test('requestNewTest refuses a request with a fallback channel when the queue is full', async () => {
+  process.env.TEST_REQUEST_QUEUE_MAX = '1';
+  try {
+    await response(['Filler Org', 'home', 'https://example.com/filler', reason]);
+    const body = await response(['One Too Many Org', 'home', 'https://www.example.com/mixed', reason]);
+    const {disposition} = getContent(body);
+    assert.ok(disposition['what happens next'].includes('too many requests are awaiting approval right now.'));
+    assert.ok(disposition['what happens next'].includes('info@kilotest.com'));
+    // The possible duplicates are listed even though the request was refused.
+    assert.equal(disposition['possible duplicates'].length, 1);
+    assert.deepEqual(requestNewTestResponseSchema.parse(body), body);
+  }
+  finally {
+    delete process.env.TEST_REQUEST_QUEUE_MAX;
+  }
+});
+
+test('requestNewTest describes its request and ancestor', async () => {
+  const body = await response(['Org', 'home', 'https://example.org/', reason, 'true']);
+  assert.equal(body['tool name'], 'requestNewTest');
+  assert.deepEqual(body['this request'].body, {
+    siteName: 'Org', pageName: 'home', URL: 'https://example.org/', reason, reviewImmediately: true
+  });
+  assert.equal(body['this request']['closest ancestor request']['tool name'], 'listSites');
+  assert.equal(body['URLs of similar requests for web users']['closest ancestor request'], 'https://kilotest.example.com/listSites.html');
 });

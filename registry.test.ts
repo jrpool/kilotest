@@ -11,8 +11,20 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  addPage, changeRegistry, getNewID, getRegistry, getSitePages, isPageID, isSiteID, registryPath
+  changeRegistry,
+  getHost,
+  getNameKey,
+  getNewID,
+  getRegistry,
+  getSitePages,
+  isPageError,
+  isPageID,
+  isSiteID,
+  planPage,
+  registerPage,
+  registryPath
 } from './registry.ts';
+import type {PageError, RegisteredPage} from './registry.ts';
 
 // FUNCTIONS
 
@@ -87,38 +99,73 @@ test('changeRegistry writes only when the change says so', async () => {
     assert.deepEqual(fs.readdirSync(dbDir), ['registry.json']);
   });
 });
-test('addPage creates or reuses sites and refuses missing sites and duplicate pages', async () => {
+test('getNameKey ignores case, apostrophes, white space, and punctuation, but not parenthesized parts', () => {
+  assert.equal(getNameKey('Women’s  Liberation Front'), getNameKey('womens liberation front.'));
+  assert.notEqual(getNameKey('Springfield (Oregon)'), getNameKey('Springfield (Illinois)'));
+});
+test('getHost returns the lowercase host of a URL, or an empty string for an invalid URL', () => {
+  assert.equal(getHost('https://WWW.Example.org/a'), 'www.example.org');
+  assert.equal(getHost('not a URL'), '');
+});
+test('planPage resolves targets and reports why a target cannot be resolved', () => {
+  const registry = {
+    sites: {'s-aaaaaa': 'Example Org'},
+    pages: {'p-aaaaaaaa': {sites: ['s-aaaaaa'], name: 'Home', url: 'https://example.org/'}}
+  };
+  assert.deepEqual(planPage(registry, {pageID: 'p-aaaaaaaa'}), {
+    siteID: 's-aaaaaa', siteName: 'Example Org', pageID: 'p-aaaaaaaa', pageName: 'Home', url: 'https://example.org/'
+  });
+  assert.deepEqual(planPage(registry, {pageID: 'p-zzzzzzzz'}), {result: 'noPage'});
+  assert.deepEqual(
+    planPage(registry, {siteID: 's-aaaaaa', pageName: 'contact', url: 'https://example.org/contact'}),
+    {siteID: 's-aaaaaa', siteName: 'Example Org', pageID: null, pageName: 'contact', url: 'https://example.org/contact'}
+  );
+  assert.deepEqual(
+    planPage(registry, {siteID: 's-zzzzzz', pageName: 'contact', url: 'https://example.org/contact'}), {result: 'noSite'}
+  );
+  // Page names match after normalization.
+  assert.deepEqual(
+    planPage(registry, {siteID: 's-aaaaaa', pageName: ' home ', url: 'https://example.org/x'}),
+    {result: 'pageExists', pageID: 'p-aaaaaaaa'}
+  );
+  assert.deepEqual(
+    planPage(registry, {siteName: 'example org.', pageName: 'home', url: 'https://example.org/'}),
+    {result: 'siteExists', siteID: 's-aaaaaa'}
+  );
+  assert.deepEqual(
+    planPage(registry, {siteName: 'Example Org (EO)', pageName: 'home', url: 'https://eo.org/'}),
+    {siteID: null, siteName: 'Example Org (EO)', pageID: null, pageName: 'home', url: 'https://eo.org/'}
+  );
+});
+test('registerPage creates sites and pages, returns existing pages, and refuses unresolvable targets', async () => {
   await withDB(async () => {
-    const first = await addPage({siteName: 'Example', pageName: 'home', url: 'https://example.org/'});
-    assert.ok(!('error' in first));
-    assert.equal(isSiteID(first.siteID) && isPageID(first.pageID), true);
-    // A named site that exists is reused.
-    const second = await addPage({siteName: 'Example', pageName: 'contact', url: 'https://example.org/contact'});
-    assert.ok(!('error' in second));
-    assert.equal(second.siteID, first.siteID);
-    // An identified site is used.
-    const third = await addPage({siteID: first.siteID, pageName: 'about', url: 'https://example.org/about'});
-    assert.ok(!('error' in third));
-    assert.equal(third.siteID, first.siteID);
-    assert.deepEqual(await addPage({siteID: 's-zzzzzz', pageName: 'home', url: 'https://x.org/'}), {error: 'noSite'});
-    assert.deepEqual(
-      await addPage({siteName: 'Example', pageName: 'home', url: 'https://example.org/'}), {error: 'pageExists'}
-    );
+    const first = await registerPage({siteName: 'Example', pageName: 'home', url: 'https://example.org/'});
+    assert.equal(isPageError(first), false);
+    const {siteID, pageID} = first as RegisteredPage;
+    assert.equal(isSiteID(siteID) && isPageID(pageID), true);
+    const second = await registerPage({siteID, pageName: 'contact', url: 'https://example.org/contact'});
+    assert.equal((second as RegisteredPage).siteID, siteID);
+    // An existing page is returned without a change.
+    assert.deepEqual(await registerPage({pageID}), first);
+    assert.deepEqual(await registerPage({siteName: 'EXAMPLE', pageName: 'x', url: 'https://x.org/'}), {
+      result: 'siteExists', siteID
+    } satisfies PageError);
     const registry = await getRegistry();
-    assert.deepEqual(registry.sites, {[first.siteID]: 'Example'});
-    assert.deepEqual(registry.pages[first.pageID], {sites: [first.siteID], name: 'home', url: 'https://example.org/'});
-    assert.deepEqual(getSitePages(registry, first.siteID).map(([, page]) => page.name), ['about', 'contact', 'home']);
+    assert.deepEqual(registry.sites, {[siteID]: 'Example'});
+    assert.deepEqual(registry.pages[pageID], {sites: [siteID], name: 'home', url: 'https://example.org/'});
+    assert.deepEqual(getSitePages(registry, siteID).map(([, page]) => page.name), ['contact', 'home']);
     assert.deepEqual(getSitePages(registry, 's-zzzzzz'), []);
   });
 });
 test('changeRegistry serializes concurrent changes', async () => {
   await withDB(async () => {
-    const results = await Promise.all(['a', 'b', 'c', 'd'].map(
-      pageName => addPage({siteName: 'Example', pageName, url: `https://example.org/${pageName}`})
+    const first = await registerPage({siteName: 'Example', pageName: 'home', url: 'https://example.org/'});
+    const {siteID} = first as RegisteredPage;
+    await Promise.all(['a', 'b', 'c', 'd'].map(
+      pageName => registerPage({siteID, pageName, url: `https://example.org/${pageName}`})
     ));
     const registry = await getRegistry();
     assert.equal(Object.keys(registry.sites).length, 1);
-    assert.equal(Object.keys(registry.pages).length, 4);
-    assert.equal(new Set(results.map(result => 'siteID' in result && result.siteID)).size, 1);
+    assert.equal(Object.keys(registry.pages).length, 5);
   });
 });

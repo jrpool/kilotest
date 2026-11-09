@@ -11,6 +11,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import {parse} from 'node-html-parser';
 import {getReport, isReportError, reportsPath} from '../util.ts';
+import type {Registry} from '../registry.ts';
 import {
   checkCommentLength,
   getAgoString,
@@ -127,9 +128,18 @@ const getFixtureReport = async (reportID: string) => {
   return report;
 };
 
-test('getPageData returns page data for a valid report', async () => {
-  const data = getPageData(await getFixtureReport('260101T0000-mix'));
-  assert.equal(data.description, 'Mixed Outcomes');
+// A registry naming the pages of two fixture reports.
+const registry: Registry = {
+  sites: {'s-fixtur': 'Fixture Site'},
+  pages: {
+    'p-mixedout': {sites: ['s-fixtur'], name: 'Mixed <Outcomes>', url: 'https://example.com/mixed'},
+    'p-canttell': {sites: ['s-fixtur'], name: 'All CantTell Page', url: 'https://example.com/canttell'}
+  }
+};
+
+test('getPageData returns page data for a valid report, named by the registry', async () => {
+  const data = getPageData(await getFixtureReport('260101T0000-mix'), registry);
+  assert.equal(data.description, 'Fixture Site Mixed <Outcomes>');
   assert.equal(data.url, 'https://example.com/mixed');
   assert.equal(typeof data.daysAgo, 'number');
 });
@@ -140,8 +150,8 @@ test('getReport returns an error for a nonexistent report', async () => {
 });
 
 test('getPageDataStrings returns HTML strings for a valid report', async () => {
-  const strings = getPageDataStrings(await getFixtureReport('260101T0000-mix'));
-  assert.equal(strings.description, 'Mixed Outcomes');
+  const strings = getPageDataStrings(await getFixtureReport('260101T0000-mix'), registry);
+  assert.equal(strings.description, 'Fixture Site Mixed &lt;Outcomes&gt;');
   assert.equal(strings.url, 'https://example.com/mixed');
   assert.equal(strings.urlLink, '<a href="https://example.com/mixed">https://example.com/mixed</a>');
   assert.ok(strings.testInfo.includes('by job <code>260101T0000-mix</code>'));
@@ -151,8 +161,8 @@ test('getPageDataStrings returns HTML strings for a valid report', async () => {
 test('getPageDataStrings dates a report by its completion time, not by its job time stamp', async () => {
   const report = await getFixtureReport('260101T0001-ct');
   report.jobData.endTime = '26-03-04T05:06';
-  const strings = getPageDataStrings(report);
-  assert.equal(strings.description, 'All CantTell Page');
+  const strings = getPageDataStrings(report, registry);
+  assert.equal(strings.description, 'Fixture Site All CantTell Page');
   assert.ok(strings.testInfo.includes('by job <code>260101T0001-ct</code>'));
   assert.ok(strings.testInfo.includes('2026-03-04 at 05:06'));
   assert.ok(!strings.testInfo.includes('2026-01-01'));
@@ -166,10 +176,10 @@ test('getDateTimeString describes an invalid date as unknown', () => {
   assert.equal(getDateTimeString(new Date(NaN)), 'an unknown date at an unknown time');
 });
 
-test('getPageDataStrings derives the strings from the report object', async () => {
-  const report = await getFixtureReport('260101T0000-mix');
+test('getPageDataStrings uses the description in a report whose page is not in the registry', async () => {
+  const report = await getFixtureReport('260101T0002-no');
   report.target.what = 'Custom Page';
-  const strings = getPageDataStrings(report);
+  const strings = getPageDataStrings(report, registry);
   assert.equal(strings.description, 'Custom Page');
 });
 
@@ -182,7 +192,7 @@ test('getPageDataStrings reports a 1-day-old report as tested 1 day ago', () => 
     target: {what: 'Some Page', url: 'https://example.com'},
     jobData: {endTime}
   } as any;
-  const strings = getPageDataStrings(report);
+  const strings = getPageDataStrings(report, registry);
   assert.ok(strings.testInfo.includes('1 day ago'));
 });
 
@@ -212,7 +222,7 @@ test('getReportData falls back to the engine ID for an unknown prevented engine'
 test('getPageFactsLines returns the about-page list lines for a report', async () => {
   const {getReportData} = await import('./util.ts');
   const report = await getFixtureReport('260101T0000-mix');
-  const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '  ');
+  const lines = getPageFactsLines(getPageDataStrings(report, registry), getReportData(report), '  ');
   const html = lines.join('\n');
   assert.ok(html.includes('<li>URL: <a href="https://example.com/mixed">'));
   assert.ok(html.includes('<li>Rule engines: 2 called, 2 able to test, 2 reported violations</li>'));
@@ -222,7 +232,7 @@ test('getPageFactsLines returns the about-page list lines for a report', async (
 test('getPageFactsLines ends with a link to download the full report', async () => {
   const {getReportData} = await import('./util.ts');
   const report = await getFixtureReport('260101T0000-mix');
-  const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
+  const lines = getPageFactsLines(getPageDataStrings(report, registry), getReportData(report), '');
   const topItems = parse(lines.join('\n')).querySelectorAll('ul:not(ul ul) > li');
   const lastItem = topItems[topItems.length - 1]!;
   assert.ok(topItems[topItems.length - 2]!.text.trim().startsWith('Results:'));
@@ -234,7 +244,7 @@ test('getPageFactsLines ends with a link to download the full report', async () 
 const getResultFacts = async (reportID: string) => {
   const {getReportData} = await import('./util.ts');
   const report = await getFixtureReport(reportID);
-  const lines = getPageFactsLines(getPageDataStrings(report), getReportData(report), '');
+  const lines = getPageFactsLines(getPageDataStrings(report, registry), getReportData(report), '');
   const itemTexts: string[] = parse(lines.join('\n'))
   .querySelectorAll('li')
   .map(li => li.text.trim());

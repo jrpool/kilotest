@@ -194,12 +194,23 @@ const responseMetadataSchema = z.object({
   'date and time': z.string().describe('UTC date and time when the response was generated, in ISO 8601 format.')
 }).meta({id: 'ResponseMetadata'});
 
+// The sites that a page belongs to.
+const pageSitesSchema = z.array(z.object({
+  identifier: z.string().describe('Identifier of the site (example: s-2fw2ea).'),
+  name: z.string().describe('Current name of the site.')
+}).meta({id: 'PageSite'})).describe('The sites that the page belongs to (currently always one).');
+
 // Facts about a report, as constructed by Kilotest's own getReportBasics (never copied from a Testaro report).
 const reportBasicsSchema = z.object({
   identifier: z.string().describe('Identifier of the report (example: 260503T0432-x9z).'),
   'completion date and time': z.string(),
   'days since the report was completed': z.number().nullable(),
-  'tested web page': z.object({description: z.string(), URL: z.string()}),
+  'tested web page': z.object({
+    identifier: z.string().describe('Identifier of the page (example: p-l6vni7ua).'),
+    name: z.string().describe('Current name of the page, distinguishing it from the other pages of its site.'),
+    sites: pageSitesSchema,
+    URL: z.string().describe('URL of the page as tested for this report.')
+  }).meta({id: 'TestedPage'}),
   'whether a later report about the same page exists': z.boolean()
 }).meta({id: 'ReportBasics'});
 
@@ -245,7 +256,7 @@ const pageFactsSchema = z.object({
   identifier: z.string().describe('Identifier of the page (example: p-l6vni7ua).'),
   name: z.string().describe('Name of the page, distinguishing it from the other pages of its site.'),
   URL: z.string(),
-  sites: z.array(z.string()).describe('Identifiers of the sites that the page belongs to (currently always one).'),
+  sites: pageSitesSchema,
   'identifier of the latest report': z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z).')
 }).meta({id: 'PageFacts'});
 

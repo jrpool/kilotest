@@ -30,16 +30,25 @@ export type ReportBasics = {
   identifier: string;
   'completion date and time': string;
   'days since the report was completed': number | null;
-  'tested web page': {description: string; URL: string};
+  'tested web page': TestedPage;
   'whether a later report about the same page exists': boolean;
 };
 
+// A site that a page belongs to, as in the PageSite response schema.
+export type PageSite = {identifier: string; name: string};
+// The page of a report, as in the TestedPage response schema.
+export type TestedPage = {
+  identifier: string;
+  name: string;
+  sites: PageSite[];
+  URL: string;
+};
 // Facts about a page, as in the PageFacts response schema.
 export type PageFacts = {
   identifier: string;
   name: string;
   URL: string;
-  sites: string[];
+  sites: PageSite[];
   'identifier of the latest report': string;
 };
 // Facts about a site, as in the SiteFacts response schema.
@@ -100,11 +109,19 @@ export const getToolsFacts = () => ({
 export const getLatestReportIDs = async (): Promise<Map<string, string>> => new Map(
   (await getReportExtracts(true)).map(extract => [extract.pageID, extract.id])
 );
+// Returns the identifiers and names of sites in a registry.
+const getPageSites = (registry: Registry, siteIDs: string[]): PageSite[] => siteIDs.map(
+  identifier => ({identifier, name: registry.sites[identifier] as string})
+);
 // Returns facts about a tested page in a registry.
 export const getPageFacts = (registry: Registry, pageID: string, latestReportIDs: Map<string, string>): PageFacts => {
   const {name, url, sites} = registry.pages[pageID] as {name: string; url: string; sites: string[]};
   return {
-    identifier: pageID, name, URL: url, sites, 'identifier of the latest report': latestReportIDs.get(pageID) as string
+    identifier: pageID,
+    name,
+    URL: url,
+    sites: getPageSites(registry, sites),
+    'identifier of the latest report': latestReportIDs.get(pageID) as string
   };
 };
 // Returns facts about a site in a registry.
@@ -239,7 +256,10 @@ export const getReportBasics = async (
   if ('error' in extract) {
     return extract;
   }
-  const {url, description, reportTime} = extract;
+  const {url, description, reportTime, pageID} = extract;
+  const registry = await getRegistry();
+  const page = registry.pages[pageID];
+
   // Get whether this report has been superseded.
   const isSuperseded = (await getReportExtracts(true))
   .every(ex => ex.id !== reportID);
@@ -249,7 +269,10 @@ export const getReportBasics = async (
     'completion date and time': reportTime,
     'days since the report was completed': getAgoDays(new Date(reportTime)),
     'tested web page': {
-      description,
+      identifier: pageID,
+      // The current name of the page, or, if the page is not in the registry, the description in the report.
+      name: page?.name ?? description,
+      sites: getPageSites(registry, page?.sites ?? []),
       URL: url
     },
     'whether a later report about the same page exists': isSuperseded

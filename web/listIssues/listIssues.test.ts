@@ -58,7 +58,7 @@ test('listIssues returns an ok status with valid HTML for the mixed report', asy
 
 test('listIssues includes the page description in the HTML for the mixed report', async () => {
   const result = await answer('260101T0000-mix');
-  assert.ok(result.answerPage.includes('Mixed Outcomes'));
+  assert.ok(result.answerPage.includes('Fixture Site Mixed Outcomes'));
 });
 
 test('listIssues interpolates the page description into the AI prompt block quote', async () => {
@@ -67,7 +67,7 @@ test('listIssues interpolates the page description into the AI prompt block quot
   const blockQuote = html.querySelector('blockquote');
   assert.ok(blockQuote);
   assert.ok(blockQuote.textContent.startsWith(
-    'Kilotest reports issues on the Mixed Outcomes web page.'
+    'Kilotest reports issues on the Fixture Site Mixed Outcomes web page.'
   ));
   // No placeholder may remain uninterpolated.
   assert.ok(!blockQuote.textContent.includes('__target__'));

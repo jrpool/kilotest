@@ -130,7 +130,9 @@ test('unhideReportForm sorts hidden reports with different page names alphabetic
   const existing = JSON.parse(await fs.readFile(hidden, 'utf8'));
   const copy = JSON.parse(JSON.stringify(existing));
   copy.id = '260101T0011-hid3';
+  // Its page is not in the registry, so it is named by its own description.
   copy.target.what = 'A Different Page';
+  copy.sources.pageID = 'p-unregist';
   const copyPath = path.join(hiddenReportsPath(), '260101T0011-hid3.json');
   await fs.writeFile(copyPath, JSON.stringify(copy));
   try {
@@ -139,6 +141,7 @@ test('unhideReportForm sorts hidden reports with different page names alphabetic
     // Both reports should appear in the form.
     assert.ok(result.answerPage.includes('260101T0007-hid'));
     assert.ok(result.answerPage.includes('260101T0011-hid3'));
+    assert.ok(result.answerPage.indexOf('A Different Page') < result.answerPage.indexOf('Fixture Site Hidden Page'));
   }
   finally {
     await fs.unlink(copyPath).catch(() => {});

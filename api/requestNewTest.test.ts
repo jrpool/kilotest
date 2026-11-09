@@ -168,7 +168,7 @@ test('requestNewTest refers a request for immediate review with a possible dupli
     identifier: 'p-mixedout',
     name: 'Mixed Outcomes',
     URL: 'https://example.com/mixed',
-    sites: ['s-fixtur'],
+    sites: [{identifier: 's-fixtur', name: 'Fixture Site'}],
     'identifier of the latest report': '260202T0000-new',
     'reason for suspicion': 'Its URL is equivalent to the requested URL.'
   }]);

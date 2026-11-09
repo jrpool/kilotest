@@ -66,7 +66,7 @@ test('listPages lists the tested pages of a site by name, each with its latest r
     identifier: 'p-mixedout',
     name: 'Mixed Outcomes',
     URL: 'https://example.com/mixed',
-    sites: ['s-fixtur'],
+    sites: [{identifier: 's-fixtur', name: 'Fixture Site'}],
     'identifier of the latest report': '260202T0000-new'
   });
   assert.equal(content['how to request a test of a page of this site not in this list']?.URL, 'https://kilotest.example.com/api/requestPageTest/s-fixtur');

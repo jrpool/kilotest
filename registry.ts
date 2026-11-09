@@ -153,6 +153,11 @@ export const changeRegistry = <T>(
   }
   return result;
 });
+// Returns the display name of a page in a registry (the name of its first site followed by its own name), or a fallback if the page is not in the registry.
+export const getPageTitle = (registry: Registry, pageID: string, fallback: string): string => {
+  const page = registry.pages[pageID];
+  return page ? `${registry.sites[page.sites[0] as string]} ${page.name}` : fallback;
+};
 // Returns the identifiers and records of the pages of a site, ordered by page name.
 export const getSitePages = (registry: Registry, siteID: string): [string, PageRecord][] => Object
 .entries(registry.pages)

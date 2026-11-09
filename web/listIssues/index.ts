@@ -25,6 +25,7 @@ import {
   getWeightName
 } from '../util.ts';
 import type {ResultsSummary} from '../util.ts';
+import {getRegistry} from '../../registry.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // FUNCTIONS
@@ -192,7 +193,7 @@ const populateQuery = async (reportID: string, query: Record<string, any>) => {
     return;
   }
   // Otherwise, i.e. if it succeeded, get fact descriptions for the target.
-  const pageInfo = getPageDataStrings(report);
+  const pageInfo = getPageDataStrings(report, await getRegistry());
   // If this failed:
   if (pageInfo.error !== undefined) {
     // Populate the query with the reason.

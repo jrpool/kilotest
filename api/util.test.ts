@@ -105,6 +105,40 @@ test('getReportBasics returns an error for a report whose extract cannot be read
   }
 });
 
+test('getReportBasics describes the page of a report by the registry, or by the report if the page is not registered', async () => {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const dbDir = (await import('../test/dbFixture.ts')).fixtureDBDir;
+  process.env.DB_DIR = dbDir;
+  const registryPath = path.join(dbDir, 'registry.json');
+  const original = await fs.readFile(registryPath, 'utf8');
+  try {
+    const registered: any = await getReportBasics('260101T0000-mix');
+    assert.deepEqual(registered['tested web page'], {
+      identifier: 'p-mixedout',
+      name: 'Mixed Outcomes',
+      sites: [{identifier: 's-fixtur', name: 'Fixture Site'}],
+      URL: 'https://example.com/mixed'
+    });
+    const registry = JSON.parse(original);
+    delete registry.pages['p-mixedout'];
+    await fs.writeFile(registryPath, JSON.stringify(registry));
+    const unregistered: any = await getReportBasics('260101T0000-mix');
+    assert.deepEqual(unregistered['tested web page'], {
+      identifier: 'p-mixedout', name: 'Mixed Outcomes', sites: [], URL: 'https://example.com/mixed'
+    });
+  }
+  finally {
+    await fs.writeFile(registryPath, original);
+    if (savedDBDir !== undefined) {
+      process.env.DB_DIR = savedDBDir;
+    }
+    else {
+      delete process.env.DB_DIR;
+    }
+  }
+});
+
 test('getResponseMetadata returns an identifier and date string', () => {
   const meta = getResponseMetadata();
   assert.ok(meta.identifier);

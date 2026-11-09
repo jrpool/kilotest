@@ -225,7 +225,7 @@ test('getPageFactsLines returns the about-page list lines for a report', async (
   const lines = getPageFactsLines(getPageDataStrings(report, registry), getReportData(report), '  ');
   const html = lines.join('\n');
   assert.ok(html.includes('<li>URL: <a href="https://example.com/mixed">'));
-  assert.ok(html.includes('<li>Rule engines: 2 called, 2 able to test, 2 reported violations</li>'));
+  assert.ok(html.includes('<li>Rule engines: 2 called, 2 able to test, violations reported by 2</li>'));
   assert.ok(html.includes('<li>Results: 3 violations, 2 violators, 2 issues</li>'));
 });
 
@@ -251,7 +251,7 @@ const getResultFacts = async (reportID: string) => {
   const enginesItem = itemTexts.find(t => t.startsWith('Rule engines: '));
   assert.ok(enginesItem, 'Rule engines item exists');
   const engineAmounts = enginesItem.match(
-    /^Rule engines: (\d+) called, (\d+) able to test, (\d+) reported violations$/
+    /^Rule engines: (\d+) called, (\d+) able to test, violations reported by (\d+)$/
   );
   assert.ok(engineAmounts, 'Rule engines item has the expected format');
   const resultsItem = itemTexts.find(t => t.startsWith('Results: '));

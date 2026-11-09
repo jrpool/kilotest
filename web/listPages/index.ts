@@ -37,7 +37,7 @@ export const answer = async (siteID: string) => {
     const safeName = htmlSafe(name);
     const link = `<a href="/listIssues.html/${latestReportIDs.get(pageID)}" aria-label="Get test results for ${safeName}">${safeName}</a>`;
     // The block display of the link places the URL below it.
-    return `${margin}  <li>${link} <code>${htmlSafe(url)}</code></li>`;
+    return `${margin}  <li>${link} (<code>${htmlSafe(url)}</code>)</li>`;
   });
   // Get the pages of the site requested for testing, as descriptions of their names, URLs, and statuses.
   const requested: string[] = [];
@@ -76,7 +76,7 @@ export const answer = async (siteID: string) => {
     siteName: htmlSafe(siteName),
     // Add the list items as an introduced list if there are any, or else a no-pages message.
     testedPages: items.length
-      ? [`${margin}<p>Get test results for:</p>`, `${margin}<ul class="links">`, ...items, `${margin}</ul>`].join('\n')
+      ? [`${margin}<p>Get test results for:</p>`, `${margin}<ul>`, ...items, `${margin}</ul>`].join('\n')
       : `${margin}<p>No pages of this site have been tested yet.</p>`
   };
   // Return the populated page.

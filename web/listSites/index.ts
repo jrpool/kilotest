@@ -66,15 +66,15 @@ const populateQuery = async (query: Record<string, string>) => {
   .sort((a, b) => alphaCompare(a.name, b.name));
   // For each tested site:
   for (const {siteID, name, count} of siteCounts) {
-    // Add a link to the list of its tested pages to the lines, followed by the count of those pages, which the block display of the link places below it.
+    // Add a link to the list of its tested pages to the lines.
     const pages = count === 1 ? '1 page' : `${count} pages`;
-    lines.push(`${margin}  <li><a href="/listPages.html/${siteID}">${htmlSafe(name)}</a> ${pages}</li>`);
+    lines.push(`${margin}  <li><a href="/listPages.html/${siteID}">${htmlSafe(name)}</a> (${pages})</li>`);
   }
   // Add the lines to the query, as an introduced list if there are any, or else a no-sites message.
   query.testedSites = siteCounts.length
   ? [
     `${margin}<p>Get the tested pages of:</p>`,
-    `${margin}<ul class="links">`,
+    `${margin}<ul>`,
     ...lines,
     `${margin}</ul>`
   ].join('\n')

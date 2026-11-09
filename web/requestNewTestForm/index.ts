@@ -28,7 +28,7 @@ export const answer = async (siteID = '') => {
     const safeName = htmlSafe(siteName);
     query = {
       forSite: ` for a page of ${safeName}`,
-      intro: `${margin}<p>You may request that a page of <q>${safeName}</q> be tested by submitting the following form. Before you do, check the <a href="/listPages.html/${siteID}">pages of this site already tested</a>. All answers are required.</p>`,
+      intro: `${margin}<p>Here you may request testing of an untested page of ${safeName}. All answers are required.</p>`,
       siteField: `${margin}  <input type="hidden" name="siteID" value="${siteID}">`
     };
   }
@@ -36,10 +36,10 @@ export const answer = async (siteID = '') => {
   else {
     query = {
       forSite: '',
-      intro: `${margin}<p>You may request that a web page of a site not yet tested be tested by submitting the following form. If the site is in the <a href="/listSites.html">list of tested sites</a>, request the test from the list of its tested pages instead. All answers are required.</p>`,
+      intro: `${margin}<p>Here you may request testing of an untested site. All answers are required.</p>`,
       siteField: [
         `${margin}  <p><label>`,
-        `${margin}    What is the name of the site (usually the name of the organization or brand that presents it)?<br>`,
+        `${margin}    Site name (e.g., <q>Archaic Technologies</q>, <q>Université de Gaspillage</q>, <q>Neptune Department of Injustice</q>)<br>`,
         `${margin}    <input size="50" maxlength="80" name="siteName" required>`,
         `${margin}  </label></p>`
       ].join('\n')

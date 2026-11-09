@@ -104,10 +104,16 @@ const request = (method: string, requestPath: string, body: any = null): Promise
 
 // TESTS
 
-test('GET /api/listPages returns valid JSON through the HTTP routing layer', {timeout: 500}, async () => {
-  const {body} = await request('GET', '/api/listPages');
+test('GET /api/listSites returns valid JSON through the HTTP routing layer', {timeout: 500}, async () => {
+  const {body} = await request('GET', '/api/listSites');
+  assert.equal(body['tool name'], 'listSites');
+  assert.equal(body['response content']['basics about all tested sites'].length, 1);
+});
+
+test('GET /api/listPages/s-fixtur returns valid JSON through the HTTP routing layer', {timeout: 500}, async () => {
+  const {body} = await request('GET', '/api/listPages/s-fixtur');
   assert.equal(body['tool name'], 'listPages');
-  const pages = body['response content']['basics about all tested pages'];
+  const pages = body['response content']['basics about all tested pages of the site'];
   assert.equal(pages.length, 7);
 });
 

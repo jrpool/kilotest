@@ -46,6 +46,10 @@ const {requestHandler, routes, serveError, startServer, runIfMain, isPathAllowed
 
 const port = 3997;
 const testRequestsPath = path.join(fixtureDBDir, 'jobs', 'testRequests.json');
+// Returns the identifier of the first request awaiting approval for a URL.
+const getPendingRequestID = async (url: string): Promise<string> => JSON.parse(
+  await fs.readFile(testRequestsPath, 'utf8')
+)[url][0].id;
 const metricsPath = path.join(fixtureDBDir, 'metrics.json');
 
 // SETUP AND TEARDOWN
@@ -338,9 +342,18 @@ test('GET /favicon.svg serves the logo as SVG', async () => {
   assert.ok(res.headers['content-type'].includes('image/svg+xml'));
 });
 
-test('GET /api/listPages returns JSON with report data and records an API-operation metric', async () => {
+test('GET /api/listSites returns JSON with site data and records an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'listSites');
+  const res = await request('GET', '/api/listSites');
+  assert.equal(res.statusCode, 200);
+  const body = jsonBody(res);
+  assert.equal(body['tool name'], 'listSites');
+  assert.equal(await getMetricCount('apiOperations', 'listSites'), countBefore + 1);
+});
+
+test('GET /api/listPages/s-fixtur returns JSON with page data and records an API-operation metric', async () => {
   const countBefore = await getMetricCount('apiOperations', 'listPages');
-  const res = await request('GET', '/api/listPages');
+  const res = await request('GET', '/api/listPages/s-fixtur');
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
   assert.equal(body['tool name'], 'listPages');
@@ -514,7 +527,8 @@ test('GET /forbidden-path returns an invalid GET request error', async () => {
 
 test('POST /requestNewTest.html with valid data returns an HTML page', async () => {
   const res = await formRequest('POST', '/requestNewTest.html', {
-    description: `Unique Test Page ${uniqueStamp}`,
+    siteName: `Unique Test Org ${uniqueStamp}`,
+    pageName: 'home',
     url: `https://example.com/unique-${uniqueStamp}`,
     why: 'Because accessibility matters'
   });
@@ -522,19 +536,21 @@ test('POST /requestNewTest.html with valid data returns an HTML page', async () 
   assert.ok(res.headers['content-type'].includes('text/html'));
 });
 
-test('POST /requestNewTest.html with an already-tested URL returns an error', async () => {
+test('POST /requestNewTest.html with the name of an existing site returns an error', async () => {
   const res = await formRequest('POST', '/requestNewTest.html', {
-    description: 'Mixed Outcomes',
-    url: 'https://example.com/mixed',
+    siteName: 'Fixture Site',
+    pageName: 'home',
+    url: 'https://example.com/fixture-home',
     why: 'Because accessibility matters'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('same description or URL is already available'));
+  assert.ok(res.body.includes('already exists'));
 });
 
 test('POST /requestNewTest.html with invalid data returns an error', async () => {
   const res = await formRequest('POST', '/requestNewTest.html', {
-    description: '',
+    siteName: '',
+    pageName: '',
     url: 'not-a-url',
     why: ''
   });
@@ -547,23 +563,25 @@ test('POST /requestNewTest.html with a URL shorter than 12 characters returns an
   // request URLs for every surface, so this 11-character URL is rejected even
   // though it is a syntactically valid https URL.
   const res = await formRequest('POST', '/requestNewTest.html', {
-    description: `Short URL Page ${uniqueStamp}`,
+    siteName: `Short URL Org ${uniqueStamp}`,
+    pageName: 'home',
     url: 'https://a.b',
     why: 'Because accessibility matters'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('The URL must be between 12 and 300 characters long'));
+  assert.ok(res.body.includes('the URL is not between 12 and 300 characters long'));
 });
 
 test('POST /requestNewTest.html with a URL longer than 300 characters returns an error', async () => {
   // The same bound rejects this 320-character URL.
   const res = await formRequest('POST', '/requestNewTest.html', {
-    description: `Long URL Page ${uniqueStamp}`,
+    siteName: `Long URL Org ${uniqueStamp}`,
+    pageName: 'home',
     url: `https://example.com/${'a'.repeat(300)}`,
     why: 'Because accessibility matters'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('The URL must be between 12 and 300 characters long'));
+  assert.ok(res.body.includes('the URL is not between 12 and 300 characters long'));
 });
 
 test('POST /requestNewTest.html with an unreadable body returns an error', async () => {
@@ -624,8 +642,9 @@ test('POST /api/requestFeature with valid JSON returns a JSON response and recor
 test('POST /api/requestNewTest with reviewImmediately enqueues a job directly and records an API-operation metric', {timeout: 500}, async () => {
   const countBefore = await getMetricCount('apiOperations', 'requestNewTest');
   const res = await request('POST', '/api/requestNewTest', {
-    description: `API Ordered Page ${uniqueStamp}`,
-    URL: `https://example.com/api-ordered-${uniqueStamp}`,
+    siteName: `API Ordered Org ${uniqueStamp}`,
+    pageName: 'home',
+    URL: `https://api-ordered-${uniqueStamp}.example/`,
     reason: 'Because accessibility matters here',
     reviewImmediately: true
   });
@@ -636,6 +655,21 @@ test('POST /api/requestNewTest with reviewImmediately enqueues a job directly an
   const reportIdentifier = body['response content']['disposition of your request']['report identifier'];
   assert.ok(reportIdentifier);
   await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier}.json`));
+});
+
+test('POST /api/requestNewTest with a siteID records a request and an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'requestNewTest');
+  const res = await request('POST', '/api/requestNewTest', {
+    siteID: 's-fixtur',
+    pageName: `API Page ${uniqueStamp}`,
+    URL: `https://example.com/api-page-${uniqueStamp}`,
+    reason: 'Because accessibility matters here'
+  });
+  assert.equal(res.statusCode, 200);
+  const body = jsonBody(res);
+  assert.equal(body['tool name'], 'requestNewTest');
+  assert.equal(body['response content']['disposition of your request']['whether your request was referred to management review'], false);
+  assert.equal(await getMetricCount('apiOperations', 'requestNewTest'), countBefore + 1);
 });
 
 test('POST /api/requestRetest/260202T0000-new with reviewImmediately enqueues a job directly and records an API-operation metric', async () => {
@@ -767,14 +801,14 @@ test('PUT / returns an invalid method error', async () => {
 
 // TESTS: requestHandler catch boundary
 
-test('GET /listPages.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
+test('GET /listSites.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
   // Corrupt testRequests.json so that getTestRequests throws, an error that should never occur in normal
   // operation and so is not handled by handleRequest itself, only by requestHandler's
   // outer catch boundary.
   const backup = await fs.readFile(testRequestsPath, 'utf8');
   await fs.writeFile(testRequestsPath, 'not valid json');
   try {
-    const res = await request('GET', '/listPages.html');
+    const res = await request('GET', '/listSites.html');
     assert.equal(res.statusCode, 500);
     assert.ok(res.headers['content-type'].includes('application/json'));
     const body = jsonBody(res);
@@ -858,17 +892,20 @@ test('GET /fullReport.json/260101T0007-hid returns an error for an unavailable r
 
 test('POST /requestAction.html with valid auth code and approval returns HTML', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
+  const url = `https://example.com/approval-${uniqueStamp}`;
   await formRequest('POST', '/requestNewTest.html', {
-    description: `Approval Test Page ${uniqueStamp}`,
-    url: `https://example.com/approval-${uniqueStamp}`,
+    siteName: `Approval Test Org ${uniqueStamp}`,
+    pageName: 'home',
+    url,
     why: 'Because accessibility matters'
   });
   const res = await formRequest('POST', '/requestAction.html', {
-    target: `https://example.com/approval-${uniqueStamp}\tApproval Test Page ${uniqueStamp}`,
+    target: `${url}\t${await getPendingRequestID(url)}`,
     authCode: 'test-auth-code'
   });
   assert.equal(res.statusCode, 200);
   assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.ok(res.body.includes(`Approval Test Org ${uniqueStamp} home`));
 });
 
 test('POST /reannotate.html with invalid auth code returns an error page and records a managerActivity failure', async () => {
@@ -1024,16 +1061,22 @@ test('GET /rules.html/<segment> redirects to the equivalent /listRules.html/<seg
   assert.equal(res.headers['location'], '/listRules.html/allCaps');
 });
 
-test('GET /targets.html redirects to /listPages.html', async () => {
-  const res = await request('GET', '/targets.html', {}, {followRedirects: false});
+test('GET /listPages.html without a site redirects to /listSites.html', async () => {
+  const res = await request('GET', '/listPages.html', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listPages.html');
+  assert.equal(res.headers['location'], '/listSites.html');
 });
 
-test('GET /listReports.html redirects to /listPages.html', async () => {
+test('GET /targets.html redirects to /listSites.html', async () => {
+  const res = await request('GET', '/targets.html', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listSites.html');
+});
+
+test('GET /listReports.html redirects to /listSites.html', async () => {
   const res = await request('GET', '/listReports.html', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listPages.html');
+  assert.equal(res.headers['location'], '/listSites.html');
 });
 
 test('GET /api/listReports returns the invalid-service error', async () => {
@@ -1096,9 +1139,43 @@ test('POST /api/requestTest and /api/orderTest return the invalid-service error'
   assert.notEqual(res2.statusCode, 200);
 });
 
+test('POST /requestNewTest.html with a siteID and valid data returns an HTML page', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
+    siteID: 's-fixtur',
+    pageName: `Web Page ${uniqueStamp}`,
+    url: `https://example.com/web-page-${uniqueStamp}`,
+    why: 'Because accessibility matters'
+  });
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.includes(`Fixture Site Web Page ${uniqueStamp}`));
+});
+
+test('POST /requestNewTest.html with a siteID and an existing page name returns an answer error', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
+    siteID: 's-fixtur',
+    pageName: 'Mixed Outcomes',
+    url: `https://example.com/web-mixed-${uniqueStamp}`,
+    why: 'Because accessibility matters'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('already has a page named'));
+});
+
+test('POST /requestNewTest.html with a malformed siteID or missing data returns an error', async () => {
+  for (const form of [
+    {siteID: 'nonsense', pageName: 'About', url: 'https://example.com/about', why: 'Because'},
+    {siteID: 's-fixtur', pageName: '', url: 'https://example.com/about', why: 'Because'}
+  ]) {
+    const res = await formRequest('POST', '/requestNewTest.html', form);
+    assert.equal(res.statusCode, 400);
+    assert.ok(res.body.includes('Invalid test request'));
+  }
+});
+
 test('POST /requestNewTest.html with non-https URL returns an error', async () => {
   const res = await formRequest('POST', '/requestNewTest.html', {
-    description: 'Test Page',
+    siteName: 'Test Org',
+    pageName: 'home',
     url: 'http://example.com',
     why: 'Because accessibility matters'
   });
@@ -1110,7 +1187,8 @@ test('POST /requestNewTest.html with a private-address URL returns an error unle
   delete process.env.ALLOW_INTERNAL_TARGETS;
   try {
     const res = await formRequest('POST', '/requestNewTest.html', {
-      description: 'Internal Page',
+      siteName: 'Internal Org',
+      pageName: 'home',
       url: 'https://192.168.1.1/page',
       why: 'Because accessibility matters'
     });
@@ -1589,7 +1667,9 @@ test('GET /requestRetest.html/260202T0000-new is rejected as an invalid GET requ
 // tested by the unit tests in web/*/*.test.cjs.
 
 const htmlPagePaths = [
-  '/listPages.html',
+  '/listSites.html',
+  '/listPages.html/s-fixtur',
+  '/requestNewTestForm.html/s-fixtur',
   '/listViolators.html/linkNoText/260101T0000-mix',
   '/listDiagnoses.html/linkNoText/260101T0000-mix/0',
   '/enqueueForm.html',
@@ -1829,14 +1909,32 @@ test('GET /pruneReportsForm.html records a managerActivity failure when a report
 
 test('GET /enqueueForm.html shows requests when testRequests.json has entries', async () => {
   await fs.writeFile(testRequestsPath, JSON.stringify({
-    'https://example.com/enqueue-test': [
-      {description: 'Enqueue Test Page', why: 'Needs testing for accessibility'}
-    ]
+    'https://example.com/enqueue-test': [{
+      id: 'q-enqueue',
+      timeStamp: '260101T0000',
+      target: {siteID: 's-fixtur', pageName: 'Enqueue Test Page', url: 'https://example.com/enqueue-test'},
+      reason: 'Needs testing for accessibility',
+      referred: true,
+      possibleDuplicates: [{pageID: 'p-mixedout', reason: 'Its URL is equivalent to the requested URL.'}],
+      similarSites: [{siteID: 's-fixtur', reason: 'Its home page has the same domain as the requested page.'}]
+    }, {
+      id: 'q-enqueu2',
+      timeStamp: '260101T0000',
+      target: {siteID: 's-fixtur', pageName: 'Plain Page', url: 'https://example.com/enqueue-test'},
+      reason: 'Needs testing too',
+      referred: false,
+      possibleDuplicates: [],
+      similarSites: []
+    }]
   }));
   const res = await request('GET', '/enqueueForm.html');
   assert.equal(res.statusCode, 200);
   assert.ok(res.body.includes('https://example.com/enqueue-test'));
-  assert.ok(res.body.includes('Enqueue Test Page'));
+  assert.ok(res.body.includes('Fixture Site Enqueue Test Page [referred from immediate review]'));
+  assert.ok(res.body.includes('value="https://example.com/enqueue-test\tq-enqueue"'));
+  assert.ok(res.body.includes('Fixture Site Mixed Outcomes: Its URL is equivalent to the requested URL.'));
+  assert.ok(res.body.includes('Fixture Site: Its home page has the same domain as the requested page.'));
+  assert.ok(res.body.includes('Fixture Site Plain Page: Needs testing too'));
 });
 
 test('GET /listRules.html returns an error page when called without arguments', async () => {
@@ -1936,19 +2034,17 @@ test('POST /requestNewTest.html with valid format but duplicate URL returns an a
   // First request to create the request. processTestRequest treats a request as a
   // duplicate only when description, URL, AND reason all match an existing pending
   // request, so the reason must be identical between the two requests here.
-  await formRequest('POST', '/requestNewTest.html', {
-    description: `Dup Test Page ${uniqueStamp}`,
+  const form = {
+    siteName: `Dup Test Org ${uniqueStamp}`,
+    pageName: 'home',
     url: `https://example.com/dup-${uniqueStamp}`,
     why: 'Because accessibility matters'
-  });
+  };
+  await formRequest('POST', '/requestNewTest.html', form);
   // Second, identical request should get a duplicate error.
-  const res = await formRequest('POST', '/requestNewTest.html', {
-    description: `Dup Test Page ${uniqueStamp}`,
-    url: `https://example.com/dup-${uniqueStamp}`,
-    why: 'Because accessibility matters'
-  });
+  const res = await formRequest('POST', '/requestNewTest.html', form);
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Test request duplicates an already submitted request'));
+  assert.ok(res.body.includes('an identical request is already awaiting approval'));
 });
 
 test('POST /requestRetest.html with valid format but duplicate retest returns an answer error', {timeout: 500}, async () => {
@@ -1964,32 +2060,41 @@ test('POST /requestRetest.html with valid format but duplicate retest returns an
     why: 'Because the report is obsolete and needs refreshing'
   });
   assert.equal(res.statusCode, 400);
-  assert.ok(res.body.includes('Test request duplicates an already submitted request'));
+  assert.ok(res.body.includes('an identical request is already awaiting approval'));
 });
 
-test('POST /requestAction.html with valid auth code approves the same target twice without error', {timeout: 500}, async () => {
+test('POST /requestAction.html refuses an approval of a request whose site was created after it', {timeout: 500}, async () => {
   await fs.writeFile(testRequestsPath, '{}\n');
-  // Create a request.
+  const siteName = `Late Site Org ${uniqueStamp}`;
+  const url = `https://example.com/late-${uniqueStamp}`;
+  await formRequest('POST', '/requestNewTest.html', {siteName, pageName: 'about', url, why: 'Because accessibility matters'});
+  const requestID = await getPendingRequestID(url);
+  // A request for another page of the same new site is approved first, creating the site.
+  const otherURL = `${url}/home`;
+  await formRequest('POST', '/requestNewTest.html', {siteName, pageName: 'home', url: otherURL, why: 'Because accessibility matters'});
+  await formRequest('POST', '/requestAction.html', {target: `${otherURL}\t${await getPendingRequestID(otherURL)}`, authCode: 'test-auth-code'});
+  const res = await formRequest('POST', '/requestAction.html', {target: `${url}\t${requestID}`, authCode: 'test-auth-code'});
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('The request cannot be approved, because a site named'));
+});
+
+test('POST /requestAction.html refuses a second approval of a request, which the first approval removed', {timeout: 500}, async () => {
+  await fs.writeFile(testRequestsPath, '{}\n');
+  const url = `https://example.com/action-dup-${uniqueStamp}`;
   await formRequest('POST', '/requestNewTest.html', {
-    description: `Action Dup Page ${uniqueStamp}`,
-    url: `https://example.com/action-dup-${uniqueStamp}`,
+    siteName: `Action Dup Org ${uniqueStamp}`,
+    pageName: 'home',
+    url,
     why: 'Because accessibility matters'
   });
-  // Approve it once.
-  await formRequest('POST', '/requestAction.html', {
-    target: `https://example.com/action-dup-${uniqueStamp}\tAction Dup Page ${uniqueStamp}`,
-    authCode: 'test-auth-code',
-    what: 'yes'
-  });
-  // Approve it again. enqueue.answer has no duplicate-detection logic of its own (that
-  // lives in processTestRequest, upstream of approval), so a second approval of the same
-  // target queues a second job rather than erroring.
-  const res = await formRequest('POST', '/requestAction.html', {
-    target: `https://example.com/action-dup-${uniqueStamp}\tAction Dup Page ${uniqueStamp}`,
-    authCode: 'test-auth-code',
-    what: 'yes'
-  });
-  assert.equal(res.statusCode, 200);
+  const target = `${url}\t${await getPendingRequestID(url)}`;
+  const first = await formRequest('POST', '/requestAction.html', {target, authCode: 'test-auth-code'});
+  assert.equal(first.statusCode, 200);
+  const countBefore = await getManagerActivityCount('requestAction.html', 'error');
+  const second = await formRequest('POST', '/requestAction.html', {target, authCode: 'test-auth-code'});
+  assert.equal(second.statusCode, 400);
+  assert.ok(second.body.includes('Invalid request'));
+  assert.equal(await getManagerActivityCount('requestAction.html', 'error'), countBefore + 1);
 });
 
 test('POST /requestAction.html with valid auth code and approval of an invalid URL returns an error', async () => {
@@ -2074,7 +2179,7 @@ test('a request logs a single-line JSON record with the expected fields', async 
   const originalLog = console.log;
   console.log = (line: string) => logged.push(line);
   try {
-    await request('GET', '/listPages.html');
+    await request('GET', '/listSites.html');
   }
   finally {
     console.log = originalLog;
@@ -2090,7 +2195,7 @@ test('a request logs a single-line JSON record with the expected fields', async 
   assert.equal(requestLines.length, 1);
   const record = JSON.parse(requestLines[0]!);
   assert.equal(record.method, 'GET');
-  assert.equal(record.path, '/listPages.html');
+  assert.equal(record.path, '/listSites.html');
   assert.equal(record.status, 200);
   assert.ok(record.ip);
   assert.ok(record.userAgent);
@@ -2120,7 +2225,7 @@ test('a smoke-test-flagged request is not logged as a general request', async ()
   const originalLog = console.log;
   console.log = (line: string) => logged.push(line);
   try {
-    await request('GET', '/listPages.html', null, {'x-kilotest-smoke': '1'});
+    await request('GET', '/listSites.html', null, {'x-kilotest-smoke': '1'});
   }
   finally {
     console.log = originalLog;

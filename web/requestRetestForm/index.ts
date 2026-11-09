@@ -5,7 +5,8 @@
 
 // IMPORTS
 
-import {getReportExtracts, populateTemplate} from '../../util.ts';
+import {getReportExtracts, htmlSafe, populateTemplate} from '../../util.ts';
+import {getPageTitle, getRegistry} from '../../registry.ts';
 import {getAgoString, getDateTimeString} from '../util.ts';
 
 // FUNCTIONS
@@ -23,8 +24,8 @@ export const answer = async (pageArgs: string) => {
   let target: string;
   // If getting the data succeeded:
   if (reportExtract) {
-    // Update the page description.
-    target = reportExtract.description;
+    // Update the page description to the current name of the page.
+    target = htmlSafe(getPageTitle(await getRegistry(), reportExtract.pageID, reportExtract.description));
   }
   // Otherwise, i.e. if it failed:
   else {

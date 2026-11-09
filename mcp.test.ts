@@ -37,12 +37,13 @@ test('mcpPath is /mcp', () => {
   assert.equal(mcpPath, '/mcp');
 });
 
-test('createMCPServer registers all 11 tools', () => {
+test('createMCPServer registers all 12 tools', () => {
   const server = createMCPServer();
   const toolNames = Object.keys((server as any)._registeredTools);
-  assert.equal(toolNames.length, 11);
+  assert.equal(toolNames.length, 12);
   assert.deepEqual(toolNames, [
     'getOverview',
+    'listSites',
     'listPages',
     'listIssues',
     'listViolators',
@@ -96,10 +97,20 @@ test('client receives instructions, server description, and the overview resourc
   await server.close();
 });
 
+test('listSites handler returns content and structuredContent', async () => {
+  const server = createMCPServer();
+  const countBefore = getToolCallCount('listSites');
+  const result = await (server as any)._registeredTools.listSites.handler({});
+  assert.equal(result.content[0].type, 'text');
+  assert.equal(result.structuredContent['tool name'], 'listSites');
+  assert.equal(getToolCallCount('listSites'), countBefore + 1);
+});
+
 test('listPages handler returns content and structuredContent', async () => {
   const server = createMCPServer();
   const countBefore = getToolCallCount('listPages');
-  const result = await (server as any)._registeredTools.listPages.handler({});
+  const result = await (server as any)._registeredTools.listPages.handler({siteID: 's-fixtur'});
+  assert.equal(result.structuredContent['response content']['basics about the site'].name, 'Fixture Site');
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
@@ -161,7 +172,8 @@ test('requestNewTest handler returns content and structuredContent', async () =>
   const server = createMCPServer();
   const countBefore = getToolCallCount('requestNewTest');
   const result = await (server as any)._registeredTools.requestNewTest.handler({
-    description: 'Test Page',
+    siteName: 'MCP Test Org',
+    pageName: 'home',
     URL: 'https://example.com/test',
     reason: 'Because accessibility matters',
     reviewImmediately: false
@@ -169,6 +181,22 @@ test('requestNewTest handler returns content and structuredContent', async () =>
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);
+  assert.equal(getToolCallCount('requestNewTest'), countBefore + 1);
+});
+
+test('requestNewTest handler accepts a siteID', async () => {
+  const server = createMCPServer();
+  const countBefore = getToolCallCount('requestNewTest');
+  const result = await (server as any)._registeredTools.requestNewTest.handler({
+    siteID: 's-fixtur',
+    pageName: 'MCP Page',
+    URL: 'https://example.com/mcp-page',
+    reason: 'Because accessibility matters',
+    reviewImmediately: false
+  });
+  assert.equal(result.content[0].type, 'text');
+  assert.equal(result.structuredContent['tool name'], 'requestNewTest');
+  assert.equal(result.structuredContent['response content']['details about your request']['page to be tested']['site identifier'], 's-fixtur');
   assert.equal(getToolCallCount('requestNewTest'), countBefore + 1);
 });
 
@@ -220,7 +248,8 @@ test('requestNewTest handler with reviewImmediately enqueues a job and returns r
   const server = createMCPServer();
   const countBefore = getToolCallCount('requestNewTest');
   const result = await (server as any)._registeredTools.requestNewTest.handler({
-    description: 'MCP Ordered Page',
+    siteName: 'MCP Ordered Org',
+    pageName: 'home',
     URL: 'https://example.com/mcp-ordered',
     reason: 'Because accessibility matters here',
     reviewImmediately: true
@@ -375,7 +404,7 @@ test('handleMCP responds to initialize with server info', async () => {
   }
 });
 
-test('handleMCP lists all 11 tools via tools/list', async () => {
+test('handleMCP lists all 12 tools via tools/list', async () => {
   const server = await startMCPServer();
   try {
     const port = server.address().port;
@@ -383,9 +412,10 @@ test('handleMCP lists all 11 tools via tools/list', async () => {
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);
     const toolNames = result.result.tools.map((t: any) => t.name);
-    assert.equal(toolNames.length, 11);
+    assert.equal(toolNames.length, 12);
     assert.deepEqual(toolNames, [
       'getOverview',
+      'listSites',
       'listPages',
       'listIssues',
       'listViolators',
@@ -393,7 +423,7 @@ test('handleMCP lists all 11 tools via tools/list', async () => {
       'questionDiagnosis',
       'getReport',
       'requestNewTest',
-      'requestRetest',
+        'requestRetest',
       'requestFeature',
       'awaitTest'
     ]);
@@ -409,7 +439,7 @@ test('handleMCP executes listPages tool via tools/call', async () => {
     const port = server.address().port;
     const res = await sendMCPRequest(port, 'tools/call', {
       name: 'listPages',
-      arguments: {}
+      arguments: {siteID: 's-fixtur'}
     }, 3);
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);

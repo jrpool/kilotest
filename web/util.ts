@@ -14,10 +14,13 @@ import {
   getDateString,
   getReportEndTime,
   getTestActInstances,
+  getReportPageID,
   getTestActs,
   htmlSafe,
   ruleEngines
 } from '../util.ts';
+import {getPageTitle} from '../registry.ts';
+import type {Registry} from '../registry.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 import type {Catalog} from 'testaro';
 import type {UsableReport} from '../util.ts';
@@ -53,7 +56,6 @@ export type ResultsSummary = {
 };
 // Basics about an available report.
 export type ReportData = {
-  description: string;
   url: string;
   jobName: unknown;
   issueCount: number;
@@ -190,7 +192,6 @@ export const getEngineIDs = (report: any) => {
 export const getReportData = (report: UsableReport): ReportData => {
   // Initialize the data.
   const data = {
-    description: report.target.what,
     url: report.target.url,
     jobName: report.id,
     issueCount: 0,
@@ -248,9 +249,10 @@ export const getReportData = (report: UsableReport): ReportData => {
   // Return the data.
   return data;
 }
-// Returns page data from an available report.
-export const getPageData = (report: UsableReport): PageData => {
-  const {what: description, url} = report.target;
+// Returns page data from an available report. The description is the current name of the page in a registry, or, if the page is not in the registry, the description in the report.
+export const getPageData = (report: UsableReport, registry: Registry): PageData => {
+  const {what, url} = report.target;
+  const description = getPageTitle(registry, getReportPageID(report), what);
   // Get the elapsed time in days since the report was completed.
   const daysAgo = getAgoDays(getReportEndTime(report))!;
   // Return the data.
@@ -261,13 +263,13 @@ export const getPageData = (report: UsableReport): PageData => {
   };
 };
 // Gets HTML strings for page data from a report.
-export const getPageDataStrings = (report: UsableReport): PageDataStrings => {
-  const {daysAgo, url, description} = getPageData(report);
+export const getPageDataStrings = (report: UsableReport, registry: Registry): PageDataStrings => {
+  const {daysAgo, url, description} = getPageData(report, registry);
   // Get a description of the completion time of the report.
   const when = getDateTimeString(getReportEndTime(report));
   // Return the HTML strings.
   return {
-    description,
+    description: htmlSafe(description),
     url,
     urlLink: `<a href="${url}">${url}</a>`,
     testInfo: `Tested ${getCountString(daysAgo!, 'day', 'days')} ago on ${when} by job <code>${report.id}</code>`,

@@ -14,7 +14,11 @@
     "url": "https://example.com/empty"
   },
   "sources": {
-    "worker": "test-worker"
+    "worker": "test-worker",
+    "siteID": "s-fixtur",
+    "pageID": "p-emptyres",
+    "siteName": "Fixture Site",
+    "pageName": "Empty Results Page"
   },
   "acts": [
     {

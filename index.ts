@@ -9,7 +9,6 @@ import dotenv from 'dotenv';
 import {
   annotateReportObject,
   createLock,
-  deleteTestRequests,
   errorMessage,
   getExclusionCookieValue,
   getJobNames,
@@ -54,12 +53,15 @@ import querystring from 'node:querystring';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
 import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
+import {rejectTestRequests} from './requests.ts';
+import {isSiteID} from './registry.ts';
 import {answer as enqueueForm} from './web/enqueueForm/index.ts';
 import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';
 import {answer as hideReportForm} from './web/hideReportForm/index.ts';
 import {answer as listDiagnosesPage} from './web/listDiagnoses/index.ts';
 import {answer as listIssuesPage} from './web/listIssues/index.ts';
 import {answer as listPagesPage} from './web/listPages/index.ts';
+import {answer as listSitesPage} from './web/listSites/index.ts';
 import {answer as listRules} from './web/listRules/index.ts';
 import {answer as listTopIssues} from './web/listTopIssues/index.ts';
 import {answer as listViolatorsPage} from './web/listViolators/index.ts';
@@ -81,6 +83,7 @@ import {response as getReportAPI} from './api/getReport.ts';
 import {response as listDiagnosesAPI} from './api/listDiagnoses.ts';
 import {response as listIssuesAPI} from './api/listIssues.ts';
 import {response as listPagesAPI} from './api/listPages.ts';
+import {response as listSitesAPI} from './api/listSites.ts';
 import {response as listViolatorsAPI} from './api/listViolators.ts';
 import {response as requestFeatureAPI} from './api/requestFeature.ts';
 import {response as requestRetestAPI} from './api/requestRetest.ts';
@@ -119,6 +122,7 @@ const answer: {
   listDiagnoses: PageHandler;
   listIssues: PageHandler;
   listPages: PageHandler;
+  listSites: PageHandler;
   listRules: PageHandler;
   listTopIssues: PageHandler;
   listViolators: PageHandler;
@@ -153,6 +157,7 @@ const answer: {
   listDiagnoses: listDiagnosesPage,
   listIssues: listIssuesPage,
   listPages: listPagesPage,
+  listSites: listSitesPage,
   listRules,
   listTopIssues,
   listViolators: listViolatorsPage,
@@ -182,6 +187,7 @@ const apiRespond: {
   listDiagnoses: ApiResponder;
   listIssues: ApiResponder;
   listPages: ApiResponder;
+  listSites: ApiResponder;
   listViolators: ApiResponder;
   requestFeature: ApiResponder;
   requestRetest: ApiResponder;
@@ -193,6 +199,7 @@ const apiRespond: {
   listDiagnoses: listDiagnosesAPI,
   listIssues: listIssuesAPI,
   listPages: listPagesAPI,
+  listSites: listSitesAPI,
   listViolators: listViolatorsAPI,
   requestFeature: requestFeatureAPI,
   requestRetest: requestRetestAPI,
@@ -300,8 +307,8 @@ export const renamedPagePrefixes: Record<string, {to: string; renameDate: string
   reportIssue: {to: 'listViolators', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
   reportIssues: {to: 'listIssues', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
   rules: {to: 'listRules', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
-  targets: {to: 'listPages', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
-  listReports: {to: 'listPages', renameDate: '2026-10-09', retireAfter: '2027-04-09'},
+  targets: {to: 'listSites', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
+  listReports: {to: 'listSites', renameDate: '2026-10-09', retireAfter: '2027-04-09'},
   requestTest: {to: 'requestNewTest', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
   requestTestForm: {to: 'requestNewTestForm', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
   tutorial: {to: 'tutorialWeb', renameDate: '2026-11-06', retireAfter: '2027-05-06'}
@@ -747,7 +754,8 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       const topic = pageName.slice(0, -5);
       // Compute the path in the current request signature: the current name if the
       // page name is a pre-rename one.
-      const canonicalTopic = renamedPagePrefixes[topic]?.to ?? topic;
+      // A request for the list of tested pages without a site, which listed all tested pages before sites existed, is a request for the list of tested sites.
+      const canonicalTopic = topic === 'listPages' && !pathTail ? 'listSites' : renamedPagePrefixes[topic]?.to ?? topic;
       const canonicalPath = `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
       // If the request signature contains any obsolete element (a pre-rename page
       // name or a query string, which no GET
@@ -807,10 +815,19 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     // Otherwise, if it is for an API service:
     else if (pageName === 'api') {
       const [service, ...specs] = pathTail.split('/');
-      // If the service lists the tested pages:
-      if (service === 'listPages') {
+      // If the service lists the tested sites:
+      if (service === 'listSites') {
         // Get the response body.
-        const responseBody = await apiRespond.listPages([]);
+        const responseBody = await apiRespond.listSites([]);
+        await recordPageMetric('apiOperations', 'listSites');
+        // Send it.
+        setHeaders('application/json', null, 'ultra');
+        response.end(JSON.stringify(responseBody));
+      }
+      // Otherwise, if the service lists the tested pages of a site:
+      else if (service === 'listPages') {
+        // Get the response body.
+        const responseBody = await apiRespond.listPages(specs);
         await recordPageMetric('apiOperations', 'listPages');
         // Send it.
         setHeaders('application/json', null, 'ultra');
@@ -986,13 +1003,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       }
       // If the request is a test request:
       else if (pageName === 'requestNewTest.html') {
-        const {description, url, why} = postData as {description?: string; url: string; why?: string};
-        // If the request is valid:
-        if (description && isURL(url) && why && await isAllowedTarget(url)) {
+        const {siteID = '', siteName = '', pageName, url, why} = postData as {siteID?: string; siteName?: string; pageName?: string; url: string; why?: string};
+        // If the request is valid, identifying an existing site or naming a new one:
+        if ((siteID ? isSiteID(siteID) : siteName) && pageName && isURL(url) && why && await isAllowedTarget(url)) {
           // Serve headers for a response.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
-          const answerData = await answer.requestNewTest(description, url, why);
+          const answerData = await answer.requestNewTest(siteID, siteName, pageName, url, why);
           // If they are valid:
           if (answerData.status === 'ok') {
             // Serve the answer page.
@@ -1039,26 +1056,35 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       // Otherwise, if it is an approval or rejection of a test request:
       else if (pageName === 'requestAction.html') {
         const {target, authCode} = postData as {target: string; authCode?: string};
-        const [url, description] = target.split('\t') as [string, string];
+        const [url, requestID] = target.split('\t') as [string, string];
         // If the request is valid:
         if (isURL(url) && isValidAuthCode(authCode)) {
           // Set the non-location headers for a response.
           setHeaders('text/html', null, 'ultra');
           // If the request is an approval:
-          if (description) {
-            // Set a location header for a response.
-            response.setHeader('content-location', pathname);
-            // Process the approval and get the answer data about the remaining requests.
-            const answerData = await answer.enqueue(url, description);
-            await recordMetric('managerActivity', 'requestAction.html', 'ok');
-            // Serve the test-order page with the remaining recommendations.
-            response.end(answerData.answerPage);
+          if (requestID) {
+            // Process the approval.
+            const answerData = await answer.enqueue(url, requestID);
+            // If it succeeded:
+            if (answerData.status === 'ok') {
+              await recordMetric('managerActivity', 'requestAction.html', 'ok');
+              // Set a location header for a response.
+              response.setHeader('content-location', pathname);
+              // Serve the test-order page.
+              response.end(answerData.answerPage);
+            }
+            // Otherwise, i.e. if it failed:
+            else {
+              await recordMetric('managerActivity', 'requestAction.html', 'error');
+              // Report why.
+              await serveError({message: answerData.message}, response, true);
+            }
           }
           // Otherwise, i.e. if it is a rejection:
           else {
             await recordMetric('managerActivity', 'requestAction.html', 'ok');
-            // Delete the test requests for the URL.
-            await deleteTestRequests(url);
+            // Reject the test requests for the URL.
+            await rejectTestRequests(url);
             // Set a location header for a response.
             response.setHeader('content-location', '/enqueueForm.html');
             // Get the answer data.
@@ -1275,9 +1301,9 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const segments = pathTail.split('/');
         // If the service is to receive a test request:
         if (segments[0] === 'requestNewTest') {
-          const {description, URL, reason, reviewImmediately = false} = postData as {description: string; URL: string; reason: string; reviewImmediately?: boolean};
+          const {siteID = '', siteName = '', pageName, URL, reason, reviewImmediately = false} = postData as {siteID?: string; siteName?: string; pageName: string; URL: string; reason: string; reviewImmediately?: boolean};
           // Get the response body.
-          const responseBody = await apiRespond.requestNewTest([description, URL, reason, String(reviewImmediately === true)]);
+          const responseBody = await apiRespond.requestNewTest([siteID, siteName, pageName, URL, reason, String(reviewImmediately === true)]);
           await recordPageMetric('apiOperations', 'requestNewTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');

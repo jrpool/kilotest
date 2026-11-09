@@ -5,46 +5,36 @@
 
 // IMPORTS
 
-import {
-  deleteTestRequests, getJSON, getNowStamp, getRandomString, jobsPath, populateTemplate
-} from '../../util.ts';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+import {htmlSafe, populateTemplate} from '../../util.ts';
+import {getRegistry} from '../../registry.ts';
+import {approveTestRequest, describePageError} from '../../requests.ts';
 
 // FUNCTIONS
 
-// Implements a test request approval and returns a revised request page. The caller
-// (index.ts, this function's only caller) has already validated the URL and
-// authorization code before invoking this function.
-export const answer = async (url: string, description: string) => {
-  // Get the job template.
-  const jobTemplateJSON = await fs.readFile(path.join(import.meta.dirname, '..', '..', 'job.json'), 'utf8');
-  const job = JSON.parse(jobTemplateJSON);
-  const nowStamp = getNowStamp();
-  // Populate the template with job properties.
-  const jobIDSuffix = getRandomString(3);
-  const jobName = `${nowStamp}-${jobIDSuffix}`;
-  job.id = jobName;
-  job.creationTimeStamp = nowStamp;
-  job.executionTimeStamp = nowStamp;
-  job.target.what = description;
-  job.target.url = url;
+// Implements a test request approval and returns a confirmation page. The caller (index.ts, this function’s only caller) has already validated the URL and authorization code before invoking this function.
+export const answer = async (url: string, requestID: string) => {
+  const result = await approveTestRequest(url, requestID);
+  // If the request does not exist:
+  if (result.result === 'noRequest') {
+    return {
+      status: 'error',
+      message: 'Invalid request'
+    };
+  }
+  // If the request cannot be approved:
+  if (result.result !== 'ordered') {
+    return {
+      status: 'error',
+      message: `The request cannot be approved, because ${describePageError(result, await getRegistry())}`
+    };
+  }
   const query: Record<string, string> = {
-    target: description,
-    jobName
+    target: htmlSafe(`${result.page.siteName} ${result.page.pageName}`),
+    jobName: result.reportID
   };
-  // Save the job in the queue.
-  await fs.writeFile(
-    path.join(jobsPath(), 'queue', `${jobName}.json`), getJSON(job)
-  );
-  console.log(`Retest queued for ${description} as job ${jobName}`);
-  // Delete the test requests for the target.
-  await deleteTestRequests(url);
-  // Get the populated answer template.
-  const answerPage = await populateTemplate(import.meta.dirname, query);
   // Return the populated page.
   return {
     status: 'ok',
-    answerPage
+    answerPage: await populateTemplate(import.meta.dirname, query)
   };
 };

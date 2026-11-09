@@ -14,7 +14,11 @@
     "url": "https://example.com/nooutcomes"
   },
   "sources": {
-    "worker": "test-worker"
+    "worker": "test-worker",
+    "siteID": "s-fixtur",
+    "pageID": "p-nooutcom",
+    "siteName": "Fixture Site",
+    "pageName": "No Outcomes Page"
   },
   "acts": [
     {

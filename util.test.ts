@@ -34,6 +34,7 @@ import {
   getEnvMax,
   getIssue,
   errorMessage,
+  getJobsData,
   getJSON,
   getNowStamp,
   getObject,
@@ -41,26 +42,25 @@ import {
   getRandomString,
   getReportEndTime,
   getReportExtract,
+  getPageReportExtracts,
   getReportExtracts,
+  getReportPageID,
   getReportPath,
   getReportStats,
   getTimeStamp,
   hiddenReportsPath,
   htmlSafe,
+  getAllowedRedirectURL,
   isAllowedRedirectTarget,
   isAllowedReport,
   isAllowedTarget,
   isJobID,
-  isReportAvailable,
   isTimeStamp,
   isURL,
   isValidAuthCode,
   jobsPath,
   minifyURL,
   objectSort,
-  orderJob,
-  processTestRequest,
-  testRequestsLock,
   testRequestsPath,
   reportsPath,
   unusableReportsPath
@@ -534,6 +534,17 @@ test('isAllowedRedirectTarget returns false when a redirect leads to a private a
   );
 });
 
+test('getAllowedRedirectURL returns the final URL of an allowed target, or null for a disallowed one', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  assert.equal(
+    await getAllowedRedirectURL('https://example.com/a', fakeFetch('https://example.com/b'), fakeLookup('93.184.216.34')),
+    'https://example.com/b'
+  );
+  assert.equal(
+    await getAllowedRedirectURL('https://example.com/a', fakeFetch('https://10.0.0.5/b'), fakeLookup('93.184.216.34')),
+    null
+  );
+});
 test('isAllowedRedirectTarget returns false when the fetch throws', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   const fetchImpl = async () => { throw new Error('fetch failed'); };
@@ -725,7 +736,7 @@ test('objectSort sorts objects numerically descending', () => {
   assert.deepEqual(sorted.map(i => i.count), [3, 2, 1]);
 });
 
-// TESTS FOR processTestRequest AND isReportAvailable
+// TESTS USING THE FIXTURE DATABASE
 
 // These tests use the fixture database directory.
 import {fixtureDBDir as fixtureDbDir} from './test/dbFixture.ts';
@@ -741,128 +752,6 @@ after(() => {
   }
   else {
     delete process.env.DB_DIR;
-  }
-});
-
-test('processTestRequest succeeds for a valid new-test request', {timeout: 500}, async () => {
-  // Reset testRequests.json to empty before the test.
-  await fs.writeFile(testRequestsPath(), '{}\n');
-  const {result} = await processTestRequest(
-    'because accessibility', {description: 'Example Page', url: 'https://example.com'}
-  );
-  assert.equal(result, 'ok');
-  const testRequests = JSON.parse(await fs.readFile(testRequestsPath(), 'utf8'));
-  assert.equal(testRequests['https://example.com'][0].description, 'Example Page');
-  // Clean up testRequests.json.
-  await fs.writeFile(testRequestsPath(), '{}\n');
-});
-
-test('processTestRequest returns a urlLength error for a URL shorter than 12 characters', {timeout: 500}, async () => {
-  // New-test request URLs must be 12 to 300 characters long; the bound lives
-  // here, not in callers, so it applies on every submission surface.
-  const {result} = await processTestRequest(
-    'because accessibility', {description: 'Short URL Page', url: 'https://a.b'}
-  );
-  assert.equal(result, 'urlLength');
-});
-
-test('processTestRequest returns a urlLength error for a URL longer than 300 characters', {timeout: 500}, async () => {
-  const {result} = await processTestRequest(
-    'because accessibility',
-    {description: 'Long URL Page', url: `https://example.com/${'a'.repeat(300)}`}
-  );
-  assert.equal(result, 'urlLength');
-});
-
-test('processTestRequest returns a duplicate error for a repeated request', {timeout: 500}, async () => {
-  // Reset testRequests.json to empty, then make a successful request.
-  await fs.writeFile(testRequestsPath(), '{}\n');
-  const target = {description: 'Example Page', url: 'https://example.com'};
-  await processTestRequest('because accessibility', target);
-  // Repeat the same request (same description, URL, and reason).
-  const {result} = await processTestRequest('because accessibility', target);
-  assert.equal(result, 'duplicate');
-  // Clean up testRequests.json.
-  await fs.writeFile(testRequestsPath(), '{}\n');
-});
-
-test('processTestRequest returns a reportExists error when a report already exists for the page', async () => {
-  // The fixture database already has a report for this description and URL.
-  const {result} = await processTestRequest(
-    'because accessibility', {description: 'Mixed Outcomes', url: 'https://example.com/mixed'}
-  );
-  assert.equal(result, 'reportExists');
-});
-
-test('processTestRequest returns a reportExists error when a report exists about a page with the same description', async () => {
-  const {result} = await processTestRequest(
-    'because accessibility', {description: 'Mixed Outcomes', url: 'https://example.com/drifted'}
-  );
-  assert.equal(result, 'reportExists');
-});
-
-test('processTestRequest returns a reportExists error when a report exists about a page with an equivalent URL', async () => {
-  // The URL differs from that of the report only by a www prefix, a trailing slash, and case.
-  const {result} = await processTestRequest(
-    'because accessibility', {description: 'Drifted Page', url: 'https://www.Example.com/mixed/'}
-  );
-  assert.equal(result, 'reportExists');
-});
-
-test('processTestRequest returns a queueFull error once the pending-request queue is full', {timeout: 500}, async () => {
-  // Fill testRequests.json with 20 pending requests, all for the same URL, so the total
-  // pending count (summed across all URLs' request arrays) reaches the cap directly,
-  // without needing 20 distinct URLs.
-  const filler = Array.from({length: 20}, (_, i) => ({
-    timeStamp: getNowStamp(), description: `Filler Page ${i}`, reason: 'because filler'
-  }));
-  await fs.writeFile(testRequestsPath(), getJSON({'https://example.com/filler': filler}));
-  // A further, distinct request is rejected as queueFull.
-  const {result} = await processTestRequest(
-    'because accessibility', {description: 'One Too Many Page', url: 'https://example.com/one-too-many'}
-  );
-  assert.equal(result, 'queueFull');
-  // Clean up testRequests.json.
-  await fs.writeFile(testRequestsPath(), '{}\n');
-});
-
-test('processTestRequest honors TEST_REQUEST_QUEUE_MAX when the cap is reached below the default', {timeout: 500}, async () => {
-  // With the cap lowered to 2, a single pending request already fills the queue.
-  process.env.TEST_REQUEST_QUEUE_MAX = '2';
-  try {
-    await fs.writeFile(testRequestsPath(), getJSON({
-      'https://example.com/filler': [
-        {timeStamp: getNowStamp(), description: 'Filler Page A', reason: 'because filler'},
-        {timeStamp: getNowStamp(), description: 'Filler Page B', reason: 'because filler'}
-      ]
-    }));
-    const {result} = await processTestRequest(
-      'because accessibility', {description: 'One Too Many Page', url: 'https://example.com/one-too-many'}
-    );
-    assert.equal(result, 'queueFull');
-  }
-  finally {
-    delete process.env.TEST_REQUEST_QUEUE_MAX;
-    await fs.writeFile(testRequestsPath(), '{}\n');
-  }
-});
-
-test('processTestRequest never returns queueFull when TEST_REQUEST_QUEUE_MAX is 0 (no limit)', {timeout: 500}, async () => {
-  // With the cap set to 0, a queue already past the default size is still not full.
-  process.env.TEST_REQUEST_QUEUE_MAX = '0';
-  try {
-    const filler = Array.from({length: 25}, (_, i) => ({
-      timeStamp: getNowStamp(), description: `Filler Page ${i}`, reason: 'because filler'
-    }));
-    await fs.writeFile(testRequestsPath(), getJSON({'https://example.com/filler': filler}));
-    const {result} = await processTestRequest(
-      'because accessibility', {description: 'One More Page', url: 'https://example.com/one-more'}
-    );
-    assert.equal(result, 'ok');
-  }
-  finally {
-    delete process.env.TEST_REQUEST_QUEUE_MAX;
-    await fs.writeFile(testRequestsPath(), '{}\n');
   }
 });
 
@@ -925,124 +814,6 @@ test('annotateReportObject handles a test act with no standardResult', async () 
   };
   await annotateReportObject(report);
   assert.deepEqual(report.jobData.issuelessRules, []);
-});
-
-test('isReportAvailable returns true for a known page description', async () => {
-  const result = await isReportAvailable('Mixed Outcomes', 'https://example.com/nonexistent');
-  assert.equal(result, true);
-});
-
-test('isReportAvailable returns true for a known URL', async () => {
-  const result = await isReportAvailable('Nonexistent Page', 'https://example.com/mixed');
-  assert.equal(result, true);
-});
-
-test('isReportAvailable returns false for an unknown page and URL', async () => {
-  const result = await isReportAvailable('Nonexistent Page', 'https://nonexistent.example.com/');
-  assert.equal(result, false);
-});
-
-// TESTS FOR processTestRequest's claimed/queued-job detection
-
-test('processTestRequest returns "description" for a page matching a claimed job by description', async () => {
-  const claimedPath = path.join(jobsPath(), 'claimed', 'clm.json');
-  await fs.writeFile(claimedPath, getJSON({
-    target: {what: 'Claimed Page', url: 'https://example.com/claimed-job'}
-  }));
-  try {
-    const {result} = await processTestRequest(
-      'because', {description: 'Claimed Page', url: 'https://example.com/some-other-url'}
-    );
-    assert.equal(result, 'description');
-  }
-  finally {
-    await fs.unlink(claimedPath);
-  }
-});
-
-test('processTestRequest returns "url" for a page matching a claimed job by URL', async () => {
-  const claimedPath = path.join(jobsPath(), 'claimed', 'clm.json');
-  await fs.writeFile(claimedPath, getJSON({
-    target: {what: 'Some Claimed Page', url: 'https://example.com/claimed-url'}
-  }));
-  try {
-    const {result} = await processTestRequest(
-      'because', {description: 'A Different Page', url: 'https://example.com/claimed-url'}
-    );
-    assert.equal(result, 'url');
-  }
-  finally {
-    await fs.unlink(claimedPath);
-  }
-});
-
-test('processTestRequest returns "description" for a page matching a queued job by description', async () => {
-  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
-  await fs.writeFile(queuedPath, getJSON({
-    target: {what: 'Queued Page', url: 'https://example.com/queued-job'}
-  }));
-  try {
-    const {result} = await processTestRequest(
-      'because', {description: 'Queued Page', url: 'https://example.com/some-other-url'}
-    );
-    assert.equal(result, 'description');
-  }
-  finally {
-    await fs.unlink(queuedPath);
-  }
-});
-
-test('processTestRequest returns "url" for a page matching a queued job by URL', async () => {
-  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
-  await fs.writeFile(queuedPath, getJSON({
-    target: {what: 'Some Queued Page', url: 'https://example.com/queued-url'}
-  }));
-  try {
-    const {result} = await processTestRequest(
-      'because', {description: 'A Different Page', url: 'https://example.com/queued-url'}
-    );
-    assert.equal(result, 'url');
-  }
-  finally {
-    await fs.unlink(queuedPath);
-  }
-});
-
-test('processTestRequest returns "url" for a page matching a queued job by an equivalent URL', async () => {
-  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
-  await fs.writeFile(queuedPath, getJSON({
-    target: {what: 'Some Queued Page', url: 'https://example.com/queued-url'}
-  }));
-  try {
-    // The URL differs from that of the job only by a www prefix, a trailing slash, and case.
-    const {result} = await processTestRequest(
-      'because', {description: 'A Different Page', url: 'https://www.Example.com/queued-url/'}
-    );
-    assert.equal(result, 'url');
-  }
-  finally {
-    await fs.unlink(queuedPath);
-  }
-});
-
-test('processTestRequest returns "nonreport" when the cited report does not exist', async () => {
-  // Cite a reportID that does not correspond to any available report.
-  const {result} = await processTestRequest('because', {reportID: '999999T9999-xxx'});
-  assert.equal(result, 'nonreport');
-});
-
-test('processTestRequest throws when a job file in a category directory is defective', async () => {
-  const claimedPath = path.join(jobsPath(), 'claimed', 'bad.json');
-  await fs.writeFile(claimedPath, 'not valid json');
-  try {
-    await assert.rejects(
-      processTestRequest('because', {description: 'Any Page', url: 'https://example.com/any'}),
-      /Failed to process test request/
-    );
-  }
-  finally {
-    await fs.unlink(claimedPath);
-  }
 });
 
 // TESTS FOR REMAINING BRANCH COVERAGE
@@ -1135,11 +906,27 @@ test('getJobsData skips a job file that is removed between the directory listing
   try {
     const {getJobsData} = await import('./util.ts');
     const result = await getJobsData('claimed');
-    assert.ok(!result.some(job => job.description === 'Raced Page'));
+    assert.ok(!result.some(job => job.url === 'https://example.com/raced'));
   }
   finally {
     t.mock.reset();
     await fs.unlink(claimedPath).catch(() => {});
+  }
+});
+
+test('getJobsData returns the page identifier of a job, or an empty one for a job without one', async () => {
+  const withPath = path.join(jobsPath(), 'queue', 'withPage.json');
+  const withoutPath = path.join(jobsPath(), 'queue', 'withoutPage.json');
+  await fs.writeFile(withPath, getJSON({sources: {pageID: 'p-withpage'}, target: {url: 'https://example.com/with'}}));
+  await fs.writeFile(withoutPath, getJSON({target: {url: 'https://example.com/without'}}));
+  try {
+    const result = await getJobsData('queue');
+    assert.ok(result.some(job => job.pageID === 'p-withpage' && job.url === 'https://example.com/with'));
+    assert.ok(result.some(job => job.pageID === '' && job.url === 'https://example.com/without'));
+  }
+  finally {
+    await fs.unlink(withPath);
+    await fs.unlink(withoutPath);
   }
 });
 
@@ -1158,27 +945,6 @@ test('getJobsData throws when a job file cannot be read for a reason other than 
   }
 });
 
-test('processTestRequest succeeds on a fresh deployment with no job directories yet', async () => {
-  // Regression test for the same ENOENT scenario, exercised through the actual
-  // public interface: a brand-new DB_DIR with no jobs/claimed or jobs/queue
-  // directories must not prevent a new-test request from being approved.
-  const os = await import('node:os');
-  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-freshdeploy-'));
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = path.join(tmpRoot, 'db');
-  try {
-    const {processTestRequest: freshProcessTestRequest} = await import('./util.ts');
-    const {result} = await freshProcessTestRequest(
-      'because accessibility', {description: 'Fresh Deploy Page', url: 'https://example.com/fresh'}
-    );
-    assert.equal(result, 'ok');
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
-  }
-});
-
 test('getObject throws for a file that is not valid JSON', async () => {
   const tmpFile = path.join((await import('node:os')).tmpdir(), 'kilotest-test-invalid.json');
   (await import('node:fs')).writeFileSync(tmpFile, 'not json');
@@ -1187,58 +953,6 @@ test('getObject throws for a file that is not valid JSON', async () => {
   }
   finally {
     (await import('node:fs')).unlinkSync(tmpFile);
-  }
-});
-
-test('getTestRequests creates and returns an empty test-requests object when the file is missing', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-missing-testrequests-test';
-  const fsSync = await import('node:fs');
-  fsSync.mkdirSync(tmpDir + '/jobs', {recursive: true});
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getTestRequests} = await import('./util.ts');
-    const result = await getTestRequests();
-    assert.deepEqual(result, {});
-    // Verify the empty file was created.
-    assert.ok(fsSync.existsSync(tmpDir + '/jobs/testRequests.json'));
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
-test('getTestRequests throws when the test-requests file is not readable for a reason other than being missing', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-testrequests-unreadable-test';
-  const fsSync = await import('node:fs');
-  // Create a directory where the test-requests file should be, causing EISDIR rather than ENOENT.
-  fsSync.mkdirSync(tmpDir + '/jobs/testRequests.json', {recursive: true});
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getTestRequests} = await import('./util.ts');
-    await assert.rejects(getTestRequests(), /not readable/);
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    fsSync.rmSync(tmpDir, {recursive: true});
-  }
-});
-
-test('getTestRequests throws when the test-requests file is not JSON', async () => {
-  const tmpDir = (await import('node:os')).tmpdir() + '/kilotest-testrequests-test';
-  (await import('node:fs')).mkdirSync(tmpDir + '/jobs', {recursive: true});
-  (await import('node:fs')).writeFileSync(tmpDir + '/jobs/testRequests.json', 'not json');
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = tmpDir;
-  try {
-    const {getTestRequests} = await import('./util.ts');
-    await assert.rejects(getTestRequests(), /not JSON/);
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    (await import('node:fs')).rmSync(tmpDir, {recursive: true});
   }
 });
 
@@ -1418,10 +1132,6 @@ test('getTimeStamp returns an 11-character stamp from a Date', () => {
   assert.equal(stamp.slice(0, 6), '260315');
   assert.equal(stamp.slice(6, 7), 'T');
   assert.equal(stamp.slice(7), '1430');
-});
-
-test('testRequestsLock is a function (the lock returned by createLock)', () => {
-  assert.equal(typeof testRequestsLock, 'function');
 });
 
 test('getReportPath returns the path of a report file', () => {
@@ -1671,8 +1381,9 @@ test('getReportExtracts reflects reports added, modified, and removed after a pr
     await fs.utimes(firstPath, later, later);
     extracts = await getReportExtracts();
     assert.deepEqual(extracts.map(e => e.description), ['Revised Page']);
-    // Add a report.
+    // Add a report about another page.
     report.target.what = 'Added Page';
+    report.sources.pageID = 'p-addedpag';
     const secondPath = path.join(tmpReportsDir, '260101T0001-bbb.json');
     await fs.writeFile(secondPath, JSON.stringify(report));
     extracts = await getReportExtracts();
@@ -1931,165 +1642,7 @@ test('getMetrics backfills every category, and generates a since stamp, from a b
   }
 });
 
-// TESTS FOR orderJob AND awaitJob (GitHub issue #111)
-
-test('orderJob enqueues a new-page order directly into the job queue', async () => {
-  const {result, description, url, reportID} = await orderJob(
-    {description: 'Ordered Page', url: 'https://example.com/ordered'}, 'because accessibility matters here'
-  ) as any;
-  assert.equal(result, 'ok');
-  assert.equal(description, 'Ordered Page');
-  assert.equal(url, 'https://example.com/ordered');
-  assert.match(reportID, /^\d{6}T\d{4}-[a-z0-9]{3}$/);
-  const queuedPath = path.join(jobsPath(), 'queue', `${reportID}.json`);
-  try {
-    const job = JSON.parse(await fs.readFile(queuedPath, 'utf8'));
-    assert.equal(job.target.what, 'Ordered Page');
-    assert.equal(job.target.url, 'https://example.com/ordered');
-    assert.equal(job.sources.reason, 'because accessibility matters here');
-    // No pending-approval inbox entry is created; the job goes straight to the queue.
-    const testRequests = JSON.parse(await fs.readFile(testRequestsPath(), 'utf8'));
-    assert.equal(testRequests['https://example.com/ordered'], undefined);
-  }
-  finally {
-    await fs.unlink(queuedPath);
-  }
-});
-
-test('orderJob returns a reportExists error when a report already exists for the ordered page', async () => {
-  const {result} = await orderJob(
-    {description: 'Mixed Outcomes', url: 'https://example.com/mixed'}, 'because accessibility matters here'
-  );
-  assert.equal(result, 'reportExists');
-});
-
-test('orderJob returns a reportExists error when a report exists about a page with the same description', async () => {
-  const {result} = await orderJob(
-    {description: 'Mixed Outcomes', url: 'https://example.com/drifted'}, 'because accessibility matters here'
-  );
-  assert.equal(result, 'reportExists');
-});
-
-test('orderJob returns a reportExists error when a report exists about a page with the same URL', async () => {
-  const {result} = await orderJob(
-    {description: 'Drifted Page', url: 'https://example.com/mixed'}, 'because accessibility matters here'
-  );
-  assert.equal(result, 'reportExists');
-});
-
-test('orderJob returns "description" for a page matching a claimed job by description', async () => {
-  const claimedPath = path.join(jobsPath(), 'claimed', 'clm.json');
-  await fs.writeFile(claimedPath, getJSON({
-    target: {what: 'Claimed Order Page', url: 'https://example.com/claimed-order-job'}
-  }));
-  try {
-    const {result} = await orderJob(
-      {description: 'Claimed Order Page', url: 'https://example.com/some-other-order-url'},
-      'because accessibility matters here'
-    );
-    assert.equal(result, 'description');
-  }
-  finally {
-    await fs.unlink(claimedPath);
-  }
-});
-
-test('orderJob returns "url" for a page matching a queued job by URL', async () => {
-  const queuedPath = path.join(jobsPath(), 'queue', 'que.json');
-  await fs.writeFile(queuedPath, getJSON({
-    target: {what: 'Some Queued Order Page', url: 'https://example.com/queued-order-url'}
-  }));
-  try {
-    const {result} = await orderJob(
-      {description: 'A Different Order Page', url: 'https://example.com/queued-order-url'},
-      'because accessibility matters here'
-    );
-    assert.equal(result, 'url');
-  }
-  finally {
-    await fs.unlink(queuedPath);
-  }
-});
-
-test('orderJob throws when a job file in a category directory is defective', async () => {
-  const claimedPath = path.join(jobsPath(), 'claimed', 'bad.json');
-  await fs.writeFile(claimedPath, 'not valid json');
-  try {
-    await assert.rejects(
-      orderJob({description: 'Any Order Page', url: 'https://example.com/any-order'}, 'because accessibility matters here'),
-      /Failed to order test/
-    );
-  }
-  finally {
-    await fs.unlink(claimedPath);
-  }
-});
-
-test('orderJob returns "nonreport" when a retest order cites a report that does not exist', async () => {
-  const {result} = await orderJob({reportID: '999999T9999-xxx'}, 'because accessibility matters here');
-  assert.equal(result, 'nonreport');
-});
-
-test('orderJob returns "superseded" when a retest order cites a superseded report', async () => {
-  // 260101T0000-mix is an earlier report of "Mixed Outcomes" than 260202T0000-new,
-  // so it is superseded.
-  const {result} = await orderJob(
-    {reportID: '260101T0000-mix'}, 'because accessibility matters here'
-  );
-  assert.equal(result, 'superseded');
-});
-
-test('orderJob enqueues a retest order for the latest report of a page', async () => {
-  const {result, description, url, reportID} = await orderJob(
-    {reportID: '260202T0000-new'}, 'because accessibility matters here'
-  ) as any;
-  assert.equal(result, 'ok');
-  assert.equal(description, 'Mixed Outcomes');
-  assert.equal(url, 'https://example.com/mixed');
-  const queuedPath = path.join(jobsPath(), 'queue', `${reportID}.json`);
-  try {
-    const job = JSON.parse(await fs.readFile(queuedPath, 'utf8'));
-    assert.equal(job.target.what, 'Mixed Outcomes');
-  }
-  finally {
-    await fs.unlink(queuedPath);
-  }
-});
-
-test('orderJob honors JOB_QUEUE_MAX when the cap is reached', async () => {
-  process.env.JOB_QUEUE_MAX = '1';
-  const fillerPath = path.join(jobsPath(), 'queue', 'fil.json');
-  await fs.writeFile(fillerPath, getJSON({target: {what: 'Filler Queued Page', url: 'https://example.com/filler-queued'}}));
-  try {
-    const {result} = await orderJob(
-      {description: 'One Too Many Order Page', url: 'https://example.com/one-too-many-order'},
-      'because accessibility matters here'
-    );
-    assert.equal(result, 'queueFull');
-  }
-  finally {
-    delete process.env.JOB_QUEUE_MAX;
-    await fs.unlink(fillerPath);
-  }
-});
-
-test('orderJob never returns queueFull when JOB_QUEUE_MAX is 0 (no limit)', async () => {
-  process.env.JOB_QUEUE_MAX = '0';
-  const fillerPath = path.join(jobsPath(), 'queue', 'fi2.json');
-  await fs.writeFile(fillerPath, getJSON({target: {what: 'Filler Queued Page Two', url: 'https://example.com/filler-queued-2'}}));
-  try {
-    const {result, reportID} = await orderJob(
-      {description: 'One More Order Page', url: 'https://example.com/one-more-order'},
-      'because accessibility matters here'
-    ) as any;
-    assert.equal(result, 'ok');
-    await fs.unlink(path.join(jobsPath(), 'queue', `${reportID}.json`));
-  }
-  finally {
-    delete process.env.JOB_QUEUE_MAX;
-    await fs.unlink(fillerPath);
-  }
-});
+// TESTS FOR awaitJob (GitHub issue #111)
 
 test('awaitJob returns "completed" immediately when a report already exists', async () => {
   const outcome = await awaitJob('260101T0000-mix');
@@ -2152,5 +1705,51 @@ test('awaitJob returns "timedOut" when a claimed job neither completes nor fails
     delete process.env.AWAIT_JOB_POLL_MS;
     delete process.env.AWAIT_JOB_TIMEOUT_MS;
     await fs.unlink(claimedPath);
+  }
+});
+
+test('getReportPageID returns the page identifier of a report, or an empty string if it has none', () => {
+  assert.equal(getReportPageID({sources: {pageID: 'p-mixedout'}}), 'p-mixedout');
+  assert.equal(getReportPageID({sources: {pageID: 7}}), '');
+  assert.equal(getReportPageID({}), '');
+});
+
+test('report extracts group reports by page identifier, not description, and omit unmigrated reports', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-pages-'));
+  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
+  const savedDbDir = process.env.DB_DIR;
+  const sourcePath = path.join(reportsPath(), '260101T0000-mix.json');
+  process.env.DB_DIR = path.join(tmpRoot, 'db');
+  try {
+    await fs.mkdir(tmpReportsDir, {recursive: true});
+    const report = JSON.parse(await fs.readFile(sourcePath, 'utf8'));
+    // Write two reports about one page with different descriptions, the later one with the earlier description.
+    report.target.what = 'Zeta Page';
+    report.jobData.endTime = '26-01-01T00:10';
+    await fs.writeFile(path.join(tmpReportsDir, '260101T0000-aaa.json'), JSON.stringify(report));
+    report.target.what = 'Alpha Page';
+    report.jobData.endTime = '26-02-01T00:10';
+    await fs.writeFile(path.join(tmpReportsDir, '260201T0000-bbb.json'), JSON.stringify(report));
+    // Write a report without a page identifier.
+    delete report.sources.pageID;
+    await fs.writeFile(path.join(tmpReportsDir, '260301T0000-ccc.json'), JSON.stringify(report));
+    const extracts = await getReportExtracts();
+    assert.deepEqual(
+      extracts.map(({id, superseded}) => [id, superseded]),
+      [['260201T0000-bbb', undefined], ['260101T0000-aaa', true]]
+    );
+    assert.deepEqual((await getReportExtracts(true)).map(({id}) => id), ['260201T0000-bbb']);
+    // The page history is chronological, whatever the descriptions.
+    assert.deepEqual(
+      (await getPageReportExtracts('p-mixedout')).map(({id}) => id), ['260101T0000-aaa', '260201T0000-bbb']
+    );
+    assert.deepEqual(await getPageReportExtracts(''), []);
+    // The unmigrated report was not quarantined.
+    assert.equal((await fs.readdir(tmpReportsDir)).includes('260301T0000-ccc.json'), true);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
   }
 });

@@ -18,6 +18,7 @@ import {
 import {
   getAgoDays,
   getPageReportExtracts,
+  getReportPageID,
   getReport,
   getReportStats,
   getTestActInstances,
@@ -68,7 +69,7 @@ export const response = async (args: string[]) => {
         browserID = null
       } = report;
       // Get extracts of all reports about the page, from oldest to latest.
-      const pageExtracts = await getPageReportExtracts(report.target.what);
+      const pageExtracts = await getPageReportExtracts(getReportPageID(report));
       const lastIndex = pageExtracts.length - 1;
       // Add the history of reports about the page to the response content.
       responseContent['history of reports about the page'] = pageExtracts.map((extract, index): ReportHistoryEntry => {
@@ -204,7 +205,7 @@ export const response = async (args: string[]) => {
             reason: '20- to 100-character reason why the page should be retested'
           },
           'how to check whether the request has been fulfilled':
-          'use the listPages tool to determine whether a later report about the page has become available (typical wait time: 1 hour to 1 day)'
+          'use this listIssues tool to determine whether the history of reports about the page includes a later report (typical wait time: 2 to 4 minutes after immediate approval, or 1 hour to 1 day under review by management)'
         };
         // Add instructions for a web user to request a retest.
         responseContent['how a web user can request that the page be retested'] = {
@@ -234,6 +235,22 @@ export const response = async (args: string[]) => {
       responseContent['basics about all issues reported in the report'] = issuesBasics;
     }
   }
+  // Get the identifier of the first site of the page, if known, to identify the closest ancestor request: the listing of the tested pages of that site, or else the listing of the tested sites.
+  const siteID = 'error' in reportBasics ? undefined : reportBasics['tested web page'].sites[0]?.identifier;
+  const ancestor = siteID ? {
+    'tool name': 'listPages',
+    description: 'Provide basics about the tested pages of one site.',
+    method: 'GET',
+    URL: `${thisHost}/api/listPages/${siteID}`,
+    webURL: `${thisHost}/listPages.html/${siteID}`
+  } : {
+    'tool name': 'listSites',
+    description: 'Provide basics about all tested sites.',
+    method: 'GET',
+    URL: `${thisHost}/api/listSites`,
+    webURL: `${thisHost}/listSites.html`
+  };
+  const {webURL, ...ancestorRequest} = ancestor;
   // Create a response body.
   const body = {
     'tool collection': getToolsFacts(),
@@ -242,16 +259,11 @@ export const response = async (args: string[]) => {
       description: 'Provide details about one report, including basics about the issues reported in it. The reportID parameter identifies the report that I want details about. It was in the response to my earlier listPages request, or in the history of reports about the page in an earlier listIssues response.',
       method: 'GET',
       URL: `${thisHost}/api/listIssues/${reportID}`,
-      'closest ancestor request': {
-        'tool name': 'listPages',
-        description: 'Provide basics about all tested pages.',
-        method: 'GET',
-        URL: `${thisHost}/api/listPages`,
-      }
+      'closest ancestor request': ancestorRequest
     },
     'URLs of similar requests for web users': {
       'this request': `${thisHost}/listIssues.html/${reportID}`,
-      'closest ancestor request': `${thisHost}/listPages.html`
+      'closest ancestor request': webURL
     },
     'response metadata': getResponseMetadata(),
     'response content': responseContent

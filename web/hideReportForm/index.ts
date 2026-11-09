@@ -6,9 +6,10 @@
 // IMPORTS
 
 import {
-  getReportExtracts, hiddenReportsPath, isValidAuthCode, populateTemplate, reportsPath
+  getReportExtracts, hiddenReportsPath, htmlSafe, isValidAuthCode, populateTemplate, reportsPath
 } from '../../util.ts';
 import {getDateTimeString} from '../util.ts';
+import {getPageTitle, getRegistry} from '../../registry.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -53,12 +54,13 @@ export const answer = async (_: any, search: string, method: string) => {
   const reportSpecs: any[] = [];
   // Get data on all available reports.
   const reportExtracts = await getReportExtracts();
+  const registry = await getRegistry();
   // For each report:
   for (const reportExtract of reportExtracts) {
-    const {id, description, reportTime} = reportExtract;
-    // Add the report to the array.
+    const {id, description, pageID, reportTime} = reportExtract;
+    // Add the report to the array, with the current name of its page.
     reportSpecs.push({
-      description,
+      description: getPageTitle(registry, pageID, description),
       id,
       reportTime
     });
@@ -76,7 +78,7 @@ export const answer = async (_: any, search: string, method: string) => {
   reportSpecs.forEach(spec => {
     const {id, description, reportTime} = spec;
     const when = getDateTimeString(new Date(reportTime));
-    const specString = `${description} (job <code>${id}</code> completed ${when})`;
+    const specString = `${htmlSafe(description)} (job <code>${id}</code> completed ${when})`;
     // Add a line with a radio button to hide it.
     lines.push(
       `${margin}<p><input type="radio" name="report" value="${id}"> ${specString}</p>`

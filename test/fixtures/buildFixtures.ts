@@ -74,6 +74,33 @@ const testAct = (which: string, instances: any[]) => ({
   }
 });
 
+// Site of all fixture pages.
+const fixtureSiteID = 's-fixtur';
+const fixtureSiteName = 'Fixture Site';
+// Page identifiers of the fixture pages, by page description.
+const fixturePageIDs: Record<string, string> = {
+  'Mixed Outcomes': 'p-mixedout',
+  'All CantTell Page': 'p-canttell',
+  'No Outcomes Page': 'p-nooutcom',
+  'Empty Results Page': 'p-emptyres',
+  'Prevented Page': 'p-prevente',
+  'Hidden Page': 'p-hiddenpg',
+  'Multi Violator Page': 'p-multivio',
+  'Branch Coverage Page': 'p-branchco'
+};
+// URLs of the fixture pages, by page identifier, recorded as reports are built.
+const fixturePageURLs: Record<string, string> = {};
+
+// Returns the page identifier of a fixture page and records its URL.
+const getFixturePageID = (what: string, url: string): string => {
+  const pageID = fixturePageIDs[what]!;
+  fixturePageURLs[pageID] = url;
+  return pageID;
+};
+// Returns the fixture page descriptions by page identifier.
+const fixtureDescriptionsByID = (): Record<string, string> => Object.fromEntries(
+  Object.entries(fixturePageIDs).map(([description, pageID]) => [pageID, description])
+);
 // Returns a minimal valid report.
 const report = (id: string, what: string, url: string, acts: any[], catalog: any, endTime = '26-01-01T00:10') => ({
   id,
@@ -85,7 +112,13 @@ const report = (id: string, what: string, url: string, acts: any[], catalog: any
   creationTimeStamp: id.slice(0, 11),
   executionTimeStamp: id.slice(0, 11),
   target: {what, url},
-  sources: {worker: 'test-worker'},
+  sources: {
+    worker: 'test-worker',
+    siteID: fixtureSiteID,
+    pageID: getFixturePageID(what, url),
+    siteName: fixtureSiteName,
+    pageName: what
+  },
   acts,
   jobData: {
     startTime: '26-01-01T00:00',
@@ -327,6 +360,13 @@ const main = async () => {
   delete brdReport.jobData.preventions;
   await writeJSON(path.join(reportsDir, '260101T0009-brd.json'), brdReport);
 
+  // Write the registry of the fixture site and pages.
+  await writeJSON(path.join(targetDir, 'registry.json'), {
+    sites: {[fixtureSiteID]: fixtureSiteName},
+    pages: Object.fromEntries(Object.entries(fixtureDescriptionsByID()).map(([pageID, name]) => [
+      pageID, {sites: [fixtureSiteID], name, url: fixturePageURLs[pageID]}
+    ]))
+  });
   // Write an empty testRequests.json so getTestRequests does not try to create one.
   await writeJSON(path.join(targetDir, 'jobs', 'testRequests.json'), {});
 

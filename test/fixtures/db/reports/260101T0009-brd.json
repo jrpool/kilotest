@@ -14,7 +14,11 @@
     "url": "https://example.com/branch"
   },
   "sources": {
-    "worker": "test-worker"
+    "worker": "test-worker",
+    "siteID": "s-fixtur",
+    "pageID": "p-branchco",
+    "siteName": "Fixture Site",
+    "pageName": "Branch Coverage Page"
   },
   "acts": [
     {

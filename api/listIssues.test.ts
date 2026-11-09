@@ -154,3 +154,25 @@ test('listIssues response conforms to its response schema', async () => {
   const body = await response(['260101T0000-mix']);
   assert.deepEqual(listIssuesResponseSchema.parse(body), body);
 });
+
+test('listIssues names the tested pages of the site of the page as its closest ancestor, or else the tested sites', async () => {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const registered = await response(['260101T0000-mix']);
+  assert.equal(registered['this request']['closest ancestor request']?.URL, 'https://kilotest.example.com/api/listPages/s-fixtur');
+  assert.equal(registered['URLs of similar requests for web users']['closest ancestor request'], 'https://kilotest.example.com/listPages.html/s-fixtur');
+  const missing = await response(['990101T0000-zzz']);
+  assert.equal(missing['this request']['closest ancestor request']?.['tool name'], 'listSites');
+  const registryPath = path.join(process.env.DB_DIR as string, 'registry.json');
+  const original = await fs.readFile(registryPath, 'utf8');
+  try {
+    const registry = JSON.parse(original);
+    delete registry.pages['p-mixedout'];
+    await fs.writeFile(registryPath, JSON.stringify(registry));
+    const unregistered = await response(['260101T0000-mix']);
+    assert.equal(unregistered['URLs of similar requests for web users']['closest ancestor request'], 'https://kilotest.example.com/listSites.html');
+  }
+  finally {
+    await fs.writeFile(registryPath, original);
+  }
+});

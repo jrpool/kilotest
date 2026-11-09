@@ -6,9 +6,10 @@
 // IMPORTS
 
 import {
-  getReportEndTime, hiddenReportsPath, isValidAuthCode, populateTemplate, readdirOrCreate, reportsPath
+  getReportEndTime, getReportPageID, hiddenReportsPath, htmlSafe, isValidAuthCode, populateTemplate, readdirOrCreate, reportsPath
 } from '../../util.ts';
 import {getDateTimeString} from '../util.ts';
+import {getPageTitle, getRegistry} from '../../registry.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -52,6 +53,7 @@ export const answer = async (_: any, search: string, method: string) => {
   const reportsData: any[] = [];
   // Get the names of the hidden report files.
   const hiddenReportFileNames = await readdirOrCreate(hiddenReportsPath(), 'Hidden reports directory');
+  const registry = await getRegistry();
   // For each hidden report:
   for (const reportFileName of hiddenReportFileNames) {
     // Get its file.
@@ -59,10 +61,9 @@ export const answer = async (_: any, search: string, method: string) => {
     // Get the report.
     const report = JSON.parse(reportJSON);
     const {id, target} = report;
-    const {what: description} = target;
-    // Add its data to the array.
+    // Add its data to the array, with the current name of its page.
     reportsData.push({
-      description,
+      description: getPageTitle(registry, getReportPageID(report), target.what),
       id,
       reportTime: getReportEndTime(report)
     });
@@ -80,7 +81,7 @@ export const answer = async (_: any, search: string, method: string) => {
   reportsData.forEach(data => {
     const {id, description, reportTime} = data;
     const when = getDateTimeString(reportTime);
-    const specString = `${description} (job <code>${id}</code> completed ${when})`;
+    const specString = `${htmlSafe(description)} (job <code>${id}</code> completed ${when})`;
     // Add a line with a radio button to unhide it.
     lines.push(
       `${margin}<p><input type="radio" name="report" value="${id}"> ${specString}</p>`

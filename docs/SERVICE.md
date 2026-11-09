@@ -405,7 +405,7 @@ Alerts are sent to the maintainer in the following conditions:
 
 5. **Requested full report unavailable**: When a user requests a full report via the API but the report cannot be retrieved (e.g., the report file is missing from disk), an alert is sent with subject `"Kilotest: requested full report unavailable"`, including details on which report was requested and why it could not be retrieved.
 
-6. **Request for a test or retest received**: When a user submits a request to test or retest a page, whether through the web interface (`/requestNewTest.html` or `/requestRetest.html`) or the API (the `requestNewTest` or `requestRetest` operation), an alert is sent with subject `"Kilotest: request for a new test awaits approval"` or `"Kilotest: request for a retest awaits approval"`, including the target URL, description, and the user's stated reason for the request. Both the UI and API paths funnel through the same underlying request-queuing function, so the subject and the rest of this behavior are identical regardless of which path the request arrived through. A request is treated as a duplicate, and no alert is sent for it, only if a request already pending in `db/jobs/testRequests.json`, i.e., submitted but not yet manually approved by the maintainer into an actual job, for the same URL has the identical description; this check ignores the stated reason and the test-versus-retest distinction, and is not limited to a recent time window, it compares against every request still pending approval for that URL. Once the maintainer approves a pending request (turning it into a job via `/enqueue.html`), all pending requests for that URL are cleared, so this check cannot detect a duplicate against a request that has already been approved, is currently running, or has already completed; an identical request submitted after approval alerts again.
+6. **Request for a test or retest received**: When a request to test or retest a page is added to the requests awaiting approval, whether it came through the web interface (`/requestNewTest.html` or `/requestRetest.html`) or the API (the `requestNewTest` or `requestRetest` operation), an alert is sent with subject `"Kilotest: request for a new test awaits approval"` or `"Kilotest: request for a retest awaits approval"`, followed by `" (referred from immediate review)"` if immediate review was requested but the request has possible duplicates or similar sites. The alert includes the site and page names, the URL, the stated reason, the number of possible duplicates and similar sites, and the number of requests now awaiting approval. All paths use `submitTestRequest` in `requests.ts`, so the behavior is identical regardless of the path. A request is a duplicate, and no alert is sent for it, if a request awaiting approval in `db/jobs/testRequests.json` has the same URL, the same target (site and page, or page for a retest), and the same reason. When the maintainer approves a request on `/enqueueForm.html`, all requests awaiting approval for its URL are removed, so a later identical request alerts again.
 
 7. **MCP feature request received**: When a user submits a feature request via the MCP server's `requestFeature` tool, an alert is sent with subject `"MCP feature request received"`, including the text of the feature request, and the request is also appended to `db/featureRequests.json`, the same way tutorial comments are appended to their own files (see item 1), so that a manager can review or delete it later via `/deleteNotesForm.html`.
 
@@ -513,7 +513,7 @@ Kilotest records basic counts of how it is used, so the maintainer can answer qu
 
 - The generic `.html` GET dispatch in `index.ts`, once per successfully served web page, recorded under the `pageViews` category by page name (for example `tutorialWeb`, `listPages`), unless the page is a manager-only page (see "Manager page activity" below), in which case it is recorded there instead.
 - The home page (`/` and `/index.html`), served by its own branch in `index.ts` rather than through the generic `.html` dispatch, recorded under `pageViews` as `index`.
-- Each of the 9 MCP tool handlers in `mcp.ts`, once per successful tool call, recorded under the `mcpToolCalls` category by tool name (for example `listPages`, `requestNewTest`).
+- Each of the 12 MCP tool handlers in `mcp.ts`, once per successful tool call, recorded under the `mcpToolCalls` category by tool name (for example `listPages`, `requestNewTest`).
 - The `/api/*` GET and POST service branches in `index.ts`, once per call, recorded under the `apiOperations` category by operation name.
 
 `db/metrics.json` also stores a `since` time stamp, set when the file is first created, so the counts can be read as "since this date" rather than assumed to cover Kilotest's entire history. `getMetrics()` backfills any category absent from an existing `db/metrics.json` (for example one written before a category such as `managerActivity` existed), so an older file remains readable rather than causing every subsequent request to error.
@@ -577,9 +577,9 @@ Experimentation revealed that a high-frequency instance could decrease the elaps
 
 ### Report protection
 
-Jobs and reports are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. Therefore, reports risk deletion unless duplicates are made externally. Other files, including application code, dependencies, and `db/reportsExtract.json`, are not at risk, because they can be pushed from the local repository or regenerated.
+Jobs, reports, and the site and page registry (`db/registry.json`) are not tracked, so there are no duplicates in any other copy of the repository. Jobs are typically ephemeral, but reports typically remain in existence until deemed obsolete and useless even for historical comparison. The registry is the sole record of which sites exist and which pages belong to them, and every report since the site/page migration refers to it by identifier (see [ADR 011](decisions/011-site-page-ontology.md)). Therefore, reports and the registry risk loss unless duplicates are made externally. Other files, including application code and dependencies, are not at risk, because they can be pushed from the local repository or regenerated.
 
-Reports created on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created two *buckets* named `kilotest-reports` and `kilotest-hidden-reports`, and has created an API token scoped to those buckets with object read-write permissions, access and secret access keys for S3 clients, and a restriction to the IPv4 and IPv6 addresses of the server.
+Reports and the registry on the deployed server are currently protected with an external archive at the [Cloudflare R2 object storage service](https://developers.cloudflare.com/r2/). On that service, the current Kilotest maintainer has an account, subscribes to the R2 service, has created six *buckets* (`kilotest-reports`, `kilotest-hidden-reports`, and `kilotest-registry`, each with a counterpart whose name ends with `-old`), and has created an API token in the account-management interface, scoped to those buckets with object read-write permissions, access and secret access keys for S3 clients, and a restriction to the IPv4 and IPv6 addresses of the server. Because the `rclone` configuration sets `no_check_bucket`, `rclone` does not create buckets, so each bucket must be created on R2 before it is used.
 
 The server host uses `rclone` for file synchronization with external storage locations. Two files on the server host enable `rclone` for use by Kilotest. One file is `/home/linuxuser/.config/rclone/rclone.conf`. Its content, with secrets replaced, is:
 
@@ -600,13 +600,15 @@ The other file is the `crontab` configuration file for `linuxuser`, which is man
 ```crontab
 11 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/hiddenReports r2:kilotest-hidden-reports/ -v --backup-dir r2:kilotest-hidden-reports-old/$(date +\%F) > /home/linuxuser/kilotest-to-r2.log 2>&1
 12 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/reports r2:kilotest-reports/ -v --backup-dir r2:kilotest-reports-old/$(date +\%F) >> /home/linuxuser/kilotest-to-r2.log 2>&1
+13 9 * * * /usr/bin/rclone copy /opt/jpdev/kilotest/db/registry.json r2:kilotest-registry/ -v --backup-dir r2:kilotest-registry-old/$(date +\%F) >> /home/linuxuser/kilotest-to-r2.log 2>&1
 ```
 
-This configuration every morning (UTC) copies reports to R2 as follows:
+This configuration every morning (UTC) copies reports and the registry to R2 as follows:
 
-- Reports already on R2 are not copied again.
-- Reports not yet on R2 are copied to it.
-- Reports on R2 that differ from and are older than the same-name reports on the server are moved to the corresponding `-old` directory, and the newer reports are copied to R2.
+- Files already on R2 are not copied again.
+- Files not yet on R2 are copied to it.
+- Files on R2 that differ from and are older than the same-name files on the server are moved to a dated directory in the corresponding `-old` bucket, and the newer files are copied to R2. Thus each day on which the registry changed leaves its previous version in `kilotest-registry-old`.
+- Files on R2 that are no longer on the server (for example, reports since moved to `db/unusableReports` or deleted) remain on R2.
 
 Each daily copy operation is logged in `/home/linuxuser/kilotest-to-r2.log`. That file is replaced with a new one each day documenting only the operation on that day.
 
@@ -615,9 +617,12 @@ If restoration becomes necessary, the files can be copied in the opposite direct
 ```bash
 /usr/bin/rclone copy r2:kilotest-reports /opt/jpdev/kilotest/db/restored-reports -v
 /usr/bin/rclone copy r2:kilotest-hidden-reports /opt/jpdev/kilotest/db/restored-hidden-reports -v
+/usr/bin/rclone copy r2:kilotest-registry /opt/jpdev/kilotest/db/restored-registry -v
 ```
 
-After that the maintainer can inspect the original and restored directories and delete or move report files as needed. After that the `db/reportsExtract.json` file should be deleted, so it will be regenerated when next needed.
+After that the maintainer can inspect the original and restored files and delete or move them as needed. No cached data needs to be deleted, because the in-memory cache of report extracts detects changed report files.
+
+Any report restored from a copy made before the site/page migration (in a dated directory of an `-old` bucket, or in a local archive) lacks site and page identifiers. After restoring files, the maintainer runs `node scripts/migrate-sites.ts` to preview, and then `node scripts/migrate-sites.ts --apply`. The script gives identifiers only to reports that lack them, reusing those in the registry, and requires that each such report’s description be in `docs/decisions/011-site-mapping.json`. It refuses to run if a report refers to a page that is not in the registry, as happens when the restored registry is older than some reports. In that case, a newer registry version from `kilotest-registry-old` may be used, or the missing pages may be reconstructed from the site and page names recorded in those reports, as described in ADR 011.
 
 ### Testing target restrictions
 

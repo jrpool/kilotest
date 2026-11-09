@@ -19,6 +19,8 @@ The API offers existing data as a hierarchy of granularity:
 
 It also offers downloads of complete reports in JSON format.
 
+Throughout the code and documentation, “tested page” is shorthand for a page about which at least one report is available, and “untested page” for any other page. A report is _available_ if it is stored in `db/reports` and is readable. Hidden reports (moved to `db/hiddenReports`) and unusable reports (in `db/unusableReports`) are not available. Thus a page that has been tested, but whose reports are all hidden, is untested in this sense: it does not appear in page listings, and a request to test it is a new-test request, not a retest request.
+
 The API would be simpler to implement if it offered only one-shot interrogation, i.e. downloads of complete reports. But the available evidence indicates that this would be inferior for typical users.
 
 Both one-shot comprehensive requests and incremental drill-downs occur in significant numbers in real-world language-model use.

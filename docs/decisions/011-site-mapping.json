@@ -1,0 +1,2470 @@
+{
+  "generated": "2026-11-08T03:54:19.406Z",
+  "instructions": "Review every page with flags, and edit the site and page of any page as needed, following the site-assignment rules in docs/decisions/011-site-page-ontology.md. Pages with the same site value will belong to the same site. Do not edit description, which identifies the pages to be migrated. A home page has the page name “home”.",
+  "summary": {
+    "reportFiles": 370,
+    "hiddenReportFiles": 1,
+    "skippedFiles": 0,
+    "pages": 222,
+    "sites": 139,
+    "flaggedPages": 27
+  },
+  "flagExplanations": {
+    "notHomeURL": "Proposed as a home page, but its URL has a path, so it may instead be a page of a site with no home-page entry (site-assignment rule 3).",
+    "chainedPrefix": "Its description extends a description that itself extends another, so the proposed page name contains an intermediate page name.",
+    "variantSpelling": "It matched its site only after normalizing case, apostrophes, quotation marks, or white space, so the site name should be unified (site-assignment rule 4).",
+    "otherHost": "Its host belongs to a different domain from the home page of its proposed site, so it may belong to another site (site-assignment rules 1 and 2).",
+    "multipleURLs": "Reports with this description have different URLs.",
+    "sharedURL": "Another description has a report with the same URL.",
+    "nearDuplicateSite": "Its proposed site name differs from another proposed site name only in case, punctuation, or a parenthesized abbreviation (site-assignment rule 4).",
+    "sharedDomain": "The home page of its proposed site has the same domain as the home page of another proposed site.",
+    "hiddenOnly": "All reports with this description are hidden, so the page is not a tested page."
+  },
+  "skipped": [],
+  "pages": [
+    {
+      "description": "350 Sacramento",
+      "site": "350 Sacramento",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://350sacramento.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "America Walks",
+      "site": "America Walks",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://americawalks.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Animal Welfare Institute",
+      "site": "Animal Welfare Institute",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://awionline.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Animal Welfare Institute contact",
+      "site": "Animal Welfare Institute",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://awionline.org/about-us/contact-us/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Benetech",
+      "site": "Benetech",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://benetech.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Benetech contact",
+      "site": "Benetech",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://benetech.org/who-we-are/contact/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Buy Nothing Project",
+      "site": "Buy Nothing Project",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://buynothingproject.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Buy Nothing Project contact",
+      "site": "Buy Nothing Project",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://buynothingproject.org/contact"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "California Groundbreakers",
+      "site": "California Groundbreakers",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.californiagroundbreakers.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "California YIMBY Education Fund",
+      "site": "California YIMBY Education Fund",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://cayimby.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Cátedra UNESCO Legislación, Sociedad y Patrimonio",
+      "site": "Cátedra UNESCO Legislación, Sociedad y Patrimonio",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://catedrapatrimonio.wixsite.com/ugto"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Center for Democracy and Technology",
+      "site": "Center for Democracy and Technology",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://cdt.org/"
+      ],
+      "reportCount": 4,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Center for Democracy and Technology contact",
+      "site": "Center for Democracy and Technology",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://cdt.org/contact/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Center for Justice and Accountability",
+      "site": "Center for Justice and Accountability",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://cja.org/"
+      ],
+      "reportCount": 5,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Center for Justice and Accountability Justice Circle",
+      "site": "Center for Justice and Accountability",
+      "page": "Justice Circle",
+      "flags": [],
+      "urls": [
+        "https://cja.org/justice-circle/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Centre for Effective Altruism",
+      "site": "Centre for Effective Altruism",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.effectivealtruism.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Charity Navigator",
+      "site": "Charity Navigator",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.charitynavigator.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Charity Navigator search",
+      "site": "Charity Navigator",
+      "page": "search",
+      "flags": [],
+      "urls": [
+        "https://www.charitynavigator.org/search"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Citizens for Global Solutions",
+      "site": "Citizens for Global Solutions",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://globalsolutions.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Citizens for Global Solutions contact",
+      "site": "Citizens for Global Solutions",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://globalsolutions.org/contact/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "CitizenShift app",
+      "site": "CitizenShift",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://citizenshift.vercel.app/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Civil Eats",
+      "site": "Civil Eats",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://civileats.com/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Civil Eats contact",
+      "site": "Civil Eats",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://civileats.com/about/contact/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Clean Air Task Force (CATF)",
+      "site": "Clean Air Task Force",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.catf.us/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Clean Air Task Force (CATF) donate",
+      "site": "Clean Air Task Force",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://give.catf.us/campaign/756949/donate"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Climate Emergency Fund",
+      "site": "Climate Emergency Fund",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.climateemergencyfund.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "ClubExpress",
+      "site": "ClubExpress",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.clubexpress.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "ClubExpress sales",
+      "site": "ClubExpress",
+      "page": "sales",
+      "flags": [],
+      "urls": [
+        "https://www.clubexpress.com/content.aspx?page_id=22&club_id=0&module_id=546184"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "CMT Services",
+      "site": "CMT Services",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.cmtservicesinc.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Cultural Survival",
+      "site": "Cultural Survival",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://culturalsurvival.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Cultural Survival contact",
+      "site": "Cultural Survival",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.culturalsurvival.org/contact"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "CVS",
+      "site": "CVS",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.cvs.com/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "CVS Health",
+      "site": "CVS Health",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.cvshealth.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "DemocracyNext",
+      "site": "DemocracyNext",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.demnext.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "DEPLOY/US",
+      "site": "DEPLOY/US",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://deployus.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "DEPLOY/US more ways to give",
+      "site": "DEPLOY/US",
+      "page": "more ways to give",
+      "flags": [],
+      "urls": [
+        "https://www.deployus.org/more-ways-to-give"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Deque",
+      "site": "Deque",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.deque.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Disability Rights Advocates",
+      "site": "Disability Rights Advocates",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://dralegal.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Disability Rights Advocates contact",
+      "site": "Disability Rights Advocates",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://dralegal.org/contact-us/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Disability Rights Oregon",
+      "site": "Disability Rights Oregon",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.droregon.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Donovan’s Venom",
+      "site": "Donovan’s Venom",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.thedonovan.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Dr. Catherine Akurut",
+      "site": "Dr. Catherine Akurut",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://catherineakurut.netlify.app/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Dr. Catherine Akurut curriculum vitae",
+      "site": "Dr. Catherine Akurut",
+      "page": "curriculum vitae",
+      "flags": [],
+      "urls": [
+        "https://catherineakurut-cv.netlify.app/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "DubBot",
+      "site": "DubBot",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://dubbot.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Earthjustice",
+      "site": "Earthjustice",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://earthjustice.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "EarthShare",
+      "site": "EarthShare",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.earthshare.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Effective Environmentalism",
+      "site": "Effective Environmentalism",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://effectiveenvironmentalism.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Effective Environmentalism contact",
+      "site": "Effective Environmentalism",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.effectiveenvironmentalism.org/contact-us"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Environmental Working Group",
+      "site": "Environmental Working Group",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.ewg.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Environmental Working Group contact",
+      "site": "Environmental Working Group",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.ewg.org/who-we-are/contact-us"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Example",
+      "site": "Example",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://example.com"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Execution",
+      "site": "MapRecord Publications",
+      "page": "Execution",
+      "flags": [],
+      "urls": [
+        "https://www.maprecord.com/Execution/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Fair Vote",
+      "site": "FairVote",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://fairvote.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Fair Vote contact",
+      "site": "FairVote",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://fairvote.org/get-involved/contact-us/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Farm Sanctuary",
+      "site": "Farm Sanctuary",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.farmsanctuary.org/",
+        "https://www.farmsanctuary.org/home"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Farm Sanctuary contact",
+      "site": "Farm Sanctuary",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.farmsanctuary.org/contact"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Farm Sanctuary giving",
+      "site": "Farm Sanctuary",
+      "page": "giving",
+      "flags": [],
+      "urls": [
+        "https://www.farmsanctuary.org/giving/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Foundation for Individual Rights and Expression",
+      "site": "Foundation for Individual Rights and Expression",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.fire.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Foundation for Individual Rights and Expression (FIRE)",
+      "site": "Foundation for Individual Rights and Expression",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.thefire.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Foundation for Individual Rights and Expression (FIRE) mission",
+      "site": "Foundation for Individual Rights and Expression",
+      "page": "mission",
+      "flags": [],
+      "urls": [
+        "https://www.thefire.org/about-us/mission/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Founders Pledge",
+      "site": "Founders Pledge",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.founderspledge.com/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Founders Pledge Catalytic Impact Fund",
+      "site": "Founders Pledge",
+      "page": "Catalytic Impact Fund",
+      "flags": [],
+      "urls": [
+        "https://www.founderspledge.com/programs/ghd-catalytic-impact-fund"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Freedom Forum",
+      "site": "Freedom Forum",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.freedomforum.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Freedom Forum contact",
+      "site": "Freedom Forum",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.freedomforum.org/contact-us/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Freedom House",
+      "site": "Freedom House",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://freedomhouse.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Freedom House contact",
+      "site": "Freedom House",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://freedomhouse.org/about-us/contact-us"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Freedom House subscriptions",
+      "site": "Freedom House",
+      "page": "subscriptions",
+      "flags": [],
+      "urls": [
+        "https://freedomhouse.org/manage-subscriptions"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Freedom of the Press Foundation",
+      "site": "Freedom of the Press Foundation",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://freedom.press/"
+      ],
+      "reportCount": 4,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Freedom of the Press Foundation contact",
+      "site": "Freedom of the Press Foundation",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://freedom.press/contact/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Frick Collection",
+      "site": "Frick Collection",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.frick.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Future Cleantech Architects (FCA)",
+      "site": "Future Cleantech Architects",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://fcarchitects.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Future Cleantech Architects (FCA) contact",
+      "site": "Future Cleantech Architects",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://fcarchitects.org/contact"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Future Cleantech Architects (FCA) Policy Recommendations",
+      "site": "Future Cleantech Architects",
+      "page": "policy recommendations",
+      "flags": [],
+      "urls": [
+        "https://fcarchitects.org/policy-recommendations/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Geohazards International",
+      "site": "Geohazards International",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.geohaz.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Geohazards International donate",
+      "site": "Geohazards International",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://www.geohaz.org/donate"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "GiveDirectly",
+      "site": "GiveDirectly",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.givedirectly.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Giving Green",
+      "site": "Giving Green",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.givinggreen.earth/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Giving Green donate",
+      "site": "Giving Green",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://www.givinggreen.earth/give"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Global Greengrants Fund",
+      "site": "Global Greengrants Fund",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.greengrants.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Global Greengrants Fund contact",
+      "site": "Global Greengrants Fund",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.greengrants.org/contact/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Go Portland Go! Coalition",
+      "site": "Go Portland Go",
+      "page": "coalition",
+      "flags": [],
+      "urls": [
+        "https://www.goportlandgo.org/coalition"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Good Food Institute (GFI)",
+      "site": "Good Food Institute",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://gfi.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Good Food Institute (GFI) contact",
+      "site": "Good Food Institute",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://gfi.org/contact/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Hesperian Health Guides",
+      "site": "Hesperian Health Guides",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://hesperian.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Hesperian Health Guides contact",
+      "site": "Hesperian Health Guides",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://hesperian.org/contact-us/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Hesperian Health Guides store product",
+      "site": "Hesperian Health Guides",
+      "page": "store product",
+      "flags": [],
+      "urls": [
+        "https://store.hesperian.org/products/helping-children-who-are-deaf"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Human Rights Watch",
+      "site": "Human Rights Watch",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.hrw.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Human Rights Watch contact",
+      "site": "Human Rights Watch",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.hrw.org/contact-us"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Hunger Free America",
+      "site": "Hunger Free America",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://hungerfreeamerica.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Hunger Free America find food",
+      "site": "Hunger Free America",
+      "page": "find food",
+      "flags": [],
+      "urls": [
+        "https://findfood.hungerfreeamerica.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Hunger Free America Fridays for Good Data Detectives",
+      "site": "Hunger Free America",
+      "page": "Fridays for Good Data Detectives",
+      "flags": [],
+      "urls": [
+        "https://volunteer.hungerfreeamerica.org/opportunity/a50Qh00000fAbJfIAK/fridays-for-good-data-detectives"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "ICF North Texas",
+      "site": "ICF North Texas",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.icf-nt.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Innovotex",
+      "site": "Innovotex",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.innovotexinc.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Institute for Agriculture and Trade Policy",
+      "site": "Institute for Agriculture and Trade Policy",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.iatp.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Institute for Agriculture and Trade Policy donate",
+      "site": "Institute for Agriculture and Trade Policy",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://www.iatp.org/donate"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Institute for Progress",
+      "site": "Institute for Progress",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://ifp.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Institute for Progress US Energy Data Electricity Demand",
+      "site": "US Energy Data",
+      "page": "electricity demand",
+      "flags": [],
+      "urls": [
+        "https://usenergydata.org/electricity-demand/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "International Consortium of Investigative Journalists",
+      "site": "International Consortium of Investigative Journalists",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.icij.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "International Consortium of Investigative Journalists newsletter subscribe",
+      "site": "International Consortium of Investigative Journalists",
+      "page": "newsletter subscribe",
+      "flags": [],
+      "urls": [
+        "https://www.icij.org/newsletter/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Internet Archive",
+      "site": "Internet Archive",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://archive.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Internet Archive Democracy Now",
+      "site": "Internet Archive",
+      "page": "Democracy Now",
+      "flags": [],
+      "urls": [
+        "https://archive.org/details/democracy_now_vid"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Jim Slavik—About",
+      "site": "Jim Slavik",
+      "page": "about",
+      "flags": [],
+      "urls": [
+        "https://www.jimslavik.com/about"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Jordan Schnitzer Museum of Art at PSU",
+      "site": "Portland State University",
+      "page": "Jordan Schnitzer Museum of Art home",
+      "flags": [],
+      "urls": [
+        "https://www.pdx.edu/museum-of-art/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Kilotest",
+      "site": "Kilotest",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://kilotest.com"
+      ],
+      "reportCount": 4,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Kilotest list diagnoses",
+      "site": "Kilotest",
+      "page": "list diagnoses",
+      "flags": [],
+      "urls": [
+        "https://kilotest.com/listDiagnoses.html/linkIndication/261007T2157-wie/434?pathID=%2Fhtml%2Fbody%2Ffooter%5B1%5D%2Fdiv%5B2%5D%2Fdiv%5B1%5D%2Fdiv%5B1%5D%2Fdiv%5B2%5D%2Fp%5B1%5D%2Fa%5B2%5D"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Kilotest list issues",
+      "site": "Kilotest",
+      "page": "list issues",
+      "flags": [],
+      "urls": [
+        "https://kilotest.com/listIssues.html/261011T2211-xak"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Kilotest list pages",
+      "site": "Kilotest",
+      "page": "list pages",
+      "flags": [],
+      "urls": [
+        "https://kilotest.com/listPages.html"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Kilotest list violators",
+      "site": "Kilotest",
+      "page": "list violators",
+      "flags": [],
+      "urls": [
+        "https://kilotest.com/listViolators.html/imageNoText/261012T1913-jbt"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Koenig Childhood Cancer Foundation donations",
+      "site": "Koenig Childhood Cancer Foundation",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://thekccf.org/donate"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "League of Women Voters of Colorado",
+      "site": "League of Women Voters of Colorado",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://lwvcolorado.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "LibreOffice",
+      "site": "LibreOffice",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.libreoffice.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "McEwen Gisvold LLP",
+      "site": "McEwen Gisvold LLP",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.mcewengisvold.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Metropolitan Transportation Authority",
+      "site": "Metropolitan Transportation Authority",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.mta.info/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Mozilla Foundation",
+      "site": "Mozilla",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.mozilla.org/",
+        "https://www.mozilla.org/en-US/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Mozilla Foundation join us",
+      "site": "Mozilla Foundation",
+      "page": "join us",
+      "flags": [],
+      "urls": [
+        "https://www.mozillafoundation.org/en/join-us/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "My Suma",
+      "site": "My Suma",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://mysuma.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "National Coalition Against Censorship",
+      "site": "National Coalition Against Censorship",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://ncac.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "National Coalition Against Censorship contact",
+      "site": "National Coalition Against Censorship",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://ncac.org/contact"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "National Coalition Against Censorship report censorship",
+      "site": "National Coalition Against Censorship",
+      "page": "report censorship",
+      "flags": [],
+      "urls": [
+        "https://ncac.org/report-censorship"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "National Continuing Care Residents Association",
+      "site": "National Continuing Care Residents Association",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://naccra.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "New_Public",
+      "site": "New_Public",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://newpublic.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Next Generation Playground",
+      "site": "Next Generation Playground",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.playnextgeneration.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Northwest District Association",
+      "site": "Northwest District Association",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.northwestdistrictassociation.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Northwest Natural Gas",
+      "site": "Northwest Natural Gas",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.nwnatural.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Not Here to be Liked",
+      "site": "Not Here to be Liked",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.notheretobeliked.studio/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Off-ramp NYC",
+      "site": "Off-ramp NYC",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.offramp.nyc/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Ohio State Chemistry Graduate Orientation required orientations",
+      "site": "Ohio State University",
+      "page": "chemistry graduate program and other required trainings & orientations",
+      "flags": [],
+      "urls": [
+        "https://u.osu.edu/2019chemgradorientation/graduate-program-and-other-required-orientations/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "OpenSecrets",
+      "site": "OpenSecrets",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.opensecrets.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "OpenSecrets advanced donor lookup",
+      "site": "OpenSecrets",
+      "page": "advanced donor lookup",
+      "flags": [],
+      "urls": [
+        "https://www.opensecrets.org/donor-lookup/advanced"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Opportunity Green",
+      "site": "Opportunity Green",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.opportunitygreen.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Opportunity Green contact",
+      "site": "Opportunity Green",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.opportunitygreen.org/contact-us/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Oregon Museum of Science and Industry",
+      "site": "Oregon Museum of Science and Industry",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://omsi.edu/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Pacific Northwest Software Quality Conference",
+      "site": "Pacific Northwest Software Quality Conference",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://pnsqc.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Pacific Northwest Software Quality Conference archive",
+      "site": "Pacific Northwest Software Quality Conference",
+      "page": "archive",
+      "flags": [],
+      "urls": [
+        "https://newsletter.pnsqc.org/archive?sort=new"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Pacific Northwest Software Quality Conference contact",
+      "site": "Pacific Northwest Software Quality Conference",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.pnsqc.org/about/contact/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Parking Reform Network",
+      "site": "Parking Reform Network",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://parkingreform.org/"
+      ],
+      "reportCount": 4,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Parking Reform Network Impact Report 2024",
+      "site": "Parking Reform Network",
+      "page": "impact report 2024",
+      "flags": [],
+      "urls": [
+        "https://parkingreform.org/about/impact-report-2024/"
+      ],
+      "reportCount": 5,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Partners in Health",
+      "site": "Partners in Health",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.pih.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Partners in Health contact",
+      "site": "Partners in Health",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.pih.org/contact"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Partners in Health Engage signup",
+      "site": "Partners in Health",
+      "page": "Engage signup",
+      "flags": [],
+      "urls": [
+        "https://act.pih.org/engage-sign-up"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "PLUSQA",
+      "site": "PLUSQA",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.plusqa.com/"
+      ],
+      "reportCount": 0,
+      "hiddenReportCount": 1
+    },
+    {
+      "description": "Portland Accessibility and User Experience Meetup",
+      "site": "Portland Accessibility and User Experience Meetup",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://pdxa11yux.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland City Club",
+      "site": "City Club of Portland",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.pdxcityclub.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland City Club event list",
+      "site": "City Club of Portland",
+      "page": "event list",
+      "flags": [],
+      "urls": [
+        "https://crm.nonprofiteasy.com/6452/Pages/Events/#/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland Community College",
+      "site": "Portland Community College",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.pcc.edu/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland General Electric",
+      "site": "Portland General Electric",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://portlandgeneral.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland OR Councilor Clark bulletin 2026-05-01",
+      "site": "City of Portland",
+      "page": "May 1st update from Council Vice President Clark",
+      "flags": [],
+      "urls": [
+        "https://content.govdelivery.com/accounts/ORPORTLAND_ENT/bulletins/41547e4"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland State University",
+      "site": "Portland State University",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.pdx.edu/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland State University Senior Adult Learning Center",
+      "site": "Portland State University",
+      "page": "Senior Adult Learning Center",
+      "flags": [],
+      "urls": [
+        "https://www.pdx.edu/senior-adult-learning-center/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Portland State University Senior Adult Learning Center join",
+      "site": "Portland State University",
+      "page": "join SALC",
+      "flags": [],
+      "urls": [
+        "https://www.pdx.edu/senior-adult-learning-center/join-salc"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Prevention of Blindness Society of Metropolitan Washington",
+      "site": "Prevention of Blindness Society of Metropolitan Washington",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.youreyes.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Probably Good",
+      "site": "Probably Good",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://probablygood.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Project InnerSpace",
+      "site": "Project InnerSpace",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://projectinnerspace.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Project InnerSpace contact",
+      "site": "Project InnerSpace",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://projectinnerspace.org/contact/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Prometheus",
+      "site": "Prometheus",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.joinprometheus.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "PTR Global",
+      "site": "PTR Global",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.ptrglobal.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Quiet Communities",
+      "site": "Quiet Communities",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.quietcommunities.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Quiet Communities contact",
+      "site": "Quiet Communities",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.quietcommunities.org/contact-us"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Rainforest Alliance",
+      "site": "Rainforest Alliance",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.rainforest-alliance.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Rainforest Alliance contact",
+      "site": "Rainforest Alliance",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.rainforest-alliance.org/contact/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Rainforest Alliance subscribe",
+      "site": "Rainforest Alliance",
+      "page": "subscribe",
+      "flags": [],
+      "urls": [
+        "https://www.rainforest-alliance.org/subscribe/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Real Estate Staging Association accessibility guide",
+      "site": "Real Estate Staging Association",
+      "page": "website accessibility for home stagers",
+      "flags": [],
+      "urls": [
+        "https://www.realestatestagingassociation.com/website-accessibility-home-stagers"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Repower",
+      "site": "Repower",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.repower.world/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Repower get involved",
+      "site": "Repower",
+      "page": "get involved",
+      "flags": [],
+      "urls": [
+        "https://www.repower.world/get-involved"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Run!",
+      "site": "Run!",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.designedtorun.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Russellville Park",
+      "site": "Russellville Park",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://russellvillepark.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Sage Mages",
+      "site": "Sage Mages",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.thesagemages.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Salesforce",
+      "site": "Salesforce",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.salesforce.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Salesforce Known Issues",
+      "site": "Salesforce",
+      "page": "known issues",
+      "flags": [],
+      "urls": [
+        "https://help.salesforce.com/s/issues"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Sightline Institute",
+      "site": "Sightline Institute",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.sightline.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Sightsavers",
+      "site": "Sightsavers",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.sightsavers.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Sightsavers cataracts simulator",
+      "site": "Sightsavers",
+      "page": "cataracts simulator",
+      "flags": [],
+      "urls": [
+        "https://www.sightsaversusa.org/eye-conditions/cataracts/cataracts-simulator/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Sightsavers contact",
+      "site": "Sightsavers",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.sightsavers.org/contact-us/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Society for Evidence Based Gender Medicine (SEGM)",
+      "site": "Society for Evidence Based Gender Medicine",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://segm.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Society for Evidence Based Gender Medicine (SEGM) donate",
+      "site": "Society for Evidence Based Gender Medicine",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://segm.org/donate"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Solver Collective",
+      "site": "Solver Collective",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://solvercollective.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Sports Bra Project",
+      "site": "Sports Bra Project",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.thesportsbraproject.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Sports Bra Project donate",
+      "site": "Sports Bra Project",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://www.thesportsbraproject.org/donate"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "State of Oregon",
+      "site": "State of Oregon",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.oregon.gov/Pages/index.aspx"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "State of Oregon Web Accessibility",
+      "site": "State of Oregon",
+      "page": "web accessibility",
+      "flags": [],
+      "urls": [
+        "https://www.oregon.gov/pages/accessibility.aspx"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Supreme Court of the United States",
+      "site": "Supreme Court of the United States",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.supremecourt.gov/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Synchronicity Earth USA",
+      "site": "Synchronicity Earth",
+      "page": "USA home",
+      "flags": [],
+      "urls": [
+        "https://www.synchronicityearthusa.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Synchronicity Earth USA Annual Reports and Spotlight",
+      "site": "Synchronicity Earth",
+      "page": "annual reports and Spotlight",
+      "flags": [],
+      "urls": [
+        "https://www.synchronicityearth.org/about-us/annualreview/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Taproot Foundation",
+      "site": "Taproot Foundation",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://taprootfoundation.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Taproot Foundation contact",
+      "site": "Taproot Foundation",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://taprootfoundation.org/contact"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Tech to Craft LLC",
+      "site": "Tech to Craft LLC",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://techtocraft.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Texas Public Health Association",
+      "site": "Texas Public Health Association",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://texaspha.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Textbox Digital",
+      "site": "Textbox Digital",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.textboxdigital.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "The Beauty Shop",
+      "site": "The Beauty Shop",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.thebeauty-shop.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Third Act",
+      "site": "Third Act",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://thirdact.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Tisbest Philanthropy",
+      "site": "Tisbest Philanthropy",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.tisbest.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Tisbest Philanthropy business inquiry",
+      "site": "Tisbest Philanthropy",
+      "page": "business inquiry",
+      "flags": [],
+      "urls": [
+        "https://www.tisbest.org/business-inquiry/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Tradeoffs",
+      "site": "Tradeoffs",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://tradeoffs.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Translation Commons",
+      "site": "Translation Commons",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://translationcommons.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Translation Commons volunteer",
+      "site": "Translation Commons",
+      "page": "volunteer",
+      "flags": [],
+      "urls": [
+        "https://translationcommons.org/web-volunteer-page/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Turrito",
+      "site": "Turrito",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.turrito.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "University of Oregon",
+      "site": "University of Oregon",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.uoregon.edu/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "US Digital Response",
+      "site": "US Digital Response",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.usdigitalresponse.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "US Digital Response volunteer",
+      "site": "US Digital Response",
+      "page": "volunteer",
+      "flags": [],
+      "urls": [
+        "https://form.jotform.com/201466372336151"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "USA for United Nations Population Fund",
+      "site": "USA for United Nations Population Fund",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.usaforunfpa.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "USA for United Nations Population Fund donate",
+      "site": "USA for United Nations Population Fund",
+      "page": "donate",
+      "flags": [],
+      "urls": [
+        "https://www.usaforunfpa.org/donate/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Valencia Lakes",
+      "site": "Valencia Lakes",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://valencialakes.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Virtual Science Teachers",
+      "site": "Virtual Science Teachers",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://virtualscienceteachers.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Virtual Science Teachers contact",
+      "site": "Virtual Science Teachers",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://virtualscienceteachers.org/contact/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Virtual Science Teachers Multi-Line Graph Maker",
+      "site": "Virtual Science Teachers",
+      "page": "multi-line graph maker",
+      "flags": [],
+      "urls": [
+        "https://virtualscienceteachers.org/line-graph-maker-multiple-sets/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Water for People",
+      "site": "Water for People",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.waterforpeople.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Water for People contact",
+      "site": "Water for People",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://www.waterforpeople.org/contact-us/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "WebAIM",
+      "site": "WebAIM",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://webaim.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Webby Awards",
+      "site": "Webby Awards",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.webbyawards.com/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "WePlanet",
+      "site": "WePlanet",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://weplanet.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "WePlanet contact",
+      "site": "WePlanet",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://weplanet.org/contact-us"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "White House",
+      "site": "White House",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.whitehouse.gov/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Whole Woman's Health Alliance",
+      "site": "Whole Woman’s Health Alliance",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.wholewomanshealthalliance.org/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Whole Woman's Health Alliance share your abortion story",
+      "site": "Whole Woman’s Health Alliance",
+      "page": "share your abortion story",
+      "flags": [],
+      "urls": [
+        "https://wholewomanshealth.com/share-your-abortion-story/"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Wikidata References Tour",
+      "site": "Wikidata",
+      "page": "references tour",
+      "flags": [],
+      "urls": [
+        "https://www.wikidata.org/w/index.php?title=Q85408509&tour=wbreferences&data=ok"
+      ],
+      "reportCount": 3,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Wikimedia Foundation",
+      "site": "Wikimedia Foundation",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://wikimediafoundation.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Wikimedia Foundation contact",
+      "site": "Wikimedia Foundation",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://wikimediafoundation.org/contact/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Women's Liberation Front",
+      "site": "Women’s Liberation Front",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://womensliberationfront.org/"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Women's Liberation Front contact",
+      "site": "Women’s Liberation Front",
+      "page": "contact",
+      "flags": [],
+      "urls": [
+        "https://womensliberationfront.org/contact"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "Women’s Liberation Front Sisterhood application",
+      "site": "Women’s Liberation Front",
+      "page": "WoLF Sisterhood application",
+      "flags": [],
+      "urls": [
+        "https://action.womensliberationfront.org/membership-application"
+      ],
+      "reportCount": 2,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "World Wide Web Consortium",
+      "site": "World Wide Web Consortium",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://www.w3.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    },
+    {
+      "description": "YMCA of Greater San Antonio",
+      "site": "YMCA of Greater San Antonio",
+      "page": "home",
+      "flags": [],
+      "urls": [
+        "https://ymcasatx.org/"
+      ],
+      "reportCount": 1,
+      "hiddenReportCount": 0
+    }
+  ]
+}

@@ -11,9 +11,9 @@ import {routes} from './routes.ts';
 
 // TESTS
 
-test('routes exports an array with 10 operations', () => {
+test('routes exports an array with 11 operations', () => {
   assert.ok(Array.isArray(routes));
-  assert.equal(routes.length, 10);
+  assert.equal(routes.length, 11);
 });
 
 test('routes includes all expected operation IDs', () => {
@@ -24,6 +24,7 @@ test('routes includes all expected operation IDs', () => {
     'listDiagnoses',
     'listIssues',
     'listPages',
+    'listSites',
     'listViolators',
     'questionDiagnosis',
     'requestFeature',

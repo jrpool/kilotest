@@ -54,12 +54,28 @@ const reviewImmediatelyField = {
   reviewImmediately: z.boolean().optional().describe('true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management')
 };
 
-// requestNewTest: POST /api/requestNewTest
-export const requestNewTestSchema = {
-  description: z.string().min(1).max(100).describe('1- to 100-character name for the page, unique among tested pages and conforming to the naming convention used in the listPages output'),
+// Shape of a site identifier.
+const siteIDPattern = /^s-[0-9a-z]{6}$/;
+// Site identifier of an existing site, reused across schemas below.
+const siteIDField = z.string().regex(siteIDPattern).describe('Identifier of the site, formatted s-xxxxxx (example: s-2fw2ea), as shown in the listSites output');
+// Fields describing a page to be added by requestNewTest.
+const newPageFields = {
+  pageName: z.string().min(1).max(120).describe('1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)'),
   URL: z.string().min(12).max(300).regex(/^https:\/\//).describe('12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address'),
   reason: z.string().min(20).max(100).describe('20- to 100-character justification evaluated by the reviewer selected by reviewImmediately'),
   ...reviewImmediatelyField
+};
+
+// listPages: GET /api/listPages/{siteID}
+export const listPagesSchema = {
+  siteID: siteIDField
+};
+
+// requestNewTest: POST /api/requestNewTest. Exactly one of siteID and siteName must be given; a JSON Schema cannot conveniently express this, so the descriptions state it and the handler enforces it.
+export const requestNewTestSchema = {
+  siteID: z.string().regex(siteIDPattern).optional().describe('For a page of a site in the listSites output: identifier of the site, formatted s-xxxxxx (example: s-2fw2ea). Give either siteID or siteName, not both.'),
+  siteName: z.string().min(1).max(80).optional().describe('For a page of a site not in the listSites output: 1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation. Give either siteID or siteName, not both.'),
+  ...newPageFields
 };
 
 // requestRetest: POST /api/requestRetest/{reportID}
@@ -89,7 +105,7 @@ export const questionDiagnosisSchema = {
   reason: z.string().min(20).max(1000).describe('20- to 1000-character explanation of why the diagnosis is disputed, evaluated by the reviewing manager')
 };
 
-// listPages takes no input; omitted (mcp.ts already uses inputSchema: {}).
+// listSites takes no input; omitted (mcp.ts uses inputSchema: {}).
 
 // RESPONSE SCHEMAS
 
@@ -126,7 +142,7 @@ export const toolsFactsSchema = z.object({
 
 // Identifies a related request (e.g., the closest ancestor request in the drill-down
 // hierarchy). method is usually GET (every drill-down tool's ancestor is a read), except
-// for requestNewTest/requestRetest, whose own ancestor is a GET, and awaitTest, whose ancestors
+// for the request tools, whose own ancestor is a GET, and awaitTest, whose ancestors
 // (requestNewTest and requestRetest) are both POST (they create a job).
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
@@ -173,12 +189,23 @@ const responseMetadataSchema = z.object({
   'date and time': z.string().describe('UTC date and time when the response was generated, in ISO 8601 format.')
 }).meta({id: 'ResponseMetadata'});
 
+// The sites that a page belongs to.
+const pageSitesSchema = z.array(z.object({
+  identifier: z.string().describe('Identifier of the site (example: s-2fw2ea).'),
+  name: z.string().describe('Current name of the site.')
+}).meta({id: 'PageSite'})).describe('The sites that the page belongs to (currently always one).');
+
 // Facts about a report, as constructed by Kilotest's own getReportBasics (never copied from a Testaro report).
 const reportBasicsSchema = z.object({
   identifier: z.string().describe('Identifier of the report (example: 260503T0432-x9z).'),
   'completion date and time': z.string(),
   'days since the report was completed': z.number().nullable(),
-  'tested web page': z.object({description: z.string(), URL: z.string()}),
+  'tested web page': z.object({
+    identifier: z.string().describe('Identifier of the page (example: p-l6vni7ua).'),
+    name: z.string().describe('Current name of the page, distinguishing it from the other pages of its site.'),
+    sites: pageSitesSchema,
+    URL: z.string().describe('URL of the page as tested for this report.')
+  }).meta({id: 'TestedPage'}),
   'whether a later report about the same page exists': z.boolean()
 }).meta({id: 'ReportBasics'});
 
@@ -212,24 +239,62 @@ const reportTimeSchema = z.object({
   'days since the report was completed': z.number().nullable()
 });
 
+// Facts about a site.
+const siteFactsSchema = z.object({
+  identifier: z.string().describe('Identifier of the site (example: s-2fw2ea).'),
+  name: z.string(),
+  'count of tested pages': z.number()
+}).meta({id: 'SiteFacts'});
+
+// Facts about a page.
+const pageFactsSchema = z.object({
+  identifier: z.string().describe('Identifier of the page (example: p-l6vni7ua).'),
+  name: z.string().describe('Name of the page, distinguishing it from the other pages of its site.'),
+  URL: z.string(),
+  sites: pageSitesSchema,
+  'identifier of the latest report': z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z).')
+}).meta({id: 'PageFacts'});
+
+// How to request a test of a new page, as described in a listing.
+const newPageRequestSchema = (bodySchema: ZodTypeAny) => z.object({
+  method: z.literal('POST'),
+  URL: z.string(),
+  'request body': bodySchema,
+  'how to check whether the request has been fulfilled': z.string()
+});
+
+export const listSitesResponseSchema = envelope('GET', z.object({
+  'how to list the tested pages of a site': z.object({
+    method: z.literal('GET'),
+    URL: z.string().describe('URL template; replace {identifier} with the identifier of the site.')
+  }),
+  'web users can list the tested pages of a site at': z.string().describe('URL template; replace {identifier} with the identifier of the site.'),
+  'basics about all tested sites': z.array(siteFactsSchema),
+  'how to request a test of a page of a site not in this list': newPageRequestSchema(z.object({
+    siteName: z.string(), pageName: z.string(), URL: z.string(), reason: z.string(), reviewImmediately: z.string()
+  })),
+  'how a web user can request a test of a page of a site not in this list': z.object({URL: z.string()})
+}));
+
 export const listPagesResponseSchema = envelope('GET', z.object({
+  'basics about the site': z.union([
+    z.object({identifier: z.string(), name: z.string()}),
+    z.object({error: z.string()})
+  ]),
   'how to get test results about a page': z.object({
     method: z.literal('GET'),
     URL: z.string().describe('URL template; replace {identifier} with the identifier of the latest report about the page.')
   }),
   'web users can get test results about a page at': z.string().describe('URL template; replace {identifier} with the identifier of the latest report about the page.'),
-  'basics about all tested pages': z.array(z.object({
-    description: z.string(),
+  'basics about all tested pages of the site': z.array(pageFactsSchema).nullable().describe('The tested pages of the site, ordered by name, or null if the site does not exist.'),
+  'how to request a test of a page of this site not in this list': newPageRequestSchema(z.object({
+    siteID: z.string().describe('Identifier of this site, to be given unchanged.'),
+    pageName: z.string(),
     URL: z.string(),
-    identifier: z.string().describe('Identifier of the latest report about the page (example: 260503T0432-x9z).')
-  })),
-  'how to request that a page with no report be tested': z.object({
-    method: z.literal('POST'),
-    URL: z.string(),
-    'request body': z.object({description: z.string(), URL: z.string(), reason: z.string()}),
-    'how to check whether the request has been fulfilled': z.string()
-  }),
-  'how a web user can request that the page be tested': z.object({URL: z.string()})
+    reason: z.string(),
+    reviewImmediately: z.string()
+  })).nullable(),
+  'how a web user can request a test of a page of this site not in this list': z.object({URL: z.string()}).nullable()
 }));
 
 export const listIssuesResponseSchema = envelope('GET', z.object({
@@ -340,22 +405,31 @@ export const getReportResponseSchema = envelope('GET', z.object({
 // Identifies the report a successfully ordered or awaited job will produce, once complete.
 const reportIdentifierSchema = z.string().describe('Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).');
 
-// Details object common to the management-review and immediate-review variants of a new-test confirmation.
+// A page that a request concerns.
+const requestedPageSchema = z.object({
+  'site identifier': z.string().nullable().describe('Identifier of the site, or null if the site does not exist yet.'),
+  'site name': z.string(),
+  'page identifier': z.string().nullable().describe('Identifier of the page, or null if the page does not exist yet.'),
+  'page name': z.string(),
+  URL: z.string()
+}).meta({id: 'RequestedPage'});
+
+// Details about a request for a test of a new page.
 const newTestDetailsSchema = z.union([
   z.object({error: z.string()}),
   z.object({
     'date and time received': z.string(),
-    'page to be tested': z.object({description: z.string(), URL: z.string()}),
+    'page to be tested': requestedPageSchema,
     'reason why the page should be tested': z.string()
   })
 ]);
 
-// Same, for a retest confirmation.
+// Same, for a retest.
 const retestDetailsSchema = z.union([
   z.object({error: z.string()}),
   z.object({
     'date and time received': z.string(),
-    'page to be retested': z.object({description: z.string(), URL: z.string()}),
+    'page to be retested': requestedPageSchema,
     'reason why the page should be retested': z.string()
   })
 ]);
@@ -366,7 +440,10 @@ const submissionDispositionSchema = z.object({
   'report identifier': reportIdentifierSchema.nullable().optional(),
   'how you can check for completion': z.string(),
   'how a web user can check for completion': z.string().optional(),
-  'do you want to wait for completion': z.string().optional()
+  'do you want to wait for completion': z.string().optional(),
+  'whether your request was referred to management review': z.boolean().optional().describe('true if immediate review was requested but the request was referred to management review because of possible duplicates or similar sites.'),
+  'possible duplicates': z.array(pageFactsSchema.extend({'reason for suspicion': z.string()})).optional().describe('Tested pages that may be the requested page. If one is, its latest report can be used at once.'),
+  'similar sites': z.array(siteFactsSchema.extend({'reason for suspicion': z.string()})).optional().describe('Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestNewTest by giving its identifier as siteID.')
 }).nullable();
 
 export const requestNewTestResponseSchema = envelope(

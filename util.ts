@@ -70,36 +70,6 @@ export type Metrics = {
   managerActivity: Record<string, {ok: number; error: number}>;
 };
 
-// Test request.
-export type TestRequest = {
-  timeStamp: string;
-  description: string;
-  reason: string;
-};
-
-// Test requests by URL.
-export type TestRequests = Record<string, TestRequest[]>;
-
-// Test request addition result. 'reportExists' means a report already exists about a
-// page with the description or URL that a newTest request or order named (an outcome), distinct from the 'retest'
-// requestType discriminant elsewhere in this file, which means the caller asked to
-// retest a page that already has a report (a request kind); the two must not be
-// confused with one another.
-export type TestRequestResult
-= 'url' | 'description' | 'reportExists' | 'duplicate' | 'superseded' | 'nonreport' | 'queueFull'
-| 'urlLength' | 'ok';
-
-// Target of a new-test or retest request: a description and URL for a new-test request,
-// or the identifier of the cited report for a retest request.
-export type TestRequestTarget
-= {description: string; url: string} | {reportID: string};
-
-// Result of processTestRequest. description and url are absent only when the result
-// is 'nonreport', i.e. when the target page could not be resolved; this is a
-// discriminated union on result so that a check of result narrows their presence.
-export type ProcessRequestResult
-= {result: 'nonreport'} | {result: Exclude<TestRequestResult, 'nonreport'>; description: string; url: string};
-
 // A StandardInstance extended with the issueID that Kilotest's annotateReportObject adds.
 export interface AnnotatedInstance extends StandardInstance {
   issueID?: string;
@@ -136,6 +106,7 @@ export type UsableReport = Omit<Report, 'target' | 'catalog' | 'jobData' | 'acts
 // An extract of an available report.
 export type ReportExtract = {
   id: string;
+  pageID: string;
   description: string;
   url: string;
   reportTime: string;
@@ -289,18 +260,18 @@ export const getJobNames = async (): Promise<{queue: string[], claimed: string[]
   }
   return jobNames;
 }
-// Gets the descriptions and URLs of the pages of all jobs of a category. Uses
+// Gets the page identifiers and URLs of all jobs of a category. A job created before the site/page ontology has no page identifier, so its page identifier is empty. Uses
 // getJobNames rather than reading the category directory directly, so that a
 // missing directory (e.g. because no job has ever been claimed or queued yet on
 // this deployment) is created empty instead of throwing ENOENT. A job file that
 // disappears between the directory listing and the read of that specific file is
 // likewise a normal, recoverable condition (a worker completed or reclaimed that
 // job in the interim), so it is skipped rather than treated as defective.
-export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{description: string, url: string}[]> => {
+export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{pageID: string, url: string}[]> => {
   const jobsDir = path.join(jobsPath(), category);
   const jobFileNames = (await getJobNames())[category];
   // For each job in the category:
-  const data: {description: string, url: string}[] = [];
+  const data: {pageID: string, url: string}[] = [];
   for (const jobFileName of jobFileNames) {
     const jobPath = path.join(jobsDir, jobFileName);
     let jobData: string;
@@ -317,9 +288,9 @@ export const getJobsData = async (category: 'queue' | 'claimed'): Promise<{descr
     }
     try {
       const job = JSON.parse(jobData);
-      const {target} = job;
+      const {sources, target} = job;
       data.push({
-        description: target.what,
+        pageID: sources?.pageID ?? '',
         url: target.url
       });
     }
@@ -447,26 +418,6 @@ export const getPOSTData = (request: import('node:http').IncomingMessage): Promi
     }
   });
 });
-// Returns the test and retest requests awaiting approval.
-export const getTestRequests = async (): Promise<TestRequests> => {
-  let testRequestsJSON: string;
-  try {
-    testRequestsJSON = await fs.readFile(testRequestsPath(), 'utf8');
-  }
-  catch(error: unknown) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      await fs.writeFile(testRequestsPath(), '{}\n');
-      return {};
-    }
-    throw new Error(`Test-requests file not readable (${errorMessage(error)})`, {cause: error});
-  }
-  try {
-    return JSON.parse(testRequestsJSON) as TestRequests;
-  }
-  catch(error: unknown) {
-    throw new Error('Test-requests file not JSON', {cause: error});
-  }
-};
 // Makes a string HTML-safe.
 export const htmlSafe = (string: string): string => string ? string
 .replace(/&/g, '&amp;')
@@ -591,13 +542,14 @@ export const isAllowedTarget = async (url: string, lookup: LookupAll = dns.looku
 // It cannot catch a redirect introduced after it runs, e.g. an attacker who
 // reconfigures the target host once a request is accepted, so isAllowedReport
 // remains the backstop that re-checks the URL a worker actually visited.
-export const isAllowedRedirectTarget = async (
+// Returns the URL to which a URL resolves through any redirects if that URL is an allowed target, or null otherwise. If this deployment allows internal targets, no request is made, and the URL itself is returned.
+export const getAllowedRedirectURL = async (
   url: string, fetchImpl: typeof fetch = fetch, lookup: LookupAll = dns.lookup
-): Promise<boolean> => {
+): Promise<string | null> => {
   // If this deployment allows internal targets, every syntactically valid URL is
   // allowed, and no fetch is needed, consistent with isAllowedTarget's own early return.
   if (allowsInternalTargets()) {
-    return true;
+    return url;
   }
   let response: Response;
   try {
@@ -606,10 +558,14 @@ export const isAllowedRedirectTarget = async (
     response = await fetchImpl(url, {redirect: 'follow', signal: AbortSignal.timeout(10000)});
   } catch {
     // An unreachable or errored target cannot be verified as safe either way.
-    return false;
+    return null;
   }
-  return isAllowedTarget(response.url, lookup);
+  return await isAllowedTarget(response.url, lookup) ? response.url : null;
 };
+// Returns whether a URL resolves through any redirects to an allowed target.
+export const isAllowedRedirectTarget = async (
+  url: string, fetchImpl: typeof fetch = fetch, lookup: LookupAll = dns.lookup
+): Promise<boolean> => await getAllowedRedirectURL(url, fetchImpl, lookup) !== null;
 // Returns whether a string is the authorization code, the shared check every
 // manager-facing page and action uses to gate a submission. Centralized so all call
 // sites compare against process.env.AUTH_CODE the same way.
@@ -642,17 +598,6 @@ export const objectSort = <T extends Record<string, unknown>>(
   }
   // Otherwise, do not sort.
   return 0;
-});
-// Concurrency lock for the `testRequests.json` file.
-export const testRequestsLock = createLock();
-// Deletes the test requests for a URL as a transaction.
-export const deleteTestRequests = (url: string) => testRequestsLock(async (): Promise<void> => {
-  // Get the test requests.
-  const testRequests = await getTestRequests() as Record<string, unknown>;
-  // Delete the requests to test the URL.
-  delete testRequests[url];
-  // Save the revised test requests.
-  await fs.writeFile(testRequestsPath(), getJSON(testRequests));
 });
 
 // REPORT FUNCTIONS
@@ -860,9 +805,17 @@ export const getReportEndTime = (report: {jobData?: {endTime?: string}}): Date =
   `20${report.jobData?.endTime}Z`
 );
 
+// Returns the page identifier of a report, or an empty string if it has none (as is true of a
+// report from before the site/page migration that has been restored without being migrated).
+export const getReportPageID = (report: unknown): string => {
+  const pageID = (report as {sources?: {pageID?: unknown}}).sources?.pageID;
+  return typeof pageID === 'string' ? pageID : '';
+};
 // Returns an extract of an available report, or an error object if the report cannot
 // be used. An extract exists to expose a report in listings, so it shares getReport's
-// usability bar: a report too defective to expose must produce no extract.
+// usability bar: a report too defective to expose must produce no extract. A report
+// without a page identifier also produces no extract, because its page is unknown, but
+// it is not quarantined, because rerunning the site/page migration gives it one.
 export const getReportExtract = async (reportID: string): Promise<ReportExtract | {error: string}> => {
   const report = await getReport(reportID);
   // If the report is not usable:
@@ -870,12 +823,19 @@ export const getReportExtract = async (reportID: string): Promise<ReportExtract 
     // Return the reason.
     return report;
   }
+  const pageID = getReportPageID(report);
+  // If the report has no page identifier:
+  if (!pageID) {
+    // Return this.
+    return {error: `Report ${reportID} has no page identifier`};
+  }
   const {target, jobData} = report;
   const {what: description, url} = target;
   // Return an extract of it. Usability has already guaranteed these properties,
   // including a valid completion time.
   return {
     id: reportID,
+    pageID,
     description,
     url,
     reportTime: getReportEndTime({jobData}).toISOString()
@@ -937,61 +897,35 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
   // Sort the extracts by page description and, secondarily, completion time.
   objectSort(extracts, 'reportTime', 'alpha');
   objectSort(extracts, 'description', 'alpha');
+  // Get the latest extract about each page. Extracts about one page may have different
+  // descriptions, so the latest is found by page identifier, not by adjacency; among
+  // extracts with equal completion times, the last in the sorted order is the latest.
+  const latestExtracts = new Map<string, ReportExtract>();
+  for (const extract of extracts) {
+    const latest = latestExtracts.get(extract.pageID);
+    if (!latest || extract.reportTime >= latest.reportTime) {
+      latestExtracts.set(extract.pageID, extract);
+    }
+  }
   // For each extract:
-  extracts.forEach((extract, index) => {
+  for (const extract of extracts) {
     // If it is superseded:
-    if (extract.description === extracts[index + 1]?.description) {
+    if (latestExtracts.get(extract.pageID) !== extract) {
       // Mark it as such.
       extract.superseded = true;
     }
-  });
+  }
   // Return the array, excluding extracts of superseded reports if so specified.
   return onlyLatest ? extracts.filter(extract => !extract.superseded) : extracts;
 };
-// Returns extracts of all available reports about a page, from oldest to latest.
-export const getPageReportExtracts = async (description: string): Promise<ReportExtract[]> => {
+// Returns extracts of all available reports about a page, from oldest to latest, or none if
+// the page identifier is empty.
+export const getPageReportExtracts = async (pageID: string): Promise<ReportExtract[]> => {
   const reportExtracts = await getReportExtracts();
-  return reportExtracts.filter(extract => extract.description === description);
+  const pageExtracts = reportExtracts.filter(extract => pageID && extract.pageID === pageID);
+  objectSort(pageExtracts, 'reportTime', 'alpha');
+  return pageExtracts;
 };
-// Returns whether a report with a description or URL is available.
-export const isReportAvailable = async (description: string, url: string): Promise<boolean> => {
-  const reportExtracts = await getReportExtracts();
-  const descriptions = reportExtracts.map(reportExtract => reportExtract.description);
-  const miniURLs = reportExtracts.map(reportExtract => minifyURL(reportExtract.url));
-  return descriptions.includes(description) || miniURLs.includes(minifyURL(url));
-};
-// Returns the property that an approved job in a category has.
-const getApprovedJobProperty = async (
-  description: string, url: string, category: 'claimed' | 'queue'
-): Promise<'description' | 'url' | ''> => {
-  try {
-    // Get the descriptions and URLs of all jobs in the category.
-    const jobsData = await getJobsData(category);
-    // If a job with the description is in the category:
-    if (jobsData.some(job => job.description === description)) {
-      // Return this.
-      return 'description';
-    }
-    // Otherwise, if a job with an equivalent URL is in the category:
-    const miniURL = minifyURL(url);
-    if (jobsData.some(job => minifyURL(job.url) === miniURL)) {
-      // Return this.
-      return 'url';
-    }
-    // Otherwise, return this.
-    return '';
-  }
-  catch(error) {
-    throw new Error('Failed to get approved job property', {cause: error});
-  }
-};
-// Processes a new-test or retest request as a transaction and returns the result.
-// For a retest request (target has a reportID), resolves the description
-// and URL of the cited report itself, so a caller never needs its own
-// getReportExtract call. Approvability (whether the request may proceed) and, if so,
-// its addition to testRequests.json are both decided inside the lock, as a single
-// atomic operation, so no caller-visible seam exists where an approvability decision
-// could be based on stale information about testRequests.json.
 // Returns the non-negative-integer value of an environment variable, or a default if the
 // variable is unset, empty, or not a non-negative integer. Read at call time, not cached,
 // so a variable set (e.g. in .env) after this module first loads still takes effect. Used
@@ -1006,244 +940,9 @@ export const getEnvMax = (name: string, defaultValue: number): number => {
   const parsed = Number(raw);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : defaultValue;
 };
-// Maximum number of test/retest requests awaiting approval at once, across all URLs.
-// Once reached, a new, distinct request is rejected rather than added, so the pending
-// queue and the manager alert emails it generates cannot grow without bound (see GitHub
-// issue #3, abuse type 3, repeated/automated test-request submissions). Modeled on a full
-// mailbox rejecting new mail, rather than on a submission rate limit, since it is the
-// backlog itself, not how quickly it grows, that costs the manager review time and risks
-// unbounded storage. Configurable via TEST_REQUEST_QUEUE_MAX, since different Kilotest
-// deployments' maintainers may want a different size; a value of 0 means no limit.
-const testRequestQueueMax = () => getEnvMax('TEST_REQUEST_QUEUE_MAX', 20);
 // Returns a cap for display in an alert message: the cap itself, or "no limit" if the
 // cap is 0.
 export const describeMax = (max: number): string => max === 0 ? 'no limit' : String(max);
-// Returns the total number of test/retest requests awaiting approval, across all URLs.
-const getPendingTestRequestCount = (testRequests: TestRequests): number =>
-  Object.values(testRequests).reduce((total, requests) => total + requests.length, 0);
-export const processTestRequest = (
-  reason: string,
-  target: TestRequestTarget
-): Promise<ProcessRequestResult> => testRequestsLock(async (): Promise<ProcessRequestResult> => {
-  let requestType: 'newTest' | 'retest';
-  let description: string;
-  let url: string;
-  // Whether the cited report (for a retest) has been superseded by a later one.
-  let superseded = false;
-  // If the target identifies a report to retest:
-  if ('reportID' in target) {
-    requestType = 'retest';
-    const {reportID} = target;
-    // Get the cited report.
-    const extract = await getReportExtract(reportID);
-    // If it does not exist:
-    if ('error' in extract) {
-      // Return this.
-      return {result: 'nonreport'};
-    }
-    ({description, url} = extract);
-    // Get whether it has been superseded by a later report.
-    const reportExtracts = await getReportExtracts();
-    superseded = reportExtracts.some(
-      ex => ex.id === reportID && ex.superseded
-    );
-  }
-  // Otherwise, i.e. if the target is a page to test for the first time:
-  else {
-    requestType = 'newTest';
-    ({description, url} = target);
-    // If the URL violates the 12-to-300-character bound on new-test requests:
-    if (url.length < 12 || url.length > 300) {
-      // Reject it here, where every new-test request passes, rather than in each
-      // caller, so the bound applies on every submission surface.
-      return {result: 'urlLength', description, url};
-    }
-  }
-  try {
-    // Get any property the page shares with a claimed job.
-    const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
-    // Get any property the page shares with a queued job.
-    const queueJobProperty = await getApprovedJobProperty(description, url, 'queue');
-    // If the page shares a property with a claimed or queued job:
-    if (claimedJobProperty || queueJobProperty) {
-      // Return the property.
-      return {
-        result: (claimedJobProperty || queueJobProperty) as 'description' | 'url',
-        description,
-        url
-      };
-    }
-    // Otherwise, get the requests awaiting approval.
-    const requests = await getTestRequests() as Record<string, {
-      description: string, reason: string, timeStamp: string
-    }[]>;
-    // If the request has the same URL, description and reason as an existing request:
-    if (requests[url]?.some(
-      request => request.description === description && request.reason === reason
-    )) {
-      // Return this.
-      return {result: 'duplicate', description, url};
-    }
-    // If the request is to retest a page that has been superseded:
-    if (requestType === 'retest' && superseded) {
-      // Return this.
-      return {result: 'superseded', description, url};
-    }
-    // Otherwise, if the request is to test a new page and a report already exists about a
-    // page with the same description or URL:
-    if (requestType === 'newTest' && await isReportAvailable(description, url)) {
-      // Return this.
-      return {result: 'reportExists', description, url};
-    }
-    // Otherwise, i.e. if the request is genuinely new, if the queue of requests awaiting
-    // approval is already full (a cap of 0 means no limit, so the queue is never full):
-    const queueMax = testRequestQueueMax();
-    if (queueMax > 0 && getPendingTestRequestCount(requests) >= queueMax) {
-      // Return this.
-      return {result: 'queueFull', description, url};
-    }
-    // The request is eligible, so get the requests awaiting approval.
-    const testRequests = await getTestRequests();
-    // Add the request to them, initializing them with the URL if necessary.
-    (testRequests[url] ??= []).push({
-      timeStamp: getNowStamp(),
-      description,
-      reason
-    });
-    // Save the revised test requests.
-    await fs.writeFile(testRequestsPath(), getJSON(testRequests));
-    // Get an email-safe version of the reason.
-    const plainReason = getPlainText(reason);
-    // Alert a manager, including the resulting queue size, so a maintainer who has been
-    // away sees at a glance how urgently the queue needs review (approval or rejection)
-    // rather than learning this only once it is already full.
-    const requestTypeLabel = requestType === 'newTest' ? 'a new test' : 'a retest';
-    await sendAlert(
-      `Kilotest: request for ${requestTypeLabel} awaits approval`,
-      `Page description: ${description}\nURL: ${url}\nReason: ${plainReason}\n` +
-      `Requests now awaiting approval: ${getPendingTestRequestCount(testRequests)} of ${describeMax(queueMax)}`
-    );
-    // Return success.
-    return {result: 'ok', description, url};
-    // If an error occurred:
-  } catch(error) {
-    // Throw it.
-    throw new Error('Failed to process test request', {cause: error});
-  }
-});
-// Maximum number of jobs allowed in the job queue (db/jobs/queue) at once. This queue is
-// shared by every path that enqueues a job: manual approval of a pending test/retest
-// request (web/enqueue), and any tool (such as orderNewTest) that enqueues directly. The cap
-// therefore protects the queue itself, not any one source of jobs; a value of 0 means no
-// limit. Configurable via JOB_QUEUE_MAX.
-const jobQueueMax = () => getEnvMax('JOB_QUEUE_MAX', 20);
-// Result of orderJob. description and url are absent only when the result is
-// 'nonreport' (a retest order citing a report that does not exist), matching
-// ProcessRequestResult's own discriminated-union shape. There is no pending approval
-// inbox to compare against, so 'duplicate' (an identical pending request) never applies.
-// reportID (the enqueued job's own identifier, and eventually its report's) is
-// present only on 'ok'.
-export type OrderJobResult
-= {result: 'nonreport'}
-| {result: 'ok'; description: string; url: string; reportID: string}
-| {result: Exclude<TestRequestResult, 'nonreport' | 'duplicate' | 'ok'>; description: string; url: string};
-// Orders a test or retest as a transaction: validates the target is not already queued,
-// claimed, or (for a new-page order) reported, then enqueues a job directly into
-// db/jobs/queue, bypassing the pending-approval inbox (testRequests.json) that
-// processTestRequest writes to. This is the auto-approval GitHub issue #111 asks for: a
-// lightweight gate (the same claimed/queued dedup check processTestRequest already
-// performs, plus a cap on the queue itself) substitutes for a maintainer's manual
-// review. Runs under testRequestsLock, the same lock processTestRequest uses, so an
-// orderJob call and a processTestRequest call can never race to enqueue duplicate jobs
-// for the same page. The caller's stated reason is recorded on the job (sources.reason),
-// which survives into the eventual report exactly as sources.worker already does: no
-// approval rule consults it yet, but accumulating real callers' stated reasons is
-// intended to inform the design of more sophisticated, reason-aware approval rules in a
-// later iteration.
-export const orderJob = (
-  target: TestRequestTarget, reason: string
-): Promise<OrderJobResult> => testRequestsLock(async (): Promise<OrderJobResult> => {
-  let description: string;
-  let url: string;
-  // Whether the cited report (for a retest order) has been superseded by a later one.
-  let superseded = false;
-  // If the target identifies a report to retest:
-  if ('reportID' in target) {
-    const {reportID} = target;
-    // Get the cited report.
-    const extract = await getReportExtract(reportID);
-    // If it does not exist:
-    if ('error' in extract) {
-      // Return this.
-      return {result: 'nonreport'};
-    }
-    ({description, url} = extract);
-    // Get whether it has been superseded by a later report.
-    const reportExtracts = await getReportExtracts();
-    superseded = reportExtracts.some(
-      ex => ex.id === reportID && ex.superseded
-    );
-  }
-  // Otherwise, i.e. if the target is a page to test for the first time:
-  else {
-    ({description, url} = target);
-  }
-  try {
-    // Get any property the page shares with a claimed job.
-    const claimedJobProperty = await getApprovedJobProperty(description, url, 'claimed');
-    // Get any property the page shares with a queued job.
-    const queueJobProperty = await getApprovedJobProperty(description, url, 'queue');
-    // If the page shares a property with a claimed or queued job:
-    if (claimedJobProperty || queueJobProperty) {
-      // Return the property.
-      return {
-        result: (claimedJobProperty || queueJobProperty) as 'description' | 'url',
-        description,
-        url
-      };
-    }
-    // Otherwise, if the order is to retest a page that has been superseded:
-    if ('reportID' in target && superseded) {
-      // Return this.
-      return {result: 'superseded', description, url};
-    }
-    // Otherwise, if the order is to test a new page and a report already exists about a
-    // page with the same description or URL:
-    if (!('reportID' in target) && await isReportAvailable(description, url)) {
-      // Return this.
-      return {result: 'reportExists', description, url};
-    }
-    // Otherwise, if the job queue is already full (a cap of 0 means no limit, so the
-    // queue is never full):
-    const queueMax = jobQueueMax();
-    const {queue: queuedJobNames} = await getJobNames();
-    if (queueMax > 0 && queuedJobNames.length >= queueMax) {
-      // Return this.
-      return {result: 'queueFull', description, url};
-    }
-    // The page is eligible, so build a job from the template.
-    const jobTemplateJSON = await fs.readFile(path.join(import.meta.dirname, 'job.json'), 'utf8');
-    const job = JSON.parse(jobTemplateJSON);
-    const nowStamp = getNowStamp();
-    const jobIDSuffix = getRandomString(3);
-    const jobName = `${nowStamp}-${jobIDSuffix}`;
-    job.id = jobName;
-    job.creationTimeStamp = nowStamp;
-    job.executionTimeStamp = nowStamp;
-    job.target.what = description;
-    job.target.url = url;
-    job.sources.reason = reason;
-    // Save the job in the queue.
-    await fs.writeFile(path.join(jobsPath(), 'queue', `${jobName}.json`), getJSON(job));
-    console.log(`Test ordered for ${description} as job ${jobName}`);
-    // Return success, with the job identifier so the caller can report it.
-    return {result: 'ok', description, url, reportID: jobName};
-    // If an error occurred:
-  } catch(error) {
-    // Throw it.
-    throw new Error('Failed to order test', {cause: error});
-  }
-});
 // Milliseconds between polls in awaitJob, and the maximum total milliseconds awaitJob
 // waits before giving up. Both are read at call time (not cached), via environment
 // variables, so tests can shrink them well below the real ~2-to-4-minute wait a
@@ -1255,7 +954,7 @@ const awaitJobPollMs = () => getEnvMax('AWAIT_JOB_POLL_MS', 2000);
 const awaitJobTimeoutMs = () => getEnvMax('AWAIT_JOB_TIMEOUT_MS', 5 * 60 * 1000);
 // Result of awaitJob.
 export type AwaitJobResult = 'completed' | 'failed' | 'timedOut' | 'notFound';
-// Waits for a job ordered via orderJob (or, in principle, any job in db/jobs/queue or
+// Waits for a job created by submitTestRequest or approveTestRequest (or, in principle, any job in db/jobs/queue or
 // db/jobs/claimed identified the same way) to leave the queue/claimed pipeline, by
 // polling for the outcome Kilotest already records for it: a completed report at
 // timeStamp-jobID.json (see index.ts's worker/report handler, which is the sole writer

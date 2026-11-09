@@ -1,0 +1,63 @@
+{
+  "sites": {
+    "s-fixtur": "Fixture Site"
+  },
+  "pages": {
+    "p-mixedout": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "Mixed Outcomes",
+      "url": "https://example.com/mixed"
+    },
+    "p-canttell": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "All CantTell Page",
+      "url": "https://example.com/canttell"
+    },
+    "p-nooutcom": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "No Outcomes Page",
+      "url": "https://example.com/nooutcomes"
+    },
+    "p-emptyres": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "Empty Results Page",
+      "url": "https://example.com/empty"
+    },
+    "p-prevente": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "Prevented Page",
+      "url": "https://example.com/prevented"
+    },
+    "p-hiddenpg": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "Hidden Page",
+      "url": "https://example.com/hidden"
+    },
+    "p-multivio": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "Multi Violator Page",
+      "url": "https://example.com/multiviolator"
+    },
+    "p-branchco": {
+      "sites": [
+        "s-fixtur"
+      ],
+      "name": "Branch Coverage Page",
+      "url": "https://example.com/branch"
+    }
+  }
+}

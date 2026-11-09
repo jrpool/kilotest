@@ -5,29 +5,28 @@
 
 // IMPORTS
 
-import {populateTemplate, processTestRequest} from '../../util.ts';
+import {htmlSafe, populateTemplate} from '../../util.ts';
+import {getRegistry} from '../../registry.ts';
+import {describeRefusal, submitTestRequest} from '../../requests.ts';
 
 // FUNCTIONS
 
-export const answer = async (pageArgs: string, reason: string) => {
-  const reportID = pageArgs;
-  // Process the request. This resolves the cited report's description and URL itself.
-  const processResult = await processTestRequest(reason, {reportID});
-  // If the cited report does not exist:
-  if (processResult.result === 'nonreport') {
-    // Report this.
+export const answer = async (reportID: string, reason: string) => {
+  // Submit the request for management review. Its page and URL are those of the cited report’s page in the registry.
+  const result = await submitTestRequest({target: {reportID}, reason, reviewImmediately: false});
+  // If the cited report or its page does not exist:
+  if (!('page' in result)) {
     return {
       status: 'error',
       message: 'Invalid request'
     };
   }
-  const {result, description, url} = processResult;
   // If the request was recorded:
-  if (result === 'ok') {
+  if (result.result === 'pending') {
     const query = {
-      description,
-      url,
-      reason
+      description: htmlSafe(`${result.page.siteName} ${result.page.pageName}`),
+      url: htmlSafe(result.page.url),
+      reason: htmlSafe(reason)
     };
     // Return the populated page.
     return {
@@ -35,37 +34,10 @@ export const answer = async (pageArgs: string, reason: string) => {
       answerPage: await populateTemplate(import.meta.dirname, query)
     };
   }
-  // Otherwise, if the request is a duplicate:
-  else if (result === 'duplicate') {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'Test request duplicates an already submitted request'
-    };
-  }
-  // Otherwise, if the cited report has been superseded:
-  else if (result === 'superseded') {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'A later report about the page is already available'
-    }
-  }
-  // Otherwise, if the queue of requests awaiting approval is full:
-  else if (result === 'queueFull') {
-    // Report this, with a fallback channel, since this request cannot be queued here.
-    return {
-      status: 'error',
-      message: 'Too many requests are awaiting approval right now. Please try again later, ' +
-        'or post your request at https://github.com/jrpool/kilotest/issues or email info@kilotest.com.'
-    }
-  }
-  // Otherwise, i.e. if a request to test a page with the same description or URL is approved:
-  else {
-    // Report this.
-    return {
-      status: 'error',
-      message: 'A request to test a page with the same description or URL is already approved'
-    }
-  }
+  // Otherwise, i.e. if the request was refused, report why.
+  const why = describeRefusal(result as Exclude<typeof result, {result: 'ordered'}>, await getRegistry());
+  return {
+    status: 'error',
+    message: `Your request will not be processed, because ${why}`
+  };
 };

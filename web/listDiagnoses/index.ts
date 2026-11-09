@@ -21,6 +21,7 @@ import {
   getTextFragmentHref,
   getViolatorFactsLines
 } from '../util.ts';
+import {getRegistry} from '../../registry.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // FUNCTIONS
@@ -42,7 +43,7 @@ const populateQuery = async (
     return;
   }
   // Otherwise, i.e. if it succeeded, get descriptions of the page facts.
-  const pageDataStrings = getPageDataStrings(report);
+  const pageDataStrings = getPageDataStrings(report, await getRegistry());
   // If this failed:
   if (pageDataStrings.error !== undefined) {
     // Populate the query with the reason.

@@ -54,12 +54,14 @@ Kilotest results are more comprehensive than single-rule-engine MCP server resul
 Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 
 - [Home page](https://kilotest.com/)
-- [List all tested pages, with links to test results](https://kilotest.com/listPages.html)
+- [List all tested sites](https://kilotest.com/listSites.html)
+- List the tested pages of one site, with links to test results: `https://kilotest.com/listPages.html/{siteID}`
 - List all issues in one report, and all reports about the same page: `https://kilotest.com/listIssues.html/{reportID}`
 - List all elements exhibiting one issue in one report: `https://kilotest.com/listViolators.html/{issueID}/{reportID}`
 - List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{reportID}/{catalogIndex}`
 - Get one full report in JSON: `https://kilotest.com/fullReport.json/{reportID}`
-- [Request testing of a not-yet-tested web page](https://kilotest.com/requestNewTestForm.html)
+- [Request testing of a web page of a site not yet tested](https://kilotest.com/requestNewTestForm.html)
+- Request testing of a not-yet-tested web page of a tested site: `https://kilotest.com/requestPageTestForm.html/{siteID}`
 - Request retesting of a web page: `https://kilotest.com/requestRetestForm.html/{reportID}`
 - [List the operations available to Kilotest managers](https://kilotest.com/manage.html)
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
@@ -188,7 +190,7 @@ When you request a test or a retest:
   - rejection
 - how to confirm approval
   - check test completion by calling `listSites` and `listPages` and looking for the page in the list
-  - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listPages.html`
+  - you advise the user to check in approximately 1 day for the test results on the Kilotest website, starting at `https://kilotest.com/listSites.html`
 
 For immediate testing without waiting for review by management, set `reviewImmediately` to `true` in a `requestNewTest`, `requestPageTest`, or `requestRetest` request. If the page or its site may already have been tested, the request is referred to management review, and the response lists the possible duplicates and similar sites, whose results you can use at once. Otherwise, that enqueues the job right away and returns a report identifier along with a question about whether to wait for completion. To wait, call `awaitTest` with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call `listIssues` with the same identifier.
 

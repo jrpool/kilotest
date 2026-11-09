@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-import {checkLength, populateTemplate} from '../../util.ts';
+import {checkLength, htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry} from '../../registry.ts';
 import {describeRefusal, nameBounds, normalizeSpace, submitTestRequest} from '../../requests.ts';
 import type {SubmitResult} from '../../requests.ts';
@@ -30,9 +30,9 @@ export const answer = async (rawSiteName: string, rawPageName: string, url: stri
   // If the request was recorded:
   if (result.result === 'pending') {
     const query = {
-      description: `${result.page.siteName} ${result.page.pageName}`,
-      url,
-      reason
+      description: htmlSafe(`${result.page.siteName} ${result.page.pageName}`),
+      url: htmlSafe(url),
+      reason: htmlSafe(reason)
     };
     // Return the populated page.
     return {

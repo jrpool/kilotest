@@ -800,14 +800,14 @@ test('PUT / returns an invalid method error', async () => {
 
 // TESTS: requestHandler catch boundary
 
-test('GET /listPages.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
+test('GET /listSites.html returns a 500 error when an unexpected internal error occurs', {timeout: 500}, async () => {
   // Corrupt testRequests.json so that getTestRequests throws, an error that should never occur in normal
   // operation and so is not handled by handleRequest itself, only by requestHandler's
   // outer catch boundary.
   const backup = await fs.readFile(testRequestsPath, 'utf8');
   await fs.writeFile(testRequestsPath, 'not valid json');
   try {
-    const res = await request('GET', '/listPages.html');
+    const res = await request('GET', '/listSites.html');
     assert.equal(res.statusCode, 500);
     assert.ok(res.headers['content-type'].includes('application/json'));
     const body = jsonBody(res);
@@ -1060,16 +1060,22 @@ test('GET /rules.html/<segment> redirects to the equivalent /listRules.html/<seg
   assert.equal(res.headers['location'], '/listRules.html/allCaps');
 });
 
-test('GET /targets.html redirects to /listPages.html', async () => {
-  const res = await request('GET', '/targets.html', {}, {followRedirects: false});
+test('GET /listPages.html without a site redirects to /listSites.html', async () => {
+  const res = await request('GET', '/listPages.html', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listPages.html');
+  assert.equal(res.headers['location'], '/listSites.html');
 });
 
-test('GET /listReports.html redirects to /listPages.html', async () => {
+test('GET /targets.html redirects to /listSites.html', async () => {
+  const res = await request('GET', '/targets.html', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listSites.html');
+});
+
+test('GET /listReports.html redirects to /listSites.html', async () => {
   const res = await request('GET', '/listReports.html', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
-  assert.equal(res.headers['location'], '/listPages.html');
+  assert.equal(res.headers['location'], '/listSites.html');
 });
 
 test('GET /api/listReports returns the invalid-service error', async () => {
@@ -1130,6 +1136,42 @@ test('POST /api/requestTest and /api/orderTest return the invalid-service error'
     reason: 'Because accessibility matters'
   }, {followRedirects: false});
   assert.notEqual(res2.statusCode, 200);
+});
+
+test('POST /requestPageTest.html/s-fixtur with valid data returns an HTML page', async () => {
+  const res = await formRequest('POST', '/requestPageTest.html/s-fixtur', {
+    pageName: `Web Page ${uniqueStamp}`,
+    url: `https://example.com/web-page-${uniqueStamp}`,
+    why: 'Because accessibility matters'
+  });
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.body.includes(`Fixture Site Web Page ${uniqueStamp}`));
+});
+
+test('POST /requestPageTest.html with an existing page name returns an answer error', async () => {
+  const res = await formRequest('POST', '/requestPageTest.html/s-fixtur', {
+    pageName: 'Mixed Outcomes',
+    url: `https://example.com/web-mixed-${uniqueStamp}`,
+    why: 'Because accessibility matters'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.ok(res.body.includes('already has a page named'));
+});
+
+test('POST /requestPageTest.html with a malformed site or missing data returns an error', async () => {
+  for (const [sitePath, form] of [
+    ['nonsense', {pageName: 'About', url: 'https://example.com/about', why: 'Because'}],
+    ['s-fixtur', {pageName: '', url: 'https://example.com/about', why: 'Because'}]
+  ] as const) {
+    const res = await formRequest('POST', `/requestPageTest.html/${sitePath}`, form);
+    assert.equal(res.statusCode, 400);
+    assert.ok(res.body.includes('Invalid test request'));
+  }
+});
+
+test('GET /requestPageTest.html/s-fixtur is not served, since the page is POST-only', async () => {
+  const res = await request('GET', '/requestPageTest.html/s-fixtur');
+  assert.equal(res.statusCode, 400);
 });
 
 test('POST /requestNewTest.html with non-https URL returns an error', async () => {
@@ -1627,7 +1669,9 @@ test('GET /requestRetest.html/260202T0000-new is rejected as an invalid GET requ
 // tested by the unit tests in web/*/*.test.cjs.
 
 const htmlPagePaths = [
-  '/listPages.html',
+  '/listSites.html',
+  '/listPages.html/s-fixtur',
+  '/requestPageTestForm.html/s-fixtur',
   '/listViolators.html/linkNoText/260101T0000-mix',
   '/listDiagnoses.html/linkNoText/260101T0000-mix/0',
   '/enqueueForm.html',
@@ -2137,7 +2181,7 @@ test('a request logs a single-line JSON record with the expected fields', async 
   const originalLog = console.log;
   console.log = (line: string) => logged.push(line);
   try {
-    await request('GET', '/listPages.html');
+    await request('GET', '/listSites.html');
   }
   finally {
     console.log = originalLog;
@@ -2153,7 +2197,7 @@ test('a request logs a single-line JSON record with the expected fields', async 
   assert.equal(requestLines.length, 1);
   const record = JSON.parse(requestLines[0]!);
   assert.equal(record.method, 'GET');
-  assert.equal(record.path, '/listPages.html');
+  assert.equal(record.path, '/listSites.html');
   assert.equal(record.status, 200);
   assert.ok(record.ip);
   assert.ok(record.userAgent);
@@ -2183,7 +2227,7 @@ test('a smoke-test-flagged request is not logged as a general request', async ()
   const originalLog = console.log;
   console.log = (line: string) => logged.push(line);
   try {
-    await request('GET', '/listPages.html', null, {'x-kilotest-smoke': '1'});
+    await request('GET', '/listSites.html', null, {'x-kilotest-smoke': '1'});
   }
   finally {
     console.log = originalLog;

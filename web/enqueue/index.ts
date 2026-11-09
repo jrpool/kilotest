@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-import {populateTemplate} from '../../util.ts';
+import {htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry} from '../../registry.ts';
 import {approveTestRequest, describePageError} from '../../requests.ts';
 
@@ -29,7 +29,7 @@ export const answer = async (url: string, requestID: string) => {
     };
   }
   const query: Record<string, string> = {
-    target: `${result.page.siteName} ${result.page.pageName}`,
+    target: htmlSafe(`${result.page.siteName} ${result.page.pageName}`),
     jobName: result.reportID
   };
   // Return the populated page.

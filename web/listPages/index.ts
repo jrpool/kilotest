@@ -1,122 +1,86 @@
 /*
   index.ts
-  Lists all tested pages, with links to the latest reports about them.
+  Lists the tested pages of a site, with links to the latest reports about them, after any of its pages requested for testing: pages in requests awaiting approval and pages whose jobs are queued or being tested.
 */
 
 // IMPORTS
 
-import {
-  getJobNames,
-  getObject,
-  getReportExtracts,
-  htmlSafe,
-  jobsPath,
-  populateTemplate
-} from '../../util.ts';
-import path from 'node:path';
-import {getRegistry} from '../../registry.ts';
-import {getTargetLabel, getTestRequests} from '../../requests.ts';
+import {getJobsData, getReportExtracts, htmlSafe, populateTemplate} from '../../util.ts';
+import {getRegistry, getSitePages, isSiteID} from '../../registry.ts';
+import {getTestRequests} from '../../requests.ts';
+
+// CONSTANTS
+
+// Descriptions of the statuses of requested pages, by job category or pending status.
+const statuses = {pending: 'awaiting approval', queue: 'queued for testing', claimed: 'being tested'} as const;
 
 // FUNCTIONS
 
-// Adds parameters to a query for the answer page.
-const populateQuery = async (query: Record<string, any>) => {
-  const margin = ' '.repeat(6);
-  // Initialize the classes of lines.
-  const lines: {requests: string[], queue: string[], claimed: string[], tested: string[]} = {
-    requests: [],
-    queue: [],
-    claimed: [],
-    tested: []
-  };
-  // Get the test requests.
-  const testRequests = await getTestRequests();
+// Returns a page listing the tested pages of a site.
+export const answer = async (siteID: string) => {
   const registry = await getRegistry();
-  // For each requested URL:
-  Object.keys(testRequests).forEach(url => {
-    // For each of its requests:
-    testRequests[url]!.forEach(request => {
-      const label = htmlSafe(getTargetLabel(registry, request.target));
-      // Add a line.
-      lines.requests.push(`${margin}  <li><code>${htmlSafe(url)}</code> (${label}): ${htmlSafe(request.reason)}</li>`);
-    });
+  const siteName = isSiteID(siteID) ? registry.sites[siteID] : undefined;
+  // If the site does not exist:
+  if (siteName === undefined) {
+    return {
+      status: 'error',
+      message: 'Request for a nonexistent site'
+    };
+  }
+  const margin = ' '.repeat(6);
+  // Get the identifiers of the latest reports about the tested pages.
+  const latestReportIDs = new Map((await getReportExtracts(true)).map(extract => [extract.pageID, extract.id]));
+  // Get the tested pages of the site, ordered by name.
+  const pages = getSitePages(registry, siteID).filter(([pageID]) => latestReportIDs.has(pageID));
+  // Get a list item for each of them, linking to the issues in the latest report about it.
+  const items = pages.map(([pageID, {name, url}]) => {
+    const safeName = htmlSafe(name);
+    const link = `<a href="/listIssues.html/${latestReportIDs.get(pageID)}" aria-label="Get test results for ${safeName}">${safeName}</a>`;
+    return `${margin}  <li>${link} (<code>${htmlSafe(url)}</code>)</li>`;
   });
-  // Sort the lines in alphabetical order by URL and secondarily by proposed name.
-  lines.requests.sort();
-  // Get the file names of all queued and claimed jobs.
-  const jobFileNames = await getJobNames();
-  // For each job category:
-  for (const category of ['queue', 'claimed'] as const) {
-    // For each job in the category:
-    for (const fileName of jobFileNames[category]) {
-      // Get the job.
-      const job = await getObject(path.join(jobsPath(), category, fileName)) as {target: {url: string, what: string}};
-      // Add a line.
-      lines[category].push(`${margin}  <li><code>${job.target.url}</code> (${job.target.what})</li>`);
+  // Get the pages of the site requested for testing, as descriptions of their names, URLs, and statuses.
+  const requested: string[] = [];
+  const describe = (pageName: string, url: string, status: string) =>
+    `${margin}  <li>${htmlSafe(pageName)} (<code>${htmlSafe(url)}</code>): ${status}</li>`;
+  // For each request awaiting approval:
+  for (const request of Object.values(await getTestRequests()).flat()) {
+    const {target} = request;
+    // If it is for a new page of the site:
+    if ('siteID' in target && target.siteID === siteID) {
+      requested.push(describe(target.pageName, target.url, `new page, ${statuses.pending}`));
+    }
+    // Otherwise, if it is for a retest of a page of the site:
+    else if ('pageID' in target && registry.pages[target.pageID]?.sites.includes(siteID)) {
+      const {name, url} = registry.pages[target.pageID] as {name: string; url: string};
+      requested.push(describe(name, url, `retest, ${statuses.pending}`));
     }
   }
-  // Initialize the conditional activity sections.
-  const sections: string[] = [];
-  // Add a section for the test requests, if there are any.
-  if (lines.requests.length) {
-    sections.push([
-      `${margin}<h2>Requested for testing</h2>`,
-      `${margin}<ol>`,
-      ...lines.requests,
-      `${margin}</ol>`,
-      `${margin}<p>Kilotest managers can <a href="enqueueForm.html">approve or reject a request</a>.</p>`
-    ].join('\n'));
+  // For each category of approved jobs:
+  for (const category of ['queue', 'claimed'] as const) {
+    // For each job in it for a page of the site:
+    for (const {pageID} of await getJobsData(category)) {
+      const page = registry.pages[pageID];
+      if (page?.sites.includes(siteID)) {
+        const kind = latestReportIDs.has(pageID) ? 'retest' : 'new page';
+        requested.push(describe(page.name, page.url, `${kind}, ${statuses[category]}`));
+      }
+    }
   }
-  // Add a section for the queued jobs, if there are any.
-  if (lines.queue.length) {
-    sections.push([
-      `${margin}<h2>Queued for testing</h2>`,
-      `${margin}<ol>`,
-      ...lines.queue,
-      `${margin}</ol>`
-    ].join('\n'));
-  }
-  // Add a section for the claimed jobs, if there are any.
-  if (lines.claimed.length) {
-    sections.push([
-      `${margin}<h2>Being tested now</h2>`,
-      `${margin}<ul>`,
-      ...lines.claimed,
-      `${margin}</ul>`
-    ].join('\n'));
-  }
-  // Add the sections to the query.
-  query.jobSections = sections.join('\n');
-  // Get extracts of the latest reports about all tested pages, sorted by page description.
-  const latestExtracts = await getReportExtracts(true);
-  const pageCount = latestExtracts.length;
-  // For each tested page:
-  for (const extract of latestExtracts) {
-    const {id, description} = extract;
-    // Add a link to the issues in the latest report about it to the lines.
-    const link = `<a href="listIssues.html/${id}" aria-label="Get test results for ${description}">${description}</a>`;
-    lines.tested.push(`${margin}  <li>${link}</li>`);
-  }
-  // Add the lines to the query, as an introduced list if there are any, or else a no-pages message.
-  query.testedPages = pageCount
-  ? [
-    `${margin}<p>Get test results for:</p>`,
-    `${margin}<ul class="links">`,
-    ...lines.tested,
-    `${margin}</ul>`
-  ].join('\n')
-  : `${margin}<p>No pages have been tested yet.</p>`;
-};
-// Returns a page listing the tested pages.
-export const answer = async () => {
-  const query: Record<string, any> = {};
-  // Create a query to replace placeholders.
-  await populateQuery(query);
-  // Get the populated template.
-  const answerPage = await populateTemplate(import.meta.dirname, query);
+  const query: Record<string, string> = {
+    siteID,
+    // Add a section for the requested pages, if there are any.
+    requestedPages: requested.length
+      ? [`${margin}<h2>Requested for testing</h2>`, `${margin}<ul>`, ...requested, `${margin}</ul>`].join('\n')
+      : '',
+    siteName: htmlSafe(siteName),
+    // Add the list items as an introduced list if there are any, or else a no-pages message.
+    testedPages: items.length
+      ? [`${margin}<p>Get test results for:</p>`, `${margin}<ul class="links">`, ...items, `${margin}</ul>`].join('\n')
+      : `${margin}<p>No pages of this site have been tested yet.</p>`
+  };
   // Return the populated page.
   return {
     status: 'ok',
-    answerPage
+    answerPage: await populateTemplate(import.meta.dirname, query)
   };
 };

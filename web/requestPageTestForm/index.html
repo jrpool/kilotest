@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    __head__
+    <meta name="keywords" content="report,accessibility,a11y">
+    <title>Test request for a page of __siteName__ | Kilotest</title>
+  </head>
+  <body>
+    <main>
+      <h1><a href="/">Kilotest</a>: Test request for a page of __siteName__</h1>
+      <p>You may request that a page of <q>__siteName__</q> be tested by submitting the following form. Before you do, check the <a href="/listPages.html/__siteID__">pages of this site already tested</a>. All answers are required.</p>
+      <form action="/requestPageTest.html/__siteID__" method="post">
+        <p><label>
+          What is the name of the page (for the home page, <q>home</q>)? It must differ from the names of the tested pages of the site.<br>
+          <input size="50" maxlength="120" name="pageName" required>
+        </label></p>
+        <p><label>
+          What is the URL (starting with <code>https://</code>)?<br>
+          <input type="url" size="60" minlength="12" maxlength="300" name="url" pattern="https://.+\..+" required>
+        </label></p>
+        <p><label>
+          Why test the page?<br>
+          <input size="70" minlength="5" maxlength="100" name="why" required>
+        </label></p>
+        <p><button type="submit">Submit</button></p>
+      </form>
+    </main>
+    __footer__
+  </body>
+</html>

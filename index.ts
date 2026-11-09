@@ -54,12 +54,14 @@ import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
 import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
 import {rejectTestRequests} from './requests.ts';
+import {isSiteID} from './registry.ts';
 import {answer as enqueueForm} from './web/enqueueForm/index.ts';
 import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';
 import {answer as hideReportForm} from './web/hideReportForm/index.ts';
 import {answer as listDiagnosesPage} from './web/listDiagnoses/index.ts';
 import {answer as listIssuesPage} from './web/listIssues/index.ts';
 import {answer as listPagesPage} from './web/listPages/index.ts';
+import {answer as listSitesPage} from './web/listSites/index.ts';
 import {answer as listRules} from './web/listRules/index.ts';
 import {answer as listTopIssues} from './web/listTopIssues/index.ts';
 import {answer as listViolatorsPage} from './web/listViolators/index.ts';
@@ -74,6 +76,8 @@ import {answer as requestRetestPage} from './web/requestRetest/index.ts';
 import {answer as requestRetestForm} from './web/requestRetestForm/index.ts';
 import {answer as requestNewTestPage} from './web/requestNewTest/index.ts';
 import {answer as requestNewTestForm} from './web/requestNewTestForm/index.ts';
+import {answer as requestPageTestPage} from './web/requestPageTest/index.ts';
+import {answer as requestPageTestForm} from './web/requestPageTestForm/index.ts';
 import {answer as rewindReportsForm} from './web/rewindReportsForm/index.ts';
 import {answer as showHiddenReportsForm} from './web/showHiddenReportsForm/index.ts';
 import {answer as unhideReportForm} from './web/unhideReportForm/index.ts';
@@ -121,6 +125,7 @@ const answer: {
   listDiagnoses: PageHandler;
   listIssues: PageHandler;
   listPages: PageHandler;
+  listSites: PageHandler;
   listRules: PageHandler;
   listTopIssues: PageHandler;
   listViolators: PageHandler;
@@ -138,6 +143,8 @@ const answer: {
   requestRetestForm: PageHandler;
   requestNewTest: PageHandler;
   requestNewTestForm: PageHandler;
+  requestPageTest: PageHandler;
+  requestPageTestForm: PageHandler;
   rewindReportsForm: PageHandler;
   showHiddenReportsForm: PageHandler;
   terms: PageHandler;
@@ -155,6 +162,7 @@ const answer: {
   listDiagnoses: listDiagnosesPage,
   listIssues: listIssuesPage,
   listPages: listPagesPage,
+  listSites: listSitesPage,
   listRules,
   listTopIssues,
   listViolators: listViolatorsPage,
@@ -172,6 +180,8 @@ const answer: {
   requestRetestForm,
   requestNewTest: requestNewTestPage,
   requestNewTestForm,
+  requestPageTest: requestPageTestPage,
+  requestPageTestForm,
   rewindReportsForm,
   showHiddenReportsForm,
   terms,
@@ -252,6 +262,7 @@ export const routes = {
     '/renewWCAG.html',
     '/requestRetest.html/*',
     '/requestNewTest.html',
+    '/requestPageTest.html/*',
     '/tutorialWebComment.html',
     '/unhideReportForm.html',
     '/worker/job',
@@ -306,8 +317,8 @@ export const renamedPagePrefixes: Record<string, {to: string; renameDate: string
   reportIssue: {to: 'listViolators', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
   reportIssues: {to: 'listIssues', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
   rules: {to: 'listRules', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
-  targets: {to: 'listPages', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
-  listReports: {to: 'listPages', renameDate: '2026-10-09', retireAfter: '2027-04-09'},
+  targets: {to: 'listSites', renameDate: '2026-08-31', retireAfter: '2027-04-01'},
+  listReports: {to: 'listSites', renameDate: '2026-10-09', retireAfter: '2027-04-09'},
   requestTest: {to: 'requestNewTest', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
   requestTestForm: {to: 'requestNewTestForm', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
   tutorial: {to: 'tutorialWeb', renameDate: '2026-11-06', retireAfter: '2027-05-06'}
@@ -753,7 +764,8 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       const topic = pageName.slice(0, -5);
       // Compute the path in the current request signature: the current name if the
       // page name is a pre-rename one.
-      const canonicalTopic = renamedPagePrefixes[topic]?.to ?? topic;
+      // A request for the list of tested pages without a site, which listed all tested pages before sites existed, is a request for the list of tested sites.
+      const canonicalTopic = topic === 'listPages' && !pathTail ? 'listSites' : renamedPagePrefixes[topic]?.to ?? topic;
       const canonicalPath = `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
       // If the request signature contains any obsolete element (a pre-rename page
       // name or a query string, which no GET
@@ -1008,6 +1020,32 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
           const answerData = await answer.requestNewTest(siteName, pageName, url, why);
+          // If they are valid:
+          if (answerData.status === 'ok') {
+            // Serve the answer page.
+            response.end(answerData.answerPage);
+          }
+          // Otherwise, i.e. if they are invalid:
+          else {
+            // Report the error.
+            await serveError({message: answerData.message}, response, true);
+          }
+        }
+        // Otherwise, i.e. if the request is invalid:
+        else {
+          // Report the error.
+          await serveError({message: 'ERROR: Invalid test request'}, response, true);
+        }
+      }
+      // Otherwise, if it is a request for a test of a page of a tested site:
+      else if (pageName === 'requestPageTest.html') {
+        const {pageName: requestedPageName, url, why} = postData as {pageName?: string; url: string; why?: string};
+        // If the request is valid:
+        if (isSiteID(pathTail) && requestedPageName && isURL(url) && why && await isAllowedTarget(url)) {
+          // Serve headers for a response.
+          setHeaders('text/html', pathname, 'ultra');
+          // Get the answer data.
+          const answerData = await answer.requestPageTest(pathTail, requestedPageName, url, why);
           // If they are valid:
           if (answerData.status === 'ok') {
             // Serve the answer page.

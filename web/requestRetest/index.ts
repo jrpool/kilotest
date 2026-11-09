@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-import {populateTemplate} from '../../util.ts';
+import {htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry} from '../../registry.ts';
 import {describeRefusal, submitTestRequest} from '../../requests.ts';
 
@@ -24,9 +24,9 @@ export const answer = async (reportID: string, reason: string) => {
   // If the request was recorded:
   if (result.result === 'pending') {
     const query = {
-      description: `${result.page.siteName} ${result.page.pageName}`,
-      url: result.page.url,
-      reason
+      description: htmlSafe(`${result.page.siteName} ${result.page.pageName}`),
+      url: htmlSafe(result.page.url),
+      reason: htmlSafe(reason)
     };
     // Return the populated page.
     return {

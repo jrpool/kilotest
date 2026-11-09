@@ -1,6 +1,13 @@
 # robots.txt
+# Ban SEO marketing crawlers
+User-agent: SERankingBacklinksBot
+User-agent: SemrushBot
+User-agent: MJ12bot
+Disallow: /
+# Restrict any other crawlers
 User-agent: *
 Allow: /
+# Management actions
 Disallow: /ai0BalanceForm.html
 Disallow: /deleteNotesForm.html
 Disallow: /enqueueForm.html
@@ -14,6 +21,9 @@ Disallow: /rewindReportsForm.html
 Disallow: /expungeReportsForm.html
 Disallow: /renewWCAGForm.html
 Disallow: /renewWCAG.html
+# Deeply drilled down requests
+Disallow: /listDiagnoses.html/
+Disallow: /listViolators.html/
 # JSON endpoints, whose contents are not indexable pages; crawling them is pointless.
 Disallow: /api/
 Disallow: /fullReport.json

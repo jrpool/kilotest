@@ -35,8 +35,8 @@ export const answer = async (siteID: string) => {
   // Get a list item for each of them, linking to the issues in the latest report about it.
   const items = pages.map(([pageID, {name, url}]) => {
     const safeName = htmlSafe(name);
-    const link = `<a href="/listIssues.html/${latestReportIDs.get(pageID)}" aria-label="Get test results for ${safeName}">${safeName}</a>`;
-    // The block display of the link places the URL below it.
+    const link = `<a href="/listIssues.html/${latestReportIDs.get(pageID)}">${safeName}</a>`;
+    // The inline link keeps the name and the URL on one line.
     return `${margin}  <li>${link} (<code>${htmlSafe(url)}</code>)</li>`;
   });
   // Get the pages of the site requested for testing, as descriptions of their names, URLs, and statuses.

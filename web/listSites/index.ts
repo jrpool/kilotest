@@ -67,14 +67,14 @@ const populateQuery = async (query: Record<string, string>) => {
   // For each tested site:
   for (const {siteID, name, count} of siteCounts) {
     // Add a link to the list of its tested pages to the lines.
-    const pages = count === 1 ? '1 page' : `${count} pages`;
-    lines.push(`${margin}  <li><a href="/listPages.html/${siteID}">${htmlSafe(name)}</a> (${pages})</li>`);
+    const pages = count === 1 ? '1 tested page' : `${count} tested pages`;
+    lines.push(`${margin}  <li><a href="/listPages.html/${siteID}">${htmlSafe(name)} (${pages})</a></li>`);
   }
   // Add the lines to the query, as an introduced list if there are any, or else a no-sites message.
   query.testedSites = siteCounts.length
   ? [
     `${margin}<p>Get test results for:</p>`,
-    `${margin}<ul>`,
+    `${margin}<ul class="links">`,
     ...lines,
     `${margin}</ul>`
   ].join('\n')

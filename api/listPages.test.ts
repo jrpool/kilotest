@@ -69,8 +69,8 @@ test('listPages lists the tested pages of a site by name, each with its latest r
     sites: [{identifier: 's-fixtur', name: 'Fixture Site'}],
     'identifier of the latest report': '260202T0000-new'
   });
-  assert.equal(content['how to request a test of a page of this site not in this list']?.URL, 'https://kilotest.example.com/api/requestPageTest/s-fixtur');
-  assert.equal(content['how a web user can request a test of a page of this site not in this list']?.URL, 'https://kilotest.example.com/requestPageTestForm.html/s-fixtur');
+  assert.equal(content['how to request a test of a page of this site not in this list']?.URL, 'https://kilotest.example.com/api/requestNewTest');
+  assert.equal(content['how a web user can request a test of a page of this site not in this list']?.URL, 'https://kilotest.example.com/requestNewTestForm.html/s-fixtur');
   assert.equal(body['this request']['closest ancestor request']['tool name'], 'listSites');
   assert.deepEqual(listPagesResponseSchema.parse(body), body);
 });

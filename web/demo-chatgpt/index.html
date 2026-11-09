@@ -10,6 +10,7 @@
     <main class="page">
       <h1>ChatGPT demonstration</h1>
       <p>This page shows how ChatGPT uses Kilotest to answer questions about the front-end quality of web pages. Each of the five scenarios below reproduces a real interaction. Step through them at your own pace with the Previous and Next buttons, or press Play to advance automatically. The same interaction is also available as a <a href="/media/demo-chatgpt.mp4">video recording</a>.</p>
+      <p>These interactions were recorded before Kilotest organized tested pages by site. Kilotest now first lists the tested sites (with the <code>listSites</code> tool) and then the tested pages of one site (with the <code>listPages</code> tool), and a test of a page of a tested site is requested with the <code>requestNewTest</code> tool by giving the site identifier.</p>
       <div class="demo" id="demo">
         <div class="demo-controls">
           <button type="button" id="demo-play" aria-pressed="false"><span aria-hidden="true">▶</span> Play</button>

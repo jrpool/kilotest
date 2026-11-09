@@ -657,18 +657,19 @@ test('POST /api/requestNewTest with reviewImmediately enqueues a job directly an
   await fs.unlink(path.join(fixtureDBDir, 'jobs', 'queue', `${reportIdentifier}.json`));
 });
 
-test('POST /api/requestPageTest/s-fixtur records a request and an API-operation metric', async () => {
-  const countBefore = await getMetricCount('apiOperations', 'requestPageTest');
-  const res = await request('POST', '/api/requestPageTest/s-fixtur', {
+test('POST /api/requestNewTest with a siteID records a request and an API-operation metric', async () => {
+  const countBefore = await getMetricCount('apiOperations', 'requestNewTest');
+  const res = await request('POST', '/api/requestNewTest', {
+    siteID: 's-fixtur',
     pageName: `API Page ${uniqueStamp}`,
     URL: `https://example.com/api-page-${uniqueStamp}`,
     reason: 'Because accessibility matters here'
   });
   assert.equal(res.statusCode, 200);
   const body = jsonBody(res);
-  assert.equal(body['tool name'], 'requestPageTest');
+  assert.equal(body['tool name'], 'requestNewTest');
   assert.equal(body['response content']['disposition of your request']['whether your request was referred to management review'], false);
-  assert.equal(await getMetricCount('apiOperations', 'requestPageTest'), countBefore + 1);
+  assert.equal(await getMetricCount('apiOperations', 'requestNewTest'), countBefore + 1);
 });
 
 test('POST /api/requestRetest/260202T0000-new with reviewImmediately enqueues a job directly and records an API-operation metric', async () => {
@@ -1138,8 +1139,9 @@ test('POST /api/requestTest and /api/orderTest return the invalid-service error'
   assert.notEqual(res2.statusCode, 200);
 });
 
-test('POST /requestPageTest.html/s-fixtur with valid data returns an HTML page', async () => {
-  const res = await formRequest('POST', '/requestPageTest.html/s-fixtur', {
+test('POST /requestNewTest.html with a siteID and valid data returns an HTML page', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
+    siteID: 's-fixtur',
     pageName: `Web Page ${uniqueStamp}`,
     url: `https://example.com/web-page-${uniqueStamp}`,
     why: 'Because accessibility matters'
@@ -1148,8 +1150,9 @@ test('POST /requestPageTest.html/s-fixtur with valid data returns an HTML page',
   assert.ok(res.body.includes(`Fixture Site Web Page ${uniqueStamp}`));
 });
 
-test('POST /requestPageTest.html with an existing page name returns an answer error', async () => {
-  const res = await formRequest('POST', '/requestPageTest.html/s-fixtur', {
+test('POST /requestNewTest.html with a siteID and an existing page name returns an answer error', async () => {
+  const res = await formRequest('POST', '/requestNewTest.html', {
+    siteID: 's-fixtur',
     pageName: 'Mixed Outcomes',
     url: `https://example.com/web-mixed-${uniqueStamp}`,
     why: 'Because accessibility matters'
@@ -1158,20 +1161,15 @@ test('POST /requestPageTest.html with an existing page name returns an answer er
   assert.ok(res.body.includes('already has a page named'));
 });
 
-test('POST /requestPageTest.html with a malformed site or missing data returns an error', async () => {
-  for (const [sitePath, form] of [
-    ['nonsense', {pageName: 'About', url: 'https://example.com/about', why: 'Because'}],
-    ['s-fixtur', {pageName: '', url: 'https://example.com/about', why: 'Because'}]
-  ] as const) {
-    const res = await formRequest('POST', `/requestPageTest.html/${sitePath}`, form);
+test('POST /requestNewTest.html with a malformed siteID or missing data returns an error', async () => {
+  for (const form of [
+    {siteID: 'nonsense', pageName: 'About', url: 'https://example.com/about', why: 'Because'},
+    {siteID: 's-fixtur', pageName: '', url: 'https://example.com/about', why: 'Because'}
+  ]) {
+    const res = await formRequest('POST', '/requestNewTest.html', form);
     assert.equal(res.statusCode, 400);
     assert.ok(res.body.includes('Invalid test request'));
   }
-});
-
-test('GET /requestPageTest.html/s-fixtur is not served, since the page is POST-only', async () => {
-  const res = await request('GET', '/requestPageTest.html/s-fixtur');
-  assert.equal(res.statusCode, 400);
 });
 
 test('POST /requestNewTest.html with non-https URL returns an error', async () => {
@@ -1671,7 +1669,7 @@ test('GET /requestRetest.html/260202T0000-new is rejected as an invalid GET requ
 const htmlPagePaths = [
   '/listSites.html',
   '/listPages.html/s-fixtur',
-  '/requestPageTestForm.html/s-fixtur',
+  '/requestNewTestForm.html/s-fixtur',
   '/listViolators.html/linkNoText/260101T0000-mix',
   '/listDiagnoses.html/linkNoText/260101T0000-mix/0',
   '/enqueueForm.html',

@@ -76,8 +76,6 @@ import {answer as requestRetestPage} from './web/requestRetest/index.ts';
 import {answer as requestRetestForm} from './web/requestRetestForm/index.ts';
 import {answer as requestNewTestPage} from './web/requestNewTest/index.ts';
 import {answer as requestNewTestForm} from './web/requestNewTestForm/index.ts';
-import {answer as requestPageTestPage} from './web/requestPageTest/index.ts';
-import {answer as requestPageTestForm} from './web/requestPageTestForm/index.ts';
 import {answer as rewindReportsForm} from './web/rewindReportsForm/index.ts';
 import {answer as showHiddenReportsForm} from './web/showHiddenReportsForm/index.ts';
 import {answer as unhideReportForm} from './web/unhideReportForm/index.ts';
@@ -90,7 +88,6 @@ import {response as listViolatorsAPI} from './api/listViolators.ts';
 import {response as requestFeatureAPI} from './api/requestFeature.ts';
 import {response as requestRetestAPI} from './api/requestRetest.ts';
 import {response as requestNewTestAPI} from './api/requestNewTest.ts';
-import {response as requestPageTestAPI} from './api/requestPageTest.ts';
 import {response as awaitTestAPI} from './api/awaitTest.ts';
 import {response as questionDiagnosisAPI} from './api/questionDiagnosis.ts';
 
@@ -143,8 +140,6 @@ const answer: {
   requestRetestForm: PageHandler;
   requestNewTest: PageHandler;
   requestNewTestForm: PageHandler;
-  requestPageTest: PageHandler;
-  requestPageTestForm: PageHandler;
   rewindReportsForm: PageHandler;
   showHiddenReportsForm: PageHandler;
   terms: PageHandler;
@@ -180,8 +175,6 @@ const answer: {
   requestRetestForm,
   requestNewTest: requestNewTestPage,
   requestNewTestForm,
-  requestPageTest: requestPageTestPage,
-  requestPageTestForm,
   rewindReportsForm,
   showHiddenReportsForm,
   terms,
@@ -199,7 +192,6 @@ const apiRespond: {
   requestFeature: ApiResponder;
   requestRetest: ApiResponder;
   requestNewTest: ApiResponder;
-  requestPageTest: ApiResponder;
   awaitTest: ApiResponder;
   questionDiagnosis: ApiResponder;
 } = {
@@ -212,7 +204,6 @@ const apiRespond: {
   requestFeature: requestFeatureAPI,
   requestRetest: requestRetestAPI,
   requestNewTest: requestNewTestAPI,
-  requestPageTest: requestPageTestAPI,
   awaitTest: awaitTestAPI,
   questionDiagnosis: questionDiagnosisAPI
 };
@@ -262,7 +253,6 @@ export const routes = {
     '/renewWCAG.html',
     '/requestRetest.html/*',
     '/requestNewTest.html',
-    '/requestPageTest.html/*',
     '/tutorialWebComment.html',
     '/unhideReportForm.html',
     '/worker/job',
@@ -1013,39 +1003,13 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       }
       // If the request is a test request:
       else if (pageName === 'requestNewTest.html') {
-        const {siteName, pageName, url, why} = postData as {siteName?: string; pageName?: string; url: string; why?: string};
-        // If the request is valid:
-        if (siteName && pageName && isURL(url) && why && await isAllowedTarget(url)) {
+        const {siteID = '', siteName = '', pageName, url, why} = postData as {siteID?: string; siteName?: string; pageName?: string; url: string; why?: string};
+        // If the request is valid, identifying an existing site or naming a new one:
+        if ((siteID ? isSiteID(siteID) : siteName) && pageName && isURL(url) && why && await isAllowedTarget(url)) {
           // Serve headers for a response.
           setHeaders('text/html', pathname, 'ultra');
           // Get the answer data.
-          const answerData = await answer.requestNewTest(siteName, pageName, url, why);
-          // If they are valid:
-          if (answerData.status === 'ok') {
-            // Serve the answer page.
-            response.end(answerData.answerPage);
-          }
-          // Otherwise, i.e. if they are invalid:
-          else {
-            // Report the error.
-            await serveError({message: answerData.message}, response, true);
-          }
-        }
-        // Otherwise, i.e. if the request is invalid:
-        else {
-          // Report the error.
-          await serveError({message: 'ERROR: Invalid test request'}, response, true);
-        }
-      }
-      // Otherwise, if it is a request for a test of a page of a tested site:
-      else if (pageName === 'requestPageTest.html') {
-        const {pageName: requestedPageName, url, why} = postData as {pageName?: string; url: string; why?: string};
-        // If the request is valid:
-        if (isSiteID(pathTail) && requestedPageName && isURL(url) && why && await isAllowedTarget(url)) {
-          // Serve headers for a response.
-          setHeaders('text/html', pathname, 'ultra');
-          // Get the answer data.
-          const answerData = await answer.requestPageTest(pathTail, requestedPageName, url, why);
+          const answerData = await answer.requestNewTest(siteID, siteName, pageName, url, why);
           // If they are valid:
           if (answerData.status === 'ok') {
             // Serve the answer page.
@@ -1337,20 +1301,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         const segments = pathTail.split('/');
         // If the service is to receive a test request:
         if (segments[0] === 'requestNewTest') {
-          const {siteName, pageName, URL, reason, reviewImmediately = false} = postData as {siteName: string; pageName: string; URL: string; reason: string; reviewImmediately?: boolean};
+          const {siteID = '', siteName = '', pageName, URL, reason, reviewImmediately = false} = postData as {siteID?: string; siteName?: string; pageName: string; URL: string; reason: string; reviewImmediately?: boolean};
           // Get the response body.
-          const responseBody = await apiRespond.requestNewTest([siteName, pageName, URL, reason, String(reviewImmediately === true)]);
+          const responseBody = await apiRespond.requestNewTest([siteID, siteName, pageName, URL, reason, String(reviewImmediately === true)]);
           await recordPageMetric('apiOperations', 'requestNewTest');
-          // Send it.
-          setHeaders('application/json', null, 'ultra');
-          response.end(JSON.stringify(responseBody));
-        }
-        // Otherwise, if the service is to receive a request for a test of a page of a tested site:
-        else if (segments[0] === 'requestPageTest') {
-          const {pageName, URL, reason, reviewImmediately = false} = postData as {pageName: string; URL: string; reason: string; reviewImmediately?: boolean};
-          // Get the response body.
-          const responseBody = await apiRespond.requestPageTest(segments.slice(1, 2).concat(pageName, URL, reason, String(reviewImmediately === true)));
-          await recordPageMetric('apiOperations', 'requestPageTest');
           // Send it.
           setHeaders('application/json', null, 'ultra');
           response.end(JSON.stringify(responseBody));

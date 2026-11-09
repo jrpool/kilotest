@@ -37,10 +37,10 @@ test('mcpPath is /mcp', () => {
   assert.equal(mcpPath, '/mcp');
 });
 
-test('createMCPServer registers all 13 tools', () => {
+test('createMCPServer registers all 12 tools', () => {
   const server = createMCPServer();
   const toolNames = Object.keys((server as any)._registeredTools);
-  assert.equal(toolNames.length, 13);
+  assert.equal(toolNames.length, 12);
   assert.deepEqual(toolNames, [
     'getOverview',
     'listSites',
@@ -51,7 +51,6 @@ test('createMCPServer registers all 13 tools', () => {
     'questionDiagnosis',
     'getReport',
     'requestNewTest',
-    'requestPageTest',
     'requestRetest',
     'requestFeature',
     'awaitTest'
@@ -185,10 +184,10 @@ test('requestNewTest handler returns content and structuredContent', async () =>
   assert.equal(getToolCallCount('requestNewTest'), countBefore + 1);
 });
 
-test('requestPageTest handler returns content and structuredContent', async () => {
+test('requestNewTest handler accepts a siteID', async () => {
   const server = createMCPServer();
-  const countBefore = getToolCallCount('requestPageTest');
-  const result = await (server as any)._registeredTools.requestPageTest.handler({
+  const countBefore = getToolCallCount('requestNewTest');
+  const result = await (server as any)._registeredTools.requestNewTest.handler({
     siteID: 's-fixtur',
     pageName: 'MCP Page',
     URL: 'https://example.com/mcp-page',
@@ -196,8 +195,9 @@ test('requestPageTest handler returns content and structuredContent', async () =
     reviewImmediately: false
   });
   assert.equal(result.content[0].type, 'text');
-  assert.equal(result.structuredContent['tool name'], 'requestPageTest');
-  assert.equal(getToolCallCount('requestPageTest'), countBefore + 1);
+  assert.equal(result.structuredContent['tool name'], 'requestNewTest');
+  assert.equal(result.structuredContent['response content']['details about your request']['page to be tested']['site identifier'], 's-fixtur');
+  assert.equal(getToolCallCount('requestNewTest'), countBefore + 1);
 });
 
 test('requestRetest handler returns content and structuredContent for a valid report', async () => {
@@ -404,7 +404,7 @@ test('handleMCP responds to initialize with server info', async () => {
   }
 });
 
-test('handleMCP lists all 13 tools via tools/list', async () => {
+test('handleMCP lists all 12 tools via tools/list', async () => {
   const server = await startMCPServer();
   try {
     const port = server.address().port;
@@ -412,7 +412,7 @@ test('handleMCP lists all 13 tools via tools/list', async () => {
     assert.equal(res.statusCode, 200);
     const result = parseSSEResult(res.body);
     const toolNames = result.result.tools.map((t: any) => t.name);
-    assert.equal(toolNames.length, 13);
+    assert.equal(toolNames.length, 12);
     assert.deepEqual(toolNames, [
       'getOverview',
       'listSites',
@@ -423,8 +423,7 @@ test('handleMCP lists all 13 tools via tools/list', async () => {
       'questionDiagnosis',
       'getReport',
       'requestNewTest',
-      'requestPageTest',
-      'requestRetest',
+        'requestRetest',
       'requestFeature',
       'awaitTest'
     ]);

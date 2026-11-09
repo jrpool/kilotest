@@ -11,8 +11,7 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 - List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}` (`GET`)
 - Question a diagnosis: `/api/questionDiagnosis/{issueID}/{reportID}/{catalogIndex}` (`POST`)
 - Get one full report in JSON: `/api/getReport/{reportID}` (`GET`)
-- Request testing of a web page of a site not yet tested: `/api/requestNewTest` (`POST`)
-- Request testing of a web page of a tested site: `/api/requestPageTest/{siteID}` (`POST`)
+- Request testing of a not-yet-tested web page: `/api/requestNewTest` (`POST`)
 - Request retesting of a web page: `/api/requestRetest/{reportID}` (`POST`)
 - Wait for a job to complete: `/api/awaitTest/{reportID}` (`POST`)
 - Request adding or improving a feature: `/api/requestFeature` (`POST`)
@@ -30,7 +29,7 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 - List all diagnoses of one element exhibiting one issue in one report: `https://kilotest.com/listDiagnoses.html/{issueID}/{reportID}/{catalogIndex}`
 - Get one full report in JSON: `https://kilotest.com/fullReport.json/{reportID}`
 - [Request testing of a web page of a site not yet tested](https://kilotest.com/requestNewTestForm.html)
-- Request testing of a not-yet-tested web page of a tested site: `https://kilotest.com/requestPageTestForm.html/{siteID}`
+- Request testing of a not-yet-tested web page of a tested site: `https://kilotest.com/requestNewTestForm.html/{siteID}`
 - Request retesting of a web page: `https://kilotest.com/requestRetestForm.html/{reportID}`
 - [List the operations available to Kilotest managers](https://kilotest.com/manage.html)
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)

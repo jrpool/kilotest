@@ -322,7 +322,7 @@ export const approveTestRequest = (
 // Returns a human-readable statement of why a page error prevents a request or approval.
 export const describePageError = (error: PageError, registry: Registry): string => {
   if (error.result === 'siteExists') {
-    return `a site named “${registry.sites[error.siteID]}” (identifier ${error.siteID}) already exists, so request a test of a page of that site instead.`;
+    return `a site named “${registry.sites[error.siteID]}” (identifier ${error.siteID}) already exists, so request the test with its identifier as siteID instead.`;
   }
   if (error.result === 'pageExists') {
     return `the site already has a page named “${(registry.pages[error.pageID] as PageRecord).name}” (identifier ${error.pageID}).`;

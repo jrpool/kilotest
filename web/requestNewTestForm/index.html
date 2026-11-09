@@ -3,19 +3,16 @@
   <head>
     __head__
     <meta name="keywords" content="report,accessibility,a11y">
-    <title>Test request | Kilotest</title>
+    <title>Test request__forSite__ | Kilotest</title>
   </head>
   <body>
     <main>
-      <h1><a href="/">Kilotest</a>: Test request</h1>
-      <p>You may request that a web page of a site not yet tested be tested by submitting the following form. If the site is in the <a href="/listSites.html">list of tested sites</a>, request the test from the list of its tested pages instead. All answers are required.</p>
+      <h1><a href="/">Kilotest</a>: Test request__forSite__</h1>
+__intro__
       <form action="/requestNewTest.html" method="post">
+__siteField__
         <p><label>
-          What is the name of the site (usually the name of the organization or brand that presents it)?<br>
-          <input size="50" maxlength="80" name="siteName" required>
-        </label></p>
-        <p><label>
-          What is the name of the page (for the home page, <q>home</q>)?<br>
+          What is the name of the page (for the home page, <q>home</q>)? It must differ from the names of the tested pages of the site.<br>
           <input size="50" maxlength="120" name="pageName" required>
         </label></p>
         <p><label>

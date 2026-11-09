@@ -42,8 +42,9 @@ export const response = async (args: string[]) => {
     .map(([pageID]) => getPageFacts(registry, pageID, latestReportIDs));
     howToRequest = {
       method: 'POST',
-      URL: `${thisHost}/api/requestPageTest/${siteID}`,
+      URL: `${thisHost}/api/requestNewTest`,
       'request body': {
+        siteID,
         pageName: '1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page, “home”)',
         URL: '12- to 300-character URL of the page, including the https:// scheme and any query',
         reason: '20- to 100-character reason why the page should be tested',
@@ -51,7 +52,7 @@ export const response = async (args: string[]) => {
       },
       'how to check whether the request has been fulfilled': 'use this listPages tool to determine whether the page has been tested (typical wait time: 2 to 4 minutes after immediate approval, or 1 hour to 1 day under review by management)'
     };
-    howWebUserRequests = {URL: `${thisHost}/requestPageTestForm.html/${siteID}`};
+    howWebUserRequests = {URL: `${thisHost}/requestNewTestForm.html/${siteID}`};
   }
   // Create the response content.
   const responseContent: ResponseContent = {

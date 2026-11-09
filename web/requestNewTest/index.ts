@@ -1,6 +1,6 @@
 /*
   index.ts
-  Records a request for a test of a page of a new site.
+  Records a request for a test of a page not yet tested, of either an existing site (identified) or a new site (named).
 */
 
 // IMPORTS
@@ -12,11 +12,12 @@ import type {SubmitResult} from '../../requests.ts';
 
 // FUNCTIONS
 
-export const answer = async (rawSiteName: string, rawPageName: string, url: string, reason: string) => {
+// Records a request. Exactly one of the site identifier and the site name is nonempty, as the caller has verified.
+export const answer = async (siteID: string, rawSiteName: string, rawPageName: string, url: string, reason: string) => {
   const siteName = normalizeSpace(rawSiteName);
   const pageName = normalizeSpace(rawPageName);
   const nameCheck = [
-    checkLength(siteName, nameBounds.site.min, nameBounds.site.max, 'site name'),
+    ...(siteID ? [] : [checkLength(siteName, nameBounds.site.min, nameBounds.site.max, 'site name')]),
     checkLength(pageName, nameBounds.page.min, nameBounds.page.max, 'page name')
   ].find(check => check.status === 'error');
   // If a name is too short or too long:
@@ -25,14 +26,16 @@ export const answer = async (rawSiteName: string, rawPageName: string, url: stri
   }
   // Submit the request for management review.
   const result = await submitTestRequest({
-    target: {siteName, pageName, url}, reason, reviewImmediately: false
-  }) as Exclude<SubmitResult, {result: 'nonreport'}>;
+    target: siteID ? {siteID, pageName, url} : {siteName, pageName, url}, reason, reviewImmediately: false
+  }) as Exclude<SubmitResult, {result: 'nonreport' | 'ordered'}>;
   // If the request was recorded:
   if (result.result === 'pending') {
     const query = {
       description: htmlSafe(`${result.page.siteName} ${result.page.pageName}`),
       url: htmlSafe(url),
-      reason: htmlSafe(reason)
+      reason: htmlSafe(reason),
+      // A link to where to check for the result: the tested pages of an existing site, or else the tested sites.
+      checkLink: `<a href="${siteID ? `/listPages.html/${siteID}` : '/listSites.html'}">check Kilotest</a>`
     };
     // Return the populated page.
     return {
@@ -41,9 +44,8 @@ export const answer = async (rawSiteName: string, rawPageName: string, url: stri
     };
   }
   // Otherwise, i.e. if the request was refused, report why.
-  const why = describeRefusal(result as Exclude<typeof result, {result: 'ordered'}>, await getRegistry());
   return {
     status: 'error',
-    message: `Your request will not be processed, because ${why}`
+    message: `Your request will not be processed, because ${describeRefusal(result, await getRegistry())}`
   };
 };

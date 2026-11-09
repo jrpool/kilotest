@@ -58,7 +58,7 @@ const reviewImmediatelyField = {
 const siteIDPattern = /^s-[0-9a-z]{6}$/;
 // Site identifier of an existing site, reused across schemas below.
 const siteIDField = z.string().regex(siteIDPattern).describe('Identifier of the site, formatted s-xxxxxx (example: s-2fw2ea), as shown in the listSites output');
-// Fields describing a page to be added, reused by requestNewTest and requestPageTest.
+// Fields describing a page to be added by requestNewTest.
 const newPageFields = {
   pageName: z.string().min(1).max(120).describe('1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)'),
   URL: z.string().min(12).max(300).regex(/^https:\/\//).describe('12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address'),
@@ -71,15 +71,10 @@ export const listPagesSchema = {
   siteID: siteIDField
 };
 
-// requestNewTest: POST /api/requestNewTest
+// requestNewTest: POST /api/requestNewTest. Exactly one of siteID and siteName must be given; a JSON Schema cannot conveniently express this, so the descriptions state it and the handler enforces it.
 export const requestNewTestSchema = {
-  siteName: z.string().min(1).max(80).describe('1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation'),
-  ...newPageFields
-};
-
-// requestPageTest: POST /api/requestPageTest/{siteID}
-export const requestPageTestSchema = {
-  siteID: siteIDField,
+  siteID: z.string().regex(siteIDPattern).optional().describe('For a page of a site in the listSites output: identifier of the site, formatted s-xxxxxx (example: s-2fw2ea). Give either siteID or siteName, not both.'),
+  siteName: z.string().min(1).max(80).optional().describe('For a page of a site not in the listSites output: 1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation. Give either siteID or siteName, not both.'),
   ...newPageFields
 };
 
@@ -147,7 +142,7 @@ export const toolsFactsSchema = z.object({
 
 // Identifies a related request (e.g., the closest ancestor request in the drill-down
 // hierarchy). method is usually GET (every drill-down tool's ancestor is a read), except
-// for requestNewTest/requestRetest, whose own ancestor is a GET, and awaitTest, whose ancestors
+// for the request tools, whose own ancestor is a GET, and awaitTest, whose ancestors
 // (requestNewTest and requestRetest) are both POST (they create a job).
 const requestReferenceSchema = z.object({
   'tool name': z.string(),
@@ -293,7 +288,11 @@ export const listPagesResponseSchema = envelope('GET', z.object({
   'web users can get test results about a page at': z.string().describe('URL template; replace {identifier} with the identifier of the latest report about the page.'),
   'basics about all tested pages of the site': z.array(pageFactsSchema).nullable().describe('The tested pages of the site, ordered by name, or null if the site does not exist.'),
   'how to request a test of a page of this site not in this list': newPageRequestSchema(z.object({
-    pageName: z.string(), URL: z.string(), reason: z.string(), reviewImmediately: z.string()
+    siteID: z.string().describe('Identifier of this site, to be given unchanged.'),
+    pageName: z.string(),
+    URL: z.string(),
+    reason: z.string(),
+    reviewImmediately: z.string()
   })).nullable(),
   'how a web user can request a test of a page of this site not in this list': z.object({URL: z.string()}).nullable()
 }));
@@ -444,7 +443,7 @@ const submissionDispositionSchema = z.object({
   'do you want to wait for completion': z.string().optional(),
   'whether your request was referred to management review': z.boolean().optional().describe('true if immediate review was requested but the request was referred to management review because of possible duplicates or similar sites.'),
   'possible duplicates': z.array(pageFactsSchema.extend({'reason for suspicion': z.string()})).optional().describe('Tested pages that may be the requested page. If one is, its latest report can be used at once.'),
-  'similar sites': z.array(siteFactsSchema.extend({'reason for suspicion': z.string()})).optional().describe('Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestPageTest.')
+  'similar sites': z.array(siteFactsSchema.extend({'reason for suspicion': z.string()})).optional().describe('Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestNewTest by giving its identifier as siteID.')
 }).nullable();
 
 export const requestNewTestResponseSchema = envelope(
@@ -454,20 +453,6 @@ export const requestNewTestResponseSchema = envelope(
     'disposition of your request': submissionDispositionSchema
   }),
   z.object(requestNewTestSchema)
-);
-
-export const requestPageTestResponseSchema = envelope(
-  'POST',
-  z.object({
-    'details about your request': newTestDetailsSchema,
-    'disposition of your request': submissionDispositionSchema
-  }),
-  z.object({
-    pageName: requestPageTestSchema.pageName,
-    URL: requestPageTestSchema.URL,
-    reason: requestPageTestSchema.reason,
-    reviewImmediately: requestPageTestSchema.reviewImmediately
-  })
 );
 
 export const requestRetestResponseSchema = envelope(

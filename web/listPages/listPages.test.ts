@@ -44,7 +44,7 @@ test('listPages returns an ok status with valid HTML naming the site', async () 
   const html = parse(result.answerPage);
   assert.equal(html.querySelector('title')?.text, 'Pages tested: Fixture Site | Kilotest');
   assert.ok(html.querySelector('a[href="/listSites.html"]'));
-  assert.ok(html.querySelector('a[href="/requestPageTestForm.html/s-fixtur"]'));
+  assert.ok(html.querySelector('a[href="/requestNewTestForm.html/s-fixtur"]'));
 });
 
 test('listPages lists each tested page of the site once, by name, with its URL', async () => {

@@ -249,6 +249,9 @@ paths:
                           request body:
                             type: object
                             properties:
+                              siteID:
+                                type: string
+                                description: Identifier of this site, to be given unchanged.
                               pageName:
                                 type: string
                               URL:
@@ -258,6 +261,7 @@ paths:
                               reviewImmediately:
                                 type: string
                             required:
+                              - siteID
                               - pageName
                               - URL
                               - reason
@@ -1167,18 +1171,22 @@ paths:
   /api/requestNewTest:
     post:
       operationId: requestNewTest
-      summary: Request that a page of a new site be tested
+      summary: Request that a page not yet tested be tested
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
+                siteID:
+                  description: 'For a page of a site in the listSites output: identifier of the site, formatted s-xxxxxx (example: s-2fw2ea). Give either siteID or siteName, not both.'
+                  type: string
+                  pattern: ^s-[0-9a-z]{6}$
                 siteName:
+                  description: 'For a page of a site not in the listSites output: 1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation. Give either siteID or siteName, not both.'
                   type: string
                   minLength: 1
                   maxLength: 80
-                  description: 1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation
                 pageName:
                   type: string
                   minLength: 1
@@ -1199,13 +1207,12 @@ paths:
                   description: true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management
                   type: boolean
               required:
-                - siteName
                 - pageName
                 - URL
                 - reason
       responses:
         '200':
-          description: Request that a page of a new site be tested
+          description: Request that a page not yet tested be tested
           content:
             application/json:
               schema:
@@ -1229,233 +1236,15 @@ paths:
                       body:
                         type: object
                         properties:
+                          siteID:
+                            description: 'For a page of a site in the listSites output: identifier of the site, formatted s-xxxxxx (example: s-2fw2ea). Give either siteID or siteName, not both.'
+                            type: string
+                            pattern: ^s-[0-9a-z]{6}$
                           siteName:
+                            description: 'For a page of a site not in the listSites output: 1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation. Give either siteID or siteName, not both.'
                             type: string
                             minLength: 1
                             maxLength: 80
-                            description: 1- to 80-character name of the site, usually the name of the organization or brand that presents it; it must not match the name of any site in the listSites output, ignoring case, white space, and punctuation
-                          pageName:
-                            type: string
-                            minLength: 1
-                            maxLength: 120
-                            description: 1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)
-                          URL:
-                            type: string
-                            minLength: 12
-                            maxLength: 300
-                            pattern: ^https:\/\/
-                            description: 12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address
-                          reason:
-                            type: string
-                            minLength: 20
-                            maxLength: 100
-                            description: 20- to 100-character justification evaluated by the reviewer selected by reviewImmediately
-                          reviewImmediately:
-                            description: true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management
-                            type: boolean
-                        required:
-                          - siteName
-                          - pageName
-                          - URL
-                          - reason
-                        additionalProperties: false
-                      closest ancestor request:
-                        allOf:
-                          - $ref: '#/components/schemas/RequestReference'
-                        type: object
-                        nullable: true
-                    required:
-                      - description
-                      - method
-                      - URL
-                      - body
-                      - closest ancestor request
-                    additionalProperties: false
-                  URLs of similar requests for web users:
-                    $ref: '#/components/schemas/SimilarWebRequests'
-                  response metadata:
-                    $ref: '#/components/schemas/ResponseMetadata'
-                  response content:
-                    type: object
-                    properties:
-                      details about your request:
-                        anyOf:
-                          - type: object
-                            properties:
-                              error:
-                                type: string
-                            required:
-                              - error
-                            additionalProperties: false
-                          - type: object
-                            properties:
-                              date and time received:
-                                type: string
-                              page to be tested:
-                                $ref: '#/components/schemas/RequestedPage'
-                              reason why the page should be tested:
-                                type: string
-                            required:
-                              - date and time received
-                              - page to be tested
-                              - reason why the page should be tested
-                            additionalProperties: false
-                      disposition of your request:
-                        type: object
-                        properties:
-                          what happens next:
-                            type: string
-                          report identifier:
-                            type: string
-                            description: 'Identifier of the report, to pass to listIssues once the report is ready (example: 260503T0432-x9z).'
-                            nullable: true
-                          how you can check for completion:
-                            type: string
-                          how a web user can check for completion:
-                            type: string
-                          do you want to wait for completion:
-                            type: string
-                          whether your request was referred to management review:
-                            description: true if immediate review was requested but the request was referred to management review because of possible duplicates or similar sites.
-                            type: boolean
-                          possible duplicates:
-                            description: Tested pages that may be the requested page. If one is, its latest report can be used at once.
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                identifier:
-                                  type: string
-                                  description: 'Identifier of the page (example: p-l6vni7ua).'
-                                name:
-                                  type: string
-                                  description: Name of the page, distinguishing it from the other pages of its site.
-                                URL:
-                                  type: string
-                                sites:
-                                  type: array
-                                  items:
-                                    $ref: '#/components/schemas/PageSite'
-                                  description: The sites that the page belongs to (currently always one).
-                                identifier of the latest report:
-                                  type: string
-                                  description: 'Identifier of the latest report about the page (example: 260503T0432-x9z).'
-                                reason for suspicion:
-                                  type: string
-                              required:
-                                - identifier
-                                - name
-                                - URL
-                                - sites
-                                - identifier of the latest report
-                                - reason for suspicion
-                              additionalProperties: false
-                          similar sites:
-                            description: Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestPageTest.
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                identifier:
-                                  type: string
-                                  description: 'Identifier of the site (example: s-2fw2ea).'
-                                name:
-                                  type: string
-                                count of tested pages:
-                                  type: number
-                                reason for suspicion:
-                                  type: string
-                              required:
-                                - identifier
-                                - name
-                                - count of tested pages
-                                - reason for suspicion
-                              additionalProperties: false
-                        required:
-                          - what happens next
-                          - how you can check for completion
-                        additionalProperties: false
-                        nullable: true
-                    required:
-                      - details about your request
-                      - disposition of your request
-                    additionalProperties: false
-                required:
-                  - tool collection
-                  - tool name
-                  - this request
-                  - URLs of similar requests for web users
-                  - response metadata
-                  - response content
-                additionalProperties: false
-  /api/requestPageTest/{siteID}:
-    post:
-      operationId: requestPageTest
-      summary: Request that a page of a tested site be tested
-      parameters:
-        - in: path
-          name: siteID
-          schema:
-            type: string
-            pattern: ^s-[0-9a-z]{6}$
-            description: 'Identifier of the site, formatted s-xxxxxx (example: s-2fw2ea), as shown in the listSites output'
-          required: true
-          description: 'Identifier of the site, formatted s-xxxxxx (example: s-2fw2ea), as shown in the listSites output'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                pageName:
-                  type: string
-                  minLength: 1
-                  maxLength: 120
-                  description: 1- to 120-character name of the page, distinguishing it from every other page of the site (for the home page of a site, “home”)
-                URL:
-                  type: string
-                  minLength: 12
-                  maxLength: 300
-                  pattern: ^https:\/\/
-                  description: 12- to 300-character URL of the page, including the https:// scheme and any query; it must not redirect to a target this deployment disallows, such as a private, loopback, or link-local address
-                reason:
-                  type: string
-                  minLength: 20
-                  maxLength: 100
-                  description: 20- to 100-character justification evaluated by the reviewer selected by reviewImmediately
-                reviewImmediately:
-                  description: true for immediate review with immediate approval or rejection and immediate enqueueing if approved; false or omitted to queue the request for review by management
-                  type: boolean
-              required:
-                - pageName
-                - URL
-                - reason
-      responses:
-        '200':
-          description: Request that a page of a tested site be tested
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  tool collection:
-                    $ref: '#/components/schemas/ToolsFacts'
-                  tool name:
-                    type: string
-                  this request:
-                    type: object
-                    properties:
-                      description:
-                        type: string
-                      method:
-                        type: string
-                        enum:
-                          - POST
-                      URL:
-                        type: string
-                      body:
-                        type: object
-                        properties:
                           pageName:
                             type: string
                             minLength: 1
@@ -1572,7 +1361,7 @@ paths:
                                 - reason for suspicion
                               additionalProperties: false
                           similar sites:
-                            description: Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestPageTest.
+                            description: Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestNewTest by giving its identifier as siteID.
                             type: array
                             items:
                               type: object
@@ -1764,7 +1553,7 @@ paths:
                                 - reason for suspicion
                               additionalProperties: false
                           similar sites:
-                            description: Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestPageTest.
+                            description: Existing sites that may be the requested site. If one is, a test of a page of it can be requested with requestNewTest by giving its identifier as siteID.
                             type: array
                             items:
                               type: object

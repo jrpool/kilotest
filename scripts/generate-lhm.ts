@@ -26,7 +26,6 @@ import {
   getReportSchema,
   listPagesSchema,
   requestNewTestSchema,
-  requestPageTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
   awaitTestSchema,
@@ -38,7 +37,6 @@ import {
   listDiagnosesResponseSchema,
   getReportResponseSchema,
   requestNewTestResponseSchema,
-  requestPageTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
   awaitTestResponseSchema,
@@ -67,7 +65,6 @@ const toolSchemas: Record<string, {input: ZodRawShape; output?: z.ZodTypeAny}> =
   questionDiagnosis: {input: questionDiagnosisSchema, output: questionDiagnosisResponseSchema},
   getReport: {input: getReportSchema, output: getReportResponseSchema},
   requestNewTest: {input: requestNewTestSchema, output: requestNewTestResponseSchema},
-  requestPageTest: {input: requestPageTestSchema, output: requestPageTestResponseSchema},
   requestRetest: {input: requestRetestSchema, output: requestRetestResponseSchema},
   requestFeature: {input: requestFeatureSchema, output: requestFeatureResponseSchema},
   awaitTest: {input: awaitTestSchema, output: awaitTestResponseSchema}

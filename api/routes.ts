@@ -13,7 +13,6 @@ import {
   getReportSchema,
   listPagesSchema,
   requestNewTestSchema,
-  requestPageTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
   awaitTestSchema,
@@ -25,7 +24,6 @@ import {
   listDiagnosesResponseSchema,
   getReportResponseSchema,
   requestNewTestResponseSchema,
-  requestPageTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
   awaitTestResponseSchema,
@@ -103,25 +101,9 @@ export const routes = [
     operationId: 'requestNewTest',
     method: 'post',
     path: '/api/requestNewTest',
-    summary: 'Request that a page of a new site be tested',
+    summary: 'Request that a page not yet tested be tested',
     bodySchema: z.object(requestNewTestSchema),
     responseSchema: requestNewTestResponseSchema
-  },
-  {
-    operationId: 'requestPageTest',
-    method: 'post',
-    path: '/api/requestPageTest/{siteID}',
-    summary: 'Request that a page of a tested site be tested',
-    pathParamsSchema: z.object({
-      siteID: requestPageTestSchema.siteID
-    }),
-    bodySchema: z.object({
-      pageName: requestPageTestSchema.pageName,
-      URL: requestPageTestSchema.URL,
-      reason: requestPageTestSchema.reason,
-      reviewImmediately: requestPageTestSchema.reviewImmediately
-    }),
-    responseSchema: requestPageTestResponseSchema
   },
   {
     operationId: 'requestRetest',

@@ -15,7 +15,6 @@ import * as listIssuesAPI from './api/listIssues.ts';
 import * as listViolatorsAPI from './api/listViolators.ts';
 import * as listDiagnosesAPI from './api/listDiagnoses.ts';
 import * as requestNewTestAPI from './api/requestNewTest.ts';
-import * as requestPageTestAPI from './api/requestPageTest.ts';
 import * as requestRetestAPI from './api/requestRetest.ts';
 import * as requestFeatureAPI from './api/requestFeature.ts';
 import * as awaitTestAPI from './api/awaitTest.ts';
@@ -31,7 +30,6 @@ import {
   listDiagnosesSchema,
   listPagesSchema,
   requestNewTestSchema,
-  requestPageTestSchema,
   requestRetestSchema,
   requestFeatureSchema,
   awaitTestSchema,
@@ -43,7 +41,6 @@ import {
   listDiagnosesResponseSchema,
   getReportResponseSchema,
   requestNewTestResponseSchema,
-  requestPageTestResponseSchema,
   requestRetestResponseSchema,
   requestFeatureResponseSchema,
   awaitTestResponseSchema,
@@ -59,8 +56,8 @@ export const mcpPath = '/mcp';
 const kilotestOverview = [
   sharedContext,
   'Results are organized as a hierarchy: tested sites; for each tested site, its tested pages; for each tested page, reports from the tests of the page; for each report, issues reported; for each issue, violators of rules belonging to the issue (a violator is an element or the whole page); for each violator, diagnoses by rule engines of its violations.',
-  'Typical workflow: call the listSites tool to learn whether the site of the page has been tested. If it has, call the listPages tool with the site identifier to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestPageTest tool if its site has been tested, or otherwise with the requestNewTest tool. If the latest report is obsolete, request a retest with the requestRetest tool.',
-  'The requestNewTest, requestPageTest, and requestRetest tools take a reviewImmediately parameter: set it to true for immediate review with immediate approval or rejection and immediate enqueueing if approved, or to false to queue the request for review by management. A request for immediate review of a page that may already have been tested (possible duplicates or similar sites) is referred to management review, and the response lists the pages and sites concerned, whose results may already answer your question. Immediate approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
+  'Typical workflow: call the listSites tool to learn whether the site of the page has been tested. If it has, call the listPages tool with the site identifier to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool, giving the site identifier as siteID if the site has been tested, or otherwise the site name as siteName. If the latest report is obsolete, request a retest with the requestRetest tool.',
+  'The requestNewTest and requestRetest tools take a reviewImmediately parameter: set it to true for immediate review with immediate approval or rejection and immediate enqueueing if approved, or to false to queue the request for review by management. A request for immediate review of a page that may already have been tested (possible duplicates or similar sites) is referred to management review, and the response lists the pages and sites concerned, whose results may already answer your question. Immediate approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
 
@@ -74,7 +71,7 @@ export const createMCPServer = (): McpServer => {
     description: collectionDescription
   },
   {
-    instructions: `${sharedContext} Use the listSites tool to start, and then the listPages tool for the site of the page you want facts about. If the page has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestPageTest tool (if the site has been tested) or the requestNewTest tool (if not) to request that the page be tested, setting its reviewImmediately parameter to true for immediate review. If the latest report about the page is obsolete, use the requestRetest tool the same way. For detailed documentation, call the getOverview tool.`
+    instructions: `${sharedContext} Use the listSites tool to start, and then the listPages tool for the site of the page you want facts about. If the page has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, giving the site identifier as siteID if the site has been tested or otherwise the site name as siteName, and setting its reviewImmediately parameter to true for immediate review. If the latest report about the page is obsolete, use the requestRetest tool the same way. For detailed documentation, call the getOverview tool.`
   });
   server.registerTool(
     'getOverview',
@@ -237,40 +234,20 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Submits a request to test a page of a site that is not in the listSites output; for a page of a site in that output, use requestPageTest instead. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The siteName and pageName become the names of the site and page in later listSites and listPages output, and the reason is what the reviewer evaluates. A site name matching that of a tested site (ignoring case, white space, and punctuation) is refused. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates and similar sites. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Submits a request to test a page that has no report yet. Identify its site with siteID if the site is in the listSites output (check the listPages output for that site first), or otherwise name the site with siteName; give exactly one of them. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The pageName becomes the name of the page in later listPages output and must differ from the names of the other pages of the site; a siteName becomes the name of a new site and must not match the name of a tested site (ignoring case, white space, and punctuation). The reason is what the reviewer evaluates. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates and similar sites. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
-        title: 'Request testing of a page of a new site',
+        title: 'Request testing of a new page',
         readOnlyHint: false,
         idempotentHint: false,
         destructiveHint: false,
         openWorldHint: true
       }
     },
-    async ({siteName, pageName, URL, reason, reviewImmediately = false}) => {
-      const result = await requestNewTestAPI.response([siteName, pageName, URL, reason, String(reviewImmediately === true)]);
+    async ({siteID = '', siteName = '', pageName, URL, reason, reviewImmediately = false}) => {
+      const result = await requestNewTestAPI.response([siteID, siteName, pageName, URL, reason, String(reviewImmediately === true)]);
       await recordMetric('mcpToolCalls', 'requestNewTest');
-      return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
-    }
-  );
-  server.registerTool(
-    'requestPageTest',
-    {
-      description: 'Submits a request to test a page, not yet tested, of a site in the listSites output; for a page of another site, use requestNewTest instead. The siteID comes from listSites, and the listPages output for it shows the tested pages of the site, so check it first. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The pageName becomes the name of the page in later listPages output and must differ from the names of the other pages of the site, and the reason is what the reviewer evaluates. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
-      inputSchema: requestPageTestSchema,
-      outputSchema: requestPageTestResponseSchema,
-      annotations: {
-        title: 'Request testing of a new page of a tested site',
-        readOnlyHint: false,
-        idempotentHint: false,
-        destructiveHint: false,
-        openWorldHint: true
-      }
-    },
-    async ({siteID, pageName, URL, reason, reviewImmediately = false}) => {
-      const result = await requestPageTestAPI.response([siteID, pageName, URL, reason, String(reviewImmediately === true)]);
-      await recordMetric('mcpToolCalls', 'requestPageTest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
   );
@@ -317,7 +294,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'awaitTest',
     {
-      description: 'Waits for a job that a requestNewTest, requestPageTest, or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
+      description: 'Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {

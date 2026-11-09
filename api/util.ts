@@ -94,7 +94,7 @@ export const getToolsFacts = () => ({
       'level 4': 'Use the listDiagnoses tool to get a list of diagnoses of how one element on one page exhibited one issue in one report.',
     },
     'how to generate more findings': {
-      'new testing': 'If no report is available yet about a page, use the requestPageTest tool to request that it be tested if its site is in the listSites output, or otherwise the requestNewTest tool; for immediate testing set the reviewImmediately parameter to true. A request for immediate testing of a page that may already have been tested is referred to management review.',
+      'new testing': 'If no report is available yet about a page, use the requestNewTest tool to request that it be tested, identifying its site by siteID if the site is in the listSites output, or otherwise naming its site by siteName; for immediate testing set the reviewImmediately parameter to true. A request for immediate testing of a page that may already have been tested is referred to management review.',
       'retesting': 'If you believe that the latest report about a page is obsolete (e.g., because the page has been revised), use the requestRetest tool to request that the page be retested; for immediate retesting set its reviewImmediately parameter to true.',
       'approval': 'Requests are reviewed by management, usually in 1 hour to one day. Orders are reviewed immediately. Reviews result in approval or rejection.',
       'latency': 'An approved test typically finishes in 2 to 4 minutes.',

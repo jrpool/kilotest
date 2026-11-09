@@ -50,6 +50,8 @@ after(() => {
 
 // FUNCTIONS
 
+// Returns the response to a request naming a new site.
+const submit = (args: string[]) => response(['', ...args]);
 // Returns the details and disposition of a response.
 const getContent = (body: Awaited<ReturnType<typeof response>>) => ({
   details: body['response content']['details about your request'] as any,
@@ -62,7 +64,7 @@ const alerted = () => logged.some(line => line.includes('request for a new test 
 
 test('requestNewTest rejects names, reasons, and URLs of invalid length or form', async () => {
   const cases: [string[], string][] = [
-    [['', 'home', 'https://example.org/', reason], 'site name'],
+    [['', 'home', 'https://example.org/', reason], 'exactly one of siteID'],
     [['x'.repeat(81), 'home', 'https://example.org/', reason], 'site name'],
     [['Org', '  ', 'https://example.org/', reason], 'page name'],
     [['Org', 'x'.repeat(121), 'https://example.org/', reason], 'page name'],
@@ -72,7 +74,7 @@ test('requestNewTest rejects names, reasons, and URLs of invalid length or form'
     [['Org', 'home', 'not-a-valid-url', reason], 'invalid URL']
   ];
   for (const [args, fragment] of cases) {
-    const {details, disposition} = getContent(await response(args));
+    const {details, disposition} = getContent(await submit(args));
     assert.ok(details.error.includes(fragment), `${args.join('|')}: ${details.error}`);
     assert.equal(disposition, null);
   }
@@ -82,7 +84,7 @@ test('requestNewTest rejects names, reasons, and URLs of invalid length or form'
 test('requestNewTest rejects a private-address URL unless internal targets are allowed', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   try {
-    const {details} = getContent(await response(['Internal', 'home', 'https://192.168.1.1/page', reason]));
+    const {details} = getContent(await submit(['Internal', 'home', 'https://192.168.1.1/page', reason]));
     assert.ok(details.error.includes('does not resolve to a page that this deployment can test'));
     assert.ok(!alerted());
   }
@@ -95,7 +97,7 @@ test('requestNewTest rejects a URL that redirects to a disallowed target, and al
   delete process.env.ALLOW_INTERNAL_TARGETS;
   t.mock.method(globalThis, 'fetch', async () => ({url: 'https://10.0.0.5/page'}) as Response);
   try {
-    const {details} = getContent(await response(['Redirector', 'home', 'https://example.com/redirector', reason]));
+    const {details} = getContent(await submit(['Redirector', 'home', 'https://example.com/redirector', reason]));
     assert.ok(details.error.includes('does not resolve to a page that this deployment can test'));
     assert.ok(logged.some(line =>
       line.includes('WARNING (Kilotest: request rejected for redirecting to a disallowed target)')
@@ -111,7 +113,7 @@ test('requestNewTest compares the URL to which the requested URL redirects with 
   delete process.env.ALLOW_INTERNAL_TARGETS;
   t.mock.method(globalThis, 'fetch', async () => ({url: 'https://example.com/mixed'}) as Response);
   try {
-    const {disposition} = getContent(await response(['Redirector', 'home', 'https://example.com/redirector', reason]));
+    const {disposition} = getContent(await submit(['Redirector', 'home', 'https://example.com/redirector', reason]));
     assert.equal(disposition['possible duplicates'][0].identifier, 'p-mixedout');
     assert.equal(disposition['possible duplicates'][0]['identifier of the latest report'], '260202T0000-new');
   }
@@ -121,7 +123,7 @@ test('requestNewTest compares the URL to which the requested URL redirects with 
 });
 
 test('requestNewTest refuses a site name matching that of an existing site', async () => {
-  const {details, disposition} = getContent(await response(['  fixture   SITE. ', 'home', 'https://fixture.example/', reason]));
+  const {details, disposition} = getContent(await submit(['  fixture   SITE. ', 'home', 'https://fixture.example/', reason]));
   assert.equal(details['page to be tested']['site name'], 'fixture SITE.');
   assert.ok(disposition['what happens next'].includes('a site named “Fixture Site” (identifier s-fixtur) already exists'));
   assert.ok(!alerted());
@@ -129,18 +131,18 @@ test('requestNewTest refuses a site name matching that of an existing site', asy
 
 test('requestNewTest refuses a page whose URL is that of a queued job', async () => {
   writeFixtureJob('queue', 'queued', {target: {url: 'https://example.com/queued-url'}});
-  const {disposition} = getContent(await response(['Queued Org', 'home', 'https://example.com/queued-url', reason]));
+  const {disposition} = getContent(await submit(['Queued Org', 'home', 'https://example.com/queued-url', reason]));
   assert.ok(disposition['what happens next'].includes('a page with an equivalent URL is already approved'));
 });
 
 test('requestNewTest refuses a duplicate request', async () => {
-  await response(['Dup Org', 'home', 'https://example.com/dup-api', reason]);
-  const {disposition} = getContent(await response(['Dup Org', 'home', 'https://example.com/dup-api', reason]));
+  await submit(['Dup Org', 'home', 'https://example.com/dup-api', reason]);
+  const {disposition} = getContent(await submit(['Dup Org', 'home', 'https://example.com/dup-api', reason]));
   assert.ok(disposition['what happens next'].includes('an identical request is already awaiting approval.'));
 });
 
 test('requestNewTest records a valid request for management review and alerts a manager', async () => {
-  const body = await response(['Brand New Org', 'home', 'https://example.com/brandnew', reason]);
+  const body = await submit(['Brand New Org', 'home', 'https://example.com/brandnew', reason]);
   const {details, disposition} = getContent(body);
   assert.deepEqual(details['page to be tested'], {
     'site identifier': null,
@@ -160,7 +162,7 @@ test('requestNewTest records a valid request for management review and alerts a 
 });
 
 test('requestNewTest refers a request for immediate review with a possible duplicate to management review', async () => {
-  const body = await response(['Mixed Org', 'home', 'https://www.example.com/mixed/', reason, 'true']);
+  const body = await submit(['Mixed Org', 'home', 'https://www.example.com/mixed/', reason, 'true']);
   const {disposition} = getContent(body);
   assert.ok(disposition['what happens next'].startsWith('Your request was referred to management review'));
   assert.equal(disposition['whether your request was referred to management review'], true);
@@ -178,7 +180,7 @@ test('requestNewTest refers a request for immediate review with a possible dupli
 });
 
 test('requestNewTest lists similar sites with their counts of tested pages', async () => {
-  const {disposition} = getContent(await response(['Fixture Site (FS)', 'home', 'https://fs.example/', reason, 'true']));
+  const {disposition} = getContent(await submit(['Fixture Site (FS)', 'home', 'https://fs.example/', reason, 'true']));
   assert.deepEqual(disposition['similar sites'], [{
     identifier: 's-fixtur',
     name: 'Fixture Site',
@@ -188,7 +190,7 @@ test('requestNewTest lists similar sites with their counts of tested pages', asy
 });
 
 test('requestNewTest orders a test of a request that passes every check under immediate review', async () => {
-  const body = await response(['Instant Org', 'home', 'https://example.com/instant', reason, 'true']);
+  const body = await submit(['Instant Org', 'home', 'https://example.com/instant', reason, 'true']);
   const {details, disposition} = getContent(body);
   assert.match(details['page to be tested']['site identifier'], /^s-[0-9a-z]{6}$/);
   assert.match(details['page to be tested']['page identifier'], /^p-[0-9a-z]{8}$/);
@@ -200,8 +202,8 @@ test('requestNewTest orders a test of a request that passes every check under im
 test('requestNewTest refuses a request with a fallback channel when the queue is full', async () => {
   process.env.TEST_REQUEST_QUEUE_MAX = '1';
   try {
-    await response(['Filler Org', 'home', 'https://example.com/filler', reason]);
-    const body = await response(['One Too Many Org', 'home', 'https://www.example.com/mixed', reason]);
+    await submit(['Filler Org', 'home', 'https://example.com/filler', reason]);
+    const body = await submit(['One Too Many Org', 'home', 'https://www.example.com/mixed', reason]);
     const {disposition} = getContent(body);
     assert.ok(disposition['what happens next'].includes('too many requests are awaiting approval right now.'));
     assert.ok(disposition['what happens next'].includes('info@kilotest.com'));
@@ -215,11 +217,77 @@ test('requestNewTest refuses a request with a fallback channel when the queue is
 });
 
 test('requestNewTest describes its request and ancestor', async () => {
-  const body = await response(['Org', 'home', 'https://example.org/', reason, 'true']);
+  const body = await submit(['Org', 'home', 'https://example.org/', reason, 'true']);
   assert.equal(body['tool name'], 'requestNewTest');
   assert.deepEqual(body['this request'].body, {
     siteName: 'Org', pageName: 'home', URL: 'https://example.org/', reason, reviewImmediately: true
   });
   assert.equal(body['this request']['closest ancestor request']['tool name'], 'listSites');
   assert.equal(body['URLs of similar requests for web users']['closest ancestor request'], 'https://kilotest.example.com/listSites.html');
+});
+
+
+test('requestNewTest with a siteID rejects a malformed site identifier and invalid page names', async () => {
+  const cases: [string[], string][] = [
+    [['fixtur', '', 'About', 'https://example.com/about', reason], 'siteID is malformed'],
+    [['s-fixtur', 'Also Named', 'About', 'https://example.com/about', reason], 'exactly one of siteID'],
+    [['s-fixtur', '', '', 'https://example.com/about', reason], 'page name'],
+    [['s-fixtur', '', 'x'.repeat(121), 'https://example.com/about', reason], 'page name']
+  ];
+  for (const [args, fragment] of cases) {
+    const {details, disposition} = getContent(await response(args));
+    assert.ok(details.error.includes(fragment), details.error);
+    assert.equal(disposition, null);
+  }
+});
+
+test('requestNewTest with a siteID refuses a nonexistent site and an existing page name', async () => {
+  const noSite = getContent(await response(['s-zzzzzz', '', 'About', 'https://example.com/about', reason]));
+  assert.equal(noSite.details['page to be tested']['site identifier'], 's-zzzzzz');
+  assert.ok(noSite.disposition['what happens next'].includes('the specified site does not exist.'));
+  const pageExists = getContent(await response(['s-fixtur', '', 'MIXED  outcomes', 'https://example.com/about', reason]));
+  assert.equal(pageExists.details['page to be tested']['page name'], 'MIXED outcomes');
+  assert.ok(pageExists.disposition['what happens next'].includes('“Mixed Outcomes” (identifier p-mixedout)'));
+});
+
+test('requestNewTest with a siteID records a valid request for management review', async () => {
+  const body = await response(['s-fixtur', '', 'About', 'https://example.com/about', reason]);
+  const {details, disposition} = getContent(body);
+  assert.deepEqual(details['page to be tested'], {
+    'site identifier': 's-fixtur',
+    'site name': 'Fixture Site',
+    'page identifier': null,
+    'page name': 'About',
+    URL: 'https://example.com/about'
+  });
+  assert.ok(disposition['how you can check for completion'].includes('siteID "s-fixtur"'));
+  assert.deepEqual(readFixtureRequests()['https://example.com/about']?.[0]?.target, {
+    siteID: 's-fixtur', pageName: 'About', url: 'https://example.com/about'
+  });
+  assert.deepEqual(requestNewTestResponseSchema.parse(body), body);
+});
+
+test('requestNewTest with a siteID orders a test under immediate review and refers a possible duplicate', async () => {
+  const ordered = await response(['s-fixtur', '', 'About', 'https://example.com/about', reason, 'true']);
+  assert.match(getContent(ordered).disposition['report identifier'], /^\d{6}T\d{4}-[0-9a-z]{3}$/);
+  assert.deepEqual(requestNewTestResponseSchema.parse(ordered), ordered);
+  const referred = getContent(await response(['s-fixtur', '', 'Branch Again', 'https://example.com/branch', reason, 'true']));
+  assert.equal(referred.disposition['whether your request was referred to management review'], true);
+  assert.equal(referred.disposition['possible duplicates'][0].identifier, 'p-branchco');
+  // A request for a page with a queued job is refused.
+  writeFixtureJob('queue', 'queued', {target: {url: 'https://example.com/queued'}});
+  const queued = getContent(await response(['s-fixtur', '', 'Queued', 'https://example.com/queued', reason, 'true']));
+  assert.ok(queued.disposition['what happens next'].includes('equivalent URL is already approved'));
+});
+
+test('requestNewTest with a siteID describes its request and ancestor', async () => {
+  const body = await response(['s-fixtur', '', 'About', 'https://example.com/about', reason]);
+  assert.equal(body['tool name'], 'requestNewTest');
+  assert.deepEqual(body['this request'].body, {
+    siteID: 's-fixtur', pageName: 'About', URL: 'https://example.com/about', reason, reviewImmediately: false
+  });
+  assert.equal(body['this request']['closest ancestor request'].URL, 'https://kilotest.example.com/api/listPages/s-fixtur');
+  assert.equal(
+    body['URLs of similar requests for web users']['this request'], 'https://kilotest.example.com/requestNewTestForm.html/s-fixtur'
+  );
 });

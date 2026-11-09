@@ -73,7 +73,7 @@ const populateQuery = async (query: Record<string, string>) => {
   // Add the lines to the query, as an introduced list if there are any, or else a no-sites message.
   query.testedSites = siteCounts.length
   ? [
-    `${margin}<p>Get the tested pages of:</p>`,
+    `${margin}<p>Get test results for:</p>`,
     `${margin}<ul>`,
     ...lines,
     `${margin}</ul>`

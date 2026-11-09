@@ -76,7 +76,7 @@ export const answer = async (siteID: string) => {
     siteName: htmlSafe(siteName),
     // Add the list items as an introduced list if there are any, or else a no-pages message.
     testedPages: items.length
-      ? [`${margin}<p>Get test results for:</p>`, `${margin}<ul>`, ...items, `${margin}</ul>`].join('\n')
+      ? [`${margin}<p>To get test results, choose a page.</p>`, `${margin}<ul>`, ...items, `${margin}</ul>`].join('\n')
       : `${margin}<p>No pages of this site have been tested yet.</p>`
   };
   // Return the populated page.

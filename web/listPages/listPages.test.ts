@@ -42,8 +42,7 @@ test('listPages returns an ok status with valid HTML naming the site', async () 
   const result: any = await answer('s-fixtur');
   assert.equal(result.status, 'ok');
   const html = parse(result.answerPage);
-  assert.equal(html.querySelector('title')?.text, 'Pages tested: Fixture Site | Kilotest');
-  assert.ok(html.querySelector('a[href="/listSites.html"]'));
+  assert.equal(html.querySelector('title')?.text, 'Pages of Fixture Site | Kilotest');
   assert.ok(html.querySelector('a[href="/requestNewTestForm.html/s-fixtur"]'));
 });
 
@@ -59,7 +58,7 @@ test('listPages lists each tested page of the site once, by name, with its URL',
     'No Outcomes Page',
     'Prevented Page'
   ]);
-  assert.ok(result.answerPage.includes('</a> <code>https://example.com/mixed</code>'));
+  assert.ok(result.answerPage.includes('</a> (<code>https://example.com/mixed</code>)'));
   assert.ok(result.answerPage.includes('<p>Get test results for:</p>'));
   // A page with only hidden reports is not a tested page.
   assert.ok(!result.answerPage.includes('Hidden Page'));

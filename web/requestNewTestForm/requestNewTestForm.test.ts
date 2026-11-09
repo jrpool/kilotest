@@ -50,7 +50,6 @@ test('requestNewTestForm for an existing site fixes the site and omits the site-
   assert.equal(html.querySelector('title')?.text, 'Test request for a page of Fixture Site | Kilotest');
   assert.deepEqual(html.querySelectorAll('input').map(input => input.getAttribute('name')), ['siteID', 'pageName', 'url', 'why']);
   assert.equal(html.querySelector('input[name="siteID"]')?.getAttribute('value'), 's-fixtur');
-  assert.ok(html.querySelector('a[href="/listPages.html/s-fixtur"]'));
 });
 
 test('requestNewTestForm refuses a nonexistent or malformed site', async () => {

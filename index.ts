@@ -313,6 +313,16 @@ export const renamedPagePrefixes: Record<string, {to: string; renameDate: string
   requestTestForm: {to: 'requestNewTestForm', renameDate: '2026-09-28', retireAfter: '2027-03-28'},
   tutorial: {to: 'tutorialWeb', renameDate: '2026-11-06', retireAfter: '2027-05-06'}
 };
+// Pages whose report-identifying path tails once used two segments (a timeStamp
+// segment and a jobID segment) where they now use one reportID segment (see
+// docs/decisions/009-report-id.md). Each value gives the index of the first
+// legacy segment within the path tail, the total segment count of the legacy
+// tail, and the date after which the redirect is to be retired. Only listIssues
+// is listed: links to it in the two-segment form were distributed to tested-site
+// owners, so it is the page with demonstrated legacy-link traffic.
+export const legacyReportTails: Record<string, {idIndex: number; segmentCount: number; retireAfter: string}> = {
+  listIssues: {idIndex: 0, segmentCount: 2, retireAfter: '2027-02-10'}
+};
 const jobLock = createLock();
 
 // FUNCTIONS
@@ -331,6 +341,25 @@ const matchPath = (pattern: string, pathname: string) => {
 export const isPathAllowed = (method: string, pathname: string): boolean => {
   const patterns = (routes as Record<string, string[]>)[method] || [];
   return patterns.some(pattern => matchPath(pattern, pathname));
+};
+// Returns the single-reportID path that a legacy two-segment report path tail (one
+// identifying a report with separate timeStamp and jobID segments) canonicalizes to
+// for a page under its current name, or null if the page has no legacy form or the
+// tail lacks its shape.
+const getLegacyReportURL = (topic: string, pathTail: string): string | null => {
+  const legacy = legacyReportTails[topic];
+  if (!legacy) {
+    return null;
+  }
+  const segments = pathTail.split('/');
+  const reportID = `${segments[legacy.idIndex]}-${segments[legacy.idIndex + 1]}`;
+  if (segments.length !== legacy.segmentCount || !isReportID(reportID)) {
+    return null;
+  }
+  const newTail = [
+    ...segments.slice(0, legacy.idIndex), reportID, ...segments.slice(legacy.idIndex + 2)
+  ].join('/');
+  return `/${topic}.html/${newTail}`;
 };
 // Serves or sends an error message.
 export const serveError = async (error: Record<string, unknown>, response: ServerResponse, isHumanUser = true, statusCode = 400): Promise<void> => {
@@ -753,12 +782,15 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);
       // Compute the path in the current request signature: the current name if the
-      // page name is a pre-rename one.
+      // page name is a pre-rename one, and the single-reportID tail if the tail
+      // identifies a report with the legacy two-segment form (a timeStamp segment
+      // and a jobID segment).
       // A request for the list of tested pages without a site, which listed all tested pages before sites existed, is a request for the list of tested sites.
       const canonicalTopic = topic === 'listPages' && !pathTail ? 'listSites' : renamedPagePrefixes[topic]?.to ?? topic;
-      const canonicalPath = `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
+      const canonicalPath = getLegacyReportURL(canonicalTopic, pathTail) ??
+        `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
       // If the request signature contains any obsolete element (a pre-rename page
-      // name or a query string, which no GET
+      // name, a legacy two-segment report tail, or a query string, which no GET
       // page handler reads, since the search argument passed to answer() is
       // consumed only for POST requests, where it is reconstructed from the
       // request body), convert all of them at once by redirecting the request

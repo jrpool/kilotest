@@ -461,11 +461,18 @@ body.styled .page ol, body.styled .page ul {
 }
 body.styled ul.links {
   columns: 16rem 3;
-  column-gap: 2.5rem;
+  column-gap: 1.6rem;
+  column-rule: 2px solid var(--accent);
+  list-style: none;
+  padding-left: 0;
 }
 body.styled ul.links li {
   margin-bottom: 0.4rem;
   break-inside: avoid;
+}
+body.styled ul.links li > a {
+  margin-right: 0;
+  padding-left: 0.9rem;
 }
 body.styled .page h3 {
   margin: 1.25rem 0 0.4rem;

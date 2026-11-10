@@ -1,6 +1,7 @@
 <header>
       <div class="header-inner">
-        <a class="brand" href="/">__logo__<span class="brand-name">Kilotest</span></a>
+        __logo__
+        <p class="brand"><a href="/">Kilotest</a></p>
         <p class="brand-tag">Ensemble front-end testing</p>
       </div>
     </header>

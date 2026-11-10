@@ -97,34 +97,26 @@ header {
   border-bottom: 2px solid var(--line);
 }
 .header-inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.55rem;
   max-width: 64rem;
   margin-inline: auto;
   padding: 0.75rem 1.5rem;
 }
+.header-inner > svg {
+  grid-row: span 2;
+  height: 100%;
+  width: auto;
+}
 .brand {
-  display: block;
-  padding-block: 0.4rem;
+  margin: 0;
   font-weight: 800;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   letter-spacing: -0.02em;
-}
-a.brand {
-  color: var(--accent);
-  text-decoration: none;
-}
-a.brand .brand-name {
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-}
-.brand svg {
-  width: 1.35rem;
-  height: 1.35rem;
-  margin-right: 0.55rem;
-  vertical-align: -0.2em;
 }
 .brand-tag {
   margin: 0;
-  font-size: 0.85rem;
   color: var(--muted);
 }
 .hero {

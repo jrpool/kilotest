@@ -278,7 +278,7 @@ body.styled p {
 }
 body.styled header {
   background: var(--card);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 2px solid var(--line);
 }
 body.styled .header-inner {
   max-width: 64rem;
@@ -497,7 +497,7 @@ body.styled .warn {
 }
 body.styled footer {
   background: var(--card);
-  border-top: 1px solid var(--line);
+  border-top: 2px solid var(--line);
 }
 body.styled .footer-inner {
   max-width: 64rem;
@@ -510,10 +510,5 @@ body.styled .footer-inner ul {
   gap: 0.25rem 1.75rem;
 }
 body.styled .footer-inner a {
-  font-size: 0.9rem;
-  color: var(--muted);
-}
-body.styled .footer-inner a:hover {
-  color: var(--accent);
-  background-color: transparent;
+  margin-right: 0;
 }

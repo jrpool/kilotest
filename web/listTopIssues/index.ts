@@ -135,14 +135,12 @@ const populateQuery = async (query: Record<string, any>) => {
         lines.push(`${margin}      <li>Share of violations: ${percentage}%</li>`);
         lines.push(`${margin}      <li>Violations reported by ${reporters}</li>`);
         lines.push(`${margin}    </ul>`);
-        lines.push(`${margin}    <ul class="nav">`);
         const linkText = 'What rules belong to this issue?';
         const label = `What rules belong to the <q>${summary}</q> issue?`;
         const href = `/listRules.html/${issueID}`;
         lines.push(
-          `${margin}      <li><a href="${href}" aria-label="${label}">${linkText}</a></li>`
+          `${margin}    <p class="links"><a href="${href}" aria-label="${label}">${linkText}</a></p>`
         );
-        lines.push(`${margin}    </ul>`);
         lines.push(`${margin}  </li>`);
       }
     });

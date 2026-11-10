@@ -102,19 +102,11 @@ header {
   padding: 0.75rem 1.5rem;
 }
 .brand {
-  display: block;
+  margin: 0;
   padding-block: 0.4rem;
   font-weight: 800;
   font-size: 1.25rem;
   letter-spacing: -0.02em;
-}
-a.brand {
-  color: var(--accent);
-  text-decoration: none;
-}
-a.brand .brand-name {
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
 }
 .brand svg {
   width: 1.35rem;

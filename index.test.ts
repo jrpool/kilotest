@@ -1029,6 +1029,17 @@ test('GET /reportIssues.html/<reportID> redirects to the equivalent /listIssues.
   assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
 });
 
+test('GET /listIssues.html/<timeStamp>/<jobID> redirects to the single-reportID URL', async () => {
+  const res = await request('GET', '/listIssues.html/260101T0000/mix', {}, {followRedirects: false});
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers['location'], '/listIssues.html/260101T0000-mix');
+});
+
+test('GET /listIssues.html/<timeStamp>/<jobID> with an invalid identifier does not redirect', async () => {
+  const res = await request('GET', '/listIssues.html/notATimeStamp/mix', {}, {followRedirects: false});
+  assert.notEqual(res.statusCode, 301);
+});
+
 test('GET /tutorial.html redirects to /tutorialWeb.html', async () => {
   const res = await request('GET', '/tutorial.html', {}, {followRedirects: false});
   assert.equal(res.statusCode, 301);
@@ -1044,6 +1055,18 @@ test('no renamedPagePrefixes redirect is past its retireAfter date', () => {
     expired,
     [],
     `Expired renamedPagePrefixes redirects in index.ts: ${expired.join(', ')}. Remove each expired entry and any test in index.test.ts that exercises it, or extend its retireAfter date if retirement must be postponed.`
+  );
+});
+
+test('no legacyReportTails redirect is past its retireAfter date', () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const expired = Object.keys(indexModule.legacyReportTails).filter(
+    name => indexModule.legacyReportTails[name]!.retireAfter < today
+  );
+  assert.deepEqual(
+    expired,
+    [],
+    `Expired legacyReportTails redirects in index.ts: ${expired.join(', ')}. Remove each expired entry and any test in index.test.ts that exercises it, or extend its retireAfter date if retirement must be postponed.`
   );
 });
 

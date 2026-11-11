@@ -45,7 +45,6 @@ The external features that support the use of Kilotest as a collection of AI too
 - A [pull request](https://github.com/public-apis/public-apis/pull/6346/changes) to add Kilotest to the list of public APIs in the `public-apis` repository.
 - An [issue](https://github.com/APIs-guru/openapi-directory/issues/2677) to add Kilotest to `openapi-directory`.
 - A [pull request](https://github.com/w3c/wai-evaluation-tools-list/pull/1153) to add Kilotest to the WAI evaluation tools list.
-- A submission, currently in review, of Kilotest as a [plugin to OpenAI](https://platform.openai.com/plugins?mcp=server%3Akilotest), with organization ID `org-HOt5F01qJGQcl6V0sHj9HWr3`. The OpenAI “Scan Tools” function succeeded without the expected demand for 3 hint justifications per tool, such as (for listDiagnoses) readOnlyHint: true — "The tool only retrieves stored report data; it modifies nothing." openWorldHint: false — "It reads only Kilotest's own database of reports; users can select among stored results but cannot direct it to arbitrary external resources." destructiveHint: false — "It deletes or overwrites nothing."
 - Registration of Kilotest as an active server in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.jrpool/kilotest), maintained by the [Model Context Protocol](https://modelcontextprotocol.io/) project. The [PulseMCP](https://www.pulsemcp.com/servers) directory and the VS Code MCP gallery both crawl this registry, so Kilotest is discoverable through them with no separate submission.
 - Registration of Kilotest with the [Smithery](https://smithery.ai/servers/pool/kilotest) MCP server registry.
 - Registration of Kilotest with the [Glama](https://glama.ai/mcp/connectors/com.kilotest/kilotest) MCP server registry, including a claim of ownership of the MCP connector by the maintainer via a `TXT` DNS record for `_glama-claim.kilotest.com`, with the value `glama_claim_gVV4HrPdcXr9TEfj1p3icEUBJ3_OVJGX`.
@@ -54,6 +53,7 @@ The external features that support the use of Kilotest as a collection of AI too
 - Registration of Kilotest with the [LobeHub MCP Market](https://lobehub.com/mcp) (identifier: `jrpool-kilotest`), enabled with an `lhm.plugin.json` file.
 - Registration of Kilotest with [MCPTry](https://mcptry.com/servers/io.github.jrpool/kilotest).
 - Registration of the MCP server as a community connector in the [Claude directory of plugins and connectors](https://claude.ai/directory/kilotest).
+- Registration and publication of Kilotest as an approved [plugin at OpenAI](https://chatgpt.com/plugins/plugin_asdk_app_6ade293658c081918aeaa3e249b9a53b).
 - Registration of Kilotest and its sitemap at [Google Search Console](https://search.google.com/search-console?resource_id=sc-domain:kilotest.com) and [Bing Webmaster Tools](https://www.bing.com/webmasters/home?siteUrl=https://kilotest.com/).
 - Submission of the MCP server to `mcp.directory`.
 - Submission of the MCP server to [MCP.so](https://mcp.so/). The submission is in review.

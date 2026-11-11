@@ -356,8 +356,16 @@ const getSharedContent = async (): Promise<{head: string, header: string, header
     const logo = (await fs.readFile(path.join(import.meta.dirname, 'logo.svg'), 'utf8')).trimEnd();
     const header = (await fs.readFile(path.join(webDir, 'header.partial'), 'utf8')).trimEnd()
     .replace(/__logo__/g, () => logo);
+    // A short content hash of the stylesheet, appended to its URL as a query so that a
+    // deployment changing it busts the long-lived caches its response headers permit.
+    const styleVersion = crypto
+    .createHash('sha256')
+    .update(await fs.readFile(path.join(import.meta.dirname, 'style.css'), 'utf8'))
+    .digest('hex')
+    .slice(0, 12);
     sharedContent = {
-      head: (await fs.readFile(path.join(webDir, 'head.partial'), 'utf8')).trimEnd(),
+      head: (await fs.readFile(path.join(webDir, 'head.partial'), 'utf8')).trimEnd()
+      .replace(/__styleVersion__/g, styleVersion),
       header,
       // The home page gets the same header with its brand as text, not a link to itself.
       headerNL: header.replace('<a href="/">Kilotest</a>', 'Kilotest'),

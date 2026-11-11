@@ -98,7 +98,7 @@ header {
 }
 .header-inner {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   column-gap: 0.55rem;
   max-width: 64rem;
   margin-inline: auto;
@@ -106,8 +106,9 @@ header {
 }
 .header-inner > svg {
   grid-row: span 2;
-  height: 100%;
-  width: auto;
+  align-self: center;
+  height: 4rem;
+  width: 4rem;
 }
 .brand {
   margin: 0;

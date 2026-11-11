@@ -1,0 +1,11 @@
+[
+  {
+    "timeStamp": "261111T2014",
+    "issueID": "linkNoText",
+    "reportID": "260101T0000-mix",
+    "catalogIndex": "0",
+    "engineID": "axe",
+    "ruleID": "r11",
+    "reason": "The element does have an accessible name"
+  }
+]

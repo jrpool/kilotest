@@ -479,3 +479,88 @@ test('handleMCP rejects a GET request with a 405 JSON-RPC error', async () => {
     await closeMCPServer(server);
   }
 });
+
+// LEGACY-CONTRACT GUIDANCE TESTS
+
+// Helper: sends a tools/call request and returns its parsed JSON-RPC response, whether JSON or SSE.
+const callTool = async (port: number, name: string, args: any) => {
+  const res = await sendMCPRequest(port, 'tools/call', {name, arguments: args}, 9);
+  assert.equal(res.statusCode, 200);
+  return res.headers['content-type'].startsWith('application/json') ? JSON.parse(res.body) : parseSSEResult(res.body);
+};
+
+test('handleMCP answers legacy tool calls with guidance', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    const orderNew = await callTool(port, 'orderNewTest', {description: 'x', URL: 'https://example.com', reason: 'r'});
+    assert.equal(orderNew.id, 9);
+    assert.equal(orderNew.result.isError, true);
+    assert.ok(orderNew.result.content[0].text.includes('requestNewTest'));
+    assert.ok(orderNew.result.content[0].text.includes('listSites'));
+    const orderRetest = await callTool(port, 'orderRetest', {reportID: '260101T0000-mix', reason: 'r'});
+    assert.equal(orderRetest.result.isError, true);
+    assert.ok(orderRetest.result.content[0].text.includes('requestRetest'));
+    const overview = await callTool(port, 'getKilotestOverview', {});
+    assert.equal(overview.result.isError, false);
+    assert.ok(overview.result.content[0].text.includes('listSites'));
+    const listPages = await callTool(port, 'listPages', {});
+    assert.equal(listPages.result.isError, true);
+    assert.ok(listPages.result.content[0].text.includes('siteID'));
+    const requestNew = await callTool(port, 'requestNewTest', {description: 'x', URL: 'https://example.com', reason: 'r'});
+    assert.equal(requestNew.result.isError, true);
+    assert.ok(requestNew.result.content[0].text.includes('pageName'));
+    assert.ok(getToolCallCount('legacy:orderNewTest') >= 1);
+  }
+  finally {
+    await closeMCPServer(server);
+  }
+});
+
+test('handleMCP passes current-contract calls through and still lists 12 tools', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    const sites = await callTool(port, 'listSites', {});
+    assert.ok(!sites.result.isError);
+    const list = parseSSEResult((await sendMCPRequest(port, 'tools/list', {}, 3)).body);
+    assert.equal(list.result.tools.length, 12);
+  }
+  finally {
+    await closeMCPServer(server);
+  }
+});
+
+test('handleMCP rejects a malformed body with a parse error', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    const res = await new Promise<any>((resolve, reject) => {
+      const req = http.request({port, method: 'POST', path: '/mcp', headers: {'content-type': 'application/json', accept: 'application/json, text/event-stream'}}, r => {
+        let data = '';
+        r.on('data', c => {
+          data += c;
+        });
+        r.on('end', () => resolve({statusCode: r.statusCode, body: data}));
+      });
+      req.on('error', reject);
+      req.end('{not json');
+    });
+    assert.equal(res.statusCode, 400);
+    assert.equal(JSON.parse(res.body).error.code, -32700);
+  }
+  finally {
+    await closeMCPServer(server);
+  }
+});
+
+test('no legacyMCPCalls entry is past its retireAfter date', async () => {
+  const {legacyMCPCalls} = await import('./mcp.ts');
+  const today = new Date().toISOString().slice(0, 10);
+  const expired = Object.keys(legacyMCPCalls).filter(name => legacyMCPCalls[name]!.retireAfter < today);
+  assert.deepEqual(
+    expired,
+    [],
+    `Expired legacyMCPCalls entries in mcp.ts: ${expired.join(', ')}. Remove each expired entry and its assertions in mcp.test.ts (and, once none remain, the whole legacy-contract section), or extend its retireAfter date if retirement must be postponed.`
+  );
+});

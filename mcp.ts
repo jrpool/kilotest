@@ -56,7 +56,9 @@ const maxBodyBytes = 4 * 1024 * 1024;
 // Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by the getOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
   sharedContext,
-  'Typical workflow: Suppose a user wants information about the quality of a website or a particular website page. Call the listSites tool to learn whether the site has been tested. If it has, call the listPages tool to learn which pages of the site have been tested. If any of them will suffice, drill down as far as needed to satisfy the user, calling the listIssues, listViolators, and/or listDiagnoses tools. If the full machine-oriented JSON report is wanted for analysis outside of Kilotest, call the getReport tool instead of drilling down beyond the listPages tool. If needed results have not been published, you can call the requestNewTest tool or, for a page with published but outdated results, the requestRetest tool. For both of those tools, if you set the optional reviewImmediately parameter to true, then your request is immediately reviewed, and, if approved, it typically takes 2 to 4 minutes to reach test completion, which you can optionally await by calling the awaitTest tool. To check later instead, call the listIssues tool. Each tool provides the parameter(s) required by the next tool in the drill-down sequence. On any error in a tool call, an error message explains the error.',
+  'Typical workflow: Suppose a user wants information about the quality of a website or a particular website page. Call the listSites tool to learn whether the site has been tested. If it has, call the listPages tool to learn which pages of the site have been tested. If any of them will suffice, drill down as far as needed to satisfy the user, calling the listIssues, listViolators, and/or listDiagnoses tools. If the full machine-oriented JSON report is wanted for analysis outside of Kilotest, call the getReport tool instead of drilling down beyond the listPages tool.',
+  'Requesting more testing: If needed results have not been published, you can call the requestNewTest tool or, for a page with published but outdated results, the requestRetest tool. For both tools, if you set the optional reviewImmediately parameter to true, then your request is immediately reviewed, and, if approved, it typically takes 2 to 4 minutes to reach test completion, which you can optionally await by calling the awaitTest tool. If the parameter is not set to true or is absent, review and, on approval, testing typically take an hour to a day. Also set reason to a justification that will be considered by the reviewer.',
+  'Parameters: Each tool provides the parameter(s) required by the next tool in the drill-down sequence. On any error in the paramaters that you provide, the tool returns an explanatory error message.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
 
@@ -193,7 +195,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'questionDiagnosis',
     {
-      description: 'Accepts anonymous doubts aboout, or objections to, a diagnosis shown by the listDiagnoses tool; queued for review by management. Call this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or was misclassified as to its issue. The parameters come from listDiagnoses.',
+      description: 'Accepts anonymous doubts aboout, or objections to, a diagnosis shown by the listDiagnoses tool; queued for review by management. Call this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or was misclassified as to its issue. The parameters come from listDiagnoses. Returns a confirmation with disposition details.',
       inputSchema: questionDiagnosisSchema,
       outputSchema: questionDiagnosisResponseSchema,
       annotations: {
@@ -233,7 +235,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Submits a request to test a page that has no report yet. Identify its site with siteID if the site is in the listSites output (check the listPages output for that site first), or otherwise name the site with siteName; give exactly one of them. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The pageName becomes the name of the page in later listPages output and must differ from the names of the other pages of the site; a siteName becomes the name of a new site and must not match the name of a tested site (ignoring case, white space, and punctuation). The reason is what the reviewer evaluates. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates and similar sites. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Receives a request to test a page that has not yet been tested. If the site has been tested, set siteID to the site identifier from listSites; otherwise set siteName to a brand or organization name like those shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Set pageName to a page description, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club, distinct from the name of any other tested page of the site shown by listPages.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
@@ -253,7 +255,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Submits a request to retest a page whose existing report is considered obsolete. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Receives a request to retest a page whose latest report is considered outdated. Set reportID to the identifier of the latest report about the page from listPages or listIssues.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
@@ -273,7 +275,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Submits a request to add a new feature or improve an existing one; queued for review by management. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text describes the proposed feature or improvement. A request identical to one awaiting review is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.',
+      description: 'Receives a request to add a new feature or improve an existing one. Call questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. Describe the proposed feature or improvement. Returns a confirmation with disposition details.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
@@ -293,7 +295,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'awaitTest',
     {
-      description: 'Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
+      description: 'Blocks and waits for completion (or failure or 5-minute timeout) of a requested job. Set reportID to the report identifier from requestNewTest or requestRetest. Use this instead of polling listIssues when the user expects test results as soon as they are available.',
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {
@@ -326,22 +328,11 @@ export const createMCPServer = (): McpServer => {
 };
 // LEGACY-CONTRACT GUIDANCE
 
-// The ChatGPT app directory can advertise an older Kilotest tool contract than this server
-// implements, until OpenAI rechecks the server. Calls made under that older contract are
-// answered here with an explanatory tool error (or, for getKilotestOverview, with the
-// overview itself), so that the calling model can switch to the current tools instead of
-// failing on an unknown tool or an opaque input-validation error. These tools are not
-// registered and therefore not listed by tools/list. Each entry of legacyMCPCalls has a
-// retireAfter date, after which a test fails until the entry is removed or its date extended;
-// remove this whole section when the last entry is removed.
+// The ChatGPT app directory can advertise an older Kilotest tool contract than this server implements, until OpenAI rechecks the server. Calls made under that older contract are answered here with an explanatory tool error (or, for getKilotestOverview, with the overview itself), so that the calling model can switch to the current tools instead of failing on an unknown tool or an opaque input-validation error. These tools are not registered and therefore not listed by tools/list. Each entry of legacyMCPCalls has a retireAfter date, after which a test fails until the entry is removed or its date extended; remove this whole section when the last entry is removed.
 
 const newTestGuidance = 'To test a page that has no report yet, call the requestNewTest tool with reviewImmediately set to true. That tool now identifies the page’s site: first call the listSites tool, and then give the site identifier as siteID if the site has been tested, or otherwise the site name as siteName. Give the page’s name as pageName (formerly description), along with URL and reason.';
 
-// Tool calls made under the older contract, keyed by tool name. Each entry gives the date
-// of the change that made such calls obsolete, the date after which its handling is to be
-// retired, whether the call is still served (rather than answered with a tool error), and a
-// function returning the reply text for a call that matches the older contract, or null
-// for a call that does not (and is therefore passed through to the current tool).
+// Tool calls made under the older contract, keyed by tool name. Each entry gives the date of the change that made such calls obsolete, the date after which its handling is to be retired, whether the call is still served (rather than answered with a tool error), and a function returning the reply text for a call that matches the older contract, or null for a call that does not (and is therefore passed through to the current tool).
 export const legacyMCPCalls: Record<string, {
   changeDate: string;
   retireAfter: string;
@@ -383,8 +374,7 @@ export const legacyMCPCalls: Record<string, {
       : `The parameters of the requestNewTest tool have changed. ${newTestGuidance}`
   }
 };
-// Returns a JSON-RPC response to an MCP message if it is a tool call made under the older
-// contract, or otherwise null.
+// Returns a JSON-RPC response to an MCP message if it is a tool call made under the older contract, or otherwise null.
 const getLegacyResponse = (message: any): object | null => {
   if (
     !message

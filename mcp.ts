@@ -56,7 +56,7 @@ const maxBodyBytes = 4 * 1024 * 1024;
 // Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by the getOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
   sharedContext,
-  'Typical workflow: Suppose a user wants information about the quality of a website or a particular website page. Call the listSites tool to learn whether the site has been tested. If it has, call the listPages tool to learn which pages of the site have been tested. If any of them will suffice, drill down as far as needed to satisfy the user, calling the listIssues, listViolators, and/or listDiagnoses tools. If the full machine-oriented JSON report is wanted, call the getReport tool. If no satisfactory results have been published, you can call the requestNewTest tool or, for a page with published results that are outdated, the requestRetest tool. Both of those tools permit a reviewImmediately parameter. If it is set to true, then the request is immediately reviewed, and, if approved, test completion typically takes 2 to 4 minutes, which you can optionally await notification of by calling the awaitTest tool. To check later instead, call the listIssues tool.',
+  'Typical workflow: Suppose a user wants information about the quality of a website or a particular website page. Call the listSites tool to learn whether the site has been tested. If it has, call the listPages tool to learn which pages of the site have been tested. If any of them will suffice, drill down as far as needed to satisfy the user, calling the listIssues, listViolators, and/or listDiagnoses tools. If the full machine-oriented JSON report is wanted for analysis outside of Kilotest, call the getReport tool instead of drilling down beyond the listPages tool. If needed results have not been published, you can call the requestNewTest tool or, for a page with published but outdated results, the requestRetest tool. For both of those tools, if you set the optional reviewImmediately parameter to true, then your request is immediately reviewed, and, if approved, it typically takes 2 to 4 minutes to reach test completion, which you can optionally await by calling the awaitTest tool. To check later instead, call the listIssues tool. Each tool provides the parameter(s) required by the next tool in the drill-down sequence. On any error in a tool call, an error message explains the error.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
 
@@ -113,7 +113,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listPages',
     {
-      description: 'Lists the tested pages of one site. Use this after listSites to learn which pages of a site have been tested. The siteID comes from listSites. Returns, for each tested page of the site, its identifier, name, URL, sites, and the identifier of its latest available report. Entries are sorted by page name and are not paginated.',
+      description: 'Lists the tested pages of one site. Use this after listSites to learn which pages of a site have been tested. The siteID comes from listSites. Returns, for each tested page of the site, its identifier, name, URL, and sites, and the identifier of its latest available report. Entries are sorted by page name and are not paginated.',
       inputSchema: listPagesSchema,
       outputSchema: listPagesResponseSchema,
       annotations: {
@@ -133,7 +133,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: 'Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to begin examining a report about a page, or to switch to an earlier or later report. The reportID comes from listPages or the history. Returns facts about the reported issues, sorted by summary and not paginated. The returned issue identifiers are inputs to the listViolators tool. Use getReport instead when the entire report is needed in one call.',
+      description: 'Lists the history of reports about a page and the issues (each with an identifier) reported in one of the reports. Call this after listPages to begin getting test results about a page, or to switch to an earlier or later report. The reportID comes from listPages or the history. Returns facts about the reported issues, sorted by summary and not paginated. For more details, you can call listViolators with one of the issue identifiers. Call getReport instead when the entire JSON report is needed in one call and will be analyzed outside Kilotest.',
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
@@ -153,7 +153,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listViolators',
     {
-      description: 'Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue; the issueID must be one of the issue identifiers listIssues returned for the same reportID; call listIssues first if you do not have an issueID. Returns basics about each violating element, sorted by catalog index and not paginated; an unknown issueID or reportID produces an error.',
+      description: 'Lists the elements of a tested page that were reported as violators of one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue. The issueID comes from listIssues. Returns facts about each violator, sorted by their catalog indexes and not paginated.',
       inputSchema: listViolatorsSchema,
       outputSchema: listViolatorsResponseSchema,
       annotations: {
@@ -173,7 +173,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listDiagnoses',
     {
-      description: 'Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue; the catalogIndex is the element’s identifier in the listViolators output for that issue and report. Use getReport instead when all diagnoses in the report are needed at once. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine; an unknown report, issue, or element produces an error.',
+      description: 'Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators if the user wants to know what each rule engine said. The catalogIndex comes from listViolators. Returns, for each reported violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine.',
       inputSchema: listDiagnosesSchema,
       outputSchema: listDiagnosesResponseSchema,
       annotations: {
@@ -193,7 +193,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'questionDiagnosis',
     {
-      description: 'Questions or contests a diagnosis shown by the listDiagnoses tool; queued for review by management. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.',
+      description: 'Accepts anonymous doubts aboout, or objections to, a diagnosis shown by the listDiagnoses tool; queued for review by management. Call this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or was misclassified as to its issue. The parameters come from listDiagnoses.',
       inputSchema: questionDiagnosisSchema,
       outputSchema: questionDiagnosisResponseSchema,
       annotations: {
@@ -213,7 +213,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getReport',
     {
-      description: 'Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call; for only part of a report, drill down with those tools instead. The reportID comes from listPages or from the report history that listIssues returns, and an unknown or malformed one produces an error. The report can exceed 1 MB; its exact size is disclosed by the listIssues tool.',
+      description: 'Retrieves an entire report as JSON. Call this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call and will be analyzed outside of Kilotest. Otherwise, drill down with those tools instead. The reportID comes from listPages or from the report history that listIssues returns. Reports are typically 0.5 to 2 MB in size. The size is disclosed by the listIssues tool before you need to decide whether to download the report.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {

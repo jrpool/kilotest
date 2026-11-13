@@ -97,7 +97,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listSites',
     {
-      description: 'Lists all tested websites, alphabetically by name, each with its identifier and name and the count of its tested pages. Call this tool first to learn whether a site has been tested. If it has, call listPages to learn which of its pages have been tested. If the site has not been tested and you want it tested, call requestNewTest.',
+      description: 'Lists all tested sites, alphabetically by name, each with its identifier and name and the count of its tested pages. Call this tool first to learn whether a site has been tested. If it has, call listPages to learn which of its pages have been tested. If the site has not been tested and you want it tested, call requestNewTest.',
       inputSchema: {},
       outputSchema: listSitesResponseSchema,
       annotations: {
@@ -117,7 +117,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listPages',
     {
-      description: 'Lists the tested pages of one site alphabetically by name, each with an identifier, name, URL, and sites, and the identifier of its latest available report. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues.',
+      description: 'Lists the tested pages of one site, each with a page identifier, name, URL, sites, and latest report identifier, sorted by name. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues. If you want a different page of the site tested, call requestNewTest.',
       inputSchema: listPagesSchema,
       outputSchema: listPagesResponseSchema,
       annotations: {
@@ -137,7 +137,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: 'Lists the issues reported in one report (grouped by priority, and each with an identifier and a summary). Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page, or to switch to an earlier or later report. Requires a reportID from listPages or from the history. After this tool, if you want to know which elements violated one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues or listViolators.',
+      description: 'Lists the issues reported in one report, each with an identifier, summary, and priority, sorted by summary. Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page, or to switch to an earlier or later report. Also call this tool after requestNewTest or requestRetest to learn whether the requested test results are available. Requires a reportID from listPages or from the list of reports. After this tool, if you want to know which elements violated one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues or listViolators.',
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
@@ -157,7 +157,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listViolators',
     {
-      description: 'Lists the elements of one page that were reported as violators of rules belonging to one issue in one report, sorted by element identifiers and each with its tag name, inner text, and count of reporting rule engines. Call this tool after listIssues to continue drilling down. Requires an issueID and a reportID from listIssues. After this tool, if you want to know the diagnoses for a specific violator, call listDiagnoses.',
+      description: 'Lists the elements of one page that were reported as violators of rules belonging to one issue in one report, each with its identifier (catalogIndex), tag name, inner text, and count of reporting rule engines, sorted by identifier. Call this tool after listIssues to continue drilling down. Requires an issueID and a reportID from listIssues. After this tool, if you want to know the diagnoses for a specific violator, call listDiagnoses.',
       inputSchema: listViolatorsSchema,
       outputSchema: listViolatorsResponseSchema,
       annotations: {
@@ -217,7 +217,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getReport',
     {
-      description: 'Gets an entire report as JSON. Call this tool instead of listIssues or listViolators if you want the full report for analysis outside of Kilotest. Requires a reportID from listPages or listIssues. Reports are typically 0.5 to 2 MB in size. The listIssues tool discloses the size of a report (typically 0.5 to 2 MB) before you decide whether to download it.',
+      description: 'Gets an entire report as JSON. Call this tool if you want the full report for analysis outside of Kilotest. Requires a reportID from listPages or listIssues. The listIssues tool discloses the size of a report (typically 0.5 to 2 MB) before you decide whether to download it. If you want Kilotest to do the analysis, drill down with listIssues, listViolators, and/or listDiagnoses instead.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
@@ -237,7 +237,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the website has been tested, or a siteName, the brand or organization name of the website, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club. If the site has been tested, the pageName must be distinct from the names of all other tested page of the site shown by listPages.',
+      description: 'Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the site has been tested, or a siteName, the brand or organization name of the site, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club. If the site has been tested, the pageName must be distinct from the names of all other tested pages of the site shown by listPages. If the page has already been tested, call requestRetest instead.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
@@ -257,7 +257,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues.',
+      description: 'Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues. If the page has not yet een tested, call requestNewTest instead.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
@@ -277,7 +277,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Requests a new feature or an improvement to an existing one. Call this tool if your request is not suitable for questionDiagnosis. Requires a feature parameter describing the feature or improvement.',
+      description: 'Requests a new feature or an improvement to an existing one. Requires a feature parameter describing the requested feature or improvement. If you want to question a diagnosis, call requestRetest instead.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
@@ -301,7 +301,7 @@ export const createMCPServer = (): McpServer => {
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {
-        title: 'Wait for an ordered job to finish',
+        title: 'Wait for a job requested with immediate review to finish',
         readOnlyHint: true,
         idempotentHint: false,
         destructiveHint: false,

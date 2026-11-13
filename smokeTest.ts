@@ -48,6 +48,7 @@ const concretePaths: Record<string, Record<string, string>> = {
     '/hideReportForm.html': '/hideReportForm.html',
     '/metrics.html': '/metrics.html',
     '/pruneReportsForm.html': '/pruneReportsForm.html',
+    '/renameForm.html': '/renameForm.html',
     '/rewindReportsForm.html': '/rewindReportsForm.html',
     '/reannotate.html': '/reannotate.html',
     '/requestAction.html': '/requestAction.html',
@@ -72,6 +73,7 @@ const postBodies: Record<string, object> = {
   '/hideReportForm.html': {authCode: 'invalid'},
   '/metrics.html': {authCode: 'invalid'},
   '/pruneReportsForm.html': {authCode: 'invalid'},
+  '/renameForm.html': {authCode: 'invalid'},
   '/rewindReportsForm.html': {authCode: 'invalid'},
   '/reannotate.html': {authCode: 'invalid'},
   '/requestAction.html': {

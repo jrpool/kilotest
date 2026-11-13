@@ -1709,6 +1709,8 @@ const htmlPagePaths = [
   '/rewindReportsForm.html',
   '/ai0BalanceForm.html',
   '/deleteNotesForm.html',
+  '/renameForm.html',
+  '/renameForm.html/s-fixtur',
   '/metrics.html'
 ];
 

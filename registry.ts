@@ -42,6 +42,12 @@ export type PageError
 = {result: 'noSite' | 'noPage'}
 | {result: 'siteExists'; siteID: string}
 | {result: 'pageExists'; pageID: string};
+// The reason why a revision of names is refused: The site does not exist, a page does not exist or does not belong to the site, another site has a name that matches the revised site name, or the revision would give two pages of a site the same name.
+export type NameRevisionError
+= {result: 'noSite'}
+| {result: 'noPage'; pageID: string}
+| {result: 'siteExists'; siteID: string}
+| {result: 'pageExists'; name: string};
 
 // CONSTANTS
 
@@ -228,5 +234,60 @@ export const registerPage = (target: PageTarget): Promise<RegisteredPage | PageE
     const pageID = getNewID('page', usedIDs);
     registry.pages[pageID] = {sites: [page.siteID], name: page.pageName, url: page.url};
     return {write: true, result: {...page, siteID: page.siteID, pageID}};
+  }
+);
+// Revises the name of a site and/or the names of pages of the site, as a transaction, and returns the count of names changed or the reason why the revision is refused. A name equal to the current one is not a change. The revision is refused as a whole if the site does not exist, if any page does not exist or does not belong to the site, if the revised site name has the name key of another site, or if the revision would leave any site with two pages whose names, after normalization, are identical. Only the registry is changed: The names in the sources of reports are historical and remain as they are.
+export const reviseNames = (
+  siteID: string, siteName: string | null, pageNames: Record<string, string>
+): Promise<{result: 'ok'; changeCount: number} | NameRevisionError> => changeRegistry(
+  (registry): {write: boolean; result: {result: 'ok'; changeCount: number} | NameRevisionError} => {
+    const refuse = (result: NameRevisionError) => ({write: false, result});
+    const oldSiteName = registry.sites[siteID];
+    // If the site does not exist:
+    if (oldSiteName === undefined) {
+      return refuse({result: 'noSite'});
+    }
+    let changeCount = 0;
+    // If the site name is to be changed:
+    if (siteName !== null && siteName !== oldSiteName) {
+      const nameKey = getNameKey(siteName);
+      const namesakeID = Object.keys(registry.sites)
+      .find(id => id !== siteID && getNameKey(registry.sites[id] as string) === nameKey);
+      // If another site has a matching name:
+      if (namesakeID) {
+        return refuse({result: 'siteExists', siteID: namesakeID});
+      }
+      registry.sites[siteID] = siteName;
+      changeCount++;
+    }
+    const affectedSiteIDs = new Set<string>();
+    // For each page to be named:
+    for (const [pageID, pageName] of Object.entries(pageNames)) {
+      const page = registry.pages[pageID];
+      // If it does not exist or does not belong to the site:
+      if (!page?.sites.includes(siteID)) {
+        return refuse({result: 'noPage', pageID});
+      }
+      // If its name is to be changed:
+      if (pageName !== page.name) {
+        page.name = pageName;
+        page.sites.forEach(id => affectedSiteIDs.add(id));
+        changeCount++;
+      }
+    }
+    // For each site with any renamed page:
+    for (const affectedSiteID of affectedSiteIDs) {
+      const pageKeys = new Set<string>();
+      // For each of its pages, with the revised names:
+      for (const [, page] of getSitePages(registry, affectedSiteID)) {
+        const pageKey = normalizeName(page.name);
+        // If an earlier page of the site has the same name:
+        if (pageKeys.has(pageKey)) {
+          return refuse({result: 'pageExists', name: page.name});
+        }
+        pageKeys.add(pageKey);
+      }
+    }
+    return {write: changeCount > 0, result: {result: 'ok', changeCount}};
   }
 );

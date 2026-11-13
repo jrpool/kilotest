@@ -20,9 +20,11 @@ import {
   isPageError,
   isPageID,
   isSiteID,
+  normalizeName,
   planPage,
   registerPage,
-  registryPath
+  registryPath,
+  reviseNames
 } from './registry.ts';
 import type {PageError, RegisteredPage} from './registry.ts';
 
@@ -167,5 +169,47 @@ test('changeRegistry serializes concurrent changes', async () => {
     const registry = await getRegistry();
     assert.equal(Object.keys(registry.sites).length, 1);
     assert.equal(Object.keys(registry.pages).length, 5);
+  });
+});
+
+test('reviseNames changes names in the registry, all or none, and refuses conflicting revisions', async () => {
+  await withDB(async () => {
+    const first = await registerPage({siteName: 'First Site', pageName: 'home', url: 'https://first.example.com/'}) as RegisteredPage;
+    const about = await registerPage({siteID: first.siteID, pageName: 'about', url: 'https://first.example.com/about'}) as RegisteredPage;
+    const second = await registerPage({siteName: 'Second Site', pageName: 'home', url: 'https://second.example.com/'}) as RegisteredPage;
+    // Unchanged names are not changes, and nothing is written.
+    assert.deepEqual(
+      await reviseNames(first.siteID, 'First Site', {[first.pageID]: 'home'}), {result: 'ok', changeCount: 0}
+    );
+    // A site name and a page name can be revised together, and a null site name leaves the site name unchanged.
+    assert.deepEqual(
+      await reviseNames(first.siteID, 'Site One', {[about.pageID]: 'about us'}), {result: 'ok', changeCount: 2}
+    );
+    assert.deepEqual(await reviseNames(first.siteID, null, {}), {result: 'ok', changeCount: 0});
+    // A site may keep its own name key, but not take that of another site.
+    assert.deepEqual(await reviseNames(first.siteID, 'site-one', {}), {result: 'ok', changeCount: 1});
+    assert.deepEqual(
+      await reviseNames(first.siteID, 'SECOND site', {}), {result: 'siteExists', siteID: second.siteID}
+    );
+    // Two pages of a site may exchange names, but not share one.
+    assert.deepEqual(
+      await reviseNames(first.siteID, null, {[first.pageID]: 'about us', [about.pageID]: 'home'}),
+      {result: 'ok', changeCount: 2}
+    );
+    const shared = await reviseNames(first.siteID, 'Refused Name', {[about.pageID]: 'About  US'});
+    assert.equal(shared.result, 'pageExists');
+    assert.equal('name' in shared && normalizeName(shared.name), 'about us');
+    // A nonexistent site, a nonexistent page, and a page of another site are refused.
+    assert.deepEqual(await reviseNames('s-absent', 'Name', {}), {result: 'noSite'});
+    assert.deepEqual(await reviseNames(first.siteID, null, {'p-absent00': 'x'}), {result: 'noPage', pageID: 'p-absent00'});
+    assert.deepEqual(
+      await reviseNames(first.siteID, null, {[second.pageID]: 'x'}), {result: 'noPage', pageID: second.pageID}
+    );
+    // Refused revisions change nothing.
+    const registry = await getRegistry();
+    assert.equal(registry.sites[first.siteID], 'site-one');
+    assert.equal(registry.pages[first.pageID]?.name, 'about us');
+    assert.equal(registry.pages[about.pageID]?.name, 'home');
+    assert.equal(registry.pages[second.pageID]?.name, 'home');
   });
 });

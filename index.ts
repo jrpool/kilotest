@@ -71,6 +71,7 @@ import {answer as pruneReportsForm} from './web/pruneReportsForm/index.ts';
 import {answer as reannotate} from './web/reannotate/index.ts';
 import {answer as reannotateForm} from './web/reannotateForm/index.ts';
 import {answer as renewWCAG} from './web/renewWCAG/index.ts';
+import {answer as renameForm} from './web/renameForm/index.ts';
 import {answer as renewWCAGForm} from './web/renewWCAGForm/index.ts';
 import {answer as requestRetestPage} from './web/requestRetest/index.ts';
 import {answer as requestRetestForm} from './web/requestRetestForm/index.ts';
@@ -129,6 +130,7 @@ const answer: {
   manage: PageHandler;
   metrics: PageHandler;
   pruneReportsForm: PageHandler;
+  renameForm: PageHandler;
   privacy: PageHandler;
   tutorialWeb: PageHandler;
   tutorialAI: PageHandler;
@@ -164,6 +166,7 @@ const answer: {
   manage,
   metrics,
   pruneReportsForm,
+  renameForm,
   privacy,
   tutorialWeb,
   tutorialAI,
@@ -245,6 +248,7 @@ export const routes = {
     '/hideReportForm.html',
     '/metrics.html',
     '/pruneReportsForm.html',
+    '/renameForm.html',
     '/rewindReportsForm.html',
     '/showHiddenReportsForm.html',
     '/tutorialAIComment.html',
@@ -269,6 +273,7 @@ const managerPages = new Set([
   'pruneReportsForm',
   'rewindReportsForm',
   'expungeReportsForm',
+  'renameForm',
   'hideReportForm',
   'showHiddenReportsForm',
   'unhideReportForm',
@@ -286,6 +291,7 @@ const selfSubmittingManagerPages = new Set([
   'pruneReportsForm',
   'rewindReportsForm',
   'expungeReportsForm',
+  'renameForm',
   'hideReportForm',
   'showHiddenReportsForm',
   'unhideReportForm',

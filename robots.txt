@@ -19,6 +19,7 @@ Disallow: /unhideReportForm.html
 Disallow: /pruneReportsForm.html
 Disallow: /rewindReportsForm.html
 Disallow: /expungeReportsForm.html
+Disallow: /renameForm.html
 Disallow: /renewWCAGForm.html
 Disallow: /renewWCAG.html
 # Deeply drilled down requests

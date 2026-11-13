@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {parse} from 'node-html-parser';
 import {answer} from './index.ts';
-import {getRegistry, registerPage, registryPath} from '../../registry.ts';
+import {getRegistry, getSitePages, registerPage, registryPath} from '../../registry.ts';
 import {fixtureDBDir} from '../../test/dbFixture.ts';
 
 // SETUP AND TEARDOWN
@@ -58,7 +58,8 @@ test('renameForm displays the names of a site and its pages on a GET request', a
   assert.equal(html.querySelector('input[name="siteName"]')?.getAttribute('value'), 'Fixture Site');
   assert.equal(html.querySelector(`input[name="page.${pageID}"]`)?.getAttribute('value'), 'Mixed Outcomes');
   assert.equal(html.querySelector(`label[for="${pageID}"] a`)?.getAttribute('href'), 'https://example.com/mixed');
-  const pageCount = Object.keys((await getRegistry()).pages).length;
+  // Count only the pages of the site, since another test, which may run first, adds a page of another site.
+  const pageCount = getSitePages(await getRegistry(), siteID).length;
   assert.equal(html.querySelectorAll('fieldset input').length, pageCount);
 });
 

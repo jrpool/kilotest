@@ -1,14 +1,14 @@
 # Kilotest
 
-Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested sites, the tested pages of each site, the reports about each page, the issues in each report, the violators of each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages. Kilotest features are available via a web UI, an API, and an MCP server with streamable HTTP and no authentication.
+Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to test web pages for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested sites, the tested pages of each site, the reports about each page, the issues in each report, the elements reported as violators of rules belonging to each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages. Kilotest features are available via a web UI, an API, and an MCP server with streamable HTTP and no authentication.
 
 ## API
 
 - [List all tested sites](/api/listSites) (`GET`)
 - List the tested pages of one site, with links to test results: `/api/listPages/{siteID}` (`GET`)
 - List all issues in one report, and all reports about the same page: `/api/listIssues/{reportID}` (`GET`)
-- List all elements exhibiting one issue in one report: `/api/listViolators/{issueID}/{reportID}` (`GET`)
-- List all diagnoses of one element exhibiting one issue in one report: `/api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}` (`GET`)
+- List all elements violating rules belonging to one issue in one report: `/api/listViolators/{issueID}/{reportID}` (`GET`)
+- List all diagnoses of one element violating rules belonging to one issue in one report: `/api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}` (`GET`)
 - Question a diagnosis: `/api/questionDiagnosis/{issueID}/{reportID}/{catalogIndex}` (`POST`)
 - Get one full report in JSON: `/api/getReport/{reportID}` (`GET`)
 - Request testing of a not-yet-tested web page: `/api/requestNewTest` (`POST`)

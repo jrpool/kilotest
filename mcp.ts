@@ -50,14 +50,17 @@ import {
 // CONSTANTS
 
 export const mcpPath = '/mcp';
+// The largest accepted request body, matching the MCP SDK transport’s own limit.
+const maxBodyBytes = 4 * 1024 * 1024;
 
-// Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by
-// the getKilotestOverview tool and served as the docs://kilotest/overview resource.
+// Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by the getOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
   sharedContext,
-  'Results are organized as a hierarchy: tested sites; for each tested site, its tested pages; for each tested page, reports from the tests of the page; for each report, issues reported; for each issue, violators of rules belonging to the issue (a violator is an element or the whole page); for each violator, diagnoses by rule engines of its violations.',
-  'Typical workflow: call the listSites tool to learn whether the site of the page has been tested. If it has, call the listPages tool with the site identifier to learn whether the page has been tested. If it has, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools, or retrieve the entire report with the getReport tool. The listIssues output also lists all reports about the same page, so you can examine earlier reports. If the page has not been tested, request a test with the requestNewTest tool, giving the site identifier as siteID if the site has been tested, or otherwise the site name as siteName. If the latest report is obsolete, request a retest with the requestRetest tool.',
-  'The requestNewTest and requestRetest tools take a reviewImmediately parameter: set it to true for immediate review with immediate approval or rejection and immediate enqueueing if approved, or to false to queue the request for review by management. A request for immediate review of a page that may already have been tested (possible duplicates or similar sites) is referred to management review, and the response lists the pages and sites concerned, whose results may already answer your question. Immediate approval produces a report identifier and an opportunity to wait for completion. To wait, call the awaitTest tool with that identifier; it blocks until the report is ready, the job fails, or a maximum wait time elapses. To check later instead, call the listIssues tool with the same identifier.',
+  'Typical workflow: Suppose a user wants information about the quality of a website or a particular website page. Call listSites to learn whether the site has been tested. If it has, call listPages to learn which pages of the site have been tested. To get test results for any of those pages, drill down as far as needed to satisfy the user, calling listIssues, listViolators, and/or listDiagnoses. If the full machine-oriented JSON report is wanted for analysis outside of Kilotest, call getReport instead of listIssues, listViolators, or listDiagnoses.',
+  'Requesting more testing: If needed results have not been published, you can call requestNewTest or, for a page with published but outdated results, requestRetest. For both tools, if you set the optional reviewImmediately parameter to true, then your request is immediately reviewed, and, if approved, you can optionally await test completion (typically in 2 to 4 minutes) by calling awaitTest. If reviewImmediately is false or omitted, review and, on approval, testing typically take an hour to a day. Also set the reason parameter to a justification to be considered by the reviewer.',
+  'Contributing: You can help improve Kilotest by calling questionDiagnosis to question a diagnosis of a reported rule violation, and by calling requestFeature to request a new feature or a feature improvement.',
+  'Parameters: Each tool provides the parameter(s) required by the next tool in the drill-down sequence. On any error in the parameters that you provide, the tool returns an explanatory error message.',
+  'Response format: List responses are not paginated.',
   'More documentation is available at https://kilotest.com/llms.txt and https://kilotest.com/llms-full.txt.'
 ].join('\n\n');
 
@@ -71,12 +74,12 @@ export const createMCPServer = (): McpServer => {
     description: collectionDescription
   },
   {
-    instructions: `${sharedContext} Use the listSites tool to start, and then the listPages tool for the site of the page you want facts about. If the page has been tested, drill down from its latest report with the listIssues, listViolators, and listDiagnoses tools. If not, use the requestNewTest tool to request that the page be tested, giving the site identifier as siteID if the site has been tested or otherwise the site name as siteName, and setting its reviewImmediately parameter to true for immediate review. If the latest report about the page is obsolete, use the requestRetest tool the same way. For detailed documentation, call the getOverview tool.`
+    instructions: `${sharedContext} For guidance about using the Kilotest tools, call the getOverview tool.`
   });
   server.registerTool(
     'getOverview',
     {
-      description: 'Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear; it is unnecessary once you know which tool you need. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest tests web pages for front-end quality with an ensemble of rule engines.',
+      description: 'Gets an overview of Kilotest, explaining that it is a front-end quality testing service for the web and describing its tools and the structure of its test results. Call this before any other tool when the tools and workflow are unclear.',
       inputSchema: {},
       annotations: {
         title: 'Explain Kilotest and its tools',
@@ -94,7 +97,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listSites',
     {
-      description: 'Lists all sites of which Kilotest has tested pages. Use this first to discover whether the site of a page has been tested, and then listPages with the site identifier to discover whether the page has been tested, before requesting a test. Returns, for each tested site, its identifier, name, and count of tested pages. Entries are sorted by site name and are not paginated.',
+      description: 'Lists all tested sites, alphabetically by name, each with its identifier and name and the count of its tested pages. Call this tool first to learn whether a site has been tested. If it has, call listPages to learn which of its pages have been tested. If the site has not been tested and you want it tested, call requestNewTest.',
       inputSchema: {},
       outputSchema: listSitesResponseSchema,
       annotations: {
@@ -114,7 +117,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listPages',
     {
-      description: 'Lists the tested pages of one site. Use this after listSites to discover whether a page of the site already has any reports before requesting a test. The siteID comes from listSites; an unknown or malformed one produces an error. Returns, for each tested page of the site, its identifier, name, URL, sites, and the identifier of its latest available report. Entries are sorted by page name and are not paginated.',
+      description: 'Lists the tested pages of one site, each with a page identifier, name, and URL, an array of the sites it belongs to (currently always 1), and the latest report identifier, sorted by page name. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues. If you want a different page of the site tested, call requestNewTest.',
       inputSchema: listPagesSchema,
       outputSchema: listPagesResponseSchema,
       annotations: {
@@ -134,7 +137,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: 'Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to begin examining the latest report about a page, or to switch to an earlier or later report or to begin examining this report. The reportID is the latest report’s identifier from listPages or an earlier identifier from the history this tool returns. Returns the history and the basics about this report’s issues, sorted by summary and not paginated; an unknown or malformed reportID produces an error. The returned issue identifiers are inputs to the listViolators tool. Use getReport instead when the entire report is needed in one call.',
+      description: 'Lists the issues reported in one report, each with an identifier, summary, and priority, sorted by summary. Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page (optionally continuing to drill down with listViolators and listDiagnoses), or to switch to an earlier or later report. Also call this tool after requestNewTest or requestRetest to learn whether the requested test results are available. Requires a reportID from listPages, the list of reports, requestNewTest, or requestRetest. After this tool, if you want to know which elements violated rules belonging to one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of this tool, listViolators, or listDiagnoses.',
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
@@ -154,7 +157,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listViolators',
     {
-      description: 'Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue; the issueID must be one of the issue identifiers listIssues returned for the same reportID; call listIssues first if you do not have an issueID. Returns basics about each violating element, sorted by catalog index and not paginated; an unknown issueID or reportID produces an error.',
+      description: 'Lists the elements of one page that were reported as violators of rules belonging to one issue in one report, each with its identifier (catalogIndex), tag name, inner text, and count of reporting rule engines, sorted by identifier. Call this tool after listIssues to continue drilling down. Requires an issueID and a reportID from listIssues. After this tool, if you want to know the diagnoses for a specific violator, call listDiagnoses. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues, this tool, or listDiagnoses.',
       inputSchema: listViolatorsSchema,
       outputSchema: listViolatorsResponseSchema,
       annotations: {
@@ -174,7 +177,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listDiagnoses',
     {
-      description: 'Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue; the catalogIndex is the element’s identifier in the listViolators output for that issue and report. Use getReport instead when all diagnoses in the report are needed at once. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine; an unknown report, issue, or element produces an error.',
+      description: 'Lists the diagnoses by rule engines for one violator of rules belonging to one issue in one report, each with a description and severity. Call this after listViolators to continue drilling down. Requires a reportID, issueID, and catalogIndex (element identifier) from listViolators. After this tool, if you want to question a diagnosis, call questionDiagnosis. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues, listViolators, or this tool.',
       inputSchema: listDiagnosesSchema,
       outputSchema: listDiagnosesResponseSchema,
       annotations: {
@@ -194,7 +197,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'questionDiagnosis',
     {
-      description: 'Questions or contests a diagnosis shown by the listDiagnoses tool; queued for review by management. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.',
+      description: 'Records and submits to management a disagreement with or doubts about one diagnosis reported by the listDiagnoses tool. Call this tool to question a diagnosis or its issue classification. Requires a reportID, issueID, catalogIndex (element identifier), engineID, and ruleID from listDiagnoses, and a reason explaining your concern. If your objection is more general than a single diagnosis, call requestFeature instead.',
       inputSchema: questionDiagnosisSchema,
       outputSchema: questionDiagnosisResponseSchema,
       annotations: {
@@ -214,7 +217,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getReport',
     {
-      description: 'Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call; for only part of a report, drill down with those tools instead. The reportID comes from listPages or from the report history that listIssues returns, and an unknown or malformed one produces an error. The report can exceed 1 MB; its exact size is disclosed by the listIssues tool.',
+      description: 'Gets an entire report as JSON. Call this tool if you want the full report for analysis outside of Kilotest. Requires a reportID from listPages or listIssues. The listIssues tool discloses the size of a report (typically 0.5 to 2 MB) before you decide whether to download it. If you want only selected results, drill down with listIssues, listViolators, and/or listDiagnoses instead.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
@@ -234,7 +237,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Submits a request to test a page that has no report yet. Identify its site with siteID if the site is in the listSites output (check the listPages output for that site first), or otherwise name the site with siteName; give exactly one of them. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The pageName becomes the name of the page in later listPages output and must differ from the names of the other pages of the site; a siteName becomes the name of a new site and must not match the name of a tested site (ignoring case, white space, and punctuation). The reason is what the reviewer evaluates. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates and similar sites. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the site has been tested, or a siteName, namely the brand or organization name of the site, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club; a URL; and a reason justifying the request. If the site has been tested, the pageName must be distinct from the names of all other tested pages of the site shown by listPages. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest and wait for, typically, 2 to 4 minutes), rejection, or queuing for management review. If reviewImmediately is false or omitted, the request will be queued for management review (approval and test completion typically take an hour to a day). If the page has already been tested, call requestRetest instead.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
@@ -254,7 +257,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Submits a request to retest a page whose existing report is considered obsolete. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.',
+      description: 'Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues and a reason justifying the request. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest and wait for, typically, 2 to 4 minutes), rejection, or queuing for management review. If reviewImmediately is false or omitted, the request will be queued for management review (approval and test completion typically take an hour to a day). If the page has not yet been tested, call requestNewTest instead.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
@@ -274,7 +277,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Submits a request to add a new feature or improve an existing one; queued for review by management. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text describes the proposed feature or improvement. A request identical to one awaiting review is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.',
+      description: 'Requests a new feature or an improvement to an existing one. Requires a feature parameter describing the requested feature or improvement. If you want to question a diagnosis, call questionDiagnosis instead.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {
@@ -294,11 +297,11 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'awaitTest',
     {
-      description: 'Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.',
+      description: 'Blocks and waits for completion (or failure or 5-minute timeout) of a requested job. Call this tool if you requested a new test or retest with immediate review and you want to block the workflow until the test is complete. Requires a reportID from requestNewTest or requestRetest. If you choose not to wait or the wait times out, call listIssues with the reportID later to check whether the results are available.',
       inputSchema: awaitTestSchema,
       outputSchema: awaitTestResponseSchema,
       annotations: {
-        title: 'Wait for an ordered job to finish',
+        title: 'Wait for a job requested with immediate review to finish',
         readOnlyHint: true,
         idempotentHint: false,
         destructiveHint: false,
@@ -325,6 +328,99 @@ export const createMCPServer = (): McpServer => {
   );
   return server;
 };
+// LEGACY-CONTRACT GUIDANCE
+
+// The ChatGPT app directory can advertise an older Kilotest tool contract than this server implements, until OpenAI rechecks the server. Calls made under that older contract are answered here with an explanatory tool error (or, for getKilotestOverview, with the overview itself), so that the calling model can switch to the current tools instead of failing on an unknown tool or an opaque input-validation error. These tools are not registered and therefore not listed by tools/list. Each entry of legacyMCPCalls has a retireAfter date, after which a test fails until the entry is removed or its date extended; remove this whole section when the last entry is removed.
+
+const newTestGuidance = 'To test a page that has no report yet, call the requestNewTest tool with reviewImmediately set to true. That tool now identifies the page’s site: first call the listSites tool, and then give the site identifier as siteID if the site has been tested, or otherwise the site name as siteName. Give the page’s name as pageName (formerly description), along with URL and reason.';
+
+// Tool calls made under the older contract, keyed by tool name. Each entry gives the date of the change that made such calls obsolete, the date after which its handling is to be retired, whether the call is still served (rather than answered with a tool error), and a function returning the reply text for a call that matches the older contract, or null for a call that does not (and is therefore passed through to the current tool).
+export const legacyMCPCalls: Record<string, {
+  changeDate: string;
+  retireAfter: string;
+  served: boolean;
+  reply: (args: Record<string, unknown>) => string | null;
+}> = {
+  getKilotestOverview: {
+    changeDate: '2026-11-07',
+    retireAfter: '2027-02-07',
+    served: true,
+    reply: () => kilotestOverview
+  },
+  orderNewTest: {
+    changeDate: '2026-11-07',
+    retireAfter: '2027-02-07',
+    served: false,
+    reply: () => `The orderNewTest tool no longer exists. ${newTestGuidance}`
+  },
+  orderRetest: {
+    changeDate: '2026-11-07',
+    retireAfter: '2027-02-07',
+    served: false,
+    reply: () => 'The orderRetest tool no longer exists. To retest a page, call the requestRetest tool with the same reportID and reason, and with reviewImmediately set to true.'
+  },
+  listPages: {
+    changeDate: '2026-11-08',
+    retireAfter: '2027-02-08',
+    served: false,
+    reply: args => args.siteID
+      ? null
+      : 'The listPages tool now lists the tested pages of one site and requires a siteID. First call the listSites tool to get the identifier of the site, and then call listPages with it as siteID.'
+  },
+  requestNewTest: {
+    changeDate: '2026-11-08',
+    retireAfter: '2027-02-08',
+    served: false,
+    reply: args => args.pageName || args.siteID || args.siteName
+      ? null
+      : `The parameters of the requestNewTest tool have changed. ${newTestGuidance}`
+  }
+};
+// Returns a JSON-RPC response to an MCP message if it is a tool call made under the older contract, or otherwise null.
+const getLegacyResponse = (message: any): object | null => {
+  if (
+    !message
+    || typeof message !== 'object'
+    || Array.isArray(message)
+    || message.method !== 'tools/call'
+    || typeof message.params?.name !== 'string'
+  ) {
+    return null;
+  }
+  const legacyCall = Object.hasOwn(legacyMCPCalls, message.params.name)
+    ? legacyMCPCalls[message.params.name]!
+    : null;
+  if (!legacyCall) {
+    return null;
+  }
+  const args = message.params.arguments && typeof message.params.arguments === 'object'
+    ? message.params.arguments
+    : {};
+  const text = legacyCall.reply(args);
+  if (text === null) {
+    return null;
+  }
+  return {jsonrpc: '2.0', id: message.id ?? null, result: {content: [{type: 'text', text}], isError: !legacyCall.served}};
+};
+// Returns the body of a request, parsed as JSON, or undefined if it is not valid JSON.
+const getParsedBody = async (request: IncomingMessage): Promise<unknown> => {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > maxBodyBytes) {
+      return undefined;
+    }
+    chunks.push(chunk);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  }
+  catch {
+    return undefined;
+  }
+};
+
 // Handles an MCP request.
 export const handleMCP = async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
   // If the request is not a POST request: reject it, because this stateless server has no sessions for GET-opened SSE streams or DELETE requests to act on, and leaving such streams open would leak resources.
@@ -337,8 +433,37 @@ export const handleMCP = async (request: IncomingMessage, response: ServerRespon
     }));
     return;
   }
+  // If the body is not declared to be JSON: reject it, as the SDK transport would if it read the body itself.
+  if (!(request.headers['content-type'] ?? '').includes('application/json')) {
+    response.writeHead(415, {'content-type': 'application/json'});
+    response.end(JSON.stringify({
+      jsonrpc: '2.0',
+      error: {code: -32000, message: 'Unsupported Media Type: Content-Type must be application/json'},
+      id: null
+    }));
+    return;
+  }
+  const parsedBody = await getParsedBody(request);
+  // If the body is not valid JSON or is too large: reject it as a parse error.
+  if (parsedBody === undefined) {
+    response.writeHead(400, {'content-type': 'application/json'});
+    response.end(JSON.stringify({
+      jsonrpc: '2.0',
+      error: {code: -32700, message: 'Parse error: the request body is not valid JSON or is too large'},
+      id: null
+    }));
+    return;
+  }
+  // If the request is a tool call made under the older contract: answer it with guidance.
+  const legacyResponse = getLegacyResponse(parsedBody);
+  if (legacyResponse) {
+    await recordMetric('mcpToolCalls', `legacy:${(parsedBody as any).params.name}`);
+    response.writeHead(200, {'content-type': 'application/json'});
+    response.end(JSON.stringify(legacyResponse));
+    return;
+  }
   const transport = new StreamableHTTPServerTransport({sessionIdGenerator: undefined});
   const server = createMCPServer();
   await server.connect(transport);
-  await transport.handleRequest(request, response);
+  await transport.handleRequest(request, response, parsedBody);
 };

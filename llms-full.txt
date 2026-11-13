@@ -96,7 +96,7 @@ Kilotest offers these tools:
   - source of parameters: response to a `listPages` request, or the history of reports about the page in the response to a `listIssues` request
 - `listViolators`
   - method: `GET`
-  - purpose: list all elements exhibiting one issue in one report
+  - purpose: list all elements violating rules belonging to one issue in one report
   - path: `/api/listViolators/{issueID}/{reportID}`
   - parameters
     - `issueID`: identifier of the issue
@@ -104,7 +104,7 @@ Kilotest offers these tools:
   - source of parameters: response to a `listIssues` request
 - `listDiagnoses`
   - method: `GET`
-  - purpose: list all diagnoses of one issue exhibited by one element in one report
+  - purpose: list all diagnoses of one element violating rules belonging to one issue in one report
   - path: `/api/listDiagnoses/{issueID}/{reportID}/{catalogIndex}`
   - parameters
     - `issueID`: identifier of the issue

@@ -18,12 +18,12 @@
     "wcag",
     "web standards"
   ],
-  "version": "65.2.1",
+  "version": "65.2.2",
   "description": "Tools that test web pages with an ensemble of 12 rule engines for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG)",
   "tools": [
     {
       "name": "getOverview",
-      "description": "Explains what Kilotest is, what its tools do, and how its results are structured. Use this before any other tool when the available tools or workflow are unclear; it is unnecessary once you know which tool you need. Returns a prose overview of the Kilotest domain, the tool workflow, and links to further documentation. Kilotest tests web pages for front-end quality with an ensemble of rule engines.",
+      "description": "Gets an overview of Kilotest, explaining that it is a front-end quality testing service for the web and describing its tools and the structure of its test results. Call this before any other tool when the tools and workflow are unclear.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -42,7 +42,7 @@
     },
     {
       "name": "listSites",
-      "description": "Lists all sites of which Kilotest has tested pages. Use this first to discover whether the site of a page has been tested, and then listPages with the site identifier to discover whether the page has been tested, before requesting a test. Returns, for each tested site, its identifier, name, and count of tested pages. Entries are sorted by site name and are not paginated.",
+      "description": "Lists all tested sites, alphabetically by name, each with its identifier and name and the count of its tested pages. Call this tool first to learn whether a site has been tested. If it has, call listPages to learn which of its pages have been tested. If the site has not been tested and you want it tested, call requestNewTest.",
       "inputSchema": {
         "type": "object",
         "properties": {},
@@ -405,7 +405,7 @@
     },
     {
       "name": "listPages",
-      "description": "Lists the tested pages of one site. Use this after listSites to discover whether a page of the site already has any reports before requesting a test. The siteID comes from listSites; an unknown or malformed one produces an error. Returns, for each tested page of the site, its identifier, name, URL, sites, and the identifier of its latest available report. Entries are sorted by page name and are not paginated.",
+      "description": "Lists the tested pages of one site, each with a page identifier, name, and URL, an array of the sites it belongs to (currently always 1), and the latest report identifier, sorted by page name. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues. If you want a different page of the site tested, call requestNewTest.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -865,7 +865,7 @@
     },
     {
       "name": "listIssues",
-      "description": "Lists the issues reported in one report, along with the history of all reports about the same page. Use this after listPages to begin examining the latest report about a page, or to switch to an earlier or later report or to begin examining this report. The reportID is the latest report’s identifier from listPages or an earlier identifier from the history this tool returns. Returns the history and the basics about this report’s issues, sorted by summary and not paginated; an unknown or malformed reportID produces an error. The returned issue identifiers are inputs to the listViolators tool. Use getReport instead when the entire report is needed in one call.",
+      "description": "Lists the issues reported in one report, each with an identifier, summary, and priority, sorted by summary. Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page (optionally continuing to drill down with listViolators and listDiagnoses), or to switch to an earlier or later report. Also call this tool after requestNewTest or requestRetest to learn whether the requested test results are available. Requires a reportID from listPages, the list of reports, requestNewTest, or requestRetest. After this tool, if you want to know which elements violated rules belonging to one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of this tool, listViolators, or listDiagnoses.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -1644,7 +1644,7 @@
     },
     {
       "name": "listViolators",
-      "description": "Lists the elements of a tested page that were reported as exhibiting one issue in one report. Use this after listIssues to drill down from an issue to the elements violating rules belonging to that issue; the issueID must be one of the issue identifiers listIssues returned for the same reportID; call listIssues first if you do not have an issueID. Returns basics about each violating element, sorted by catalog index and not paginated; an unknown issueID or reportID produces an error.",
+      "description": "Lists the elements of one page that were reported as violators of rules belonging to one issue in one report, each with its identifier (catalogIndex), tag name, inner text, and count of reporting rule engines, sorted by identifier. Call this tool after listIssues to continue drilling down. Requires an issueID and a reportID from listIssues. After this tool, if you want to know the diagnoses for a specific violator, call listDiagnoses. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues, this tool, or listDiagnoses.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2190,7 +2190,7 @@
     },
     {
       "name": "listDiagnoses",
-      "description": "Lists the diagnoses that rule engines gave for how one element exhibited one issue in one report. Use this after listViolators to get details about the element as a violator of the issue; the catalogIndex is the element’s identifier in the listViolators output for that issue and report. Use getReport instead when all diagnoses in the report are needed at once. Returns, for each rule engine that reported a violation by the element of a rule belonging to the issue, the diagnosis given by the rule engine; an unknown report, issue, or element produces an error.",
+      "description": "Lists the diagnoses by rule engines for one violator of rules belonging to one issue in one report, each with a description and severity. Call this after listViolators to continue drilling down. Requires a reportID, issueID, and catalogIndex (element identifier) from listViolators. After this tool, if you want to question a diagnosis, call questionDiagnosis. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues, listViolators, or this tool.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -2798,7 +2798,7 @@
     },
     {
       "name": "questionDiagnosis",
-      "description": "Questions or contests a diagnosis shown by the listDiagnoses tool; queued for review by management. Use this after listDiagnoses when you believe a rule violation was incorrectly diagnosed or classified into an issue, providing the issueID, reportID, catalogIndex, engineID, and ruleID shown in the diagnosis and your reason. No authorization is required; a nonexistent report, element, or diagnosis produces an error. Returns a confirmation with disposition details.",
+      "description": "Records and submits to management a disagreement with or doubts about one diagnosis reported by the listDiagnoses tool. Call this tool to question a diagnosis or its issue classification. Requires a reportID, issueID, catalogIndex (element identifier), engineID, and ruleID from listDiagnoses, and a reason explaining your concern. If your objection is more general than a single diagnosis, call requestFeature instead.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3142,7 +3142,7 @@
     },
     {
       "name": "getReport",
-      "description": "Retrieves one entire report as JSON, with all of its issues, violators, and diagnoses. Use this instead of drilling down through listIssues, listViolators, and listDiagnoses when the full report is needed in one call; for only part of a report, drill down with those tools instead. The reportID comes from listPages or from the report history that listIssues returns, and an unknown or malformed one produces an error. The report can exceed 1 MB; its exact size is disclosed by the listIssues tool.",
+      "description": "Gets an entire report as JSON. Call this tool if you want the full report for analysis outside of Kilotest. Requires a reportID from listPages or listIssues. The listIssues tool discloses the size of a report (typically 0.5 to 2 MB) before you decide whether to download it. If you want only selected results, drill down with listIssues, listViolators, and/or listDiagnoses instead.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3409,7 +3409,7 @@
     },
     {
       "name": "requestNewTest",
-      "description": "Submits a request to test a page that has no report yet. Identify its site with siteID if the site is in the listSites output (check the listPages output for that site first), or otherwise name the site with siteName; give exactly one of them. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The pageName becomes the name of the page in later listPages output and must differ from the names of the other pages of the site; a siteName becomes the name of a new site and must not match the name of a tested site (ignoring case, white space, and punctuation). The reason is what the reviewer evaluates. A request for immediate review of a page that may already have been tested is referred to management review, and the disposition lists the possible duplicates and similar sites. A refusal, such as a duplicate request or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
+      "description": "Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the site has been tested, or a siteName, namely the brand or organization name of the site, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club; a URL; and a reason justifying the request. If the site has been tested, the pageName must be distinct from the names of all other tested pages of the site shown by listPages. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest and wait for, typically, 2 to 4 minutes), rejection, or queuing for management review. If reviewImmediately is false or omitted, the request will be queued for management review (approval and test completion typically take an hour to a day). If the page has already been tested, call requestRetest instead.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3950,7 +3950,7 @@
     },
     {
       "name": "requestRetest",
-      "description": "Submits a request to retest a page whose existing report is considered obsolete. Set reviewImmediately to true for immediate review with immediate approval or rejection and immediate enqueueing if approved (testing then typically takes 2 to 4 minutes); set it to false to queue the request for review by management, which typically takes 1 hour to 1 day. The reportID must belong to the page’s latest report and the reason is what the reviewer evaluates. A refusal, such as a superseded report, a duplicate request, or a full queue, is reported in the disposition. Returns a confirmation with disposition details, including, on immediate approval, a report identifier and a question about whether to wait for completion with the awaitTest tool.",
+      "description": "Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues and a reason justifying the request. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest and wait for, typically, 2 to 4 minutes), rejection, or queuing for management review. If reviewImmediately is false or omitted, the request will be queued for management review (approval and test completion typically take an hour to a day). If the page has not yet been tested, call requestNewTest instead.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4445,7 +4445,7 @@
     },
     {
       "name": "requestFeature",
-      "description": "Submits a request to add a new feature or improve an existing one; queued for review by management. Use questionDiagnosis instead to question a specific diagnosis shown by listDiagnoses. The feature text describes the proposed feature or improvement. A request identical to one awaiting review is refused, and otherwise the disposition confirms the request was logged and the manager notified. Returns a request confirmation with disposition details.",
+      "description": "Requests a new feature or an improvement to an existing one. Requires a feature parameter describing the requested feature or improvement. If you want to question a diagnosis, call questionDiagnosis instead.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -4731,7 +4731,7 @@
     },
     {
       "name": "awaitTest",
-      "description": "Waits for a job that a requestNewTest or requestRetest call with reviewImmediately set to true ordered, using the report identifier that call returned. Use this instead of polling listIssues when an immediate answer is preferred. The reportID identifies a pending or in-progress job and remains the finished report’s identifier for listIssues and getReport. Blocks until the report is ready, the job fails, or a maximum wait time elapses (5 minutes by default), sending no interim notices; returns the finished job’s status and, if ready, its report identifier.",
+      "description": "Blocks and waits for completion (or failure or 5-minute timeout) of a requested job. Call this tool if you requested a new test or retest with immediate review and you want to block the workflow until the test is complete. Requires a reportID from requestNewTest or requestRetest. If you choose not to wait or the wait times out, call listIssues with the reportID later to check whether the results are available.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -5029,7 +5029,7 @@
         }
       },
       "annotations": {
-        "title": "Wait for an ordered job to finish",
+        "title": "Wait for a job requested with immediate review to finish",
         "readOnlyHint": true,
         "idempotentHint": false,
         "destructiveHint": false,

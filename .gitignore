@@ -12,6 +12,9 @@ node_modules/
 results/
 ai0Balance.json
 test/fixtures/comments/
+test/fixtures/apiIntegration/
+test/fixtures/disagreements/
+test/fixtures/featureRequests/
 
 # Test coverage reports
 coverage/

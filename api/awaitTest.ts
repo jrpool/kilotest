@@ -1,6 +1,6 @@
 /*
   awaitTest.ts
-  Waits for a job ordered via orderNewTest or orderRetest to complete, and returns its outcome.
+  Waits for a job ordered via requestNewTest or requestRetest (with reviewImmediately set to true) to complete, and returns its outcome.
 */
 
 // IMPORTS

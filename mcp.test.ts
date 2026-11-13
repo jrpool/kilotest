@@ -564,3 +564,36 @@ test('no legacyMCPCalls entry is past its retireAfter date', async () => {
     `Expired legacyMCPCalls entries in mcp.ts: ${expired.join(', ')}. Remove each expired entry and its assertions in mcp.test.ts (and, once none remain, the whole legacy-contract section), or extend its retireAfter date if retirement must be postponed.`
   );
 });
+
+test('handleMCP handles the edge cases of legacy and content-type checking', async () => {
+  const server = await startMCPServer();
+  try {
+    const port = server.address().port;
+    // A requestNewTest call with a current-contract parameter is passed through, not answered with legacy guidance.
+    const current = await callTool(port, 'requestNewTest', {pageName: 'home'});
+    assert.ok(!JSON.stringify(current).includes('have changed'));
+    // A legacy call without arguments is still answered with guidance.
+    const noArgs = await sendMCPRequest(port, 'tools/call', {name: 'orderRetest'}, 9);
+    assert.ok(JSON.parse(noArgs.body).result.content[0].text.includes('requestRetest'));
+    // A legacy call without an id is answered with a null id.
+    const noID = await sendMCPRequest(port, 'tools/call', {name: 'orderRetest', arguments: {}}, undefined);
+    assert.equal(JSON.parse(noID.body).id, null);
+    // A POST without a content-type header is rejected with 415.
+    const noType = await new Promise<any>((resolve, reject) => {
+      const req = http.request({port, method: 'POST', path: '/mcp', headers: {accept: 'application/json, text/event-stream'}}, r => {
+        let data = '';
+        r.on('data', c => {
+          data += c;
+        });
+        r.on('end', () => resolve({statusCode: r.statusCode, body: data}));
+      });
+      req.on('error', reject);
+      req.end('{}');
+    });
+    assert.equal(noType.statusCode, 415);
+    assert.equal(JSON.parse(noType.body).error.code, -32000);
+  }
+  finally {
+    await closeMCPServer(server);
+  }
+});

@@ -56,7 +56,7 @@ const maxBodyBytes = 4 * 1024 * 1024;
 // Detailed overview of the Kilotest domain, data hierarchy, and tool workflow, returned by the getOverview tool and served as the docs://kilotest/overview resource.
 const kilotestOverview = [
   sharedContext,
-  'Typical workflow: Suppose a user wants information about the quality of a website or a particular website page. Call listSites to learn whether the site has been tested. If it has, call listPages to learn which pages of the site have been tested. To get test results for any of those pages, drill down as far as needed to satisfy the user, calling listIssues, listViolators, and/or listDiagnoses. If the full machine-oriented JSON report is wanted for analysis outside of Kilotest, call getReport instead of listIssues.',
+  'Typical workflow: Suppose a user wants information about the quality of a website or a particular website page. Call listSites to learn whether the site has been tested. If it has, call listPages to learn which pages of the site have been tested. To get test results for any of those pages, drill down as far as needed to satisfy the user, calling listIssues, listViolators, and/or listDiagnoses. If the full machine-oriented JSON report is wanted for analysis outside of Kilotest, call getReport instead of listIssues, listViolators, or listDiagnoses.',
   'Requesting more testing: If needed results have not been published, you can call requestNewTest or, for a page with published but outdated results, requestRetest. For both tools, if you set the optional reviewImmediately parameter to true, then your request is immediately reviewed, and, if approved, you can optionally await test completion (typically in 2 to 4 minutes) by calling awaitTest. If reviewImmediately is false or absent, review and, on approval, testing typically take an hour to a day. Also set the reason parameter to a justification to be considered by the reviewer.',
   'Contributing: You can help improve Kilotest by calling questionDiagnosis to question a diagnosis of a reported rule violation, and by calling requestFeature to request a new feature or a feature improvement.',
   'Parameters: Each tool provides the parameter(s) required by the next tool in the drill-down sequence. On any error in the parameters that you provide, the tool returns an explanatory error message.',
@@ -117,7 +117,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listPages',
     {
-      description: 'Lists the tested pages of one site, each with a page identifier, name, and URL, an array of site identifiers (most pages have only 1 site), and the latest report identifier, sorted by page name. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues. If you want a different page of the site tested, call requestNewTest.',
+      description: 'Lists the tested pages of one site, each with a page identifier, name, and URL, an array of the sites it belongs to (currently always 1), and the latest report identifier, sorted by page name. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues. If you want a different page of the site tested, call requestNewTest.',
       inputSchema: listPagesSchema,
       outputSchema: listPagesResponseSchema,
       annotations: {
@@ -137,7 +137,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: 'Lists the issues reported in one report, each with an identifier, summary, and priority, sorted by summary. Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page (optionally continuing to drill down with listViolators and listDiagnoses), or to switch to an earlier or later report. Also call this tool after requestNewTest or requestRetest to learn whether the requested test results are available. Requires a reportID from listPages or from the list of reports. After this tool, if you want to know which elements violated one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of this tool, listViolators, or listDiagnoses.',
+      description: 'Lists the issues reported in one report, each with an identifier, summary, and priority, sorted by summary. Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page (optionally continuing to drill down with listViolators and listDiagnoses), or to switch to an earlier or later report. Also call this tool after requestNewTest or requestRetest to learn whether the requested test results are available. Requires a reportID from listPages, the list of reports, requestNewTest, or requestRetest. After this tool, if you want to know which elements violated rules belonging to one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of this tool, listViolators, or listDiagnoses.',
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
@@ -217,7 +217,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'getReport',
     {
-      description: 'Gets an entire report as JSON. Call this tool if you want the full report for analysis outside of Kilotest. Requires a reportID from listPages or listIssues. The listIssues tool discloses the size of a report (typically 0.5 to 2 MB) before you decide whether to download it. If you want Kilotest to do the analysis, drill down with listIssues, listViolators, and/or listDiagnoses instead.',
+      description: 'Gets an entire report as JSON. Call this tool if you want the full report for analysis outside of Kilotest. Requires a reportID from listPages or listIssues. The listIssues tool discloses the size of a report (typically 0.5 to 2 MB) before you decide whether to download it. If you want to interrogate Kilotest to get selected results, drill down with listIssues, listViolators, and/or listDiagnoses instead.',
       inputSchema: getReportSchema,
       outputSchema: getReportResponseSchema,
       annotations: {
@@ -237,7 +237,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the site has been tested, or a siteName, namely the brand or organization name of the site, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club. If the site has been tested, the pageName must be distinct from the names of all other tested pages of the site shown by listPages. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest), rejection, or queuing for management review. If the page has already been tested, call requestRetest instead.',
+      description: 'Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the site has been tested, or a siteName, namely the brand or organization name of the site, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club; a URL, and a reason justifying the request. If the site has been tested, the pageName must be distinct from the names of all other tested pages of the site shown by listPages. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest and wait for, typically, 2 to 4 minutes), rejection, or queuing for management review. If reviewImmediately is false, the request will be queued for management review. If the page has already been tested, call requestRetest instead.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
@@ -257,7 +257,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest), rejection, or queuing for management review. If the page has not yet been tested, call requestNewTest instead.',
+      description: 'Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest and wait for, typically, 2 to 4 minutes), rejection, or queuing for management review. If reviewImmediately is false, the request will be queued for management review. If the page has not yet been tested, call requestNewTest instead.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {
@@ -277,7 +277,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestFeature',
     {
-      description: 'Requests a new feature or an improvement to an existing one. Requires a feature parameter describing the requested feature or improvement. If you want to question a diagnosis, call requestRetest instead.',
+      description: 'Requests a new feature or an improvement to an existing one. Requires a feature parameter describing the requested feature or improvement. If you want to question a diagnosis, call questionDiagnosis instead.',
       inputSchema: requestFeatureSchema,
       outputSchema: requestFeatureResponseSchema,
       annotations: {

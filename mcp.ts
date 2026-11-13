@@ -117,7 +117,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listPages',
     {
-      description: 'Lists the tested pages of one site, each with a page identifier, name, URL, sites, and latest report identifier, sorted by name. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues. If you want a different page of the site tested, call requestNewTest.',
+      description: 'Lists the tested pages of one site, each with a page identifier, name, and URL, an array of site identifiers (most pages have only 1 site), and the latest report identifier, sorted by page name. Call this after listSites to learn which pages of a site have been tested. Requires a siteID from listSites. After this tool, if you want to know which issues were reported, call listIssues. If you want a different page of the site tested, call requestNewTest.',
       inputSchema: listPagesSchema,
       outputSchema: listPagesResponseSchema,
       annotations: {
@@ -137,7 +137,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listIssues',
     {
-      description: 'Lists the issues reported in one report, each with an identifier, summary, and priority, sorted by summary. Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page, or to switch to an earlier or later report. Also call this tool after requestNewTest or requestRetest to learn whether the requested test results are available. Requires a reportID from listPages or from the list of reports. After this tool, if you want to know which elements violated one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues or listViolators.',
+      description: 'Lists the issues reported in one report, each with an identifier, summary, and priority, sorted by summary. Also lists all the reports about the same page chronologically. Call this tool after listPages to begin getting test results about a page (optionally continuing to drill down with listViolators and listDiagnoses), or to switch to an earlier or later report. Also call this tool after requestNewTest or requestRetest to learn whether the requested test results are available. Requires a reportID from listPages or from the list of reports. After this tool, if you want to know which elements violated one of the issues, call listViolators. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of this tool, listViolators, or listDiagnoses.',
       inputSchema: listIssuesSchema,
       outputSchema: listIssuesResponseSchema,
       annotations: {
@@ -157,7 +157,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listViolators',
     {
-      description: 'Lists the elements of one page that were reported as violators of rules belonging to one issue in one report, each with its identifier (catalogIndex), tag name, inner text, and count of reporting rule engines, sorted by identifier. Call this tool after listIssues to continue drilling down. Requires an issueID and a reportID from listIssues. After this tool, if you want to know the diagnoses for a specific violator, call listDiagnoses.',
+      description: 'Lists the elements of one page that were reported as violators of rules belonging to one issue in one report, each with its identifier (catalogIndex), tag name, inner text, and count of reporting rule engines, sorted by identifier. Call this tool after listIssues to continue drilling down. Requires an issueID and a reportID from listIssues. After this tool, if you want to know the diagnoses for a specific violator, call listDiagnoses. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues, this tool, or listDiagnoses.',
       inputSchema: listViolatorsSchema,
       outputSchema: listViolatorsResponseSchema,
       annotations: {
@@ -177,7 +177,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'listDiagnoses',
     {
-      description: 'Lists the diagnoses by rule engines for one violator of rules belonging to one issue in one report, each with a description and severity. Call this after listViolators to continue drilling down. Requires a reportID, issueID, and catalogIndex (element identifier) from listViolators. After this tool, if you want to question a diagnosis, call questionDiagnosis.',
+      description: 'Lists the diagnoses by rule engines for one violator of rules belonging to one issue in one report, each with a description and severity. Call this after listViolators to continue drilling down. Requires a reportID, issueID, and catalogIndex (element identifier) from listViolators. After this tool, if you want to question a diagnosis, call questionDiagnosis. If you want the entire JSON report for analysis outside Kilotest, call getReport instead of listIssues, listViolators, or this tool.',
       inputSchema: listDiagnosesSchema,
       outputSchema: listDiagnosesResponseSchema,
       annotations: {
@@ -237,7 +237,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestNewTest',
     {
-      description: 'Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the site has been tested, or a siteName, the brand or organization name of the site, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club. If the site has been tested, the pageName must be distinct from the names of all other tested pages of the site shown by listPages. If the page has already been tested, call requestRetest instead.',
+      description: 'Requests that a not yet tested page be tested. Call this tool after listSites or listPages. Requires either a siteID from listSites if the site has been tested, or a siteName, namely the brand or organization name of the site, like the names shown by listSites, but distinct from the name of any tested site when lower-cased and stripped of punctuation and white space. Also requires a pageName describing the purpose of the page, such as home, about, contact, shop, blog, subscribe, sign up, or Benefactors Club. If the site has been tested, the pageName must be distinct from the names of all other tested pages of the site shown by listPages. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest), rejection, or queuing for management review. If the page has already been tested, call requestRetest instead.',
       inputSchema: requestNewTestSchema,
       outputSchema: requestNewTestResponseSchema,
       annotations: {
@@ -257,7 +257,7 @@ export const createMCPServer = (): McpServer => {
   server.registerTool(
     'requestRetest',
     {
-      description: 'Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues. If the page has not yet een tested, call requestNewTest instead.',
+      description: 'Requests that a page be tested again. Call this tool if you have reason to consider the latest report about the page outdated. Requires a reportID from listPages or listIssues. Permits an optional boolean reviewImmediately parameter. If it is true, the response will notify you of approval (with a report identifier, and with an opportunity to call awaitTest), rejection, or queuing for management review. If the page has not yet been tested, call requestNewTest instead.',
       inputSchema: requestRetestSchema,
       outputSchema: requestRetestResponseSchema,
       annotations: {

@@ -433,6 +433,16 @@ export const handleMCP = async (request: IncomingMessage, response: ServerRespon
     }));
     return;
   }
+  // If the body is not declared to be JSON: reject it, as the SDK transport would if it read the body itself.
+  if (!(request.headers['content-type'] ?? '').includes('application/json')) {
+    response.writeHead(415, {'content-type': 'application/json'});
+    response.end(JSON.stringify({
+      jsonrpc: '2.0',
+      error: {code: -32000, message: 'Unsupported Media Type: Content-Type must be application/json'},
+      id: null
+    }));
+    return;
+  }
   const parsedBody = await getParsedBody(request);
   // If the body is not valid JSON or is too large: reject it as a parse error.
   if (parsedBody === undefined) {

@@ -2004,6 +2004,15 @@ test('POST /mcp with malformed JSON returns a JSON-RPC 400 parse error', async (
   assert.equal(jsonBody(res).error.code, -32700);
 });
 
+test('POST /mcp with an oversized body returns a JSON-RPC 400 parse error', async () => {
+  const res = await request('POST', '/mcp', JSON.stringify({padding: 'x'.repeat(4 * 1024 * 1024)}), {
+    'content-type': 'application/json',
+    accept: 'application/json, text/event-stream'
+  });
+  assert.equal(res.statusCode, 400);
+  assert.equal(jsonBody(res).error.code, -32700);
+});
+
 test('POST /mcp with a non-JSON-RPC body returns a JSON-RPC 400 error', async () => {
   const res = await request('POST', '/mcp', {foo: 'bar'}, {accept: 'application/json, text/event-stream'});
   assert.equal(res.statusCode, 400);

@@ -45,7 +45,10 @@ const getOrderedPages = (registry: Registry, siteID: string): [string, PageRecor
 const getFormLines = (
   registry: Registry, siteID: string, values: FormValues, message: {type: 'status' | 'alert'; text: string} | null
 ): string[] => [
-  ...(message ? [`${margin}<p role="${message.type}"><strong>${htmlSafe(message.text)}</strong></p>`] : []),
+  // A message about an error has the error class, which makes it conspicuous, and is focused, so that it is announced when the page is loaded; one about a success is only emphasized.
+  ...(message ? [message.type === 'alert'
+    ? `${margin}<p role="alert" class="error" tabindex="-1" autofocus>${htmlSafe(message.text)}</p>`
+    : `${margin}<p role="status"><strong>${htmlSafe(message.text)}</strong></p>`] : []),
   `${margin}<p>Edit any values to be revised. Unedited values remain unchanged. By convention, the home page of a site is named “home”.</p>`,
   `${margin}<form action="/reregisterForm.html" method="post">`,
   `${margin}  <input type="hidden" name="siteID" value="${siteID}">`,

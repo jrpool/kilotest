@@ -191,7 +191,8 @@ export const reportDeletionForm = async (
   const anyDeletable = lines.length > 0;
   const query: Record<string, string> = {
     reports: lines.join('\n'),
-    notice: notice ? `      <p role="alert"><strong>${htmlSafe(notice)}</strong></p>` : '',
+    // Any message about an error is located at the top of the page, has the error class, which makes it conspicuous, and is focused, so that it is announced when the page is loaded.
+    notice: notice ? `      <p role="alert" class="error" tabindex="-1" autofocus>${htmlSafe(notice)}</p>` : '',
     intro: anyDeletable ? intro : emptyIntro,
     disabled: anyDeletable ? '' : 'disabled'
   };

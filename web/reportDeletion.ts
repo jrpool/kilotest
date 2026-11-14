@@ -8,6 +8,7 @@
 import {
   errorMessage,
   getReport,
+  getReportPageID,
   isReportError,
   isValidAuthCode,
   objectSort,
@@ -18,6 +19,7 @@ import {
 import {
   getReportData
 } from './util.ts';
+import {getRegistry} from '../registry.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -28,6 +30,10 @@ type ReportSpec = {
   id: string;
   issueCount: number;
   preventedEngineCount: number;
+  // What the report is about: the identifier of its page, or, if it has none, its URL. Reports about one page have one target even if the URL of the page was revised between them.
+  target: string;
+  // The URL by which the report is ordered: the registered URL of its page, or, if the page is not registered, its own URL.
+  sortURL: string;
   url: string;
 };
 
@@ -86,6 +92,7 @@ export const reportDeletionForm = async (
     }
   }
   const reportNames = await readdirOrCreate(reportsPath(), 'Reports directory');
+  const registry = await getRegistry();
   // Initialize an array of report summaries.
   const reportSpecs: ReportSpec[] = [];
   // For each report:
@@ -104,17 +111,21 @@ export const reportDeletionForm = async (
     // Otherwise, i.e. if it succeeded, get a summary of it.
     const reportFacts = getReportData(report);
     const {issueCount, preventedEngineCount, url} = reportFacts;
+    const pageID = getReportPageID(report);
     // Otherwise, i.e. if it succeeded, add the summary to the array.
     reportSpecs.push({
       id: reportID,
       issueCount,
       preventedEngineCount,
+      target: pageID || url,
+      sortURL: registry.pages[pageID]?.url ?? url,
       url
     });
   }
-  // Sort the summaries primarily by URL and secondarily by report identifier.
+  // Sort the summaries by URL, then target, and then report identifier, so that the reports about each target are adjacent and chronological.
   objectSort(reportSpecs, 'id', 'alpha');
-  objectSort(reportSpecs, 'url', 'alpha');
+  objectSort(reportSpecs, 'target', 'alpha');
+  objectSort(reportSpecs, 'sortURL', 'alpha');
   const lines: string[] = [];
   const margin = ' '.repeat(12);
   let anyDeletable = false;

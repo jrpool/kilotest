@@ -716,6 +716,10 @@ test('isValidAuthCode returns false for an undefined code', () => {
 
 test('minifyURL removes www. and trailing slash and lowercases', () => {
   assert.equal(minifyURL('https://www.Example.com/'), 'https://example.com');
+  // The www. label is removed whatever its case, but only where it begins the host.
+  assert.equal(minifyURL('https://WWW.Example.com/Path/'), 'https://example.com/path');
+  assert.equal(minifyURL('https://example.com/docs/www.pdf'), 'https://example.com/docs/www.pdf');
+  assert.equal(minifyURL('https://awww.example.com'), 'https://awww.example.com');
 });
 
 test('objectSort sorts objects alphabetically by a string property', () => {

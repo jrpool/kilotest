@@ -580,8 +580,11 @@ export const isAllowedRedirectTarget = async (
 export const isValidAuthCode = (authCode: string | undefined | null): boolean => {
   return !!authCode && authCode === process.env.AUTH_CODE;
 };
-// Minifies a URL for duplicate detection.
-export const minifyURL = (url: string): string => url.replace(/www\.|\/$/g, '').toLowerCase();
+// Minifies a URL for duplicate detection: lowercases it, removes a www. label that begins its host, and removes a final slash. Lowercasing precedes the removal, so that the label is removed whatever its case, and the removal is limited to the start of the host, so that a www. elsewhere in the URL (as in /docs/www.pdf) is kept.
+export const minifyURL = (url: string): string => url
+.toLowerCase()
+.replace(/^(https?:\/\/)www\./, '$1')
+.replace(/\/$/, '');
 // Sorts objects by a property value and returns the sorted array.
 export const objectSort = <T extends Record<string, unknown>>(
   objects: T[],

@@ -80,6 +80,29 @@ test('pruneReportsForm deletes a superseded report with valid auth code on a POS
   }
 });
 
+test('pruneReportsForm treats reports about one page as reports about one target even if their URLs differ', async () => {
+  // 260202T0000-new is about the same page as 260101T0000-mix.
+  const reportPath = path.join(reportsPath(), '260202T0000-new.json');
+  const backup = await fs.readFile(reportPath, 'utf8');
+  try {
+    const report = JSON.parse(backup);
+    report.target.url = 'https://example.com/mixed-revised';
+    await fs.writeFile(reportPath, JSON.stringify(report));
+    const result = await answer(null, '', 'GET');
+    const html = parse(result.answerPage as string);
+    assert.ok(html.querySelector('input[value="260101T0000-mix"]'));
+    assert.equal(html.querySelector('input[value="260202T0000-new"]'), null);
+    // A report with no page identifier is about its URL, so it supersedes no report with a different URL.
+    delete report.sources.pageID;
+    await fs.writeFile(reportPath, JSON.stringify(report));
+    const orphanResult = await answer(null, '', 'GET');
+    assert.equal(parse(orphanResult.answerPage as string).querySelector('input[value="260101T0000-mix"]'), null);
+  }
+  finally {
+    await fs.writeFile(reportPath, backup);
+  }
+});
+
 test('pruneReportsForm returns an error when a report file is corrupt', async () => {
   const reportPath = path.join(reportsPath(), '260101T0001-ct.json');
   const backup = await fs.readFile(reportPath, 'utf8');

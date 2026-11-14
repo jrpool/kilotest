@@ -57,10 +57,17 @@ test('expungeReportsForm returns an error for an invalid auth code on a POST req
   assert.equal(result.message, 'Invalid request');
 });
 
-test('expungeReportsForm returns an error when deleting a nonexistent report on a POST request', async () => {
-  const result: any = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope', 'POST');
-  assert.equal(result.status, 'error');
-  assert.ok(result.message.includes('Deleting sole reports'));
+test('expungeReportsForm deletes nothing and says why when a submitted report is not deletable', async () => {
+  // 999999T9999-nope does not exist, and 260101T0000-mix and 260202T0000-new are never both deletable with this form.
+  for (const reports of [['999999T9999-nope'], ['260101T0000-mix', '260202T0000-new']]) {
+    const search = `authCode=test-auth-code&${reports.map(report => `report=${report}`).join('&')}`;
+    const result: any = await answer(null, search, 'POST');
+    assert.equal(result.status, 'ok');
+    const alert = parse(result.answerPage as string).querySelector('[role="alert"]')?.text ?? '';
+    assert.match(alert, /^Nothing was deleted, because report \S+ is not deletable with this form\./);
+    await fs.access(path.join(reportsPath(), '260101T0000-mix.json'));
+    await fs.access(path.join(reportsPath(), '260202T0000-new.json'));
+  }
 });
 
 test('expungeReportsForm deletes a sole report with valid auth code on a POST request', async () => {
@@ -116,5 +123,28 @@ test('expungeReportsForm shows no-deletable message when every URL has at least 
   finally {
     process.env.DB_DIR = savedDBDir;
     await fs.rm(tmpDir, {recursive: true}).catch(() => {});
+  }
+});
+
+test('expungeReportsForm shows a sole report with no page identifier or names as unregistered', async () => {
+  const reportPath = path.join(reportsPath(), '260101T0001-ct.json');
+  const backup = await fs.readFile(reportPath, 'utf8');
+  try {
+    const report = JSON.parse(backup);
+    delete report.sources;
+    await fs.writeFile(reportPath, JSON.stringify(report));
+    const result: any = await answer(null, '', 'GET');
+    const group = parse(result.answerPage).querySelectorAll('fieldset')
+    .find(fieldset => fieldset.querySelector('input[value="260101T0001-ct"]'));
+    assert.equal(group?.querySelector('legend')?.text, 'page with no identifier');
+    const lines = group?.querySelectorAll('p').map(line => line.text) ?? [];
+    assert.equal(lines[0], 'Not now registered.');
+    assert.ok(lines[1]?.includes(`tested as “${report.target.what}” at ${report.target.url};`));
+    // The page with 2 reports has no sole report, so it is omitted.
+    assert.equal(parse(result.answerPage).querySelector('input[value="260101T0000-mix"]'), null);
+    assert.ok(!result.answerPage.includes('260202T0000-new'));
+  }
+  finally {
+    await fs.writeFile(reportPath, backup);
   }
 });

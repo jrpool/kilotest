@@ -57,10 +57,17 @@ test('rewindReportsForm returns an error for an invalid auth code on a POST requ
   assert.equal(result.message, 'Invalid request');
 });
 
-test('rewindReportsForm returns an error when deleting a nonexistent report on a POST request', async () => {
-  const result = await answer(null, 'authCode=test-auth-code&report=999999T9999-nope', 'POST');
-  assert.equal(result.status, 'error');
-  assert.ok(result.message?.includes('Deleting latest superseding reports'));
+test('rewindReportsForm deletes nothing and says why when a submitted report is not deletable', async () => {
+  // 999999T9999-nope does not exist, and 260101T0000-mix and 260202T0000-new are never both deletable with this form.
+  for (const reports of [['999999T9999-nope'], ['260101T0000-mix', '260202T0000-new']]) {
+    const search = `authCode=test-auth-code&${reports.map(report => `report=${report}`).join('&')}`;
+    const result = await answer(null, search, 'POST');
+    assert.equal(result.status, 'ok');
+    const alert = parse(result.answerPage as string).querySelector('[role="alert"]')?.text ?? '';
+    assert.match(alert, /^Nothing was deleted, because report \S+ is not deletable with this form\./);
+    await fs.access(path.join(reportsPath(), '260101T0000-mix.json'));
+    await fs.access(path.join(reportsPath(), '260202T0000-new.json'));
+  }
 });
 
 test('rewindReportsForm deletes a latest superseding report with valid auth code on a POST request', async () => {

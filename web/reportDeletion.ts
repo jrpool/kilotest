@@ -181,10 +181,10 @@ export const reportDeletionForm = async (
     for (const {spec, deletable} of group) {
       const {id, issueCount, preventedEngineCount, title, url} = spec;
       const specString = `<code>${id}</code>: tested as “${htmlSafe(title)}” at <code>${htmlSafe(url)}</code>; preventions ${preventedEngineCount}, issues ${issueCount}`;
-      // Add a line about it, with a deletion checkbox if it is deletable.
+      // Add a line about it, with a deletion checkbox if and only if it is deletable.
       lines.push(deletable
         ? `${margin}  <p><label><input type="checkbox" name="report" value="${id}"> ${specString}</label></p>`
-        : `${margin}  <p>Not deletable here: ${specString}</p>`);
+        : `${margin}  <p>${specString}</p>`);
     }
     lines.push(`${margin}</fieldset>`);
   }

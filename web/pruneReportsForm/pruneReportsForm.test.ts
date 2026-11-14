@@ -98,7 +98,7 @@ test('pruneReportsForm shows only the pages with a deletable report, each with a
   assert.deepEqual(lines, [
     'Now registered as “Fixture Site Mixed Outcomes” at https://example.com/mixed.',
     ' 260101T0000-mix: tested as “Fixture Site Mixed Outcomes” at https://example.com/mixed; preventions 0, issues 2',
-    'Not deletable here: 260202T0000-new: tested as “Fixture Site Mixed Outcomes” at https://example.com/mixed; preventions 0, issues 1'
+    '260202T0000-new: tested as “Fixture Site Mixed Outcomes” at https://example.com/mixed; preventions 0, issues 1'
   ]);
   // The deletable report has a labeled checkbox, and the other report has none.
   assert.ok(group.querySelector('label input[type="checkbox"][value="260101T0000-mix"]'));

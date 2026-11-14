@@ -27,7 +27,7 @@ const getBody = (fields: Record<string, string>, authCode = 'test-auth-code'): s
   new URLSearchParams({siteID, siteName: 'Fixture Site', authCode, ...fields}).toString();
 // Returns the text of the message of a given type in an answer page.
 const getMessage = (result: any, type: 'status' | 'alert'): string | undefined =>
-  parse(result.answerPage).querySelector(`[role="${type}"]`)?.text;
+  parse(result.answerPage).querySelector(type === 'alert' ? 'h1 + p.error[role="alert"]' : 'p[role="status"]')?.text;
 
 before(async () => {
   process.env.AUTH_CODE = 'test-auth-code';

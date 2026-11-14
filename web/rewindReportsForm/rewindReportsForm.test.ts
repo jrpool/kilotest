@@ -63,7 +63,7 @@ test('rewindReportsForm deletes nothing and says why when a submitted report is 
     const search = `authCode=test-auth-code&${reports.map(report => `report=${report}`).join('&')}`;
     const result = await answer(null, search, 'POST');
     assert.equal(result.status, 'ok');
-    const alert = parse(result.answerPage as string).querySelector('[role="alert"]')?.text ?? '';
+    const alert = parse(result.answerPage as string).querySelector('h1 + p.error[role="alert"]')?.text ?? '';
     assert.match(alert, /^Nothing was deleted, because report \S+ is not deletable with this form\./);
     await fs.access(path.join(reportsPath(), '260101T0000-mix.json'));
     await fs.access(path.join(reportsPath(), '260202T0000-new.json'));

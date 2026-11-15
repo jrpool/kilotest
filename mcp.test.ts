@@ -247,13 +247,24 @@ test('requestNewTest handler with reviewImmediately enqueues a job and returns r
   const {jobsPath} = await import('./util.ts');
   const server = createMCPServer();
   const countBefore = getToolCallCount('requestNewTest');
-  const result = await (server as any)._registeredTools.requestNewTest.handler({
-    siteName: 'MCP Ordered Org',
-    pageName: 'home',
-    URL: 'https://example.com/mcp-ordered',
-    reason: 'Because accessibility matters here',
-    reviewImmediately: true
-  });
+  const logged: string[] = [];
+  const originalLog = console.log;
+  console.log = (...args) => logged.push(args.join(' '));
+  let result;
+  try {
+    result = await (server as any)._registeredTools.requestNewTest.handler({
+      siteName: 'MCP Ordered Org',
+      pageName: 'home',
+      URL: 'https://example.com/mcp-ordered',
+      reason: 'Because accessibility matters here',
+      reviewImmediately: true
+    });
+  }
+  finally {
+    console.log = originalLog;
+  }
+  // The manager alert names the MCP server as the interface.
+  assert.ok(logged.some(line => line.startsWith('WARNING (Kilotest: MCP request for a new test approved immediately)')));
   assert.ok(result.content);
   assert.equal(result.content[0].type, 'text');
   assert.ok(result.structuredContent);

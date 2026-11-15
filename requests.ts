@@ -32,6 +32,8 @@ import {
 
 // TYPES
 
+// The interface through which a request is submitted.
+export type RequestInterface = 'web' | 'API' | 'MCP';
 // The target of a submitted request: a page to be added, or the identifier of a report about a page to be retested.
 export type RequestTarget = Exclude<PageTarget, {pageID: string}> | {reportID: string};
 // An existing tested page that may be the requested page.
@@ -194,9 +196,9 @@ const getRequestID = (testRequests: TestRequests): string => {
   } while (usedIDs.has(id));
   return id;
 };
-// Submits a request as a transaction and returns the result. finalURL is the URL to which the requested URL redirects, if known.
-export const submitTestRequest = ({target, reason, reviewImmediately, finalURL = ''}: {
-  target: RequestTarget; reason: string; reviewImmediately: boolean; finalURL?: string;
+// Submits a request as a transaction and returns the result. via is the interface through which the request was submitted, and finalURL is the URL to which the requested URL redirects, if known. A manager is alerted to every request that is added to the pending requests or for which a job is created, and the alert names the interface.
+export const submitTestRequest = ({target, reason, reviewImmediately, via, finalURL = ''}: {
+  target: RequestTarget; reason: string; reviewImmediately: boolean; via: RequestInterface; finalURL?: string;
 }): Promise<SubmitResult> => testRequestsLock(async (): Promise<SubmitResult> => {
   let pageTarget: PageTarget;
   // Whether the cited report (for a retest) has been superseded by a later one.
@@ -259,6 +261,7 @@ export const submitTestRequest = ({target, reason, reviewImmediately, finalURL =
       registry, testedPageIDs, page, finalURL
     );
     const referred = reviewImmediately && (checks.possibleDuplicates.length + checks.similarSites.length > 0);
+    const kind = page.pageID ? 'a retest' : 'a new test';
     // If immediate review was requested and the request passes every check:
     if (reviewImmediately && !referred) {
       const queueMax = jobQueueMax();
@@ -268,7 +271,18 @@ export const submitTestRequest = ({target, reason, reviewImmediately, finalURL =
         return {result: 'queueFull', page, referred, ...checks};
       }
       // Otherwise, create the job.
-      return startJob(pageTarget, reason);
+      const startResult = await startJob(pageTarget, reason);
+      // If it was created:
+      if (startResult.result === 'ordered') {
+        const {page: jobPage, reportID} = startResult;
+        // Alert a manager.
+        await sendAlert(
+          `Kilotest: ${via} request for ${kind} approved immediately`,
+          `Interface: ${via}\nSite: ${jobPage.siteName}\nPage: ${jobPage.pageName}\nURL: ${jobPage.url}\n` +
+          `Reason: ${getPlainText(reason)}\nReport: ${reportID}`
+        );
+      }
+      return startResult;
     }
     // Otherwise, i.e. if the request is for or referred to management review, if the pending requests are full:
     const queueMax = testRequestQueueMax();
@@ -286,12 +300,11 @@ export const submitTestRequest = ({target, reason, reviewImmediately, finalURL =
     });
     await saveTestRequests(testRequests);
     // Alert a manager, including the resulting number of pending requests.
-    const kind = page.pageID ? 'a retest' : 'a new test';
     const referral = referred ? ' (referred from immediate review)' : '';
     const checkCount = checks.possibleDuplicates.length + checks.similarSites.length;
     await sendAlert(
-      `Kilotest: request for ${kind} awaits approval${referral}`,
-      `Site: ${page.siteName}\nPage: ${page.pageName}\nURL: ${page.url}\nReason: ${getPlainText(reason)}\n` +
+      `Kilotest: ${via} request for ${kind} awaits approval${referral}`,
+      `Interface: ${via}\nSite: ${page.siteName}\nPage: ${page.pageName}\nURL: ${page.url}\nReason: ${getPlainText(reason)}\n` +
       `Possible duplicates and similar sites: ${checkCount}\n` +
       `Requests now awaiting approval: ${getPendingCount(testRequests)} of ${describeMax(queueMax)}`
     );

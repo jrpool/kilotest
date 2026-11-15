@@ -37,8 +37,19 @@ after(() => {
 // TESTS
 
 test('answer returns ok with a populated answer page for a valid retest request', async () => {
-  const result: any = await answer('260202T0000-new', reason);
+  const logged: string[] = [];
+  const originalLog = console.log;
+  console.log = (...args) => logged.push(args.join(' '));
+  let result: any;
+  try {
+    result = await answer('260202T0000-new', reason);
+  }
+  finally {
+    console.log = originalLog;
+  }
   assert.equal(result.status, 'ok');
+  // The manager alert names the web UI as the interface.
+  assert.ok(logged.some(line => line.startsWith('WARNING (Kilotest: web request for a retest awaits approval)')));
   assert.ok(result.answerPage.includes('Fixture Site Mixed Outcomes'));
   assert.ok(result.answerPage.includes('https://example.com/mixed'));
 });

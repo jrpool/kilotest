@@ -117,7 +117,7 @@ test('getTestRequests creates an empty file if none exists, and throws if the fi
 test('submitTestRequest records a request for a page of a new site for management review', async () => {
   await withDB(async () => {
     const result = await submitTestRequest({
-      target: {siteName: 'New Org', pageName: 'home', url: 'https://neworg.example/'}, reason, reviewImmediately: false
+      target: {siteName: 'New Org', pageName: 'home', url: 'https://neworg.example/'}, reason, reviewImmediately: false, via: 'API'
     });
     assert.deepEqual(result, {
       result: 'pending',
@@ -134,7 +134,7 @@ test('submitTestRequest records a request for a page of a new site for managemen
     assert.equal(Object.keys((await getRegistry()).sites).length, 1);
     // An identical request is a duplicate.
     const duplicate = await submitTestRequest({
-      target: {siteName: 'New Org', pageName: 'home', url: 'https://neworg.example/'}, reason, reviewImmediately: false
+      target: {siteName: 'New Org', pageName: 'home', url: 'https://neworg.example/'}, reason, reviewImmediately: false, via: 'API'
     });
     assert.equal(duplicate.result, 'duplicate');
   });
@@ -142,7 +142,7 @@ test('submitTestRequest records a request for a page of a new site for managemen
 test('submitTestRequest refuses unresolvable targets and URLs of invalid length', async () => {
   await withDB(async () => {
     const submit = (target: Parameters<typeof submitTestRequest>[0]['target']) => submitTestRequest({
-      target, reason, reviewImmediately: true
+      target, reason, reviewImmediately: true, via: 'API'
     });
     assert.deepEqual(await submit({siteName: 'X', pageName: 'home', url: 'https://x.c'}), {result: 'urlLength'});
     assert.deepEqual(
@@ -168,12 +168,12 @@ test('submitTestRequest refuses unresolvable targets and URLs of invalid length'
 });
 test('submitTestRequest handles retests of superseded and latest reports', async () => {
   await withDB(async () => {
-    const superseded = await submitTestRequest({target: {reportID: '260101T0000-mix'}, reason, reviewImmediately: false});
+    const superseded = await submitTestRequest({target: {reportID: '260101T0000-mix'}, reason, reviewImmediately: false, via: 'API'});
     assert.equal(superseded.result, 'superseded');
-    const pending = await submitTestRequest({target: {reportID: '260202T0000-new'}, reason, reviewImmediately: false});
+    const pending = await submitTestRequest({target: {reportID: '260202T0000-new'}, reason, reviewImmediately: false, via: 'API'});
     assert.equal(pending.result, 'pending');
     assert.deepEqual(readRequests()['https://example.com/mixed']?.[0]?.target, {pageID: 'p-mixedout'});
-    const ordered = await submitTestRequest({target: {reportID: '260101T0009-brd'}, reason, reviewImmediately: true});
+    const ordered = await submitTestRequest({target: {reportID: '260101T0009-brd'}, reason, reviewImmediately: true, via: 'API'});
     assert.equal(ordered.result, 'ordered');
     const {reportID} = ordered as Extract<SubmitResult, {result: 'ordered'}>;
     const job = readJob(reportID);
@@ -184,7 +184,7 @@ test('submitTestRequest handles retests of superseded and latest reports', async
       {siteID: 's-fixtur', pageID: 'p-branchco', reason}
     );
     // A retest of a page whose job is queued is refused.
-    const again = await submitTestRequest({target: {reportID: '260101T0009-brd'}, reason, reviewImmediately: true});
+    const again = await submitTestRequest({target: {reportID: '260101T0009-brd'}, reason, reviewImmediately: true, via: 'API'});
     assert.equal(again.result, 'page');
   });
 });
@@ -192,15 +192,15 @@ test('submitTestRequest refuses pages with claimed or queued jobs', async () => 
   await withDB(async () => {
     writeJob('claimed', 'claimed', {sources: {pageID: 'p-emptyres'}, target: {url: 'https://example.com/empty'}});
     writeJob('queue', 'queued', {target: {url: 'https://www.example.com/queued/'}});
-    const claimed = await submitTestRequest({target: {reportID: '260101T0005-emp'}, reason, reviewImmediately: false});
+    const claimed = await submitTestRequest({target: {reportID: '260101T0005-emp'}, reason, reviewImmediately: false, via: 'API'});
     assert.equal(claimed.result, 'page');
     const queued = await submitTestRequest({
-      target: {siteID: 's-fixtur', pageName: 'Queued', url: 'https://example.com/queued'}, reason, reviewImmediately: false
+      target: {siteID: 's-fixtur', pageName: 'Queued', url: 'https://example.com/queued'}, reason, reviewImmediately: false, via: 'API'
     });
     assert.equal(queued.result, 'url');
     fs.writeFileSync(path.join(jobsPath(), 'claimed', 'defective.json'), 'not JSON');
     await assert.rejects(
-      submitTestRequest({target: {reportID: '260101T0005-emp'}, reason, reviewImmediately: false}),
+      submitTestRequest({target: {reportID: '260101T0005-emp'}, reason, reviewImmediately: false, via: 'API'}),
       /Failed to process test request/
     );
   });
@@ -208,7 +208,7 @@ test('submitTestRequest refuses pages with claimed or queued jobs', async () => 
 test('submitTestRequest refers a request with possible duplicates to management review', async () => {
   await withDB(async () => {
     const sameURL = await submitTestRequest({
-      target: {siteID: 's-fixtur', pageName: 'Other', url: 'https://www.example.com/mixed/'}, reason, reviewImmediately: true
+      target: {siteID: 's-fixtur', pageName: 'Other', url: 'https://www.example.com/mixed/'}, reason, reviewImmediately: true, via: 'API'
     });
     assert.equal(sameURL.result, 'pending');
     assert.deepEqual(
@@ -221,6 +221,7 @@ test('submitTestRequest refers a request with possible duplicates to management 
       target: {siteID: 's-fixtur', pageName: 'Redirector', url: 'https://example.com/redirector'},
       reason,
       reviewImmediately: false,
+      via: 'API',
       finalURL: 'https://example.com/branch'
     });
     assert.deepEqual(
@@ -229,7 +230,7 @@ test('submitTestRequest refers a request with possible duplicates to management 
     );
     // A page with only hidden reports is not a tested page.
     const hidden = await submitTestRequest({
-      target: {siteID: 's-fixtur', pageName: 'Hidden Again', url: 'https://example.com/hidden'}, reason, reviewImmediately: true
+      target: {siteID: 's-fixtur', pageName: 'Hidden Again', url: 'https://example.com/hidden'}, reason, reviewImmediately: true, via: 'API'
     });
     assert.equal(hidden.result, 'ordered');
   });
@@ -238,14 +239,14 @@ test('submitTestRequest reports sites with similar names or home-page domains', 
   await withDB(async () => {
     await addHomeSite();
     const byName = await submitTestRequest({
-      target: {siteName: 'Fixture Site (FS)', pageName: 'home', url: 'https://fs.example/'}, reason, reviewImmediately: true
+      target: {siteName: 'Fixture Site (FS)', pageName: 'home', url: 'https://fs.example/'}, reason, reviewImmediately: true, via: 'API'
     });
     assert.deepEqual((byName as Extract<SubmitResult, {referred: boolean}>).similarSites, [{
       siteID: 's-fixtur',
       reason: 'Its name differs from the requested site name only in case, punctuation, or a parenthesized part.'
     }]);
     const byDomain = await submitTestRequest({
-      target: {siteName: 'Shop', pageName: 'home', url: 'https://shop.homesite.org/'}, reason, reviewImmediately: false
+      target: {siteName: 'Shop', pageName: 'home', url: 'https://shop.homesite.org/'}, reason, reviewImmediately: false, via: 'API'
     });
     assert.deepEqual((byDomain as Extract<SubmitResult, {referred: boolean}>).similarSites, [{
       siteID: homeSite.siteID, reason: 'Its home page has the same domain as the requested page.'
@@ -255,7 +256,7 @@ test('submitTestRequest reports sites with similar names or home-page domains', 
 test('submitTestRequest creates a job for a request that passes every check under immediate review', async () => {
   await withDB(async () => {
     const result = await submitTestRequest({
-      target: {siteName: 'New Org', pageName: 'home', url: 'https://neworg.example/'}, reason, reviewImmediately: true
+      target: {siteName: 'New Org', pageName: 'home', url: 'https://neworg.example/'}, reason, reviewImmediately: true, via: 'API'
     });
     assert.equal(result.result, 'ordered');
     const {page, reportID} = result as Extract<SubmitResult, {result: 'ordered'}>;
@@ -271,10 +272,47 @@ test('submitTestRequest creates a job for a request that passes every check unde
     assert.deepEqual(readRequests(), {});
   });
 });
+test('submitTestRequest alerts a manager to every pending or ordered request, naming the interface', async () => {
+  await withDB(async () => {
+    const logged: string[] = [];
+    const originalLog = console.log;
+    console.log = (...args) => logged.push(args.join(' '));
+    try {
+      const submit = (via: 'web' | 'API' | 'MCP', pageName: string, reviewImmediately: boolean) => submitTestRequest({
+        target: {siteID: 's-fixtur', pageName, url: `https://example.com/${pageName}`}, reason, reviewImmediately, via
+      });
+      assert.equal((await submit('web', 'viaweb', false)).result, 'pending');
+      assert.equal((await submit('API', 'viaapi', false)).result, 'pending');
+      const ordered = await submit('API', 'orderedapi', true);
+      assert.equal(ordered.result, 'ordered');
+      assert.equal((await submit('MCP', 'orderedmcp', true)).result, 'ordered');
+      // A refused request triggers no alert.
+      assert.equal((await submit('API', 'orderedapi', true)).result, 'pageExists');
+      const alerts = logged.filter(line => line.startsWith('WARNING (Kilotest: '));
+      assert.equal(alerts.length, 4);
+      assert.ok(alerts[0]?.startsWith(
+        'WARNING (Kilotest: web request for a new test awaits approval): Interface: web\nSite: Fixture Site\nPage: viaweb\n'
+      ));
+      assert.ok(alerts[1]?.startsWith(
+        'WARNING (Kilotest: API request for a new test awaits approval): Interface: API\nSite: Fixture Site\nPage: viaapi\n'
+      ));
+      assert.ok(alerts[1]?.includes('Requests now awaiting approval: 2 of 20'));
+      assert.ok(alerts[2]?.startsWith(
+        'WARNING (Kilotest: API request for a new test approved immediately): Interface: API\nSite: Fixture Site\n'
+        + 'Page: orderedapi\nURL: https://example.com/orderedapi\n'
+      ));
+      assert.ok(alerts[2]?.includes(`Report: ${(ordered as Extract<SubmitResult, {result: 'ordered'}>).reportID}`));
+      assert.ok(alerts[3]?.startsWith('WARNING (Kilotest: MCP request for a new test approved immediately): Interface: MCP\n'));
+    }
+    finally {
+      console.log = originalLog;
+    }
+  });
+});
 test('submitTestRequest honors the limits on the job queue and the pending requests', async () => {
   await withDB(async () => {
     const submit = (url: string, reviewImmediately: boolean) => submitTestRequest({
-      target: {siteID: 's-fixtur', pageName: url, url}, reason, reviewImmediately
+      target: {siteID: 's-fixtur', pageName: url, url}, reason, reviewImmediately, via: 'API'
     });
     writeJob('queue', 'filler', {target: {url: 'https://example.com/filler'}});
     await withEnv('JOB_QUEUE_MAX', '1', async () => {
@@ -298,7 +336,7 @@ test('submitTestRequest honors the limits on the job queue and the pending reque
 });
 test('submitTestRequest regenerates a request identifier that is already used', async () => {
   await withDB(async () => {
-    const submit = (url: string) => submitTestRequest({target: {siteID: 's-fixtur', pageName: url, url}, reason, reviewImmediately: false});
+    const submit = (url: string) => submitTestRequest({target: {siteID: 's-fixtur', pageName: url, url}, reason, reviewImmediately: false, via: 'API'});
     let callCount = 0;
     // Make the first two identifiers all zeros and the third all ones.
     const random = mock.method(Math, 'random', () => callCount++ < 12 ? 0 : 1 / 36);
@@ -317,9 +355,9 @@ test('submitTestRequest regenerates a request identifier that is already used', 
 test('approveTestRequest creates a job and removes the requests for its URL, unless the target is no longer valid', async () => {
   await withDB(async () => {
     const url = 'https://neworg.example/';
-    await submitTestRequest({target: {siteName: 'New Org', pageName: 'home', url}, reason, reviewImmediately: false});
+    await submitTestRequest({target: {siteName: 'New Org', pageName: 'home', url}, reason, reviewImmediately: false, via: 'API'});
     await submitTestRequest({
-      target: {siteName: 'New Org', pageName: 'about', url: `${url}about`}, reason, reviewImmediately: false
+      target: {siteName: 'New Org', pageName: 'about', url: `${url}about`}, reason, reviewImmediately: false, via: 'API'
     });
     assert.deepEqual(await approveTestRequest(url, 'q-zzzzzz'), {result: 'noRequest'});
     assert.deepEqual(await approveTestRequest('https://other.example/', 'q-zzzzzz'), {result: 'noRequest'});

@@ -39,6 +39,7 @@ import {
   getNowStamp,
   getObject,
   getPlainText,
+  getPreventions,
   getRandomString,
   getReportEndTime,
   getReportExtract,
@@ -1171,6 +1172,47 @@ test('getReportExtract returns an extract for a valid report', async () => {
   assert.equal(extract.description, 'Mixed Outcomes');
   assert.equal(extract.url, 'https://example.com/mixed');
   assert.ok(extract.reportTime);
+});
+
+test('getReportExtract includes the preventions of a report', async () => {
+  const extract = await getReportExtract('260101T0006-prv') as any;
+  assert.deepEqual(extract.preventions, {alfa: 'page timed out'});
+});
+
+test('getReportExtract includes an empty preventions object for a report without preventions', async () => {
+  const extract = await getReportExtract('260101T0000-mix') as any;
+  assert.deepEqual(extract.preventions, {});
+});
+
+test('getPreventions returns no preventions for a report without a preventions object', () => {
+  assert.deepEqual(getPreventions({}), {});
+  assert.deepEqual(getPreventions({jobData: {}}), {});
+  assert.deepEqual(getPreventions({jobData: {preventions: null}}), {});
+  assert.deepEqual(getPreventions({jobData: {preventions: 'none'}}), {});
+});
+
+test('getPreventions collapses whitespace in a reason', () => {
+  const preventions = getPreventions({jobData: {preventions: {alfa: '  Error\n    at a (b.js:1:2)\n\tat c  '}}});
+  assert.deepEqual(preventions, {alfa: 'Error at a (b.js:1:2) at c'});
+});
+
+test('getPreventions converts a non-string reason to a string', () => {
+  const preventions = getPreventions({jobData: {preventions: {wave: {code: 1}, axe: 7, ibm: undefined}}});
+  assert.deepEqual(preventions, {wave: '{"code":1}', axe: '7', ibm: ''});
+});
+
+test('getPreventions truncates a long reason to the maximum length', () => {
+  const preventions = getPreventions({jobData: {preventions: {
+    alfa: 'x'.repeat(300),
+    wave: 'y'.repeat(301)
+  }}});
+  assert.equal(preventions.alfa, 'x'.repeat(300));
+  assert.equal(preventions.wave, `${'y'.repeat(299)}…`);
+});
+
+test('getPreventions includes both nuVal and nuVnu preventions', () => {
+  const preventions = getPreventions({jobData: {preventions: {nuVal: 'HTTP 502', nuVnu: 'failed'}}});
+  assert.deepEqual(preventions, {nuVal: 'HTTP 502', nuVnu: 'failed'});
 });
 
 test('getReportExtract returns an error for a nonexistent report', async () => {

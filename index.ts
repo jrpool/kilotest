@@ -61,6 +61,7 @@ import {answer as hideReportForm} from './web/hideReportForm/index.ts';
 import {answer as listDiagnosesPage} from './web/listDiagnoses/index.ts';
 import {answer as listIssuesPage} from './web/listIssues/index.ts';
 import {answer as listPagesPage} from './web/listPages/index.ts';
+import {answer as listPreventions} from './web/listPreventions/index.ts';
 import {answer as listSitesPage} from './web/listSites/index.ts';
 import {answer as listRules} from './web/listRules/index.ts';
 import {answer as listTopIssues} from './web/listTopIssues/index.ts';
@@ -123,6 +124,7 @@ const answer: {
   listDiagnoses: PageHandler;
   listIssues: PageHandler;
   listPages: PageHandler;
+  listPreventions: PageHandler;
   listSites: PageHandler;
   listRules: PageHandler;
   listTopIssues: PageHandler;
@@ -159,6 +161,7 @@ const answer: {
   listDiagnoses: listDiagnosesPage,
   listIssues: listIssuesPage,
   listPages: listPagesPage,
+  listPreventions,
   listSites: listSitesPage,
   listRules,
   listTopIssues,

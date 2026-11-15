@@ -286,6 +286,14 @@ ul.links li > a {
   margin-right: 0;
   padding-left: 0.9rem;
 }
+.page dl.preventions dt {
+  margin-top: 1rem;
+  font-weight: 700;
+}
+.page dl.preventions dd {
+  margin: 0.25rem 0 0 1.5rem;
+  overflow-wrap: anywhere;
+}
 .page blockquote {
   margin: 0.75rem 0;
   padding-left: 1rem;

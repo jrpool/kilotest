@@ -1700,6 +1700,7 @@ const htmlPagePaths = [
   '/tutorialWeb.html',
   '/tutorialAI.html',
   '/listTopIssues.html',
+  '/listPreventions.html',
   '/reannotateForm.html',
   '/renewWCAGForm.html',
   '/hideReportForm.html',

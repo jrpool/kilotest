@@ -110,6 +110,8 @@ export type ReportExtract = {
   description: string;
   url: string;
   reportTime: string;
+  // Reasons why rule engines were prevented from testing, by rule-engine identifier.
+  preventions: Record<string, string>;
   superseded?: boolean;
 };
 
@@ -822,6 +824,32 @@ export const getReportPageID = (report: unknown): string => {
   const pageID = (report as {sources?: {pageID?: unknown}}).sources?.pageID;
   return typeof pageID === 'string' ? pageID : '';
 };
+// Maximum length, in characters, of a prevention reason in a report extract.
+export const preventionReasonMaxLength = 300;
+// Returns the reasons why rule engines were prevented from testing, by rule-engine
+// identifier, according to a report. Reasons come from many sources (rule engines,
+// browsers, remote services) and may be non-strings, multi-line stack traces, or
+// fragments of HTML, so each is converted to a string, its whitespace is collapsed, and
+// it is truncated to the maximum length. Reasons are not made HTML-safe here; a
+// consumer that renders them as HTML must do that. Preventions of the tests of
+// individual Testaro rules are recorded elsewhere in a report and are not included.
+export const getPreventions = (report: {jobData?: {preventions?: unknown}}): Record<string, string> => {
+  const rawPreventions = report.jobData?.preventions;
+  const preventions: Record<string, string> = {};
+  // If the report has a preventions object:
+  if (typeof rawPreventions === 'object' && rawPreventions !== null) {
+    // For each prevention in it:
+    for (const [ruleEngineID, rawReason] of Object.entries(rawPreventions)) {
+      const reasonString = typeof rawReason === 'string' ? rawReason : JSON.stringify(rawReason) ?? '';
+      const reason = reasonString.replace(/\s+/g, ' ').trim();
+      // Add the rule engine and the normalized reason to the result.
+      preventions[ruleEngineID] = reason.length > preventionReasonMaxLength
+        ? `${reason.slice(0, preventionReasonMaxLength - 1)}…`
+        : reason;
+    }
+  }
+  return preventions;
+};
 // Returns an extract of an available report, or an error object if the report cannot
 // be used. An extract exists to expose a report in listings, so it shares getReport's
 // usability bar: a report too defective to expose must produce no extract. A report
@@ -849,7 +877,8 @@ export const getReportExtract = async (reportID: string): Promise<ReportExtract 
     pageID,
     description,
     url,
-    reportTime: getReportEndTime({jobData}).toISOString()
+    reportTime: getReportEndTime({jobData}).toISOString(),
+    preventions: getPreventions(report)
   };
 };
 // Cache of report extracts, keyed by report file path. Each entry records the modification

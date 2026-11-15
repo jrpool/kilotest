@@ -9,7 +9,7 @@ import {z} from 'zod';
 import {buildSubmissionDisposition, checkNewPage, getResponseMetadata, getThisHost, getToolsFacts, viewPage} from './util.ts';
 import {isSiteID} from '../registry.ts';
 import {normalizeSpace, submitTestRequest} from '../requests.ts';
-import type {SubmitResult} from '../requests.ts';
+import type {RequestInterface, SubmitResult} from '../requests.ts';
 import {requestNewTestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -31,8 +31,8 @@ const checkSite = (siteID: string, siteName: string): string | null => {
   }
   return null;
 };
-// Returns the response body. The arguments are the site identifier, the site name, the page name, the URL, the reason, and whether to review the request immediately; an empty site identifier or site name is absent.
-export const response = async (args: string[]) => {
+// Returns the response body. The arguments are the site identifier, the site name, the page name, the URL, the reason, and whether to review the request immediately; an empty site identifier or site name is absent. via is the interface through which the request was submitted.
+export const response = async (args: string[], via: Exclude<RequestInterface, 'web'> = 'API') => {
   const [siteID = '', rawSiteName = '', rawPageName = '', url = '', reason = '', review = ''] = args;
   const siteName = normalizeSpace(rawSiteName);
   const pageName = normalizeSpace(rawPageName);
@@ -56,6 +56,7 @@ export const response = async (args: string[]) => {
       target: siteID ? {siteID, pageName, url} : {siteName, pageName, url},
       reason,
       reviewImmediately,
+      via,
       finalURL: check.finalURL
     }) as Exclude<SubmitResult, {result: 'nonreport'}>;
     // Add details about the request.

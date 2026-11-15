@@ -154,7 +154,7 @@ test('requestNewTest records a valid request for management review and alerts a 
   assert.equal(disposition['whether your request was referred to management review'], false);
   assert.ok(disposition['how you can check for completion'].includes('listSites'));
   assert.ok(logged.some(line =>
-    line.startsWith('WARNING (Kilotest: request for a new test awaits approval)')
+    line.startsWith('WARNING (Kilotest: API request for a new test awaits approval)')
     && line.includes('Brand New Org')
     && line.includes('Requests now awaiting approval: 1 of 20')
   ));
@@ -196,6 +196,11 @@ test('requestNewTest orders a test of a request that passes every check under im
   assert.match(details['page to be tested']['page identifier'], /^p-[0-9a-z]{8}$/);
   assert.match(disposition['report identifier'], /^\d{6}T\d{4}-[0-9a-z]{3}$/);
   assert.ok(disposition['do you want to wait for completion'].includes('awaitTest'));
+  assert.ok(logged.some(line =>
+    line.startsWith('WARNING (Kilotest: API request for a new test approved immediately)')
+    && line.includes('Instant Org')
+    && line.includes(`Report: ${disposition['report identifier']}`)
+  ));
   assert.deepEqual(requestNewTestResponseSchema.parse(body), body);
 });
 

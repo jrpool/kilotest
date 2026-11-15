@@ -13,7 +13,7 @@ import {describeRefusal, submitTestRequest} from '../../requests.ts';
 
 export const answer = async (reportID: string, reason: string) => {
   // Submit the request for management review. Its page and URL are those of the cited report’s page in the registry.
-  const result = await submitTestRequest({target: {reportID}, reason, reviewImmediately: false});
+  const result = await submitTestRequest({target: {reportID}, reason, reviewImmediately: false, via: 'web'});
   // If the cited report or its page does not exist:
   if (!('page' in result)) {
     return {

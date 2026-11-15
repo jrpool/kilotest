@@ -26,7 +26,7 @@ export const answer = async (siteID: string, rawSiteName: string, rawPageName: s
   }
   // Submit the request for management review.
   const result = await submitTestRequest({
-    target: siteID ? {siteID, pageName, url} : {siteName, pageName, url}, reason, reviewImmediately: false
+    target: siteID ? {siteID, pageName, url} : {siteName, pageName, url}, reason, reviewImmediately: false, via: 'web'
   }) as Exclude<SubmitResult, {result: 'nonreport' | 'ordered'}>;
   // If the request was recorded:
   if (result.result === 'pending') {

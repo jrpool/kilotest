@@ -249,7 +249,7 @@ export const createMCPServer = (): McpServer => {
       }
     },
     async ({siteID = '', siteName = '', pageName, URL, reason, reviewImmediately = false}) => {
-      const result = await requestNewTestAPI.response([siteID, siteName, pageName, URL, reason, String(reviewImmediately === true)]);
+      const result = await requestNewTestAPI.response([siteID, siteName, pageName, URL, reason, String(reviewImmediately === true)], 'MCP');
       await recordMetric('mcpToolCalls', 'requestNewTest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }
@@ -269,7 +269,7 @@ export const createMCPServer = (): McpServer => {
       }
     },
     async ({reportID, reason, reviewImmediately = false}) => {
-      const result = await requestRetestAPI.response([reportID, reason, String(reviewImmediately === true)]);
+      const result = await requestRetestAPI.response([reportID, reason, String(reviewImmediately === true)], 'MCP');
       await recordMetric('mcpToolCalls', 'requestRetest');
       return {content: [{type: 'text', text: JSON.stringify(result)}], structuredContent: result};
     }

@@ -9,6 +9,7 @@ import {z} from 'zod';
 import {buildSubmissionDisposition, getResponseMetadata, getThisHost, getToolsFacts, viewPage} from './util.ts';
 import {checkLength, isReportID} from '../util.ts';
 import {submitTestRequest} from '../requests.ts';
+import type {RequestInterface} from '../requests.ts';
 import {requestRetestResponseSchema} from './schemas.ts';
 
 // TYPES
@@ -18,8 +19,8 @@ type ResponseContent = z.infer<typeof requestRetestResponseSchema>['response con
 
 // FUNCTIONS
 
-// Returns the response body.
-export const response = async (args: string[]) => {
+// Returns the response body. via is the interface through which the request was submitted.
+export const response = async (args: string[], via: Exclude<RequestInterface, 'web'> = 'API') => {
   const [reportID = '', reason = '', review = ''] = args;
   const reviewImmediately = review === 'true';
   const thisHost = getThisHost();
@@ -42,7 +43,7 @@ export const response = async (args: string[]) => {
   // Otherwise, i.e. if the request is facially valid:
   else {
     // Submit it. Its page and URL are those of the cited report’s page in the registry.
-    const result = await submitTestRequest({target: {reportID}, reason, reviewImmediately});
+    const result = await submitTestRequest({target: {reportID}, reason, reviewImmediately, via});
     // If the cited report or its page does not exist:
     if (!('page' in result)) {
       requestDetails = {

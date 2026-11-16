@@ -9,7 +9,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {sendAlert} from './alerts.ts';
 import {
-  getDomain, getHost, getRegistry, getSiteKey, getSitePages, isPageError, normalizeName, planPage, registerPage
+  changeRegistry, getDomain, getHost, getPageTitle, getRegistry, getSiteKey, getSitePages, isPageError, normalizeName, planPage,
+  registerPage
 } from './registry.ts';
 import type {PageError, PageRecord, PageTarget, PlannedPage, RegisteredPage, Registry} from './registry.ts';
 import {
@@ -25,8 +26,12 @@ import {
   getRandomString,
   getReportExtract,
   getReportExtracts,
+  getReportPageID,
+  hiddenReportsPath,
   jobsPath,
   minifyURL,
+  readdirOrCreate,
+  reportsPath,
   testRequestsPath
 } from './util.ts';
 
@@ -119,6 +124,61 @@ export const rejectTestRequests = (url: string): Promise<void> => testRequestsLo
   delete testRequests[url];
   await saveTestRequests(testRequests);
 });
+// Returns the page identifiers of the reports in a directory.
+const getReportPageIDs = async (dirPath: string, label: string): Promise<string[]> => {
+  const pageIDs: string[] = [];
+  // For each report in the directory:
+  for (const fileName of await readdirOrCreate(dirPath, label)) {
+    pageIDs.push(getReportPageID(JSON.parse(await fs.readFile(path.join(dirPath, fileName), 'utf8'))));
+  }
+  return pageIDs;
+};
+// Removes the orphans from the registry and returns the names of the removed pages and sites. An orphan page is one with no available or hidden report and no queued or claimed job (see docs/decisions/011-site-page-ontology.md) that no request awaiting approval identifies as a page to retest; it arises when the only report about a page is deleted or when every job to test a page fails. It is removed because it has no use and prevents any request to test the page: a request for a new test is refused because the site has a page with the name, and a request for a retest requires a report. An orphan site is one with no page; it is removed unless a request awaiting approval identifies it as the site of a new page. Managers have no other way to delete a registration, so they cannot delete one that a report needs. The removal runs under testRequestsLock, so that no page registered for a job that has not yet been created is taken for an orphan. If the reports, jobs, or requests cannot be read, nothing is removed.
+export const removeOrphans = (): Promise<{pages: string[]; sites: string[]}> => testRequestsLock(
+  async (): Promise<{pages: string[]; sites: string[]}> => {
+    try {
+      const targets = Object.values(await getTestRequests()).flat().map(request => request.target);
+      // Get the identifiers of the pages in use, including those that requests awaiting approval identify as pages to retest. The jobs are read before the reports, because a completed job is deleted only after its report is saved, and the available reports are read both before and after the hidden ones, because a report can be moved in either direction between them; so a page in use is found whatever happens during the reading.
+      const usedPageIDs = new Set([
+        ...(await getJobsData('queue')).map(job => job.pageID),
+        ...(await getJobsData('claimed')).map(job => job.pageID),
+        ...await getReportPageIDs(reportsPath(), 'Reports directory'),
+        ...await getReportPageIDs(hiddenReportsPath(), 'Hidden reports directory'),
+        ...await getReportPageIDs(reportsPath(), 'Reports directory'),
+        ...targets.map(target => 'pageID' in target ? target.pageID : '')
+      ]);
+      // Get the identifiers of the sites that requests awaiting approval identify as sites of new pages.
+      const requestedSiteIDs = new Set(targets.map(target => 'siteID' in target ? target.siteID : ''));
+      const removed = await changeRegistry(registry => {
+        const pages: string[] = [];
+        const sites: string[] = [];
+        // For each orphan page:
+        for (const pageID of Object.keys(registry.pages).filter(id => !usedPageIDs.has(id))) {
+          // Remove it.
+          pages.push(getPageTitle(registry, pageID, ''));
+          delete registry.pages[pageID];
+        }
+        const pagedSiteIDs = new Set(Object.values(registry.pages).flatMap(page => page.sites));
+        // For each orphan site that no request awaiting approval identifies:
+        for (const siteID of Object.keys(registry.sites).filter(id => !pagedSiteIDs.has(id) && !requestedSiteIDs.has(id))) {
+          // Remove it.
+          sites.push(registry.sites[siteID] as string);
+          delete registry.sites[siteID];
+        }
+        return {write: pages.length + sites.length > 0, result: {pages, sites}};
+      });
+      // If any registration was removed:
+      if (removed.pages.length + removed.sites.length) {
+        console.log(`Orphan registrations removed: pages [${removed.pages.join('; ')}], sites [${removed.sites.join('; ')}]`);
+      }
+      return removed;
+    }
+    catch (error: unknown) {
+      console.error(`ERROR: Orphan registrations not removed (${errorMessage(error)})`);
+      return {pages: [], sites: []};
+    }
+  }
+);
 // Creates a job to test a registered page and returns its identifier.
 export const createJob = async (page: RegisteredPage, reason: string): Promise<string> => {
   const jobTemplateJSON = await fs.readFile(path.join(import.meta.dirname, 'job.json'), 'utf8');

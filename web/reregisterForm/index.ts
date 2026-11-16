@@ -50,6 +50,7 @@ const getFormLines = (
     ? `${margin}<p role="alert" class="error" tabindex="-1" autofocus>${htmlSafe(message.text)}</p>`
     : `${margin}<p role="status"><strong>${htmlSafe(message.text)}</strong></p>`] : []),
   `${margin}<p>Edit any values to be revised. Unedited values remain unchanged. By convention, the home page of a site is named “home”.</p>`,
+  `${margin}<p>Registrations cannot be deleted here. Kilotest removes the registration of a page when no report about it and no job to test it remains, and that of a site when it has no page.</p>`,
   `${margin}<form action="/reregisterForm.html" method="post">`,
   `${margin}  <input type="hidden" name="siteID" value="${siteID}">`,
   `${margin}  <p><label>`,

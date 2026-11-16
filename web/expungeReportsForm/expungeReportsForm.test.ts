@@ -12,6 +12,7 @@ import fs from 'fs/promises';
 import {parse} from 'node-html-parser';
 import {answer} from './index.ts';
 import {reportsPath} from '../../util.ts';
+import {getRegistry, registryPath} from '../../registry.ts';
 
 // SETUP AND TEARDOWN
 
@@ -74,6 +75,7 @@ test('expungeReportsForm deletes a sole report with valid auth code on a POST re
   // 260101T0001-ct is the only report for its URL (canttell).
   const reportPath = path.join(reportsPath(), '260101T0001-ct.json');
   const backup = await fs.readFile(reportPath, 'utf8');
+  const registryBackup = await fs.readFile(registryPath(), 'utf8');
   try {
     const result: any = await answer(null, 'authCode=test-auth-code&report=260101T0001-ct', 'POST');
     assert.equal(result.status, 'ok');
@@ -81,9 +83,18 @@ test('expungeReportsForm deletes a sole report with valid auth code on a POST re
       () => {throw new Error('Report should have been deleted');},
       () => {}
     );
+    // The page, left with no report, is no longer registered, but its site, which has other pages, is.
+    const registry = await getRegistry();
+    assert.equal(registry.pages['p-canttell'], undefined);
+    assert.ok(registry.sites['s-fixtur']);
+    assert.equal(
+      parse(result.answerPage).querySelector('h1 + p[role="status"]')?.text,
+      'Registrations removed, because no report remains: page “Fixture Site All CantTell Page”.'
+    );
   }
   finally {
     await fs.writeFile(reportPath, backup);
+    await fs.writeFile(registryPath(), registryBackup);
   }
 });
 

@@ -53,7 +53,7 @@ import querystring from 'node:querystring';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
 import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
-import {rejectTestRequests} from './requests.ts';
+import {rejectTestRequests, removeOrphans} from './requests.ts';
 import {isSiteID} from './registry.ts';
 import {answer as enqueueForm} from './web/enqueueForm/index.ts';
 import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';
@@ -342,6 +342,11 @@ const jobLock = createLock();
 const queuePath = () => path.join(jobsPath(), 'queue');
 const claimedPath = () => path.join(jobsPath(), 'claimed');
 const failedPath = () => path.join(jobsPath(), 'failed');
+// Reclassifies a job in a directory as failed, and then removes the registrations of any page left with no report or job (as a page whose first job fails is) and of any site left with no page.
+const failJob = async (dirPath: string, jobFileName: string): Promise<void> => {
+  await fs.rename(path.join(dirPath, jobFileName), path.join(failedPath(), jobFileName));
+  await removeOrphans();
+};
 // Returns whether a pathname matches a glob-style pattern.
 const matchPath = (pattern: string, pathname: string) => {
   const regex = new RegExp(
@@ -540,9 +545,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
       // Report this.
       await serveError({message: `${messageStart}${messageEnd}`}, response, false);
       // Reclassify the job as failed.
-      await fs.rename(
-        path.join(claimedPath(), jobName), path.join(failedPath(), jobName)
-      );
+      await failJob(claimedPath(), jobName);
       clean = false;
       // Stop checking claimed jobs.
       break;
@@ -571,9 +574,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
           `Job ${firstJob.id} (${firstJob.target.what}) was never assigned to a worker because its target no longer resolves, directly or via a redirect, to an address this deployment allows (e.g. a private, loopback, or link-local address). The job was reclassified as failed.`
         );
         // Reclassify the job as failed, instead of assigning it or leaving it queued.
-        await fs.rename(
-          path.join(queuePath(), oldestJobName), path.join(failedPath(), oldestJobName)
-        );
+        await failJob(queuePath(), oldestJobName);
         // Respond as if no job were queued, rather than revealing anything about the rejected job.
         response.writeHead(200, {
           'content-type': 'application/json; charset=utf-8'
@@ -1266,9 +1267,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
                   );
                   // Reclassify the job as failed, instead of recording the disallowed report or
                   // leaving the job claimed indefinitely.
-                  await fs.rename(
-                    path.join(claimedPath(), `${id}.json`), path.join(failedPath(), `${id}.json`)
-                  );
+                  await failJob(claimedPath(), `${id}.json`);
                   // Report the error.
                   await serveError({message: `ERROR: Report ${id} is on a disallowed target`}, response, false);
                 }
@@ -1306,9 +1305,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
                   );
                   // Reclassify the job as failed, instead of recording the unusable report or
                   // leaving the job claimed indefinitely.
-                  await fs.rename(
-                    path.join(claimedPath(), `${id}.json`), path.join(failedPath(), `${id}.json`)
-                  );
+                  await failJob(claimedPath(), `${id}.json`);
                   // Report the error.
                   await serveError({message: `ERROR: Report ${id} is not usable`}, response, false);
                 }

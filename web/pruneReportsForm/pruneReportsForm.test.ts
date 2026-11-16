@@ -77,6 +77,8 @@ test('pruneReportsForm deletes a superseded report with valid auth code on a POS
   try {
     const result = await answer(null, 'authCode=test-auth-code&report=260101T0000-mix', 'POST');
     assert.equal(result.status, 'ok');
+    // The page still has a report, so no registration is removed.
+    assert.equal(parse(result.answerPage as string).querySelector('[role="status"]'), null);
     await fs.access(reportPath).then(
       () => {throw new Error('Report should have been deleted');},
       () => {}

@@ -21,6 +21,7 @@ import {
   getTestRequests,
   normalizeSpace,
   rejectTestRequests,
+  removeOrphans,
   submitTestRequest
 } from './requests.ts';
 import type {SubmitResult, TestRequests} from './requests.ts';
@@ -433,4 +434,62 @@ test('getTargetLabel labels new sites, new pages, and retests', () => {
 });
 test('normalizeSpace trims white space and reduces internal runs of it', () => {
   assert.equal(normalizeSpace('  A \t site\n name '), 'A site name');
+});
+
+test('removeOrphans removes pages with no report, job, or request and sites with no page or request', async () => {
+  await withDB(async dbDir => {
+    // Every fixture page has an available or hidden report, so there is no orphan.
+    assert.deepEqual(await removeOrphans(), {pages: [], sites: []});
+    const fixtureRegistry = await getRegistry();
+    const addPage = (registry: Registry, pageID: string, siteID: string, name: string) => {
+      registry.pages[pageID] = {sites: [siteID], name, url: `https://example.com/${pageID}`};
+    };
+    // Adds a site with an orphan home page, an orphan page of the fixture site, pages in use only by a queued job, a claimed job, and a request for a retest, and a site in use only by a request for a new page.
+    const addRegistrations = () => editRegistry(registry => {
+      registry.sites[homeSite.siteID] = 'Home Site';
+      registry.pages[homeSite.pageID] = homeSite.page;
+      registry.sites['s-wanted'] = 'Wanted Site';
+      addPage(registry, 'p-orphan00', 's-fixtur', 'Orphan');
+      addPage(registry, 'p-queued00', 's-fixtur', 'Queued');
+      addPage(registry, 'p-claimed0', 's-fixtur', 'Claimed');
+      addPage(registry, 'p-retest00', 's-fixtur', 'Retest');
+    });
+    await addRegistrations();
+    writeJob('queue', 'queued', {sources: {pageID: 'p-queued00'}, target: {url: 'https://example.com/p-queued00'}});
+    writeJob('claimed', 'claimed', {sources: {pageID: 'p-claimed0'}, target: {url: 'https://example.com/p-claimed0'}});
+    const request = {id: 'q-000000', timeStamp: '', reason, referred: false, possibleDuplicates: [], similarSites: []};
+    fs.writeFileSync(testRequestsPath(), getJSON({
+      'https://example.com/a': [{...request, target: {pageID: 'p-retest00'}}],
+      'https://example.com/b': [{...request, target: {siteID: 's-wanted', pageName: 'New', url: 'https://example.com/b'}}],
+      'https://example.com/c': [{...request, target: {siteName: 'New Site', pageName: 'home', url: 'https://example.com/c'}}]
+    }));
+    // Only the orphans are removed.
+    assert.deepEqual(await removeOrphans(), {pages: ['Home Site Home', 'Fixture Site Orphan'], sites: ['Home Site']});
+    const registry = await getRegistry();
+    assert.deepEqual(Object.keys(registry.sites).sort(), ['s-fixtur', 's-wanted']);
+    assert.deepEqual(
+      Object.keys(registry.pages).sort(),
+      [...Object.keys(fixtureRegistry.pages), 'p-queued00', 'p-claimed0', 'p-retest00'].sort()
+    );
+    // Once nothing uses them, the other pages and the other site are removed.
+    fs.rmSync(path.join(jobsPath(), 'queue', 'queued.json'));
+    fs.rmSync(path.join(jobsPath(), 'claimed', 'claimed.json'));
+    fs.writeFileSync(testRequestsPath(), '{}');
+    assert.deepEqual(
+      await removeOrphans(), {pages: ['Fixture Site Queued', 'Fixture Site Claimed', 'Fixture Site Retest'], sites: ['Wanted Site']}
+    );
+    assert.deepEqual(await getRegistry(), fixtureRegistry);
+    // If a report cannot be read, nothing is removed.
+    await addRegistrations();
+    const errorLog = mock.method(console, 'error', () => {});
+    fs.writeFileSync(path.join(dbDir, 'hiddenReports', 'defective.json'), 'not JSON');
+    try {
+      assert.deepEqual(await removeOrphans(), {pages: [], sites: []});
+      assert.equal(errorLog.mock.callCount(), 1);
+    }
+    finally {
+      errorLog.mock.restore();
+    }
+    assert.ok((await getRegistry()).pages['p-orphan00']);
+  });
 });

@@ -21,6 +21,7 @@ import {
   getReportData
 } from './util.ts';
 import {getPageTitle, getRegistry} from '../registry.ts';
+import {removeOrphans} from '../requests.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -69,7 +70,7 @@ export const reportDeletionForm = async (
   const searchParams = new URLSearchParams(search);
   const authCode = searchParams?.get('authCode');
   const jobNames = searchParams?.getAll('report');
-  const registry = await getRegistry();
+  let registry = await getRegistry();
   // Returns summaries of the available reports, ordered so that the reports about each target are adjacent and chronological, or an error object if any report cannot be used.
   const getReportSpecs = async (): Promise<ReportSpec[] | {error: string}> => {
     const reportNames = await readdirOrCreate(reportsPath(), 'Reports directory');
@@ -113,6 +114,7 @@ export const reportDeletionForm = async (
     return {status: 'error', message: reportSpecs.error};
   }
   let notice = '';
+  let removalNotice = '';
   // If the form has been submitted and any reports are to be deleted:
   if (method === 'POST' && jobNames?.length) {
     // If the authorization code is invalid:
@@ -150,6 +152,16 @@ export const reportDeletionForm = async (
           status: 'error',
           message: `${failurePrefix} (${errorMessage(error)})`
         };
+      }
+      // Remove the registrations of any pages left with no report or job, and of any sites left with no page.
+      const {pages, sites} = await removeOrphans();
+      // If any were removed:
+      if (pages.length) {
+        // Prepare to say so.
+        removalNotice = `Registrations removed, because no report remains: ${[
+          ...pages.map(page => `page “${page}”`), ...sites.map(site => `site “${site}”`)
+        ].join(', ')}.`;
+        registry = await getRegistry();
       }
       // Get summaries of the remaining reports, which were all usable before the deletion.
       reportSpecs = await getReportSpecs() as ReportSpec[];
@@ -192,7 +204,9 @@ export const reportDeletionForm = async (
   const query: Record<string, string> = {
     reports: lines.join('\n'),
     // Any message about an error is located at the top of the page, has the error class, which makes it conspicuous, and is focused, so that it is announced when the page is loaded.
-    notice: notice ? `      <p role="alert" class="error" tabindex="-1" autofocus>${htmlSafe(notice)}</p>` : '',
+    notice: notice
+      ? `      <p role="alert" class="error" tabindex="-1" autofocus>${htmlSafe(notice)}</p>`
+      : removalNotice ? `      <p role="status"><strong>${htmlSafe(removalNotice)}</strong></p>` : '',
     intro: anyDeletable ? intro : emptyIntro,
     disabled: anyDeletable ? '' : 'disabled'
   };

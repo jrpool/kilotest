@@ -65,6 +65,8 @@ Kilotest offers a comprehensive suite of capabilities to users via its web UI:
 - Request retesting of a web page: `https://kilotest.com/requestRetestForm.html/{reportID}`
 - [List the operations available to Kilotest managers](https://kilotest.com/manage.html)
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
+- [List the incompletely tested pages, with the rule engines that could not test them, per the latest report about each page](https://kilotest.com/listPreventingPages.html)
+- [List the rule engines that could not test pages, with those pages, per the latest report about each page](https://kilotest.com/listPreventedEngines.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
 - [Tutorial, “Kilotest and AI”](https://kilotest.com/tutorialAI.html)
 

@@ -1,6 +1,6 @@
 /*
-  listPreventions.test.ts
-  UI tests for web/listPreventions/index.ts using the fixture corpus.
+  listPreventingPages.test.ts
+  UI tests for web/listPreventingPages/index.ts using the fixture corpus.
 */
 
 // IMPORTS
@@ -69,13 +69,13 @@ const getListItems = (answerPage: string) => parse(answerPage)
 
 // TESTS
 
-test('listPreventions returns an ok status with valid HTML', async () => {
+test('listPreventingPages returns an ok status with valid HTML', async () => {
   const result = await answer();
   assert.equal(result.status, 'ok');
   assert.ok(parse(result.answerPage).querySelector('title'));
 });
 
-test('listPreventions lists a page whose latest report has a prevention', async () => {
+test('listPreventingPages lists a page whose latest report has a prevention', async () => {
   const result = await answer();
   const items = getListItems(result.answerPage);
   const termIndex = items.findIndex(item => item.tag === 'dt' && item.text.includes('Fixture Site Prevented Page'));
@@ -84,6 +84,8 @@ test('listPreventions lists a page whose latest report has a prevention', async 
   const link = items[termIndex]!.element.querySelector('a')!;
   assert.equal(link.getAttribute('href'), '/listIssues.html/260101T0006-prv');
   assert.equal(link.text, 'Fixture Site Prevented Page');
+  // Only the link, not the test date, is in the term's link.
+  assert.match(items[termIndex]!.text, /^Fixture Site Prevented Page \(tested \d+ days? ago\)$/);
   // The description names the rule engine, without its sponsor, and gives the reason.
   assert.deepEqual(
     {tag: items[termIndex + 1]!.tag, text: items[termIndex + 1]!.text},
@@ -91,14 +93,14 @@ test('listPreventions lists a page whose latest report has a prevention', async 
   );
 });
 
-test('listPreventions omits pages whose latest reports have no preventions', async () => {
+test('listPreventingPages omits pages whose latest reports have no preventions', async () => {
   const result = await answer();
   const terms = getListItems(result.answerPage).filter(item => item.tag === 'dt');
   assert.equal(terms.length, 1);
   assert.ok(!result.answerPage.includes('Mixed Outcomes'));
 });
 
-test('listPreventions omits a prevention in a superseded report', async () => {
+test('listPreventingPages omits a prevention in a superseded report', async () => {
   // A later report about the prevented fixture page, in which no rule engine was prevented.
   const later = makeReport('260301T0000-ltr', 'Prevented Page', 'p-prevente', {}, '26-03-01T00:10');
   await withReports([later], async () => {
@@ -109,7 +111,7 @@ test('listPreventions omits a prevention in a superseded report', async () => {
   });
 });
 
-test('listPreventions lists the prevented rule engines of a report in name order', async () => {
+test('listPreventingPages lists the prevented rule engines of a report in name order', async () => {
   const report = makeReport('260301T0001-mny', 'Many Page', 'p-manyprev', {
     wave: 'Not enough credits.',
     nuVal: 'HTTP 502: Bad Gateway',
@@ -132,7 +134,7 @@ test('listPreventions lists the prevented rule engines of a report in name order
   });
 });
 
-test('listPreventions sorts the pages by extended page name', async () => {
+test('listPreventingPages sorts the pages by extended page name', async () => {
   const report = makeReport('260301T0002-aaa', 'Aardvark Page', 'p-aardvark', {axe: 'failed'});
   await withReports([report], async () => {
     const terms = getListItems((await answer()).answerPage).filter(item => item.tag === 'dt');
@@ -142,7 +144,7 @@ test('listPreventions sorts the pages by extended page name', async () => {
   });
 });
 
-test('listPreventions makes reasons and page names HTML-safe', async () => {
+test('listPreventingPages makes reasons and page names HTML-safe', async () => {
   const report = makeReport('260301T0003-xss', 'Risky <b>Page</b>', 'p-riskypag', {
     alfa: 'HTTP 502 (<!DOCTYPE html>\n<script>alert("x")</script>)'
   });
@@ -150,12 +152,12 @@ test('listPreventions makes reasons and page names HTML-safe', async () => {
     const {answerPage} = await answer();
     assert.ok(!answerPage.includes('<script>alert'));
     assert.ok(!answerPage.includes('<b>Page</b>'));
-    assert.ok(answerPage.includes('Alfa: HTTP 502 (&lt;!DOCTYPE html&gt; &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;)'));
+    assert.ok(answerPage.includes('<span class="engine">Alfa</span>: HTTP 502 (&lt;!DOCTYPE html&gt; &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;)'));
     assert.ok(answerPage.includes('Risky &lt;b&gt;Page&lt;/b&gt;'));
   });
 });
 
-test('listPreventions truncates a long reason', async () => {
+test('listPreventingPages truncates a long reason', async () => {
   const report = makeReport('260301T0004-lng', 'Long Page', 'p-longpage', {alfa: '<'.repeat(400)});
   await withReports([report], async () => {
     const items = getListItems((await answer()).answerPage);
@@ -165,9 +167,9 @@ test('listPreventions truncates a long reason', async () => {
   });
 });
 
-test('listPreventions reports a prevention that has no reason', async () => {
+test('listPreventingPages reports a prevention that has no reason', async () => {
   const report = makeReport('260301T0005-nor', 'Reasonless Page', 'p-reasonle', {alfa: ''});
   await withReports([report], async () => {
-    assert.ok((await answer()).answerPage.includes('<dd>Alfa: no reason given</dd>'));
+    assert.ok((await answer()).answerPage.includes('<dd><span class="engine">Alfa</span>: no reason given</dd>'));
   });
 });

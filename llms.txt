@@ -22,6 +22,7 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 
 ## Web UI
 
+- [Home page](https://kilotest.com/)
 - [List all tested sites](https://kilotest.com/listSites.html)
 - List the tested pages of one site, with links to test results: `https://kilotest.com/listPages.html/{siteID}`
 - List all issues in one report, and all reports about the same page: `https://kilotest.com/listIssues.html/{reportID}`
@@ -33,7 +34,8 @@ Kilotest integrates an ensemble of 12 rule engines, with about 1,300 rules, to t
 - Request retesting of a web page: `https://kilotest.com/requestRetestForm.html/{reportID}`
 - [List the operations available to Kilotest managers](https://kilotest.com/manage.html)
 - [Get statistics about frequently reported issues across all pages](https://kilotest.com/listTopIssues.html)
-- [List the rule engines that could not test pages, per the latest report about each page](https://kilotest.com/listPreventions.html)
+- [List the incompletely tested pages, with the rule engines that could not test them, per the latest report about each page](https://kilotest.com/listPreventingPages.html)
+- [List the rule engines that could not test pages, with those pages, per the latest report about each page](https://kilotest.com/listPreventedEngines.html)
 - [Tutorial, “Accessibility testing strategies”](https://kilotest.com/tutorialWeb.html)
 - [Tutorial, “Kilotest and AI”](https://kilotest.com/tutorialAI.html)
 

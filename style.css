@@ -288,10 +288,14 @@ ul.links li > a {
 }
 .page dl.preventions dt {
   margin-top: 1rem;
+}
+.page dl.preventions dt a, .page dl.preventions .engine {
   font-weight: 700;
 }
 .page dl.preventions dd {
-  margin: 0.25rem 0 0 1.5rem;
+  display: list-item;
+  list-style: disc;
+  margin: 0.4rem 0 0 1.5rem;
   overflow-wrap: anywhere;
 }
 .page blockquote {

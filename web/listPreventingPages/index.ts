@@ -1,6 +1,6 @@
 /*
   index.ts
-  Lists the rule engines that were prevented from testing pages, and the reasons, according to the latest available report about each page. Uses only the report extracts, so no report is read.
+  Lists the pages that rule engines were prevented from testing, with the prevented rule engines and the reasons, according to the latest available report about each page. Uses only the report extracts, so no report is read.
 */
 
 // IMPORTS
@@ -11,7 +11,7 @@ import {getAgoString} from '../util.ts';
 
 // FUNCTIONS
 
-// Returns a page listing the pages that rule engines were prevented from testing.
+// Returns a page listing the incompletely tested pages.
 export const answer = async () => {
   const margin = ' '.repeat(6);
   const registry = await getRegistry();
@@ -39,7 +39,7 @@ export const answer = async () => {
       .sort((a, b) => alphaCompare(a[0], b[0]));
       // Add a description for each of them.
       for (const [name, reason] of failures) {
-        lines.push(`${margin}  <dd>${htmlSafe(name)}: ${htmlSafe(reason) || 'no reason given'}</dd>`);
+        lines.push(`${margin}  <dd><span class="engine">${htmlSafe(name)}</span>: ${htmlSafe(reason) || 'no reason given'}</dd>`);
       }
     }
     lines.push(`${margin}</dl>`);

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: Kilotest API
   description: Kilotest is a powerful web validator. It integrates an ensemble of 12 rule engines (Axe, HTML CodeSniffer, QualWeb, Nu Html Checker, etc.), with about 1,300 rules, to audit web pages for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized public report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested sites and pages, the reports about each page, the issues in each report, the elements violating rules belonging to each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages. Kilotest features are available via a web UI, an API, and a hosted MCP server with streamable HTTP and no authentication.
-  version: 69.2.0
+  version: 69.3.0
   license:
     name: MIT
     url: https://github.com/jrpool/kilotest/blob/main/LICENSE

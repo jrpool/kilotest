@@ -76,6 +76,24 @@
           <li>Save the connector.</li>
         </ol>
       </details>
+      <details id="kilo-code">
+        <summary>Kilo Code</summary>
+        <p>These instructions apply to the <a href="https://kilo.ai">Kilo Code</a> extension for <a href="https://code.visualstudio.com">Visual Studio Code</a>, <a href="https://devin.ai/desktop">Devin Desktop</a>, and compatible editors.</p>
+        <ol>
+          <li>Open the file <code>kilo.jsonc</code> in the <code>.config/kilo</code> directory of your home directory, creating the file if it does not exist.</li>
+          <li>If the file has no <code>mcp</code> property, add the one below inside the outermost braces. If it already has one, add only the <code>kilotest</code> property inside it.</li>
+          <li>Save the file.</li>
+          <li>Open the Kilo Code <q>Settings</q>, select <q>Agent Behaviour</q>, then <q>MCP Servers</q>, and check that <code>kilotest</code> is listed.</li>
+        </ol>
+        <pre><code>"mcp": {
+  "kilotest": {
+    "type": "remote",
+    "url": "https://kilotest.com/mcp",
+    "enabled": true
+  }
+}</code></pre>
+        <p>When Kilo Code wants to call a Kilotest tool, it asks for your approval.</p>
+      </details>
       <details id="lagrange">
         <summary>LagrangeCloud</summary>
         <p>These instructions apply to the <a href="https://lgr.tensorblock.co/">LagrangeCloud</a> agent deployment platform.</p>

@@ -138,7 +138,7 @@ const generate = () => {
     openapi: '3.1.0',
     info: {
       title: 'Kilotest API',
-      description: `${sharedContext} Kilotest acts as a web server for human users, an MCP server for AI platforms, and an API for programmatic access. With this API you can request that a page be tested or retested, discover available reports, and incrementally retrieve facts from a report: from what reports are available, to what issues were reported in one report, to what elements violated one issue, to what diagnoses rule engines gave for one violation.`,
+      description: sharedContext,
       version,
       license: {
         name: license,

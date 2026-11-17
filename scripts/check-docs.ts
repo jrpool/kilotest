@@ -15,7 +15,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {routes} from '../api/routes.ts';
-import {openingParagraph} from './generate-llms.ts';
+import {sharedContext} from '../content.ts';
 
 // CONSTANTS
 
@@ -57,7 +57,7 @@ for (const fileName of targetFiles) {
 // content is that generated text, not whatever an editor may have written directly into
 // the file; anything else in llms.txt is hand-maintained and unchecked here.
 const llmsContent = fs.readFileSync(path.join(rootDir, 'llms.txt'), 'utf8');
-if (!llmsContent.includes(openingParagraph)) {
+if (!llmsContent.includes(sharedContext)) {
   errors.push('llms.txt: the opening paragraph does not match the text scripts/generate-llms.ts generates from sharedContext in content.ts; edit that source or run `npm run generate`');
 }
 if (errors.length) {

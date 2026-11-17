@@ -89,13 +89,13 @@ When you make a change in a feature branch **without** any API or tool contract 
 When you **make an API or tool contract change** in a feature branch:
 
 1. `llms.txt`: Update entries in the “API” section as needed. The initial pagagraph is generated, so do not edit it.
-2. `llms-full.txt`: Update descriptions as needed.
+2. `llms-full.txt`: Update descriptions as needed. The initial pagagraph is generated, so do not edit it.
 3. `capability.md` and `README.md`: Update their prose to describe the changed behavior.
 4. Stage, commit, and optionally push all changes.
 5. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).
 6. Submit a pull request.
 7. When all checks succeed, squash-merge to `main` and delete the feature branch on GitHub.
-8. Execute `npm run postPR` (with interactive browser authentication).
+8. Execute `npm run postPR` (with interactive browser authentication). It runs the `generate:lhm` script, among other things.
 9. Wait until `npmjs.com` has processed the publication.
 10. Use `git pull`, `npm ci`, and `pm2 restart kilotest` (but **not** `npm audit fix`) to deploy the revised `main` branch on the public server.
 11. Visit the [RapidAPI Studio](https://rapidapi.com/studio) and update the API definition at `Hub Listing` → `Definitions` → `CI/CD` → `Import OpenAPI` by uploading the regenerated `openapi-3.0.yaml`.

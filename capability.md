@@ -2,11 +2,11 @@
 
 ## Capability
 
-Web-page front-end quality audit. Kilotest tests web pages for front-end quality, namely accessibility, usability, and web standards, including HTML, CSS, ARIA, and WCAG, and makes structured findings available for retrieval.
+Kilotest is a powerful web validator. It integrates an ensemble of 12 rule engines (Axe, HTML CodeSniffer, QualWeb, Nu Html Checker, etc.), with about 1,300 rules, to audit web pages for front-end quality (accessibility, usability, and W3C web standards, including HTML, CSS, ARIA, and WCAG). Each test job generates a standardized public report describing which elements violated which rules and grouping the violations into about 380 issues. Kilotest can list the tested sites and pages, the reports about each page, the issues in each report, the elements violating rules belonging to each issue, and the diagnoses of each violation. Kilotest also accepts requests to test pages not yet tested and to retest already tested pages. Kilotest features are available via a web UI, an API, and a hosted MCP server with streamable HTTP and no authentication.
 
 ## Purpose
 
-Language models and AI platforms often need accurate, page-specific data about the front-end quality of a web page to answer user questions. Any single rule engine, such as `axe-core`, `QualWeb`, or `WAVE`, provides such data, but with a large coverage gap. Orchestrating and reconciling numerous complementary rule engines would be difficult. Kilotest solves that problem by testing pages with an ensemble of numerous independent rule engines, making their results comparable, saving the results as JSON reports, and mining the reports for facts at selectable levels of detail.
+Language models and AI platforms often need accurate, page-specific data about the front-end quality of a web page to answer user questions. Any single rule engine, such as `Accessibility Checker`, `Alfa`, or `WAVE`, provides such data, but with a large coverage gap. Orchestrating and reconciling numerous complementary rule engines would be difficult. Kilotest solves that problem by testing pages with an ensemble of 12 independent rule engines, making their results comparable, saving the results as JSON reports, and mining the reports for facts at selectable levels of detail.
 
 ## Interfaces
 
@@ -44,7 +44,7 @@ Kilotest reads the specified web page during testing. It does not modify the tar
 
 ## Cost
 
-Free. No authentication is required for the web UI or the public MCP endpoint.
+Free.
 
 ## License
 
@@ -53,6 +53,10 @@ MIT.
 ## Repository
 
 `https://github.com/jrpool/kilotest`
+
+## Authentication
+
+No authentication is required for the web UI or the public MCP endpoint.
 
 ## Privacy
 

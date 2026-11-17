@@ -14,6 +14,7 @@ import {sharedContext} from '../content.ts';
 const outputPaths = [
   path.join(import.meta.dirname, '..', 'llms.txt'),
   path.join(import.meta.dirname, '..', 'llms-full.txt'),
+  path.join(import.meta.dirname, '..', 'capability.md'),
 ];
 
 // EXECUTION

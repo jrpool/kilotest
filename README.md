@@ -89,7 +89,7 @@ When you make a change in a feature branch **without** any API or tool contract 
 When you **make an API or tool contract change** in a feature branch:
 
 1. `llms.txt`: Update entries in the “API” section as needed. The initial pagagraph is generated, so do not edit it.
-2. `llms-full.txt`: Update descriptions as needed.
+2. `llms-full.txt`: Update descriptions as needed. The initial pagagraph is generated, so do not edit it.
 3. `capability.md` and `README.md`: Update their prose to describe the changed behavior.
 4. Stage, commit, and optionally push all changes.
 5. Execute `npm run prePR -- <level>` (`major`, `minor`, or `patch`).

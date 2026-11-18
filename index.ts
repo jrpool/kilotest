@@ -233,6 +233,7 @@ export const routes = {
     '/index.html',
     '/llms-full.txt',
     '/llms.txt',
+    '/logo.png',
     '/mcp',
     '/media/*',
     '/openapi.json',
@@ -754,6 +755,14 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       setHeaders('application/xml', '/sitemap.xml', 'medium');
       response.end(sitemap);
     }
+    // Otherwise, if it is for the PNG version of the logo, served for registries that
+    // require a raster icon format:
+    else if (pageName === 'logo.png') {
+      const logo = await fs.readFile('logo.png');
+      // Serve it.
+      setHeaders('image/png', '/logo.png', 'low');
+      response.end(logo);
+    }
     // Otherwise, if it is for a full report download:
     else if (pageName === 'fullReport.json') {
       // If the request is syntactically valid:
@@ -988,7 +997,7 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
     }
     // Otherwise, if it is for the application icon:
     else if (pathname.includes('favicon.')) {
-      // Get the site icon (logo.svg, the only format served).
+      // Get the site icon (logo.svg; the raster copy is served separately at /logo.png).
       const icon = await fs.readFile(path.join(import.meta.dirname, 'logo.svg'));
       // Serve it.
       setHeaders('image/svg+xml', null, 'low');

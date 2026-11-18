@@ -42,8 +42,8 @@
           "Order a Kilotest test of https://example.org and wait for the report."
         ],
         "brandColor": "#005C5C",
-        "composerIcon": "./assets/logo.svg",
-        "logo": "./assets/logo.svg"
+        "composerIcon": "./assets/logo.png",
+        "logo": "./assets/logo.png"
       },
       "review": {
         "test_cases": {

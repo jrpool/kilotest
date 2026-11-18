@@ -11,7 +11,11 @@ export default defineConfig([
     ignores: [
       "docs/IDEAS.md",
       "package-lock.json",
-      "coverage/**"
+      "coverage/**",
+      "db/**",
+      "results/**",
+      "ai0Balance.json",
+      "test/fixtures/**"
     ]
   },
   {

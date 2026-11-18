@@ -342,6 +342,13 @@ test('GET /favicon.svg serves the logo as SVG', async () => {
   assert.ok(res.headers['content-type'].includes('image/svg+xml'));
 });
 
+test('GET /logo.png serves the logo as PNG', async () => {
+  const res = await request('GET', '/logo.png');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('image/png'));
+  assert.equal(res.body.slice(1, 4), 'PNG');
+});
+
 test('GET /api/listSites returns JSON with site data and records an API-operation metric', async () => {
   const countBefore = await getMetricCount('apiOperations', 'listSites');
   const res = await request('GET', '/api/listSites');

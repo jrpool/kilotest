@@ -25,6 +25,7 @@ const {
   getReportExtracts,
   getRuleClass,
   getRuleKeyIssue,
+  getRuleKeySpec,
   getViolationData,
   reannotationNeededMessage
 } = await import('./util.ts');
@@ -59,6 +60,12 @@ test('getIssue returns null for an unclassified rule', () => {
 test('getRuleKeyIssue returns the issue of an invariant or variable rule key', () => {
   assert.equal(getRuleKeyIssue('axe', 'mockRule'), 'mockIssueA');
   assert.equal(getRuleKeyIssue('nuVal', 'Mock message about .+\\.'), 'mockIssueB');
+});
+
+test('getRuleKeySpec returns the description and issue of a rule key, or null for an unknown one', () => {
+  assert.deepEqual(getRuleKeySpec('axe', 'mockRule'), {what: 'Mock rule', issueID: 'mockIssueA'});
+  assert.deepEqual(getRuleKeySpec('nuVal', 'Mock message about .+\\.'), {what: 'Mock message', issueID: 'mockIssueB'});
+  assert.equal(getRuleKeySpec('axe', 'nonexistent-rule-id'), null);
 });
 
 test('getRuleKeyIssue returns null for an unknown rule key or engine', () => {

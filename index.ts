@@ -64,6 +64,7 @@ import {answer as listPagesPage} from './web/listPages/index.ts';
 import {answer as listPreventedEngines} from './web/listPreventedEngines/index.ts';
 import {answer as listPreventingPages} from './web/listPreventingPages/index.ts';
 import {answer as listSitesPage} from './web/listSites/index.ts';
+import {answer as listRuleMatches, getCanonicalTail as getRuleMatchesTail} from './web/listRuleMatches/index.ts';
 import {answer as listRules} from './web/listRules/index.ts';
 import {answer as listTopIssues} from './web/listTopIssues/index.ts';
 import {answer as listViolatorsPage} from './web/listViolators/index.ts';
@@ -128,6 +129,7 @@ const answer: {
   listPreventedEngines: PageHandler;
   listPreventingPages: PageHandler;
   listSites: PageHandler;
+  listRuleMatches: PageHandler;
   listRules: PageHandler;
   listTopIssues: PageHandler;
   listViolators: PageHandler;
@@ -166,6 +168,7 @@ const answer: {
   listPreventedEngines,
   listPreventingPages,
   listSites: listSitesPage,
+  listRuleMatches,
   listRules,
   listTopIssues,
   listViolators: listViolatorsPage,
@@ -809,8 +812,10 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
       // and a jobID segment).
       // A request for the list of tested pages without a site, which listed all tested pages before sites existed, is a request for the list of tested sites.
       const canonicalTopic = topic === 'listPages' && !pathTail ? 'listSites' : renamedPagePrefixes[topic]?.to ?? topic;
-      const canonicalPath = getLegacyReportURL(canonicalTopic, pathTail) ??
-        `/${canonicalTopic}.html${pathTail ? `/${pathTail}` : ''}`;
+      // The minimum support of the rule-match page, which its form submits in the query string, belongs in the path.
+      const canonicalTail = canonicalTopic === 'listRuleMatches' ? getRuleMatchesTail(pathTail, search) : pathTail;
+      const canonicalPath = getLegacyReportURL(canonicalTopic, canonicalTail) ??
+        `/${canonicalTopic}.html${canonicalTail ? `/${canonicalTail}` : ''}`;
       // If the request signature contains any obsolete element (a pre-rename page
       // name, a legacy two-segment report tail, or a query string, which no GET
       // page handler reads, since the search argument passed to answer() is

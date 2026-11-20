@@ -258,11 +258,16 @@ export const getRuleClass = (
 export const getIssue = (engineID: string, ruleID: string): string | null => getRuleClass(
   engineID, ruleID
 )?.issueID ?? null;
-// Returns the issue that the classified rule with a rule key (as returned by getRuleClass) belongs to, or null if there is no such rule.
-export const getRuleKeyIssue = (engineID: string, ruleKey: string): string | null => {
+// Returns the description and issue of the classified rule with a rule key (as returned by getRuleClass), or null if there is no such rule.
+export const getRuleKeySpec = (engineID: string, ruleKey: string): {what: string; issueID: string} | null => {
   const engineRules = ruleSpecs[engineID];
-  return (engineRules?.invariant[ruleKey] ?? engineRules?.variable[ruleKey])?.issueID ?? null;
+  const ruleSpec = engineRules?.invariant[ruleKey] ?? engineRules?.variable[ruleKey];
+  return ruleSpec ? {what: ruleSpec.what, issueID: ruleSpec.issueID} : null;
 };
+// Returns the issue that the classified rule with a rule key (as returned by getRuleClass) belongs to, or null if there is no such rule.
+export const getRuleKeyIssue = (engineID: string, ruleKey: string): string | null => getRuleKeySpec(
+  engineID, ruleKey
+)?.issueID ?? null;
 // Returns the names of the files in a directory. A missing directory is a normal,
 // recoverable condition (e.g. on first run, before anything has ever been written to
 // it) and is created empty; any other failure to read it should never occur, so it is

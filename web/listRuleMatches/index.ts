@@ -205,14 +205,14 @@ const getMinSupport = (requested: string): {minSupport: number; minSupportError?
     return {minSupport: minSupportPages};
   }
   // Otherwise, if a valid value was requested:
-  if (/^\d{1,4}$/.test(requested) && Number(requested) >= lowestMinSupport) {
+  if (/^\d{1,2}$/.test(requested) && Number(requested) >= lowestMinSupport) {
     // Return it.
     return {minSupport: Number(requested)};
   }
   // Otherwise, return the default and an error message.
   return {
     minSupport: minSupportPages,
-    minSupportError: `The minimum number of supporting pages must be a whole number from ${lowestMinSupport} to 9999, so the default, ${minSupportPages}, was used.`
+    minSupportError: `The minimum number of supporting pages must be a whole number from ${lowestMinSupport} to 99, so the default, ${minSupportPages}, was used.`
   };
 };
 // Returns a page listing the sets of matching rules, with the minimum support specified by the path tail, if any.
@@ -264,7 +264,7 @@ export const answer = async (pathTail: string = '') => {
     }
   }
   const intro = [
-    'Two rules <q>match</q> if, on every page on which both were tested, the same elements violated both of them.',
+    'Two rules are suspected duplicatesif, on every page on which both were tested, the same elements violated both of them.',
     `To be listed, they must also have been violated on at least ${minSupport} such pages.`,
     'These are the largest sets of rules in which every two rules match.',
     'A rule can belong to more than one set, because rules were not all tested on the same pages.',
@@ -272,7 +272,7 @@ export const answer = async (pathTail: string = '') => {
   ].join(' ');
   const form = [
     `${margin}<form method="get" action="/listRuleMatches.html">`,
-    `${margin}  <p><label>Minimum number of supporting pages: <input type="number" name="minPages" min="${lowestMinSupport}" step="1" value="${minSupport}" required></label></p>`,
+    `${margin}  <p><label>Minimum number of supporting pages (from ${lowestMinSupport} to 99): <input type="number" name="minPages" min="${lowestMinSupport}" max="99" step="1" value="${minSupport}" required></label></p>`,
     `${margin}  <p><button type="submit">Recompute</button></p>`,
     `${margin}</form>`
   ].join('\n');

@@ -32,7 +32,8 @@ export const fixtureViolationData: ViolationData[] = [
       url: 'https://example.com/vd1',
       reportTime: '2026-01-01T00:10:00.000Z',
       ruleEngineIDs: ['alfa', 'axe'],
-      preventions: {}
+      preventions: {},
+      rulePreventions: {}
     },
     violations: {
       alfa: {
@@ -53,7 +54,8 @@ export const fixtureViolationData: ViolationData[] = [
       url: 'https://example.com/vd2',
       reportTime: '2026-01-01T00:10:00.000Z',
       ruleEngineIDs: ['axe', 'ibm', 'nuVal'],
-      preventions: {ibm: 'page timed out'}
+      preventions: {ibm: 'page timed out'},
+      rulePreventions: {}
     },
     violations: {
       axe: {

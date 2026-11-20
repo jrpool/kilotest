@@ -46,6 +46,7 @@ import {
   getReportPageID,
   getReportPath,
   getReportStats,
+  getRulePreventions,
   getTimeStamp,
   hiddenReportsPath,
   htmlSafe,
@@ -1100,6 +1101,28 @@ test('getReportExtract includes the preventions of a report', async () => {
 test('getReportExtract includes an empty preventions object for a report without preventions', async () => {
   const extract = await getReportExtract('260101T0000-mix') as any;
   assert.deepEqual(extract.preventions, {});
+});
+
+test('getReportExtract includes an empty rulePreventions object for a report without rule preventions', async () => {
+  const extract = await getReportExtract('260101T0000-mix') as any;
+  assert.deepEqual(extract.rulePreventions, {});
+});
+
+test('getRulePreventions returns the sorted rules with prevented tests, by engine that was not prevented', () => {
+  const report: any = {
+    acts: [
+      {type: 'test', which: 'testaro', data: {rulePreventions: {tabNav: 'Timeout', hover: 'Error'}}},
+      {type: 'test', which: 'testaro', data: {rulePreventions: {hover: 'Error', allCaps: 'Error'}}},
+      // An act of an engine that was prevented, whose rule preventions are subsumed by its prevention.
+      {type: 'test', which: 'alfa', data: {prevented: true, rulePreventions: {r1: 'Error'}}},
+      // Acts without rule preventions.
+      {type: 'test', which: 'axe', data: {rulePreventions: null}},
+      {type: 'test', which: 'ibm'},
+      {type: 'url', data: {rulePreventions: {x: 'Error'}}}
+    ],
+    jobData: {preventions: {alfa: 'page timed out'}}
+  };
+  assert.deepEqual(getRulePreventions(report), {testaro: ['allCaps', 'hover', 'tabNav']});
 });
 
 test('getPreventions returns no preventions for a report without a preventions object', () => {

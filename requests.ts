@@ -179,7 +179,7 @@ export const removeOrphans = (): Promise<{pages: string[]; sites: string[]}> => 
     }
   }
 );
-// Creates a job to test a registered page and returns its identifier.
+// Creates a job to test a registered page and returns its identifier. Analyses of rule violations across reports assume that every job tests all rules of all rule engines and that the testaro act does not stop on a failure (see docs/decisions/012-rule-test-coverage.md), so a change to the job template that violates those assumptions requires revising those analyses.
 export const createJob = async (page: RegisteredPage, reason: string): Promise<string> => {
   const jobTemplateJSON = await fs.readFile(path.join(import.meta.dirname, 'job.json'), 'utf8');
   const job = JSON.parse(jobTemplateJSON);

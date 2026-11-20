@@ -114,6 +114,8 @@ export type ReportExtract = {
   ruleEngineIDs: string[];
   // Reasons why rule engines were prevented from testing, by rule-engine identifier.
   preventions: Record<string, string>;
+  // Identifiers of the rules whose individual tests were prevented, in alphabetical order, by identifier of a rule engine (in practice, only testaro) that was not itself prevented from testing.
+  rulePreventions: Record<string, string[]>;
   superseded?: boolean;
 };
 // Data on the instances of one outcome of a rule in a report. The count is the sum of the instance counts, each defaulting to 1, and the unlocated count is the part of it from instances without catalog indexes.
@@ -879,6 +881,25 @@ export const getPreventions = (report: {jobData?: {preventions?: unknown}}): Rec
   }
   return preventions;
 };
+// Returns the identifiers of the rules whose individual tests were prevented, according to a report, in alphabetical order, by identifier of a rule engine whose test act records them in its rulePreventions property (in practice, only testaro, whose act otherwise continues with its other rules). An engine whose whole act was prevented is not included, because its prevention is recorded in the report preventions instead.
+export const getRulePreventions = (report: UsableReport): Record<string, string[]> => {
+  const preventedEngineIDs = Object.keys(getPreventions(report));
+  const rulePreventions: Record<string, Set<string>> = {};
+  // For each test act of a rule engine that was not prevented:
+  for (const act of getTestActs(report).filter(act => !preventedEngineIDs.includes(act.which!))) {
+    const actRulePreventions = act.data?.rulePreventions;
+    // If the act records any preventions of individual rule tests:
+    if (typeof actRulePreventions === 'object' && actRulePreventions !== null) {
+      // Add their rule identifiers to the result.
+      for (const ruleID of Object.keys(actRulePreventions)) {
+        (rulePreventions[act.which!] ??= new Set()).add(ruleID);
+      }
+    }
+  }
+  return Object.fromEntries(
+    Object.entries(rulePreventions).map(([engineID, ruleIDs]) => [engineID, Array.from(ruleIDs).sort()])
+  );
+};
 // Returns an extract of an available report, or an error object if the report cannot
 // be used. An extract exists to expose a report in listings, so it shares getReport's
 // usability bar: a report too defective to expose must produce no extract. A report
@@ -908,7 +929,8 @@ export const getReportExtract = async (reportID: string): Promise<ReportExtract 
     url,
     reportTime: getReportEndTime({jobData}).toISOString(),
     ruleEngineIDs: Array.from(new Set(getTestActs(report).map(act => act.which!))).sort(),
-    preventions: getPreventions(report)
+    preventions: getPreventions(report),
+    rulePreventions: getRulePreventions(report)
   };
 };
 // The modification time and size of a file, used to decide whether data cached from it are current.
@@ -1049,7 +1071,7 @@ export const reannotationNeededMessage = 'These data are not currently available
 const violationDataCache = new Map<string, {
   stamp: FileStamp; violations: ReportViolations; needsAttention: boolean;
 }>();
-// Returns the extract and violation data of the latest report about each page, or an error object if any of those reports cannot be read or needs reannotation. In the latter case, a manager is alerted.
+// Returns the extract and violation data of the latest report about each page, or an error object if any of those reports cannot be read or needs reannotation. In the latter case, a manager is alerted. A consumer that infers from these data that a rule was passed relies on the assumptions in docs/decisions/012-rule-test-coverage.md about the jobs that Kilotest creates.
 export const getViolationData = async (): Promise<ViolationData[] | {error: string}> => {
   const extracts = await getReportExtracts(true);
   const reportFilePaths = extracts.map(({id}) => getReportPath(id));

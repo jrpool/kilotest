@@ -197,6 +197,7 @@ test('getViolationData collects violators, counts, and unlocated counts by engin
     assert.equal(extract.id, '260101T0000-aaa');
     assert.deepEqual(extract.ruleEngineIDs, ['alfa', 'axe', 'nuVal']);
     assert.deepEqual(extract.preventions, {ibm: 'page timed out'});
+    assert.deepEqual(extract.rulePreventions, {});
     assert.deepEqual(violations, {
       axe: {
         'mockRule': {

@@ -264,9 +264,9 @@ export const answer = async (pathTail: string = '') => {
     }
   }
   const intro = [
-    'Two rules are suspected duplicatesif, on every page on which both were tested, the same elements violated both of them.',
+    'Two rules are suspected duplicates if, on every page on which both were tested, the same elements violated both of them.',
     `To be listed, they must also have been violated on at least ${minSupport} such pages.`,
-    'These are the largest sets of rules in which every two rules match.',
+    'The sets shown below are the largest sets of rules in which every two rules match.',
     'A rule can belong to more than one set, because rules were not all tested on the same pages.',
     `Sets found: ${ruleMatches.length}, based on the last test of each of ${getCountString(violationData.length, 'page', 'pages')}.`
   ].join(' ');

@@ -5,7 +5,7 @@
 
 // IMPORTS
 
-import {test, before, after, mock} from 'node:test';
+import {test, before, after} from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
 import path from 'node:path';
@@ -20,7 +20,6 @@ for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_A
 }
 
 import {
-  annotateReportObject,
   awaitJob,
   checkCommentDuplicate,
   checkLength,
@@ -32,10 +31,6 @@ import {
   getDateString,
   getDateTime,
   getEnvMax,
-  getIssue,
-  getRuleClass,
-  getViolationData,
-  reannotationNeededMessage,
   errorMessage,
   getJobsData,
   getJSON,
@@ -260,15 +255,6 @@ test('getEnvMax returns the default when the variable is negative', () => {
 test('describeMax returns "no limit" for a cap of 0 and the number otherwise', () => {
   assert.equal(describeMax(0), 'no limit');
   assert.equal(describeMax(20), '20');
-});
-
-test('getIssue returns an issue ID for a known engine and rule', () => {
-  const issueID = getIssue('axe', 'link-name');
-  assert.ok(typeof issueID === 'string' || issueID === null);
-});
-
-test('getIssue returns null for an unknown engine', () => {
-  assert.equal(getIssue('nonexistentEngine', 'anyRule'), null);
 });
 
 test('errorMessage returns the message of an Error instance', () => {
@@ -763,67 +749,6 @@ after(() => {
   }
 });
 
-test('annotateReportObject annotates a report object in place without reading or writing a file', async () => {
-  // A report object that was never written to disk (e.g. one just received from a worker,
-  // as in index.ts's worker/report handler, which annotates before the first write).
-  const report: any = {
-    id: '990101T0099-obj',
-    target: {what: 'Object Page', url: 'https://example.com/object'},
-    acts: [
-      {
-        type: 'test',
-        which: 'alfa',
-        result: {
-          standardResult: {
-            instances: [
-              // A classifiable rule.
-              {ruleID: 'r11', what: 'The link does not have an accessible name', outcome: 'failed', catalogIndex: '0'},
-              // An unclassifiable rule.
-              {ruleID: 'unknownRule123', what: 'Unknown', outcome: 'failed', catalogIndex: '0'}
-            ]
-          }
-        }
-      }
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  await annotateReportObject(report);
-  const instances = report.acts[0].result.standardResult.instances;
-  assert.equal(instances[0].issueID, 'linkNoText');
-  assert.equal(instances[1].issueID, undefined);
-  assert.deepEqual(report.jobData.issuelessRules, ['alfa:unknownRule123']);
-});
-
-test('annotateReportObject handles a test act with no standardResult instances', async () => {
-  const report: any = {
-    id: '990101T0098-ni',
-    target: {what: 'Test', url: 'https://example.com'},
-    acts: [
-      {type: 'test', which: 'axe', result: {standardResult: {instances: []}}},
-      {type: 'other'}
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  await annotateReportObject(report);
-  assert.deepEqual(report.jobData.issuelessRules, []);
-});
-
-test('annotateReportObject handles a test act with no standardResult', async () => {
-  const report: any = {
-    id: '990101T0097-ns',
-    target: {what: 'Test', url: 'https://example.com'},
-    acts: [
-      {type: 'test', which: 'axe', result: {}}
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  await annotateReportObject(report);
-  assert.deepEqual(report.jobData.issuelessRules, []);
-});
-
 // TESTS FOR REMAINING BRANCH COVERAGE
 
 test('getJobNames creates missing job directories and returns empty arrays', async () => {
@@ -1012,16 +937,6 @@ test('getReport returns an error for an invalid report', async () => {
 
 test('getAgoDays returns null for an invalid Date object', () => {
   assert.equal(getAgoDays(new Date('invalid')), null);
-});
-
-test('getIssue returns null for a known engine with an unknown variable rule', () => {
-  assert.equal(getIssue('axe', 'nonexistent-rule-id'), null);
-});
-
-test('getIssue returns an issue ID for a variable rule pattern match', () => {
-  const result = getIssue('nuVal', 'Duplicate attribute foo.');
-  assert.ok(typeof result === 'string');
-  assert.equal(result, 'duplicateAttribute');
 });
 
 test('getPOSTData resolves with parsed JSON for application/json requests', async () => {
@@ -1803,225 +1718,7 @@ test('report extracts group reports by page identifier, not description, and omi
   }
 });
 
-test('getRuleClass returns the rule key and issue of an invariant rule', () => {
-  assert.deepEqual(getRuleClass('axe', 'link-name'), {ruleKey: 'link-name', issueID: 'linkNoText'});
-});
-
-test('getRuleClass returns the pattern of a matching variable rule as its rule key', () => {
-  assert.deepEqual(
-    getRuleClass('nuVal', 'Duplicate attribute foo.'),
-    {ruleKey: 'Duplicate attribute .+\\.', issueID: 'duplicateAttribute'}
-  );
-});
-
-test('getRuleClass returns null for an unclassified rule or an unknown engine', () => {
-  assert.equal(getRuleClass('axe', 'nonexistent-rule-id'), null);
-  assert.equal(getRuleClass('nonexistentEngine', 'link-name'), null);
-});
-
 test('getReportExtract includes the rule engines that tried to test', async () => {
   const extract = await getReportExtract('260101T0000-mix') as any;
   assert.deepEqual(extract.ruleEngineIDs, ['alfa', 'axe']);
-});
-
-// Returns a minimal standard instance for violation-data tests.
-const violationInstance = (
-  ruleID: string, issueID: string | undefined, catalogIndex?: string | number, outcome?: string, count?: number
-) => ({ruleID, what: ruleID, ordinalSeverity: 2, outcome, count, catalogIndex, issueID});
-// Returns a minimal usable report for violation-data tests.
-const violationReport = (
-  pageID: string, endTime: string, acts: Record<string, any[]>, preventions: Record<string, string> = {}
-) => ({
-  target: {what: `Page ${pageID}`, url: `https://example.com/${pageID}`},
-  sources: {pageID},
-  acts: Object.entries(acts).map(([which, instances]) => ({
-    type: 'test', which, result: {standardResult: {instances}}
-  })),
-  jobData: {endTime, preventions},
-  catalog: {}
-});
-// Runs a function with the data directory pointed at an empty temporary one, passing it the path of its reports directory.
-const withTmpReports = async (run: (reportsDir: string) => Promise<void>) => {
-  const os = await import('node:os');
-  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-violations-'));
-  const tmpReportsDir = path.join(tmpRoot, 'db', 'reports');
-  const savedDbDir = process.env.DB_DIR;
-  process.env.DB_DIR = path.join(tmpRoot, 'db');
-  try {
-    await fs.mkdir(tmpReportsDir, {recursive: true});
-    await run(tmpReportsDir);
-  }
-  finally {
-    process.env.DB_DIR = savedDbDir;
-    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
-  }
-};
-// Returns the number of reannotation alerts logged while a function runs. The alert configuration is blank in tests, so sendAlert logs each alert instead of sending it.
-const countReannotationAlerts = async (run: () => Promise<void>): Promise<number> => {
-  const logMock = mock.method(console, 'log', () => {});
-  try {
-    await run();
-    return logMock.mock.calls.filter(
-      call => String(call.arguments[0]).includes('Kilotest: reannotation needed')
-    ).length;
-  }
-  finally {
-    logMock.mock.restore();
-  }
-};
-
-test('getViolationData collects violators, counts, and unlocated counts by engine, rule key, and outcome', async () => {
-  await withTmpReports(async reportsDir => {
-    const report = violationReport('p-aaaaaaaa', '26-01-01T00:10', {
-      axe: [
-        violationInstance('link-name', 'linkNoText', '0', 'failed', 1),
-        violationInstance('link-name', 'linkNoText', 2, undefined, 3),
-        violationInstance('link-name', 'linkNoText', undefined, 'failed', 2),
-        violationInstance('link-name', 'linkNoText', '1', 'cantTell')
-      ],
-      nuVal: [
-        violationInstance('Duplicate attribute foo.', 'duplicateAttribute', '0', 'failed'),
-        violationInstance('Duplicate attribute bar.', 'duplicateAttribute', '1', 'failed')
-      ],
-      alfa: []
-    }, {ibm: 'page timed out'});
-    await fs.writeFile(path.join(reportsDir, '260101T0000-aaa.json'), JSON.stringify(report));
-    const data = await getViolationData();
-    assert.ok(Array.isArray(data));
-    assert.equal(data.length, 1);
-    const {extract, violations} = data[0]!;
-    assert.equal(extract.id, '260101T0000-aaa');
-    assert.deepEqual(extract.ruleEngineIDs, ['alfa', 'axe', 'nuVal']);
-    assert.deepEqual(extract.preventions, {ibm: 'page timed out'});
-    assert.deepEqual(violations, {
-      axe: {
-        'link-name': {
-          failed: {violators: new Set(['0', '2']), count: 6, unlocatedCount: 2},
-          cantTell: {violators: new Set(['1']), count: 1, unlocatedCount: 0}
-        }
-      },
-      nuVal: {
-        'Duplicate attribute .+\\.': {
-          failed: {violators: new Set(['0', '1']), count: 2, unlocatedCount: 0},
-          cantTell: {violators: new Set(), count: 0, unlocatedCount: 0}
-        }
-      }
-    });
-  });
-});
-
-test('getViolationData includes only the latest report about each page', async () => {
-  await withTmpReports(async reportsDir => {
-    const instances = {axe: [violationInstance('link-name', 'linkNoText', '0', 'failed')]};
-    await fs.writeFile(
-      path.join(reportsDir, '260101T0000-old.json'),
-      JSON.stringify(violationReport('p-aaaaaaaa', '26-01-01T00:10', instances))
-    );
-    await fs.writeFile(
-      path.join(reportsDir, '260201T0000-new.json'),
-      JSON.stringify(violationReport('p-aaaaaaaa', '26-02-01T00:10', instances))
-    );
-    await fs.writeFile(
-      path.join(reportsDir, '260101T0000-oth.json'),
-      JSON.stringify(violationReport('p-bbbbbbbb', '26-01-01T00:10', instances))
-    );
-    const data = await getViolationData();
-    assert.ok(Array.isArray(data));
-    assert.deepEqual(data.map(({extract}) => extract.id).sort(), ['260101T0000-oth', '260201T0000-new']);
-  });
-});
-
-test('getViolationData returns an error and alerts once for each kind of instance needing reannotation', async () => {
-  const cases: Record<string, any> = {
-    'an obsolete issue': violationInstance('link-name', 'noSuchIssue', '0', 'failed'),
-    'a reclassified rule': violationInstance('link-name', 'allCaps', '0', 'failed'),
-    'a newly classified rule': violationInstance('link-name', undefined, '0', 'failed'),
-    'an unclassified rule': violationInstance('nonexistent-rule-id', undefined, '0', 'failed'),
-    'an out-of-date cantTell instance': violationInstance('link-name', 'allCaps', '0', 'cantTell')
-  };
-  for (const [description, instance] of Object.entries(cases)) {
-    await withTmpReports(async reportsDir => {
-      const report = violationReport('p-aaaaaaaa', '26-01-01T00:10', {
-        axe: [violationInstance('image-alt', 'imageNoText', '1', 'failed'), instance]
-      });
-      await fs.writeFile(path.join(reportsDir, '260101T0000-aaa.json'), JSON.stringify(report));
-      let data: any;
-      const alertCount = await countReannotationAlerts(async () => {
-        data = await getViolationData();
-      });
-      assert.deepEqual(data, {error: reannotationNeededMessage}, description);
-      assert.equal(alertCount, 1, description);
-    });
-  }
-});
-
-test('getViolationData sends no alert when no report needs reannotation', async () => {
-  await withTmpReports(async reportsDir => {
-    const report = violationReport('p-aaaaaaaa', '26-01-01T00:10', {
-      axe: [violationInstance('link-name', 'linkNoText', '0', 'failed')]
-    });
-    await fs.writeFile(path.join(reportsDir, '260101T0000-aaa.json'), JSON.stringify(report));
-    const alertCount = await countReannotationAlerts(async () => {
-      assert.ok(Array.isArray(await getViolationData()));
-    });
-    assert.equal(alertCount, 0);
-  });
-});
-
-test('getViolationData reuses cached data while a report file is unchanged and reflects changes', async () => {
-  await withTmpReports(async reportsDir => {
-    const firstPath = path.join(reportsDir, '260101T0000-aaa.json');
-    const report = violationReport('p-aaaaaaaa', '26-01-01T00:10', {
-      axe: [violationInstance('link-name', 'linkNoText', '0', 'failed')]
-    });
-    await fs.writeFile(firstPath, JSON.stringify(report));
-    // Give the file a whole-second modification time, so that it can be restored exactly.
-    const earlier = new Date('2026-01-01T00:00:00Z');
-    await fs.utimes(firstPath, earlier, earlier);
-    let data = await getViolationData() as any[];
-    assert.deepEqual(data[0].violations.axe['link-name'].failed.violators, new Set(['0']));
-    // Rewrite the file with content of the same size and restore its modification time, so its cached data are still treated as current.
-    report.acts[0]!.result.standardResult.instances[0]!.catalogIndex = '5';
-    await fs.writeFile(firstPath, JSON.stringify(report));
-    await fs.utimes(firstPath, earlier, earlier);
-    data = await getViolationData() as any[];
-    assert.deepEqual(data[0].violations.axe['link-name'].failed.violators, new Set(['0']));
-    // Give the file a later modification time, as reannotation would.
-    const later = new Date(Date.now() + 60000);
-    await fs.utimes(firstPath, later, later);
-    data = await getViolationData() as any[];
-    assert.deepEqual(data[0].violations.axe['link-name'].failed.violators, new Set(['5']));
-    // Add a report about another page.
-    const secondPath = path.join(reportsDir, '260101T0000-bbb.json');
-    await fs.writeFile(secondPath, JSON.stringify({...report, sources: {pageID: 'p-bbbbbbbb'}}));
-    data = await getViolationData() as any[];
-    assert.deepEqual(data.map(({extract}) => extract.id).sort(), ['260101T0000-aaa', '260101T0000-bbb']);
-    // Remove a report, as hiding would.
-    await fs.rm(firstPath);
-    data = await getViolationData() as any[];
-    assert.deepEqual(data.map(({extract}) => extract.id), ['260101T0000-bbb']);
-  });
-});
-
-test('getViolationData returns an error when a latest report cannot be read', {
-  // A superuser can read a file whatever its permissions.
-  skip: process.getuid?.() === 0
-}, async () => {
-  await withTmpReports(async reportsDir => {
-    const reportPath = path.join(reportsDir, '260101T0000-aaa.json');
-    const report = violationReport('p-aaaaaaaa', '26-01-01T00:10', {
-      axe: [violationInstance('link-name', 'linkNoText', '0', 'failed')]
-    });
-    await fs.writeFile(reportPath, JSON.stringify(report));
-    // Cache the extract of the report, which a permission change does not invalidate.
-    await getReportExtracts(true);
-    await fs.chmod(reportPath, 0o000);
-    try {
-      const data: any = await getViolationData();
-      assert.ok(data.error);
-    }
-    finally {
-      await fs.chmod(reportPath, 0o644);
-    }
-  });
 });

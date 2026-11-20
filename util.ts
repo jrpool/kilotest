@@ -110,9 +110,27 @@ export type ReportExtract = {
   description: string;
   url: string;
   reportTime: string;
+  // Identifiers of the rule engines that tried to test, in alphabetical order.
+  ruleEngineIDs: string[];
   // Reasons why rule engines were prevented from testing, by rule-engine identifier.
   preventions: Record<string, string>;
   superseded?: boolean;
+};
+// Data on the instances of one outcome of a rule in a report. The count is the sum of the instance counts, each defaulting to 1, and the unlocated count is the part of it from instances without catalog indexes.
+export type OutcomeViolations = {
+  violators: ReadonlySet<string>;
+  count: number;
+  unlocatedCount: number;
+};
+// Data on the instances of the rules of a report, by rule-engine identifier and rule key. A rule key is the identifier of an invariant rule or the pattern of a variable rule, as in the rule classification. Instances without an outcome are violations, as in getTestActInstances.
+export type ReportViolations = Readonly<Record<string, Readonly<Record<string, Readonly<{
+  failed: OutcomeViolations;
+  cantTell: OutcomeViolations;
+}>>>>>;
+// The extract and the violation data of a report.
+export type ViolationData = {
+  extract: ReportExtract;
+  violations: ReportViolations;
 };
 
 // MISCELLANEOUS FUNCTIONS
@@ -211,8 +229,10 @@ export const getDateTime = (timeStamp: string): Date | null => {
   const dateTime = new Date(dateString);
   return dateTime.toString() === 'Invalid Date' ? null : dateTime;
 };
-// Returns the issue that a rule belongs to, or null if none.
-export const getIssue = (engineID: string, ruleID: string): string | null => {
+// Returns the key of the classified rule that a rule ID identifies (the rule ID itself if invariant, or the first matching pattern if variable) and the issue that the rule belongs to, or null if the rule is unclassified.
+export const getRuleClass = (
+  engineID: string, ruleID: string
+): {ruleKey: string; issueID: string} | null => {
   const engineRules = ruleSpecs[engineID];
   // If the rule engine has no rule specifications:
   if (!engineRules) {
@@ -222,16 +242,20 @@ export const getIssue = (engineID: string, ruleID: string): string | null => {
   const {invariant, variable} = engineRules;
   // If the rule ID is invariant and classified:
   if (invariant[ruleID]) {
-    // Return its issue ID.
-    return invariant[ruleID].issueID;
+    // Return it and its issue ID.
+    return {ruleKey: ruleID, issueID: invariant[ruleID].issueID};
   }
   // Otherwise, find the first matching variable rule ID pattern.
   const variableRuleID = Object
   .keys(variable)
   .find(pattern => new RegExp(`^${pattern}$`).test(ruleID));
-  // Return the issue ID if a pattern matched, or a failure result otherwise.
-  return variableRuleID ? variable[variableRuleID]!.issueID : null;
+  // Return the pattern and its issue ID if a pattern matched, or a failure result otherwise.
+  return variableRuleID ? {ruleKey: variableRuleID, issueID: variable[variableRuleID]!.issueID} : null;
 };
+// Returns the issue that a rule belongs to, or null if none.
+export const getIssue = (engineID: string, ruleID: string): string | null => getRuleClass(
+  engineID, ruleID
+)?.issueID ?? null;
 // Returns the names of the files in a directory. A missing directory is a normal,
 // recoverable condition (e.g. on first run, before anything has ever been written to
 // it) and is created empty; any other failure to read it should never occur, so it is
@@ -878,15 +902,24 @@ export const getReportExtract = async (reportID: string): Promise<ReportExtract 
     description,
     url,
     reportTime: getReportEndTime({jobData}).toISOString(),
+    ruleEngineIDs: Array.from(new Set(getTestActs(report).map(act => act.which!))).sort(),
     preventions: getPreventions(report)
   };
 };
+// The modification time and size of a file, used to decide whether data cached from it are current.
+type FileStamp = {mtimeMs: number; size: number};
+// Returns the stamp of a file, or a stamp equal to no other stamp if the file cannot be inspected.
+const getFileStamp = (filePath: string): Promise<FileStamp> => fs
+.stat(filePath)
+.then(({mtimeMs, size}) => ({mtimeMs, size}), () => ({mtimeMs: NaN, size: NaN}));
+// Returns whether two file stamps are equal.
+const isSameStamp = (a: FileStamp, b: FileStamp): boolean => a.mtimeMs === b.mtimeMs && a.size === b.size;
 // Cache of report extracts, keyed by report file path. Each entry records the modification
 // time and size of the file when it was extracted, so an entry is reused only while the file
 // is unchanged. Reports are mutable (e.g., reannotation rewrites all of them) and may be
 // written, hidden, or deleted by any process, so the cache is validated against the files
 // before every use rather than invalidated by the code that changes them.
-const reportExtractCache = new Map<string, {mtimeMs: number, size: number, extract: ReportExtract}>();
+const reportExtractCache = new Map<string, {stamp: FileStamp, extract: ReportExtract}>();
 // Returns extracts of all available reports, ordered by page description and completion time.
 export const getReportExtracts = async (onlyLatest: boolean = false): Promise<ReportExtract[]> => {
   const reportsDir = reportsPath();
@@ -900,21 +933,19 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
       reportExtractCache.delete(cachedPath);
     }
   }
-  // Get the current modification times and sizes of the report files. A file that disappeared
-  // after the directory was read gets values that match no cache entry, so it is reread, which
-  // fails and removes it from the cache.
-  const reportStats = await Promise.all(
-    reportFilePaths.map(filePath => fs.stat(filePath).catch(() => ({mtimeMs: NaN, size: NaN})))
-  );
+  // Get the current stamps of the report files. A file that disappeared after the directory
+  // was read gets a stamp that matches no cache entry, so it is reread, which fails and
+  // removes it from the cache.
+  const reportStamps = await Promise.all(reportFilePaths.map(getFileStamp));
   // Initialize an array of extracts.
   const extracts: ReportExtract[] = [];
   // For each report file:
   for (const [index, reportFileName] of reportFileNames.entries()) {
     const filePath = reportFilePaths[index]!;
-    const stat = reportStats[index]!;
+    const stamp = reportStamps[index]!;
     const cached = reportExtractCache.get(filePath);
     // If its cached extract is current:
-    if (cached && cached.mtimeMs === stat.mtimeMs && cached.size === stat.size) {
+    if (cached && isSameStamp(cached.stamp, stamp)) {
       // Add a copy of the cached extract to the array.
       extracts.push({...cached.extract});
       continue;
@@ -925,7 +956,7 @@ export const getReportExtracts = async (onlyLatest: boolean = false): Promise<Re
     // If this succeeded:
     if (!('error' in extract)) {
       // Cache it and add a copy of it to the array.
-      reportExtractCache.set(filePath, {mtimeMs: stat.mtimeMs, size: stat.size, extract});
+      reportExtractCache.set(filePath, {stamp, extract});
       extracts.push({...extract});
     }
     // Otherwise, i.e. if it failed:
@@ -965,6 +996,101 @@ export const getPageReportExtracts = async (pageID: string): Promise<ReportExtra
   const pageExtracts = reportExtracts.filter(extract => pageID && extract.pageID === pageID);
   objectSort(pageExtracts, 'reportTime', 'alpha');
   return pageExtracts;
+};
+// Returns the violation data of a report and whether any of its instances, of any outcome, needs reannotation, because its rule is unclassified or its issue differs from the issue of its rule in the current classification.
+const getReportViolations = (
+  report: UsableReport
+): {violations: ReportViolations; needsAttention: boolean} => {
+  type MutableOutcomeViolations = {violators: Set<string>; count: number; unlocatedCount: number};
+  const violations: Record<string, Record<string, {
+    failed: MutableOutcomeViolations; cantTell: MutableOutcomeViolations;
+  }>> = {};
+  let needsAttention = false;
+  // For each standard instance of each test act of the report:
+  for (const {act, instance} of getTestActInstances(report)) {
+    const engineID = act.which!;
+    const {ruleID, catalogIndex, count, issueID} = instance;
+    const ruleClass = getRuleClass(engineID, ruleID);
+    // If its rule is unclassified or its annotation is out of date:
+    if (!ruleClass || ruleClass.issueID !== issueID) {
+      // Record this.
+      needsAttention = true;
+      continue;
+    }
+    // Otherwise, add the instance to the data on its rule and outcome.
+    const ruleData = (violations[engineID] ??= {})[ruleClass.ruleKey] ??= {
+      failed: {violators: new Set(), count: 0, unlocatedCount: 0},
+      cantTell: {violators: new Set(), count: 0, unlocatedCount: 0}
+    };
+    const outcomeData = ruleData[instance.outcome === 'cantTell' ? 'cantTell' : 'failed'];
+    const instanceCount = count ?? 1;
+    outcomeData.count += instanceCount;
+    // If the instance has a catalog index:
+    if (catalogIndex !== undefined && catalogIndex !== null && catalogIndex !== '') {
+      // Add it to the violators.
+      outcomeData.violators.add(String(catalogIndex));
+    }
+    // Otherwise, i.e. if the instance has no catalog index:
+    else {
+      // Add its count to the unlocated count.
+      outcomeData.unlocatedCount += instanceCount;
+    }
+  }
+  return {violations, needsAttention};
+};
+// Error message returned while any latest report needs reannotation.
+export const reannotationNeededMessage = 'Results are temporarily unavailable while reports are being updated';
+// Cache of the violation data of latest reports, keyed by report file path and validated like the report-extract cache. The rule classification changes only when Kilotest restarts, which empties the cache, so whether a report needs reannotation is also cached.
+const violationDataCache = new Map<string, {
+  stamp: FileStamp; violations: ReportViolations; needsAttention: boolean;
+}>();
+// Returns the extract and violation data of the latest report about each page, or an error object if any of those reports cannot be read or needs reannotation. In the latter case, a manager is alerted.
+export const getViolationData = async (): Promise<ViolationData[] | {error: string}> => {
+  const extracts = await getReportExtracts(true);
+  const reportFilePaths = extracts.map(({id}) => getReportPath(id));
+  const reportFilePathSet = new Set(reportFilePaths);
+  // Remove from the cache any report that is no longer a latest available report.
+  for (const cachedPath of violationDataCache.keys()) {
+    if (!reportFilePathSet.has(cachedPath)) {
+      violationDataCache.delete(cachedPath);
+    }
+  }
+  const reportStamps = await Promise.all(reportFilePaths.map(getFileStamp));
+  const data: ViolationData[] = [];
+  let needsAttention = false;
+  // For each latest report:
+  for (const [index, extract] of extracts.entries()) {
+    const filePath = reportFilePaths[index]!;
+    const stamp = reportStamps[index]!;
+    let cached = violationDataCache.get(filePath);
+    // If it has no current cached violation data:
+    if (!cached || !isSameStamp(cached.stamp, stamp)) {
+      // Get the report.
+      const report = await getReport(extract.id);
+      // If this failed:
+      if (isReportError(report)) {
+        // Forget any outdated data on it and return the reason.
+        violationDataCache.delete(filePath);
+        return report;
+      }
+      // Otherwise, cache its violation data. The stat precedes the read, so a change between
+      // them leaves a stale stamp in the cache and causes a reread next time.
+      cached = {stamp, ...getReportViolations(report)};
+      violationDataCache.set(filePath, cached);
+    }
+    needsAttention ||= cached.needsAttention;
+    data.push({extract, violations: cached.violations});
+  }
+  // If any latest report needs reannotation:
+  if (needsAttention) {
+    // Alert a manager and return an error.
+    await sendAlert(
+      'Kilotest: reannotation needed',
+      'Some latest reports contain violations of unclassified rules or issue annotations that differ from the current rule classification. Use the reannotation form to identify and update them.'
+    );
+    return {error: reannotationNeededMessage};
+  }
+  return data;
 };
 // Returns the non-negative-integer value of an environment variable, or a default if the
 // variable is unset, empty, or not a non-negative integer. Read at call time, not cached,

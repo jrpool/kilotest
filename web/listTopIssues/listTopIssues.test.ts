@@ -1,51 +1,42 @@
 /*
   listTopIssues.test.ts
-  UI tests for web/listTopIssues/index.ts using the fixture corpus.
+  UI tests for web/listTopIssues/index.ts, using a mocked rule classification and mocked violation data, so that their results depend neither on the classification in the testaro-issues dependency nor on the annotations of the fixture reports.
 */
 
 // IMPORTS
 
-import {test, before, after, mock} from 'node:test';
+import {test, afterEach, mock} from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'node:path';
-import fs from 'node:fs/promises';
 import {parse} from 'node-html-parser';
+import {mockClassification} from '../../test/fixtures/classification.ts';
+import {fixtureViolationData} from '../../test/fixtures/violationData.ts';
 
-// Mock the util functions called by index.ts before importing it, so that
-// it imports the mocked versions. Other exports delegate to the real module.
-import * as realUtil from '../../util.ts';
-let getReportCallCount = 0;
-let failGetReportOnCall = -1;
+// Mock the rule classification before importing any module that imports it.
+mockClassification();
+const realUtil = await import('../../util.ts');
+// The result that the mocked getViolationData returns, replaceable by a test to create an error.
+let violationDataResult: Awaited<ReturnType<typeof realUtil.getViolationData>> = fixtureViolationData;
+// Mock getViolationData before importing index.ts, so that it imports the mocked version. Other exports delegate to the real module.
 mock.module('../../util.ts', {
   exports: {
     ...realUtil,
-    getReport: async (...args: any[]) => {
-      getReportCallCount++;
-      if (getReportCallCount === failGetReportOnCall) {
-        return {error: 'Report is invalid (test override)'};
-      }
-      return (realUtil.getReport as any)(...args);
-    }
+    getViolationData: async () => violationDataResult
   }
 } as any);
 
 const {answer} = await import('./index.ts') as any;
 
+// Returns the text of the items of the issue list under the heading of a priority.
+const getPriorityItems = (html: ReturnType<typeof parse>, priority: string): string[] => {
+  const heading = html.querySelectorAll('h2').find(h2 => h2.text === `${priority} priority`)!;
+  const list = heading.nextElementSibling!;
+  return list.querySelectorAll(':scope > li').map(item => item.text.replace(/\s+/g, ' ').trim());
+};
+
 // SETUP AND TEARDOWN
 
-const savedDBDir = process.env.DB_DIR;
-
-before(async () => {
-  process.env.DB_DIR = (await import('../../test/dbFixture.ts')).fixtureDBDir;
-});
-
-after(() => {
-  if (savedDBDir !== undefined) {
-    process.env.DB_DIR = savedDBDir;
-  }
-  else {
-    delete process.env.DB_DIR;
-  }
+afterEach(() => {
+  violationDataResult = fixtureViolationData;
 });
 
 // TESTS
@@ -53,116 +44,66 @@ after(() => {
 test('listTopIssues returns an ok status with valid HTML', async () => {
   const result: any = await answer();
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage);
   const html = parse(result.answerPage);
   assert.ok(html.querySelector('title'));
+  assert.match(html.querySelector('main p')!.text, /^These are the issues reported most often\./);
 });
 
-test('listTopIssues includes priority headings in the page', async () => {
+test('listTopIssues lists issues by priority with their shares and reporters', async () => {
   const result: any = await answer();
   assert.equal(result.status, 'ok');
-  assert.ok(result.answerPage.includes('priority'));
+  const html = parse(result.answerPage);
+  const highest = getPriorityItems(html, 'highest');
+  assert.equal(highest.length, 1);
+  assert.match(highest[0]!, /^mock issue A /);
+  assert.match(highest[0]!, /Share of violations: 97%/);
+  assert.match(highest[0]!, /Violations reported by Alfa \+ Axe/);
+  const lowest = getPriorityItems(html, 'lowest');
+  assert.equal(lowest.length, 1);
+  assert.match(lowest[0]!, /^mock issue B /);
+  assert.match(lowest[0]!, /Share of violations: 2%/);
+  assert.match(lowest[0]!, /Violations reported by Axe \+ Html Checker API/);
 });
 
 test('listTopIssues excludes cantTell instances from issue counts', async () => {
-  // In the fixture corpus, focusIndicationBad is reported only with a cantTell outcome
-  // (in the mixed and all-cantTell reports), never as a violation, so it should not
-  // appear in the summary.
+  // The fixture data include 52 cantTell instances of a mockIssueA rule. If they were counted, the share of mockIssueA would not be 97%.
+  const result: any = await answer();
+  assert.match(result.answerPage, /Share of violations: 97%/);
+});
+
+test('listTopIssues excludes the ignorable issue', async () => {
+  // The fixture data include 1000 violations of an ignorable rule. If they were counted, the share of mockIssueA would not be 97%, and the ignorable issue would be listed.
+  const result: any = await answer();
+  assert.match(result.answerPage, /Share of violations: 97%/);
+  assert.ok(!result.answerPage.includes('No known impact'));
+});
+
+test('listTopIssues omits issues with shares below 2% and says so for a priority with none', async () => {
+  const result: any = await answer();
+  assert.ok(!result.answerPage.includes('mock issue C'));
+  const html = parse(result.answerPage);
+  const heading = html.querySelectorAll('h2').find(h2 => h2.text === 'high priority')!;
+  assert.equal(heading.nextElementSibling!.nextElementSibling!.text, 'No issues with this priority.');
+});
+
+test('listTopIssues lists no issues when there are no reports', async () => {
+  violationDataResult = [];
   const result: any = await answer();
   assert.equal(result.status, 'ok');
-  assert.ok(!result.answerPage.includes('focus indication poor'));
+  assert.equal(result.answerPage.match(/No issues with this priority\./g).length, 4);
 });
 
-test('listTopIssues omits a report that is not usable', async () => {
-  const dbDir = (await import('../../test/dbFixture.ts')).fixtureDBDir;
-  const reportsDir = path.join(dbDir, 'reports');
-  const invalidReportPath = path.join(reportsDir, '260101T9999-bad.json');
-  try {
-    // Not usable by isUsableReport (no acts or catalog), so it produces no extract
-    // and contributes nothing to the summary.
-    const invalidReport = {
-      target: {what: 'Invalid TopIssues Report', url: 'https://example.com/invalidtop'},
-      jobData: {endTime: '26-01-01T00:10'}
-    };
-    await fs.writeFile(invalidReportPath, JSON.stringify(invalidReport, null, 2));
-    const result: any = await answer();
-    assert.equal(result.status, 'ok');
-  }
-  finally {
-    await fs.unlink(invalidReportPath).catch(() => {});
-  }
+test('listTopIssues states that the data are unavailable when reports need reannotation', async () => {
+  violationDataResult = {error: realUtil.reannotationNeededMessage};
+  const result: any = await answer();
+  assert.equal(result.status, 'ok');
+  const html = parse(result.answerPage);
+  assert.equal(html.querySelector('main p')!.text, `${realUtil.reannotationNeededMessage}.`);
+  assert.equal(html.querySelectorAll('h2').length, 0);
 });
 
-test('listTopIssues returns an error when a report read fails', async () => {
-  getReportCallCount = 0;
-  failGetReportOnCall = 1;
-  try {
-    const result: any = await answer();
-    assert.equal(result.status, 'error');
-    assert.ok(result.message);
-  }
-  finally {
-    failGetReportOnCall = -1;
-  }
-});
-
-test('listTopIssues handles reports with unclassified issue IDs', async () => {
-  const dbDir = (await import('../../test/dbFixture.ts')).fixtureDBDir;
-  const reportsDir = path.join(dbDir, 'reports');
-  const reportPath = path.join(reportsDir, '260101T0004-unc.json');
-  try {
-    const report = {
-      id: '260101T0004-unc',
-      what: 'Unclassified Issue Page',
-      target: {what: 'Unclassified Issue Page', url: 'https://example.com/unclassified'},
-      sources: {pageID: 'p-unclassi'},
-      acts: [
-        {
-          type: 'test',
-          which: 'axe',
-          result: {
-            standardResult: {
-              instances: [
-                {
-                  ruleID: 'r99',
-                  what: 'Some unclassified issue',
-                  outcome: 'failed',
-                  count: 1,
-                  catalogIndex: '0',
-                  issueID: 'nonexistentIssue'
-                }
-              ]
-            }
-          }
-        }
-      ],
-      jobData: {
-        startTime: '26-01-01T00:00',
-        endTime: '26-01-01T00:10',
-        preventions: {},
-        issuelessRules: []
-      },
-      catalog: {
-        '0': {
-          tagName: 'DIV',
-          id: '',
-          startTag: '<div>',
-          text: '',
-          textLinkable: false,
-          boxID: '0:0:100:50',
-          pathID: '/html/body/div[1]'
-        }
-      },
-      images: {},
-      checkpoints: []
-    };
-    await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
-    const result: any = await answer();
-    // The unclassified issue is skipped, but the page should still render successfully.
-    assert.equal(result.status, 'ok');
-    assert.ok(result.answerPage);
-  }
-  finally {
-    await fs.unlink(reportPath).catch(() => {});
-  }
+test('listTopIssues returns an error when the violation data cannot be compiled', async () => {
+  violationDataResult = {error: 'Report is invalid (test override)'};
+  const result: any = await answer();
+  assert.deepEqual(result, {status: 'error', message: 'Report is invalid (test override)'});
 });

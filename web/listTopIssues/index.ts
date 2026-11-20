@@ -5,14 +5,12 @@
 
 // IMPORTS
 
-import {sendAlert} from '../../alerts.ts';
 import {
-  getReportExtracts,
-  getReport,
-  getTestActInstances,
-  isReportError,
+  getRuleKeyIssue,
+  getViolationData,
   objectSort,
-  populateTemplate
+  populateTemplate,
+  reannotationNeededMessage
 } from '../../util.ts';
 import {
   getEngineNamesString,
@@ -31,58 +29,42 @@ const getIssuesSummary = async () => {
     issues: []
   };
   // Initialize data for a summary.
-  const issuesData: Record<string, any> = {};
-  // Get extracts of the latest available report on each page.
-  const latestReportExtracts = await getReportExtracts(true);
-  // For each of them:
-  for (const reportExtract of latestReportExtracts) {
-    const {id} = reportExtract;
-    // Get the corresponding report.
-    const report = await getReport(id);
-    // If this failed:
-    if (isReportError(report)) {
-      // Populate the summary with the reason.
-      summary.error = report.error;
-      continue;
-    }
-    // For each violating standard instance of each test act in it:
-    getTestActInstances(report, {violationsOnly: true}).forEach(({act, instance}) => {
-      const {count, issueID} = instance;
-      // If the instance has a non-ignorable issue ID:
-      if (issueID && issueID !== 'ignorable') {
-        issuesData[issueID] ??= {
-          count: 0,
-          reporters: new Set()
-        };
-        // Increment the data with the count and reporter of the instance.
-        issuesData[issueID].count += count ?? 1;
-        issuesData[issueID].reporters.add(act.which);
+  const issuesData: Record<string, {count: number; reporters: Set<string>}> = {};
+  // Get the violation data of the latest available report on each page.
+  const violationData = await getViolationData();
+  // If this failed:
+  if ('error' in violationData) {
+    // Populate the summary with the reason and stop.
+    summary.error = violationData.error;
+    return summary;
+  }
+  // For each rule of each rule engine reported in any of the reports:
+  for (const {violations} of violationData) {
+    for (const [engineID, engineViolations] of Object.entries(violations)) {
+      for (const [ruleKey, {failed}] of Object.entries(engineViolations)) {
+        const issueID = getRuleKeyIssue(engineID, ruleKey);
+        // If the rule was violated and belongs to a non-ignorable issue:
+        if (failed.count && issueID && issueID !== 'ignorable') {
+          // Increment the data on the issue with the count and reporter of the violations.
+          issuesData[issueID] ??= {count: 0, reporters: new Set()};
+          issuesData[issueID].count += failed.count;
+          issuesData[issueID].reporters.add(engineID);
+        }
       }
-    });
+    }
   }
   // For each issue:
-  Object.entries(issuesData).forEach(([issueID, data]) => {
-    const {count, reporters} = data;
-    // If the issue is still classified:
-    if (issueSpecs[issueID]) {
-      // Increment the report violation count by the issue violation count.
-      summary.totalCount += count;
-      // Add the issue data and an initilized percentage to the summary.
-      summary.issues.push({
-        issueID,
-        weight: issueSpecs[issueID].weight,
-        count,
-        percentage: 0,
-        reporters: getEngineNamesString(reporters)
-      });
-    }
-    // Otherwise, i.e. if it is no longer classified:
-    else {
-      // Report this.
-      console.log(`ERROR: Annotations obsolete for issue ${issueID}; reannotate`);
-      // Notify a manager.
-      sendAlert('Kilotest: Annotations obsolete', `Annotations for issue ${issueID} obsolete; reannotate.`);
-    }
+  Object.entries(issuesData).forEach(([issueID, {count, reporters}]) => {
+    // Increment the report violation count by the issue violation count.
+    summary.totalCount += count;
+    // Add the issue data and an initilized percentage to the summary.
+    summary.issues.push({
+      issueID,
+      weight: issueSpecs[issueID]!.weight,
+      count,
+      percentage: 0,
+      reporters: getEngineNamesString(reporters)
+    });
   });
   // For each summarized issue:
   summary.issues.forEach((issue: any) => {
@@ -100,7 +82,14 @@ const getIssuesSummary = async () => {
 const populateQuery = async (query: Record<string, any>) => {
   // Get summary data on the issues.
   const issuesSummary = await getIssuesSummary();
-  // If this failed:
+  // If the data are unavailable until reports are reannotated:
+  if (issuesSummary.error === reannotationNeededMessage) {
+    // Populate the query with a statement of this, which correctly answers the question.
+    query.intro = `${reannotationNeededMessage}.`;
+    query.issues = '';
+    return;
+  }
+  // Otherwise, if this failed:
   if (issuesSummary.error) {
     // Populate the query with the reason.
     query.error = issuesSummary.error;
@@ -108,6 +97,7 @@ const populateQuery = async (query: Record<string, any>) => {
     return;
   }
   // Otherwise, i.e. if it succeeded, initialize the lines.
+  query.intro = 'These are the issues reported most often. If a page has been tested more than once, only its last test is counted.';
   const lines: string[] = [];
   const margin = ' '.repeat(6);
   // For each weight:

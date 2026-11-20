@@ -9,6 +9,7 @@ import {test, mock} from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import {mockClassification} from './test/fixtures/classification.ts';
 
 // Blank the alert configuration before util.ts is imported, so this file sends no real alert emails even when run directly rather than via `npm test`.
 for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_API_KEY', 'ALERT_FROM']) {
@@ -16,28 +17,16 @@ for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_A
 }
 
 // Mock the rule classification before importing util.ts, so that util.ts imports the mocked version.
-mock.module('testaro-issues', {
-  exports: {
-    rules: {
-      axe: {
-        invariant: {
-          mockRule: {issueID: 'mockIssueA', quality: 1, what: 'Mock rule'},
-          mockOtherRule: {issueID: 'mockIssueB', quality: 1, what: 'Other mock rule'}
-        },
-        variable: {}
-      },
-      nuVal: {
-        invariant: {},
-        variable: {
-          'Mock message about .+\\.': {issueID: 'mockIssueB', quality: 1, what: 'Mock message'}
-        }
-      }
-    }
-  }
-} as any);
+mockClassification();
 
 const {
-  annotateReportObject, getIssue, getReportExtracts, getRuleClass, getViolationData, reannotationNeededMessage
+  annotateReportObject,
+  getIssue,
+  getReportExtracts,
+  getRuleClass,
+  getRuleKeyIssue,
+  getViolationData,
+  reannotationNeededMessage
 } = await import('./util.ts');
 
 // TESTS
@@ -65,6 +54,17 @@ test('getIssue returns the issue of a classified rule', () => {
 
 test('getIssue returns null for an unclassified rule', () => {
   assert.equal(getIssue('axe', 'nonexistent-rule-id'), null);
+});
+
+test('getRuleKeyIssue returns the issue of an invariant or variable rule key', () => {
+  assert.equal(getRuleKeyIssue('axe', 'mockRule'), 'mockIssueA');
+  assert.equal(getRuleKeyIssue('nuVal', 'Mock message about .+\\.'), 'mockIssueB');
+});
+
+test('getRuleKeyIssue returns null for an unknown rule key or engine', () => {
+  // A rule ID that a variable rule matches is not itself a rule key.
+  assert.equal(getRuleKeyIssue('nuVal', 'Mock message about foo.'), null);
+  assert.equal(getRuleKeyIssue('nonexistentEngine', 'mockRule'), null);
 });
 
 test('annotateReportObject annotates a report object in place without reading or writing a file', async () => {

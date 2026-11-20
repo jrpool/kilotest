@@ -375,6 +375,8 @@ export const getTimeStamp = (date: Date): string => {
 export const getNowStamp = (): string => {
   return getTimeStamp(new Date());
 };
+// Returns a text with white space trimmed and each internal run of it reduced to one space.
+export const normalizeSpace = (text: string): string => text.replace(/\s+/g, ' ').trim();
 // Converts a string to a plain-text 1-line ASCII string.
 export const getPlainText = (string: string): string => string
 .replace(/&/g, '+')
@@ -872,7 +874,7 @@ export const getPreventions = (report: {jobData?: {preventions?: unknown}}): Rec
     // For each prevention in it:
     for (const [ruleEngineID, rawReason] of Object.entries(rawPreventions)) {
       const reasonString = typeof rawReason === 'string' ? rawReason : JSON.stringify(rawReason) ?? '';
-      const reason = reasonString.replace(/\s+/g, ' ').trim();
+      const reason = normalizeSpace(reasonString);
       // Add the rule engine and the normalized reason to the result.
       preventions[ruleEngineID] = reason.length > preventionReasonMaxLength
         ? `${reason.slice(0, preventionReasonMaxLength - 1)}…`

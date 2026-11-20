@@ -53,7 +53,7 @@ import querystring from 'node:querystring';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
 import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
-import {rejectTestRequests, removeOrphans} from './requests.ts';
+import {rejectTestRequests, removeOrphans} from './testRequests.ts';
 import {isSiteID} from './registry.ts';
 import {answer as enqueueForm} from './web/enqueueForm/index.ts';
 import {answer as expungeReportsForm} from './web/expungeReportsForm/index.ts';

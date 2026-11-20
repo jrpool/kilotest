@@ -60,6 +60,7 @@ import {
   isValidAuthCode,
   jobsPath,
   minifyURL,
+  normalizeSpace,
   objectSort,
   testRequestsPath,
   reportsPath,
@@ -284,6 +285,10 @@ test('getNowStamp returns an 11-character time stamp', () => {
   const stamp = getNowStamp();
   assert.equal(stamp.length, 11);
   assert.ok(/^\d{6}T\d{4}$/.test(stamp));
+});
+
+test('normalizeSpace trims white space and reduces internal runs of it', () => {
+  assert.equal(normalizeSpace('  A \t site\n name '), 'A site name');
 });
 
 test('getPlainText replaces special characters', () => {

@@ -90,7 +90,7 @@
       "alerts.ts",
       "balances.ts",
       "registry.ts",
-      "requests.ts",
+      "testRequests.ts",
       "util.ts",
       "api/**/*.{js,ts,cts}",
       "web/**/*.{js,ts,cts}"

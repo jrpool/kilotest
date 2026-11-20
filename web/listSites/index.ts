@@ -7,7 +7,7 @@
 
 import {alphaCompare, getJobsData, getReportExtracts, htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry} from '../../registry.ts';
-import {getTestRequests} from '../../requests.ts';
+import {getTestRequests} from '../../testRequests.ts';
 
 // CONSTANTS
 

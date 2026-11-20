@@ -7,7 +7,7 @@
 
 import {htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry} from '../../registry.ts';
-import {describeRefusal, submitTestRequest} from '../../requests.ts';
+import {describeRefusal, submitTestRequest} from '../../testRequests.ts';
 
 // FUNCTIONS
 

@@ -7,7 +7,7 @@
 
 import {htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry} from '../../registry.ts';
-import {approveTestRequest, describePageError} from '../../requests.ts';
+import {approveTestRequest, describePageError} from '../../testRequests.ts';
 
 // FUNCTIONS
 

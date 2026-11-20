@@ -1,5 +1,5 @@
 /*
-  requests.ts
+  testRequests.ts
   Processes requests to test pages, as described in docs/decisions/011-site-page-ontology.md. A request is submitted with immediate review, which creates a job at once if the request passes every check, or with management review, which adds it to the pending requests (testRequests.json) for a manager to approve or reject. A request with immediate review that has possible duplicates or similar sites is referred to management review. Submission, approval, and rejection all run under testRequestsLock, so that no two of them can act on stale facts about the pending requests, the jobs, or the registry.
 */
 
@@ -81,8 +81,6 @@ export type ApproveResult = StartResult | {result: 'noRequest'};
 
 // The name of a site’s home page.
 const homeName = 'home';
-// The bounds on the lengths of site and page names.
-export const nameBounds = {site: {min: 1, max: 80}, page: {min: 1, max: 120}} as const;
 
 // FUNCTIONS
 
@@ -438,5 +436,3 @@ export const getTargetLabel = (registry: Registry, target: PageTarget): string =
   }
   return `${target.siteName} ${target.pageName} (new site)`;
 };
-// Returns a text with white space trimmed and each internal run of it reduced to one space.
-export const normalizeSpace = (text: string): string => text.replace(/\s+/g, ' ').trim();

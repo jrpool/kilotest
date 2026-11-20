@@ -7,7 +7,7 @@
 
 import {htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry} from '../../registry.ts';
-import {getTargetLabel, getTestRequests} from '../../requests.ts';
+import {getTargetLabel, getTestRequests} from '../../testRequests.ts';
 
 // FUNCTIONS
 

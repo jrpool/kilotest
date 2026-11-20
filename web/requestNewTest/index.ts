@@ -5,10 +5,10 @@
 
 // IMPORTS
 
-import {checkLength, htmlSafe, populateTemplate} from '../../util.ts';
-import {getRegistry} from '../../registry.ts';
-import {describeRefusal, nameBounds, normalizeSpace, submitTestRequest} from '../../requests.ts';
-import type {SubmitResult} from '../../requests.ts';
+import {checkLength, htmlSafe, normalizeSpace, populateTemplate} from '../../util.ts';
+import {getRegistry, nameBounds} from '../../registry.ts';
+import {describeRefusal, submitTestRequest} from '../../testRequests.ts';
+import type {SubmitResult} from '../../testRequests.ts';
 
 // FUNCTIONS
 

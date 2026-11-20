@@ -284,6 +284,32 @@ test('GET /swagger.yaml redirects to /openapi.yaml', async () => {
   assert.equal(res.headers.location, '/openapi.yaml');
 });
 
+test('GET /listRuleMatches.html with a minPages query redirects to the path with the minimum as its tail', async () => {
+  const res = await request('GET', '/listRuleMatches.html?minPages=5');
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers.location, '/listRuleMatches.html/5');
+});
+
+test('GET /listRuleMatches.html with the default minimum in the query or path redirects to the bare path', async () => {
+  for (const requestPath of ['/listRuleMatches.html?minPages=3', '/listRuleMatches.html/3']) {
+    const res = await request('GET', requestPath);
+    assert.equal(res.statusCode, 301, requestPath);
+    assert.equal(res.headers.location, '/listRuleMatches.html', requestPath);
+  }
+});
+
+test('GET /listRuleMatches.html with another query parameter redirects to the bare path', async () => {
+  const res = await request('GET', '/listRuleMatches.html?x=5');
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers.location, '/listRuleMatches.html');
+});
+
+test('GET /listRuleMatches.html with a minimum as its tail serves the page', async () => {
+  const res = await request('GET', '/listRuleMatches.html/5');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('text/html'));
+});
+
 test('GET /swagger.json redirects to /openapi.yaml', async () => {
   const res = await request('GET', '/swagger.json');
   assert.equal(res.statusCode, 301);
@@ -1709,6 +1735,7 @@ const htmlPagePaths = [
   '/listTopIssues.html',
   '/listPreventingPages.html',
   '/listPreventedEngines.html',
+  '/listRuleMatches.html',
   '/reannotateForm.html',
   '/renewWCAGForm.html',
   '/hideReportForm.html',

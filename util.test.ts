@@ -20,7 +20,6 @@ for (const key of ['MANAGER_EMAIL', 'ALERT_API_HOST', 'ALERT_API_PATH', 'ALERT_A
 }
 
 import {
-  annotateReportObject,
   awaitJob,
   checkCommentDuplicate,
   checkLength,
@@ -32,7 +31,6 @@ import {
   getDateString,
   getDateTime,
   getEnvMax,
-  getIssue,
   errorMessage,
   getJobsData,
   getJSON,
@@ -48,6 +46,7 @@ import {
   getReportPageID,
   getReportPath,
   getReportStats,
+  getRulePreventions,
   getTimeStamp,
   hiddenReportsPath,
   htmlSafe,
@@ -61,6 +60,7 @@ import {
   isValidAuthCode,
   jobsPath,
   minifyURL,
+  normalizeSpace,
   objectSort,
   testRequestsPath,
   reportsPath,
@@ -259,15 +259,6 @@ test('describeMax returns "no limit" for a cap of 0 and the number otherwise', (
   assert.equal(describeMax(20), '20');
 });
 
-test('getIssue returns an issue ID for a known engine and rule', () => {
-  const issueID = getIssue('axe', 'link-name');
-  assert.ok(typeof issueID === 'string' || issueID === null);
-});
-
-test('getIssue returns null for an unknown engine', () => {
-  assert.equal(getIssue('nonexistentEngine', 'anyRule'), null);
-});
-
 test('errorMessage returns the message of an Error instance', () => {
   assert.equal(errorMessage(new Error('something went wrong')), 'something went wrong');
 });
@@ -294,6 +285,10 @@ test('getNowStamp returns an 11-character time stamp', () => {
   const stamp = getNowStamp();
   assert.equal(stamp.length, 11);
   assert.ok(/^\d{6}T\d{4}$/.test(stamp));
+});
+
+test('normalizeSpace trims white space and reduces internal runs of it', () => {
+  assert.equal(normalizeSpace('  A \t site\n name '), 'A site name');
 });
 
 test('getPlainText replaces special characters', () => {
@@ -760,67 +755,6 @@ after(() => {
   }
 });
 
-test('annotateReportObject annotates a report object in place without reading or writing a file', async () => {
-  // A report object that was never written to disk (e.g. one just received from a worker,
-  // as in index.ts's worker/report handler, which annotates before the first write).
-  const report: any = {
-    id: '990101T0099-obj',
-    target: {what: 'Object Page', url: 'https://example.com/object'},
-    acts: [
-      {
-        type: 'test',
-        which: 'alfa',
-        result: {
-          standardResult: {
-            instances: [
-              // A classifiable rule.
-              {ruleID: 'r11', what: 'The link does not have an accessible name', outcome: 'failed', catalogIndex: '0'},
-              // An unclassifiable rule.
-              {ruleID: 'unknownRule123', what: 'Unknown', outcome: 'failed', catalogIndex: '0'}
-            ]
-          }
-        }
-      }
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  await annotateReportObject(report);
-  const instances = report.acts[0].result.standardResult.instances;
-  assert.equal(instances[0].issueID, 'linkNoText');
-  assert.equal(instances[1].issueID, undefined);
-  assert.deepEqual(report.jobData.issuelessRules, ['alfa:unknownRule123']);
-});
-
-test('annotateReportObject handles a test act with no standardResult instances', async () => {
-  const report: any = {
-    id: '990101T0098-ni',
-    target: {what: 'Test', url: 'https://example.com'},
-    acts: [
-      {type: 'test', which: 'axe', result: {standardResult: {instances: []}}},
-      {type: 'other'}
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  await annotateReportObject(report);
-  assert.deepEqual(report.jobData.issuelessRules, []);
-});
-
-test('annotateReportObject handles a test act with no standardResult', async () => {
-  const report: any = {
-    id: '990101T0097-ns',
-    target: {what: 'Test', url: 'https://example.com'},
-    acts: [
-      {type: 'test', which: 'axe', result: {}}
-    ],
-    jobData: {endTime: '26-01-01T00:00'},
-    catalog: {}
-  };
-  await annotateReportObject(report);
-  assert.deepEqual(report.jobData.issuelessRules, []);
-});
-
 // TESTS FOR REMAINING BRANCH COVERAGE
 
 test('getJobNames creates missing job directories and returns empty arrays', async () => {
@@ -1011,16 +945,6 @@ test('getAgoDays returns null for an invalid Date object', () => {
   assert.equal(getAgoDays(new Date('invalid')), null);
 });
 
-test('getIssue returns null for a known engine with an unknown variable rule', () => {
-  assert.equal(getIssue('axe', 'nonexistent-rule-id'), null);
-});
-
-test('getIssue returns an issue ID for a variable rule pattern match', () => {
-  const result = getIssue('nuVal', 'Duplicate attribute foo.');
-  assert.ok(typeof result === 'string');
-  assert.equal(result, 'duplicateAttribute');
-});
-
 test('getPOSTData resolves with parsed JSON for application/json requests', async () => {
   const {Readable} = await import('node:stream');
   const {getPOSTData} = await import('./util.ts');
@@ -1182,6 +1106,28 @@ test('getReportExtract includes the preventions of a report', async () => {
 test('getReportExtract includes an empty preventions object for a report without preventions', async () => {
   const extract = await getReportExtract('260101T0000-mix') as any;
   assert.deepEqual(extract.preventions, {});
+});
+
+test('getReportExtract includes an empty rulePreventions object for a report without rule preventions', async () => {
+  const extract = await getReportExtract('260101T0000-mix') as any;
+  assert.deepEqual(extract.rulePreventions, {});
+});
+
+test('getRulePreventions returns the sorted rules with prevented tests, by engine that was not prevented', () => {
+  const report: any = {
+    acts: [
+      {type: 'test', which: 'testaro', data: {rulePreventions: {tabNav: 'Timeout', hover: 'Error'}}},
+      {type: 'test', which: 'testaro', data: {rulePreventions: {hover: 'Error', allCaps: 'Error'}}},
+      // An act of an engine that was prevented, whose rule preventions are subsumed by its prevention.
+      {type: 'test', which: 'alfa', data: {prevented: true, rulePreventions: {r1: 'Error'}}},
+      // Acts without rule preventions.
+      {type: 'test', which: 'axe', data: {rulePreventions: null}},
+      {type: 'test', which: 'ibm'},
+      {type: 'url', data: {rulePreventions: {x: 'Error'}}}
+    ],
+    jobData: {preventions: {alfa: 'page timed out'}}
+  };
+  assert.deepEqual(getRulePreventions(report), {testaro: ['allCaps', 'hover', 'tabNav']});
 });
 
 test('getPreventions returns no preventions for a report without a preventions object', () => {
@@ -1798,4 +1744,9 @@ test('report extracts group reports by page identifier, not description, and omi
     process.env.DB_DIR = savedDbDir;
     await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
   }
+});
+
+test('getReportExtract includes the rule engines that tried to test', async () => {
+  const extract = await getReportExtract('260101T0000-mix') as any;
+  assert.deepEqual(extract.ruleEngineIDs, ['alfa', 'axe']);
 });

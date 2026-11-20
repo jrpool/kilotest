@@ -8,8 +8,8 @@
 import {z} from 'zod';
 import {buildSubmissionDisposition, getResponseMetadata, getThisHost, getToolsFacts, viewPage} from './util.ts';
 import {checkLength, isReportID} from '../util.ts';
-import {submitTestRequest} from '../requests.ts';
-import type {RequestInterface} from '../requests.ts';
+import {submitTestRequest} from '../testRequests.ts';
+import type {RequestInterface} from '../testRequests.ts';
 import {requestRetestResponseSchema} from './schemas.ts';
 
 // TYPES

@@ -7,7 +7,7 @@
 
 import {getJobsData, getReportExtracts, htmlSafe, populateTemplate} from '../../util.ts';
 import {getRegistry, getSitePages, isSiteID} from '../../registry.ts';
-import {getTestRequests} from '../../requests.ts';
+import {getTestRequests} from '../../testRequests.ts';
 
 // CONSTANTS
 

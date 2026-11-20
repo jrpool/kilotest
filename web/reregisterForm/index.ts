@@ -5,10 +5,11 @@
 
 // IMPORTS
 
-import {alphaCompare, checkLength, htmlSafe, isAllowedTarget, isURL, isValidAuthCode, populateTemplate} from '../../util.ts';
-import {getPageTitle, getRegistry, getSitePages, isSiteID, reviseRegistrations} from '../../registry.ts';
+import {
+  alphaCompare, checkLength, htmlSafe, isAllowedTarget, isURL, isValidAuthCode, normalizeSpace, populateTemplate
+} from '../../util.ts';
+import {getPageTitle, getRegistry, getSitePages, isSiteID, nameBounds, reviseRegistrations} from '../../registry.ts';
 import type {PageRecord, Registry} from '../../registry.ts';
-import {nameBounds, normalizeSpace} from '../../requests.ts';
 
 // TYPES
 

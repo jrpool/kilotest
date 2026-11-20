@@ -21,7 +21,7 @@ import {
   getReportData
 } from './util.ts';
 import {getPageTitle, getRegistry} from '../registry.ts';
-import {removeOrphans} from '../requests.ts';
+import {removeOrphans} from '../testRequests.ts';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 

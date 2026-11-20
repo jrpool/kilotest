@@ -62,6 +62,8 @@ const secondLevelLabels = new Set(['ac', 'co', 'com', 'edu', 'gov', 'net', 'org'
 // Patterns of valid site and page identifiers.
 const siteIDPattern = new RegExp(`^${idFormats.site.prefix}[0-9a-z]{${idFormats.site.length}}$`);
 const pageIDPattern = new RegExp(`^${idFormats.page.prefix}[0-9a-z]{${idFormats.page.length}}$`);
+// The bounds on the lengths of site and page names.
+export const nameBounds = {site: {min: 1, max: 80}, page: {min: 1, max: 120}} as const;
 
 // VARIABLES
 

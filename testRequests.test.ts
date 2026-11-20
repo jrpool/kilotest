@@ -1,6 +1,6 @@
 /*
-  requests.test.ts
-  Tests for requests.ts.
+  testRequests.test.ts
+  Tests for testRequests.ts.
 */
 
 // IMPORTS
@@ -19,12 +19,11 @@ import {
   describeRefusal,
   getTargetLabel,
   getTestRequests,
-  normalizeSpace,
   rejectTestRequests,
   removeOrphans,
   submitTestRequest
-} from './requests.ts';
-import type {SubmitResult, TestRequests} from './requests.ts';
+} from './testRequests.ts';
+import type {SubmitResult, TestRequests} from './testRequests.ts';
 import {getJSON, jobsPath, testRequestsPath} from './util.ts';
 
 // CONSTANTS
@@ -432,10 +431,6 @@ test('getTargetLabel labels new sites, new pages, and retests', () => {
   assert.equal(getTargetLabel(registry, {siteID: 's-zzzzzz', pageName: 'B', url: 'https://a.example/b'}), 's-zzzzzz B');
   assert.equal(getTargetLabel(registry, {siteName: 'C', pageName: 'home', url: 'https://c.example/'}), 'C home (new site)');
 });
-test('normalizeSpace trims white space and reduces internal runs of it', () => {
-  assert.equal(normalizeSpace('  A \t site\n name '), 'A site name');
-});
-
 test('removeOrphans removes pages with no report, job, or request and sites with no page or request', async () => {
   await withDB(async dbDir => {
     // Every fixture page has an available or hidden report, so there is no orphan.

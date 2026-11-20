@@ -17,10 +17,10 @@ import {
 } from '../util.ts';
 import {checkLength, getAllowedRedirectURL, isAllowedTarget, isURL} from '../util.ts';
 import {sendAlert} from '../alerts.ts';
-import {getRegistry} from '../registry.ts';
+import {getRegistry, nameBounds} from '../registry.ts';
 import type {PlannedPage, Registry} from '../registry.ts';
-import {describeRefusal, nameBounds} from '../requests.ts';
-import type {SubmitResult} from '../requests.ts';
+import {describeRefusal} from '../testRequests.ts';
+import type {SubmitResult} from '../testRequests.ts';
 import {issues as issueSpecs} from 'testaro-issues';
 
 // TYPES

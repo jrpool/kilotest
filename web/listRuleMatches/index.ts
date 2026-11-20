@@ -272,7 +272,7 @@ export const answer = async (pathTail: string = '') => {
   ].join(' ');
   const form = [
     `${margin}<form method="get" action="/listRuleMatches.html">`,
-    `${margin}  <p><label>You may change the minimum number of supporting pages (from ${lowestMinSupport} to 99): <input type="number" name="minPages" min="${lowestMinSupport}" max="99" step="1" value="${minSupport}" required></label></p>`,
+    `${margin}  <p><label>You may change the minimum number of supporting pages (from ${lowestMinSupport} to 99): <input class="size2" type="number" name="minPages" min="${lowestMinSupport}" max="99" step="1" value="${minSupport}" required></label></p>`,
     `${margin}  <p><button type="submit">Recompute</button></p>`,
     `${margin}</form>`
   ].join('\n');

@@ -379,6 +379,9 @@ input, textarea {
 textarea {
   width: 100%;
 }
+input.size2 {
+  width: 2rem;
+}
 button {
   min-height: 44px;
   min-width: 44px;

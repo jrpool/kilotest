@@ -166,7 +166,7 @@ summary {
   min-height: 44px;
   padding: 0.9rem 1.25rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: default;
 }
 summary:hover {
   background: #eef3f3;
@@ -379,9 +379,6 @@ input, textarea {
 textarea {
   width: 100%;
 }
-input.size2 {
-  width: 2rem;
-}
 button {
   min-height: 44px;
   min-width: 44px;
@@ -392,7 +389,6 @@ button {
   font-weight: 700;
   color: #fff;
   background: var(--accent);
-  cursor: pointer;
 }
 button:hover {
   background: var(--accent-dark);
@@ -400,7 +396,6 @@ button:hover {
 button:disabled, button:disabled:hover {
   color: var(--muted);
   background: var(--line);
-  cursor: default;
 }
 table {
   border-collapse: collapse;
@@ -472,9 +467,6 @@ table.allBorder th, table.allBorder td {
 }
 .knowledge-check li {
   margin-bottom: 0.5rem;
-}
-.knowledge-check label {
-  cursor: pointer;
 }
 .demo-controls {
   display: flex;

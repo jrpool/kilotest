@@ -220,7 +220,7 @@ test('listRuleMatches uses a valid minimum number of supporting pages from the p
   html = parse((await answer('2') as any).answerPage);
   assert.match(html.querySelector('main p')!.text, /at least 2 such pages\..*Sets found: 1,/);
   assert.equal(html.querySelector('input[name="minPages"]')!.getAttribute('value'), '2');
-  assert.equal(html.querySelector('input[name="minPages"]')!.getAttribute('min'), '2');
+  assert.equal(html.querySelector('input[name="minPages"]')!.getAttribute('pattern'), '[2-9]|[1-9][0-9]');
   assert.equal(html.querySelector('form')!.getAttribute('method'), 'get');
   assert.equal(html.querySelector('.error'), null);
 });
@@ -231,7 +231,7 @@ test('listRuleMatches uses the default minimum and says so when the requested mi
     assert.match(html.querySelector('main p')!.text, /at least 3 such pages\./, value);
     assert.equal(
       html.querySelector('.error')!.text,
-      'The minimum number of supporting pages must be a whole number from 2 to 9999, so the default, 3, was used.',
+      'The minimum number of supporting pages must be a whole number from 2 to 99, so the default, 3, was used.',
       value
     );
   }

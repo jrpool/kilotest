@@ -351,6 +351,60 @@ const failJob = async (dirPath: string, jobFileName: string): Promise<void> => {
   await fs.rename(path.join(dirPath, jobFileName), path.join(failedPath(), jobFileName));
   await removeOrphans();
 };
+// The properties of a job that Kilotest reads or alters between its creation and
+// its completion or failure; its other properties are Testaro's and pass through
+// untouched.
+type ManagedJob = {
+  id: string;
+  browserID?: string;
+  target: {what: string; url: string};
+  sources: {worker?: string; browsersTried?: string[]} & Record<string, unknown>;
+};
+// The browser types, in the order a job that has failed is retried with before it
+// is classified as failed. A failure can be specific to the browser engine used:
+// the edge protection of a target may reset the connections of some engines, and
+// a page may crash one engine but not another. Each type is therefore tried once
+// before a failure is accepted.
+const browserRetryOrder = ['chromium', 'webkit', 'firefox'];
+// Reclassifies a defective job — one with no browser type, although every job is
+// created as a modified copy of job.json, which specifies one — as failed, and
+// alerts the maintainer by email, since the defect indicates corruption that
+// should never occur.
+const failDefectiveJob = async (dirPath: string, jobFileName: string, job: ManagedJob): Promise<void> => {
+  await sendAlert(
+    'Kilotest: defective job failed',
+    `Job ${job.id} (${job.target.what}) has no browser type, although every job is created as a modified copy of job.json, which specifies one. The job was reclassified as failed.`
+  );
+  await failJob(dirPath, jobFileName);
+};
+// Requeues a job for a retry under the first browser type in the retry order that
+// it has not already used, and returns that type. Returns 'defective' if the job
+// has no browser type, since it is then defective and cannot be retried, or null
+// if it has used every type. The job keeps its identifier, which is also the
+// identifier under which its report is announced to the requester and eventually
+// saved. The types already used are recorded in sources.browsersTried, a property
+// Testaro does not read or alter (like sources.worker, which the requeue removes,
+// since the retry is unassigned).
+const requeueJob = async (dirPath: string, jobFileName: string, job: ManagedJob): Promise<string | 'defective' | null> => {
+  if (!job.browserID) {
+    return 'defective';
+  }
+  const tried = job.sources.browsersTried ?? [job.browserID];
+  const nextBrowserID = browserRetryOrder.find(id => !tried.includes(id));
+  if (!nextBrowserID) {
+    return null;
+  }
+  job.browserID = nextBrowserID;
+  job.sources = {...job.sources, browsersTried: [...tried, nextBrowserID]};
+  delete job.sources.worker;
+  // The job is written to the queue before any removal from its current
+  // directory, so a failure during the move cannot lose it.
+  await fs.writeFile(path.join(queuePath(), jobFileName), getJSON(job));
+  if (dirPath !== queuePath()) {
+    await fs.unlink(path.join(dirPath, jobFileName));
+  }
+  return nextBrowserID;
+};
 // Returns whether a pathname matches a glob-style pattern.
 const matchPath = (pattern: string, pathname: string) => {
   const regex = new RegExp(
@@ -548,8 +602,20 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
       const messageEnd = `but has not completed job ${id}`;
       // Report this.
       await serveError({message: `${messageStart}${messageEnd}`}, response, false);
-      // Reclassify the job as failed.
-      await failJob(claimedPath(), jobName);
+      // Retry the job under the next untried browser type, or reclassify it as
+      // failed if all types have been tried or it is defective: an abandoned job
+      // may have failed only under the engine it was assigned (e.g. a crash on
+      // the target).
+      const retriedBrowserID = await requeueJob(claimedPath(), jobName, job as ManagedJob);
+      if (retriedBrowserID === 'defective') {
+        await failDefectiveJob(claimedPath(), jobName, job as ManagedJob);
+      }
+      else if (retriedBrowserID) {
+        console.log(`Job ${id} is being retried with ${retriedBrowserID}`);
+      }
+      else {
+        await failJob(claimedPath(), jobName);
+      }
       clean = false;
       // Stop checking claimed jobs.
       break;
@@ -562,7 +628,7 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
     if (queuedJobNames.length) {
       const oldestJobName = queuedJobNames[0]!;
       // Get the first one.
-      const firstJob = await getObject(path.join(queuePath(), oldestJobName)) as {id: string, sources: {worker: string}, target: {what: string, url: string}};
+      const firstJob = await getObject(path.join(queuePath(), oldestJobName)) as ManagedJob;
       // If the job's target is no longer allowed, whether because its host now resolves
       // to a disallowed address or, more likely, because the host now redirects to one
       // (both possible if the target host was reconfigured, e.g. by an attacker, after
@@ -571,14 +637,31 @@ const processJobRequest = async (request: IncomingMessage, response: ServerRespo
       // which is rare, and a redirect introduced after acceptance is the likelier attack):
       if (!(await isAllowedRedirectTarget(firstJob.target.url))) {
         console.error(`ERROR: Queued job ${firstJob.id} is on a target this deployment does not allow`);
-        // Alert a manager, since this indicates an attempted or accidental SSRF
-        // rather than an ordinary usability problem with the target.
-        await sendAlert(
-          'Kilotest: queued job on disallowed target rejected',
-          `Job ${firstJob.id} (${firstJob.target.what}) was never assigned to a worker because its target no longer resolves, directly or via a redirect, to an address this deployment allows (e.g. a private, loopback, or link-local address). The job was reclassified as failed.`
-        );
-        // Reclassify the job as failed, instead of assigning it or leaving it queued.
-        await failJob(queuePath(), oldestJobName);
+        // Requeue the job under the next untried browser type, if one remains: the
+        // check also fails on any fetch error, so a rejection that is transient
+        // (e.g. an intermittent reset by the edge protection of the target) can be
+        // healed by the re-check a retried job gets when it reaches the head of
+        // the queue again. A persistently disallowed target consumes one retry
+        // per assignment attempt, so the rechecks are bounded.
+        const retriedBrowserID = await requeueJob(queuePath(), oldestJobName, firstJob);
+        // If the job is defective:
+        if (retriedBrowserID === 'defective') {
+          await failDefectiveJob(queuePath(), oldestJobName, firstJob);
+        }
+        // Otherwise, if no browser type remains untried:
+        else if (!retriedBrowserID) {
+          // Alert a manager, since this indicates an attempted or accidental SSRF
+          // rather than an ordinary usability problem with the target.
+          await sendAlert(
+            'Kilotest: queued job on disallowed target rejected',
+            `Job ${firstJob.id} (${firstJob.target.what}) was never assigned to a worker because its target no longer resolves, directly or via a redirect, to an address this deployment allows (e.g. a private, loopback, or link-local address). The job was reclassified as failed.`
+          );
+          // Reclassify the job as failed, instead of assigning it or leaving it queued.
+          await failJob(queuePath(), oldestJobName);
+        }
+        else {
+          console.log(`Job ${firstJob.id} is being retried with ${retriedBrowserID}`);
+        }
         // Respond as if no job were queued, rather than revealing anything about the rejected job.
         response.writeHead(200, {
           'content-type': 'application/json; charset=utf-8'
@@ -1279,6 +1362,9 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
                     'Kilotest: report on disallowed target rejected',
                     `Job ${id} from worker ${workerName} resulted in a visit to a target this deployment does not allow (e.g. a private, loopback, or link-local address), possibly via a redirect. The report was discarded and the job was reclassified as failed.`
                   );
+                  // The job is reclassified as failed without a retry under another
+                  // browser type, because its browser already navigated to the
+                  // disallowed target, and a retry would repeat that navigation.
                   // Reclassify the job as failed, instead of recording the disallowed report or
                   // leaving the job claimed indefinitely.
                   await failJob(claimedPath(), `${id}.json`);
@@ -1312,14 +1398,29 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
                 // Otherwise, i.e. if the report is not usable by Kilotest:
                 else {
                   console.error(`ERROR: Report ${id} from worker ${workerName} is not usable`);
-                  // Alert a manager, since an assigned job should never produce an unusable report.
-                  await sendAlert(
-                    'Kilotest: unusable report received',
-                    `Job ${id} from worker ${workerName} produced a report that Kilotest cannot use. The job was reclassified as failed instead of being recorded.`
-                  );
-                  // Reclassify the job as failed, instead of recording the unusable report or
-                  // leaving the job claimed indefinitely.
-                  await failJob(claimedPath(), `${id}.json`);
+                  // Retry the job under the next untried browser type, if one
+                  // remains: an unusable report may reflect a failure specific to
+                  // the engine used (e.g. a navigation crash), which another
+                  // engine may not reproduce.
+                  const retriedBrowserID = await requeueJob(claimedPath(), `${id}.json`, claimedJob as ManagedJob);
+                  // If the job is defective:
+                  if (retriedBrowserID === 'defective') {
+                    await failDefectiveJob(claimedPath(), `${id}.json`, claimedJob as ManagedJob);
+                  }
+                  // Otherwise, if no browser type remains untried:
+                  else if (!retriedBrowserID) {
+                    // Alert a manager, since an assigned job should never produce an unusable report.
+                    await sendAlert(
+                      'Kilotest: unusable report received',
+                      `Job ${id} from worker ${workerName} produced a report that Kilotest cannot use. The job was reclassified as failed instead of being recorded.`
+                    );
+                    // Reclassify the job as failed, instead of recording the unusable report or
+                    // leaving the job claimed indefinitely.
+                    await failJob(claimedPath(), `${id}.json`);
+                  }
+                  else {
+                    console.log(`Job ${id} is being retried with ${retriedBrowserID}`);
+                  }
                   // Report the error.
                   await serveError({message: `ERROR: Report ${id} is not usable`}, response, false);
                 }

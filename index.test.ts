@@ -1344,10 +1344,12 @@ test('POST /worker/job with a claimed job assigned to the worker returns an erro
   const failedJobPath = path.join(failedDir, jobFile);
   // Clean up any existing files.
   await fs.unlink(failedJobPath).catch(() => {});
+  // Every browser type has already been tried, so the job cannot be retried.
   await fs.writeFile(claimedJobPath, JSON.stringify({
     id: '260101T0000-mix',
+    browserID: 'firefox',
     target: {what: 'Test', url: 'https://example.com/test'},
-    sources: {worker: 'Worker One'}
+    sources: {worker: 'Worker One', browsersTried: ['chromium', 'webkit', 'firefox']}
   }));
   const auth = Buffer.from('worker1:secret1').toString('base64');
   const res = await request('POST', '/worker/job', {}, {
@@ -1361,6 +1363,79 @@ test('POST /worker/job with a claimed job assigned to the worker returns an erro
   // The job should have been moved to failed.
   const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
   assert.ok(failedExists, 'Job should be moved to failed directory');
+  // Clean up.
+  await fs.unlink(failedJobPath).catch(() => {});
+});
+
+test('POST /worker/job with a claimed job requeues it under the next untried browser type', {timeout: 500}, async () => {
+  // Create a claimed job assigned to Worker One, having been tried only under chromium.
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  const jobFile = '260101T0000-mix.json';
+  const claimedJobPath = path.join(claimedDir, jobFile);
+  const queuedJobPath = path.join(queueDir, jobFile);
+  // Clean up any existing files.
+  await fs.unlink(queuedJobPath).catch(() => {});
+  await fs.unlink(path.join(failedDir, jobFile)).catch(() => {});
+  await fs.writeFile(claimedJobPath, JSON.stringify({
+    id: '260101T0000-mix',
+    browserID: 'chromium',
+    target: {what: 'Test', url: 'https://example.com/test'},
+    sources: {worker: 'Worker One'}
+  }));
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  const res = await request('POST', '/worker/job', {}, {
+    authorization: `Basic ${auth}`
+  });
+  // The worker should still get an error about the incomplete job.
+  const body = jsonBody(res);
+  assert.ok(body.error.message.includes('has not completed job'));
+  // Wait for the async move to complete.
+  await new Promise<void>(resolve => setTimeout(resolve, 100));
+  // The job should have been moved back to the queue, retried under webkit, with
+  // the types tried recorded and the former assignee removed.
+  const claimedExists = await fs.access(claimedJobPath).then(() => true).catch(() => false);
+  assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
+  const requeued = JSON.parse(await fs.readFile(queuedJobPath, 'utf8'));
+  assert.equal(requeued.browserID, 'webkit');
+  assert.deepEqual(requeued.sources.browsersTried, ['chromium', 'webkit']);
+  assert.equal(requeued.sources.worker, undefined);
+  const failedExists = await fs.access(path.join(failedDir, jobFile)).then(() => true).catch(() => false);
+  assert.equal(failedExists, false, 'Job should not be moved to the failed directory');
+  // Clean up.
+  await fs.unlink(queuedJobPath).catch(() => {});
+});
+
+test('POST /worker/job with a claimed job lacking a browser type fails it as defective', {timeout: 500}, async () => {
+  // Create a claimed job assigned to Worker One, with no browserID, although
+  // every job is created from job.json, which specifies one.
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  const jobFile = '260101T0000-mix.json';
+  const claimedJobPath = path.join(claimedDir, jobFile);
+  const failedJobPath = path.join(failedDir, jobFile);
+  // Clean up any existing files.
+  await fs.unlink(failedJobPath).catch(() => {});
+  await fs.writeFile(claimedJobPath, JSON.stringify({
+    id: '260101T0000-mix',
+    target: {what: 'Test', url: 'https://example.com/test'},
+    sources: {worker: 'Worker One'}
+  }));
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  const res = await request('POST', '/worker/job', {}, {
+    authorization: `Basic ${auth}`
+  });
+  // The worker should still get an error about the incomplete job.
+  const body = jsonBody(res);
+  assert.ok(body.error.message.includes('has not completed job'));
+  // Wait for the async rename to complete.
+  await new Promise<void>(resolve => setTimeout(resolve, 100));
+  // The job should have been moved to failed, since a defective job cannot be retried.
+  const claimedExists = await fs.access(claimedJobPath).then(() => true).catch(() => false);
+  assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
+  const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+  assert.ok(failedExists, 'Job should be moved to the failed directory');
   // Clean up.
   await fs.unlink(failedJobPath).catch(() => {});
 });
@@ -1518,10 +1593,12 @@ test('POST /worker/job with a queued job whose host now redirects to a disallowe
   // private address, which only a fetch-based check, not a DNS-only one, can see.
   t.mock.method(globalThis, 'fetch', async () => ({url: 'https://192.168.1.1/test'}) as Response);
   try {
+    // Every browser type has already been tried, so the job cannot be retried.
     await fs.writeFile(path.join(queueDir, jobFile), JSON.stringify({
       id: '260101T0000-mix',
+      browserID: 'firefox',
       target: {what: 'Test Page', url: 'https://example.com/test'},
-      sources: {}
+      sources: {browsersTried: ['chromium', 'webkit', 'firefox']}
     }));
     const auth = Buffer.from('worker1:secret1').toString('base64');
     const res = await request('POST', '/worker/job', {}, {
@@ -1544,6 +1621,114 @@ test('POST /worker/job with a queued job whose host now redirects to a disallowe
     t.mock.reset();
     process.env.ALLOW_INTERNAL_TARGETS = 'true';
     // Clean up.
+    await fs.unlink(failedJobPath).catch(() => {});
+  }
+});
+
+test('POST /worker/job with a queued job on a disallowed target requeues it under the next untried browser type', {timeout: 500}, async (t) => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  // Clean up claimed, queue, and failed directories.
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  for (const dir of [claimedDir, queueDir]) {
+    await fs.mkdir(dir, {recursive: true});
+    const files = await fs.readdir(dir).catch(() => []);
+    for (const file of files) {
+      await fs.unlink(path.join(dir, file)).catch(() => {});
+    }
+  }
+  const jobFile = '260101T0000-mix.json';
+  const queuedJobPath = path.join(queueDir, jobFile);
+  const failedJobPath = path.join(failedDir, jobFile);
+  await fs.unlink(failedJobPath).catch(() => {});
+  // The job's host still resolves publicly, but by the time it is dequeued for
+  // assignment it has been reconfigured (e.g. by an attacker) to redirect to a
+  // private address, which only a fetch-based check, not a DNS-only one, can see.
+  t.mock.method(globalThis, 'fetch', async () => ({url: 'https://192.168.1.1/test'}) as Response);
+  try {
+    // The job has been tried only under chromium, so a retry under webkit remains.
+    await fs.writeFile(queuedJobPath, JSON.stringify({
+      id: '260101T0000-mix',
+      browserID: 'chromium',
+      target: {what: 'Test Page', url: 'https://example.com/test'},
+      sources: {}
+    }));
+    const auth = Buffer.from('worker1:secret1').toString('base64');
+    const res = await request('POST', '/worker/job', {}, {
+      authorization: `Basic ${auth}`
+    });
+    // The worker should be told there is no job, not given the rejected job.
+    assert.equal(res.statusCode, 200);
+    const body = jsonBody(res);
+    assert.equal(body.id, undefined);
+    // Wait for the async write to complete.
+    await new Promise<void>(resolve => setTimeout(resolve, 100));
+    // The job should stay queued, retried under webkit, never claimed or failed.
+    const requeued = JSON.parse(await fs.readFile(queuedJobPath, 'utf8'));
+    assert.equal(requeued.browserID, 'webkit');
+    assert.deepEqual(requeued.sources.browsersTried, ['chromium', 'webkit']);
+    const claimedExists = await fs.access(path.join(claimedDir, jobFile)).then(() => true).catch(() => false);
+    assert.equal(claimedExists, false, 'Job should not be moved to claimed directory');
+    const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+    assert.equal(failedExists, false, 'Job should not be moved to the failed directory');
+  } finally {
+    t.mock.reset();
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
+    // Clean up.
+    await fs.unlink(queuedJobPath).catch(() => {});
+    await fs.unlink(failedJobPath).catch(() => {});
+  }
+});
+
+test('POST /worker/job with a queued disallowed job lacking a browser type fails it without assigning it', {timeout: 500}, async (t) => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  // Clean up claimed, queue, and failed directories.
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  for (const dir of [claimedDir, queueDir]) {
+    await fs.mkdir(dir, {recursive: true});
+    const files = await fs.readdir(dir).catch(() => []);
+    for (const file of files) {
+      await fs.unlink(path.join(dir, file)).catch(() => {});
+    }
+  }
+  const jobFile = '260101T0000-mix.json';
+  const queuedJobPath = path.join(queueDir, jobFile);
+  const failedJobPath = path.join(failedDir, jobFile);
+  await fs.unlink(failedJobPath).catch(() => {});
+  t.mock.method(globalThis, 'fetch', async () => ({url: 'https://192.168.1.1/test'}) as Response);
+  try {
+    // The job has no browserID, although every job is created from job.json,
+    // which specifies one, so it is defective and cannot be retried.
+    await fs.writeFile(queuedJobPath, JSON.stringify({
+      id: '260101T0000-mix',
+      target: {what: 'Test Page', url: 'https://example.com/test'},
+      sources: {}
+    }));
+    const auth = Buffer.from('worker1:secret1').toString('base64');
+    const res = await request('POST', '/worker/job', {}, {
+      authorization: `Basic ${auth}`
+    });
+    // The worker should be told there is no job, not given the defective job.
+    assert.equal(res.statusCode, 200);
+    const body = jsonBody(res);
+    assert.equal(body.id, undefined);
+    // Wait for the async rename to complete.
+    await new Promise<void>(resolve => setTimeout(resolve, 100));
+    // The job should have been moved from queue to failed, never to claimed.
+    const queueExists = await fs.access(queuedJobPath).then(() => true).catch(() => false);
+    assert.equal(queueExists, false, 'Job should be removed from queue');
+    const claimedExists = await fs.access(path.join(claimedDir, jobFile)).then(() => true).catch(() => false);
+    assert.equal(claimedExists, false, 'Job should not be moved to claimed directory');
+    const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+    assert.ok(failedExists, 'Job should be moved to the failed directory');
+  } finally {
+    t.mock.reset();
+    process.env.ALLOW_INTERNAL_TARGETS = 'true';
+    // Clean up.
+    await fs.unlink(queuedJobPath).catch(() => {});
     await fs.unlink(failedJobPath).catch(() => {});
   }
 });
@@ -1595,11 +1780,13 @@ test('POST /worker/report with a claimed job but an unusable report returns an e
   // Clean up any leftover files.
   await fs.unlink(reportPath).catch(() => {});
   await fs.unlink(failedJobPath).catch(() => {});
-  // Create a claimed job assigned to Worker One.
+  // Create a claimed job assigned to Worker One, with every browser type already
+  // tried, so the job cannot be retried.
   await fs.writeFile(claimedJobPath, JSON.stringify({
     id: jobID,
+    browserID: 'firefox',
     target: {what: 'Test', url: 'https://example.com/test'},
-    sources: {worker: 'Worker One'}
+    sources: {worker: 'Worker One', browsersTried: ['chromium', 'webkit', 'firefox']}
   }));
   const auth = Buffer.from('worker1:secret1').toString('base64');
   // A report that is syntactically valid (has id, target.what, target.url) but is not
@@ -1624,6 +1811,105 @@ test('POST /worker/report with a claimed job but an unusable report returns an e
   assert.ok(failedExists, 'Job should be moved to the failed directory');
   const claimedExists = await fs.access(claimedJobPath).then(() => true).catch(() => false);
   assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
+  // Clean up.
+  await fs.unlink(failedJobPath).catch(() => {});
+});
+
+test('POST /worker/report with an unusable report requeues the job under the next untried browser type', {timeout: 500}, async () => {
+  // Use a unique job ID that does not conflict with existing fixtures.
+  const jobID = '990101T0003-ret';
+  const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const queueDir = path.join(fixtureDBDir, 'jobs', 'queue');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  const jobFile = `${jobID}.json`;
+  const claimedJobPath = path.join(claimedDir, jobFile);
+  const queuedJobPath = path.join(queueDir, jobFile);
+  const failedJobPath = path.join(failedDir, jobFile);
+  // Clean up any leftover files.
+  await fs.unlink(reportPath).catch(() => {});
+  await fs.unlink(queuedJobPath).catch(() => {});
+  await fs.unlink(failedJobPath).catch(() => {});
+  // Create a claimed job assigned to Worker One, tried only under chromium.
+  await fs.writeFile(claimedJobPath, JSON.stringify({
+    id: jobID,
+    browserID: 'chromium',
+    target: {what: 'Test', url: 'https://example.com/test'},
+    sources: {worker: 'Worker One'}
+  }));
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  // A report that is syntactically valid (has id, target.what, target.url) but is not
+  // usable by Kilotest, because it has no acts, jobData, or catalog.
+  const report = {
+    id: jobID,
+    target: {what: 'Test', url: 'https://example.com/test'}
+  };
+  const res = await request('POST', '/worker/report', {report}, {
+    authorization: `Basic ${auth}`
+  });
+  assert.equal(res.statusCode, 400);
+  const body = jsonBody(res);
+  assert.ok(body.error.message.includes('not usable'));
+  // The report should not have been recorded.
+  const reportExists = await fs.access(reportPath).then(() => true).catch(() => false);
+  assert.equal(reportExists, false, 'Unusable report should not be saved');
+  // Wait for the async move to complete.
+  await new Promise<void>(resolve => setTimeout(resolve, 100));
+  // The job should have been requeued under webkit rather than left claimed or failed.
+  const claimedExists = await fs.access(claimedJobPath).then(() => true).catch(() => false);
+  assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
+  const requeued = JSON.parse(await fs.readFile(queuedJobPath, 'utf8'));
+  assert.equal(requeued.browserID, 'webkit');
+  assert.deepEqual(requeued.sources.browsersTried, ['chromium', 'webkit']);
+  assert.equal(requeued.sources.worker, undefined);
+  const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+  assert.equal(failedExists, false, 'Job should not be moved to the failed directory');
+  // Clean up.
+  await fs.unlink(queuedJobPath).catch(() => {});
+});
+
+test('POST /worker/report with an unusable report fails a job lacking a browser type as defective', {timeout: 500}, async () => {
+  // Use a unique job ID that does not conflict with existing fixtures.
+  const jobID = '990101T0004-def';
+  const reportPath = path.join(fixtureDBDir, 'reports', `${jobID}.json`);
+  const claimedDir = path.join(fixtureDBDir, 'jobs', 'claimed');
+  const failedDir = path.join(fixtureDBDir, 'jobs', 'failed');
+  const jobFile = `${jobID}.json`;
+  const claimedJobPath = path.join(claimedDir, jobFile);
+  const failedJobPath = path.join(failedDir, jobFile);
+  // Clean up any leftover files.
+  await fs.unlink(reportPath).catch(() => {});
+  await fs.unlink(failedJobPath).catch(() => {});
+  // Create a claimed job assigned to Worker One, with no browserID, although
+  // every job is created from job.json, which specifies one.
+  await fs.writeFile(claimedJobPath, JSON.stringify({
+    id: jobID,
+    target: {what: 'Test', url: 'https://example.com/test'},
+    sources: {worker: 'Worker One'}
+  }));
+  const auth = Buffer.from('worker1:secret1').toString('base64');
+  // A report that is syntactically valid (has id, target.what, target.url) but is not
+  // usable by Kilotest, because it has no acts, jobData, or catalog.
+  const report = {
+    id: jobID,
+    target: {what: 'Test', url: 'https://example.com/test'}
+  };
+  const res = await request('POST', '/worker/report', {report}, {
+    authorization: `Basic ${auth}`
+  });
+  assert.equal(res.statusCode, 400);
+  const body = jsonBody(res);
+  assert.ok(body.error.message.includes('not usable'));
+  // The report should not have been recorded.
+  const reportExists = await fs.access(reportPath).then(() => true).catch(() => false);
+  assert.equal(reportExists, false, 'Unusable report should not be saved');
+  // Wait for the async rename to complete.
+  await new Promise<void>(resolve => setTimeout(resolve, 100));
+  // The job should have been moved to failed, since a defective job cannot be retried.
+  const claimedExists = await fs.access(claimedJobPath).then(() => true).catch(() => false);
+  assert.equal(claimedExists, false, 'Job should be removed from the claimed directory');
+  const failedExists = await fs.access(failedJobPath).then(() => true).catch(() => false);
+  assert.ok(failedExists, 'Job should be moved to the failed directory');
   // Clean up.
   await fs.unlink(failedJobPath).catch(() => {});
 });

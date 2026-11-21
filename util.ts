@@ -11,6 +11,7 @@
 import {sendAlert} from './alerts.ts';
 import {rules as ruleSpecs} from 'testaro-issues';
 import type {Act, Catalog, Report, StandardInstance} from 'testaro';
+import {execFile} from 'node:child_process';
 import crypto from 'node:crypto';
 import dns from 'node:dns/promises';
 import fs from 'node:fs/promises';
@@ -18,6 +19,7 @@ import ipaddr from 'ipaddr.js';
 import net from 'node:net';
 import path from 'node:path';
 import querystring from 'node:querystring';
+import {promisify} from 'node:util';
 /* c8 ignore stop */
 
 // CONSTANTS
@@ -543,6 +545,11 @@ const allowsInternalTargets = (): boolean => process.env.ALLOW_INTERNAL_TARGETS 
 // The signature of dns.lookup with {all: true}, extracted so tests can inject
 // a fake resolver and avoid depending on real network/DNS access.
 type LookupAll = (hostname: string, options: {all: true}) => Promise<{address: string; family: number}[]>;
+// The signature of a promisified child_process.execFile taking a file and an
+// argument array, extracted so tests can inject a fake process runner and avoid
+// depending on real subprocesses.
+type ExecFile = (file: string, args: string[]) => Promise<{stdout: string | Buffer; stderr: string | Buffer}>;
+const execFileAsync: ExecFile = promisify(execFile);
 // Returns whether the host a URL resolves to consists only of addresses this
 // deployment is configured to allow as testing targets. This governs where
 // the Testaro browser is allowed to navigate, so it is the control against
@@ -592,28 +599,45 @@ export const isAllowedTarget = async (url: string, lookup: LookupAll = dns.looku
 // remains the backstop that re-checks the URL a worker actually visited.
 // Returns the URL to which a URL resolves through any redirects if that URL is an allowed target, or null otherwise. If this deployment allows internal targets, no request is made, and the URL itself is returned.
 export const getAllowedRedirectURL = async (
-  url: string, fetchImpl: typeof fetch = fetch, lookup: LookupAll = dns.lookup
+  url: string, fetchImpl: typeof fetch = fetch, lookup: LookupAll = dns.lookup, execFileImpl: ExecFile = execFileAsync
 ): Promise<string | null> => {
   // If this deployment allows internal targets, every syntactically valid URL is
   // allowed, and no fetch is needed, consistent with isAllowedTarget's own early return.
   if (allowsInternalTargets()) {
     return url;
   }
-  let response: Response;
+  let finalURL: string;
   try {
     // redirect: 'follow' is the default, but named here because observing
     // where redirects lead is the entire purpose of this request.
-    response = await fetchImpl(url, {redirect: 'follow', signal: AbortSignal.timeout(10000)});
+    const response = await fetchImpl(url, {redirect: 'follow', signal: AbortSignal.timeout(10000)});
+    finalURL = response.url;
   } catch {
-    // An unreachable or errored target cannot be verified as safe either way.
-    return null;
+    // A fetch failure does not prove the target disallowed: the edge protection
+    // of a target may reject the HTTP client fetch is built on while tolerating
+    // others (e.g. Akamai bot mitigation resetting the HTTP/2 streams of undici
+    // for datacenter clients while passing curl), so curl is tried as a fallback
+    // before the failure is accepted. Its --max-time limit matches the fetch
+    // timeout, --proto and --proto-redir confine it to the protocols fetch would
+    // follow (preventing e.g. a file: URL or redirect from reading a local
+    // file), and -- ends option parsing so the URL cannot inject an option.
+    try {
+      const {stdout} = await execFileImpl('curl', [
+        '-sLo', '/dev/null', '-w', '%{url_effective}', '--max-time', '10',
+        '--proto', '=http,https', '--proto-redir', '=http,https', '--', url
+      ]);
+      finalURL = stdout.toString().trim();
+    } catch {
+      // An unreachable or errored target cannot be verified as safe either way.
+      return null;
+    }
   }
-  return await isAllowedTarget(response.url, lookup) ? response.url : null;
+  return await isAllowedTarget(finalURL, lookup) ? finalURL : null;
 };
 // Returns whether a URL resolves through any redirects to an allowed target.
 export const isAllowedRedirectTarget = async (
-  url: string, fetchImpl: typeof fetch = fetch, lookup: LookupAll = dns.lookup
-): Promise<boolean> => await getAllowedRedirectURL(url, fetchImpl, lookup) !== null;
+  url: string, fetchImpl: typeof fetch = fetch, lookup: LookupAll = dns.lookup, execFileImpl: ExecFile = execFileAsync
+): Promise<boolean> => await getAllowedRedirectURL(url, fetchImpl, lookup, execFileImpl) !== null;
 // Returns whether a string is the authorization code, the shared check every
 // manager-facing page and action uses to gate a submission. Centralized so all call
 // sites compare against process.env.AUTH_CODE the same way.

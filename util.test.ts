@@ -541,10 +541,45 @@ test('getAllowedRedirectURL returns the final URL of an allowed target, or null 
     null
   );
 });
-test('isAllowedRedirectTarget returns false when the fetch throws', async () => {
+// A fake process runner returning curl output, so the curl fallback needs no
+// real subprocess or network access.
+const fakeExecFile = (stdout: string) => async () => ({stdout, stderr: ''});
+
+test('isAllowedRedirectTarget returns false when the fetch and the curl fallback throw', async () => {
   delete process.env.ALLOW_INTERNAL_TARGETS;
   const fetchImpl = async () => { throw new Error('fetch failed'); };
-  assert.equal(await isAllowedRedirectTarget('https://example.com/page', fetchImpl), false);
+  const execFileImpl = async () => { throw new Error('curl failed'); };
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fetchImpl, fakeLookup('93.184.216.34'), execFileImpl),
+    false
+  );
+});
+
+test('isAllowedRedirectTarget returns true via the curl fallback when the fetch fails', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const fetchImpl = async () => { throw new Error('fetch failed'); };
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fetchImpl, fakeLookup('93.184.216.34'), fakeExecFile('https://example.com/page')),
+    true
+  );
+});
+
+test('isAllowedRedirectTarget returns false when the curl fallback resolves to a private address', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const fetchImpl = async () => { throw new Error('fetch failed'); };
+  assert.equal(
+    await isAllowedRedirectTarget('https://example.com/page', fetchImpl, fakeLookup('93.184.216.34'), fakeExecFile('https://10.0.0.5/page')),
+    false
+  );
+});
+
+test('getAllowedRedirectURL returns the final URL from the curl fallback when the fetch fails', async () => {
+  delete process.env.ALLOW_INTERNAL_TARGETS;
+  const fetchImpl = async () => { throw new Error('fetch failed'); };
+  assert.equal(
+    await getAllowedRedirectURL('https://example.com/a', fetchImpl, fakeLookup('93.184.216.34'), fakeExecFile('https://example.com/b')),
+    'https://example.com/b'
+  );
 });
 
 test('isAllowedRedirectTarget returns true for any URL when ALLOW_INTERNAL_TARGETS is true, without fetching', async () => {

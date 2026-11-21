@@ -11,56 +11,21 @@ import {mcpPath} from './mcp.ts';
 
 // CONSTANTS
 
-// Concrete paths matching each wildcard pattern in the routes table, for smoke testing.
+// Concrete request paths for route patterns that cannot be requested literally (wildcards) or for which another path is a safer probe; any non-wildcard pattern defaults to being requested as itself.
 const concretePaths: Record<string, Record<string, string>> = {
   GET: {
     '*.html*': '/listSites.html',
-    '/': '/',
     '/.well-known/*': '/.well-known/openai-apps-challenge',
-    '/api-docs': '/api-docs',
     '/api/*': '/api/listSites',
-    '/capability.md': '/capability.md',
     '/favicon.*': '/favicon.svg',
     '/fullReport.json/*': '/fullReport.json/260101T0000/mix',
-    '/index.html': '/index.html',
-    '/llms-full.txt': '/llms-full.txt',
-    '/llms.txt': '/llms.txt',
-    '/mcp': '/mcp',
     '/media/*': '/media/demo-chatgpt.mp4',
-    '/openapi.json': '/openapi.json',
-    '/openapi.yaml': '/openapi.yaml',
-    '/qai': '/qai',
-    '/qai/comments': '/qai/comments',
-    '/robots.txt': '/robots.txt',
-    '/sitemap.xml': '/sitemap.xml',
-    '/style.css': '/style.css',
-    '/swagger.json': '/swagger.json',
-    '/swagger.yaml': '/swagger.yaml',
     '/tutorialAI/images/*': '/tutorialAI/images/example.png',
     '/tutorialWeb/images/*': '/tutorialWeb/images/newsletter-form.png'
   },
   POST: {
     '/api/*': '/api/requestFeature',
-    '/mcp': '/mcp',
-    '/ai0BalanceForm.html': '/ai0BalanceForm.html',
-    '/deleteNotesForm.html': '/deleteNotesForm.html',
-    '/expungeReportsForm.html': '/expungeReportsForm.html',
-    '/hideReportForm.html': '/hideReportForm.html',
-    '/metrics.html': '/metrics.html',
-    '/pruneReportsForm.html': '/pruneReportsForm.html',
-    '/reregisterForm.html': '/reregisterForm.html',
-    '/rewindReportsForm.html': '/rewindReportsForm.html',
-    '/reannotate.html': '/reannotate.html',
-    '/requestAction.html': '/requestAction.html',
-    '/renewWCAG.html': '/renewWCAG.html',
-    '/requestRetest.html/*': '/requestRetest.html/260101T0001/ct',
-    '/requestNewTest.html': '/requestNewTest.html',
-    '/showHiddenReportsForm.html': '/showHiddenReportsForm.html',
-    '/tutorialAIComment.html': '/tutorialAIComment.html',
-    '/tutorialWebComment.html': '/tutorialWebComment.html',
-    '/unhideReportForm.html': '/unhideReportForm.html',
-    '/worker/job': '/worker/job',
-    '/worker/report': '/worker/report'
+    '/requestRetest.html/*': '/requestRetest.html/260101T0001/ct'
   }
 };
 // Minimal POST bodies for paths that require them.
@@ -195,9 +160,9 @@ const isMCPErrorResponse = (result: {statusCode: number | undefined, body: strin
   for (const method of ['GET', 'POST']) {
     console.log(`\n=== ${method} paths ===`);
     for (const pattern of routes[method as 'GET' | 'POST']) {
-      const requestPath = concretePaths[method]![pattern];
+      const requestPath = concretePaths[method]![pattern] ?? (pattern.includes('*') ? undefined : pattern);
       if (!requestPath) {
-        console.log(`FAIL: no concrete path defined for pattern ${pattern}`);
+        console.log(`FAIL: no concrete path defined for wildcard pattern ${pattern}`);
         failures++;
         continue;
       }

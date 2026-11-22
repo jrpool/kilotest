@@ -50,6 +50,7 @@ import http, {type IncomingMessage, type ServerResponse} from 'node:http';
 import https from 'node:https';
 import path from 'node:path';
 import querystring from 'node:querystring';
+import {answer as aboutExemplars} from './web/aboutExemplars/index.ts';
 import {answer as ai0BalanceForm} from './web/ai0BalanceForm/index.ts';
 import {answer as deleteNotesForm} from './web/deleteNotesForm/index.ts';
 import {answer as enqueue} from './web/enqueue/index.ts';
@@ -115,6 +116,7 @@ type AnswerData = {
 type PageHandler = (...args: any[]) => Promise<AnswerData>;
 
 const answer: {
+  aboutExemplars: PageHandler;
   accessibility: PageHandler;
   ai0BalanceForm: PageHandler;
   deleteNotesForm: PageHandler;
@@ -154,6 +156,7 @@ const answer: {
   unhideReportForm: PageHandler;
   [key: string]: PageHandler | undefined;
 } = {
+  aboutExemplars,
   accessibility,
   ai0BalanceForm,
   deleteNotesForm,

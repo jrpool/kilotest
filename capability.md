@@ -38,6 +38,10 @@ A list of tested sites, with URLs for listing the tested pages of each site, whi
 - From a request for results: Details at several granularities about issues reported, related WCAG standards, what rules were violated, and which DOM elements violated them.
 - From complaints and suggestions about violation diagnoses and features: acknowledgment of receipt and of the manager being notified.
 
+## Exemplar pages
+
+Kilotest hosts a collection of self-documenting exemplar pages, each illustrating defect types with contrasting defect-free counterparts, at `https://kilotest.com/exemplars/`. They are registered as the pages of the “Kilotest exemplars” site and are tested like any other pages, so their reports can be compared with the defects they declare, helping evaluate the rule engines themselves. `listPages` applied to that site lists them.
+
 ## Side effects
 
 Kilotest reads the specified web page during testing. It does not modify the target site.

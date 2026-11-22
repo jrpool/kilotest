@@ -49,3 +49,4 @@ Kilotest is a powerful web validator. It integrates an ensemble of 12 rule engin
 - [OpenAPI specification for Kilotest](https://kilotest.com/openapi.yaml)
 - [Kilotest as connector to and collection of AI Tools](https://github.com/jrpool/kilotest/blob/main/docs/AI-TOOLS.md)
 - [Tutorial on authorizing language models to use Kilotest](https://kilotest.com/tutorialAI.html)
+- [Self-documenting exemplar pages illustrating defect types](https://kilotest.com/exemplars/index.html); the tested exemplars are the pages of the “Kilotest exemplars” site, listed by `listPages` applied to that site, and their reports can be compared with the defects the pages declare

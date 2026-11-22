@@ -48,6 +48,12 @@ code {
   border: 1px solid #e8d48b;
   border-radius: 0.5rem;
 }
+h1 {
+  margin: 0 0 1.5rem;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
 h2 {
   margin: 1rem 0 0.5rem;
   font-size: 1.4rem;
@@ -110,7 +116,7 @@ header {
   height: 4rem;
   width: 4rem;
 }
-.brand {
+a.brand {
   display: flex;
   align-items: center;
   min-height: 44px;
@@ -119,6 +125,9 @@ header {
   font-weight: 800;
   font-size: 1.5rem;
   letter-spacing: -0.02em;
+}
+h1.brand {
+  margin: 0;
 }
 .brand-tag {
   margin: 0;
@@ -146,7 +155,6 @@ header {
 }
 .hero > h2 {
   margin: 0 0 1rem;
-  font-size: clamp(2rem, 4.5vw, 2.2rem);
   line-height: 1.5;
   letter-spacing: -0.03em;
 }
@@ -260,11 +268,6 @@ ul.nav a:hover .card-title {
   max-width: 64rem;
   margin-inline: auto;
   padding: 2.5rem 1.5rem 3.5rem;
-}
-.page h1 {
-  margin: 0 0 1.5rem;
-  font-size: 2rem;
-  letter-spacing: -0.02em;
 }
 .page h2 {
   margin: 2rem 0 0.75rem;
@@ -510,7 +513,6 @@ table.allBorder th, table.allBorder td {
 }
 .demo-stage .frame h2 {
   margin-top: 0;
-  font-size: 1.15rem;
 }
 .demo-stage .frame h3 {
   margin: 1rem 0 0.25rem;

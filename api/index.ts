@@ -81,7 +81,7 @@ export const handleApiRequest = async (
   pathTail: string,
   postData: unknown
 ): Promise<void> => {
-  const [service, ...specs] = pathTail.split('/');
+  const [service, ...specs] = pathTail.split('/') as [string, ...string[]];
   const services = request.method === 'POST' ? postServices : getServices;
   const entry = services[service];
   // If the service is valid:
@@ -90,7 +90,7 @@ export const handleApiRequest = async (
     const responseBody = await entry.respond(
       entry.args(specs, (postData ?? {}) as Record<string, unknown>)
     );
-    await recordPageMetric(request, 'apiOperations', service!);
+    await recordPageMetric(request, 'apiOperations', service);
     // Send it.
     setHeaders(response, 'application/json', null, entry.volatility ?? 'ultra');
     response.end(JSON.stringify(responseBody));

@@ -7,8 +7,28 @@
   </head>
   <body>
     <h1>Iframe exemplar</h1>
-    <p>This exemplar page ascertains which rule engines, if any, can test the descendants of iframes. It embeds three frames containing identical defect sets: a same-origin frame, a srcdoc frame, and a cross-site frame served by GitHub Pages from a different registrable domain. The frame elements themselves are defect-free, so every violation attributed to an element inside a frame comes from an intended defect in its document. Each frame document is also registered and tested as its own page, providing the unframed baseline: a rule engine that reports the defects in a directly tested frame document but not in its framed copy cannot reach the frame contents.</p>
+    <p>This exemplar page ascertains which rule engines, if any, can test the descendants of iframes. It embeds three frames containing identical defect sets: a same-origin frame, a srcdoc frame, and a cross-site frame served by GitHub Pages from a different registrable domain. The frame elements themselves are defect-free, so every violation attributed to an element inside a frame comes from an intended defect in its document.</p>
+    <p>The same defects also appear in this top-level document, so an engine that reports them here but not inside a frame is demonstrably failing at the frame boundary. In addition, each frame document is registered and tested as its own page, providing the unframed baseline for comparison across reports.</p>
     <p>Exemplar version 1.</p>
+    <h2>Deliberate defects in this document</h2>
+    <!-- Image without alternative text. -->
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E" id="p-img-noalt">
+    <!-- Text with insufficient contrast. -->
+    <p id="p-contrast" style="color: #aaa; background-color: #fff">Low-contrast defect text.</p>
+    <!-- Text input without a label. -->
+    <input type="text" id="p-input-nolabel">
+    <!-- Link without any text. -->
+    <a href="#" id="p-empty-link"></a>
+    <h2>Defect-free counterparts in this document</h2>
+    <!-- Image with alternative text. -->
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E" alt="Red square" id="p-img-alt">
+    <!-- Text with sufficient contrast. -->
+    <p id="p-contrast-ok" style="color: #595959; background-color: #fff">Sufficient-contrast counterpart text.</p>
+    <!-- Text input with a label. -->
+    <label for="p-input-label">Counterpart field</label>
+    <input type="text" id="p-input-label">
+    <!-- Link with text. -->
+    <a href="#p-link-text" id="p-link-text">Counterpart link text</a>
     <h2>Same-origin frame</h2>
     <p>The frame below loads <a href="/exemplars/iframes-frame.html">the frame document</a> from the same origin as this page.</p>
     <iframe id="frame-same-origin" title="Same-origin frame document" src="/exemplars/iframes-frame.html" width="640" height="480"></iframe>

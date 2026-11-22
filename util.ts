@@ -409,8 +409,8 @@ const getSharedContent = async (): Promise<{head: string, header: string, header
       head: (await fs.readFile(path.join(webDir, 'head.partial'), 'utf8')).trimEnd()
       .replace(/__styleVersion__/g, styleVersion),
       header,
-      // The home page gets the same header with its brand as text, not a link to itself.
-      headerNL: header.replace('<a href="/">Kilotest</a>', 'Kilotest'),
+      // The home page gets the same header with its brand as its h1, not a link to itself.
+      headerNL: header.replace('<a class="brand" href="/">Kilotest</a>', '<h1 class="brand">Kilotest</h1>'),
       footer: (await fs.readFile(path.join(webDir, 'footer.partial'), 'utf8')).trimEnd(),
       logo
     };

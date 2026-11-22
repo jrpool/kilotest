@@ -111,16 +111,14 @@ header {
   width: 4rem;
 }
 .brand {
-  margin: 0;
-  font-weight: 800;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
-}
-.brand > a {
   display: flex;
   align-items: center;
   min-height: 44px;
   min-width: 44px;
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
 }
 .brand-tag {
   margin: 0;
@@ -146,7 +144,7 @@ header {
   margin: 0 0.5rem 0.22rem 0;
   background: var(--accent);
 }
-.hero h1 {
+.hero > h2 {
   margin: 0 0 1rem;
   font-size: clamp(2rem, 4.5vw, 2.2rem);
   line-height: 1.5;

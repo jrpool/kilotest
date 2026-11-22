@@ -80,8 +80,13 @@ htmlRoutes.forEach(p => validPathsExact.add(p));
 validPathsExact.add('/');
 
 const isValidPath = (href: string): boolean => {
-  // Absolute URLs and email links are not internal paths
-  if (href.includes('://') || href.startsWith('mailto:') || href.startsWith('#')) {
+  // Absolute URLs, email links, data URIs, and fragment links are not internal paths
+  if (
+    href.includes('://')
+    || href.startsWith('mailto:')
+    || href.startsWith('data:')
+    || href.startsWith('#')
+  ) {
     return true;
   }
 

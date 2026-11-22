@@ -396,6 +396,11 @@ test('GET /exemplars/file.txt is rejected as an invalid GET request', async () =
   assert.equal(res.statusCode, 400);
 });
 
+test('GET /exemplars/index.html/extra returns an invalid exemplar request error', async () => {
+  const res = await request('GET', '/exemplars/index.html/extra');
+  assert.equal(res.statusCode, 400);
+});
+
 test('GET /logo.png serves the logo as PNG', async () => {
   const res = await request('GET', '/logo.png');
   assert.equal(res.statusCode, 200);

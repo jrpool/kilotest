@@ -217,3 +217,4 @@ More information about Kilotest features and internals:
 - [Testaro rule classifier](https://github.com/jrpool/testaro-issues)
 - [Research report on Testaro](https://arxiv.org/abs/2309.10167)
 - [Blog post on the Kilotest use case](https://medium.com/cvs-health-tech-blog/how-to-run-a-thousand-accessibility-tests-63692ad120c3)
+- [Self-documenting exemplar pages illustrating defect types](https://kilotest.com/exemplars/index.html); the tested exemplars are the pages of the “Kilotest exemplars” site, listed by `listPages` applied to that site, and their reports can be compared with the defects the pages declare

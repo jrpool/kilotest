@@ -1102,9 +1102,18 @@ export const reannotationNeededMessage = 'These data are not currently available
 const violationDataCache = new Map<string, {
   stamp: FileStamp; violations: ReportViolations; needsAttention: boolean;
 }>();
-// Returns the extract and violation data of the latest report about each page, or an error object if any of those reports cannot be read or needs reannotation. In the latter case, a manager is alerted. A consumer that infers from these data that a rule was passed relies on the assumptions in docs/decisions/012-rule-test-coverage.md about the jobs that Kilotest creates.
-export const getViolationData = async (): Promise<ViolationData[] | {error: string}> => {
-  const extracts = await getReportExtracts(true);
+// Returns the extract and violation data of the latest report about each page, or an error object if any of those reports cannot be read or needs reannotation. In the latter case, a manager is alerted. A consumer that infers from these data that a rule was passed relies on the assumptions in docs/decisions/012-rule-test-coverage.md about the jobs that Kilotest creates. If excludeExemplars is true, reports about pages of the exemplar site are excluded, for aggregations in which deliberately defective pages would masquerade as organic findings (see docs/decisions/013-exemplar-pages.md).
+export const getViolationData = async (
+  options: {excludeExemplars?: boolean} = {}
+): Promise<ViolationData[] | {error: string}> => {
+  let extracts = await getReportExtracts(true);
+  // If the reports about exemplar pages are to be excluded:
+  if (options.excludeExemplars) {
+    // Dynamically imported, because registry.ts statically imports this module.
+    const {getExemplarPageIDs, getRegistry} = await import('./registry.ts');
+    const exemplarPageIDs = getExemplarPageIDs(await getRegistry());
+    extracts = extracts.filter(({pageID}) => !exemplarPageIDs.has(pageID));
+  }
   const reportFilePaths = extracts.map(({id}) => getReportPath(id));
   const reportFilePathSet = new Set(reportFilePaths);
   // Remove from the cache any report that is no longer a latest available report.

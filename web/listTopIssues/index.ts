@@ -30,8 +30,9 @@ const getIssuesSummary = async () => {
   };
   // Initialize data for a summary.
   const issuesData: Record<string, {count: number; reporters: Set<string>}> = {};
-  // Get the violation data of the latest available report on each page.
-  const violationData = await getViolationData();
+  // Get the violation data of the latest available report on each page, excluding
+  // the exemplar pages, whose deliberate defects would masquerade as organic findings.
+  const violationData = await getViolationData({excludeExemplars: true});
   // If this failed:
   if ('error' in violationData) {
     // Populate the summary with the reason and stop.

@@ -12,6 +12,8 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   changeRegistry,
+  exemplarSiteName,
+  getExemplarPageIDs,
   getHost,
   getNameKey,
   getNewID,
@@ -157,6 +159,26 @@ test('registerPage creates sites and pages, returns existing pages, and refuses 
     assert.deepEqual(registry.pages[pageID], {sites: [siteID], name: 'home', url: 'https://example.org/'});
     assert.deepEqual(getSitePages(registry, siteID).map(([, page]) => page.name), ['contact', 'home']);
     assert.deepEqual(getSitePages(registry, 's-zzzzzz'), []);
+  });
+});
+test('getExemplarPageIDs returns the identifiers of the pages of the exemplar site only', async () => {
+  await withDB(async () => {
+    const first = await registerPage({
+      siteName: exemplarSiteName, pageName: 'iframes', url: 'https://kilotest.com/exemplars/iframes.html'
+    }) as RegisteredPage;
+    const second = await registerPage({
+      siteID: first.siteID, pageName: 'other', url: 'https://kilotest.com/exemplars/other.html'
+    }) as RegisteredPage;
+    await registerPage({siteName: 'Other Site', pageName: 'home', url: 'https://example.org/'});
+    const registry = await getRegistry();
+    assert.deepEqual(getExemplarPageIDs(registry), new Set([first.pageID, second.pageID]));
+  });
+});
+test('getExemplarPageIDs returns an empty set if the exemplar site does not exist', async () => {
+  await withDB(async () => {
+    await registerPage({siteName: 'Other Site', pageName: 'home', url: 'https://example.org/'});
+    assert.deepEqual(getExemplarPageIDs(await getRegistry()), new Set());
+    assert.deepEqual(getExemplarPageIDs({sites: {}, pages: {}}), new Set());
   });
 });
 test('changeRegistry serializes concurrent changes', async () => {

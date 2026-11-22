@@ -172,6 +172,18 @@ export const getSitePages = (registry: Registry, siteID: string): [string, PageR
 .entries(registry.pages)
 .filter(([, page]) => page.sites.includes(siteID))
 .sort(([, a], [, b]) => a.name.localeCompare(b.name, 'en', {sensitivity: 'base'}));
+// The name of the registry site whose pages are defect exemplars (see
+// docs/decisions/013-exemplar-pages.md). The site is found by name key, not by
+// identifier, so the exemplar pages are still found if the registry is rebuilt.
+export const exemplarSiteName = 'Kilotest exemplars';
+// Returns the identifiers of the pages of the exemplar site in a registry, or an empty set if the site does not exist.
+export const getExemplarPageIDs = (registry: Registry): Set<string> => {
+  const siteID = Object.keys(registry.sites)
+  .find(id => getNameKey(registry.sites[id] as string) === getNameKey(exemplarSiteName));
+  return siteID
+    ? new Set(getSitePages(registry, siteID).map(([pageID]) => pageID))
+    : new Set();
+};
 // Returns the page that a target resolves to in a registry, or the reason why it cannot be resolved. A page cannot be added to a nonexistent site, nor with a name that, after normalization, is that of a page the site already has, and a site cannot be created with a name whose name key is that of an existing site.
 export const planPage = (registry: Registry, target: PageTarget): PlannedPage | PageError => {
   // If the target is an existing page:

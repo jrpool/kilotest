@@ -16,11 +16,16 @@ mockClassification();
 const realUtil = await import('../../util.ts');
 // The result that the mocked getViolationData returns, replaceable by a test.
 let violationDataResult: Awaited<ReturnType<typeof realUtil.getViolationData>> = [];
+// The options that the mocked getViolationData was last called with.
+let violationDataOptions: unknown;
 // Mock getViolationData before importing index.ts, so that it imports the mocked version. Other exports delegate to the real module.
 mock.module('../../util.ts', {
   exports: {
     ...realUtil,
-    getViolationData: async () => violationDataResult
+    getViolationData: async (options?: unknown) => {
+      violationDataOptions = options;
+      return violationDataResult;
+    }
   }
 } as any);
 
@@ -168,6 +173,12 @@ test('getRuleMatches sorts sets by decreasing size, then decreasing support, the
 });
 
 // TESTS OF THE PAGE
+
+test('listRuleMatches does not exclude the exemplar pages from the violation data', async () => {
+  violationDataOptions = undefined;
+  await answer();
+  assert.equal(violationDataOptions, undefined);
+});
 
 // Returns the texts of the items of the list under a heading.
 const getSetTexts = (html: ReturnType<typeof parse>, heading: string): string[] => {

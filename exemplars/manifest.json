@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "defectSets": {
+    "iframesParent": {
+      "defects": [
+        {"id": "p-img-noalt", "type": "imgNoAlt", "description": "Image without alternative text"},
+        {"id": "p-contrast", "type": "lowContrast", "description": "Text with insufficient contrast"},
+        {"id": "p-input-nolabel", "type": "unlabeledControl", "description": "Text input without a label"},
+        {"id": "p-empty-link", "type": "emptyLink", "description": "Link without any text"}
+      ],
+      "clean": [
+        {"id": "p-img-alt", "type": "labeledImg", "description": "Image with alternative text"},
+        {"id": "p-contrast-ok", "type": "styledText", "description": "Text with sufficient contrast"},
+        {"id": "p-input-label", "type": "labeledControl", "description": "Text input with a label"},
+        {"id": "p-link-text", "type": "nonemptyLink", "description": "Link with text"}
+      ]
+    },
+    "iframes": {
+      "defects": [
+        {"id": "d-img-noalt", "type": "imgNoAlt", "description": "Image without alternative text"},
+        {"id": "d-contrast", "type": "lowContrast", "description": "Text with insufficient contrast"},
+        {"id": "d-input-nolabel", "type": "unlabeledControl", "description": "Text input without a label"},
+        {"id": "d-empty-link", "type": "emptyLink", "description": "Link without any text"}
+      ],
+      "clean": [
+        {"id": "c-img-alt", "type": "labeledImg", "description": "Image with alternative text"},
+        {"id": "c-contrast", "type": "styledText", "description": "Text with sufficient contrast"},
+        {"id": "c-input-label", "type": "labeledControl", "description": "Text input with a label"},
+        {"id": "c-link-text", "type": "nonemptyLink", "description": "Link with text"}
+      ]
+    }
+  },
+  "documents": [
+    {
+      "path": "index.html",
+      "purpose": "introduces a collection of minimal pages that exemplify types of front-end defects",
+      "cleanDocument": true
+    },
+    {
+      "path": "iframes-frame.html",
+      "purpose": "a frame source for the iframes exemplar",
+      "cleanDocument": true,
+      "defectSet": "iframes"
+    },
+    {
+      "path": "iframes.html",
+      "purpose": "ascertains which rule engines, if any, can test the descendants of iframes",
+      "cleanDocument": true,
+      "defectSet": "iframesParent",
+      "frames": [
+        {"id": "frame-same-origin", "kind": "same-origin", "src": "/exemplars/iframes-frame.html"},
+        {"id": "frame-srcdoc", "kind": "srcdoc", "defectSet": "iframes"},
+        {"id": "frame-cross-site", "kind": "cross-site", "src": "https://jrpool.github.io/kilotest-exemplars/iframes-frame.html"}
+      ]
+    }
+  ]
+}

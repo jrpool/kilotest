@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>Kilotest exemplar: iframes</title>
+  </head>
+  <body>
+    <h1>Iframe exemplar</h1>
+    <p>This exemplar page ascertains which rule engines, if any, can test the descendants of iframes. It embeds three frames containing identical defect sets: a same-origin frame, a srcdoc frame, and a cross-site frame served by GitHub Pages from a different registrable domain. The frame elements themselves are defect-free, so every violation attributed to an element inside a frame comes from an intended defect in its document.</p>
+    <p>The same defects also appear in this top-level document, so an engine that reports them here but not inside a frame is demonstrably failing at the frame boundary. In addition, each frame document is registered and tested as its own page, providing the unframed baseline for comparison across reports.</p>
+    <p>Exemplar version 1.</p>
+    <h2>Deliberate defects in this document</h2>
+    <!-- Image without alternative text. -->
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E" id="p-img-noalt">
+    <!-- Text with insufficient contrast. -->
+    <p id="p-contrast" style="color: #aaa; background-color: #fff">Low-contrast defect text.</p>
+    <!-- Text input without a label. -->
+    <input type="text" id="p-input-nolabel">
+    <!-- Link without any text. -->
+    <a href="#" id="p-empty-link"></a>
+    <h2>Defect-free counterparts in this document</h2>
+    <!-- Image with alternative text. -->
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E" alt="Red square" id="p-img-alt">
+    <!-- Text with sufficient contrast. -->
+    <p id="p-contrast-ok" style="color: #595959; background-color: #fff">Sufficient-contrast counterpart text.</p>
+    <!-- Text input with a label. -->
+    <label for="p-input-label">Counterpart field</label>
+    <input type="text" id="p-input-label">
+    <!-- Link with text. -->
+    <a href="#p-link-text" id="p-link-text">Counterpart link text</a>
+    <h2>Same-origin frame</h2>
+    <p>The frame below loads <a href="/exemplars/iframes-frame.html">the frame document</a> from the same origin as this page.</p>
+    <iframe id="frame-same-origin" title="Same-origin frame document" src="/exemplars/iframes-frame.html" width="640" height="480"></iframe>
+    <h2>Srcdoc frame</h2>
+    <p>The frame below contains the same defect set in an inline srcdoc document, which has no fetchable URL.</p>
+    <iframe id="frame-srcdoc" title="Srcdoc frame document" srcdoc="&lt;!DOCTYPE html&gt;&lt;html lang=&quot;en&quot;&gt;&lt;head&gt;&lt;meta charset=&quot;utf-8&quot;&gt;&lt;title&gt;Iframe exemplar: srcdoc frame document&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;Iframe exemplar srcdoc frame document&lt;/h1&gt;&lt;p&gt;This srcdoc document contains the same defect set as the other frame documents of the iframes exemplar.&lt;/p&gt;&lt;img src=&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E&quot; id=&quot;d-img-noalt&quot;&gt;&lt;p id=&quot;d-contrast&quot; style=&quot;color: #aaa; background-color: #fff&quot;&gt;Low-contrast defect text.&lt;/p&gt;&lt;input type=&quot;text&quot; id=&quot;d-input-nolabel&quot;&gt;&lt;a href=&quot;#&quot; id=&quot;d-empty-link&quot;&gt;&lt;/a&gt;&lt;img src=&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E&quot; alt=&quot;Red square&quot; id=&quot;c-img-alt&quot;&gt;&lt;p id=&quot;c-contrast&quot; style=&quot;color: #595959; background-color: #fff&quot;&gt;Sufficient-contrast counterpart text.&lt;/p&gt;&lt;label for=&quot;c-input-label&quot;&gt;Counterpart field&lt;/label&gt;&lt;input type=&quot;text&quot; id=&quot;c-input-label&quot;&gt;&lt;a href=&quot;#c-link-text&quot; id=&quot;c-link-text&quot;&gt;Counterpart link text&lt;/a&gt;&lt;/body&gt;&lt;/html&gt;" width="640" height="480"></iframe>
+    <h2>Cross-site frame</h2>
+    <p>The frame below loads a copy of the frame document from GitHub Pages, a different registrable domain (site) from kilotest.com.</p>
+    <iframe id="frame-cross-site" title="Cross-site frame document" src="https://jrpool.github.io/kilotest-exemplars/iframes-frame.html" width="640" height="480"></iframe>
+  </body>
+</html>

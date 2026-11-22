@@ -16,11 +16,16 @@ mockClassification();
 const realUtil = await import('../../util.ts');
 // The result that the mocked getViolationData returns, replaceable by a test to create an error.
 let violationDataResult: Awaited<ReturnType<typeof realUtil.getViolationData>> = fixtureViolationData;
+// The options that the mocked getViolationData was last called with.
+let violationDataOptions: unknown;
 // Mock getViolationData before importing index.ts, so that it imports the mocked version. Other exports delegate to the real module.
 mock.module('../../util.ts', {
   exports: {
     ...realUtil,
-    getViolationData: async () => violationDataResult
+    getViolationData: async (options?: unknown) => {
+      violationDataOptions = options;
+      return violationDataResult;
+    }
   }
 } as any);
 
@@ -40,6 +45,12 @@ afterEach(() => {
 });
 
 // TESTS
+
+test('listTopIssues excludes the exemplar pages from the violation data', async () => {
+  violationDataOptions = undefined;
+  await answer();
+  assert.deepEqual(violationDataOptions, {excludeExemplars: true});
+});
 
 test('listTopIssues returns an ok status with valid HTML', async () => {
   const result: any = await answer();

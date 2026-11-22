@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="robots" content="noindex">
+    <title>Iframe exemplar: frame document</title>
+  </head>
+  <body>
+    <h1>Iframe exemplar frame document</h1>
+    <p>This document is a frame source for the <a href="/exemplars/iframes.html">iframes exemplar</a>, which embeds it in a same-origin frame, reproduces it in a srcdoc frame, and embeds an identical copy in a cross-site frame. It is also registered as a page of the “Kilotest exemplars” site, so testing it directly provides the unframed baseline: the defects a rule engine reports here but fails to report in a framed copy mark an engine that cannot reach the frame contents. Except for the deliberate defects below, this document is defect-free, so every reported violation can be attributed to an intended defect.</p>
+    <p>Exemplar version 1.</p>
+    <h2>Deliberate defects</h2>
+    <!-- Image without alternative text. -->
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E" id="d-img-noalt">
+    <!-- Text with insufficient contrast. -->
+    <p id="d-contrast" style="color: #aaa; background-color: #fff">Low-contrast defect text.</p>
+    <!-- Text input without a label. -->
+    <input type="text" id="d-input-nolabel">
+    <!-- Link without any text. -->
+    <a href="#" id="d-empty-link"></a>
+    <h2>Defect-free counterparts</h2>
+    <!-- Image with alternative text. -->
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Crect width='24' height='24' fill='%23c00'/%3E%3C/svg%3E" alt="Red square" id="c-img-alt">
+    <!-- Text with sufficient contrast. -->
+    <p id="c-contrast" style="color: #595959; background-color: #fff">Sufficient-contrast counterpart text.</p>
+    <!-- Text input with a label. -->
+    <label for="c-input-label">Counterpart field</label>
+    <input type="text" id="c-input-label">
+    <!-- Link with text. -->
+    <a href="#c-link-text" id="c-link-text">Counterpart link text</a>
+  </body>
+</html>

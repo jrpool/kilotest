@@ -116,6 +116,12 @@ header {
   font-size: 1.5rem;
   letter-spacing: -0.02em;
 }
+.brand > a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+}
 .brand-tag {
   margin: 0;
   color: var(--muted);

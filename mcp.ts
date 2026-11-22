@@ -49,7 +49,7 @@ import {
 
 // CONSTANTS
 
-export const mcpPath = '/mcp';
+export {mcpPath} from './routeAuth.ts';
 // The largest accepted request body, matching the MCP SDK transport’s own limit.
 const maxBodyBytes = 4 * 1024 * 1024;
 

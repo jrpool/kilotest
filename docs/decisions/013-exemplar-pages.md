@@ -1,6 +1,6 @@
 ---
-date: 2026-11-21
-status: proposed
+date: 2026-11-22
+status: accepted
 ---
 
 # Exemplar pages and the iframe exemplar

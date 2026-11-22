@@ -48,6 +48,7 @@ import {
   getReportStats,
   getRulePreventions,
   getTimeStamp,
+  getViolationData,
   hiddenReportsPath,
   htmlSafe,
   getAllowedRedirectURL,
@@ -1431,6 +1432,44 @@ test('getReportExtracts reflects reports added, modified, and removed after a pr
     await fs.rm(firstPath);
     extracts = await getReportExtracts();
     assert.deepEqual(extracts.map(e => e.description), ['Added Page']);
+  }
+  finally {
+    process.env.DB_DIR = savedDbDir;
+    await fs.rm(tmpRoot, {recursive: true}).catch(() => {});
+  }
+});
+
+test('getViolationData excludes the reports about exemplar pages only when excludeExemplars is set', async () => {
+  const os = await import('node:os');
+  const tmpRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'kilotest-violation-'));
+  const savedDbDir = process.env.DB_DIR;
+  const tmpDbDir = path.join(tmpRoot, 'db');
+  process.env.DB_DIR = tmpDbDir;
+  try {
+    // Copy a fixture report and register its page in the exemplar site.
+    const tmpReportsDir = path.join(tmpDbDir, 'reports');
+    await fs.mkdir(tmpReportsDir, {recursive: true});
+    await fs.copyFile(
+      path.join(fixtureDbDir, 'reports', '260101T0000-mix.json'),
+      path.join(tmpReportsDir, '260101T0000-mix.json')
+    );
+    await fs.writeFile(path.join(tmpDbDir, 'registry.json'), JSON.stringify({
+      sites: {'s-exemplar': 'Kilotest exemplars'},
+      pages: {
+        'p-mixedout': {
+          sites: ['s-exemplar'], name: 'iframes', url: 'https://kilotest.com/exemplars/iframes.html'
+        }
+      }
+    }));
+    // Without the option the report is not excluded: it is read and either produces
+    // data about the page or an error (the fixture reports need reannotation).
+    const included = await getViolationData();
+    assert.ok(
+      'error' in included || included.some(({extract}) => extract.pageID === 'p-mixedout')
+    );
+    // With the option the only report is excluded before any report is read, so no
+    // reannotation error occurs.
+    assert.deepEqual(await getViolationData({excludeExemplars: true}), []);
   }
   finally {
     process.env.DB_DIR = savedDbDir;

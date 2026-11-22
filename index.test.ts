@@ -368,6 +368,34 @@ test('GET /favicon.svg serves the logo as SVG', async () => {
   assert.ok(res.headers['content-type'].includes('image/svg+xml'));
 });
 
+test('GET /exemplars/index.html serves the exemplar landing page as HTML', async () => {
+  const res = await request('GET', '/exemplars/index.html');
+  assert.equal(res.statusCode, 200);
+  assert.ok(res.headers['content-type'].includes('text/html'));
+  assert.ok(res.body.includes('Kilotest exemplars'));
+});
+
+test('GET /exemplars/index.html with a query redirects to the queryless URL', async () => {
+  const res = await request('GET', '/exemplars/index.html?x=1');
+  assert.equal(res.statusCode, 301);
+  assert.equal(res.headers.location, '/exemplars/index.html');
+});
+
+test('GET /exemplars/nonexistent.html returns an error page', async () => {
+  const res = await request('GET', '/exemplars/nonexistent.html');
+  assert.equal(res.statusCode, 400);
+});
+
+test('GET /exemplars/ with no file name returns an invalid GET request error', async () => {
+  const res = await request('GET', '/exemplars/');
+  assert.equal(res.statusCode, 400);
+});
+
+test('GET /exemplars/file.txt is rejected as an invalid GET request', async () => {
+  const res = await request('GET', '/exemplars/file.txt');
+  assert.equal(res.statusCode, 400);
+});
+
 test('GET /logo.png serves the logo as PNG', async () => {
   const res = await request('GET', '/logo.png');
   assert.equal(res.statusCode, 200);

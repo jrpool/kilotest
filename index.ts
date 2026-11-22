@@ -886,6 +886,43 @@ const handleRequest = async (request: IncomingMessage, response: ServerResponse)
         await serveError({message: 'ERROR: Invalid report request'}, response, true);
       }
     }
+    // Otherwise, if it is for an exemplar page, a static file in the root-level
+    // exemplars directory (see docs/decisions/013-exemplar-pages.md):
+    else if (pageName === 'exemplars') {
+      const segments = pathTail.split('/');
+      // If the tail is a relative path to an .html file:
+      if (pathTail.endsWith('.html') && !segments.includes('..') && !segments.includes('.')) {
+        // If the URL has a query string, redirect the request permanently to the
+        // queryless URL (see the same redirect for .html pages below).
+        if (search) {
+          response.writeHead(301, {Location: pathname});
+          response.end();
+        }
+        // Otherwise, i.e. if the URL has no query string:
+        else {
+          // Get the exemplar page.
+          const exemplar = await fs.readFile(path.join('exemplars', pathTail), 'utf8')
+          .catch(() => null);
+          // If it exists:
+          if (exemplar !== null) {
+            await recordPageMetric('pageViews', `exemplars/${pathTail}`);
+            // Serve it.
+            setHeaders('text/html', `/exemplars/${pathTail}`, 'low');
+            response.end(exemplar);
+          }
+          // Otherwise, i.e. if it does not exist:
+          else {
+            // Report the error as suspected abuse.
+            await serveError(getAbuseError(request, 'Request for nonexistent page'), response, true);
+          }
+        }
+      }
+      // Otherwise, i.e. if the tail is not a relative path to an .html file:
+      else {
+        // Report the error as suspected abuse.
+        await serveError(getAbuseError(request, 'ERROR: Invalid exemplar request'), response, true);
+      }
+    }
     // Otherwise, if it is for an HTML page other than the home page:
     else if (pageName.endsWith('.html')) {
       const topic = pageName.slice(0, -5);

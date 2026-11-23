@@ -1,6 +1,6 @@
 /*
   index.ts
-  Serves a form for revising the registrations of a site and its pages: the name of the site and the name and URL of each page. Without a site identifier, serves a list of the sites, each linked to its form. Revisions change only the registry, which holds the current names and URLs; the names and URLs in reports are historical (see docs/decisions/011-site-page-ontology.md).
+  Serves a form for revising the registrations of a site and its pages: the name of the site, the name and URL of each page, and the site, existing or created by the revision, to move checked pages to. Without a site identifier, serves a list of the sites, each linked to its form. Revisions change only the registry, which holds the current names and URLs; the names and URLs in reports are historical (see docs/decisions/011-site-page-ontology.md).
 */
 
 // IMPORTS
@@ -13,17 +13,20 @@ import type {PageRecord, Registry} from '../../registry.ts';
 
 // TYPES
 
-// The values of the form controls: the site name and, by page identifier, the name and URL of each page.
+// The values of the form controls: the site name, the name of a site to move checked pages to with its new-site flag, and, by page identifier, the name, URL, and move flag of each page.
 type FormValues = {
   siteName: string;
-  pages: Record<string, {name: string; url: string}>;
+  newSiteName: string;
+  newSiteIsNew: boolean;
+  pages: Record<string, {name: string; url: string; move: boolean}>;
 };
 
 // CONSTANTS
 
-// Prefixes of the names of the form controls for page names and URLs, each followed by a page identifier.
+// Prefixes of the names of the form controls for page names, URLs, and move flags, each followed by a page identifier.
 const namePrefix = 'name.';
 const urlPrefix = 'url.';
+const movePrefix = 'move.';
 // Bounds of the length of a URL, as for a requested test.
 const urlBounds = {min: 12, max: 300} as const;
 const margin = ' '.repeat(6);
@@ -50,17 +53,26 @@ const getFormLines = (
   ...(message ? [message.type === 'alert'
     ? `${margin}<p role="alert" class="error" tabindex="-1" autofocus>${htmlSafe(message.text)}</p>`
     : `${margin}<p role="status"><strong>${htmlSafe(message.text)}</strong></p>`] : []),
-  `${margin}<p>Edit any values to be revised. Unedited values remain unchanged. By convention, the home page of a site is named “home”.</p>`,
-  `${margin}<p>Registrations cannot be deleted here. Kilotest removes the registration of a page when no report about it and no job to test it remains, and that of a site when it has no page.</p>`,
+  `${margin}<p>Edit any values to be revised. If you specify a new or existing site to move pages to, those with <q>Move this page</q> checked will be moved to it.</p>`,
+  `${margin}<p>Registrations cannot be deleted here. In a later cleanup, Kilotest removes the registration of a page when no report about it and no job to test it remains, and that of a site when it has no page.</p>`,
   `${margin}<form action="/reregisterForm.html" method="post">`,
   `${margin}  <input type="hidden" name="siteID" value="${siteID}">`,
   `${margin}  <p><label>`,
   `${margin}    Site name:`,
   `${margin}    <input size="50" maxlength="${nameBounds.site.max}" name="siteName" value="${htmlSafe(values.siteName)}" required>`,
   `${margin}  </label></p>`,
+  `${margin}  <p><label>`,
+  `${margin}    Name of a site to move some pages to:`,
+  `${margin}    <input size="50" maxlength="${nameBounds.site.max}" name="newSiteName" value="${htmlSafe(values.newSiteName)}">`,
+  `${margin}  </label>`,
+  `${margin}  <label>`,
+  `${margin}    <input type="checkbox" name="newSiteIsNew"${values.newSiteIsNew ? ' checked' : ''}>`,
+  `${margin}    This is a new site`,
+  `${margin}  </label></p>`,
   `${margin}  <h2>Page registrations</h2>`,
   ...getOrderedPages(registry, siteID).flatMap(([pageID, page], index) => {
     const {name, url} = values.pages[pageID] ?? page;
+    const move = values.pages[pageID]?.move ?? false;
     return [
       `${margin}  <fieldset>`,
       `${margin}    <legend>page ${index + 1}</legend>`,
@@ -71,6 +83,10 @@ const getFormLines = (
       `${margin}    <p><label>`,
       `${margin}      URL:`,
       `${margin}      <input type="url" size="70" minlength="${urlBounds.min}" maxlength="${urlBounds.max}" name="${urlPrefix}${pageID}" value="${htmlSafe(url)}" required>`,
+      `${margin}    </label></p>`,
+      `${margin}    <p><label>`,
+      `${margin}      <input type="checkbox" name="${movePrefix}${pageID}"${move ? ' checked' : ''}>`,
+      `${margin}      Move this page`,
       `${margin}    </label></p>`,
       `${margin}    <p><a href="${htmlSafe(page.url)}">Open page ${index + 1} (${htmlSafe(page.name)})</a></p>`,
       `${margin}  </fieldset>`
@@ -90,9 +106,18 @@ const getFirstError = async (registry: Registry, siteID: string, values: FormVal
   if (siteCheck.status === 'error') {
     return siteCheck.message;
   }
+  // If a site to move pages to is named or claimed to be new and its name has an invalid length:
+  if (values.newSiteName || values.newSiteIsNew) {
+    const newSiteCheck = checkLength(
+      values.newSiteName, nameBounds.site.min, nameBounds.site.max, 'name of the site to move pages to'
+    );
+    if (newSiteCheck.status === 'error') {
+      return newSiteCheck.message;
+    }
+  }
   // For each page of the site, in the order of the form:
   for (const [index, [pageID, page]] of getOrderedPages(registry, siteID).entries()) {
-    const {name, url} = values.pages[pageID] as {name: string; url: string};
+    const {name, url, move} = values.pages[pageID] as {name: string; url: string; move: boolean};
     const label = `page ${index + 1}`;
     const nameCheck = checkLength(name, nameBounds.page.min, nameBounds.page.max, `name of ${label}`);
     // If its name has an invalid length:
@@ -106,6 +131,10 @@ const getFirstError = async (registry: Registry, siteID: string, values: FormVal
     // If its URL is revised and is not an allowed target:
     if (url !== page.url && !await isAllowedTarget(url)) {
       return `The URL of ${label} is not one that Kilotest is allowed to test`;
+    }
+    // If it is marked to be moved but no site to move it to is named:
+    if (move && !values.newSiteName) {
+      return `The site to move ${label} to is not named`;
     }
   }
   return null;
@@ -135,7 +164,9 @@ export const answer = async (pathTail: string, search: string, method: string) =
     // Return the list of sites.
     return getPage(getSiteLines(registry));
   }
-  const currentValues: FormValues = {siteName: registry.sites[siteID] as string, pages: {}};
+  const currentValues: FormValues = {
+    siteName: registry.sites[siteID] as string, newSiteName: '', newSiteIsNew: false, pages: {}
+  };
   // If the form has not been submitted:
   if (!isSubmission) {
     // Return it, with the current values.
@@ -143,29 +174,46 @@ export const answer = async (pathTail: string, search: string, method: string) =
   }
   const values: FormValues = {
     siteName: normalizeSpace(searchParams.get('siteName') ?? currentValues.siteName),
+    newSiteName: '',
+    newSiteIsNew: false,
     pages: {}
   };
   // For each submitted value:
   for (const [key, value] of searchParams) {
-    // If it is the name of a page:
-    if (key.startsWith(namePrefix)) {
-      (values.pages[key.slice(namePrefix.length)] ??= {name: '', url: ''}).name = normalizeSpace(value);
+    // If it is the name of the site to move checked pages to:
+    if (key === 'newSiteName') {
+      values.newSiteName = normalizeSpace(value);
+    }
+    // Otherwise, if it is the flag claiming that site to be new:
+    else if (key === 'newSiteIsNew') {
+      values.newSiteIsNew = true;
+    }
+    // Otherwise, if it is the name of a page:
+    else if (key.startsWith(namePrefix)) {
+      (values.pages[key.slice(namePrefix.length)] ??= {name: '', url: '', move: false}).name = normalizeSpace(value);
     }
     // Otherwise, if it is the URL of a page:
     else if (key.startsWith(urlPrefix)) {
-      (values.pages[key.slice(urlPrefix.length)] ??= {name: '', url: ''}).url = value.trim();
+      (values.pages[key.slice(urlPrefix.length)] ??= {name: '', url: '', move: false}).url = value.trim();
+    }
+    // Otherwise, if it is the move flag of a page:
+    else if (key.startsWith(movePrefix)) {
+      (values.pages[key.slice(movePrefix.length)] ??= {name: '', url: '', move: false}).move = true;
     }
   }
-  // For each page of the site with neither a name nor a URL submitted:
+  // For each page of the site with no value submitted:
   for (const [pageID, page] of getSitePages(registry, siteID).filter(([id]) => !values.pages[id])) {
     // Its current name and URL are to remain unchanged.
-    values.pages[pageID] = {name: page.name, url: page.url};
+    values.pages[pageID] = {name: page.name, url: page.url, move: false};
   }
   let error = await getFirstError(registry, siteID, values);
   // If no value is erroneous:
   if (!error) {
     // Revise the registrations, all or none.
-    const revision = await reviseRegistrations(siteID, values.siteName, values.pages);
+    const revision = await reviseRegistrations(
+      siteID, values.siteName, values.newSiteName ? {name: values.newSiteName, isNew: values.newSiteIsNew} : null,
+      values.pages
+    );
     registry = await getRegistry();
     // If the revision succeeded:
     if (revision.result === 'ok') {
@@ -175,11 +223,25 @@ export const answer = async (pathTail: string, search: string, method: string) =
         : 'No values were revised.';
       // Return the form, with the revised values.
       return getPage(getFormLines(
-        registry, siteID, {siteName: registry.sites[siteID] as string, pages: {}}, {type: 'status', text}
+        registry, siteID,
+        {siteName: registry.sites[siteID] as string, newSiteName: '', newSiteIsNew: false, pages: {}},
+        {type: 'status', text}
       ));
     }
+    // Otherwise, if a site to move pages to is specified but no page is marked to be moved:
+    if (revision.result === 'noMove') {
+      error = 'A site to move pages to is specified, but no page is marked to be moved';
+    }
+    // Otherwise, if the site to move pages to is the name of no site:
+    else if (revision.result === 'noSiteNamed') {
+      error = `No site is named “${revision.name}”`;
+    }
+    // Otherwise, if the name of the site to be created for moved pages is already the name of a site:
+    else if (revision.result === 'newSiteExists') {
+      error = `The name of the site to move pages to is too similar to that of the site “${registry.sites[revision.siteID]}”`;
+    }
     // Otherwise, if the site name matches that of another site:
-    if (revision.result === 'siteExists') {
+    else if (revision.result === 'siteExists') {
       error = `The site name is too similar to that of the site “${registry.sites[revision.siteID]}”`;
     }
     // Otherwise, if two pages would have the same name:

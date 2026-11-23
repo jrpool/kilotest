@@ -65,7 +65,10 @@ test('reregisterForm displays the registrations of a site and its pages on a GET
   assert.equal(html.querySelector('input[name="siteName"]')?.getAttribute('value'), 'Fixture Site');
   assert.equal(html.querySelector(`input[name="name.${pageID}"]`)?.getAttribute('value'), 'Mixed Outcomes');
   assert.equal(html.querySelector(`input[name="url.${pageID}"]`)?.getAttribute('value'), pageURL);
-  // Each page has a group labeled with its serial number in the order of the URLs, containing 2 inputs and a link to the page.
+  assert.equal(html.querySelector('input[name="newSiteName"]')?.getAttribute('value'), '');
+  assert.equal(html.querySelector('input[name="newSiteIsNew"]')?.hasAttribute('checked'), false);
+  assert.equal(html.querySelector(`input[name="move.${pageID}"]`)?.hasAttribute('checked'), false);
+  // Each page has a group labeled with its serial number in the order of the URLs, containing 3 inputs and a link to the page.
   const orderedIDs = getSitePages(await getRegistry(), siteID)
   .sort(([, a], [, b]) => a.url.localeCompare(b.url))
   .map(([id]) => id);
@@ -74,7 +77,7 @@ test('reregisterForm displays the registrations of a site and its pages on a GET
   const group = groups[orderedIDs.indexOf(pageID)];
   const serial = orderedIDs.indexOf(pageID) + 1;
   assert.equal(group?.querySelector('legend')?.text, `page ${serial}`);
-  assert.equal(group?.querySelectorAll('input').length, 2);
+  assert.equal(group?.querySelectorAll('input').length, 3);
   assert.equal(group?.querySelector('a')?.getAttribute('href'), pageURL);
   assert.equal(group?.querySelector('a')?.text, `Open page ${serial} (Mixed Outcomes)`);
 });
@@ -132,8 +135,40 @@ test('reregisterForm redisplays the form with the submitted values and the first
     ],
     [{siteName: 'other-site'}, 'Nothing was revised. The site name is too similar to that of the site “Other Site”.'],
     [
+      {newSiteName: 'x'.repeat(81)},
+      'Nothing was revised. The name of the site to move pages to must be between 1 and 80 characters long.'
+    ],
+    [
+      {newSiteIsNew: 'on'},
+      'Nothing was revised. The name of the site to move pages to must be between 1 and 80 characters long.'
+    ],
+    [
+      {[`move.${pageID}`]: 'on'},
+      `Nothing was revised. The site to move page ${serial} to is not named.`
+    ],
+    [
+      {newSiteName: 'Other Site'},
+      'Nothing was revised. A site to move pages to is specified, but no page is marked to be moved.'
+    ],
+    [
+      {newSiteName: 'Other Site', newSiteIsNew: 'on'},
+      'Nothing was revised. A site to move pages to is specified, but no page is marked to be moved.'
+    ],
+    [
+      {newSiteName: 'No Such Site', [`move.${pageID}`]: 'on'},
+      'Nothing was revised. No site is named “No Such Site”.'
+    ],
+    [
+      {newSiteName: 'Other Site', newSiteIsNew: 'on', [`move.${pageID}`]: 'on'},
+      'Nothing was revised. The name of the site to move pages to is too similar to that of the site “Other Site”.'
+    ],
+    [
       {[`name.${pageID}`]: 'Kept <edit>'},
       'Nothing was revised. Two pages would be named “Kept <edit>”.'
+    ],
+    [
+      {[`name.p-canttell`]: 'home', newSiteName: 'Other Site', [`move.p-canttell`]: 'on'},
+      'Nothing was revised. Two pages would be named “home”.'
     ],
     [
       {[`url.${pageID}`]: 'https://www.example.com/CantTell/'},
@@ -157,10 +192,18 @@ test('reregisterForm redisplays the form with the submitted values and the first
     assert.equal(getMessage(result, 'alert'), message);
     // The submitted values, including valid ones, are redisplayed.
     const html = parse(result.answerPage);
-    assert.equal(html.querySelector('input[name="name.p-canttell"]')?.getAttribute('value'), 'Kept <edit>');
-    assert.ok(result.answerPage.includes('value="Kept &lt;edit&gt;"'));
+    const canttellName = fields['name.p-canttell'] ?? 'Kept <edit>';
+    assert.equal(html.querySelector('input[name="name.p-canttell"]')?.getAttribute('value'), canttellName);
+    const escapedName = canttellName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    assert.ok(result.answerPage.includes(`value="${escapedName}"`));
     for (const [name, value] of Object.entries(fields)) {
-      assert.equal(html.querySelector(`input[name="${name}"]`)?.getAttribute('value'), value.trim());
+      const input = html.querySelector(`input[name="${name}"]`);
+      if (name.startsWith('move.') || name === 'newSiteIsNew') {
+        assert.equal(input?.hasAttribute('checked'), true);
+      }
+      else {
+        assert.equal(input?.getAttribute('value'), value.trim());
+      }
     }
     // Nothing is changed.
     const registry = await getRegistry();
@@ -175,6 +218,78 @@ test('reregisterForm treats a name or URL submitted without the other as submitt
   assert.match(getMessage(noURL, 'alert') ?? '', /The URL of page \d+ must start with https:/);
   const noName: any = await answer('', getBody({[`url.${pageID}`]: pageURL}), 'POST');
   assert.match(getMessage(noName, 'alert') ?? '', /The name of page \d+ must be between/);
+  const moveOnly: any = await answer('', getBody({[`move.${pageID}`]: 'on'}), 'POST');
+  assert.match(getMessage(moveOnly, 'alert') ?? '', /The name of page \d+ must be between/);
+});
+
+test('reregisterForm moves a page to a named site on a POST request', async () => {
+  await registerPage({siteName: 'Other Site', pageName: 'home', url: 'https://other.example.com/'});
+  const otherSiteID = Object.entries((await getRegistry()).sites).find(([, name]) => name === 'Other Site')?.[0];
+  const result: any = await answer('', getBody({
+    newSiteName: ' Other  Site ',
+    [`name.${pageID}`]: 'Mixed Outcomes',
+    [`url.${pageID}`]: pageURL,
+    [`move.${pageID}`]: 'on'
+  }), 'POST');
+  assert.equal(result.status, 'ok');
+  assert.equal(getMessage(result, 'status'), '1 value was revised.');
+  assert.deepEqual((await getRegistry()).pages[pageID]?.sites, [otherSiteID]);
+  // The moved page is no longer listed in the form of its former site.
+  assert.equal(parse(result.answerPage).querySelector(`input[name="name.${pageID}"]`), null);
+  // Moving a page to the site it belongs to is not a change.
+  const same: any = await answer('', getBody({
+    newSiteName: 'fixture site',
+    'name.p-canttell': 'All CantTell Page',
+    'url.p-canttell': 'https://example.com/canttell',
+    'move.p-canttell': 'on'
+  }), 'POST');
+  assert.equal(getMessage(same, 'status'), 'No values were revised.');
+  // The page can be moved back by submitting the form of its new site.
+  const back: any = await answer('', new URLSearchParams({
+    siteID: otherSiteID ?? '',
+    siteName: 'Other Site',
+    newSiteName: 'Fixture Site',
+    authCode: 'test-auth-code',
+    [`name.${pageID}`]: 'Moved Outcomes',
+    [`url.${pageID}`]: pageURL,
+    [`move.${pageID}`]: 'on'
+  }).toString(), 'POST');
+  assert.equal(getMessage(back, 'status'), '2 values were revised.');
+  const registry = await getRegistry();
+  assert.equal(registry.pages[pageID]?.name, 'Moved Outcomes');
+  assert.deepEqual(registry.pages[pageID]?.sites, [siteID]);
+});
+
+test('reregisterForm moves pages to a site created for them on a POST request', async () => {
+  const result: any = await answer('', getBody({
+    newSiteName: 'Split Site',
+    newSiteIsNew: 'on',
+    [`name.${pageID}`]: 'Mixed Outcomes',
+    [`url.${pageID}`]: pageURL,
+    [`move.${pageID}`]: 'on'
+  }), 'POST');
+  assert.equal(result.status, 'ok');
+  assert.equal(getMessage(result, 'status'), '1 value was revised.');
+  const registry = await getRegistry();
+  const newSiteID = Object.keys(registry.sites).find(id => id !== siteID);
+  assert.equal(registry.sites[newSiteID ?? ''], 'Split Site');
+  assert.deepEqual(registry.pages[pageID]?.sites, [newSiteID]);
+  // Several checked pages are moved to the one created site.
+  const pair: any = await answer('', getBody({
+    newSiteName: 'Second Split',
+    newSiteIsNew: 'on',
+    'name.p-canttell': 'All CantTell Page',
+    'url.p-canttell': 'https://example.com/canttell',
+    'move.p-canttell': 'on',
+    'name.p-nooutcom': 'No Outcomes Page',
+    'url.p-nooutcom': 'https://example.com/nooutcomes',
+    'move.p-nooutcom': 'on'
+  }), 'POST');
+  assert.equal(getMessage(pair, 'status'), '2 values were revised.');
+  const registry2 = await getRegistry();
+  const splitID = Object.entries(registry2.sites).find(([, name]) => name === 'Second Split')?.[0];
+  assert.deepEqual(registry2.pages['p-canttell']?.sites, [splitID]);
+  assert.deepEqual(registry2.pages['p-nooutcom']?.sites, [splitID]);
 });
 
 test('reregisterForm refuses a revised URL that is not an allowed target, but not an unrevised one', async () => {

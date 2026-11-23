@@ -42,10 +42,13 @@ export type PageError
 = {result: 'noSite' | 'noPage'}
 | {result: 'siteExists'; siteID: string}
 | {result: 'pageExists'; pageID: string};
-// The reason why a revision of registrations is refused: The site does not exist, a page does not exist or does not belong to the site, another site has a name that matches the revised site name, the revision would give two pages of a site the same name, or a revised URL is equivalent to the URL of another page.
+// The reason why a revision of registrations is refused: The site does not exist, a page does not exist or does not belong to the site, a site to move pages to is specified but no page is to be moved, a page is to be moved but the site to move it to is the name of no site (or no name at all), the name of a site to be created for moved pages is already the name of a site, another site has a name that matches the revised site name, the revision would give two pages of a site the same name, or a revised URL is equivalent to the URL of another page.
 export type RevisionError
 = {result: 'noSite'}
 | {result: 'noPage'; pageID: string}
+| {result: 'noMove'}
+| {result: 'noSiteNamed'; name: string}
+| {result: 'newSiteExists'; siteID: string}
 | {result: 'siteExists'; siteID: string}
 | {result: 'pageExists'; name: string}
 | {result: 'urlExists'; pageID: string; otherPageID: string};
@@ -251,9 +254,10 @@ export const registerPage = (target: PageTarget): Promise<RegisteredPage | PageE
     return {write: true, result: {...page, siteID: page.siteID, pageID}};
   }
 );
-// Revises the name of a site and/or the names and URLs of pages of the site, as a transaction, and returns the count of values changed or the reason why the revision is refused. A value equal to the current one is not a change. The revision is refused as a whole if the site does not exist, if any page does not exist or does not belong to the site, if the revised site name has the name key of another site, if the revision would leave any site with two pages whose names, after normalization, are identical, or if a revised URL is equivalent to the URL of another page of any site. Only the registry is changed: The names and URLs in reports are historical and remain as they are.
+// Revises the name of a site and/or the names, URLs, and sites of pages of the site, as a transaction, and returns the count of values changed or the reason why the revision is refused. Each page marked move is moved to newSite, which is required when any page is marked; if newSite.isNew, a site with the name is created. A value equal to the current one is not a change. The revision is refused as a whole if the site does not exist, if any page does not exist or does not belong to the site, if a site to move pages to is specified but no page is to be moved, if a page is to be moved but the site to move it to is the name of no site, if the name of a site to be created is already the name of a site, if the revised site name has the name key of another site, if the revision would leave any site with two pages whose names, after normalization, are identical, or if a revised URL is equivalent to the URL of another page of any site. Only the registry is changed: The names and URLs in reports are historical and remain as they are.
 export const reviseRegistrations = (
-  siteID: string, siteName: string | null, pages: Record<string, {name: string; url: string}>
+  siteID: string, siteName: string | null, newSite: {name: string; isNew: boolean} | null,
+  pages: Record<string, {name: string; url: string; move?: boolean}>
 ): Promise<{result: 'ok'; changeCount: number} | RevisionError> => changeRegistry(
   (registry): {write: boolean; result: {result: 'ok'; changeCount: number} | RevisionError} => {
     const refuse = (result: RevisionError) => ({write: false, result});
@@ -277,8 +281,37 @@ export const reviseRegistrations = (
     }
     const renamedSiteIDs = new Set<string>();
     const movedPageIDs: string[] = [];
+    // If any page is to be moved, resolve the site to move it to:
+    let newSiteID: string | undefined;
+    if (Object.values(pages).some(({move}) => move)) {
+      // If no site to move it to is named:
+      if (!newSite) {
+        return refuse({result: 'noSiteNamed', name: ''});
+      }
+      const nameKey = getNameKey(newSite.name);
+      newSiteID = Object.keys(registry.sites)
+      .find(id => getNameKey(registry.sites[id] as string) === nameKey);
+      // If the site is claimed to be new:
+      if (newSite.isNew) {
+        // If a site has the name:
+        if (newSiteID) {
+          return refuse({result: 'newSiteExists', siteID: newSiteID});
+        }
+        // Create a site with the name.
+        newSiteID = getNewID('site', new Set([...Object.keys(registry.sites), ...Object.keys(registry.pages)]));
+        registry.sites[newSiteID] = newSite.name;
+      }
+      // Otherwise, if no site has the name:
+      else if (!newSiteID) {
+        return refuse({result: 'noSiteNamed', name: newSite.name});
+      }
+    }
+    // Otherwise, if a site to move pages to is nevertheless specified, the submission is mistaken:
+    else if (newSite) {
+      return refuse({result: 'noMove'});
+    }
     // For each page to be revised:
-    for (const [pageID, {name, url}] of Object.entries(pages)) {
+    for (const [pageID, {name, url, move}] of Object.entries(pages)) {
       const page = registry.pages[pageID];
       // If it does not exist or does not belong to the site:
       if (!page?.sites.includes(siteID)) {
@@ -296,8 +329,18 @@ export const reviseRegistrations = (
         movedPageIDs.push(pageID);
         changeCount++;
       }
+      // If it is to be moved to the named site:
+      if (move) {
+        const newSites = [...new Set(page.sites.map(id => id === siteID ? newSiteID as string : id))];
+        // If the move changes the sites of the page:
+        if (newSites.join() !== page.sites.join()) {
+          page.sites = newSites;
+          renamedSiteIDs.add(newSiteID as string);
+          changeCount++;
+        }
+      }
     }
-    // For each site with any renamed page:
+    // For each site with a renamed page or a page moved to it:
     for (const renamedSiteID of renamedSiteIDs) {
       const pageKeys = new Set<string>();
       // For each of its pages, with the revised names:

@@ -28,7 +28,7 @@ import {
   registryPath,
   reviseRegistrations
 } from './registry.ts';
-import type {PageError, RegisteredPage} from './registry.ts';
+import type {PageError, PageRecord, RegisteredPage} from './registry.ts';
 
 // FUNCTIONS
 
@@ -204,50 +204,155 @@ test('reviseRegistrations changes names and URLs in the registry, all or none, a
     const second = await registerPage({siteName: 'Second Site', pageName: 'home', url: secondURL}) as RegisteredPage;
     // Unchanged values are not changes, and nothing is written.
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, 'First Site', {[first.pageID]: {name: 'home', url: firstURL}}),
+      await reviseRegistrations(first.siteID, 'First Site', null, {[first.pageID]: {name: 'home', url: firstURL}}),
       {result: 'ok', changeCount: 0}
     );
     // A site name, a page name, and a URL can be revised together, and a null site name leaves the site name unchanged.
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, 'Site One', {[about.pageID]: {name: 'about us', url: `${aboutURL}-us`}}),
+      await reviseRegistrations(
+        first.siteID, 'Site One', null, {[about.pageID]: {name: 'about us', url: `${aboutURL}-us`}}
+      ),
       {result: 'ok', changeCount: 3}
     );
-    assert.deepEqual(await reviseRegistrations(first.siteID, null, {}), {result: 'ok', changeCount: 0});
+    assert.deepEqual(await reviseRegistrations(first.siteID, null, null, {}), {result: 'ok', changeCount: 0});
     // A site may keep its own name key, but not take that of another site.
-    assert.deepEqual(await reviseRegistrations(first.siteID, 'site-one', {}), {result: 'ok', changeCount: 1});
+    assert.deepEqual(await reviseRegistrations(first.siteID, 'site-one', null, {}), {result: 'ok', changeCount: 1});
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, 'SECOND site', {}), {result: 'siteExists', siteID: second.siteID}
+      await reviseRegistrations(first.siteID, 'SECOND site', null, {}), {result: 'siteExists', siteID: second.siteID}
     );
     // Two pages of a site may exchange names and URLs, but not share a name.
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, null, {
+      await reviseRegistrations(first.siteID, null, null, {
         [first.pageID]: {name: 'about us', url: `${aboutURL}-us`}, [about.pageID]: {name: 'home', url: firstURL}
       }),
       {result: 'ok', changeCount: 4}
     );
     const shared = await reviseRegistrations(
-      first.siteID, 'Refused Name', {[about.pageID]: {name: 'About  US', url: firstURL}}
+      first.siteID, 'Refused Name', null, {[about.pageID]: {name: 'About  US', url: firstURL}}
     );
     assert.equal(shared.result, 'pageExists');
     assert.equal('name' in shared && normalizeName(shared.name), 'about us');
     // A page may take a URL equivalent to its own, but not one equivalent to that of another page of any site.
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, null, {[about.pageID]: {name: 'home', url: 'https://www.first.example.com'}}),
+      await reviseRegistrations(
+        first.siteID, null, null, {[about.pageID]: {name: 'home', url: 'https://www.first.example.com'}}
+      ),
       {result: 'ok', changeCount: 1}
     );
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, null, {[about.pageID]: {name: 'home', url: 'https://WWW.second.example.com'}}),
+      await reviseRegistrations(
+        first.siteID, null, null, {[about.pageID]: {name: 'home', url: 'https://WWW.second.example.com'}}
+      ),
       {result: 'urlExists', pageID: about.pageID, otherPageID: second.pageID}
     );
     // A nonexistent site, a nonexistent page, and a page of another site are refused.
-    assert.deepEqual(await reviseRegistrations('s-absent', 'Name', {}), {result: 'noSite'});
+    assert.deepEqual(await reviseRegistrations('s-absent', 'Name', null, {}), {result: 'noSite'});
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, null, {'p-absent00': {name: 'x', url: firstURL}}),
+      await reviseRegistrations(first.siteID, null, null, {'p-absent00': {name: 'x', url: firstURL}}),
       {result: 'noPage', pageID: 'p-absent00'}
     );
     assert.deepEqual(
-      await reviseRegistrations(first.siteID, null, {[second.pageID]: {name: 'x', url: secondURL}}),
+      await reviseRegistrations(first.siteID, null, null, {[second.pageID]: {name: 'x', url: secondURL}}),
       {result: 'noPage', pageID: second.pageID}
+    );
+    // A page can be moved to the named site, matched by name key.
+    assert.deepEqual(
+      await reviseRegistrations(first.siteID, null, {name: 'SECOND site', isNew: false}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true}
+      }),
+      {result: 'ok', changeCount: 1}
+    );
+    assert.deepEqual((await getRegistry()).pages[first.pageID]?.sites, [second.siteID]);
+    // Moving a page to a site it already belongs to is not a change.
+    assert.deepEqual(
+      await reviseRegistrations(second.siteID, null, {name: 'Second Site', isNew: false}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true}
+      }),
+      {result: 'ok', changeCount: 0}
+    );
+    // A move is refused if the site to move to is the name of no site or is not named at all.
+    assert.deepEqual(
+      await reviseRegistrations(second.siteID, null, {name: 'No Such Site', isNew: false}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true}
+      }),
+      {result: 'noSiteNamed', name: 'No Such Site'}
+    );
+    assert.deepEqual(
+      await reviseRegistrations(second.siteID, null, null, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true}
+      }),
+      {result: 'noSiteNamed', name: ''}
+    );
+    // A site to move pages to, whether existent or to be created, is refused if no page is to be moved, and no site is created.
+    assert.deepEqual(
+      await reviseRegistrations(second.siteID, null, {name: 'Site One', isNew: false}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`}
+      }),
+      {result: 'noMove'}
+    );
+    assert.deepEqual(
+      await reviseRegistrations(second.siteID, null, {name: 'Fourth Site', isNew: true}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`}
+      }),
+      {result: 'noMove'}
+    );
+    assert.equal(Object.keys((await getRegistry()).sites).length, 2);
+    // A move is refused if it would give two pages of the new site the same name.
+    assert.deepEqual(
+      await reviseRegistrations(first.siteID, null, {name: 'Second Site', isNew: false}, {
+        [about.pageID]: {name: 'home', url: 'https://www.first.example.com', move: true}
+      }),
+      {result: 'pageExists', name: 'home'}
+    );
+    // A moved page can be moved back, together with a revision of the name of the site it is moved from.
+    assert.deepEqual(
+      await reviseRegistrations(second.siteID, '2nd Site', {name: 'Site One', isNew: false}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true}
+      }),
+      {result: 'ok', changeCount: 2}
+    );
+    assert.deepEqual((await getRegistry()).pages[first.pageID]?.sites, [first.siteID]);
+    assert.equal((await getRegistry()).sites[second.siteID], '2nd Site');
+    // If a page belongs to several sites, moving it from one replaces only that membership.
+    await changeRegistry(registry => {
+      (registry.pages[about.pageID] as PageRecord).sites.push(second.siteID);
+      return {write: true, result: null};
+    });
+    assert.deepEqual(
+      await reviseRegistrations(second.siteID, null, {name: 'Site One', isNew: false}, {
+        [about.pageID]: {name: 'home', url: 'https://www.first.example.com', move: true}
+      }),
+      {result: 'ok', changeCount: 1}
+    );
+    assert.deepEqual((await getRegistry()).pages[about.pageID]?.sites, [first.siteID]);
+    // Pages can be moved to a site created by the revision.
+    assert.deepEqual(
+      await reviseRegistrations(first.siteID, null, {name: 'Third Site', isNew: true}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true},
+        [about.pageID]: {name: 'home', url: 'https://www.first.example.com', move: true}
+      }),
+      {result: 'ok', changeCount: 2}
+    );
+    const splitRegistry = await getRegistry();
+    const thirdSiteID = Object.keys(splitRegistry.sites)
+    .find(id => ![first.siteID, second.siteID].includes(id)) as string;
+    assert.equal(splitRegistry.sites[thirdSiteID], 'Third Site');
+    assert.deepEqual(splitRegistry.pages[first.pageID]?.sites, [thirdSiteID]);
+    assert.deepEqual(splitRegistry.pages[about.pageID]?.sites, [thirdSiteID]);
+    // A site to be created whose name is already that of a site is refused.
+    assert.deepEqual(
+      await reviseRegistrations(thirdSiteID, null, {name: '2nd Site', isNew: true}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true}
+      }),
+      {result: 'newSiteExists', siteID: second.siteID}
+    );
+    // The pages can be moved back to their former site by its name.
+    assert.deepEqual(
+      await reviseRegistrations(thirdSiteID, null, {name: 'Site One', isNew: false}, {
+        [first.pageID]: {name: 'about us', url: `${aboutURL}-us`, move: true},
+        [about.pageID]: {name: 'home', url: 'https://www.first.example.com', move: true}
+      }),
+      {result: 'ok', changeCount: 2}
     );
     // Refused revisions change nothing.
     const registry = await getRegistry();

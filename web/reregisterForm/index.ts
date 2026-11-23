@@ -53,7 +53,7 @@ const getFormLines = (
   ...(message ? [message.type === 'alert'
     ? `${margin}<p role="alert" class="error" tabindex="-1" autofocus>${htmlSafe(message.text)}</p>`
     : `${margin}<p role="status"><strong>${htmlSafe(message.text)}</strong></p>`] : []),
-  `${margin}<p>Edit any values to be revised. Unedited values remain unchanged. To move some pages to another site, enter the site name, check “This is a new site” to create a site with the name, and check “Move this page” for each page to be moved. Naming such a site but checking “Move this page” for no page is an error. By convention, the home page of a site is named “home”.</p>`,
+  `${margin}<p>Edit any values to be revised. To move <strong>some</strong> pages to another site, enter the name of that site; if it is a new site, check the box. Then check the box for any page to be moved. To move <strong>all</strong> pages to another site, simply change the site name instead.</p>`,
   `${margin}<p>Registrations cannot be deleted here. In a later cleanup, Kilotest removes the registration of a page when no report about it and no job to test it remains, and that of a site when it has no page.</p>`,
   `${margin}<form action="/reregisterForm.html" method="post">`,
   `${margin}  <input type="hidden" name="siteID" value="${siteID}">`,

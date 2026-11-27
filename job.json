@@ -99,7 +99,12 @@
       "which": "testaro",
       "what": "Testaro by CVS Health",
       "withItems": true,
-      "stopOnFail": false
+      "stopOnFail": false,
+      "rulesForcedOn": [
+        "allCapStyle",
+        "attVal",
+        "motion"
+      ]
     },
     {
       "type": "test",
